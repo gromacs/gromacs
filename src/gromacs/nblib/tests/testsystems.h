@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic nblib AtomType tests
+ * This implements basic nblib test systems
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -102,11 +102,26 @@ private:
     void addExclusionsFromNames();
 };
 
-class TwoWaterMolecules
+//! \brief Make a methanol molecule with parameters from gromos43A1
+class MethanolMoleculeBuilder
 {
 public:
-    //! Return a topology with 2 SPC water molecules
-    Topology buildTopology();
+    //! There is no default ctor for a Molecule so it must be initialized
+    MethanolMoleculeBuilder();
+
+    //! Return the initialized water Molecule, with exclusions
+    Molecule methanolMolecule();
+
+private:
+    //! The molecule
+    Molecule methanol_;
+};
+
+class WaterTopology
+{
+public:
+    //! Return a topology with specified SPC water molecules
+    Topology buildTopology(int numMolecules);
 
     //! Return the actual water Molecule used in the topology
     Molecule water();
@@ -115,10 +130,41 @@ private:
     WaterMoleculeBuilder waterMolecule_;
 };
 
-class SimulationStateTester
+class SpcMethanolTopologyBuilder
 {
 public:
-    SimulationStateTester();
+    //! Return a topology with specified methanol molecules
+    Topology buildTopology(int numWater, int numMethanol);
+
+    //! Return the actual methanol Molecule used in the topology
+    Molecule methanol();
+
+    //! Return the actual water Molecule used in the topology
+    Molecule water();
+
+private:
+    MethanolMoleculeBuilder methanolMolecule_;
+    WaterMoleculeBuilder    waterMolecule_;
+};
+
+class ArgonTopologyBuilder
+{
+public:
+    //! Build a topology with specified argon molecules
+    ArgonTopologyBuilder(const int& numAtoms);
+
+    //! Get the topology with specified argon molecules
+    Topology argonTopology();
+
+private:
+    TopologyBuilder topologyBuilder_;
+};
+
+
+class ArgonSimulationStateBuilder
+{
+public:
+    ArgonSimulationStateBuilder();
 
     void setCoordinate(int atomNum, int dimension, real value);
 
@@ -129,6 +175,25 @@ public:
     const Topology& topology() const;
 
     Box& box();
+
+    std::vector<gmx::RVec>& coordinates();
+
+    std::vector<gmx::RVec>& velocities();
+
+private:
+    std::vector<gmx::RVec> coordinates_;
+    std::vector<gmx::RVec> velocities_;
+
+    Box      box_;
+    Topology topology_;
+};
+
+class SpcMethanolSimulationStateBuilder
+{
+public:
+    SpcMethanolSimulationStateBuilder();
+
+    SimulationState setupSimulationState();
 
     std::vector<gmx::RVec>& coordinates();
 

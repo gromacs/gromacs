@@ -87,17 +87,17 @@ void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector
 
 TEST(NBlibTest, TopologyHasNumAtoms)
 {
-    TwoWaterMolecules waters;
-    Topology          watersTopology = waters.buildTopology();
-    const int         test           = watersTopology.numAtoms();
-    const int         ref            = 6;
+    WaterTopology waters;
+    Topology      watersTopology = waters.buildTopology(2);
+    const int     test           = watersTopology.numAtoms();
+    const int     ref            = 6;
     EXPECT_EQ(ref, test);
 }
 
 TEST(NBlibTest, TopologyHasCharges)
 {
-    TwoWaterMolecules       waters;
-    Topology                watersTopology = waters.buildTopology();
+    WaterTopology           waters;
+    Topology                watersTopology = waters.buildTopology(2);
     const std::vector<real> test           = watersTopology.getCharges();
     const std::vector<real> ref            = { Charges.at("Ow"), Charges.at("Hw"), Charges.at("Hw"),
                                     Charges.at("Ow"), Charges.at("Hw"), Charges.at("Hw") };
@@ -106,8 +106,8 @@ TEST(NBlibTest, TopologyHasCharges)
 
 TEST(NBlibTest, TopologyHasMasses)
 {
-    TwoWaterMolecules       waters;
-    Topology                watersTopology = waters.buildTopology();
+    WaterTopology           waters;
+    Topology                watersTopology = waters.buildTopology(2);
     const std::vector<real> test           = watersTopology.getMasses();
     const Mass              refOwMass      = waters.water().at("Ow").mass();
     const Mass              refHwMass      = waters.water().at("H").mass();
@@ -117,8 +117,8 @@ TEST(NBlibTest, TopologyHasMasses)
 
 TEST(NBlibTest, TopologyHasAtomTypes)
 {
-    TwoWaterMolecules           waters;
-    Topology                    watersTopology = waters.buildTopology();
+    WaterTopology               waters;
+    Topology                    watersTopology = waters.buildTopology(2);
     const std::vector<AtomType> test           = watersTopology.getAtomTypes();
     const AtomType              refOw          = waters.water().at("Ow");
     const AtomType              refHw          = waters.water().at("H");
@@ -129,8 +129,8 @@ TEST(NBlibTest, TopologyHasAtomTypes)
 
 TEST(NBlibTest, TopologyHasAtomTypeIds)
 {
-    TwoWaterMolecules waters;
-    Topology          watersTopology = waters.buildTopology();
+    WaterTopology waters;
+    Topology      watersTopology = waters.buildTopology(2);
 
     const std::vector<int>      testIds   = watersTopology.getAtomTypeIdOfAllAtoms();
     const std::vector<AtomType> testTypes = watersTopology.getAtomTypes();
@@ -169,8 +169,8 @@ TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
 
 TEST(NBlibTest, TopologyHasExclusions)
 {
-    TwoWaterMolecules     waters;
-    Topology              watersTopology = waters.buildTopology();
+    WaterTopology         waters;
+    Topology              watersTopology = waters.buildTopology(2);
     gmx::ListOfLists<int> testExclusions = watersTopology.getGmxExclusions();
 
     const std::vector<std::vector<int>> refExclusions = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
@@ -181,8 +181,8 @@ TEST(NBlibTest, TopologyHasExclusions)
 
 TEST(NBlibTest, TopologyHasNonbondedParameters)
 {
-    TwoWaterMolecules                         waters;
-    Topology                                  watersTopology = waters.buildTopology();
+    WaterTopology                             waters;
+    Topology                                  watersTopology = waters.buildTopology(2);
     const std::vector<std::tuple<real, real>> test     = watersTopology.getNonbondedParameters();
     const Mass                                refOwC6  = waters.water().at("Ow").c6();
     const Mass                                refOwC12 = waters.water().at("Ow").c12();
@@ -194,14 +194,18 @@ TEST(NBlibTest, TopologyHasNonbondedParameters)
     EXPECT_EQ(ref, test);
 }
 
-    const std::vector<real> testC6 = expandQuantity(watersTopology, &AtomType::c6);
-    const std::vector<real> testC12 = expandQuantity(watersTopology, &AtomType::c12);
-
-    const std::vector<real> refC6 = {6, 0.6, 0.6, 6, 0.6, 0.6};
-    const std::vector<real> refC12 = {12, 0.12, 0.12, 12, 0.12, 0.12};
-
-    EXPECT_EQ(refC6, testC6);
-    EXPECT_EQ(refC12, testC12);
+TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
+{
+    WaterTopology          waters;
+    Topology               watersTopology = waters.buildTopology(2);
+    const std::vector<int> test           = watersTopology.getAtomInfoAllVdw();
+    std::vector<int>       ref;
+    ref.resize(watersTopology.numAtoms());
+    for (size_t atomI = 0; atomI < ref.size(); atomI++)
+    {
+        SET_CGINFO_HAS_VDW(ref[atomI]);
+    }
+    EXPECT_EQ(ref, test);
 }
 
 //! Todo: this belongs to ForceCalculator
