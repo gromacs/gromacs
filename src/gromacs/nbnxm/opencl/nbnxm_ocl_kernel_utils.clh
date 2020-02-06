@@ -122,6 +122,8 @@
 #        define gmx_unused
 #    endif
 
+typedef float fvec[3];
+
 // Data structures shared between OpenCL device code and OpenCL host code
 // TODO: review, improve
 // Replaced real by float for now, to avoid including any other header
@@ -669,7 +671,7 @@ gmx_opencl_inline void reduce_force_j(__local float gmx_unused* f_buf,
 }
 
 #    if REDUCE_SHUFFLE
-gmx_opencl_inline void reduce_force_i_and_shift_shfl(float3*         fci_buf,
+gmx_opencl_inline void reduce_force_i_and_shift_shfl(__private fvec  fci_buf[],
                                                      __global float* fout,
                                                      bool            bCalcFshift,
                                                      int             tidxi,
@@ -684,7 +686,7 @@ gmx_opencl_inline void reduce_force_i_and_shift_shfl(float3*         fci_buf,
     for (int ci_offset = 0; ci_offset < c_nbnxnGpuNumClusterPerSupercluster; ci_offset++)
     {
         int    aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ci_offset) * CL_SIZE + tidxi;
-        float3 fin  = fci_buf[ci_offset];
+        float3 fin  = (float3) (fci_buf[ci_offset][0], fci_buf[ci_offset][1], fci_buf[ci_offset][2]);
         fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, CL_SIZE);
         fin.y += intel_sub_group_shuffle_up(fin.y, fin.y, CL_SIZE);
         fin.z += intel_sub_group_shuffle_down(fin.z, fin.z, CL_SIZE);
@@ -727,7 +729,7 @@ gmx_opencl_inline void reduce_force_i_and_shift_shfl(float3*         fci_buf,
  *  array sizes.
  */
 gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_buf,
-                                                     float3*                 fci_buf,
+                                                     __private fvec          fci_buf[],
                                                      __global float*         fout,
                                                      bool                    bCalcFshift,
                                                      int                     tidxi,
@@ -742,9 +744,9 @@ gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_b
         int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ci_offset) * CL_SIZE + tidxi;
         int tidx = tidxi + tidxj * CL_SIZE;
         /* store i forces in shmem */
-        f_buf[tidx]                   = fci_buf[ci_offset].x;
-        f_buf[FBUF_STRIDE + tidx]     = fci_buf[ci_offset].y;
-        f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
+        f_buf[tidx]                   = fci_buf[ci_offset][0];
+        f_buf[FBUF_STRIDE + tidx]     = fci_buf[ci_offset][1];
+        f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset][2];
         barrier(CLK_LOCAL_MEM_FENCE);
 
         /* Reduce the initial CL_SIZE values for each i atom to half
@@ -806,7 +808,7 @@ gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_b
 /*! Final i-force reduction
  */
 gmx_opencl_inline void reduce_force_i_and_shift(__local float gmx_unused* f_buf,
-                                                float3*                   fci_buf,
+                                                __private fvec            fci_buf[],
                                                 __global float*           f,
                                                 bool                      bCalcFshift,
                                                 int                       tidxi,
