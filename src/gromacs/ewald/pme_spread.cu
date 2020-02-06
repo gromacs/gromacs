@@ -47,7 +47,7 @@
 #include <cassert>
 
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
-#include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/typecasts.cuh"
 
 #include "pme.cuh"
 #include "pme_calculate_splines.cuh"
@@ -60,14 +60,15 @@
  * Optional second stage of the spline_and_spread_kernel.
  *
  * \tparam[in] order                PME interpolation order.
- * \tparam[in] wrapX                A boolean which tells if the grid overlap in dimension X should
- * be wrapped. \tparam[in] wrapY                A boolean which tells if the grid overlap in
- * dimension Y should be wrapped. \tparam[in] useOrderThreads      A boolean which Tells if we
- * should use order threads per atom (order*order used if false) \param[in]  kernelParams Input PME
- * CUDA data in constant memory. \param[in]  atomIndexOffset      Starting atom index for the
- * execution block w.r.t. global memory. \param[in]  atomCharge           Atom charge/coefficient of
- * atom processed by thread. \param[in]  sm_gridlineIndices   Atom gridline indices in the shared
- * memory. \param[in]  sm_theta             Atom spline values in the shared memory.
+ * \tparam[in] wrapX                Whether the grid overlap in dimension X should be wrapped.
+ * \tparam[in] wrapY                Whether the grid overlap in dimension Y should be wrapped.
+ * \tparam[in] useOrderThreads      Whether we should use order threads per atom (order*order used if false).
+ *
+ * \param[in]  kernelParams         Input PME CUDA data in constant memory.
+ * \param[in]  atomIndexOffset      Starting atom index for the execution block w.r.t. global memory.
+ * \param[in]  atomCharge           Atom charge/coefficient of atom processed by thread.
+ * \param[in]  sm_gridlineIndices   Atom gridline indices in the shared memory.
+ * \param[in]  sm_theta             Atom spline values in the shared memory.
  */
 template<const int order, const bool wrapX, const bool wrapY, const bool useOrderThreads>
 __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams kernelParams,

@@ -48,7 +48,10 @@ if(GMX_USE_CUDA)
     # CUDA-only test
     list(APPEND SOURCES_FROM_CXX
         pinnedmemorychecker.cpp
+        typecasts.cpp
+        typecasts_runner.cpp
         )
+    gmx_add_libgromacs_sources(typecasts_runner.cu)
     # TODO Making a separate library is heavy handed, but nothing else
     # seems to work. Also don't use a hyphen in its name, because nvcc
     # can't cope with that.

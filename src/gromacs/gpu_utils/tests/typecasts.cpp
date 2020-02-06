@@ -40,28 +40,16 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <vector>
 
-#ifndef __CUDA_ARCH__
-/*! \brief Dummy definition to avoid compiler error
- *
- * \todo Find a better solution. Probably, move asFloat3(...) function to different header.
- */
-#    define __CUDA_ARCH__ -1
-#    include <cuda_runtime.h>
-#    undef __CUDA_ARCH__
-#else
-#    include <cuda_runtime.h>
-#endif
 #include <gtest/gtest.h>
 
-#include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/utility/real.h"
+#include "gromacs/utility/exceptions.h"
 
-#if GMX_GPU == GMX_GPU_CUDA
+#include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
+
+#include "typecasts_runner.h"
 
 namespace gmx
 {
@@ -69,21 +57,22 @@ namespace gmx
 namespace test
 {
 
-TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3)
+//! Test data in RVec format
+static const std::vector<RVec> rVecInput = { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } };
+
+TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3OnHost)
 {
-    std::vector<RVec> dataRVec;
-    dataRVec.emplace_back(1.0, 2.0, 3.0);
-    dataRVec.emplace_back(4.0, 5.0, 6.0);
-    float3* dataFloat3 = asFloat3(dataRVec.data());
-    EXPECT_EQ(dataFloat3[0].x, dataRVec[0][XX]);
-    EXPECT_EQ(dataFloat3[0].y, dataRVec[0][YY]);
-    EXPECT_EQ(dataFloat3[0].z, dataRVec[0][ZZ]);
-    EXPECT_EQ(dataFloat3[1].x, dataRVec[1][XX]);
-    EXPECT_EQ(dataFloat3[1].y, dataRVec[1][YY]);
-    EXPECT_EQ(dataFloat3[1].z, dataRVec[1][ZZ]);
+    std::vector<RVec> rVecOutput(rVecInput.size());
+    convertRVecToFloat3OnHost(rVecOutput, rVecInput);
+    EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));
+}
+
+TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3OnDevice)
+{
+    std::vector<RVec> rVecOutput(rVecInput.size());
+    convertRVecToFloat3OnDevice(rVecOutput, rVecInput);
+    EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));
 }
 
 } // namespace test
 } // namespace gmx
-
-#endif // GMX_GPU == GMX_GPU_CUDA
