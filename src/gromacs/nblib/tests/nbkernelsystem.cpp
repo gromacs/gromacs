@@ -43,12 +43,13 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/nblib/nbkernelsystem.h"
-
+#include <iostream>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/atomtype.h"
+#include <gromacs/nblib/forcecalculator.h>
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/topology/exclusionblocks.h"
@@ -133,115 +134,37 @@ public:
         };
     }
 
-    NBKernelSystem setupKernelSystem()
+    SimulationState getSimulationState()
     {
-        Topology topology       = topologyBuilder.buildTopology();
-        auto     simState       = SimulationState(coordinates, box, topology, velocities);
-        auto     nbKernelSystem = NBKernelSystem(simState);
-        return nbKernelSystem;
+        Topology topology = topologyBuilder.buildTopology();
+        return SimulationState(coordinates, box, topology, velocities);
     }
 };
 
-TEST(NBlibTest, KernelSystemHasNumAtoms)
+
+TEST(NBlibTest, canIntegrateSystem)
 {
+    auto options      = NBKernelOptions();
+    options.nbnxmSimd = BenchMarkKernels::SimdNo;
+
     KernelSystemTester kernelSystemTester;
-    auto               kernelSystem = kernelSystemTester.setupKernelSystem();
-    const int          test         = kernelSystem.numAtoms;
-    const int          ref          = 6;
-    EXPECT_EQ(ref, test);
-}
 
-TEST(NBlibTest, KernelSystemHasNonbondedParameters)
-{
-    KernelSystemTester      kernelSystemTester;
-    auto                    kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<real> test         = kernelSystem.nonbondedParameters;
-    std::vector<real>       ref;
-    ref.resize(kernelSystem.numAtoms * kernelSystem.numAtoms * 2, 0);
-    ref[0] = 6;
-    ref[1] = 12;
-    EXPECT_EQ(ref, test);
-}
+    auto simState        = kernelSystemTester.getSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
 
-TEST(NBlibTest, KernelSystemHasAtomTypes)
-{
-    KernelSystemTester     kernelSystemTester;
-    auto                   kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<int> test         = kernelSystem.atomTypes;
-    std::vector<int>       ref;
-    ref.resize(kernelSystem.numAtoms, 0);
-    EXPECT_EQ(ref, test);
-}
+    std::vector<real> forces;
+    ASSERT_NO_THROW(forces = forceCalculator.compute());
+    EXPECT_EQ(simState.topology().numAtoms() * 3, forces.size());
 
-TEST(NBlibTest, KernelSystemHasCharges)
-{
-    KernelSystemTester      kernelSystemTester;
-    auto                    kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<real> test         = kernelSystem.charges;
-    const std::vector<real> ref          = { -0.6, 0.3, 0.3, -0.6, 0.3, 0.3 };
-    EXPECT_EQ(ref, test);
-}
-
-TEST(NBlibTest, KernelSystemHasMasses)
-{
-    KernelSystemTester      kernelSystemTester;
-    auto                    kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<real> test         = kernelSystem.masses;
-    const std::vector<real> ref          = { 16., 1., 1., 16., 1., 1. };
-    EXPECT_EQ(ref, test);
-}
-
-TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
-{
-    KernelSystemTester     kernelSystemTester;
-    auto                   kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<int> test         = kernelSystem.atomInfoAllVdw;
-    std::vector<int>       ref;
-    ref.resize(kernelSystem.numAtoms);
-    for (size_t atomI = 0; atomI < ref.size(); atomI++)
+    for (int iter = 0; iter < options.numIterations; iter++)
     {
-        SET_CGINFO_HAS_VDW(ref[atomI]);
-    }
-    EXPECT_EQ(ref, test);
-}
+        // std::vector<real> forces = forceCalculator.compute();
 
-TEST(NBlibTest, KernelSystemHasCoordinates)
-{
-    KernelSystemTester           kernelSystemTester;
-    auto                         kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<gmx::RVec> test         = kernelSystem.coordinates;
-    const std::vector<gmx::RVec> ref          = kernelSystemTester.coordinates;
-    for (size_t i = 0; i < ref.size(); i++)
-    {
-        for (size_t j = 0; j < 3; j++)
-            EXPECT_EQ(ref[i][j], test[i][j]);
+        // std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
+        // integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
     }
 }
 
-TEST(NBlibTest, KernelSystemHasVelocities)
-{
-    KernelSystemTester           kernelSystemTester;
-    auto                         kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<gmx::RVec> test         = kernelSystem.velocities;
-    const std::vector<gmx::RVec> ref          = kernelSystemTester.velocities;
-    for (size_t i = 0; i < ref.size(); i++)
-    {
-        for (size_t j = 0; j < 3; j++)
-            EXPECT_EQ(ref[i][j], test[i][j]);
-    }
-}
-
-TEST(NBlibTest, TopologyHasExclusions)
-{
-    KernelSystemTester    kernelSystemTester;
-    auto                  kernelSystem   = kernelSystemTester.setupKernelSystem();
-    gmx::ListOfLists<int> testExclusions = kernelSystem.excls;
-
-    const std::vector<std::vector<int>> refExclusions = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
-                                                          { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
-
-    compareLists(testExclusions, refExclusions);
-}
 
 } // namespace
 } // namespace test

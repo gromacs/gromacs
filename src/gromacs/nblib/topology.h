@@ -83,19 +83,10 @@ public:
     const std::vector<AtomType>& getAtomTypes() const;
 
     //! Return the AtomType ID of all atoms
-    const std::vector<int>& getAtomTypeIdOfallAtoms() const;
+    const std::vector<int>& getAtomTypeIdOfAllAtoms() const;
 
     //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
-
-    //! Returns a vector of atomic masses
-    const std::vector<real>& getMasses() const;
-
-    //! Returns full list of nonbondedParameters
-    const std::vector<std::tuple<real, real>>& getNonbondedParameters() const;
-
-    //! Returns a bit-masked vector indicating if an atom has VDW params
-    const std::vector<int>& getAtomInfoAllVdw() const;
 
     //! Returns exclusions in proper, performant, gromacs layout
     const gmx::ListOfLists<int>& getGmxExclusions() const { return exclusions_; }
@@ -107,18 +98,12 @@ private:
 
     //! Total number of atoms in the system
     int numAtoms_;
-    //! Storage for parameters for short range interactions.
-    std::vector<std::tuple<real, real>> nonbondedParameters_;
     //! unique collection of AtomTypes
     std::vector<AtomType> atomTypes_;
     //! store an ID of each atom's type
     std::vector<int> atomTypeIdOfAllAtoms_;
-    //! Storage for atom partial charges.
+    //! Storage for atom partial charges
     std::vector<real> charges_;
-    //! Atom masses
-    std::vector<real> masses_;
-    //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoAllVdw_;
     //! Information about exclusions.
     gmx::ListOfLists<int> exclusions_;
 };
@@ -171,6 +156,26 @@ private:
     //! distinct collection of AtomTypes
     std::unordered_map<std::string, AtomType> atomTypes_;
 };
+
+//! utility function to extract AtomType quantities and expand them to the full
+//! array of length numAtoms()
+template <class F>
+inline auto expandQuantity(const Topology& topology, F atomTypeExtractor)
+{
+    using ValueType = decltype((std::declval<AtomType>().*std::declval<F>())());
+
+    std::vector<ValueType> ret;
+    ret.reserve(topology.numAtoms());
+
+    const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
+
+    for (size_t id : topology.getAtomTypeIdOfAllAtoms())
+    {
+        ret.push_back((atomTypes[id].*atomTypeExtractor)());
+    }
+
+    return ret;
+}
 
 } // namespace nblib
 

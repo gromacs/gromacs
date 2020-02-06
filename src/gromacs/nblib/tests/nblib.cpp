@@ -48,7 +48,6 @@
 #include "gromacs/nblib/interactions.h"
 #include "gromacs/nblib/molecules.h"
 #include "gromacs/nblib/nbkerneloptions.h"
-#include "gromacs/nblib/nbkernelsystem.h"
 #include "gromacs/nblib/topology.h"
 
 #include "testutils/refdata.h"

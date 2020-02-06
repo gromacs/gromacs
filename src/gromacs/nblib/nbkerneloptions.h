@@ -50,7 +50,6 @@
 #include "gromacs/math/vectypes.h"
 
 #include "nbkerneldef.h"
-#include "nbkernelsystem.h"
 
 struct interaction_const_t;
 struct nonbonded_verlet_t;
@@ -100,12 +99,8 @@ struct NBKernelOptions
  * \param[in] options How the benchmark will be run.
  * \param[in] printTimings Whether to print cycle counters
  */
-void nbKernel(NBKernelSystem& system, const NBKernelOptions& options, const bool& printTimings);
+//void nbKernel(NBKernelSystem& system, const NBKernelOptions& options, const bool& printTimings);
 
-interaction_const_t setupInteractionConst(const NBKernelOptions& options);
-
-std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const NBKernelOptions& options,
-                                                       NBKernelSystem&        system);
 
 } // namespace nblib
 

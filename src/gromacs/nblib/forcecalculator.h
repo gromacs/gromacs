@@ -48,35 +48,49 @@
 
 #include "nbkerneldef.h"
 #include "nbkerneloptions.h"
-#include "nbkernelsystem.h"
+#include "simulationstate.h"
 
-namespace nblib {
+namespace nblib
+{
+
+enum class CombinationRule : int
+{
+    Geometric = 0,
+    Count     = 1
+};
 
 class ForceCalculator
 {
 public:
-
     // TODO: Depend on simulationState
-    ForceCalculator(NBKernelSystem          &system,
-                    const NBKernelOptions   &options);
+    ForceCalculator(const SimulationState& system, const NBKernelOptions& options);
 
     //! Sets up and runs the kernel calls
-    //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
-    //!      that callers can manipulate directly.
-    void compute(const bool printTimings = false);
+    //! returns the forces as a vector
+    std::vector<real> compute(const bool printTimings = false);
 
 private:
+    void                                unpackTopologyToGmx();
+    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
 
-    void printTimingsOutput(const NBKernelOptions &options,
-                            const NBKernelSystem  &system,
-                            const gmx::index      &numPairs,
-                            gmx_cycles_t           cycles);
+    // void printTimingsOutput(const NBKernelOptions &options,
+    //                        const SimulationState &system,
+    //                        const gmx::index      &numPairs,
+    //                        gmx_cycles_t           cycles);
 
-    NBKernelSystem nbKernelSystem_;
-    NBKernelOptions nbKernelOptions_;
+    SimulationState system_;
+    NBKernelOptions options_;
 
+    //! Storage for parameters for short range interactions.
+    std::vector<real> nonbondedParameters_;
+    //! Atom masses
+    std::vector<real> masses_;
+    //! Atom info where all atoms are marked to have Van der Waals interactions
+    std::vector<int> atomInfoAllVdw_;
+    //! Legacy matrix for box
+    matrix box_;
 };
 
 } // namespace nblib
 
-#endif //GROMACS_FORCECALCULATOR_H
+#endif // GROMACS_FORCECALCULATOR_H
