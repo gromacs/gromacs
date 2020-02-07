@@ -289,37 +289,4 @@ const std::vector<int>& Topology::getAtomInfoAllVdw() const
     return atomInfoAllVdw_;
 }
 
-bool operator==(const Topology& a, const Topology& b)
-{
-    if (a.numAtoms() != b.numAtoms())
-    {
-        return false;
-    }
-    if (a.getMasses() != b.getMasses())
-    {
-        return false;
-    }
-    if (a.getCharges() != b.getCharges())
-    {
-        return false;
-    }
-    if (a.getAtomTypes() != b.getAtomTypes())
-    {
-        return false;
-    }
-    if (a.getAtomTypeIdOfallAtoms() != b.getAtomTypeIdOfallAtoms())
-    {
-        return false;
-    }
-    if (a.getNonbondedParameters() != b.getNonbondedParameters())
-    {
-        return false;
-    }
-    if (a.getAtomInfoAllVdw() != b.getAtomInfoAllVdw())
-    {
-        return false;
-    }
-    return true;
-}
-
 } // namespace nblib
