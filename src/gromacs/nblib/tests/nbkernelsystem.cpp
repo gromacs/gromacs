@@ -133,60 +133,13 @@ public:
             { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
         };
     }
-    /*
-    NBKernelSystem setupKernelSystem()
+    SimulationState getSimulationState()
     {
         Topology topology = topologyBuilder.buildTopology();
         return SimulationState(coordinates, box, topology, velocities);
     }
-    */
 };
-/*
-TEST(NBlibTest, KernelSystemHasNumAtoms)
-{
-    KernelSystemTester kernelSystemTester;
-    auto               kernelSystem = kernelSystemTester.setupKernelSystem();
-    const int          test         = kernelSystem.numAtoms;
-    const int          ref          = 6;
-    EXPECT_EQ(ref, test);
-}
 
-TEST(NBlibTest, canIntegrateSystem)
-{
-    auto options      = NBKernelOptions();
-    options.nbnxmSimd = BenchMarkKernels::SimdNo;
-
-    KernelSystemTester kernelSystemTester;
-
-    auto simState        = kernelSystemTester.getSimulationState();
-    auto forceCalculator = ForceCalculator(simState, options);
-
-    std::vector<real> forces;
-    ASSERT_NO_THROW(forces = forceCalculator.compute());
-    EXPECT_EQ(simState.topology().numAtoms() * 3, forces.size());
-
-    for (int iter = 0; iter < options.numIterations; iter++)
-    {
-        // std::vector<real> forces = forceCalculator.compute();
-
-        // std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
-        // integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
-    }
-}
-
-
-TEST(NBlibTest, TopologyHasExclusions)
-{
-    KernelSystemTester    kernelSystemTester;
-    auto                  kernelSystem   = kernelSystemTester.setupKernelSystem();
-    gmx::ListOfLists<int> testExclusions = kernelSystem.excls;
-
-    const std::vector<std::vector<int>> refExclusions = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
-                                                          { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
-
-    compareLists(testExclusions, refExclusions);
-}
-*/
 } // namespace
 } // namespace test
 } // namespace nblib

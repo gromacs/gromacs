@@ -124,15 +124,6 @@ TEST(NBlibTest, SimulationStateCanAssign)
     EXPECT_NO_THROW(const SimulationState& gmx_unused AssignedSimState = simState);
 }
 
-TEST(NBlibTest, SimulationStateHasTopology)
-{
-    ArgonSimulationStateBuilder argonSimulationStateBuilder;
-    SimulationState             simState = argonSimulationStateBuilder.setupSimulationState();
-    const Topology&             testTop  = simState.topology();
-    const Topology&             refTop   = argonSimulationStateBuilder.topology();
-    EXPECT_EQ(refTop, testTop);
-}
-
 TEST(NBlibTest, SimulationStateHasBox)
 {
     ArgonSimulationStateBuilder argonSimulationStateBuilder;
