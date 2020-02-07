@@ -45,9 +45,11 @@
 
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
@@ -598,19 +600,23 @@ static void set_forces(FILE* fp, int angle, int nx, double h, double v[], double
 static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_tabledata td[])
 {
     char     buf[STRLEN];
-    double **yy = nullptr, start, end, dx0, dx1, ssd, vm, vp, f, numf;
-    int      k, i, nx, nx0 = 0, ny, nny, ns;
+    double   start, end, dx0, dx1, ssd, vm, vp, f, numf;
+    int      k, i, nx0 = 0, nny, ns;
     gmx_bool bAllZero, bZeroV, bZeroF;
     double   tabscale;
 
     nny               = 2 * ntab + 1;
     std::string libfn = gmx::findLibraryFile(filename);
-    nx                = read_xvg(libfn.c_str(), &yy, &ny);
-    if (ny != nny)
+    gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> xvgData    = readXvgData(libfn);
+    int                                                            numColumns = xvgData.extent(0);
+    if (numColumns != nny)
     {
         gmx_fatal(FARGS, "Trying to read file %s, but nr columns = %d, should be %d", libfn.c_str(),
-                  ny, nny);
+                  numColumns, nny);
     }
+    int numRows = xvgData.extent(1);
+
+    const auto& yy = xvgData.asView();
     if (angle == 0)
     {
         if (yy[0][0] != 0.0)
@@ -630,18 +636,18 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
             start = -180.0;
         }
         end = 180.0;
-        if (yy[0][0] != start || yy[0][nx - 1] != end)
+        if (yy[0][0] != start || yy[0][numRows - 1] != end)
         {
             gmx_fatal(FARGS, "The angles in file %s should go from %f to %f instead of %f to %f\n",
-                      libfn.c_str(), start, end, yy[0][0], yy[0][nx - 1]);
+                      libfn.c_str(), start, end, yy[0][0], yy[0][numRows - 1]);
         }
     }
 
-    tabscale = (nx - 1) / (yy[0][nx - 1] - yy[0][0]);
+    tabscale = (numRows - 1) / (yy[0][numRows - 1] - yy[0][0]);
 
     if (fp)
     {
-        fprintf(fp, "Read user tables from %s with %d data points.\n", libfn.c_str(), nx);
+        fprintf(fp, "Read user tables from %s with %d data points.\n", libfn.c_str(), numRows);
         if (angle == 0)
         {
             fprintf(fp, "Tabscale = %g points/nm\n", tabscale);
@@ -653,7 +659,7 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
     {
         bZeroV = TRUE;
         bZeroF = TRUE;
-        for (i = 0; (i < nx); i++)
+        for (i = 0; (i < numRows); i++)
         {
             if (i >= 2)
             {
@@ -699,7 +705,8 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
 
         if (!bZeroV && bZeroF)
         {
-            set_forces(fp, angle, nx, 1 / tabscale, yy[1 + k * 2], yy[1 + k * 2 + 1], k);
+            set_forces(fp, angle, numRows, 1 / tabscale, yy[1 + k * 2].data(),
+                       yy[1 + k * 2 + 1].data(), k);
         }
         else
         {
@@ -708,7 +715,7 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
              */
             ssd = 0;
             ns  = 0;
-            for (i = 1; (i < nx - 1); i++)
+            for (i = 1; (i < numRows - 1); i++)
             {
                 vm = yy[1 + 2 * k][i - 1];
                 vp = yy[1 + 2 * k][i + 1];
@@ -754,19 +761,14 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
 
     for (k = 0; (k < ntab); k++)
     {
-        init_table(nx, nx0, tabscale, &(td[k]), TRUE);
-        for (i = 0; (i < nx); i++)
+        init_table(numRows, nx0, tabscale, &(td[k]), TRUE);
+        for (i = 0; (i < numRows); i++)
         {
             td[k].x[i] = yy[0][i];
             td[k].v[i] = yy[2 * k + 1][i];
             td[k].f[i] = yy[2 * k + 2][i];
         }
     }
-    for (i = 0; (i < ny); i++)
-    {
-        sfree(yy[i]);
-    }
-    sfree(yy);
 }
 
 static void done_tabledata(t_tabledata* td)
