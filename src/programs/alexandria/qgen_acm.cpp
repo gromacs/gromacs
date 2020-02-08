@@ -73,6 +73,15 @@ void QgenAcm::setInfo(const Poldata            *pd,
     natom_          = 0;
     hfac_           = hfac;
     qtotal_         = qtotal;
+    
+    if (coreIndex_.size() != 0)
+    {
+        coreIndex_.clear();
+    }
+    if (shellIndex_.size() != 0)
+    {
+        shellIndex_.clear();
+    }
     for (i = 0; i < atoms->nr; i++)
     {
         if (atoms->atom[i].ptype == eptAtom)
