@@ -771,9 +771,7 @@ double OptACM::calcPenalty(bool verbose)
 {
     double            penalty  = 0;
     double            deltaChi = 2;
-    double            deltaJ0  = 4;
     double            chi_Max  = chi0Max();
-    double            J0_Max   = J0Max();
     const auto        pd       = poldata();
     auto             *ic       = indexCount();
     
@@ -817,10 +815,6 @@ double OptACM::calcPenalty(bool verbose)
     
             std::string label = ai->name() + " chi";
             penalty += l2_regularizer(ai_chi, chiHmax+deltaChi, chi_Max, label, verbose);
-            // Penalty for J0 turned off
-            //auto ai_J0   = ei->getJ0();
-            //label = ai->name() + " Eta";
-            //penalty += l2_regularizer(ai_J0, J0Hmax+deltaJ0, J0_Max, label, verbose);
         }
     }
     return penalty;

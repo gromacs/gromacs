@@ -262,16 +262,17 @@ int alex_gentop(int argc, char *argv[])
     iModel = pd.getChargeModel();
     printf("Using force field file %s and charge distribution model %s\n",
            gentop_fnm, getEemtypeName(iModel));
-
-    if (pd.getNexcl() != nexcl)
-    {
-        printf("Exclusion number changed from %d to %d.\n", pd.getNexcl(), nexcl);
-        pd.setNexcl(nexcl);
-    }
     if (bVerbose)
     {
         printf("Reading force field information. There are %d atomtypes.\n",
                static_cast<int>(pd.getNatypes()));
+    }
+
+    if (pd.getNexcl() != nexcl && opt2parg_bSet("-nexcl", asize(pa), pa))
+    {
+        fprintf(stderr, "WARNING: Changing exclusion number from %d in force field file\n", pd.getNexcl());
+        fprintf(stderr, "         to %d (command line), Please check your output carefully.\n", nexcl);
+        pd.setNexcl(nexcl);
     }
     if (strlen(dbname) > 0)
     {

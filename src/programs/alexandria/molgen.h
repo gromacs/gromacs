@@ -180,6 +180,7 @@ class MolGen
         int                             mindata_;
         int                             maxESP_;
         int                             nexcl_;
+        int                             nexcl_orig_;
         real                            J0_min_;
         real                            Chi0_min_;
         real                            zeta_min_;

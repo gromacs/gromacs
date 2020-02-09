@@ -441,7 +441,7 @@ void print_electric_props(FILE                           *fp,
                     qCalc = mol.atoms_->atom[j].q;
                     if (nullptr != mol.shellfc_)
                     {
-                        qCalc += mol.atoms_->atom[j+1].q;
+                        //qCalc += mol.atoms_->atom[j+1].q;
                     }
                     if (k != lsqt.end())
                     {
@@ -461,8 +461,19 @@ void print_electric_props(FILE                           *fp,
                             x[j][XX],
                             x[j][YY],
                             x[j][ZZ]);
-
                     i++;
+                }
+                else
+                {
+                    fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f %8.3f%8.3f%8.3f\n",
+                            0,
+                            j+1,
+                            *(mol.atoms_->atomtype[j]),
+                            mol.atoms_->atom[j].q,
+                            0.0, 0.0, 0.0, 0.0,
+                            x[j][XX],
+                            x[j][YY],
+                            x[j][ZZ]);
                 }
             }
             fprintf(fp, "\n");

@@ -1135,6 +1135,10 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
                                  gmx_hw_info_t             *hwinfo,
                                  ChargeModel                ieqd)
 {
+    if (gromacsGenerated_)
+    {
+        return immOK;
+    }
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
 
     if (!fr_)
@@ -1177,6 +1181,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
             mdatoms->row[i] = 0;
         }
     }
+    gromacsGenerated_ = true;
     return immOK;
 }
 
@@ -1744,6 +1749,7 @@ immStatus MyMol::CalcPolarizability(double     efield,
     {
         CalcAnisoPolarizability(alpha_calc_, &anisoPol_calc_);
     }
+    restoreCoordinates();
     return imm;
 }
 

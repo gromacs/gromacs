@@ -253,8 +253,8 @@ int IndexCount::cleanIndex(int   minimum_data,
         {
             if (fp)
             {
-                fprintf(fp, "Not enough support in data set for optimizing %s\n",
-                        ai->name().c_str());
+                fprintf(fp, "Not enough support (%d/%d) in data set for optimizing %s\n",
+                        ai->count(), minimum_data, ai->name().c_str());
             }
             ai = atomIndex_.erase(ai);
             nremove++;
@@ -288,6 +288,7 @@ MolGen::MolGen()
     qcycle_    = 500;
     mindata_   = 3;
     nexcl_     = 2;
+    nexcl_orig_= nexcl_;
     hfac_      = 0;
     maxESP_    = 100;
     fixchi_    = (char *)"";
@@ -448,6 +449,11 @@ immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
             }
             else
             {
+                if (debug)
+                {
+                    fprintf(debug, "No support in poldata for atomtype %s\n",
+                            *(mymol.atoms_->atomtype[i]));
+                }
                 imm = immInsufficientDATA;
             }
         }
@@ -500,10 +506,10 @@ void MolGen::Read(FILE            *fp,
             alexandria::readPoldata(pd_fn, pd_, atomprop_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        if (pd_.getNexcl() != nexcl_)
+        if (pd_.getNexcl() != nexcl_ && nexcl_ != nexcl_orig_)
         {
-            fprintf(stderr, "Exclusion number changed from %d in gentop.dat to %d read from the command line.\n",
-                    pd_.getNexcl(), nexcl_);
+            fprintf(stderr, "WARNING: Changing exclusion number from %d in force field file\n", pd_.getNexcl());
+            fprintf(stderr, "         to %d (command line), Please check your output carefully.\n", nexcl_);
             pd_.setNexcl(nexcl_);
         }
     }
@@ -587,9 +593,19 @@ void MolGen::Read(FILE            *fp,
                                              bDihedral,
                                              false,
                                              tabfn);
+                if (debug)
+                {
+                    fprintf(debug, "Tried to generate topology for %s. Outcome: %s\n",
+                            mymol.getMolname().c_str(), immsg(imm));
+                }
                 if (bCheckSupport && immOK == imm)
                 {
                     imm = check_data_sufficiency(mymol, &indexCount_);
+                }
+                if (debug)
+                {
+                    fprintf(debug, "Checked data sufficiency for %s. Outcome: %s\n",
+                            mymol.getMolname().c_str(), immsg(imm));
                 }
                 if (immOK == imm)
                 {
@@ -612,6 +628,11 @@ void MolGen::Read(FILE            *fp,
                                                 nullptr,
                                                 nullptr);
                     (void) mymol.espRms();
+                }
+                if (debug)
+                {
+                    fprintf(debug, "Tried to generate charges for %s. Outcome: %s\n",
+                            mymol.getMolname().c_str(), immsg(imm));
                 }
                 if (immOK == imm)
                 {

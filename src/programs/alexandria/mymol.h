@@ -254,7 +254,7 @@ class MyMol : public MolProp
 
         double                         isoPol_elec_   = 0;
         double                         isoPol_calc_   = 0;
-
+        bool                           gromacsGenerated_ = false;
     public:
         double                         chieq_         = 0;
         // Enthalpy of formation (experimental) for this compound
