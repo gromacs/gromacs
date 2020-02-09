@@ -92,6 +92,7 @@ class OptACM : public MolGen, Bayes
         bool       bSameZeta_                    = true;
         bool       bFitChi_                      = false;
         bool       bUseCM5_                      = false;
+        bool       bRemoveMol_                   = true;
         gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
 
     public:
@@ -115,6 +116,8 @@ class OptACM : public MolGen, Bayes
         bool fitChi() const { return bFitChi_; }
 
         bool useCM5() const {return bUseCM5_; }
+        
+        bool removeMol() const {return bRemoveMol_; }
 
         void add_pargs(std::vector<t_pargs> *pargs)
         {
@@ -132,6 +135,8 @@ class OptACM : public MolGen, Bayes
                   "Calibrate electronegativity and hardness." },
                 { "-cm5", FALSE, etBOOL, {&bUseCM5_},
                   "Reproduce CM5 charges in fitting." },
+                { "-removemol", FALSE, etBOOL, {&bRemoveMol_},
+                  "Remove a molecule from training set if shell minimzation does not converge." },
             };
             for (size_t i = 0; i < asize(pa); i++)
             {
@@ -427,8 +432,11 @@ double OptACM::calcDeviation()
                             fprintf(logFile(), "Could not compute forces for %s. Removing it from the data set.\n",
                                     mymol.getMolname().c_str());
                         }
-                        mymol.eSupp_ = eSupportNo;
-                        break;
+                        if (removeMol())
+                        {
+                          mymol.eSupp_ = eSupportNo;
+                          break;
+                        }
                     }
                 }
                 dumpQX(logFile(), &mymol, "LOOP2");
@@ -462,7 +470,10 @@ double OptACM::calcDeviation()
                     fprintf(logFile(), "Could not generate charges for %s. Removing compound.",
                             mymol.getMolname().c_str());
                 }
-                mymol.eSupp_ = eSupportNo;
+                if (removeMol())
+                {
+                    mymol.eSupp_ = eSupportNo;
+                }
             }
             // Check whether we have disabled this compound
             if (mymol.eSupp_ == eSupportNo)
