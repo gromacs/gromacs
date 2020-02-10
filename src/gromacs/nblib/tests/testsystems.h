@@ -70,7 +70,7 @@ struct ArAtom
 struct OwAtom;
 
 //! Parameters from gromos43A1
-struct UnitedHAtom;
+struct HAtom;
 
 //! Parameters from gromos43A1
 struct OMettom;

@@ -56,6 +56,8 @@
 
 #include "testutils/testasserts.h"
 
+#include "testsystems.h"
+
 namespace nblib
 {
 namespace test
@@ -86,69 +88,14 @@ void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector
 //       file can just include forcerec.h
 #define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
 
-class KernelSystemTester
-{
-public:
-    std::vector<gmx::RVec> coordinates;
-    std::vector<gmx::RVec> velocities;
-
-    Box             box;
-    TopologyBuilder topologyBuilder;
-
-    KernelSystemTester() : box(7.25449)
-    {
-        constexpr int numWaters = 2;
-
-        //! Define Atom Type
-        AtomType Ow(AtomName("Ow"), Mass(16), C6(6.), C12(12.));
-        AtomType Hw(AtomName("Hw"), Mass(1), C6(0.6), C12(0.12));
-
-        //! Define Molecule
-        Molecule water("water");
-
-        //! Add the atoms
-        water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
-        water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
-        water.addAtom(AtomName("H2"), Charge(+0.3), Hw);
-
-        //! Add the exclusions
-        water.addExclusion("Oxygen", "H1");
-        water.addExclusion("Oxygen", "H2");
-        water.addExclusion("H1", "H2");
-
-        // Todo: Add bonds functionality so this can be used/tested
-        // water.addHarmonicBond(HarmonicType{1, 2, "H1", "Oxygen"});
-        // water.addHarmonicBond(HarmonicType{1, 2, "H2", "Oxygen"});
-
-        //! Add some molecules to the topology
-        topologyBuilder.addMolecule(water, numWaters);
-
-        coordinates = {
-            { 0.569, 1.275, 1.165 }, { 0.476, 1.268, 1.128 }, { 0.580, 1.364, 1.209 },
-            { 1.555, 1.511, 0.703 }, { 1.498, 1.495, 0.784 }, { 1.496, 1.521, 0.623 },
-        };
-
-        velocities = {
-            { 0.569, 1.215, 1.965 }, { 0.669, 1.225, 1.865 }, { 0.769, 1.235, 1.765 },
-            { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
-        };
-    }
-
-    SimulationState getSimulationState()
-    {
-        Topology topology = topologyBuilder.buildTopology();
-        return SimulationState(coordinates, box, topology, velocities);
-    }
-};
-
 TEST(NBlibTest, canIntegrateSystem)
 {
     auto options      = NBKernelOptions();
     options.nbnxmSimd = BenchMarkKernels::SimdNo;
 
-    KernelSystemTester kernelSystemTester;
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
 
-    auto simState        = kernelSystemTester.getSimulationState();
+    auto simState        = spcMethanolSystemBuilder.setupSimulationState();
     auto forceCalculator = ForceCalculator(simState, options);
 
     std::vector<real> forces;
