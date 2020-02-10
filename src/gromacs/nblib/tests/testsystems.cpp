@@ -56,7 +56,7 @@ struct OwAtom
     C12      c12  = 2.634129e-06;
 };
 
-struct UnitedHAtom
+struct HAtom
 {
     AtomName name = "H";
     Mass     mass = 1.008;
@@ -75,7 +75,7 @@ struct OMetAtom
 struct CMetAtom
 {
     AtomName name = "CMet";
-    Mass     mass = 15.035; // Direct from FF
+    Mass     mass = 15.035; // United atom
     C6       c6   = 0.0088755241;
     C12      c12  = 2.0852922e-05;
 };
@@ -89,10 +89,10 @@ std::unordered_map<std::string, Charge> Charges{ { "Ow", -0.82 },
 WaterMoleculeBuilder::WaterMoleculeBuilder() : water_("SOL")
 {
     //! Define Atom Types
-    OwAtom      owAtom;
-    AtomType    Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
-    UnitedHAtom hwAtom;
-    AtomType    Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
+    OwAtom   owAtom;
+    AtomType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
+    HAtom    hwAtom;
+    AtomType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
 
     //! Add the atoms
     water_.addAtom(AtomName("Oxygen"), Charges.at("Ow"), Ow);
@@ -121,22 +121,22 @@ void WaterMoleculeBuilder::addExclusionsFromNames()
 MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_("MeOH")
 {
     //! Define Atom Types
-    CMetAtom    cMetAtom;
-    AtomType    CMet(cMetAtom.name, cMetAtom.mass, cMetAtom.c6, cMetAtom.c12);
-    OMetAtom    oMetAtom;
-    AtomType    OMet(oMetAtom.name, oMetAtom.mass, oMetAtom.c6, oMetAtom.c12);
-    UnitedHAtom hAtom;
-    AtomType    H(hAtom.name, hAtom.mass, hAtom.c6, hAtom.c12);
+    CMetAtom cMetAtom;
+    AtomType CMet(cMetAtom.name, cMetAtom.mass, cMetAtom.c6, cMetAtom.c12);
+    OMetAtom oMetAtom;
+    AtomType OMet(oMetAtom.name, oMetAtom.mass, oMetAtom.c6, oMetAtom.c12);
+    HAtom    hAtom;
+    AtomType H(hAtom.name, hAtom.mass, hAtom.c6, hAtom.c12);
 
     //! Add the atoms
     methanol_.addAtom(AtomName("Me1"), Charges.at("CMet"), CMet);
     methanol_.addAtom(AtomName("O2"), Charges.at("OMet"), OMet);
-    methanol_.addAtom(AtomName("H3"), Charges.at("H"), H);
+    methanol_.addAtom(AtomName("H3"), Charges.at("HMet"), H);
 
     //! Add the exclusions
     methanol_.addExclusion("Me1", "O2");
-    methanol_.addExclusion("Me1", "H");
-    methanol_.addExclusion("H", "O2");
+    methanol_.addExclusion("Me1", "H3");
+    methanol_.addExclusion("H3", "O2");
 }
 
 Molecule MethanolMoleculeBuilder::methanolMolecule()
