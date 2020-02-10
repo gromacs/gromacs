@@ -43,12 +43,13 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/nblib/nbkernelsystem.h"
-
+#include <iostream>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/atomtype.h"
+#include <gromacs/nblib/forcecalculator.h>
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/topology/exclusionblocks.h"
@@ -132,12 +133,36 @@ public:
             { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
         };
     }
+
     SimulationState getSimulationState()
     {
         Topology topology = topologyBuilder.buildTopology();
         return SimulationState(coordinates, box, topology, velocities);
     }
 };
+
+TEST(NBlibTest, canIntegrateSystem)
+{
+    auto options      = NBKernelOptions();
+    options.nbnxmSimd = BenchMarkKernels::SimdNo;
+
+    KernelSystemTester kernelSystemTester;
+
+    auto simState        = kernelSystemTester.getSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
+
+    std::vector<real> forces;
+    ASSERT_NO_THROW(forces = forceCalculator.compute());
+    EXPECT_EQ(simState.topology().numAtoms() * 3, forces.size());
+
+    for (int iter = 0; iter < options.numIterations; iter++)
+    {
+        // std::vector<real> forces = forceCalculator.compute();
+
+        // std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
+        // integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
+    }
+}
 
 } // namespace
 } // namespace test

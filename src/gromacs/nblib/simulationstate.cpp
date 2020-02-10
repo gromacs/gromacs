@@ -59,7 +59,6 @@
 #include "gromacs/utility/exceptions.h"
 
 #include "coords.h"
-#include "nbkernelsystem.h"
 
 namespace nblib
 {
