@@ -86,7 +86,6 @@
 #include "freeenergyperturbationelement.h"
 #include "parrinellorahmanbarostat.h"
 #include "propagator.h"
-#include "shellfcelement.h"
 #include "signallers.h"
 #include "statepropagatordata.h"
 #include "trajectoryelement.h"
@@ -542,35 +541,17 @@ ModularSimulator::buildForces(SignallerBuilder<NeighborSearchSignaller>* neighbo
 {
     const bool isVerbose    = mdrunOptions.verbose;
     const bool isDynamicBox = inputrecDynamicBox(inputrec);
-    // Check for polarizable models and flexible constraints
-    if (ShellFCElement::doShellsOrFlexConstraints(topologyHolder_->globalTopology(),
-                                                  constr ? constr->numFlexibleConstraints() : 0))
-    {
-        auto shellFCElement = std::make_unique<ShellFCElement>(
-                statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement, isVerbose,
-                isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork, vsite,
-                imdSession, pull_work, constr, &topologyHolder_->globalTopology(), enforcedRotation);
-        topologyHolder_->registerClient(shellFCElement.get());
-        neighborSearchSignallerBuilder->registerSignallerClient(
-                compat::make_not_null(shellFCElement.get()));
-        energySignallerBuilder->registerSignallerClient(compat::make_not_null(shellFCElement.get()));
 
-        // std::move *should* not be needed with c++-14, but clang-3.6 still requires it
-        return std::move(shellFCElement);
-    }
-    else
-    {
-        auto forceElement = std::make_unique<ForceElement>(
-                statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement,
-                isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork,
-                vsite, imdSession, pull_work, enforcedRotation);
-        topologyHolder_->registerClient(forceElement.get());
-        neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
-        energySignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
+    auto forceElement = std::make_unique<ForceElement>(
+            statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement, isVerbose,
+            isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork, vsite,
+            imdSession, pull_work, constr, &topologyHolder_->globalTopology(), enforcedRotation);
+    topologyHolder_->registerClient(forceElement.get());
+    neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
+    energySignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
 
-        // std::move *should* not be needed with c++-14, but clang-3.6 still requires it
-        return std::move(forceElement);
-    }
+    // std::move *should* not be needed with c++-14, but clang-3.6 still requires it
+    return std::move(forceElement);
 }
 
 std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(

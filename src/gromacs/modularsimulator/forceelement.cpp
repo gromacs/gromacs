@@ -43,10 +43,13 @@
 
 #include "forceelement.h"
 
+#include "gromacs/domdec/mdsetup.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdrun/shellfc.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -65,6 +68,7 @@ namespace gmx
 ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
                            EnergyElement*                 energyElement,
                            FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                           bool                           isVerbose,
                            bool                           isDynamicBox,
                            FILE*                          fplog,
                            const t_commrec*               cr,
@@ -78,7 +82,15 @@ ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
                            gmx_vsite_t*                   vsite,
                            ImdSession*                    imdSession,
                            pull_t*                        pull_work,
+                           Constraints*                   constr,
+                           const gmx_mtop_t*              globalTopology,
                            gmx_enfrot*                    enforcedRotation) :
+    shellfc_(init_shell_flexcon(fplog,
+                                globalTopology,
+                                constr ? constr->numFlexibleConstraints() : 0,
+                                inputrec->nstcalcenergy,
+                                DOMAINDECOMP(cr))),
+    doShellFC_(shellfc_ != nullptr),
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
     nextVirialCalculationStep_(-1),
@@ -88,6 +100,8 @@ ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
     freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     localTopology_(nullptr),
     isDynamicBox_(isDynamicBox),
+    isVerbose_(isVerbose),
+    nShellRelaxationSteps_(0),
     ddBalanceRegionHandler_(cr),
     lambda_(),
     fplog_(fplog),
@@ -102,9 +116,17 @@ ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
     pull_work_(pull_work),
     fcd_(fcd),
     runScheduleWork_(runScheduleWork),
+    constr_(constr),
     enforcedRotation_(enforcedRotation)
 {
     lambda_.fill(0);
+
+    if (doShellFC_ && !DOMAINDECOMP(cr))
+    {
+        // This was done in mdAlgorithmsSetupAtomData(), but shellfc
+        // won't be available outside this element.
+        make_local_shells(cr, mdAtoms->mdatoms(), shellfc_);
+    }
 }
 
 void ForceElement::scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction)
@@ -114,10 +136,18 @@ void ForceElement::scheduleTask(Step step, Time time, const RegisterRunFunctionP
              | (nextVirialCalculationStep_ == step ? GMX_FORCE_VIRIAL : 0)
              | (nextEnergyCalculationStep_ == step ? GMX_FORCE_ENERGY : 0)
              | (nextFreeEnergyCalculationStep_ == step ? GMX_FORCE_DHDL : 0)
-             | (nextNSStep_ == step ? GMX_FORCE_NS : 0));
+             | (!doShellFC_ && nextNSStep_ == step ? GMX_FORCE_NS : 0));
 
-    (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-            [this, step, time, flags]() { run(step, time, flags); }));
+    (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this, step, time, flags]() {
+        if (doShellFC_)
+        {
+            run<true>(step, time, flags);
+        }
+        else
+        {
+            run<false>(step, time, flags);
+        }
+    }));
 }
 
 void ForceElement::elementSetup()
@@ -125,12 +155,12 @@ void ForceElement::elementSetup()
     GMX_ASSERT(localTopology_, "Setup called before local topology was set.");
 }
 
+template<bool doShellFC>
 void ForceElement::run(Step step, Time time, unsigned int flags)
 {
     // Disabled functionality
-    Awh*            awh = nullptr;
-    gmx_edsam*      ed  = nullptr;
-    gmx_multisim_t* ms  = nullptr;
+    gmx_multisim_t* ms = nullptr;
+
 
     if (!DOMAINDECOMP(cr_) && (flags & GMX_FORCE_NS) && inputrecDynamicBox(inputrec_))
     {
@@ -155,11 +185,38 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     ArrayRef<real> lambda =
             freeEnergyPerturbationElement_ ? freeEnergyPerturbationElement_->lambdaView() : lambda_;
 
-    do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation_, imdSession_, pull_work_, step,
-             nrnb_, wcycle_, localTopology_, box, x, hist, forces, force_vir, mdAtoms_->mdatoms(),
-             energyElement_->enerdata(), fcd_, lambda, fr_, runScheduleWork_, vsite_,
-             energyElement_->muTot(), time, ed, static_cast<int>(flags), ddBalanceRegionHandler_);
+    if (doShellFC)
+    {
+        auto v = statePropagatorData_->velocitiesView();
+
+        relax_shell_flexcon(
+                fplog_, cr_, ms, isVerbose_, enforcedRotation_, step, inputrec_, imdSession_,
+                pull_work_, step == nextNSStep_, static_cast<int>(flags), localTopology_, constr_,
+                energyElement_->enerdata(), fcd_, statePropagatorData_->localNumAtoms(), x, v, box,
+                lambda, hist, forces, force_vir, mdAtoms_->mdatoms(), nrnb_, wcycle_, shellfc_, fr_,
+                runScheduleWork_, time, energyElement_->muTot(), vsite_, ddBalanceRegionHandler_);
+        nShellRelaxationSteps_++;
+    }
+    else
+    {
+        // Disabled functionality
+        Awh*       awh = nullptr;
+        gmx_edsam* ed  = nullptr;
+
+        do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation_, imdSession_, pull_work_, step,
+                 nrnb_, wcycle_, localTopology_, box, x, hist, forces, force_vir, mdAtoms_->mdatoms(),
+                 energyElement_->enerdata(), fcd_, lambda, fr_, runScheduleWork_, vsite_,
+                 energyElement_->muTot(), time, ed, static_cast<int>(flags), ddBalanceRegionHandler_);
+    }
     energyElement_->addToForceVirial(force_vir, step);
+}
+
+void ForceElement::elementTeardown()
+{
+    if (doShellFC_)
+    {
+        done_shellfc(fplog_, shellfc_, nShellRelaxationSteps_);
+    }
 }
 
 void ForceElement::setTopology(const gmx_localtop_t* top)
