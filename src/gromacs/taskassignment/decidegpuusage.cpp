@@ -567,9 +567,9 @@ bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
         errorMessage += "SHAKE constraints are not supported.\n";
     }
     // Using the GPU-version of update if:
-    // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread), or
+    // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread) or inactive, or
     // 2. Non-bonded interactions are on the GPU.
-    if (pmeRunMode == PmeRunMode::CPU && !useGpuForNonbonded)
+    if ((pmeRunMode == PmeRunMode::CPU || pmeRunMode == PmeRunMode::None) && !useGpuForNonbonded)
     {
         errorMessage +=
                 "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
