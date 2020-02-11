@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,8 @@
 # Make a static library for test infrastructure code that we re-use
 # in multiple test executables across the repository.
 gmx_add_unit_test_library(nblib_test_infrastructure
-    testsystems.cpp
+  testhelpers.cpp
+  testsystems.cpp
     )
 target_include_directories(nblib_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 

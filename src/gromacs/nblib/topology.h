@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,9 +108,6 @@ private:
     gmx::ListOfLists<int> exclusions_;
 };
 
-//! Topology comparison operator
-bool operator==(const Topology& a, const Topology& b);
-
 /*! \brief Topology Builder
  *
  * \libinternal
@@ -162,7 +159,7 @@ private:
 
 //! utility function to extract AtomType quantities and expand them to the full
 //! array of length numAtoms()
-template <class F>
+template<class F>
 inline auto expandQuantity(const Topology& topology, F atomTypeExtractor)
 {
     using ValueType = decltype((std::declval<AtomType>().*std::declval<F>())());

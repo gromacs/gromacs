@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,14 +48,12 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
-namespace nblib {
-
-void generateCoordinates(int                     multiplicationFactor,
-                        std::vector<gmx::RVec> *coordinates,
-                        matrix                  box)
+namespace nblib
 {
-    if (multiplicationFactor < 1 ||
-        (multiplicationFactor & (multiplicationFactor - 1)) != 0)
+
+void generateCoordinates(int multiplicationFactor, std::vector<gmx::RVec>* coordinates, matrix box)
+{
+    if (multiplicationFactor < 1 || (multiplicationFactor & (multiplicationFactor - 1)) != 0)
     {
         gmx_fatal(FARGS, "The size factor has to be a power of 2");
     }
@@ -70,10 +68,10 @@ void generateCoordinates(int                     multiplicationFactor,
 
     ivec factors = { 1, 1, 1 };
 
-    int  dim = 0;
+    int dim = 0;
     while (multiplicationFactor > 1)
     {
-        factors[dim]         *= 2;
+        factors[dim] *= 2;
         multiplicationFactor /= 2;
         dim++;
         if (dim == DIM)
@@ -81,24 +79,24 @@ void generateCoordinates(int                     multiplicationFactor,
             dim = 0;
         }
     }
-    printf("Stacking a box of %zu atoms %d x %d x %d times\n",
-           coordinates12.size(), factors[XX], factors[YY], factors[ZZ]);
+    printf("Stacking a box of %zu atoms %d x %d x %d times\n", coordinates12.size(), factors[XX],
+           factors[YY], factors[ZZ]);
 
-    coordinates->resize(factors[XX]*factors[YY]*factors[ZZ]*coordinates12.size());
+    coordinates->resize(factors[XX] * factors[YY] * factors[ZZ] * coordinates12.size());
 
     int       i = 0;
     gmx::RVec shift;
     for (int x = 0; x < factors[XX]; x++)
     {
-        shift[XX] = x*box12[XX][XX];
+        shift[XX] = x * box12[XX][XX];
         for (int y = 0; y < factors[YY]; y++)
         {
-            shift[YY] = y*box12[YY][YY];
+            shift[YY] = y * box12[YY][YY];
             for (int z = 0; z < factors[ZZ]; z++)
             {
-                shift[ZZ] = z*box12[ZZ][ZZ];
+                shift[ZZ] = z * box12[ZZ][ZZ];
 
-                for (const gmx::RVec &coordOrig : coordinates12)
+                for (const gmx::RVec& coordOrig : coordinates12)
                 {
                     (*coordinates)[i] = coordOrig + shift;
                     i++;
@@ -111,7 +109,7 @@ void generateCoordinates(int                     multiplicationFactor,
     {
         for (int d2 = 0; d2 < DIM; d2++)
         {
-            box[d1][d2] = factors[d1]*box12[d1][d2];
+            box[d1][d2] = factors[d1] * box12[d1][d2];
         }
     }
 }

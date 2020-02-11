@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@
 namespace nblib
 {
 
-//! Parameters from gromos43A1
+//! \internal \brief Parameters from gromos43A1
 struct ArAtom
 {
     AtomName name = "Ar";
@@ -81,7 +81,7 @@ struct CMetAtom;
 //! Lookup table for charges needed for building topologies
 extern std::unordered_map<std::string, Charge> Charges;
 
-//! \brief Make an SPC water molecule with parameters from gromos43A1
+//! \internal \brief Make an SPC water molecule with parameters from gromos43A1
 class WaterMoleculeBuilder
 {
 public:
