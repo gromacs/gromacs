@@ -1004,6 +1004,7 @@ int alex_tune_eem(int argc, char *argv[])
 
     int                         nrun          = 1;
     int                         reinit        = 0;
+    real                        esp_toler     = 30;
     real                        dip_toler     = 0.5;
     real                        quad_toler    = 5;
     real                        alpha_toler   = 3;
@@ -1030,6 +1031,8 @@ int alex_tune_eem(int argc, char *argv[])
           "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step and before each subsequent run." },
         { "-zero", FALSE, etBOOL, {&bZero},
           "Use molecules with zero dipole in the fit as well" },
+        { "-esp_toler", FALSE, etREAL, {&esp_toler},
+          "Tolerance (kJ/mol e) for marking ESP as an outlier in the log file" },
         { "-dip_toler", FALSE, etREAL, {&dip_toler},
           "Tolerance (Debye) for marking dipole as an outlier in the log file" },
         { "-quad_toler", FALSE, etREAL, {&quad_toler},
@@ -1146,6 +1149,7 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt2fn("-isopol",    NFILE, fnm),
                                  opt2fn("-anisopol",  NFILE, fnm),
                                  opt2fn("-qcorr",     NFILE, fnm),
+                                 esp_toler,
                                  dip_toler,
                                  quad_toler,
                                  alpha_toler,

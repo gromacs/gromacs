@@ -541,6 +541,7 @@ int alex_tune_zeta(int argc, char *argv[])
     int                         reinit        = 0;
     real                        th_toler      = 170;
     real                        ph_toler      = 5;
+    real                        esp_toler     = 30;
     real                        dip_toler     = 0.5;
     real                        quad_toler    = 5;
     real                        alpha_toler   = 3;
@@ -565,6 +566,8 @@ int alex_tune_zeta(int argc, char *argv[])
           "Use molecules with zero dipole in the fit as well" },
         { "-zpe",     FALSE, etBOOL, {&bZPE},
           "Consider zero-point energy from thermochemistry calculations in order to calculate the reference enthalpy of the molecule" },
+        { "-esp_toler", FALSE, etREAL, {&esp_toler},
+          "Tolerance (kJ/mol e) for marking ESP as an outlier in the log file" },
         { "-dip_toler", FALSE, etREAL, {&dip_toler},
           "Tolerance (Debye) for marking dipole as an outlier in the log file" },
         { "-quad_toler", FALSE, etREAL, {&quad_toler},
@@ -687,6 +690,7 @@ int alex_tune_zeta(int argc, char *argv[])
                              opt2fn("-isopol",    NFILE, fnm),
                              opt2fn("-anisopol",  NFILE, fnm),
                              opt2fn("-qcorr",     NFILE, fnm),
+                             esp_toler,
                              dip_toler,
                              quad_toler,
                              alpha_toler,

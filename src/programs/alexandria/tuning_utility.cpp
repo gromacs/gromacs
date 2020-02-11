@@ -143,7 +143,7 @@ void print_polarizability(FILE              *fp,
                     "     (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
                     calc_name,
                     mol->alpha_calc_[XX][XX], mol->alpha_calc_[XX][YY], mol->alpha_calc_[XX][ZZ],
-                    dalpha[XX][XX], dalpha[XX][YY], dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "YYY" : "",
+                    dalpha[XX][XX], dalpha[XX][YY], dalpha[XX][ZZ], delta, (delta > alpha_toler) ? "ALPHA" : "",
                     "", mol->alpha_calc_[YY][YY], mol->alpha_calc_[YY][ZZ],
                     "", dalpha[YY][YY], dalpha[YY][ZZ],
                     "", "", mol->alpha_calc_[ZZ][ZZ],
@@ -153,7 +153,7 @@ void print_polarizability(FILE              *fp,
                     mol->getMolname().c_str(), 
                     mol->ElectronicPolarizability(),
                     mol->CalculatedPolarizability(), 
-                    diso_pol, (diso_pol > isopol_toler) ? "ZZZ" : "");
+                    diso_pol, (diso_pol > isopol_toler) ? "ISO" : "");
 
         }
         else
@@ -192,7 +192,7 @@ static void print_quadrapole(FILE              *fp,
                 "           (%6s %6s %6.2f)      (%6s %6s %6.2f)\n",
                 qTypeName(qt),
                 qcalc[XX][XX], qcalc[XX][YY], qcalc[XX][ZZ],
-                dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
+                dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "QUAD" : "",
                 "", qcalc[YY][YY], qcalc[YY][ZZ],
                 "", dQ[YY][YY], dQ[YY][ZZ],
                 "", "", qcalc[ZZ][ZZ],
@@ -200,7 +200,7 @@ static void print_quadrapole(FILE              *fp,
     }
     else
     {
-        fprintf(fp, "Quadrupole analysis (6 independent components only)\n");
+        fprintf(fp, "Quadrupole analysis (5 independent components only)\n");
         fprintf(fp,
                 "Electronic   (%6.2f %6.2f %6.2f)\n"
                 "             (%6s %6.2f %6.2f)\n"
@@ -225,7 +225,7 @@ static void print_dipole(FILE              *fp,
     cosa = cos_angle(mol->muQM(qtElec), mol->muQM(qtCalc));
     if (ndmu > toler)
     {
-        sprintf(ebuf, "XXX");
+        sprintf(ebuf, "DIP");
     }
     else if (fabs(cosa) < 0.1)
     {
@@ -268,6 +268,7 @@ void print_electric_props(FILE                           *fp,
                           const char                     *isopolCorr,
                           const char                     *anisopolCorr,
                           const char                     *qCorr,
+                          real                            esp_toler,
                           real                            dip_toler,
                           real                            quad_toler,
                           real                            alpha_toler,
@@ -359,9 +360,8 @@ void print_electric_props(FILE                           *fp,
             }
             auto rms    = mol.Qgresp_.getRms(&wtot, &rrms, &cosangle);
             auto espRms = convert2gmx(rms, eg2cHartree_e);
-            fprintf(fp, "ESP rms: %g (kJ/mol e) %s\n", espRms, (espRms > 11) ? "XXX" : "");
-            fprintf(fp, "ESP cosangle: %.3f%s\n", cosangle,
-                    (cosangle < 0.5) ? " WWW" : "");
+            fprintf(fp, "ESP rms: %g (kJ/mol e) %s\n", espRms, (espRms > esp_toler) ? " EEE" : "");
+            fprintf(fp, "ESP cosangle: %.3f%s\n", cosangle, (cosangle < 0.5) ? " WWW" : "");
             if (espZero)
             {
                 fprintf(fp, "Orthogonal ESP\n");
@@ -652,7 +652,7 @@ void print_header(FILE                       *fp,
             value = gmx::formatString("%d", *p.u.i);
             break;
         case etINT64:
-            value = gmx::formatString("%ld", *p.u.is);
+            value = gmx::formatString("%lld", *p.u.is);
             break;
         case etREAL:
             value = gmx::formatString("%g", *p.u.r);
