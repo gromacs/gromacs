@@ -46,6 +46,7 @@
 
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 
 #include "nbkerneloptions.h"
@@ -55,10 +56,10 @@ struct nbnxn_atomdata_output_t;
 namespace nblib
 {
 
-void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t>& nbvAtomsOut,
-                          const NBKernelOptions&                      options,
-                          const matrix&                               box,
-                          std::vector<gmx::RVec>&                     currentCoords);
+void integrateCoordinates(gmx::PaddedHostVector<gmx::RVec> forces,
+                          const NBKernelOptions&           options,
+                          const matrix&                    box,
+                          std::vector<gmx::RVec>&          currentCoords);
 
 } // namespace nblib
 

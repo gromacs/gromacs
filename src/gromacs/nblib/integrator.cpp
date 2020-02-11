@@ -51,19 +51,18 @@
 namespace nblib
 {
 
-void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t>& nbvAtomsOut,
-                          const NBKernelOptions&                      options,
-                          const matrix&                               box,
-                          std::vector<gmx::RVec>&                     currentCoords)
+void integrateCoordinates(gmx::PaddedHostVector<gmx::RVec> forces,
+                          const NBKernelOptions&           options,
+                          const matrix&                    box,
+                          std::vector<gmx::RVec>&          currentCoords)
 {
     std::vector<gmx::RVec> nextCoords;
     nextCoords.resize(currentCoords.size());
     for (size_t atomI = 0; atomI < currentCoords.size(); atomI++)
     {
-        auto force = nbvAtomsOut[0].f;
         for (int dim = 0; dim < DIM; dim++)
         {
-            real vel               = force[dim] * options.timestep;
+            real vel               = forces[atomI][dim] * options.timestep;
             real newCoord          = currentCoords[atomI][dim] + vel * options.timestep;
             nextCoords[atomI][dim] = newCoord;
         }
