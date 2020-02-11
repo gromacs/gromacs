@@ -243,7 +243,7 @@ void ForceCalculator::unpackTopologyToGmx()
 //! Sets up and runs the kernel calls
 //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
 //!      that callers can manipulate directly.
-std::vector<real> ForceCalculator::compute(const bool printTimings)
+gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute(const bool printTimings)
 {
     // We set the interaction cut-off to the pairlist cut-off
     interaction_const_t ic   = setupInteractionConst(options_);
@@ -275,21 +275,17 @@ std::vector<real> ForceCalculator::compute(const bool printTimings)
     nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local, ic, stepWork, enbvClearFNo,
                                  forceRec, &enerd, &nrnb);
 
-    // There is one output data structure per thread
-    std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = std::move(nbv->nbat->out);
+    // Todo manage this at a higer level
+    gmx::PaddedHostVector<gmx::RVec> verletForces{};
+    nbnxn_atomdata_t*                nbat = nbv->nbat.get();
+    verletForces.resizeWithPadding(nbat->numAtoms());
+    nbv->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces);
+    return verletForces;
+}
 
-    //! extract the forces to return (gmx::HostVector<real> ~ std::vector<real)
-    //! Todo: merge data from different threads
-    const auto&       forceOutput = nbvAtomsOut[0].f;
-    std::vector<real> ret(forceOutput.begin(), forceOutput.end());
-
-    cycles = gmx_cycles_read() - cycles;
-    if (printTimings)
-    {
-        // printTimingsOutput(nbKernelOptions_, system_, numPairs, cycles);
-    }
-
-    return ret;
+const matrix& ForceCalculator::box() const
+{
+    return box_;
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system

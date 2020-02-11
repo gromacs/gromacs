@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/forcecalculator.h"
+#include "gromacs/nblib/integrator.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/topology/exclusionblocks.h"
@@ -87,7 +88,7 @@ void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector
 //       file can just include forcerec.h
 #define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
 
-TEST(NBlibTest, canIntegrateSystem)
+TEST(NBlibTest, canComputeForces)
 {
     auto options      = NBKernelOptions();
     options.nbnxmSimd = BenchMarkKernels::SimdNo;
@@ -97,16 +98,66 @@ TEST(NBlibTest, canIntegrateSystem)
     auto simState        = spcMethanolSystemBuilder.setupSimulationState();
     auto forceCalculator = ForceCalculator(simState, options);
 
-    std::vector<real> forces;
+    gmx::PaddedHostVector<gmx::RVec> forces;
     ASSERT_NO_THROW(forces = forceCalculator.compute());
-    EXPECT_EQ(simState.topology().numAtoms() * 3, forces.size());
+}
+
+TEST(NBlibTest, ExpectedNumberOfForces)
+{
+    auto options      = NBKernelOptions();
+    options.nbnxmSimd = BenchMarkKernels::SimdNo;
+
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
+
+    auto simState        = spcMethanolSystemBuilder.setupSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
+
+    gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
+    EXPECT_EQ(simState.topology().numAtoms(), forces.size());
+}
+
+TEST(NBlibTest, CanIntegrateSystem)
+{
+    auto options          = NBKernelOptions();
+    options.nbnxmSimd     = BenchMarkKernels::SimdNo;
+    options.numIterations = 1;
+
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
+
+    auto simState        = spcMethanolSystemBuilder.setupSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
 
     for (int iter = 0; iter < options.numIterations; iter++)
     {
-        // std::vector<real> forces = forceCalculator.compute();
+        gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
+        EXPECT_NO_THROW(integrateCoordinates(forces, options, forceCalculator.box(),
+                                             simState.coordinates()));
+    }
+}
 
-        // std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
-        // integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
+TEST(NBlibTest, ForcesAreNotZero)
+{
+    auto options          = NBKernelOptions();
+    options.nbnxmSimd     = BenchMarkKernels::SimdNo;
+    options.numIterations = 1;
+
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
+
+    auto simState        = spcMethanolSystemBuilder.setupSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
+
+    gmx::PaddedHostVector<gmx::RVec> forces;
+    for (int iter = 0; iter < options.numIterations; iter++)
+    {
+        forces = forceCalculator.compute();
+        integrateCoordinates(forces, options, forceCalculator.box(), simState.coordinates());
+    }
+    for (int atomI = 0; atomI < simState.topology().numAtoms(); atomI++)
+    {
+        // At least one of the force components on each atom should be nonzero
+        const bool haveNonzeroForces =
+                (forces[atomI][0] != 0.0 || forces[atomI][1] != 0.0 || forces[atomI][2] != 0.0);
+        EXPECT_TRUE(haveNonzeroForces);
     }
 }
 
