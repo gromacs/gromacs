@@ -56,6 +56,14 @@ is a rather uncommon scenario.
 :issue:`2640`
 :issue:`3359`
 
+Avoid deadlock when checking for missing DD interactions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When missing bonded interactions after domain decomposition were detected,
+mdrun was deadlocking instead of exiting with a failure.
+
+:issue:`3373`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
