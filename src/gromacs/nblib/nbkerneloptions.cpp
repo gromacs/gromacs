@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,11 +44,10 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/nbnxm/nbnxm_simd.h"
-#include "gromacs/utility/logger.h"
-
 #include "nbkerneloptions.h"
 
+#include "gromacs/nbnxm/nbnxm_simd.h"
+#include "gromacs/utility/logger.h"
 
 namespace nblib
 {
@@ -192,9 +191,7 @@ setupNbnxmInstance(const NBKernelOptions   &options,
 //! TODO This should be refactored so that if SimdAuto is set only one kernel
 //!      layout is chosen.
 //! TODO This should be refactored to only return the desired kernel layout
-static void
-expandSimdOptionAndPushBack(const NBKernelOptions        &options,
-                            std::vector<NBKernelOptions> *optionsList)
+static void expandSimdOptionAndPushBack(const NBKernelOptions& options, std::vector<NBKernelOptions>* optionsList)
 {
     if (options.nbnxmSimd == BenchMarkKernels::SimdAuto)
     {
@@ -202,12 +199,12 @@ expandSimdOptionAndPushBack(const NBKernelOptions        &options,
 #ifdef GMX_NBNXN_SIMD_4XN
         optionsList->push_back(options);
         optionsList->back().nbnxmSimd = BenchMarkKernels::Simd4XM;
-        addedInstance = true;
+        addedInstance                 = true;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
         optionsList->push_back(options);
         optionsList->back().nbnxmSimd = BenchMarkKernels::Simd2XMM;
-        addedInstance = true;
+        addedInstance                 = true;
 #endif
         if (!addedInstance)
         {
@@ -222,8 +219,7 @@ expandSimdOptionAndPushBack(const NBKernelOptions        &options,
 }
 
 
-
-//void nbKernel(NBKernelSystem        &system,
+// void nbKernel(NBKernelSystem        &system,
 //              const NBKernelOptions &options,
 //              const bool            &printTimings)
 //{

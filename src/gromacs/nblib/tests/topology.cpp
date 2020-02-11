@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,11 +106,11 @@ TEST(NBlibTest, TopologyHasCharges)
 
 TEST(NBlibTest, TopologyHasMasses)
 {
-    WaterTopology           waters;
-    Topology                watersTopology = waters.buildTopology(2);
-    const std::vector<real> test           = watersTopology.getMasses();
-    const Mass              refOwMass      = waters.water().at("Ow").mass();
-    const Mass              refHwMass      = waters.water().at("H").mass();
+    WaterTopology waters;
+    Topology      watersTopology = waters.buildTopology(2);
+
+    const Mass              refOwMass = waters.water().at("Ow").mass();
+    const Mass              refHwMass = waters.water().at("H").mass();
     const std::vector<real> ref = { refOwMass, refHwMass, refHwMass, refOwMass, refHwMass, refHwMass };
     EXPECT_EQ(ref, test);
 }
@@ -181,18 +181,17 @@ TEST(NBlibTest, TopologyHasExclusions)
 
 TEST(NBlibTest, TopologyHasNonbondedParameters)
 {
-    WaterTopology                             waters;
-    Topology                                  watersTopology = waters.buildTopology(2);
-    const std::vector<std::tuple<real, real>> test     = watersTopology.getNonbondedParameters();
-    const Mass                                refOwC6  = waters.water().at("Ow").c6();
-    const Mass                                refOwC12 = waters.water().at("Ow").c12();
-    const Mass                                refHwC6  = waters.water().at("H").c6();
-    const Mass                                refHwC12 = waters.water().at("H").c12();
-    const std::vector<std::tuple<real, real>> ref = { { refOwC6, refOwC12 }, { refHwC6, refHwC12 },
-                                                      { refHwC6, refHwC12 }, { refOwC6, refOwC12 },
-                                                      { refHwC6, refHwC12 }, { refHwC6, refHwC12 } };
-    EXPECT_EQ(ref, test);
-}
+    WaterTopology waters;
+    Topology      watersTopology = waters.buildTopology(2);
+
+    const Mass              refOwC6  = waters.water().at("Ow").c6();
+    const Mass              refOwC12 = waters.water().at("Ow").c12();
+    const Mass              refHwC6  = waters.water().at("H").c6();
+    const Mass              refHwC12 = waters.water().at("H").c12();
+    const std::vector<real> refC6    = { refOwC6, refHwC6, refHwC6, refOwC6, refHwC6, refHwC6 };
+    const std::vector<real> refC12 = { refOwC12, refHwC12, refHwC12, refOwC12, refHwC12, refHwC12 };
+    const std::vector<real> testC6 = expandQuantity(watersTopology, &AtomType::c6);
+    const std::vector<real> testC12 = expandQuantity(watersTopology, &AtomType::c12);
 
 TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
 {
@@ -209,7 +208,7 @@ TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
 }
 
 //! Todo: this belongs to ForceCalculator
-//TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
+// TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
 //{
 //    TwoWaterMolecules      waters;
 //    Topology               watersTopology = waters.buildTopology();

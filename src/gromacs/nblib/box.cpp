@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,23 +82,6 @@ Box::Matrix Box::matrix()
 const Box::Matrix& Box::matrix() const
 {
     return box_;
-}
-
-bool operator==(const Box& a, const Box& b)
-{
-    if (a.matrix()(XX, XX) != b.matrix()(XX, XX))
-    {
-        return false;
-    }
-    if (a.matrix()(YY, YY) != b.matrix()(YY, YY))
-    {
-        return false;
-    }
-    if (a.matrix()(ZZ, ZZ) != b.matrix()(ZZ, ZZ))
-    {
-        return false;
-    }
-    return true;
 }
 
 } // namespace nblib

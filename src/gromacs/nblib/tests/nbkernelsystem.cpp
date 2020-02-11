@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,13 +43,12 @@
  */
 #include "gmxpre.h"
 
-#include <iostream>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/atomtype.h"
-#include <gromacs/nblib/forcecalculator.h>
+#include "gromacs/nblib/forcecalculator.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/topology/exclusionblocks.h"

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,16 +51,15 @@
 #include "coords.h"
 #include "nbkerneloptions.h"
 
-namespace nblib {
+namespace nblib
+{
 
 //! Generates coordinates and a box for the base system scaled by \p multiplicationFactor
 //
 // The parameter \p multiplicationFactor should be a power of 2.
 // A fatal error is generated when this is not the case.
-void generateCoordinates(int                     multiplicationFactor,
-                         std::vector<gmx::RVec> *coordinates,
-                         matrix                  box);
+void generateCoordinates(int multiplicationFactor, std::vector<gmx::RVec>* coordinates, matrix box);
 
 } // namespace nblib
 
-#endif //GROMACS_COORDINATES_H
+#endif // GROMACS_COORDINATES_H

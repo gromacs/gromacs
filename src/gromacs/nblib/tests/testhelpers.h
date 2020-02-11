@@ -34,32 +34,30 @@
  */
 /*! \internal \file
  * \brief
- * Implements nblib integrator
+ * This implements basic nblib test systems
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#ifndef GROMACS_INTEGRATOR_H
-#define GROMACS_INTEGRATOR_H
+#ifndef GROMACS_TESTHELPERS_H
+#define GROMACS_TESTHELPERS_H
 
-#include <vector>
+#include "gmxpre.h"
 
-#include "gromacs/math/vectypes.h"
+#include <cmath>
 
-#include "nbkerneloptions.h"
-
-struct nbnxn_atomdata_output_t;
+#include "gromacs/nblib/box.h"
 
 namespace nblib
 {
 
-void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t>& nbvAtomsOut,
-                          const NBKernelOptions&                      options,
-                          const matrix&                               box,
-                          std::vector<gmx::RVec>&                     currentCoords);
+namespace test
+{
 
+bool operator==(const Box& a, const Box& b);
+
+} // namespace test
 } // namespace nblib
-
-#endif // GROMACS_INTEGRATOR_H
+#endif // GROMACS_TESTHELPERS_H

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
  */
 #include "gmxpre.h"
 
+#include "forcecalculator.h"
+
 #include "gromacs/compat/optional.h"
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -54,8 +56,10 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nblib/atomtype.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/nbnxm/pairsearch.h"
@@ -66,8 +70,6 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "atomtype.h"
-#include "forcecalculator.h"
 #include "integrator.h"
 
 
@@ -76,7 +78,7 @@ namespace nblib
 
 namespace detail
 {
-real combinationFunction(real v, real w, CombinationRule combinationRule)
+static real combinationFunction(real v, real w, CombinationRule combinationRule)
 {
     if (combinationRule == CombinationRule::Geometric)
     {
@@ -106,7 +108,7 @@ static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
  *
  * Returns an error string when the kernel is not available.
  */
-gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions& options)
+static gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions& options)
 {
     GMX_RELEASE_ASSERT(options.nbnxmSimd < BenchMarkKernels::Count
                                && options.nbnxmSimd != BenchMarkKernels::SimdAuto,
@@ -131,7 +133,7 @@ gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions& optio
 
 /*! \brief Returns the kernel setup
  */
-Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
+static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
 {
     auto messageWhenInvalid = checkKernelSetup(options);
     GMX_RELEASE_ASSERT(!messageWhenInvalid, "Need valid options");
@@ -157,7 +159,7 @@ Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
 
 
 //! Return an interaction constants struct with members used in the benchmark set appropriately
-interaction_const_t setupInteractionConst(const NBKernelOptions& options)
+static interaction_const_t setupInteractionConst(const NBKernelOptions& options)
 {
     interaction_const_t ic;
 
@@ -217,15 +219,15 @@ void ForceCalculator::unpackTopologyToGmx()
     nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
     for (const AtomType& atomType1 : atomTypes)
     {
-        real c6_1 = atomType1.c6();
+        real c6_1  = atomType1.c6();
         real c12_1 = atomType1.c12();
         for (const AtomType& atomType2 : atomTypes)
         {
-            real c6_2 = atomType2.c6();
+            real c6_2  = atomType2.c6();
             real c12_2 = atomType2.c12();
 
-            real c6_combo = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
-            real c12_combo = detail::combinationFunction(c12_1, c12_2,CombinationRule::Geometric);
+            real c6_combo  = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
+            real c12_combo = detail::combinationFunction(c12_1, c12_2, CombinationRule::Geometric);
             nonbondedParameters_.push_back(c6_combo);
             nonbondedParameters_.push_back(c12_combo);
         }
@@ -257,8 +259,8 @@ std::vector<real> ForceCalculator::compute(const bool printTimings)
     }
 
     std::unique_ptr<nonbonded_verlet_t> nbv = setupNbnxmInstance();
-    const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
-    const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
+    // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
+    // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
     gmx_cycles_t cycles = gmx_cycles_read();
 
     t_forcerec forceRec;
@@ -310,9 +312,10 @@ std::unique_ptr<nonbonded_verlet_t> ForceCalculator::setupNbnxmInstance()
     PairlistParams pairlistParams(kernelSetup.kernelType, false, options_.pairlistCutoff, false);
     Nbnxm::GridSet gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType,
                            false, numThreads, pinPolicy);
-    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
-    auto pairSearch =   std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
-                                                     pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    auto           pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
+    auto           pairSearch =
+            std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
+                                         pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
 
