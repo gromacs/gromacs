@@ -313,7 +313,7 @@ size_t getDeviceWarpSize(cl_context context, cl_device_id deviceId)
  *
  * \return The appropriate compilation-line define
  */
-static const std::string makeVendorFlavorChoice(DeviceVendor deviceVendor)
+static std::string makeVendorFlavorChoice(DeviceVendor deviceVendor)
 {
     switch (deviceVendor)
     {
