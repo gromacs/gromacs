@@ -893,6 +893,11 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags =
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
+    const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
+            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed);
+    const bool useModularSimulator = inputIsCompatibleWithModularSimulator
+                                     && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
     // There is nothing unique about restraints at this point as far as the
@@ -1540,13 +1545,6 @@ int Mdrunner::mdrunner()
             dd_init_bondeds(fplog, cr->dd, &mtop, vsite.get(), inputrec,
                             domdecOptions.checkBondedInteractions, fr->cginfo_mb);
         }
-
-        const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
-                false, inputrec, doRerun, vsite.get(), ms, replExParams, fcd,
-                static_cast<int>(filenames.size()), filenames.data(), &observablesHistory, membed);
-
-        const bool useModularSimulator = inputIsCompatibleWithModularSimulator
-                                         && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
         // TODO This is not the right place to manage the lifetime of
         // this data structure, but currently it's the easiest way to

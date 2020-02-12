@@ -69,6 +69,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -777,14 +778,12 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
 bool ModularSimulator::isInputCompatible(bool                             exitOnFailure,
                                          const t_inputrec*                inputrec,
                                          bool                             doRerun,
-                                         const gmx_vsite_t*               vsite,
+                                         const gmx_mtop_t&                globalTopology,
                                          const gmx_multisim_t*            ms,
                                          const ReplicaExchangeParameters& replExParams,
                                          const t_fcdata*                  fcd,
-                                         int                              nfile,
-                                         const t_filenm*                  fnm,
-                                         ObservablesHistory*              observablesHistory,
-                                         const gmx_membed_t*              membed)
+                                         bool                             doEssentialDynamics,
+                                         bool                             doMembed)
 {
     auto conditionalAssert = [exitOnFailure](bool condition, const char* message) {
         if (exitOnFailure)
@@ -877,7 +876,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                        "Deformation is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
-            && conditionalAssert(vsite == nullptr,
+            && conditionalAssert(gmx_mtop_interaction_count(globalTopology, IF_VSITE) == 0,
                                  "Virtual sites are not supported by the modular simulator.");
     isInputCompatible = isInputCompatible
                         && conditionalAssert(!inputrec->bDoAwh,
@@ -890,9 +889,23 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             isInputCompatible
             && conditionalAssert(replExParams.exchangeInterval == 0,
                                  "Replica exchange is not supported by the modular simulator.");
+
+    int numEnsembleRestraintSystems;
+    if (fcd)
+    {
+        numEnsembleRestraintSystems = fcd->disres.nsystems;
+    }
+    else
+    {
+        auto distantRestraintEnsembleEnvVar = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+        numEnsembleRestraintSystems =
+                (ms != nullptr && distantRestraintEnsembleEnvVar != nullptr)
+                        ? static_cast<int>(strtol(distantRestraintEnsembleEnvVar, nullptr, 10))
+                        : 0;
+    }
     isInputCompatible =
             isInputCompatible
-            && conditionalAssert(fcd->disres.nsystems <= 1,
+            && conditionalAssert(numEnsembleRestraintSystems <= 1,
                                  "Ensemble restraints are not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
@@ -908,9 +921,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                              "the modular simulator.");
     isInputCompatible =
             isInputCompatible
-            && conditionalAssert(
-                       !(opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr),
-                       "Essential dynamics is not supported by the modular simulator.");
+            && conditionalAssert(!doEssentialDynamics,
+                                 "Essential dynamics is not supported by the modular simulator.");
     isInputCompatible = isInputCompatible
                         && conditionalAssert(inputrec->eSwapCoords == eswapNO,
                                              "Ion / water position swapping is not supported by "
@@ -921,7 +933,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                  "Interactive MD is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
-            && conditionalAssert(membed == nullptr,
+            && conditionalAssert(!doMembed,
                                  "Membrane embedding is not supported by the modular simulator.");
     // TODO: Change this to the boolean passed when we merge the user interface change for the GPU update.
     isInputCompatible =
@@ -944,8 +956,15 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
 
 void ModularSimulator::checkInputForDisabledFunctionality()
 {
-    isInputCompatible(true, inputrec, doRerun, vsite, ms, replExParams, fcd, nfile, fnm,
-                      observablesHistory, membed);
+    isInputCompatible(true, inputrec, doRerun, *top_global, ms, replExParams, fcd,
+                      opt2bSet("-ei", nfile, fnm), membed != nullptr);
+    if (observablesHistory->edsamHistory)
+    {
+        gmx_fatal(FARGS,
+                  "The checkpoint is from a run with essential dynamics sampling, "
+                  "but the current run did not specify the -ei option. "
+                  "Either specify the -ei option to mdrun, or do not use this checkpoint file.");
+    }
 }
 
 SignallerCallbackPtr ModularSimulator::SignalHelper::registerLastStepCallback()
