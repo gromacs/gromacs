@@ -217,13 +217,13 @@ ArgonSimulationStateBuilder::ArgonSimulationStateBuilder() :
 
 void ArgonSimulationStateBuilder::setCoordinate(int atomNum, int dimension, real value)
 {
-    GMX_ASSERT((dimension < 0 || dimension > 2), "Must provide a valid dimension\n");
+    GMX_ASSERT((dimension >= 0 and dimension <= 2), "Must provide a valid dimension\n");
     coordinates_.at(atomNum)[dimension] = value;
 }
 
 void ArgonSimulationStateBuilder::setVelocity(int atomNum, int dimension, real value)
 {
-    GMX_ASSERT((dimension < 0 || dimension > 2), "Must provide a valid dimension\n");
+    GMX_ASSERT((dimension >= 0 and dimension <= 2), "Must provide a valid dimension\n");
     velocities_.at(atomNum)[dimension] = value;
 }
 
