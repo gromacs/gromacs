@@ -25,6 +25,16 @@ is a rather uncommon scenario.
 
 :issue:`2640`
 :issue:`3359`
+
+Avoid overzealous program abort with orientation restraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It could happen that mdrun would abort on checking orientation
+restraints in multiple molecules even though no restraints where
+applied to them.
+
+:issue:`3375`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
