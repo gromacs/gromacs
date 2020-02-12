@@ -72,6 +72,14 @@ the new modular simulator approach) could not be read.
 
 :issue:`3377`
 
+Avoid overzealous program abort with orientation restraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It could happen that mdrun would abort on checking orientation restraints in multiple
+molecules even though no restraints where applied to them.
+
+:issue:`3375`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
