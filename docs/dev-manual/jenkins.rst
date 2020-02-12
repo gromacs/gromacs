@@ -1,8 +1,9 @@
 Understanding Jenkins builds
 ============================
 
-This page documents what different Jenkins builds actually run from the
-|Gromacs| source tree.  The purpose is two-fold:
+This page documents what different Jenkins builds actually run at
+http://jenkins.gromacs.org/ from the |Gromacs| source tree.
+The purpose is two-fold:
 
 * Provide information on how to interpret Jenkins failures and how to run the
   same tasks locally to diagnose issues (in most cases, referring to the

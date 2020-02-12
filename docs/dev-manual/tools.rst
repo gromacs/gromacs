@@ -8,7 +8,7 @@ Several tools have their own individual pages and are listed below.
 
    doxygen
    change-management
-   jenkins
+   infrastructure
    releng/index
    gmxtree
    code-formatting
@@ -43,12 +43,11 @@ Gerrit
   All code changes go through a code review system at
   http://gerrit.gromacs.org.
 
-Jenkins
+Build testing
   All changes pushed to Gerrit are automatically compiled and otherwise
-  checked on various platforms using a continuous integration system at
-  http://jenkins.gromacs.org.
-  :doc:`jenkins` documents how Jenkins interacts with the build system,
-  providing information on how to replicate the builds Jenkins does (e.g., to
+  checked on various platforms.
+  :doc:`infrastructure` documents how builds are automated,
+  providing information on how to replicate the builds (e.g., to
   diagnose issues).
   :doc:`releng/index` provides more information on the technical implementation
   of the builds.
