@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,13 +81,13 @@ TEST(NBlibTest, RectangularBoxCannotHaveInf)
 
 TEST(NBlibTest, CubicBoxWorks)
 {
-    real length = 3;
-    Box::Matrix ref = {{length, 0, 0, 0, length, 0, 0, 0, length}};
-    Box::Matrix probe = Box(length).matrix();
+    real        length = 3;
+    Box::Matrix ref    = { { length, 0, 0, 0, length, 0, 0, 0, length } };
+    Box::Matrix probe  = Box(length).matrix();
 
     for (int i = 0; i < DIM; ++i)
         for (int j = 0; j < DIM; ++j)
             EXPECT_REAL_EQ_TOL(ref(i, j), probe(i, j), defaultRealTolerance());
 }
 
-}  // namespace nblib
+} // namespace nblib

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -129,6 +129,11 @@ void Molecule::addExclusion(std::tuple<std::string, std::string> atom,
 void Molecule::addExclusion(const std::string& atomName, const std::string& atomNameToExclude)
 {
     addExclusion(std::make_tuple(atomName, name_), std::make_tuple(atomNameToExclude, name_));
+}
+
+const AtomType& Molecule::at(const std::string& atomTypeName) const
+{
+    return atomTypes_.at(atomTypeName);
 }
 
 std::vector<std::tuple<int, int>> Molecule::getExclusions() const

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,18 +50,12 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+#include "testsystems.h"
+
 using gmx::test::defaultRealTolerance;
 
 namespace nblib
 {
-
-struct ArAtom
-{
-    AtomName name = "Ar";
-    Mass     mass = 1.0;
-    C6       c6   = 1;
-    C12      c12  = 1;
-};
 
 TEST(NBlibTest, AtomNameCanBeConstructed)
 {
@@ -91,4 +85,4 @@ TEST(NBlibTest, AtomC12CanBeConstructed)
     EXPECT_EQ(argonAtom.c12(), arAtom.c12);
 }
 
-}  // namespace nblib
+} // namespace nblib

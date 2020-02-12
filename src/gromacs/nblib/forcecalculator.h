@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,11 +44,13 @@
 #ifndef GROMACS_FORCECALCULATOR_H
 #define GROMACS_FORCECALCULATOR_H
 
+#include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/nblib/simulationstate.h"
 #include "gromacs/timing/cyclecounter.h"
 
 #include "nbkerneldef.h"
 #include "nbkerneloptions.h"
-#include "simulationstate.h"
+
 
 namespace nblib
 {
@@ -67,7 +69,9 @@ public:
 
     //! Sets up and runs the kernel calls
     //! returns the forces as a vector
-    std::vector<real> compute(const bool printTimings = false);
+    gmx::PaddedHostVector<gmx::RVec> compute(const bool printTimings = false);
+
+    const matrix& box() const;
 
 private:
     void                                unpackTopologyToGmx();

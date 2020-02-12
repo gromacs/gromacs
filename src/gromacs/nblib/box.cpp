@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,8 @@
 
 #include "gromacs/utility/exceptions.h"
 
-namespace nblib {
+namespace nblib
+{
 
 Box::Box(real l)
 {
@@ -63,9 +64,7 @@ Box::Box(real l)
 
 Box::Box(real x, real y, real z)
 {
-    if (std::isnan(x) or std::isinf(x) or
-        std::isnan(y) or std::isinf(y) or
-        std::isnan(z) or std::isinf(z))
+    if (std::isnan(x) or std::isinf(x) or std::isnan(y) or std::isinf(y) or std::isnan(z) or std::isinf(z))
     {
         GMX_THROW(gmx::InvalidInputError("Cannot have NaN or Inf box length."));
     }
@@ -76,6 +75,11 @@ Box::Box(real x, real y, real z)
 }
 
 Box::Matrix Box::matrix()
+{
+    return box_;
+}
+
+const Box::Matrix& Box::matrix() const
 {
     return box_;
 }

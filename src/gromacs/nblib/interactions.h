@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,13 +52,13 @@ namespace nblib
 //! Type of interaction
 struct HarmonicType
 {
-    real equiDist;
-    real forceConstant;
+    real        equiDist;
+    real        forceConstant;
     std::string atomIDi;
     std::string atomIDj;
-    //int atomI;
-    //int atomJ;
+    // int atomI;
+    // int atomJ;
 };
 
-} //namespace nblib
-#endif //GROMACS_INTERACTIONS_H
+} // namespace nblib
+#endif // GROMACS_INTERACTIONS_H

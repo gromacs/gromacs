@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,6 +111,9 @@ public:
 
     // The number of molecules
     int numAtomsInMolecule() const;
+
+    // Return the AtomType data for a specific atom name that has been added to the molecule
+    const AtomType& at(const std::string& atomTypeName) const;
 
     // convert exclusions given by name to indices and unify with exclusions given by indices
     // returns a sorted vector containing no duplicates of atoms to exclude by indices

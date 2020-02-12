@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -185,7 +185,7 @@ Topology TopologyBuilder::buildTopology()
     topology_.numAtoms_ = numAtoms_;
 
     topology_.exclusions_ = createExclusionsListOfLists();
-    topology_.charges_ = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
+    topology_.charges_    = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
         ignore_unused(map);
         return data.charge_;
     });
@@ -256,6 +256,5 @@ const std::vector<int>& Topology::getAtomTypeIdOfAllAtoms() const
 {
     return atomTypeIdOfAllAtoms_;
 }
-
 
 } // namespace nblib

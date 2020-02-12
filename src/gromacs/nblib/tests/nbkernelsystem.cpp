@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,18 +43,20 @@
  */
 #include "gmxpre.h"
 
-#include <iostream>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/atomtype.h"
-#include <gromacs/nblib/forcecalculator.h>
+#include "gromacs/nblib/forcecalculator.h"
+#include "gromacs/nblib/integrator.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/topology/exclusionblocks.h"
 
 #include "testutils/testasserts.h"
+
+#include "testsystems.h"
 
 namespace nblib
 {
@@ -86,85 +88,78 @@ void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector
 //       file can just include forcerec.h
 #define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
 
-class KernelSystemTester
-{
-public:
-    std::vector<gmx::RVec> coordinates;
-    std::vector<gmx::RVec> velocities;
-
-    Box             box;
-    TopologyBuilder topologyBuilder;
-
-    KernelSystemTester() : box(7.25449)
-    {
-        constexpr int numWaters = 2;
-
-        //! Define Atom Type
-        AtomType Ow(AtomName("Ow"), Mass(16), C6(6.), C12(12.));
-        AtomType Hw(AtomName("Hw"), Mass(1), C6(0.6), C12(0.12));
-
-        //! Define Molecule
-        Molecule water("water");
-
-        //! Add the atoms
-        water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
-        water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
-        water.addAtom(AtomName("H2"), Charge(+0.3), Hw);
-
-        //! Add the exclusions
-        water.addExclusion("Oxygen", "H1");
-        water.addExclusion("Oxygen", "H2");
-        water.addExclusion("H1", "H2");
-
-        // Todo: Add bonds functionality so this can be used/tested
-        // water.addHarmonicBond(HarmonicType{1, 2, "H1", "Oxygen"});
-        // water.addHarmonicBond(HarmonicType{1, 2, "H2", "Oxygen"});
-
-        //! Add some molecules to the topology
-        topologyBuilder.addMolecule(water, numWaters);
-
-        coordinates = {
-            { 0.569, 1.275, 1.165 }, { 0.476, 1.268, 1.128 }, { 0.580, 1.364, 1.209 },
-            { 1.555, 1.511, 0.703 }, { 1.498, 1.495, 0.784 }, { 1.496, 1.521, 0.623 },
-        };
-
-        velocities = {
-            { 0.569, 1.215, 1.965 }, { 0.669, 1.225, 1.865 }, { 0.769, 1.235, 1.765 },
-            { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
-        };
-    }
-
-    SimulationState getSimulationState()
-    {
-        Topology topology = topologyBuilder.buildTopology();
-        return SimulationState(coordinates, box, topology, velocities);
-    }
-};
-
-
-TEST(NBlibTest, canIntegrateSystem)
+TEST(NBlibTest, canComputeForces)
 {
     auto options      = NBKernelOptions();
     options.nbnxmSimd = BenchMarkKernels::SimdNo;
 
-    KernelSystemTester kernelSystemTester;
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
 
-    auto simState        = kernelSystemTester.getSimulationState();
+    auto simState        = spcMethanolSystemBuilder.setupSimulationState();
     auto forceCalculator = ForceCalculator(simState, options);
 
-    std::vector<real> forces;
+    gmx::PaddedHostVector<gmx::RVec> forces;
     ASSERT_NO_THROW(forces = forceCalculator.compute());
-    EXPECT_EQ(simState.topology().numAtoms() * 3, forces.size());
+}
+
+TEST(NBlibTest, ExpectedNumberOfForces)
+{
+    auto options      = NBKernelOptions();
+    options.nbnxmSimd = BenchMarkKernels::SimdNo;
+
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
+
+    auto simState        = spcMethanolSystemBuilder.setupSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
+
+    gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
+    EXPECT_EQ(simState.topology().numAtoms(), forces.size());
+}
+
+TEST(NBlibTest, CanIntegrateSystem)
+{
+    auto options          = NBKernelOptions();
+    options.nbnxmSimd     = BenchMarkKernels::SimdNo;
+    options.numIterations = 1;
+
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
+
+    auto simState        = spcMethanolSystemBuilder.setupSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
 
     for (int iter = 0; iter < options.numIterations; iter++)
     {
-        // std::vector<real> forces = forceCalculator.compute();
-
-        // std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
-        // integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
+        gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
+        EXPECT_NO_THROW(integrateCoordinates(forces, options, forceCalculator.box(),
+                                             simState.coordinates()));
     }
 }
 
+TEST(NBlibTest, ForcesAreNotZero)
+{
+    auto options          = NBKernelOptions();
+    options.nbnxmSimd     = BenchMarkKernels::SimdNo;
+    options.numIterations = 1;
+
+    SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
+
+    auto simState        = spcMethanolSystemBuilder.setupSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
+
+    gmx::PaddedHostVector<gmx::RVec> forces;
+    for (int iter = 0; iter < options.numIterations; iter++)
+    {
+        forces = forceCalculator.compute();
+        integrateCoordinates(forces, options, forceCalculator.box(), simState.coordinates());
+    }
+    for (int atomI = 0; atomI < simState.topology().numAtoms(); atomI++)
+    {
+        // At least one of the force components on each atom should be nonzero
+        const bool haveNonzeroForces =
+                (forces[atomI][0] != 0.0 || forces[atomI][1] != 0.0 || forces[atomI][2] != 0.0);
+        EXPECT_TRUE(haveNonzeroForces);
+    }
+}
 
 } // namespace
 } // namespace test

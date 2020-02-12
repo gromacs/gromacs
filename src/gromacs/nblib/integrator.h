@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,19 +46,21 @@
 
 #include <vector>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 
 #include "nbkerneloptions.h"
 
 struct nbnxn_atomdata_output_t;
 
-namespace nblib {
+namespace nblib
+{
 
-void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
-                          const NBKernelOptions                      &options,
-                          const matrix                               &box,
-                          std::vector<gmx::RVec>                     &currentCoords);
+void integrateCoordinates(gmx::PaddedHostVector<gmx::RVec> forces,
+                          const NBKernelOptions&           options,
+                          const matrix&                    box,
+                          std::vector<gmx::RVec>&          currentCoords);
 
 } // namespace nblib
 
-#endif //GROMACS_INTEGRATOR_H
+#endif // GROMACS_INTEGRATOR_H

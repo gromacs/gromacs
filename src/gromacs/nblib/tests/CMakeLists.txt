@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,8 +38,13 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
-#gmx_add_unit_test_library(nblib_test_infrastructure
-#    )
+# Make a static library for test infrastructure code that we re-use
+# in multiple test executables across the repository.
+gmx_add_unit_test_library(nblib_test_infrastructure
+  testhelpers.cpp
+  testsystems.cpp
+    )
+target_include_directories(nblib_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 
 set(testname "NbLibSetupTests")
 set(exename "nblib-setup-test")
@@ -55,7 +60,7 @@ gmx_add_gtest_executable(
     # pseudo-library for code for mdrun
     #$<TARGET_OBJECTS:nblib_objlib>
     )
-#target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
+target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 1 INTEGRATION_TEST)
 
 
@@ -65,11 +70,10 @@ set(exename "nblib-test")
 gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
-    #nblib.cpp
     simstate.cpp
     nbkernelsystem.cpp
     # pseudo-library for code for mdrun
     #$<TARGET_OBJECTS:nblib_objlib>
     )
-#target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
+target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 1 INTEGRATION_TEST)

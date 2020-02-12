@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,9 +50,10 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/fatalerror.h"
 
-namespace nblib {
+namespace nblib
+{
 
-static std::vector<gmx::RVec> low_mspeed(real tempi,  std::vector<real> const& masses, gmx::ThreeFry2x64<>* rng)
+static std::vector<gmx::RVec> low_mspeed(real tempi, std::vector<real> const& masses, gmx::ThreeFry2x64<>* rng)
 {
     int                                    nrdf;
     real                                   boltz;
@@ -64,8 +65,9 @@ static std::vector<gmx::RVec> low_mspeed(real tempi,  std::vector<real> const& m
     boltz = BOLTZ * tempi;
     ekin  = 0.0;
     nrdf  = 0;
-    for(size_t i = 0; i < masses.size(); i++) {
-        real mass  = masses[i];
+    for (size_t i = 0; i < masses.size(); i++)
+    {
+        real mass = masses[i];
         if (mass > 0)
         {
             rng->restart(i, 0);
@@ -77,13 +79,12 @@ static std::vector<gmx::RVec> low_mspeed(real tempi,  std::vector<real> const& m
             }
             nrdf += DIM;
         }
-
     }
     temp = (2.0 * ekin) / (nrdf * BOLTZ);
     if (temp > 0)
     {
         real scal = std::sqrt(tempi / temp);
-        for(auto &vel : velocities)
+        for (auto& vel : velocities)
         {
             for (int m = 0; (m < DIM); m++)
             {
@@ -118,13 +119,13 @@ std::vector<gmx::RVec> generateVelocity(real tempi, unsigned int seed, std::vect
     return low_mspeed(tempi, masses, &rng);
 }
 
-bool checkNumericValues(const std::vector<gmx::RVec> &values)
+bool checkNumericValues(const std::vector<gmx::RVec>& values)
 {
     for (auto val : values)
     {
         for (int m = 0; (m < DIM); m++)
         {
-            if(std::isnan(val[m]) or std::isinf(val[m]))
+            if (std::isnan(val[m]) or std::isinf(val[m]))
             {
                 return false;
             }

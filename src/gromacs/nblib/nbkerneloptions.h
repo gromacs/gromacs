@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ struct NBKernelOptions
  * \param[in] options How the benchmark will be run.
  * \param[in] printTimings Whether to print cycle counters
  */
-//void nbKernel(NBKernelSystem& system, const NBKernelOptions& options, const bool& printTimings);
+// void nbKernel(NBKernelSystem& system, const NBKernelOptions& options, const bool& printTimings);
 
 
 } // namespace nblib

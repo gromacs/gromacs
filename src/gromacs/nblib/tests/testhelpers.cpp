@@ -34,9 +34,8 @@
  */
 /*! \internal \file
  * \brief
- * Implements nblib SimulationState
+ * This implements basic nblib test systems
  *
- * \author Berk Hess <hess@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
@@ -44,63 +43,31 @@
  */
 #include "gmxpre.h"
 
-#include "simulationstate.h"
+#include "testhelpers.h"
 
-#include <vector>
-
-#include "gromacs/math/vec.h"
-#include "gromacs/mdlib/dispersioncorrection.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/nblib/atomtype.h"
-#include "gromacs/nblib/util.h"
-#include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/exceptions.h"
-
-#include "coords.h"
+#include "gromacs/math/matrix.h"
 
 namespace nblib
 {
-
-SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
-                                 Box                           box,
-                                 Topology&                     topo,
-                                 const std::vector<gmx::RVec>& vel) :
-    box_(box),
-    topology_(topo)
+namespace test
 {
-    if (!checkNumericValues(coord))
+
+bool operator==(const Box& a, const Box& b)
+{
+    if (a.matrix()(XX, XX) != b.matrix()(XX, XX))
     {
-        GMX_THROW(gmx::InvalidInputError("Input coordinates has at least one NaN"));
+        return false;
     }
-    coordinates_ = coord;
-    if (!checkNumericValues(vel))
+    if (a.matrix()(YY, YY) != b.matrix()(YY, YY))
     {
-        GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
+        return false;
     }
-    velocities_ = vel;
+    if (a.matrix()(ZZ, ZZ) != b.matrix()(ZZ, ZZ))
+    {
+        return false;
+    }
+    return true;
 }
 
-const Topology& SimulationState::topology() const
-{
-    return topology_;
-}
-
-Box& SimulationState::box()
-{
-    return box_;
-}
-
-std::vector<gmx::RVec>& SimulationState::coordinates()
-{
-    return coordinates_;
-}
-
-std::vector<gmx::RVec>& SimulationState::velocities()
-{
-    return velocities_;
-}
-
-
+} // namespace test
 } // namespace nblib

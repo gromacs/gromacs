@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,19 +51,18 @@
 namespace nblib
 {
 
-void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t>& nbvAtomsOut,
-                          const NBKernelOptions&                      options,
-                          const matrix&                               box,
-                          std::vector<gmx::RVec>&                     currentCoords)
+void integrateCoordinates(gmx::PaddedHostVector<gmx::RVec> forces,
+                          const NBKernelOptions&           options,
+                          const matrix&                    box,
+                          std::vector<gmx::RVec>&          currentCoords)
 {
     std::vector<gmx::RVec> nextCoords;
     nextCoords.resize(currentCoords.size());
     for (size_t atomI = 0; atomI < currentCoords.size(); atomI++)
     {
-        auto force = nbvAtomsOut[0].f;
         for (int dim = 0; dim < DIM; dim++)
         {
-            real vel               = force[dim] * options.timestep;
+            real vel               = forces[atomI][dim] * options.timestep;
             real newCoord          = currentCoords[atomI][dim] + vel * options.timestep;
             nextCoords[atomI][dim] = newCoord;
         }
