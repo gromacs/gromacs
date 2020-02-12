@@ -792,15 +792,18 @@ double OptACM::calcPenalty(bool verbose)
     double            J0Hmax  = 0;
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
-        auto ei      = ai->eemProps();
-        auto ai_elem = pd->ztype2elem(ei->getName());
-        auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
-        atomnumber.push_back(ai_atn);
-        if (ai_atn == 1)
+        if (!ai->isConst())
         {
-            auto ei = ai->eemProps();
-            chiHmax = std::max(chiHmax, ei->getChi0());
-            J0Hmax  = std::max(J0Hmax, ei->getJ0());
+            auto ei      = ai->eemProps();
+            auto ai_elem = pd->ztype2elem(ei->getName());
+            auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
+            atomnumber.push_back(ai_atn);
+            if (ai_atn == 1)
+            {
+                auto ei = ai->eemProps();
+                chiHmax = std::max(chiHmax, ei->getChi0());
+                J0Hmax  = std::max(J0Hmax, ei->getJ0());
+            }
         }
     }
     // Now check the other elements
