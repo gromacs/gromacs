@@ -113,7 +113,7 @@ public:
     int numAtomsInMolecule() const;
 
     // Return the AtomType data for a specific atom name that has been added to the molecule
-    const AtomType& at(const std::string& atomName) const;
+    const AtomType& at(const std::string& atomTypeName) const;
 
     // convert exclusions given by name to indices and unify with exclusions given by indices
     // returns a sorted vector containing no duplicates of atoms to exclude by indices

@@ -131,9 +131,9 @@ void Molecule::addExclusion(const std::string& atomName, const std::string& atom
     addExclusion(std::make_tuple(atomName, name_), std::make_tuple(atomNameToExclude, name_));
 }
 
-const AtomType& Molecule::at(const std::string& atomName) const
+const AtomType& Molecule::at(const std::string& atomTypeName) const
 {
-    return atomTypes_.at(atomName);
+    return atomTypes_.at(atomTypeName);
 }
 
 std::vector<std::tuple<int, int>> Molecule::getExclusions() const
