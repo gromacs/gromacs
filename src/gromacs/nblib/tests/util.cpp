@@ -132,25 +132,6 @@ TEST(NBlibTest, generateVelocityCheckNumbers)
     EXPECT_EQ(ret, true);
 }
 
-TEST(NBlibTest, VectorOperatorAdditionWorksPOD)
-{
-    std::vector<int>                  v1   = { 1, 2 };
-    std::vector<int>                  v2   = { 3, 4 };
-    std::vector<std::tuple<int, int>> ref  = { { 1, 3 }, { 2, 4 } };
-    std::vector<std::tuple<int, int>> test = std::move(v1) + std::move(v2);
-    EXPECT_EQ(ref, test);
-}
-
-TEST(NBlibTest, VectorOperatorAdditionWorksNonPOD)
-{
-    std::vector<std::string>                          v1   = { "can", "this" };
-    std::vector<std::string>                          v2   = { "test", "work" };
-    std::vector<std::tuple<std::string, std::string>> ref  = { { "can", "test" },
-                                                              { "this", "work" } };
-    std::vector<std::tuple<std::string, std::string>> test = std::move(v1) + std::move(v2);
-    EXPECT_EQ(ref, test);
-}
-
 } // namespace
 } // namespace test
 } // namespace nblib

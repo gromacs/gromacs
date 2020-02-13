@@ -68,7 +68,7 @@ public:
     //! Constructor
     SimulationState(const std::vector<gmx::RVec>& coord,
                     Box                           box,
-                    Topology&                     topo,
+                    const Topology&               topology,
                     const std::vector<gmx::RVec>& vel = {});
 
     //! Force generation of a move ctor such that we get a compiler error

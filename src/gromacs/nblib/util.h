@@ -61,21 +61,6 @@ inline void ignore_unused(T& x)
     static_cast<void>(x);
 }
 
-//! Allow creation of vector<tuple<T, T>> from two vector<T>
-template<typename T>
-std::vector<std::tuple<T, T>> operator+(std::vector<T>&& lhs, std::vector<T>&& rhs)
-{
-
-    std::vector<std::tuple<T, T>> ret(lhs.size());
-
-    std::transform(std::make_move_iterator(lhs.cbegin()), std::make_move_iterator(lhs.cend()),
-                   std::make_move_iterator(rhs.cbegin()), ret.begin(), [](auto&& lhs_val, auto&& rhs_val) {
-                       return std::make_tuple(std::move(lhs_val), std::move(rhs_val));
-                   });
-    return ret;
-}
-
-
 } // namespace nblib
 
 #endif // GROMACS_UTIL_H

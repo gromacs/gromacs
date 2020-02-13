@@ -60,8 +60,13 @@ namespace nblib
 
 namespace detail
 {
+
+// Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
 std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList);
+
+// Add offset to all indices in inBlock
 std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
+
 } // namespace detail
 
 /*! \inpublicapi

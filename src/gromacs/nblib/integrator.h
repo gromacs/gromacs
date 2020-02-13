@@ -56,6 +56,7 @@ struct nbnxn_atomdata_output_t;
 namespace nblib
 {
 
+// todo Use HostVector or ArrayRef for coordinates
 void integrateCoordinates(gmx::PaddedHostVector<gmx::RVec> forces,
                           const NBKernelOptions&           options,
                           const matrix&                    box,

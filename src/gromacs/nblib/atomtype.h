@@ -54,10 +54,9 @@
 #include "gromacs/math/vectypes.h"
 #include "interactions.h"
 
-class TopologyBuilder;
-
 namespace nblib
 {
+class TopologyBuilder;
 
 using AtomName = std::string;
 using Mass     = real;

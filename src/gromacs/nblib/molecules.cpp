@@ -60,7 +60,7 @@ Molecule& Molecule::addAtom(const AtomName&    atomName,
                             const Charge&      charge,
                             AtomType const&    atomType)
 {
-    if (!atomTypes_.count(atomType.name()))
+    if (atomTypes_.count(atomType.name()) == 0)
     {
         atomTypes_[atomType.name()] = atomType;
     }
@@ -102,12 +102,12 @@ int Molecule::numAtomsInMolecule() const
     return atoms_.size();
 }
 
-void Molecule::addHarmonicBond(HarmonicType harmonicBond)
+void Molecule::addHarmonicBond(const HarmonicType& harmonicBond)
 {
     harmonicInteractions_.push_back(harmonicBond);
 }
 
-void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
+void Molecule::addExclusion(const int& atomIndex, const int& atomIndexToExclude)
 {
     // We do not need to add exclusion in case the atom indexes are the same
     // because self exclusion are added by addAtom
@@ -155,9 +155,13 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
     //! normal operator<, except ignore third element
     auto sortKey = [](const auto& tup1, const auto& tup2) {
         if (std::get<0>(tup1) < std::get<0>(tup2))
+        {
             return true;
+        }
         else
+        {
             return std::get<1>(tup1) < std::get<1>(tup2);
+        }
     };
 
     //! convert exclusions given by names to indices and append

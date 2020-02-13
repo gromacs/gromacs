@@ -66,7 +66,7 @@ namespace test
 namespace
 {
 
-static void compareValues(const std::vector<gmx::RVec>& ref, const std::vector<gmx::RVec>& test)
+void compareValues(const std::vector<gmx::RVec>& ref, const std::vector<gmx::RVec>& test)
 {
     for (size_t i = 0; i < ref.size(); i++)
     {
