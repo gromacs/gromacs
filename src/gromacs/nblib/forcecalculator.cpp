@@ -216,15 +216,21 @@ void ForceCalculator::unpackTopologyToGmx()
     //!
     //! initial self-handling of combination rules
     //! size: 2*(numAtomTypes^2)
+    //! Note: Gromacs stores 6*C6 and 12*C12 to save a flop in the force calculation,
+    //!       so we need to take this into account here
     nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
+
+    constexpr real c6factor = 6.0;
+    constexpr real c12factor = 12.0;
+
     for (const AtomType& atomType1 : atomTypes)
     {
-        real c6_1  = atomType1.c6();
-        real c12_1 = atomType1.c12();
+        real c6_1  = atomType1.c6() * c6factor;
+        real c12_1 = atomType1.c12() * c12factor;
         for (const AtomType& atomType2 : atomTypes)
         {
-            real c6_2  = atomType2.c6();
-            real c12_2 = atomType2.c12();
+            real c6_2  = atomType2.c6() * c6factor;
+            real c12_2 = atomType2.c12() * c12factor;
 
             real c6_combo  = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
             real c12_combo = detail::combinationFunction(c12_1, c12_2, CombinationRule::Geometric);
@@ -275,10 +281,10 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute(const bool printTiming
     nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local, ic, stepWork, enbvClearFNo,
                                  forceRec, &enerd, &nrnb);
 
-    // Todo manage this at a higer level
-    gmx::PaddedHostVector<gmx::RVec> verletForces{};
+    // Todo manage this at a higher level
     nbnxn_atomdata_t*                nbat = nbv->nbat.get();
-    verletForces.resizeWithPadding(nbat->numAtoms());
+    gmx::PaddedHostVector<gmx::RVec> verletForces(nbat->numAtoms(), gmx::RVec(0,0,0));
+
     nbv->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces);
     return verletForces;
 }
