@@ -1141,18 +1141,16 @@ int Mdrunner::mdrunner()
             EEL_PME(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
 
     // Get the device handles for the modules, nullptr when no task is assigned.
-    // TODO: There should be only one DeviceInformation per rank.
-    DeviceInformation* nonbondedDeviceInfo = gpuTaskAssignments.initNonbondedDevice(cr);
-    DeviceInformation* pmeDeviceInfo       = gpuTaskAssignments.initPmeDevice();
-
+    int                            deviceId      = -1;
+    DeviceInformation*             deviceInfo    = gpuTaskAssignments.initDevice(&deviceId);
     std::unique_ptr<DeviceContext> deviceContext = nullptr;
-    if (pmeDeviceInfo)
+    if (deviceInfo != nullptr)
     {
-        deviceContext = std::make_unique<DeviceContext>(*pmeDeviceInfo);
-    }
-    else if (nonbondedDeviceInfo)
-    {
-        deviceContext = std::make_unique<DeviceContext>(*nonbondedDeviceInfo);
+        if (DOMAINDECOMP(cr) && thisRankHasDuty(cr, DUTY_PP))
+        {
+            dd_setup_dlb_resource_sharing(cr, deviceId);
+        }
+        deviceContext = std::make_unique<DeviceContext>(*deviceInfo);
     }
 
     // TODO Initialize GPU streams here.
@@ -1361,7 +1359,7 @@ int Mdrunner::mdrunner()
                     cr->mpi_comm_mysim, cr->dd->pme_nodeid, *deviceContext);
         }
 
-        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec, fr, cr, *hwinfo, nonbondedDeviceInfo,
+        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec, fr, cr, *hwinfo, deviceInfo,
                                         fr->deviceContext, &mtop, box, wcycle);
         if (useGpuForBonded)
         {
@@ -1452,12 +1450,12 @@ int Mdrunner::mdrunner()
     if (thisRankHasPmeGpuTask)
     {
         GMX_RELEASE_ASSERT(
-                pmeDeviceInfo != nullptr,
+                deviceInfo != nullptr,
                 "Device information can not be nullptr when building PME GPU program object.");
         GMX_RELEASE_ASSERT(
                 deviceContext != nullptr,
                 "Device context can not be nullptr when building PME GPU program object.");
-        pmeGpuProgram = buildPmeGpuProgram(*pmeDeviceInfo, *deviceContext);
+        pmeGpuProgram = buildPmeGpuProgram(*deviceInfo, *deviceContext);
     }
 
     /* Initiate PME if necessary,
@@ -1486,7 +1484,7 @@ int Mdrunner::mdrunner()
                 pmedata = gmx_pme_init(cr, getNumPmeDomains(cr->dd), inputrec, nChargePerturbed != 0,
                                        nTypePerturbed != 0, mdrunOptions.reproducible, ewaldcoeff_q,
                                        ewaldcoeff_lj, gmx_omp_nthreads_get(emntPME), pmeRunMode,
-                                       nullptr, pmeDeviceInfo, pmeGpuProgram.get(), mdlog);
+                                       nullptr, deviceInfo, pmeGpuProgram.get(), mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -1699,8 +1697,7 @@ int Mdrunner::mdrunner()
         physicalNodeComm.barrier();
     }
 
-    free_gpu(nonbondedDeviceInfo);
-    free_gpu(pmeDeviceInfo);
+    free_gpu(deviceInfo);
     deviceContext.reset(nullptr);
     sfree(fcd);
 

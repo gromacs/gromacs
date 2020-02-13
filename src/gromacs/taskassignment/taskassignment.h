@@ -239,32 +239,19 @@ public:
      * \param[in]  numCompatibleGpusOnThisNode  The number of compatible GPUs on this node.
      * */
     void logPerformanceHints(const MDLogger& mdlog, size_t numCompatibleGpusOnThisNode);
-    /*! \brief Return handle to the initialized GPU to use for the
-     * nonbonded task on this rank, if any.
+    /*! \brief Return handle to the initialized GPU to use in the this rank.
      *
-     * Returns nullptr if no such task is assigned to this rank.
+     * \param[out] deviceId Index of the assigned device.
      *
-     * \todo This also sets up DLB for device sharing, where
-     * appropriate, but that responsbility should move
-     * elsewhere. */
-    DeviceInformation* initNonbondedDevice(const t_commrec* cr) const;
-    /*! \brief Return handle to the initialized GPU to use for the
-     * PME task on this rank, if any.
-     *
-     * Returns nullptr if no such task is assigned to this rank. */
-    DeviceInformation* initPmeDevice() const;
+     * \returns Device information on the selected devicce. Returns nullptr if no GPU task
+     *          is assigned to this rank.
+     */
+    DeviceInformation* initDevice(int* deviceId) const;
     //! Return whether this rank has a PME task running on a GPU
     bool thisRankHasPmeGpuTask() const;
     //! Return whether this rank has any task running on a GPU
     bool thisRankHasAnyGpuTask() const;
 };
-
-//! Function for whether the task of \c mapping has value \c TaskType.
-template<GpuTask TaskType>
-bool hasTaskType(const GpuTaskMapping& mapping)
-{
-    return mapping.task_ == TaskType;
-}
 
 } // namespace gmx
 
