@@ -67,6 +67,7 @@ enum class BenchMarkCombRule : int
 enum class BenchMarkCoulomb : int
 {
     Pme,
+    Cutoff,
     ReactionField,
     Count
 };
