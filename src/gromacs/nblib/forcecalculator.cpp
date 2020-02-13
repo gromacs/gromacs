@@ -52,6 +52,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -167,14 +168,23 @@ static interaction_const_t setupInteractionConst(const NBKernelOptions& options)
     ic.vdw_modifier = eintmodPOTSHIFT;
     ic.rvdw         = options.pairlistCutoff;
 
-    ic.eeltype          = (options.coulombType == BenchMarkCoulomb::Pme ? eelPME : eelRF);
+    switch (options.coulombType)
+    {
+        case BenchMarkCoulomb::Pme: ic.eeltype = eelPME; break;
+        case BenchMarkCoulomb::Cutoff: ic.eeltype = eelCUT; break;
+        case BenchMarkCoulomb::ReactionField: ic.eeltype = eelRF; break;
+    }
     ic.coulomb_modifier = eintmodPOTSHIFT;
     ic.rcoulomb         = options.pairlistCutoff;
+    //! Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
+    ic.dispersion_shift.cpot = -1.0 / gmx::power6(ic.rvdw);
+    ic.repulsion_shift.cpot  = -1.0 / gmx::power12(ic.rvdw);
 
-    // Reaction-field with epsilon_rf=inf
-    // TODO: Replace by calc_rffac() after refactoring that
-    ic.k_rf = 0.5 * std::pow(ic.rcoulomb, -3);
-    ic.c_rf = 1 / ic.rcoulomb + ic.k_rf * ic.rcoulomb * ic.rcoulomb;
+    ic.epsilon_r  = 1.0;
+    ic.epsilon_rf = 1.0;
+    ic.epsfac     = 138.935455; // ONE_4PI_EPS0;
+
+    calc_rffac(nullptr, ic.epsilon_r, ic.epsilon_rf, ic.rcoulomb, &ic.k_rf, &ic.c_rf);
 
     if (EEL_PME_EWALD(ic.eeltype))
     {
@@ -220,7 +230,7 @@ void ForceCalculator::unpackTopologyToGmx()
     //!       so we need to take this into account here
     nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
 
-    constexpr real c6factor = 6.0;
+    constexpr real c6factor  = 6.0;
     constexpr real c12factor = 12.0;
 
     for (const AtomType& atomType1 : atomTypes)
@@ -283,7 +293,7 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute(const bool printTiming
 
     // Todo manage this at a higher level
     nbnxn_atomdata_t*                nbat = nbv->nbat.get();
-    gmx::PaddedHostVector<gmx::RVec> verletForces(nbat->numAtoms(), gmx::RVec(0,0,0));
+    gmx::PaddedHostVector<gmx::RVec> verletForces(nbat->numAtoms(), gmx::RVec(0, 0, 0));
 
     nbv->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces);
     return verletForces;
