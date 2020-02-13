@@ -64,6 +64,14 @@ mdrun was deadlocking instead of exiting with a failure.
 
 :issue:`3373`
 
+Fix checkpoint restarts using Parrinello-Rahman and md-vv
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Checkpoints using Parrinello-Rahman and md-vv (only implemented in
+the new modular simulator approach) could not be read.
+
+:issue:`3377`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

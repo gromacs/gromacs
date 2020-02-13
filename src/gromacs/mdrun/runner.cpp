@@ -944,7 +944,7 @@ int Mdrunner::mdrunner()
         }
 
         /* now make sure the state is initialized and propagated */
-        set_state_entries(globalState.get(), inputrec);
+        set_state_entries(globalState.get(), inputrec, useModularSimulator);
     }
 
     /* NM and TPI parallelize over force/energy calculations, not atoms,
