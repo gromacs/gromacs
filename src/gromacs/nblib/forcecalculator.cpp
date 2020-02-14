@@ -49,6 +49,7 @@
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/matrix.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -159,7 +160,11 @@ static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
 }
 
 
-//! Return an interaction constants struct with members used in the benchmark set appropriately
+/*! Return an interaction constants struct with members used in the benchmark set appropriately
+ *
+ * Todo: decide whether to keep expanding this function or update and write a wrapper for
+ *       init_interaction_const(), which is somewhat duplicated here.
+ */
 static interaction_const_t setupInteractionConst(const NBKernelOptions& options)
 {
     interaction_const_t ic;
@@ -173,6 +178,8 @@ static interaction_const_t setupInteractionConst(const NBKernelOptions& options)
         case BenchMarkCoulomb::Pme: ic.eeltype = eelPME; break;
         case BenchMarkCoulomb::Cutoff: ic.eeltype = eelCUT; break;
         case BenchMarkCoulomb::ReactionField: ic.eeltype = eelRF; break;
+        case BenchMarkCoulomb::Count:
+            GMX_THROW(gmx::InvalidInputError("Unsupported electrostatic interaction"));
     }
     ic.coulomb_modifier = eintmodPOTSHIFT;
     ic.rcoulomb         = options.pairlistCutoff;
@@ -180,9 +187,21 @@ static interaction_const_t setupInteractionConst(const NBKernelOptions& options)
     ic.dispersion_shift.cpot = -1.0 / gmx::power6(ic.rvdw);
     ic.repulsion_shift.cpot  = -1.0 / gmx::power12(ic.rvdw);
 
+    // These are the initialized values but we leave them here so that later
+    // these can become options.
     ic.epsilon_r  = 1.0;
     ic.epsilon_rf = 1.0;
-    ic.epsfac     = 138.935455; // ONE_4PI_EPS0;
+
+    /* Set the Coulomb energy conversion factor */
+    if (ic.epsilon_r != 0)
+    {
+        ic.epsfac = ONE_4PI_EPS0 / ic.epsilon_r;
+    }
+    else
+    {
+        /* eps = 0 is infinite dieletric: no Coulomb interactions */
+        ic.epsfac = 0;
+    }
 
     calc_rffac(nullptr, ic.epsilon_r, ic.epsilon_rf, ic.rcoulomb, &ic.k_rf, &ic.c_rf);
 
