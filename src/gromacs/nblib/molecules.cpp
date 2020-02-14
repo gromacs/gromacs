@@ -102,12 +102,12 @@ int Molecule::numAtomsInMolecule() const
     return atoms_.size();
 }
 
-void Molecule::addHarmonicBond(const HarmonicType& harmonicBond)
+void Molecule::addHarmonicBond(HarmonicType harmonicBond)
 {
-    harmonicInteractions_.push_back(harmonicBond);
+    harmonicInteractions_.push_back(std::move(harmonicBond));
 }
 
-void Molecule::addExclusion(const int& atomIndex, const int& atomIndexToExclude)
+void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
 {
     // We do not need to add exclusion in case the atom indexes are the same
     // because self exclusion are added by addAtom
