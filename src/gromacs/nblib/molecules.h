@@ -96,10 +96,10 @@ public:
     template<typename T>
     Molecule& addAtom(const T& atomName, AtomType const& atomType) = delete;
 
-    void addHarmonicBond(const HarmonicType& harmonicBond);
+    void addHarmonicBond(HarmonicType harmonicBond);
 
     // TODO: add exclusions based on the unique ID given to the atom of the molecule
-    void addExclusion(const int& atomIndex, const int& atomIndexToExclude);
+    void addExclusion(int atomIndex, int atomIndexToExclude);
 
     // Specify an exclusion with atom and residue names that have been added to molecule
     void addExclusion(std::tuple<std::string, std::string> atom,
