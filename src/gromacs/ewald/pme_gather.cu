@@ -213,15 +213,14 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
  * The grid is assumed to be wrapped in dimension Z.
  *
  * \tparam[in] order                The PME order (must be 4 currently).
- * \tparam[in] overwriteForces      True: the forces are written to the output buffer;
- *                                  False: the forces are added non-atomically to the output buffer (e.g. to the bonded forces).
  * \tparam[in] wrapX                Tells if the grid is wrapped in the X dimension.
  * \tparam[in] wrapY                Tells if the grid is wrapped in the Y dimension.
  * \tparam[in] readGlobal           Tells if we should read spline values from global memory
- * \tparam[in] useOrderThreads      Tells if we should use order threads per atom (order*order used if false)
+ * \tparam[in] useOrderThreads      Tells if we should use order threads per atom
+ *                                   (order*order used if false)
  * \param[in]  kernelParams         All the PME GPU data.
  */
-template<const int order, const bool overwriteForces, const bool wrapX, const bool wrapY, const bool readGlobal, const bool useOrderThreads>
+template<const int order, const bool wrapX, const bool wrapY, const bool readGlobal, const bool useOrderThreads>
 __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams)
 {
@@ -462,25 +461,14 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
             if (globalOutputCheck)
             {
                 const float outputForceComponent = ((float*)sm_forces)[outputIndexLocal];
-                if (overwriteForces)
-                {
-                    gm_forces[outputIndexGlobal] = outputForceComponent;
-                }
-                else
-                {
-                    gm_forces[outputIndexGlobal] += outputForceComponent;
-                }
+                gm_forces[outputIndexGlobal]     = outputForceComponent;
             }
         }
     }
 }
 
 //! Kernel instantiations
-template __global__ void pme_gather_kernel<4, true, true, true, true, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, true, true, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, false, true, true, true, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, false, true, true, true, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, true, false, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, true, false, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, false, true, true, false, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, false, true, true, false, false>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, true, false>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, false, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, false, false>(const PmeGpuCudaKernelParams);

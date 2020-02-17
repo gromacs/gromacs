@@ -214,7 +214,7 @@ typedef std::map<size_t, AtomSizedData> InputDataByAtomCount;
  * The rest of the atom-related input data - gridline indices, spline theta values, spline dtheta
  * values, atom charges - is looked up in the inputAtomDataSets_ test fixture variable.
  */
-typedef std::tuple<Matrix3x3, int, IVec, SparseRealGridValuesInput, PmeForceOutputHandling, size_t> GatherInputParameters;
+typedef std::tuple<Matrix3x3, int, IVec, SparseRealGridValuesInput, size_t> GatherInputParameters;
 
 //! Test fixture
 class PmeGatherTest : public ::testing::TestWithParam<GatherInputParameters>
@@ -263,8 +263,7 @@ public:
         IVec                      gridSize;
         size_t                    atomCount;
         SparseRealGridValuesInput nonZeroGridValues;
-        PmeForceOutputHandling    inputForceTreatment;
-        std::tie(box, pmeOrder, gridSize, nonZeroGridValues, inputForceTreatment, atomCount) = GetParam();
+        std::tie(box, pmeOrder, gridSize, nonZeroGridValues, atomCount) = GetParam();
         auto inputAtomData       = s_inputAtomDataSets_[atomCount];
         auto inputAtomSplineData = inputAtomData.splineDataByPmeOrder[pmeOrder];
 
@@ -294,12 +293,9 @@ public:
             /* Describing the test uniquely */
             SCOPED_TRACE(
                     formatString("Testing force gathering with %s %sfor PME grid size %d %d %d"
-                                 ", order %d, %zu atoms, %s",
+                                 ", order %d, %zu atoms",
                                  codePathToString(codePath), context->getDescription().c_str(),
-                                 gridSize[XX], gridSize[YY], gridSize[ZZ], pmeOrder, atomCount,
-                                 (inputForceTreatment == PmeForceOutputHandling::ReduceWithInput)
-                                         ? "with reduction"
-                                         : "without reduction"));
+                                 gridSize[XX], gridSize[YY], gridSize[ZZ], pmeOrder, atomCount));
 
             PmeSafePointer pmeSafe = pmeInitWrapper(&inputRec, codePath, context->getDeviceInfo(),
                                                     context->getPmeGpuProgram(), box);
@@ -326,7 +322,7 @@ public:
             auto forces = ForcesVector(inputForcesFull).subArray(0, atomCount);
 
             /* Running the force gathering itself */
-            pmePerformGather(pmeSafe.get(), codePath, inputForceTreatment, forces);
+            pmePerformGather(pmeSafe.get(), codePath, forces);
             pmeFinalizeTest(pmeSafe.get(), codePath);
 
             /* Check the output forces correctness */
@@ -354,8 +350,6 @@ INSTANTIATE_TEST_CASE_P(SaneInput,
                                            ::testing::ValuesIn(pmeOrders),
                                            ::testing::ValuesIn(c_sampleGridSizes),
                                            ::testing::ValuesIn(c_sampleGrids),
-                                           ::testing::Values(PmeForceOutputHandling::Set,
-                                                             PmeForceOutputHandling::ReduceWithInput),
                                            ::testing::ValuesIn(atomCounts)));
 
 } // namespace

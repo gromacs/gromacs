@@ -644,7 +644,7 @@ static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
 static void launchPmeGpuFftAndGather(gmx_pme_t* pmedata, gmx_wallcycle_t wcycle)
 {
     pme_gpu_launch_complex_transforms(pmedata, wcycle);
-    pme_gpu_launch_gather(pmedata, wcycle, PmeForceOutputHandling::Set);
+    pme_gpu_launch_gather(pmedata, wcycle);
 }
 
 /*! \brief

@@ -92,7 +92,6 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     stat |= clReleaseKernel(splineKernel);
     stat |= clReleaseKernel(spreadKernel);
     stat |= clReleaseKernel(gatherKernel);
-    stat |= clReleaseKernel(gatherReduceWithInputKernel);
     stat |= clReleaseKernel(solveXYZKernel);
     stat |= clReleaseKernel(solveXYZEnergyKernel);
     stat |= clReleaseKernel(solveYZXKernel);
@@ -228,12 +227,6 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation* deviceInfo)
             gatherKernel            = kernel;
             gatherKernelReadSplines = kernel;
             checkRequiredWarpSize(gatherKernel, kernelNamesBuffer.data(), deviceInfo);
-        }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherReduceWithInputKernel"))
-        {
-            gatherReduceWithInputKernel            = kernel;
-            gatherReduceWithInputKernelReadSplines = kernel;
-            checkRequiredWarpSize(gatherReduceWithInputKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernel"))
         {

@@ -382,12 +382,9 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
  * A GPU force gathering function.
  *
  * \param[in]     pmeGpu           The PME GPU structure.
- * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
- *                                 TODO: determine efficiency/balance of host/device-side
  * reductions. \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
  */
-GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*                GPU_FUNC_ARGUMENT(pmeGpu),
-                                       PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment),
+GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*      GPU_FUNC_ARGUMENT(pmeGpu),
                                        const float* GPU_FUNC_ARGUMENT(h_grid)) GPU_FUNC_TERM;
 
 /*! \brief Sets the device pointer to coordinate data

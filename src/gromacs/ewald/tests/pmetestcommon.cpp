@@ -397,17 +397,16 @@ void pmePerformSolve(const gmx_pme_t*  pme,
 }
 
 //! PME force gathering
-void pmePerformGather(gmx_pme_t* pme, CodePath mode, PmeForceOutputHandling inputTreatment, ForcesVector& forces)
+void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
 {
     PmeAtomComm* atc       = &(pme->atc[0]);
     const index  atomCount = atc->numAtoms();
     GMX_RELEASE_ASSERT(forces.ssize() == atomCount, "Invalid force buffer size");
-    const bool forceReductionWithInput = (inputTreatment == PmeForceOutputHandling::ReduceWithInput);
-    const real   scale                 = 1.0;
-    const size_t threadIndex           = 0;
-    const size_t gridIndex             = 0;
-    real*        pmegrid               = pme->pmegrid[gridIndex].grid.grid;
-    real*        fftgrid               = pme->fftgrid[gridIndex];
+    const real   scale       = 1.0;
+    const size_t threadIndex = 0;
+    const size_t gridIndex   = 0;
+    real*        pmegrid     = pme->pmegrid[gridIndex].grid.grid;
+    real*        fftgrid     = pme->fftgrid[gridIndex];
 
     switch (mode)
     {
@@ -420,7 +419,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, PmeForceOutputHandling inpu
             }
             copy_fftgrid_to_pmegrid(pme, fftgrid, pmegrid, gridIndex, pme->nthread, threadIndex);
             unwrap_periodic_pmegrid(pme, pmegrid);
-            gather_f_bsplines(pme, pmegrid, !forceReductionWithInput, atc, &atc->spline[threadIndex], scale);
+            gather_f_bsplines(pme, pmegrid, true, atc, &atc->spline[threadIndex], scale);
             break;
 
         case CodePath::GPU:
@@ -429,11 +428,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, PmeForceOutputHandling inpu
             PmeOutput output = pme_gpu_getOutput(*pme, GMX_PME_CALC_F);
             GMX_ASSERT(forces.size() == output.forces_.size(),
                        "Size of force buffers did not match");
-            if (forceReductionWithInput)
-            {
-                std::copy(std::begin(forces), std::end(forces), std::begin(output.forces_));
-            }
-            pme_gpu_gather(pme->gpu, inputTreatment, reinterpret_cast<float*>(fftgrid));
+            pme_gpu_gather(pme->gpu, reinterpret_cast<float*>(fftgrid));
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;

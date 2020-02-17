@@ -4,14 +4,14 @@
   <Sequence Name="Forces">
     <Int Name="Length">2</Int>
     <Vector>
-      <Real Name="X">-3.4582204419484599</Real>
-      <Real Name="Y">-3.9969224751666577</Real>
-      <Real Name="Z">-9.9756355772564991</Real>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-0.067954884757908562</Real>
-      <Real Name="Y">-0.85449341275494772</Real>
-      <Real Name="Z">-5.12573966904852</Real>
+      <Real Name="X">1.4460874540966253</Real>
+      <Real Name="Y">2.1584071797019928</Real>
+      <Real Name="Z">1.0820509080507321</Real>
     </Vector>
   </Sequence>
 </ReferenceData>

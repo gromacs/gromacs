@@ -95,17 +95,8 @@
 #define atomsPerBlock (c_gatherWorkGroupSize / threadsPerAtom)
 
 // gather
-#define overwriteForces 1
 #define CUSTOMIZED_KERNEL_NAME(x) pmeGatherKernel
 #include "pme_gather.clh"
-#undef overwriteForces
-#undef CUSTOMIZED_KERNEL_NAME
-
-// gather with reduction
-#define overwriteForces 0
-#define CUSTOMIZED_KERNEL_NAME(x) pmeGatherReduceWithInputKernel
-#include "pme_gather.clh"
-#undef overwriteForces
 #undef CUSTOMIZED_KERNEL_NAME
 
 

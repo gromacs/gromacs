@@ -126,12 +126,8 @@ struct PmeGpuProgramImpl
      */
     size_t gatherWorkGroupSize;
 
-    PmeKernelHandle gatherReduceWithInputKernel;
-    PmeKernelHandle gatherReduceWithInputKernelThPerAtom4;
     PmeKernelHandle gatherKernel;
     PmeKernelHandle gatherKernelThPerAtom4;
-    PmeKernelHandle gatherReduceWithInputKernelReadSplines;
-    PmeKernelHandle gatherReduceWithInputKernelReadSplinesThPerAtom4;
     PmeKernelHandle gatherKernelReadSplines;
     PmeKernelHandle gatherKernelReadSplinesThPerAtom4;
     //@}

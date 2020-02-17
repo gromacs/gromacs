@@ -43,8 +43,6 @@
  *
  * - atomsPerBlock which expresses how many atoms are processed by a single work group
  * - order which is a PME interpolation order
- * - overwriteForces must evaluate to either true or false to specify whether the kernel
- * overwrites or reduces into the forces buffer
  * - wrapX and wrapY must evaluate to either true or false to specify whether the grid overlap
  * in dimension X/Y is to be used
  *
@@ -383,14 +381,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
             if (globalOutputCheck)
             {
                 const float outputForceComponent = sm_forces[outputIndexLocal];
-                if (overwriteForces)
-                {
-                    gm_forces[outputIndexGlobal] = outputForceComponent;
-                }
-                else
-                {
-                    gm_forces[outputIndexGlobal] += outputForceComponent;
-                }
+                gm_forces[outputIndexGlobal]     = outputForceComponent;
             }
         }
     }

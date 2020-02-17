@@ -274,7 +274,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle)
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void pme_gpu_launch_gather(const gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycle, PmeForceOutputHandling forceTreatment)
+void pme_gpu_launch_gather(const gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
@@ -287,7 +287,7 @@ void pme_gpu_launch_gather(const gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycl
     wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
     const unsigned int gridIndex = 0;
     real*              fftgrid   = pme->fftgrid[gridIndex];
-    pme_gpu_gather(pme->gpu, forceTreatment, reinterpret_cast<float*>(fftgrid));
+    pme_gpu_gather(pme->gpu, reinterpret_cast<float*>(fftgrid));
     wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }

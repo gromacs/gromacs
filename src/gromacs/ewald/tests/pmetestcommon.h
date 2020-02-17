@@ -152,10 +152,9 @@ void pmePerformSolve(const gmx_pme_t*  pme,
                      GridOrdering      gridOrdering,
                      bool              computeEnergyAndVirial);
 //! PME force gathering
-void pmePerformGather(gmx_pme_t*             pme,
-                      CodePath               mode,
-                      PmeForceOutputHandling inputTreatment,
-                      ForcesVector&          forces); //NOLINT(google-runtime-references)
+void pmePerformGather(gmx_pme_t*    pme,
+                      CodePath      mode,
+                      ForcesVector& forces); //NOLINT(google-runtime-references)
 //! PME test finalization before fetching the outputs
 void pmeFinalizeTest(const gmx_pme_t* pme, CodePath mode);
 

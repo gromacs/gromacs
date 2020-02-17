@@ -4,9 +4,9 @@
   <Sequence Name="Forces">
     <Int Name="Length">1</Int>
     <Vector>
-      <Real Name="X">-7.0476399072188638</Real>
-      <Real Name="Y">-14.378902132683789</Real>
-      <Real Name="Z">-14.272277552262375</Real>
+      <Real Name="X">2.4399461929761004</Real>
+      <Real Name="Y">-1.2243385943090714</Real>
+      <Real Name="Z">0.41543174060820942</Real>
     </Vector>
   </Sequence>
 </ReferenceData>

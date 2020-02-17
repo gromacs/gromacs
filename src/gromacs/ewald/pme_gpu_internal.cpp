@@ -1385,14 +1385,10 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
  * \param[in]  pmeGpu                   The PME GPU structure.
  * \param[in]  useOrderThreadsPerAtom   bool controlling if we should use order or order*order threads per atom
  * \param[in]  readSplinesFromGlobal    bool controlling if we should write spline data to global memory
- * \param[in]  forceTreatment           Controls if the forces from the gather should increment or replace the input forces.
  *
  * \return Pointer to CUDA kernel
  */
-inline auto selectGatherKernelPtr(const PmeGpu*          pmeGpu,
-                                  bool                   useOrderThreadsPerAtom,
-                                  bool                   readSplinesFromGlobal,
-                                  PmeForceOutputHandling forceTreatment)
+inline auto selectGatherKernelPtr(const PmeGpu* pmeGpu, bool useOrderThreadsPerAtom, bool readSplinesFromGlobal)
 
 {
     PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
@@ -1401,44 +1397,30 @@ inline auto selectGatherKernelPtr(const PmeGpu*          pmeGpu,
     {
         if (useOrderThreadsPerAtom)
         {
-            kernelPtr = (forceTreatment == PmeForceOutputHandling::Set)
-                                ? pmeGpu->programHandle_->impl_->gatherKernelReadSplinesThPerAtom4
-                                : pmeGpu->programHandle_->impl_->gatherReduceWithInputKernelReadSplinesThPerAtom4;
+            kernelPtr = pmeGpu->programHandle_->impl_->gatherKernelReadSplinesThPerAtom4;
         }
         else
         {
-            kernelPtr = (forceTreatment == PmeForceOutputHandling::Set)
-                                ? pmeGpu->programHandle_->impl_->gatherKernelReadSplines
-                                : pmeGpu->programHandle_->impl_->gatherReduceWithInputKernelReadSplines;
+            kernelPtr = pmeGpu->programHandle_->impl_->gatherKernelReadSplines;
         }
     }
     else
     {
         if (useOrderThreadsPerAtom)
         {
-            kernelPtr = (forceTreatment == PmeForceOutputHandling::Set)
-                                ? pmeGpu->programHandle_->impl_->gatherKernelThPerAtom4
-                                : pmeGpu->programHandle_->impl_->gatherReduceWithInputKernelThPerAtom4;
+            kernelPtr = pmeGpu->programHandle_->impl_->gatherKernelThPerAtom4;
         }
         else
         {
-            kernelPtr = (forceTreatment == PmeForceOutputHandling::Set)
-                                ? pmeGpu->programHandle_->impl_->gatherKernel
-                                : pmeGpu->programHandle_->impl_->gatherReduceWithInputKernel;
+            kernelPtr = pmeGpu->programHandle_->impl_->gatherKernel;
         }
     }
     return kernelPtr;
 }
 
 
-void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const float* h_grid)
+void pme_gpu_gather(PmeGpu* pmeGpu, const float* h_grid)
 {
-    /* Copying the input CPU forces for reduction */
-    if (forceTreatment != PmeForceOutputHandling::Set)
-    {
-        pme_gpu_copy_input_forces(pmeGpu);
-    }
-
     const auto& settings = pmeGpu->settings;
     if (!settings.performGPUFFT || settings.copyAllOutputs)
     {
@@ -1481,9 +1463,9 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
 
     // TODO test different cache configs
 
-    int                                timingId  = gtPME_GATHER;
-    PmeGpuProgramImpl::PmeKernelHandle kernelPtr = selectGatherKernelPtr(
-            pmeGpu, useOrderThreadsPerAtom, readGlobal || (!recalculateSplines), forceTreatment);
+    int                                timingId = gtPME_GATHER;
+    PmeGpuProgramImpl::PmeKernelHandle kernelPtr =
+            selectGatherKernelPtr(pmeGpu, useOrderThreadsPerAtom, readGlobal || (!recalculateSplines));
     // TODO design kernel selection getters and make PmeGpu a friend of PmeGpuProgramImpl
 
     pme_gpu_start_timing(pmeGpu, timingId);

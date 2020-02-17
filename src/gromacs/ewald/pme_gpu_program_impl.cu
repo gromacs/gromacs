@@ -88,19 +88,15 @@ extern template void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaK
 extern template void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
 extern template void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuCudaKernelParams);
 
-template<const int order, const bool overwriteForces, const bool wrapX, const bool wrapY, const bool readGlobal, const bool orderThreads>
+template<const int order, const bool wrapX, const bool wrapY, const bool readGlobal, const bool orderThreads>
 void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
-extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, true>(const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, true>(const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
-extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, false, true>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
 
 PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation* /* deviceInfo */)
 {
@@ -129,21 +125,14 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation* /* deviceInfo */)
     spreadKernel = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, false>;
     spreadKernelThPerAtom4 =
             pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, true>;
-    gatherKernel            = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, false>;
-    gatherKernelThPerAtom4  = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, true>;
-    gatherKernelReadSplines = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, false>;
-    gatherKernelReadSplinesThPerAtom4 = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, true>;
-    gatherReduceWithInputKernel = pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, false>;
-    gatherReduceWithInputKernelThPerAtom4 =
-            pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, true>;
-    gatherReduceWithInputKernelReadSplines =
-            pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, false>;
-    gatherReduceWithInputKernelReadSplinesThPerAtom4 =
-            pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, true>;
-    solveXYZKernel       = pme_solve_kernel<GridOrdering::XYZ, false>;
-    solveXYZEnergyKernel = pme_solve_kernel<GridOrdering::XYZ, true>;
-    solveYZXKernel       = pme_solve_kernel<GridOrdering::YZX, false>;
-    solveYZXEnergyKernel = pme_solve_kernel<GridOrdering::YZX, true>;
+    gatherKernel            = pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, false, false>;
+    gatherKernelThPerAtom4  = pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, false, true>;
+    gatherKernelReadSplines = pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, true, false>;
+    gatherKernelReadSplinesThPerAtom4 = pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, true, true>;
+    solveXYZKernel                    = pme_solve_kernel<GridOrdering::XYZ, false>;
+    solveXYZEnergyKernel              = pme_solve_kernel<GridOrdering::XYZ, true>;
+    solveYZXKernel                    = pme_solve_kernel<GridOrdering::YZX, false>;
+    solveYZXEnergyKernel              = pme_solve_kernel<GridOrdering::YZX, true>;
 }
 
 PmeGpuProgramImpl::~PmeGpuProgramImpl() {}
