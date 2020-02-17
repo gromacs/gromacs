@@ -611,7 +611,7 @@ if (SPHINX_FOUND)
     set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
     set(SPHINX_CONFIG_OVERRIDES "")
     if (GMX_DEVELOPER_BUILD)
-        set(SPHINX_CONFIG_OVERRIDES "-D todo_include_todos=1")
+        set(SPHINX_CONFIG_OVERRIDES "-Dtodo_include_todos=1")
     endif()
     add_custom_target(webpage-sphinx
         DEPENDS sphinx-programs
