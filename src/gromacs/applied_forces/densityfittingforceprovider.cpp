@@ -76,7 +76,7 @@ namespace
 GaussianSpreadKernelParameters::Shape makeSpreadKernel(real sigma, real nSigma, const ScaleCoordinates& scaleToLattice)
 {
     RVec sigmaInLatticeCoordinates{ sigma, sigma, sigma };
-    scaleToLattice({ &sigmaInLatticeCoordinates, &sigmaInLatticeCoordinates + 1 });
+    scaleToLattice(&sigmaInLatticeCoordinates);
     return { DVec{ sigmaInLatticeCoordinates[XX], sigmaInLatticeCoordinates[YY],
                    sigmaInLatticeCoordinates[ZZ] },
              nSigma };
@@ -163,14 +163,12 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters&         
     referenceDensityCenter_ = { real(referenceDensity.extent(XX)) / 2,
                                 real(referenceDensity.extent(YY)) / 2,
                                 real(referenceDensity.extent(ZZ)) / 2 };
-    transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(
-            { &referenceDensityCenter_, &referenceDensityCenter_ + 1 });
+    transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(&referenceDensityCenter_);
     // correct the reference density center for a shift
     // if the reference density does not have its origin at (0,0,0)
     RVec referenceDensityOriginShift(0, 0, 0);
-    transformationToDensityLattice_({ &referenceDensityOriginShift, &referenceDensityOriginShift + 1 });
-    transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(
-            { &referenceDensityOriginShift, &referenceDensityOriginShift + 1 });
+    transformationToDensityLattice_(&referenceDensityOriginShift);
+    transformationToDensityLattice_.scaleOperationOnly().inverseIgnoringZeroScale(&referenceDensityOriginShift);
     referenceDensityCenter_ -= referenceDensityOriginShift;
 }
 

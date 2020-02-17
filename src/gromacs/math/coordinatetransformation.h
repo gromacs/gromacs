@@ -71,10 +71,21 @@ public:
      * \param[in] coordinates to be transformed
      */
     void operator()(ArrayRef<RVec> coordinates) const;
+
+    /*! \brief Perform a coordinate transformation on an input coordinate.
+     * \param[in] coordinate to be transformed
+     */
+    void operator()(RVec* coordinate) const;
+
     /*! \brief Apply the inverse scale to coordinates, ignoring dimensions for which scale is zero.
      * \param[in] coordinates to be transformed
      */
     void inverseIgnoringZeroScale(ArrayRef<RVec> coordinates) const;
+
+    /*! \brief Apply the inverse scale to a coordinate, ignoring dimensions for which scale is zero.
+     * \param[in] coordinate to be transformed
+     */
+    void inverseIgnoringZeroScale(RVec* coordinate) const;
 
 private:
     class Impl;
@@ -109,6 +120,11 @@ public:
      * \param[in] coordinates to be transformed
      */
     void operator()(ArrayRef<RVec> coordinates) const;
+
+    /*! \brief Perform a coordinate transformation on a coordinate.
+     * \param[in] coordinate to be transformed
+     */
+    void operator()(RVec* coordinate) const;
 
     /*! \brief Returns the scaling operation, discarding the translation.
      */

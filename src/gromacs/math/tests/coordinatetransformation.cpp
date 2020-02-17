@@ -110,6 +110,17 @@ TEST_F(TranslateAndScaleTest, translationAndScalingNonTrivial)
     EXPECT_THAT(expected, Pointwise(RVecEq(defaultFloatTolerance()), testVectors_));
 }
 
+TEST_F(TranslateAndScaleTest, translationAndScalingNonTrivialSingeVector)
+{
+    TranslateAndScale translateAndScale({ -1e10, 2, 0 }, { 1, -1, 2 });
+    RVec              test(0, 0, 0);
+    translateAndScale(&test);
+
+    EXPECT_REAL_EQ(-1e+10, test[XX]);
+    EXPECT_REAL_EQ(-2, test[YY]);
+    EXPECT_REAL_EQ(0, test[ZZ]);
+}
+
 TEST_F(TranslateAndScaleTest, scalingIdentity)
 {
     ScaleCoordinates scale(identityScale_);
@@ -128,6 +139,18 @@ TEST_F(TranslateAndScaleTest, scalingNonTrivial)
     EXPECT_THAT(expected, Pointwise(RVecEq(defaultFloatTolerance()), testVectors_));
 }
 
+TEST_F(TranslateAndScaleTest, scalingNonTrivialSingleVector)
+{
+    ScaleCoordinates scale({ -100, 0.1, 0 });
+    RVec             test(3, -6, 2.5);
+    scale(&test);
+
+    EXPECT_REAL_EQ(-300, test[XX]);
+    EXPECT_REAL_EQ(-0.6, test[YY]);
+    EXPECT_REAL_EQ(0, test[ZZ]);
+}
+
+
 TEST_F(TranslateAndScaleTest, scalingInverseNoZero)
 {
     ScaleCoordinates scale({ -100, 0.1, 3 });
@@ -145,6 +168,20 @@ TEST_F(TranslateAndScaleTest, scalingInverseWithOneScaleDimensionZero)
     scale.inverseIgnoringZeroScale(testVectors_);
     EXPECT_THAT(expected, Pointwise(RVecEq(defaultFloatTolerance()), testVectors_));
 }
+
+TEST_F(TranslateAndScaleTest, scalingInverseWithOneScaleDimensionZeroSingleVector)
+{
+    ScaleCoordinates scale({ -100, 0.1, 0 });
+    RVec             test(3, -6, 2.5);
+
+    scale(&test);
+    scale.inverseIgnoringZeroScale(&test);
+
+    EXPECT_REAL_EQ(3, test[XX]);
+    EXPECT_REAL_EQ(-6, test[YY]);
+    EXPECT_REAL_EQ(0, test[ZZ]);
+}
+
 
 } // namespace test
 } // namespace gmx

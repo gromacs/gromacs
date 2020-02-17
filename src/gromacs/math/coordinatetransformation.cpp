@@ -100,9 +100,19 @@ void ScaleCoordinates::operator()(ArrayRef<RVec> coordinates) const
     impl_->scale(coordinates);
 }
 
+void ScaleCoordinates::operator()(RVec* coordinate) const
+{
+    impl_->scale({ coordinate, coordinate + 1 });
+}
+
 void ScaleCoordinates::inverseIgnoringZeroScale(ArrayRef<RVec> coordinates) const
 {
     impl_->inverseIgnoringZeroScale(coordinates);
+}
+
+void ScaleCoordinates::inverseIgnoringZeroScale(RVec* coordinate) const
+{
+    impl_->inverseIgnoringZeroScale({ coordinate, coordinate + 1 });
 }
 
 ScaleCoordinates::~ScaleCoordinates() = default;
@@ -162,6 +172,11 @@ TranslateAndScale::TranslateAndScale(const RVec& scale, const RVec& translation)
 void TranslateAndScale::operator()(ArrayRef<RVec> coordinates) const
 {
     impl_->transform(coordinates);
+}
+
+void TranslateAndScale::operator()(RVec* coordinate) const
+{
+    impl_->transform({ coordinate, coordinate + 1 });
 }
 
 ScaleCoordinates TranslateAndScale::scaleOperationOnly() const
