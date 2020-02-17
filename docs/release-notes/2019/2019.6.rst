@@ -38,6 +38,9 @@ applied to them.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Added check for inconsistent input of distance restraint labels
+in gmx disre.
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
