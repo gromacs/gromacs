@@ -79,8 +79,8 @@ public:
     Impl(gmx_domdec_t*        dd,
          MPI_Comm             mpi_comm_mysim,
          const DeviceContext& deviceContext,
-         void*                localStream,
-         void*                nonLocalStream,
+         const DeviceStream&  localStream,
+         const DeviceStream&  nonLocalStream,
          int                  pulse);
     ~Impl();
 
@@ -185,9 +185,9 @@ private:
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! CUDA stream for local non-bonded calculations
-    cudaStream_t localStream_ = nullptr;
+    const DeviceStream& localStream_;
     //! CUDA stream for non-local non-bonded calculations
-    cudaStream_t nonLocalStream_ = nullptr;
+    const DeviceStream& nonLocalStream_;
     //! full coordinates buffer in GPU memory
     float3* d_x_ = nullptr;
     //! full forces buffer in GPU memory

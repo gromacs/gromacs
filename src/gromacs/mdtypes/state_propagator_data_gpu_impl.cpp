@@ -54,9 +54,9 @@ class StatePropagatorDataGpu::Impl
 {
 };
 
-StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */,
-                                               const void* /* localStream     */,
-                                               const void* /* nonLocalStream  */,
+StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStream* /* pmeStream       */,
+                                               const DeviceStream* /* localStream     */,
+                                               const DeviceStream* /* nonLocalStream  */,
                                                const DeviceContext& /* deviceContext   */,
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* paddingSize     */,
@@ -65,7 +65,7 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */
 {
 }
 
-StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */,
+StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStream* /* pmeStream       */,
                                                const DeviceContext& /* deviceContext   */,
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* paddingSize     */,
@@ -242,7 +242,7 @@ void StatePropagatorDataGpu::waitForcesReadyOnHost(AtomLocality /* atomLocality 
 }
 
 
-void* StatePropagatorDataGpu::getUpdateStream()
+const DeviceStream* StatePropagatorDataGpu::getUpdateStream()
 {
     GMX_ASSERT(false,
                "A CPU stub method from GPU state propagator data was called instead of one from "

@@ -366,7 +366,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
  */
 void nbnxnInsertNonlocalGpuDependency(const NbnxmGpu* nb, const InteractionLocality interactionLocality)
 {
-    cudaStream_t stream = nb->stream[interactionLocality];
+    const DeviceStream& deviceStream = nb->deviceStreams[interactionLocality];
 
     /* When we get here all misc operations issued in the local stream as well as
        the local xq H2D are done,
@@ -378,12 +378,13 @@ void nbnxnInsertNonlocalGpuDependency(const NbnxmGpu* nb, const InteractionLocal
     {
         if (interactionLocality == InteractionLocality::Local)
         {
-            cudaError_t stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, stream);
+            cudaError_t stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, deviceStream.stream());
             CU_RET_ERR(stat, "cudaEventRecord on misc_ops_and_local_H2D_done failed");
         }
         else
         {
-            cudaError_t stat = cudaStreamWaitEvent(stream, nb->misc_ops_and_local_H2D_done, 0);
+            cudaError_t stat =
+                    cudaStreamWaitEvent(deviceStream.stream(), nb->misc_ops_and_local_H2D_done, 0);
             CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_and_local_H2D_done failed");
         }
     }
@@ -401,10 +402,10 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 
     int adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
-    cu_atomdata_t* adat   = nb->atdat;
-    cu_plist_t*    plist  = nb->plist[iloc];
-    cu_timers_t*   t      = nb->timers;
-    cudaStream_t   stream = nb->stream[iloc];
+    cu_atomdata_t*      adat         = nb->atdat;
+    cu_plist_t*         plist        = nb->plist[iloc];
+    cu_timers_t*        t            = nb->timers;
+    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
 
@@ -440,16 +441,16 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     /* beginning of timed HtoD section */
     if (bDoTime)
     {
-        t->xf[atomLocality].nb_h2d.openTimingRegion(stream);
+        t->xf[atomLocality].nb_h2d.openTimingRegion(deviceStream);
     }
 
     cu_copy_H2D_async(adat->xq + adat_begin,
                       static_cast<const void*>(nbatom->x().data() + adat_begin * 4),
-                      adat_len * sizeof(*adat->xq), stream);
+                      adat_len * sizeof(*adat->xq), deviceStream.stream());
 
     if (bDoTime)
     {
-        t->xf[atomLocality].nb_h2d.closeTimingRegion(stream);
+        t->xf[atomLocality].nb_h2d.closeTimingRegion(deviceStream);
     }
 
     /* When we get here all misc operations issued in the local stream as well as
@@ -480,11 +481,11 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
  */
 void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
-    cu_atomdata_t* adat   = nb->atdat;
-    cu_nbparam_t*  nbp    = nb->nbparam;
-    cu_plist_t*    plist  = nb->plist[iloc];
-    cu_timers_t*   t      = nb->timers;
-    cudaStream_t   stream = nb->stream[iloc];
+    cu_atomdata_t*      adat         = nb->atdat;
+    cu_nbparam_t*       nbp          = nb->nbparam;
+    cu_plist_t*         plist        = nb->plist[iloc];
+    cu_timers_t*        t            = nb->timers;
+    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
 
@@ -522,7 +523,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     /* beginning of timed nonbonded calculation section */
     if (bDoTime)
     {
-        t->interaction[iloc].nb_k.openTimingRegion(stream);
+        t->interaction[iloc].nb_k.openTimingRegion(deviceStream);
     }
 
     /* Kernel launch config:
@@ -544,7 +545,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = nblock;
     config.sharedMemorySize = calc_shmem_required_nonbonded(num_threads_z, nb->deviceInfo, nbp);
-    config.stream           = stream;
+    config.stream           = deviceStream.stream();
 
     if (debug)
     {
@@ -567,13 +568,13 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 
     if (bDoTime)
     {
-        t->interaction[iloc].nb_k.closeTimingRegion(stream);
+        t->interaction[iloc].nb_k.closeTimingRegion(deviceStream);
     }
 
     if (GMX_NATIVE_WINDOWS)
     {
         /* Windows: force flushing WDDM queue */
-        cudaStreamQuery(stream);
+        cudaStreamQuery(deviceStream.stream());
     }
 }
 
@@ -592,11 +593,11 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
 
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    cu_atomdata_t* adat   = nb->atdat;
-    cu_nbparam_t*  nbp    = nb->nbparam;
-    cu_plist_t*    plist  = nb->plist[iloc];
-    cu_timers_t*   t      = nb->timers;
-    cudaStream_t   stream = nb->stream[iloc];
+    cu_atomdata_t*      adat         = nb->atdat;
+    cu_nbparam_t*       nbp          = nb->nbparam;
+    cu_plist_t*         plist        = nb->plist[iloc];
+    cu_timers_t*        t            = nb->timers;
+    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
 
@@ -652,7 +653,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     /* beginning of timed prune calculation section */
     if (bDoTime)
     {
-        timer->openTimingRegion(stream);
+        timer->openTimingRegion(deviceStream);
     }
 
     /* Kernel launch config:
@@ -668,7 +669,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = nblock;
     config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
-    config.stream           = stream;
+    config.stream           = deviceStream.stream();
 
     if (debug)
     {
@@ -704,13 +705,13 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
 
     if (bDoTime)
     {
-        timer->closeTimingRegion(stream);
+        timer->closeTimingRegion(deviceStream);
     }
 
     if (GMX_NATIVE_WINDOWS)
     {
         /* Windows: force flushing WDDM queue */
-        cudaStreamQuery(stream);
+        cudaStreamQuery(deviceStream.stream());
     }
 }
 
@@ -728,10 +729,10 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
 
     /* extract the data */
-    cu_atomdata_t* adat    = nb->atdat;
-    cu_timers_t*   t       = nb->timers;
-    bool           bDoTime = nb->bDoTime;
-    cudaStream_t   stream  = nb->stream[iloc];
+    cu_atomdata_t*      adat         = nb->atdat;
+    cu_timers_t*        t            = nb->timers;
+    bool                bDoTime      = nb->bDoTime;
+    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
 
     /* don't launch non-local copy-back if there was no non-local work to do */
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
@@ -744,14 +745,14 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     /* beginning of timed D2H section */
     if (bDoTime)
     {
-        t->xf[atomLocality].nb_d2h.openTimingRegion(stream);
+        t->xf[atomLocality].nb_d2h.openTimingRegion(deviceStream);
     }
 
     /* With DD the local D2H transfer can only start after the non-local
        kernel has finished. */
     if (iloc == InteractionLocality::Local && nb->bUseTwoStreams)
     {
-        stat = cudaStreamWaitEvent(stream, nb->nonlocal_done, 0);
+        stat = cudaStreamWaitEvent(deviceStream.stream(), nb->nonlocal_done, 0);
         CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");
     }
 
@@ -761,7 +762,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     if (!stepWork.useGpuFBufferOps)
     {
         cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
-                          (adat_len) * sizeof(*adat->f), stream);
+                          (adat_len) * sizeof(*adat->f), deviceStream.stream());
     }
 
     /* After the non-local D2H is launched the nonlocal_done event can be
@@ -770,7 +771,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
        back first. */
     if (iloc == InteractionLocality::NonLocal)
     {
-        stat = cudaEventRecord(nb->nonlocal_done, stream);
+        stat = cudaEventRecord(nb->nonlocal_done, deviceStream.stream());
         CU_RET_ERR(stat, "cudaEventRecord on nonlocal_done failed");
     }
 
@@ -780,20 +781,21 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         /* DtoH fshift when virial is needed */
         if (stepWork.computeVirial)
         {
-            cu_copy_D2H_async(nb->nbst.fshift, adat->fshift, SHIFTS * sizeof(*nb->nbst.fshift), stream);
+            cu_copy_D2H_async(nb->nbst.fshift, adat->fshift, SHIFTS * sizeof(*nb->nbst.fshift),
+                              deviceStream.stream());
         }
 
         /* DtoH energies */
         if (stepWork.computeEnergy)
         {
-            cu_copy_D2H_async(nb->nbst.e_lj, adat->e_lj, sizeof(*nb->nbst.e_lj), stream);
-            cu_copy_D2H_async(nb->nbst.e_el, adat->e_el, sizeof(*nb->nbst.e_el), stream);
+            cu_copy_D2H_async(nb->nbst.e_lj, adat->e_lj, sizeof(*nb->nbst.e_lj), deviceStream.stream());
+            cu_copy_D2H_async(nb->nbst.e_el, adat->e_el, sizeof(*nb->nbst.e_el), deviceStream.stream());
         }
     }
 
     if (bDoTime)
     {
-        t->xf[atomLocality].nb_d2h.closeTimingRegion(stream);
+        t->xf[atomLocality].nb_d2h.closeTimingRegion(deviceStream);
     }
 }
 
@@ -834,7 +836,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
     const int                  numAtomsPerCell = grid.numAtomsPerCell();
     Nbnxm::InteractionLocality interactionLoc  = gpuAtomToInteractionLocality(locality);
 
-    cudaStream_t stream = nb->stream[interactionLoc];
+    const DeviceStream& deviceStream = nb->deviceStreams[interactionLoc];
 
     int numAtoms = grid.srcAtomEnd() - grid.srcAtomBegin();
     // avoid empty kernel launch, skip to inserting stream dependency
@@ -845,7 +847,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
 
         // ensure that coordinates are ready on the device before launching the kernel
         GMX_ASSERT(xReadyOnDevice, "Need a valid GpuEventSynchronizer object");
-        xReadyOnDevice->enqueueWaitEvent(stream);
+        xReadyOnDevice->enqueueWaitEvent(deviceStream);
 
         KernelLaunchConfig config;
         config.blockSize[0] = c_bufOpsThreadsPerBlock;
@@ -858,7 +860,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         GMX_ASSERT(config.gridSize[0] > 0,
                    "Can not have empty grid, early return above avoids this");
         config.sharedMemorySize = 0;
-        config.stream           = stream;
+        config.stream           = deviceStream.stream();
 
         auto kernelFn = setFillerCoords ? nbnxn_gpu_x_to_nbat_x_kernel<true>
                                         : nbnxn_gpu_x_to_nbat_x_kernel<false>;
@@ -873,7 +875,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
     }
 
-    // TODO: note that this is not necessary when there are no local atoms, that is:
+    // TODO: note that this is not necessary when there astreamre no local atoms, that is:
     // (numAtoms == 0 && interactionLoc == InteractionLocality::Local)
     // but for now we avoid that optimization
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
@@ -899,9 +901,9 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     GMX_ASSERT(numAtoms != 0, "Cannot call function with no atoms");
     GMX_ASSERT(totalForcesDevice, "Need a valid totalForcesDevice pointer");
 
-    const InteractionLocality iLocality = gpuAtomToInteractionLocality(atomLocality);
-    cudaStream_t              stream    = nb->stream[iLocality];
-    cu_atomdata_t*            adat      = nb->atdat;
+    const InteractionLocality iLocality    = gpuAtomToInteractionLocality(atomLocality);
+    const DeviceStream&       deviceStream = nb->deviceStreams[iLocality];
+    cu_atomdata_t*            adat         = nb->atdat;
 
     size_t gmx_used_in_debug numDependency = static_cast<size_t>((useGpuFPmeReduction == true))
                                              + static_cast<size_t>((accumulateForce == true));
@@ -911,7 +913,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     // Enqueue wait on all dependencies passed
     for (auto const synchronizer : dependencyList)
     {
-        synchronizer->enqueueWaitEvent(stream);
+        synchronizer->enqueueWaitEvent(deviceStream);
     }
 
     /* launch kernel */
@@ -924,7 +926,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     config.gridSize[1]  = 1;
     config.gridSize[2]  = 1;
     config.sharedMemorySize = 0;
-    config.stream           = stream;
+    config.stream           = deviceStream.stream();
 
     auto kernelFn = accumulateForce ? nbnxn_gpu_add_nbat_f_to_f_kernel<true, false>
                                     : nbnxn_gpu_add_nbat_f_to_f_kernel<false, false>;
@@ -950,7 +952,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     {
         GMX_ASSERT(nb->localFReductionDone != nullptr,
                    "localFReductionDone has to be a valid pointer");
-        nb->localFReductionDone->markEvent(stream);
+        nb->localFReductionDone->markEvent(deviceStream);
     }
 }
 

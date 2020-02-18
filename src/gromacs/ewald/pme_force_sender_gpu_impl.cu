@@ -55,8 +55,8 @@ namespace gmx
 {
 
 /*! \brief Create PME-PP GPU communication object */
-PmeForceSenderGpu::Impl::Impl(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
-    pmeStream_(*static_cast<const cudaStream_t*>(pmeStream)),
+PmeForceSenderGpu::Impl::Impl(const DeviceStream& pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
+    pmeStream_(pmeStream),
     comm_(comm),
     ppRanks_(ppRanks)
 {
@@ -106,7 +106,9 @@ void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank)
 #endif
 }
 
-PmeForceSenderGpu::PmeForceSenderGpu(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
+PmeForceSenderGpu::PmeForceSenderGpu(const DeviceStream&    pmeStream,
+                                     MPI_Comm               comm,
+                                     gmx::ArrayRef<PpRanks> ppRanks) :
     impl_(new Impl(pmeStream, comm, ppRanks))
 {
 }

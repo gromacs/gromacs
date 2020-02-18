@@ -47,6 +47,7 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
 
+class DeviceStream;
 struct PpRanks;
 
 namespace gmx
@@ -64,7 +65,7 @@ public:
      * \param[in] comm            Communicator used for simulation
      * \param[in] ppRanks         List of PP ranks
      */
-    PmeCoordinateReceiverGpu(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    PmeCoordinateReceiverGpu(const DeviceStream& pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
     ~PmeCoordinateReceiverGpu();
 
     /*! \brief

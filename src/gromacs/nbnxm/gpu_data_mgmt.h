@@ -51,6 +51,7 @@
 #include "gromacs/mdtypes/locality.h"
 
 class DeviceContext;
+class DeviceStream;
 
 struct NbnxmGpu;
 struct gmx_gpu_info_t;
@@ -126,7 +127,7 @@ gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu gmx_unused* nb) GPU_FUNC_
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-void* gpu_get_command_stream(NbnxmGpu gmx_unused* nb, gmx::InteractionLocality gmx_unused iloc)
+const DeviceStream* gpu_get_command_stream(NbnxmGpu gmx_unused* nb, gmx::InteractionLocality gmx_unused iloc)
         CUDA_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Returns an opaque pointer to the GPU coordinate+charge array

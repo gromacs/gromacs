@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,9 +82,9 @@ public:
     GpuRegionTimerImpl(GpuRegionTimerImpl&&) = delete;
 
     /*! \brief Should be called before the region start. */
-    inline void openTimingRegion(CommandStream /*unused*/) {}
+    inline void openTimingRegion(const DeviceStream& /*unused*/) {}
     /*! \brief Should be called after the region end. */
-    inline void closeTimingRegion(CommandStream /*unused*/) {}
+    inline void closeTimingRegion(const DeviceStream& /*unused*/) {}
     /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset(). */
     inline double getLastRangeTime()
     {

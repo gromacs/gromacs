@@ -50,6 +50,7 @@
 
 struct gmx_domdec_t;
 class DeviceContext;
+class DeviceStream;
 class GpuEventSynchronizer;
 
 namespace gmx
@@ -89,8 +90,8 @@ public:
     GpuHaloExchange(gmx_domdec_t*        dd,
                     MPI_Comm             mpi_comm_mysim,
                     const DeviceContext& deviceContext,
-                    void*                streamLocal,
-                    void*                streamNonLocal,
+                    const DeviceStream&  streamLocal,
+                    const DeviceStream&  streamNonLocal,
                     int                  pulse);
     ~GpuHaloExchange();
 

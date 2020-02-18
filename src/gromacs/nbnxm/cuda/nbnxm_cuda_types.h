@@ -303,7 +303,7 @@ struct NbnxmGpu
     /*! \brief staging area where fshift/energies get downloaded */
     nb_staging_t nbst;
     /*! \brief local and non-local GPU streams */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cudaStream_t> stream = { { nullptr } };
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, DeviceStream> deviceStreams;
 
     /*! \brief Events used for synchronization */
     /*! \{ */

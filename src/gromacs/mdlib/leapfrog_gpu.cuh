@@ -64,9 +64,9 @@ public:
     /*! \brief Constructor.
      *
      * \param[in] deviceContext  Device context (dummy in CUDA).
-     * \param[in] commandStream  Device command stream to use.
+     * \param[in] deviceStream   Device stream to use.
      */
-    LeapFrogGpu(const DeviceContext& deviceContext, CommandStream commandStream);
+    LeapFrogGpu(const DeviceContext& deviceContext, const DeviceStream& deviceStream);
     ~LeapFrogGpu();
 
     /*! \brief Integrate
@@ -115,7 +115,7 @@ private:
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! GPU stream
-    CommandStream commandStream_;
+    const DeviceStream& deviceStream_;
     //! GPU kernel launch config
     KernelLaunchConfig kernelLaunchConfig_;
     //! Number of atoms

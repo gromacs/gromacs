@@ -62,7 +62,7 @@ public:
      * \param[in] comm            Communicator used for simulation
      * \param[in] ppRanks         List of PP ranks
      */
-    Impl(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    Impl(const DeviceStream& pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
     ~Impl();
 
     /*! \brief
@@ -84,7 +84,7 @@ public:
 
 private:
     //! CUDA stream for PME operations
-    cudaStream_t pmeStream_ = nullptr;
+    const DeviceStream& pmeStream_;
     //! communicator for simulation
     MPI_Comm comm_;
     //! list of PP ranks

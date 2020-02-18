@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,60 +34,25 @@
  */
 /*! \internal \file
  *
- * \brief May be used to implement PME-PP GPU comm interfaces for non-GPU builds.
+ * \brief Implements the DeviceContext for OpenCL
  *
- * Currently, reports and exits if any of the interfaces are called.
- * Needed to satisfy compiler on systems, where CUDA is not available.
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  *
- * \author Alan Gray <alang@nvidia.com>
- *
- * \ingroup module_ewald
+ * \ingroup module_gpu_utils
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "device_stream.h"
 
-#include "gromacs/ewald/pme_force_sender_gpu.h"
-#include "gromacs/utility/arrayref.h"
+DeviceStream::DeviceStream() = default;
 
-#if GMX_GPU != GMX_GPU_CUDA
-
-namespace gmx
+void DeviceStream::init(const DeviceInformation& /* deviceInfo */,
+                        const DeviceContext& /* deviceContext */,
+                        DeviceStreamPriority /* priority */,
+                        const bool /* useTiming */)
 {
-
-/*!\brief Impl class stub. */
-class PmeForceSenderGpu::Impl
-{
-};
-
-/*!\brief Constructor stub. */
-PmeForceSenderGpu::PmeForceSenderGpu(const DeviceStream& /*pmeStream */,
-                                     MPI_Comm /* comm     */,
-                                     gmx::ArrayRef<PpRanks> /* ppRanks */) :
-    impl_(nullptr)
-{
-    GMX_ASSERT(false,
-               "A CPU stub for PME-PP GPU communication was called instead of the correct "
-               "implementation.");
 }
 
-PmeForceSenderGpu::~PmeForceSenderGpu() = default;
+DeviceStream::~DeviceStream() = default;
 
-/*!\brief init PME-PP GPU communication stub */
-void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec* /* d_f */)
-{
-    GMX_ASSERT(false,
-               "A CPU stub for PME-PP GPU communication initialization was called instead of the "
-               "correct implementation.");
-}
-
-void PmeForceSenderGpu::sendFToPpCudaDirect(int /* ppRank */)
-{
-    GMX_ASSERT(false,
-               "A CPU stub for PME-PP GPU communication was called instead of the correct "
-               "implementation.");
-}
-
-} // namespace gmx
-
-#endif /* GMX_GPU != GMX_GPU_CUDA */
+void DeviceStream::synchronize() const {}

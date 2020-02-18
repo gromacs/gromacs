@@ -61,7 +61,7 @@ void pme_gpu_start_timing(const PmeGpu* pmeGpu, size_t PMEStageId)
     {
         GMX_ASSERT(PMEStageId < pmeGpu->archSpecific->timingEvents.size(),
                    "Wrong PME GPU timing event index");
-        pmeGpu->archSpecific->timingEvents[PMEStageId].openTimingRegion(pmeGpu->archSpecific->pmeStream);
+        pmeGpu->archSpecific->timingEvents[PMEStageId].openTimingRegion(pmeGpu->archSpecific->pmeStream_);
     }
 }
 
@@ -71,7 +71,7 @@ void pme_gpu_stop_timing(const PmeGpu* pmeGpu, size_t PMEStageId)
     {
         GMX_ASSERT(PMEStageId < pmeGpu->archSpecific->timingEvents.size(),
                    "Wrong PME GPU timing event index");
-        pmeGpu->archSpecific->timingEvents[PMEStageId].closeTimingRegion(pmeGpu->archSpecific->pmeStream);
+        pmeGpu->archSpecific->timingEvents[PMEStageId].closeTimingRegion(pmeGpu->archSpecific->pmeStream_);
     }
 }
 

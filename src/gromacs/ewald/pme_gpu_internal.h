@@ -314,14 +314,6 @@ void pme_gpu_sync_spread_grid(const PmeGpu* pmeGpu);
 void pme_gpu_init_internal(PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
- * Destroys the PME GPU-framework specific data.
- * Should be called last in the PME GPU destructor.
- *
- * \param[in] pmeGpu  The PME GPU structure.
- */
-void pme_gpu_destroy_specific(const PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
  * Initializes the CUDA FFT structures.
  *
  * \param[in] pmeGpu  The PME GPU structure.
@@ -405,7 +397,7 @@ GPU_FUNC_QUALIFIER void* pme_gpu_get_kernelparam_forces(const PmeGpu* GPU_FUNC_A
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  Pointer to stream object.
  */
-GPU_FUNC_QUALIFIER void* pme_gpu_get_stream(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
+GPU_FUNC_QUALIFIER const DeviceStream* pme_gpu_get_stream(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
         GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Return pointer to the sync object triggered after the PME force calculation completion

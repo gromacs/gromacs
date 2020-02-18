@@ -433,7 +433,7 @@ void pme_gpu_set_device_x(const gmx_pme_t* pme, DeviceBuffer<gmx::RVec> d_x)
     pme_gpu_set_kernelparam_coordinates(pme->gpu, d_x);
 }
 
-void* pme_gpu_get_device_stream(const gmx_pme_t* pme)
+const DeviceStream* pme_gpu_get_device_stream(const gmx_pme_t* pme)
 {
     if (!pme || !pme_gpu_active(pme))
     {

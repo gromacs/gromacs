@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,9 +84,9 @@ public:
     /*! \brief
      * To be called before the region start.
      *
-     * \param[in] s   The GPU command stream where the event being measured takes place.
+     * \param[in] deviceStream   The GPU command stream where the event being measured takes place.
      */
-    void openTimingRegion(CommandStream s)
+    void openTimingRegion(const DeviceStream& deviceStream)
     {
         if (c_debugTimerState)
         {
@@ -96,14 +96,14 @@ public:
             GMX_ASSERT(debugState_ == TimerState::Idle, error.c_str());
             debugState_ = TimerState::Recording;
         }
-        impl_.openTimingRegion(s);
+        impl_.openTimingRegion(deviceStream);
     }
     /*! \brief
      * To be called after the region end.
      *
-     * \param[in] s   The GPU command stream where the event being measured takes place.
+     * \param[in] deviceStream   The GPU command stream where the event being measured takes place.
      */
-    void closeTimingRegion(CommandStream s)
+    void closeTimingRegion(const DeviceStream& deviceStream)
     {
         if (c_debugTimerState)
         {
@@ -114,7 +114,7 @@ public:
             debugState_ = TimerState::Stopped;
         }
         callCount_++;
-        impl_.closeTimingRegion(s);
+        impl_.closeTimingRegion(deviceStream);
     }
     /*! \brief
      * Accumulates the last timespan of all the events used into the total duration,

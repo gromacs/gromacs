@@ -63,8 +63,6 @@ struct DeviceInformation
     // No member needed
 };
 
-//! \brief GPU command stream
-using CommandStream = void*;
 //! \brief Single GPU call timing event
 using CommandEvent = void*;
 

@@ -45,6 +45,7 @@ gmx_add_libgromacs_sources(
 if(GMX_USE_OPENCL)
     gmx_add_libgromacs_sources(
         device_context_ocl.cpp
+        device_stream_ocl.cpp
         gpu_utils_ocl.cpp
         ocl_compiler.cpp
         ocl_caching.cpp
@@ -53,10 +54,15 @@ if(GMX_USE_OPENCL)
 elseif(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
         cudautils.cu
+        device_stream.cu
         gpu_utils.cu
         pinning.cu
         pmalloc_cuda.cu
         )
+elseif()
+    gmx_add_libgromacs_sources(
+        device_stream.cpp
+    )
 endif()
 
 if (BUILD_TESTING)

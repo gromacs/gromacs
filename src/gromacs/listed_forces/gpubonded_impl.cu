@@ -66,22 +66,22 @@ namespace gmx
 
 GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
                       const DeviceContext&  deviceContext,
-                      void*                 streamPtr,
+                      const DeviceStream&   deviceStream,
                       gmx_wallcycle*        wcycle) :
-    deviceContext_(deviceContext)
+    deviceContext_(deviceContext),
+    deviceStream_(deviceStream)
 {
-    stream_ = *static_cast<CommandStream*>(streamPtr);
     wcycle_ = wcycle;
 
     allocateDeviceBuffer(&d_forceParams_, ffparams.numTypes(), deviceContext_);
     // This could be an async transfer (if the source is pinned), so
     // long as it uses the same stream as the kernels and we are happy
     // to consume additional pinned pages.
-    copyToDeviceBuffer(&d_forceParams_, ffparams.iparams.data(), 0, ffparams.numTypes(), stream_,
-                       GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_forceParams_, ffparams.iparams.data(), 0, ffparams.numTypes(),
+                       deviceStream_, GpuApiCallBehavior::Sync, nullptr);
     vTot_.resize(F_NRE);
     allocateDeviceBuffer(&d_vTot_, F_NRE, deviceContext_);
-    clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, stream_);
+    clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, deviceStream);
 
     kernelParams_.d_forceParams = d_forceParams_;
     kernelParams_.d_xq          = d_xq_;
@@ -212,7 +212,7 @@ void GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>
             reallocateDeviceBuffer(&d_iList.iatoms, iList.size(), &d_iList.nr, &d_iList.nalloc,
                                    deviceContext_);
 
-            copyToDeviceBuffer(&d_iList.iatoms, iList.iatoms.data(), 0, iList.size(), stream_,
+            copyToDeviceBuffer(&d_iList.iatoms, iList.iatoms.data(), 0, iList.size(), deviceStream_,
                                GpuApiCallBehavior::Async, nullptr);
         }
         kernelParams_.fTypesOnGpu[fTypesCounter]    = fType;
@@ -270,7 +270,7 @@ void GpuBonded::Impl::launchEnergyTransfer()
     wallcycle_sub_start_nocount(wcycle_, ewcsLAUNCH_GPU_BONDED);
     // TODO add conditional on whether there has been any compute (and make sure host buffer doesn't contain garbage)
     float* h_vTot = vTot_.data();
-    copyFromDeviceBuffer(h_vTot, &d_vTot_, 0, F_NRE, stream_, GpuApiCallBehavior::Async, nullptr);
+    copyFromDeviceBuffer(h_vTot, &d_vTot_, 0, F_NRE, deviceStream_, GpuApiCallBehavior::Async, nullptr);
     wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_BONDED);
 }
 
@@ -281,7 +281,7 @@ void GpuBonded::Impl::waitAccumulateEnergyTerms(gmx_enerdata_t* enerd)
                "accumulation should not occur");
 
     wallcycle_start(wcycle_, ewcWAIT_GPU_BONDED);
-    cudaError_t stat = cudaStreamSynchronize(stream_);
+    cudaError_t stat = cudaStreamSynchronize(deviceStream_.stream());
     CU_RET_ERR(stat, "D2H transfer of bonded energies failed");
     wallcycle_stop(wcycle_, ewcWAIT_GPU_BONDED);
 
@@ -304,7 +304,7 @@ void GpuBonded::Impl::clearEnergies()
 {
     wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
     wallcycle_sub_start_nocount(wcycle_, ewcsLAUNCH_GPU_BONDED);
-    clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, stream_);
+    clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, deviceStream_);
     wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_BONDED);
     wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
@@ -313,9 +313,9 @@ void GpuBonded::Impl::clearEnergies()
 
 GpuBonded::GpuBonded(const gmx_ffparams_t& ffparams,
                      const DeviceContext&  deviceContext,
-                     void*                 streamPtr,
+                     const DeviceStream&   deviceStream,
                      gmx_wallcycle*        wcycle) :
-    impl_(new Impl(ffparams, deviceContext, streamPtr, wcycle))
+    impl_(new Impl(ffparams, deviceContext, deviceStream, wcycle))
 {
 }
 

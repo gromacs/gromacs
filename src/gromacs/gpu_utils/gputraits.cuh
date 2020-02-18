@@ -45,6 +45,8 @@
  * \ingroup module_gpu_utils
  */
 
+#include "gromacs/gpu_utils/device_stream.h"
+
 /*! \brief CUDA device information.
  *
  * The CUDA device information is queried and set at detection and contains
@@ -61,8 +63,6 @@ struct DeviceInformation
     int stat;
 };
 
-//! \brief GPU command stream
-using CommandStream = cudaStream_t;
 //! \brief Single GPU call timing event - meaningless in CUDA
 using CommandEvent = void;
 
@@ -73,10 +73,10 @@ using CommandEvent = void;
  */
 struct KernelLaunchConfig
 {
-    size_t        gridSize[3]      = { 1, 1, 1 }; //!< Block counts
-    size_t        blockSize[3]     = { 1, 1, 1 }; //!< Per-block thread counts
-    size_t        sharedMemorySize = 0;           //!< Shared memory size in bytes
-    CommandStream stream           = nullptr;     //!< Stream to launch kernel in
+    size_t       gridSize[3]      = { 1, 1, 1 }; //!< Block counts
+    size_t       blockSize[3]     = { 1, 1, 1 }; //!< Per-block thread counts
+    size_t       sharedMemorySize = 0;           //!< Shared memory size in bytes
+    cudaStream_t stream           = nullptr;     //!< Stream to launch kernel in
 };
 
 //! Sets whether device code can use arrays that are embedded in structs.

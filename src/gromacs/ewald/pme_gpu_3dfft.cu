@@ -104,7 +104,7 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
                            realGridSizePaddedTotal, CUFFT_C2R, batch);
     handleCufftError(result, "cufftPlanMany C2R plan failure");
 
-    cudaStream_t stream = pmeGpu->archSpecific->pmeStream;
+    cudaStream_t stream = pmeGpu->archSpecific->pmeStream_.stream();
     GMX_RELEASE_ASSERT(stream, "Using the default CUDA stream for PME cuFFT");
 
     result = cufftSetStream(planR2C_, stream);

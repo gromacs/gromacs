@@ -119,7 +119,7 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
     clear_mat(virial);
 
     // Make sure that the forces are ready on device before proceeding with the update.
-    fReadyOnDevice->enqueueWaitEvent(commandStream_);
+    fReadyOnDevice->enqueueWaitEvent(deviceStream_);
 
     // The integrate should save a copy of the current coordinates in d_xp_ and write updated once
     // into d_x_. The d_xp_ is only needed by constraints.
@@ -141,7 +141,7 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
         }
     }
 
-    coordinatesReady_->markEvent(commandStream_);
+    coordinatesReady_->markEvent(deviceStream_);
 
     return;
 }
@@ -162,31 +162,30 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
                     "scaleCoordinates_kernel", kernelArgs);
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
     //       can affect the perfornamce if nstpcouple is small.
-    gpuStreamSynchronize(commandStream_);
+    deviceStream_.synchronize();
 }
 
 UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
                                const gmx_mtop_t&     mtop,
                                const DeviceContext&  deviceContext,
-                               const void*           commandStream,
+                               const DeviceStream&   deviceStream,
                                GpuEventSynchronizer* xUpdatedOnDevice) :
     deviceContext_(deviceContext),
+    deviceStream_(deviceStream),
     coordinatesReady_(xUpdatedOnDevice)
 {
     GMX_ASSERT(xUpdatedOnDevice != nullptr, "The event synchronizer can not be nullptr.");
-    commandStream != nullptr ? commandStream_ = *static_cast<const CommandStream*>(commandStream)
-                             : commandStream_ = nullptr;
 
 
-    integrator_ = std::make_unique<LeapFrogGpu>(deviceContext_, commandStream_);
-    lincsGpu_ = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, deviceContext_, commandStream_);
-    settleGpu_ = std::make_unique<SettleGpu>(mtop, deviceContext_, commandStream_);
+    integrator_ = std::make_unique<LeapFrogGpu>(deviceContext_, deviceStream_);
+    lincsGpu_ = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, deviceContext_, deviceStream_);
+    settleGpu_ = std::make_unique<SettleGpu>(mtop, deviceContext_, deviceStream_);
 
     coordinateScalingKernelLaunchConfig_.blockSize[0]     = c_threadsPerBlock;
     coordinateScalingKernelLaunchConfig_.blockSize[1]     = 1;
     coordinateScalingKernelLaunchConfig_.blockSize[2]     = 1;
     coordinateScalingKernelLaunchConfig_.sharedMemorySize = 0;
-    coordinateScalingKernelLaunchConfig_.stream           = commandStream_;
+    coordinateScalingKernelLaunchConfig_.stream           = deviceStream_.stream();
 }
 
 UpdateConstrainGpu::Impl::~Impl() {}
@@ -235,9 +234,9 @@ GpuEventSynchronizer* UpdateConstrainGpu::Impl::getCoordinatesReadySync()
 UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec&     ir,
                                        const gmx_mtop_t&     mtop,
                                        const DeviceContext&  deviceContext,
-                                       const void*           commandStream,
+                                       const DeviceStream&   deviceStream,
                                        GpuEventSynchronizer* xUpdatedOnDevice) :
-    impl_(new Impl(ir, mtop, deviceContext, commandStream, xUpdatedOnDevice))
+    impl_(new Impl(ir, mtop, deviceContext, deviceStream, xUpdatedOnDevice))
 {
 }
 

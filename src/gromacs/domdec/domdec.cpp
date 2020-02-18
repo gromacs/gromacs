@@ -3203,8 +3203,8 @@ gmx_bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const g
 void constructGpuHaloExchange(const gmx::MDLogger& mdlog,
                               const t_commrec&     cr,
                               const DeviceContext& deviceContext,
-                              void*                streamLocal,
-                              void*                streamNonLocal)
+                              const DeviceStream&  streamLocal,
+                              const DeviceStream&  streamNonLocal)
 {
 
     int gpuHaloExchangeSize = 0;

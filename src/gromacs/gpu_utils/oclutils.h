@@ -45,6 +45,7 @@
 #include <string>
 
 #include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/utility/exceptions.h"
@@ -130,17 +131,6 @@ void pfree(void* h_ptr);
 /*! \brief Convert error code to diagnostic string */
 std::string ocl_get_error_string(cl_int error);
 
-/*! \brief Calls clFinish() in the stream \p s.
- *
- * \param[in] s stream to synchronize with
- */
-static inline void gpuStreamSynchronize(cl_command_queue s)
-{
-    cl_int cl_error = clFinish(s);
-    GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error,
-                       ("Error caught during clFinish:" + ocl_get_error_string(cl_error)).c_str());
-}
-
 //! A debug checker to track cl_events being released correctly
 inline void ensureReferenceCount(const cl_event& event, unsigned int refCount)
 {
@@ -156,11 +146,9 @@ inline void ensureReferenceCount(const cl_event& event, unsigned int refCount)
 
 /*! \brief Pretend to synchronize an OpenCL stream (dummy implementation).
  *
- * \param[in] s queue to check
- *
- *  \returns     True if all tasks enqueued in the stream \p s (at the time of this call) have completed.
+ *  \returns  Not implemented in OpenCL.
  */
-static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
+static inline bool haveStreamTasksCompleted(const DeviceStream& /* deviceStream */)
 {
     GMX_RELEASE_ASSERT(false, "haveStreamTasksCompleted is not implemented for OpenCL");
     return false;

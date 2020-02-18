@@ -72,6 +72,7 @@ struct gmx_wallcycle;
 struct NumPmeDomains;
 
 class DeviceContext;
+class DeviceStream;
 enum class GpuTaskCompletion;
 class PmeGpuProgram;
 class GpuEventSynchronizer;
@@ -433,7 +434,7 @@ GPU_FUNC_QUALIFIER void* pme_gpu_get_device_f(const gmx_pme_t* GPU_FUNC_ARGUMENT
  *  \param[in] pme            The PME data structure.
  *  \returns                  Pointer to GPU stream object.
  */
-GPU_FUNC_QUALIFIER void* pme_gpu_get_device_stream(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
+GPU_FUNC_QUALIFIER const DeviceStream* pme_gpu_get_device_stream(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
         GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Get pointer to the device synchronizer object that allows syncing on PME force calculation completion

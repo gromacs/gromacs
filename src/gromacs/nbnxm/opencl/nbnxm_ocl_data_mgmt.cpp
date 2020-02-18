@@ -487,7 +487,7 @@ static void nbnxn_ocl_clear_e_fshift(NbnxmGpu* nb)
 
     cl_int           cl_error;
     cl_atomdata_t*   adat = nb->atdat;
-    cl_command_queue ls   = nb->stream[InteractionLocality::Local];
+    cl_command_queue ls   = nb->deviceStreams[InteractionLocality::Local].stream();
 
     size_t local_work_size[3]  = { 1, 1, 1 };
     size_t global_work_size[3] = { 1, 1, 1 };
@@ -606,10 +606,12 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
         queue_properties = 0;
     }
 
-    /* local/non-local GPU streams */
-    nb->stream[InteractionLocality::Local] =
+    cl_command_queue localStream =
             clCreateCommandQueue(nb->dev_rundata->deviceContext_.context(),
                                  nb->deviceInfo->oclDeviceId, queue_properties, &cl_error);
+    /* local/non-local GPU streams */
+    nb->deviceStreams[InteractionLocality::Local].setStream(localStream);
+
     if (CL_SUCCESS != cl_error)
     {
         gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s: OpenCL error %d", rank,
@@ -620,9 +622,11 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
     {
         init_plist(nb->plist[InteractionLocality::NonLocal]);
 
-        nb->stream[InteractionLocality::NonLocal] =
+        cl_command_queue nonLocalStream =
                 clCreateCommandQueue(nb->dev_rundata->deviceContext_.context(),
                                      nb->deviceInfo->oclDeviceId, queue_properties, &cl_error);
+        nb->deviceStreams[InteractionLocality::NonLocal].setStream(nonLocalStream);
+
         if (CL_SUCCESS != cl_error)
         {
             gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s: OpenCL error %d",
@@ -675,7 +679,7 @@ static void nbnxn_ocl_clear_f(NbnxmGpu* nb, int natoms_clear)
     cl_int gmx_used_in_debug cl_error;
 
     cl_atomdata_t*   atomData = nb->atdat;
-    cl_command_queue ls       = nb->stream[InteractionLocality::Local];
+    cl_command_queue ls       = nb->deviceStreams[InteractionLocality::Local].stream();
     cl_float         value    = 0.0F;
 
     cl_error = clEnqueueFillBuffer(ls, atomData->f, &value, sizeof(cl_float), 0,
@@ -697,7 +701,7 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 
     /* kick off buffer clearing kernel to ensure concurrency with constraints/update */
     cl_int gmx_unused cl_error;
-    cl_error = clFlush(nb->stream[InteractionLocality::Local]);
+    cl_error = clFlush(nb->deviceStreams[InteractionLocality::Local].stream());
     GMX_ASSERT(cl_error == CL_SUCCESS, ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 }
 
@@ -708,9 +712,9 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
     // Timing accumulation should happen only if there was work to do
     // because getLastRangeTime() gets skipped with empty lists later
     // which leads to the counter not being reset.
-    bool             bDoTime = (nb->bDoTime && !h_plist->sci.empty());
-    cl_command_queue stream  = nb->stream[iloc];
-    cl_plist_t*      d_plist = nb->plist[iloc];
+    bool                bDoTime      = (nb->bDoTime && !h_plist->sci.empty());
+    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    cl_plist_t*         d_plist      = nb->plist[iloc];
 
     if (d_plist->na_c < 0)
     {
@@ -730,7 +734,7 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
 
     if (bDoTime)
     {
-        iTimers.pl_h2d.openTimingRegion(stream);
+        iTimers.pl_h2d.openTimingRegion(deviceStream);
         iTimers.didPairlistH2D = true;
     }
 
@@ -739,12 +743,12 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
 
     reallocateDeviceBuffer(&d_plist->sci, h_plist->sci.size(), &d_plist->nsci, &d_plist->sci_nalloc,
                            deviceContext);
-    copyToDeviceBuffer(&d_plist->sci, h_plist->sci.data(), 0, h_plist->sci.size(), stream,
+    copyToDeviceBuffer(&d_plist->sci, h_plist->sci.data(), 0, h_plist->sci.size(), deviceStream,
                        GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     reallocateDeviceBuffer(&d_plist->cj4, h_plist->cj4.size(), &d_plist->ncj4, &d_plist->cj4_nalloc,
                            deviceContext);
-    copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4.data(), 0, h_plist->cj4.size(), stream,
+    copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4.data(), 0, h_plist->cj4.size(), deviceStream,
                        GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     reallocateDeviceBuffer(&d_plist->imask, h_plist->cj4.size() * c_nbnxnGpuClusterpairSplit,
@@ -752,12 +756,12 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
 
     reallocateDeviceBuffer(&d_plist->excl, h_plist->excl.size(), &d_plist->nexcl,
                            &d_plist->excl_nalloc, deviceContext);
-    copyToDeviceBuffer(&d_plist->excl, h_plist->excl.data(), 0, h_plist->excl.size(), stream,
+    copyToDeviceBuffer(&d_plist->excl, h_plist->excl.data(), 0, h_plist->excl.size(), deviceStream,
                        GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     if (bDoTime)
     {
-        iTimers.pl_h2d.closeTimingRegion(stream);
+        iTimers.pl_h2d.closeTimingRegion(deviceStream);
     }
 
     /* need to prune the pair list during the next step */
@@ -768,7 +772,7 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 {
     cl_atomdata_t*   adat = nb->atdat;
-    cl_command_queue ls   = nb->stream[InteractionLocality::Local];
+    cl_command_queue ls   = nb->deviceStreams[InteractionLocality::Local].stream();
 
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
@@ -782,13 +786,13 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 //! This function is documented in the header file
 void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 {
-    cl_int           cl_error;
-    int              nalloc, natoms;
-    bool             realloced;
-    bool             bDoTime = nb->bDoTime;
-    cl_timers_t*     timers  = nb->timers;
-    cl_atomdata_t*   d_atdat = nb->atdat;
-    cl_command_queue ls      = nb->stream[InteractionLocality::Local];
+    cl_int              cl_error;
+    int                 nalloc, natoms;
+    bool                realloced;
+    bool                bDoTime      = nb->bDoTime;
+    cl_timers_t*        timers       = nb->timers;
+    cl_atomdata_t*      d_atdat      = nb->atdat;
+    const DeviceStream& deviceStream = nb->deviceStreams[InteractionLocality::Local];
 
     natoms    = nbat->numAtoms();
     realloced = false;
@@ -796,7 +800,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     if (bDoTime)
     {
         /* time async copy */
-        timers->atdat.openTimingRegion(ls);
+        timers->atdat.openTimingRegion(deviceStream);
     }
 
     /* need to reallocate if we have to copy more atoms than the amount of space
@@ -859,21 +863,21 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
         ocl_copy_H2D_async(d_atdat->lj_comb, nbat->params().lj_comb.data(), 0, natoms * sizeof(cl_float2),
-                           ls, bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+                           deviceStream.stream(), bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
     else
     {
         ocl_copy_H2D_async(d_atdat->atom_types, nbat->params().type.data(), 0, natoms * sizeof(int),
-                           ls, bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+                           deviceStream.stream(), bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
 
     if (bDoTime)
     {
-        timers->atdat.closeTimingRegion(ls);
+        timers->atdat.closeTimingRegion(deviceStream);
     }
 
     /* kick off the tasks enqueued above to ensure concurrency with the search */
-    cl_error = clFlush(ls);
+    cl_error = clFlush(deviceStream.stream());
     GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                        ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 }
@@ -996,14 +1000,6 @@ void gpu_free(NbnxmGpu* nb)
     pfree(nb->nbst.fshift);
     nb->nbst.fshift = nullptr;
 
-    /* Free command queues */
-    clReleaseCommandQueue(nb->stream[InteractionLocality::Local]);
-    nb->stream[InteractionLocality::Local] = nullptr;
-    if (nb->bUseTwoStreams)
-    {
-        clReleaseCommandQueue(nb->stream[InteractionLocality::NonLocal]);
-        nb->stream[InteractionLocality::NonLocal] = nullptr;
-    }
     /* Free other events */
     if (nb->nonlocal_done)
     {

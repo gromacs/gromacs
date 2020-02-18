@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,15 +79,17 @@ public:
     GpuRegionTimerImpl(GpuRegionTimerImpl&&) = delete;
 
     /*! \brief Will be called before the region start. */
-    inline void openTimingRegion(CommandStream s)
+    inline void openTimingRegion(const DeviceStream& deviceStream)
     {
-        CU_RET_ERR(cudaEventRecord(eventStart_, s), "GPU timing recording failure");
+        CU_RET_ERR(cudaEventRecord(eventStart_, deviceStream.stream()),
+                   "GPU timing recording failure");
     }
 
     /*! \brief Will be called after the region end. */
-    inline void closeTimingRegion(CommandStream s)
+    inline void closeTimingRegion(const DeviceStream& deviceStream)
     {
-        CU_RET_ERR(cudaEventRecord(eventStop_, s), "GPU timing recording failure");
+        CU_RET_ERR(cudaEventRecord(eventStop_, deviceStream.stream()),
+                   "GPU timing recording failure");
     }
 
     /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset() */

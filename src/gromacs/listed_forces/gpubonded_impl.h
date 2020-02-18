@@ -126,7 +126,10 @@ class GpuBonded::Impl
 {
 public:
     //! Constructor
-    Impl(const gmx_ffparams_t& ffparams, const DeviceContext& deviceContext, void* streamPtr, gmx_wallcycle* wcycle);
+    Impl(const gmx_ffparams_t& ffparams,
+         const DeviceContext&  deviceContext,
+         const DeviceStream&   deviceStream,
+         gmx_wallcycle*        wcycle);
     /*! \brief Destructor, non-default needed for freeing
      * device-side buffers */
     ~Impl();
@@ -183,7 +186,7 @@ private:
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! \brief Bonded GPU stream, not owned by this module
-    CommandStream stream_;
+    const DeviceStream& deviceStream_;
 
     //! Parameters and pointers, passed to the CUDA kernel
     BondedCudaKernelParameters kernelParams_;

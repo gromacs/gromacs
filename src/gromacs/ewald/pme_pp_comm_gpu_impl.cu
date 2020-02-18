@@ -64,7 +64,9 @@ PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank, const DeviceContext& device
     GMX_RELEASE_ASSERT(
             GMX_THREAD_MPI,
             "PME-PP GPU Communication is currently only supported with thread-MPI enabled");
-    cudaStreamCreate(&pmePpCommStream_);
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+    pmePpCommStream_.setStream(stream);
 }
 
 PmePpCommGpu::Impl::~Impl() = default;
@@ -98,7 +100,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(void* recvPtr, int recvSi
     // Pull force data from remote GPU
     void*       pmeForcePtr = receivePmeForceToGpu ? static_cast<void*>(d_pmeForces_) : recvPtr;
     cudaError_t stat = cudaMemcpyAsync(pmeForcePtr, remotePmeFBuffer_, recvSize * DIM * sizeof(float),
-                                       cudaMemcpyDefault, pmePpCommStream_);
+                                       cudaMemcpyDefault, pmePpCommStream_.stream());
     CU_RET_ERR(stat, "cudaMemcpyAsync on Recv from PME CUDA direct data transfer failed");
 
     if (receivePmeForceToGpu)
@@ -112,7 +114,7 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(void* recvPtr, int recvSi
     {
         // Ensure CPU waits for PME forces to be copied before reducing
         // them with other forces on the CPU
-        cudaStreamSynchronize(pmePpCommStream_);
+        cudaStreamSynchronize(pmePpCommStream_.stream());
     }
 #else
     GMX_UNUSED_VALUE(recvPtr);
@@ -131,7 +133,7 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeCudaDirect(void* sendPtr,
     coordinatesReadyOnDeviceEvent->enqueueWaitEvent(pmePpCommStream_);
 
     cudaError_t stat = cudaMemcpyAsync(remotePmeXBuffer_, sendPtr, sendSize * DIM * sizeof(float),
-                                       cudaMemcpyDefault, pmePpCommStream_);
+                                       cudaMemcpyDefault, pmePpCommStream_.stream());
     CU_RET_ERR(stat, "cudaMemcpyAsync on Send to PME CUDA direct data transfer failed");
 
     // Record and send event to allow PME task to sync to above transfer before commencing force calculations

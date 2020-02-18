@@ -55,8 +55,10 @@
 namespace gmx
 {
 
-PmeCoordinateReceiverGpu::Impl::Impl(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
-    pmeStream_(*static_cast<const cudaStream_t*>(pmeStream)),
+PmeCoordinateReceiverGpu::Impl::Impl(const DeviceStream&    pmeStream,
+                                     MPI_Comm               comm,
+                                     gmx::ArrayRef<PpRanks> ppRanks) :
+    pmeStream_(pmeStream),
     comm_(comm),
     ppRanks_(ppRanks)
 {
@@ -122,7 +124,7 @@ void PmeCoordinateReceiverGpu::Impl::enqueueWaitReceiveCoordinatesFromPpCudaDire
     }
 }
 
-PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(const void*            pmeStream,
+PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(const DeviceStream&    pmeStream,
                                                    MPI_Comm               comm,
                                                    gmx::ArrayRef<PpRanks> ppRanks) :
     impl_(new Impl(pmeStream, comm, ppRanks))

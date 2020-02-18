@@ -287,7 +287,7 @@ void LeapFrogGpu::integrate(const float3*                     d_x,
                 h_lambdas_[i] = tcstat[i].lambda;
             }
             copyToDeviceBuffer(&d_lambdas_, h_lambdas_.data(), 0, numTempScaleValues_,
-                               commandStream_, GpuApiCallBehavior::Async, nullptr);
+                               deviceStream_, GpuApiCallBehavior::Async, nullptr);
         }
         VelocityScalingType prVelocityScalingType = VelocityScalingType::None;
         if (doParrinelloRahman)
@@ -316,9 +316,9 @@ void LeapFrogGpu::integrate(const float3*                     d_x,
     return;
 }
 
-LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext, CommandStream commandStream) :
+LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext, const DeviceStream& deviceStream) :
     deviceContext_(deviceContext),
-    commandStream_(commandStream)
+    deviceStream_(deviceStream)
 {
     numAtoms_ = 0;
 
@@ -328,7 +328,7 @@ LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext, CommandStream comma
     kernelLaunchConfig_.blockSize[1]     = 1;
     kernelLaunchConfig_.blockSize[2]     = 1;
     kernelLaunchConfig_.sharedMemorySize = 0;
-    kernelLaunchConfig_.stream           = commandStream_;
+    kernelLaunchConfig_.stream           = deviceStream_.stream();
 }
 
 LeapFrogGpu::~LeapFrogGpu()
@@ -345,7 +345,7 @@ void LeapFrogGpu::set(const t_mdatoms& md, const int numTempScaleValues, const u
 
     reallocateDeviceBuffer(&d_inverseMasses_, numAtoms_, &numInverseMasses_,
                            &numInverseMassesAlloc_, deviceContext_);
-    copyToDeviceBuffer(&d_inverseMasses_, (float*)md.invmass, 0, numAtoms_, commandStream_,
+    copyToDeviceBuffer(&d_inverseMasses_, (float*)md.invmass, 0, numAtoms_, deviceStream_,
                        GpuApiCallBehavior::Sync, nullptr);
 
     // Temperature scale group map only used if there are more then one group
@@ -353,7 +353,7 @@ void LeapFrogGpu::set(const t_mdatoms& md, const int numTempScaleValues, const u
     {
         reallocateDeviceBuffer(&d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_,
                                &numTempScaleGroupsAlloc_, deviceContext_);
-        copyToDeviceBuffer(&d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, commandStream_,
+        copyToDeviceBuffer(&d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, deviceStream_,
                            GpuApiCallBehavior::Sync, nullptr);
     }
 

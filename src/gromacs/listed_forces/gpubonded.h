@@ -56,6 +56,8 @@
 #include "gromacs/utility/classhelpers.h"
 
 class DeviceContext;
+class DeviceStream;
+
 struct gmx_enerdata_t;
 struct gmx_ffparams_t;
 struct gmx_mtop_t;
@@ -109,7 +111,7 @@ public:
     //! Construct the manager with constant data and the stream to use.
     GpuBonded(const gmx_ffparams_t& ffparams,
               const DeviceContext&  deviceContext,
-              void*                 streamPtr,
+              const DeviceStream&   deviceStream,
               gmx_wallcycle*        wcycle);
     //! Destructor
     ~GpuBonded();

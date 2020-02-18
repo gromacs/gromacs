@@ -60,6 +60,7 @@
 #include "locality.h"
 
 class DeviceContext;
+class DeviceStream;
 class GpuEventSynchronizer;
 struct gmx_wallcycle;
 
@@ -99,9 +100,6 @@ public:
      *       \p pmeStream argument needs to be a valid OpenCL queue object
      *       which must have been created in \p deviceContext.
      *
-     * \todo Make a \p CommandStream visible in the CPU parts of the code so we
-     *       will not have to pass a void*.
-     *
      *  \param[in] pmeStream       Device PME stream, nullptr allowed.
      *  \param[in] localStream     Device NBNXM local stream, nullptr allowed.
      *  \param[in] nonLocalStream  Device NBNXM non-local stream, nullptr allowed.
@@ -110,9 +108,9 @@ public:
      *  \param[in] paddingSize     Padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
      */
-    StatePropagatorDataGpu(const void*          pmeStream,
-                           const void*          localStream,
-                           const void*          nonLocalStream,
+    StatePropagatorDataGpu(const DeviceStream*  pmeStream,
+                           const DeviceStream*  localStream,
+                           const DeviceStream*  nonLocalStream,
                            const DeviceContext& deviceContext,
                            GpuApiCallBehavior   transferKind,
                            int                  paddingSize,
@@ -134,7 +132,7 @@ public:
      *  \param[in] paddingSize     Padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
      */
-    StatePropagatorDataGpu(const void*          pmeStream,
+    StatePropagatorDataGpu(const DeviceStream*  pmeStream,
                            const DeviceContext& deviceContext,
                            GpuApiCallBehavior   transferKind,
                            int                  paddingSize,
@@ -329,7 +327,7 @@ public:
      *
      *  \returns The device command stream to use in update-constraints.
      */
-    void* getUpdateStream();
+    const DeviceStream* getUpdateStream();
 
     /*! \brief Getter for the number of local atoms.
      *

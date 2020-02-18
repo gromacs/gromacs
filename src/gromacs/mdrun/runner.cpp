@@ -1373,7 +1373,9 @@ int Mdrunner::mdrunner()
             GMX_RELEASE_ASSERT(
                     fr->deviceContext != nullptr,
                     "Device context can not be nullptr when computing bonded interactions on GPU.");
-            gpuBonded = std::make_unique<GpuBonded>(mtop.ffparams, *fr->deviceContext, stream, wcycle);
+            GMX_RELEASE_ASSERT(stream != nullptr,
+                               "Can'r run GPU version of bonded forces in nullptr stream.");
+            gpuBonded = std::make_unique<GpuBonded>(mtop.ffparams, *fr->deviceContext, *stream, wcycle);
             fr->gpuBonded = gpuBonded.get();
         }
 
@@ -1584,12 +1586,12 @@ int Mdrunner::mdrunner()
             && ((useGpuForPme && thisRankHasDuty(cr, DUTY_PME))
                 || runScheduleWork.simulationWork.useGpuBufferOps))
         {
-            const void* pmeStream = pme_gpu_get_device_stream(fr->pmedata);
-            const void* localStream =
+            const DeviceStream* pmeStream = pme_gpu_get_device_stream(fr->pmedata);
+            const DeviceStream* localStream =
                     fr->nbv->gpu_nbv != nullptr
                             ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::Local)
                             : nullptr;
-            const void* nonLocalStream =
+            const DeviceStream* nonLocalStream =
                     fr->nbv->gpu_nbv != nullptr
                             ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::NonLocal)
                             : nullptr;

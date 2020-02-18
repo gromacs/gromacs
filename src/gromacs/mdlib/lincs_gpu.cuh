@@ -105,9 +105,12 @@ public:
      * \param[in] numIterations    Number of iteration for the correction of the projection.
      * \param[in] expansionOrder   Order of the matrix inversion algorithm.
      * \param[in] deviceContext    Device context (dummy in CUDA).
-     * \param[in] commandStream    Device command stream.
+     * \param[in] deviceStream     Device command stream.
      */
-    LincsGpu(int numIterations, int expansionOrder, const DeviceContext& deviceContext, CommandStream commandStream);
+    LincsGpu(int                  numIterations,
+             int                  expansionOrder,
+             const DeviceContext& deviceContext,
+             const DeviceStream&  deviceStream);
     /*! \brief Destructor.*/
     ~LincsGpu();
 
@@ -172,7 +175,7 @@ private:
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! GPU stream
-    CommandStream commandStream_;
+    const DeviceStream& deviceStream_;
 
     //! Parameters and pointers, passed to the GPU kernel
     LincsGpuKernelParameters kernelParams_;

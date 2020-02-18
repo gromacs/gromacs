@@ -88,8 +88,9 @@ void applySettleGpu(SettleTestData*  testData,
 
     DeviceInformation   deviceInfo;
     const DeviceContext deviceContext(deviceInfo);
+    const DeviceStream deviceStream(deviceInfo, deviceContext, DeviceStreamPriority::Normal, false);
 
-    auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, deviceContext, nullptr);
+    auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, deviceContext, deviceStream);
 
     settleGpu->set(*testData->idef_, testData->mdatoms_);
     PbcAiuc pbcAiuc;
@@ -107,19 +108,20 @@ void applySettleGpu(SettleTestData*  testData,
     allocateDeviceBuffer(&d_xp, numAtoms, deviceContext);
     allocateDeviceBuffer(&d_v, numAtoms, deviceContext);
 
-    copyToDeviceBuffer(&d_x, (float3*)h_x, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_x, (float3*)h_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     if (updateVelocities)
     {
-        copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+        copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     }
     settleGpu->apply(d_x, d_xp, updateVelocities, d_v, testData->reciprocalTimeStep_, calcVirial,
                      testData->virial_, pbcAiuc);
 
-    copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     if (updateVelocities)
     {
-        copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+        copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, deviceStream,
+                             GpuApiCallBehavior::Sync, nullptr);
     }
 
     freeDeviceBuffer(&d_x);

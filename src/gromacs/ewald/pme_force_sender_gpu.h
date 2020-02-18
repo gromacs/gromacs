@@ -46,6 +46,8 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
 
+class DeviceStream;
+
 /*! \libinternal
  * \brief Contains information about the PP ranks that partner this PME rank. */
 struct PpRanks
@@ -73,7 +75,7 @@ public:
      * \param[in] comm            Communicator used for simulation
      * \param[in] ppRanks         List of PP ranks
      */
-    PmeForceSenderGpu(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    PmeForceSenderGpu(const DeviceStream& pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
     ~PmeForceSenderGpu();
 
     /*! \brief

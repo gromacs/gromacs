@@ -135,7 +135,7 @@ int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu)
 
 void pme_gpu_synchronize(const PmeGpu* pmeGpu)
 {
-    gpuStreamSynchronize(pmeGpu->archSpecific->pmeStream);
+    pmeGpu->archSpecific->pmeStream_.synchronize();
 }
 
 void pme_gpu_alloc_energy_virial(PmeGpu* pmeGpu)
@@ -156,7 +156,7 @@ void pme_gpu_free_energy_virial(PmeGpu* pmeGpu)
 void pme_gpu_clear_energy_virial(const PmeGpu* pmeGpu)
 {
     clearDeviceBufferAsync(&pmeGpu->kernelParams->constants.d_virialAndEnergy, 0,
-                           c_virialAndEnergyCount, pmeGpu->archSpecific->pmeStream);
+                           c_virialAndEnergyCount, pmeGpu->archSpecific->pmeStream_);
 }
 
 void pme_gpu_realloc_and_copy_bspline_values(PmeGpu* pmeGpu)
@@ -188,7 +188,7 @@ void pme_gpu_realloc_and_copy_bspline_values(PmeGpu* pmeGpu)
     }
     /* TODO: pin original buffer instead! */
     copyToDeviceBuffer(&pmeGpu->kernelParams->grid.d_splineModuli, pmeGpu->staging.h_splineModuli,
-                       0, newSplineValuesSize, pmeGpu->archSpecific->pmeStream,
+                       0, newSplineValuesSize, pmeGpu->archSpecific->pmeStream_,
                        pmeGpu->settings.transferKind, nullptr);
 }
 
@@ -219,7 +219,7 @@ void pme_gpu_copy_input_forces(PmeGpu* pmeGpu)
     GMX_ASSERT(pmeGpu->kernelParams->atoms.nAtoms > 0, "Bad number of atoms in PME GPU");
     float* h_forcesFloat = reinterpret_cast<float*>(pmeGpu->staging.h_forces.data());
     copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_forces, h_forcesFloat, 0,
-                       DIM * pmeGpu->kernelParams->atoms.nAtoms, pmeGpu->archSpecific->pmeStream,
+                       DIM * pmeGpu->kernelParams->atoms.nAtoms, pmeGpu->archSpecific->pmeStream_,
                        pmeGpu->settings.transferKind, nullptr);
 }
 
@@ -228,7 +228,7 @@ void pme_gpu_copy_output_forces(PmeGpu* pmeGpu)
     GMX_ASSERT(pmeGpu->kernelParams->atoms.nAtoms > 0, "Bad number of atoms in PME GPU");
     float* h_forcesFloat = reinterpret_cast<float*>(pmeGpu->staging.h_forces.data());
     copyFromDeviceBuffer(h_forcesFloat, &pmeGpu->kernelParams->atoms.d_forces, 0,
-                         DIM * pmeGpu->kernelParams->atoms.nAtoms, pmeGpu->archSpecific->pmeStream,
+                         DIM * pmeGpu->kernelParams->atoms.nAtoms, pmeGpu->archSpecific->pmeStream_,
                          pmeGpu->settings.transferKind, nullptr);
 }
 
@@ -243,7 +243,7 @@ void pme_gpu_realloc_and_copy_input_coefficients(PmeGpu* pmeGpu, const float* h_
                            pmeGpu->archSpecific->deviceContext_);
     copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coefficients,
                        const_cast<float*>(h_coefficients), 0, pmeGpu->kernelParams->atoms.nAtoms,
-                       pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+                       pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
     if (c_usePadding)
     {
         const size_t paddingIndex = pmeGpu->kernelParams->atoms.nAtoms;
@@ -251,7 +251,7 @@ void pme_gpu_realloc_and_copy_input_coefficients(PmeGpu* pmeGpu, const float* h_
         if (paddingCount > 0)
         {
             clearDeviceBufferAsync(&pmeGpu->kernelParams->atoms.d_coefficients, paddingIndex,
-                                   paddingCount, pmeGpu->archSpecific->pmeStream);
+                                   paddingCount, pmeGpu->archSpecific->pmeStream_);
         }
     }
 }
@@ -360,7 +360,7 @@ void pme_gpu_free_grids(const PmeGpu* pmeGpu)
 void pme_gpu_clear_grids(const PmeGpu* pmeGpu)
 {
     clearDeviceBufferAsync(&pmeGpu->kernelParams->grid.d_realGrid, 0,
-                           pmeGpu->archSpecific->realGridSize, pmeGpu->archSpecific->pmeStream);
+                           pmeGpu->archSpecific->realGridSize, pmeGpu->archSpecific->pmeStream_);
 }
 
 void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
@@ -393,10 +393,10 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
     allocateDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable, newFractShiftsSize,
                          pmeGpu->archSpecific->deviceContext_);
     copyToDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable, pmeGpu->common->fsh.data(), 0,
-                       newFractShiftsSize, pmeGpu->archSpecific->pmeStream,
+                       newFractShiftsSize, pmeGpu->archSpecific->pmeStream_,
                        GpuApiCallBehavior::Async, nullptr);
     copyToDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable, pmeGpu->common->nn.data(), 0,
-                       newFractShiftsSize, pmeGpu->archSpecific->pmeStream,
+                       newFractShiftsSize, pmeGpu->archSpecific->pmeStream_,
                        GpuApiCallBehavior::Async, nullptr);
 #endif
 }
@@ -417,21 +417,21 @@ void pme_gpu_free_fract_shifts(const PmeGpu* pmeGpu)
 
 bool pme_gpu_stream_query(const PmeGpu* pmeGpu)
 {
-    return haveStreamTasksCompleted(pmeGpu->archSpecific->pmeStream);
+    return haveStreamTasksCompleted(pmeGpu->archSpecific->pmeStream_);
 }
 
 void pme_gpu_copy_input_gather_grid(const PmeGpu* pmeGpu, float* h_grid)
 {
     copyToDeviceBuffer(&pmeGpu->kernelParams->grid.d_realGrid, h_grid, 0, pmeGpu->archSpecific->realGridSize,
-                       pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+                       pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
 }
 
 void pme_gpu_copy_output_spread_grid(const PmeGpu* pmeGpu, float* h_grid)
 {
     copyFromDeviceBuffer(h_grid, &pmeGpu->kernelParams->grid.d_realGrid, 0,
-                         pmeGpu->archSpecific->realGridSize, pmeGpu->archSpecific->pmeStream,
+                         pmeGpu->archSpecific->realGridSize, pmeGpu->archSpecific->pmeStream_,
                          pmeGpu->settings.transferKind, nullptr);
-    pmeGpu->archSpecific->syncSpreadGridD2H.markEvent(pmeGpu->archSpecific->pmeStream);
+    pmeGpu->archSpecific->syncSpreadGridD2H.markEvent(pmeGpu->archSpecific->pmeStream_);
 }
 
 void pme_gpu_copy_output_spread_atom_data(const PmeGpu* pmeGpu)
@@ -441,11 +441,11 @@ void pme_gpu_copy_output_spread_atom_data(const PmeGpu* pmeGpu)
     const size_t splinesCount    = DIM * nAtomsPadded * pmeGpu->common->pme_order;
     auto*        kernelParamsPtr = pmeGpu->kernelParams.get();
     copyFromDeviceBuffer(pmeGpu->staging.h_dtheta, &kernelParamsPtr->atoms.d_dtheta, 0, splinesCount,
-                         pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+                         pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
     copyFromDeviceBuffer(pmeGpu->staging.h_theta, &kernelParamsPtr->atoms.d_theta, 0, splinesCount,
-                         pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+                         pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
     copyFromDeviceBuffer(pmeGpu->staging.h_gridlineIndices, &kernelParamsPtr->atoms.d_gridlineIndices,
-                         0, kernelParamsPtr->atoms.nAtoms * DIM, pmeGpu->archSpecific->pmeStream,
+                         0, kernelParamsPtr->atoms.nAtoms * DIM, pmeGpu->archSpecific->pmeStream_,
                          pmeGpu->settings.transferKind, nullptr);
 }
 
@@ -459,20 +459,20 @@ void pme_gpu_copy_input_gather_atom_data(const PmeGpu* pmeGpu)
     {
         // TODO: could clear only the padding and not the whole thing, but this is a test-exclusive code anyway
         clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_gridlineIndices, 0,
-                               pmeGpu->nAtomsAlloc * DIM, pmeGpu->archSpecific->pmeStream);
+                               pmeGpu->nAtomsAlloc * DIM, pmeGpu->archSpecific->pmeStream_);
         clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_dtheta, 0,
                                pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order * DIM,
-                               pmeGpu->archSpecific->pmeStream);
+                               pmeGpu->archSpecific->pmeStream_);
         clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_theta, 0,
                                pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order * DIM,
-                               pmeGpu->archSpecific->pmeStream);
+                               pmeGpu->archSpecific->pmeStream_);
     }
     copyToDeviceBuffer(&kernelParamsPtr->atoms.d_dtheta, pmeGpu->staging.h_dtheta, 0, splinesCount,
-                       pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+                       pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
     copyToDeviceBuffer(&kernelParamsPtr->atoms.d_theta, pmeGpu->staging.h_theta, 0, splinesCount,
-                       pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+                       pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
     copyToDeviceBuffer(&kernelParamsPtr->atoms.d_gridlineIndices, pmeGpu->staging.h_gridlineIndices,
-                       0, kernelParamsPtr->atoms.nAtoms * DIM, pmeGpu->archSpecific->pmeStream,
+                       0, kernelParamsPtr->atoms.nAtoms * DIM, pmeGpu->archSpecific->pmeStream_,
                        pmeGpu->settings.transferKind, nullptr);
 }
 
@@ -529,35 +529,25 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
     int         highest_priority, lowest_priority;
     stat = cudaDeviceGetStreamPriorityRange(&lowest_priority, &highest_priority);
     CU_RET_ERR(stat, "PME cudaDeviceGetStreamPriorityRange failed");
-    stat = cudaStreamCreateWithPriority(&pmeGpu->archSpecific->pmeStream,
+    cudaStream_t stream;
+    stat = cudaStreamCreateWithPriority(&stream,
                                         cudaStreamDefault, // cudaStreamNonBlocking,
                                         highest_priority);
+    pmeGpu->archSpecific->pmeStream_.setStream(stream);
     CU_RET_ERR(stat, "cudaStreamCreateWithPriority on the PME stream failed");
 #elif GMX_GPU == GMX_GPU_OPENCL
     cl_command_queue_properties queueProperties =
             pmeGpu->archSpecific->useTiming ? CL_QUEUE_PROFILING_ENABLE : 0;
     cl_device_id device_id = pmeGpu->deviceInfo->oclDeviceId;
     cl_int       clError;
-    pmeGpu->archSpecific->pmeStream = clCreateCommandQueue(
-            pmeGpu->archSpecific->deviceContext_.context(), device_id, queueProperties, &clError);
-    if (clError != CL_SUCCESS)
-    {
-        GMX_THROW(gmx::InternalError("Failed to create PME command queue"));
-    }
-#endif
-}
+    pmeGpu->archSpecific->pmeStream_.setStream(clCreateCommandQueue(
+            pmeGpu->archSpecific->deviceContext_.context(), device_id, queueProperties, &clError));
 
-void pme_gpu_destroy_specific(const PmeGpu* pmeGpu)
-{
-#if GMX_GPU == GMX_GPU_CUDA
-    /* Destroy the CUDA stream */
-    cudaError_t stat = cudaStreamDestroy(pmeGpu->archSpecific->pmeStream);
-    CU_RET_ERR(stat, "PME cudaStreamDestroy error");
-#elif GMX_GPU == GMX_GPU_OPENCL
-    cl_int clError = clReleaseCommandQueue(pmeGpu->archSpecific->pmeStream);
+
     if (clError != CL_SUCCESS)
     {
-        gmx_warning("Failed to destroy PME command queue");
+        GMX_THROW(gmx::InternalError(
+                gmx::formatString("Failed to create PME command queue (OpenCL error %d)", clError).c_str()));
     }
 #endif
 }
@@ -979,9 +969,6 @@ void pme_gpu_destroy(PmeGpu* pmeGpu)
 
     pme_gpu_destroy_3dfft(pmeGpu);
 
-    /* Free the GPU-framework specific data last */
-    pme_gpu_destroy_specific(pmeGpu);
-
     delete pmeGpu;
 }
 
@@ -1205,7 +1192,7 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
                "Need a valid coordinate synchronizer on PP+PME ranks with CUDA.");
     if (xReadyOnDevice)
     {
-        xReadyOnDevice->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream);
+        xReadyOnDevice->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
     }
 
     const int blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
@@ -1217,7 +1204,7 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     config.blockSize[2] = atomsPerBlock;
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
-    config.stream       = pmeGpu->archSpecific->pmeStream;
+    config.stream       = pmeGpu->archSpecific->pmeStream_.stream();
 
     int                                timingId;
     PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
@@ -1285,7 +1272,7 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
     if (copyInputAndOutputGrid)
     {
         copyToDeviceBuffer(&kernelParamsPtr->grid.d_fourierGrid, h_gridFloat, 0,
-                           pmeGpu->archSpecific->complexGridSize, pmeGpu->archSpecific->pmeStream,
+                           pmeGpu->archSpecific->complexGridSize, pmeGpu->archSpecific->pmeStream_,
                            pmeGpu->settings.transferKind, nullptr);
     }
 
@@ -1335,7 +1322,7 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
     config.gridSize[1] = (pmeGpu->kernelParams->grid.complexGridSize[middleDim] + gridLinesPerBlock - 1)
                          / gridLinesPerBlock;
     config.gridSize[2] = pmeGpu->kernelParams->grid.complexGridSize[majorDim];
-    config.stream      = pmeGpu->archSpecific->pmeStream;
+    config.stream      = pmeGpu->archSpecific->pmeStream_.stream();
 
     int                                timingId  = gtPME_SOLVE;
     PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
@@ -1366,13 +1353,13 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
     {
         copyFromDeviceBuffer(pmeGpu->staging.h_virialAndEnergy,
                              &kernelParamsPtr->constants.d_virialAndEnergy, 0, c_virialAndEnergyCount,
-                             pmeGpu->archSpecific->pmeStream, pmeGpu->settings.transferKind, nullptr);
+                             pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
     }
 
     if (copyInputAndOutputGrid)
     {
         copyFromDeviceBuffer(h_gridFloat, &kernelParamsPtr->grid.d_fourierGrid, 0,
-                             pmeGpu->archSpecific->complexGridSize, pmeGpu->archSpecific->pmeStream,
+                             pmeGpu->archSpecific->complexGridSize, pmeGpu->archSpecific->pmeStream_,
                              pmeGpu->settings.transferKind, nullptr);
     }
 }
@@ -1457,7 +1444,7 @@ void pme_gpu_gather(PmeGpu* pmeGpu, const float* h_grid)
     config.blockSize[2] = atomsPerBlock;
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
-    config.stream       = pmeGpu->archSpecific->pmeStream;
+    config.stream       = pmeGpu->archSpecific->pmeStream_.stream();
 
     // TODO test different cache configs
 
@@ -1483,7 +1470,7 @@ void pme_gpu_gather(PmeGpu* pmeGpu, const float* h_grid)
 
     if (pmeGpu->settings.useGpuForceReduction)
     {
-        pmeGpu->archSpecific->pmeForcesReady.markEvent(pmeGpu->archSpecific->pmeStream);
+        pmeGpu->archSpecific->pmeForcesReady.markEvent(pmeGpu->archSpecific->pmeStream_);
     }
     else
     {
@@ -1515,11 +1502,11 @@ void pme_gpu_set_kernelparam_coordinates(const PmeGpu* pmeGpu, DeviceBuffer<gmx:
     pmeGpu->kernelParams->atoms.d_coordinates = d_x;
 }
 
-void* pme_gpu_get_stream(const PmeGpu* pmeGpu)
+const DeviceStream* pme_gpu_get_stream(const PmeGpu* pmeGpu)
 {
     if (pmeGpu)
     {
-        return static_cast<void*>(&pmeGpu->archSpecific->pmeStream);
+        return &pmeGpu->archSpecific->pmeStream_;
     }
     else
     {

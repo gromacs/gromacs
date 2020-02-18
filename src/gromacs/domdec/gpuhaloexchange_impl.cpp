@@ -63,8 +63,8 @@ class GpuHaloExchange::Impl
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
                                  MPI_Comm /* mpi_comm_mysim */,
                                  const DeviceContext& /* deviceContext */,
-                                 void* /*streamLocal */,
-                                 void* /*streamNonLocal */,
+                                 const DeviceStream& /*streamLocal */,
+                                 const DeviceStream& /*streamNonLocal */,
                                  int /*pulse */) :
     impl_(nullptr)
 {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,7 +93,7 @@ private:
 #elif GMX_GPU == GMX_GPU_OPENCL
     clfftPlanHandle               planR2C_;
     clfftPlanHandle               planC2R_;
-    std::vector<cl_command_queue> commandStreams_;
+    std::vector<cl_command_queue> deviceStreams_;
     cl_mem                        realGrid_;
     cl_mem                        complexGrid_;
 #endif

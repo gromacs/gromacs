@@ -216,25 +216,15 @@ static inline void rvec_inc(rvec a, const float3 b)
     rvec_inc(a, tmp);
 }
 
-/*! \brief Wait for all taks in stream \p s to complete.
- *
- * \param[in] s stream to synchronize with
- */
-static inline void gpuStreamSynchronize(cudaStream_t s)
-{
-    cudaError_t stat = cudaStreamSynchronize(s);
-    CU_RET_ERR(stat, "cudaStreamSynchronize failed");
-}
-
 /*! \brief  Returns true if all tasks in \p s have completed.
  *
- * \param[in] s stream to check
+ *  \param[in] deviceStream CUDA stream to check.
  *
- *  \returns     True if all tasks enqueued in the stream \p s (at the time of this call) have completed.
+ *  \returns True if all tasks enqueued in the stream \p deviceStream (at the time of this call) have completed.
  */
-static inline bool haveStreamTasksCompleted(cudaStream_t s)
+static inline bool haveStreamTasksCompleted(const DeviceStream& deviceStream)
 {
-    cudaError_t stat = cudaStreamQuery(s);
+    cudaError_t stat = cudaStreamQuery(deviceStream.stream());
 
     if (stat == cudaErrorNotReady)
     {

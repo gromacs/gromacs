@@ -202,9 +202,9 @@ public:
      *                           target O-H and H-H distances. These values are also checked for
      *                           consistency.
      * \param[in] deviceContext  Device context (dummy in CUDA).
-     * \param[in] commandStream  Device stream to use.
+     * \param[in] deviceStream   Device stream to use.
      */
-    SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, CommandStream commandStream);
+    SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, const DeviceStream& deviceStream);
 
     ~SettleGpu();
 
@@ -255,7 +255,7 @@ private:
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! GPU stream
-    CommandStream commandStream_;
+    const DeviceStream& deviceStream_;
 
     //! Scaled virial tensor (9 reals, GPU)
     std::vector<float> h_virialScaled_;

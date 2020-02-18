@@ -68,6 +68,7 @@ void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
 {
     DeviceInformation   deviceInfo;
     const DeviceContext deviceContext(deviceInfo);
+    const DeviceStream deviceStream(deviceInfo, deviceContext, DeviceStreamPriority::Normal, false);
 
     int numAtoms = testData->numAtoms_;
 
@@ -83,12 +84,12 @@ void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
     allocateDeviceBuffer(&d_v, numAtoms, deviceContext);
     allocateDeviceBuffer(&d_f, numAtoms, deviceContext);
 
-    copyToDeviceBuffer(&d_x, h_x, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_xp, h_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_v, h_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_f, h_f, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_x, h_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_xp, h_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_v, h_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_f, h_f, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
-    auto integrator = std::make_unique<LeapFrogGpu>(deviceContext, nullptr);
+    auto integrator = std::make_unique<LeapFrogGpu>(deviceContext, deviceStream);
 
     integrator->set(testData->mdAtoms_, testData->numTCoupleGroups_, testData->mdAtoms_.cTC);
 
@@ -104,8 +105,8 @@ void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
                               testData->dtPressureCouple_, testData->velocityScalingMatrix_);
     }
 
-    copyFromDeviceBuffer(h_xp, &d_x, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-    copyFromDeviceBuffer(h_v, &d_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_xp, &d_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_v, &d_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
     freeDeviceBuffer(&d_x);
     freeDeviceBuffer(&d_xp);

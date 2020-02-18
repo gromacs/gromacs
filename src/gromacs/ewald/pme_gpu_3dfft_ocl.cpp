@@ -81,7 +81,7 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
                    "Complex padding not implemented");
     }
     cl_context context = pmeGpu->archSpecific->deviceContext_.context();
-    commandStreams_.push_back(pmeGpu->archSpecific->pmeStream);
+    deviceStreams_.push_back(pmeGpu->archSpecific->pmeStream_.stream());
     realGrid_                       = kernelParamsPtr->grid.d_realGrid;
     complexGrid_                    = kernelParamsPtr->grid.d_fourierGrid;
     const bool performOutOfPlaceFFT = pmeGpu->archSpecific->performOutOfPlaceFFT;
@@ -124,9 +124,9 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
     handleClfftError(clfftSetPlanOutStride(planC2R_, dims, realGridStrides.data()),
                      "clFFT stride setting failure");
 
-    handleClfftError(clfftBakePlan(planR2C_, commandStreams_.size(), commandStreams_.data(), nullptr, nullptr),
+    handleClfftError(clfftBakePlan(planR2C_, deviceStreams_.size(), deviceStreams_.data(), nullptr, nullptr),
                      "clFFT precompiling failure");
-    handleClfftError(clfftBakePlan(planC2R_, commandStreams_.size(), commandStreams_.data(), nullptr, nullptr),
+    handleClfftError(clfftBakePlan(planC2R_, deviceStreams_.size(), deviceStreams_.data(), nullptr, nullptr),
                      "clFFT precompiling failure");
 
     // TODO: implement solve kernel as R2C FFT callback
@@ -166,8 +166,8 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingE
             GMX_THROW(
                     gmx::NotImplementedError("The chosen 3D-FFT case is not implemented on GPUs"));
     }
-    handleClfftError(clfftEnqueueTransform(plan, direction, commandStreams_.size(),
-                                           commandStreams_.data(), waitEvents.size(), waitEvents.data(),
+    handleClfftError(clfftEnqueueTransform(plan, direction, deviceStreams_.size(),
+                                           deviceStreams_.data(), waitEvents.size(), waitEvents.data(),
                                            timingEvent, inputGrids, outputGrids, tempBuffer),
                      "clFFT execution failure");
 }

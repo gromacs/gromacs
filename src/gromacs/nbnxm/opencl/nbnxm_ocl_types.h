@@ -361,7 +361,7 @@ struct NbnxmGpu
     nb_staging_t nbst;
 
     //! local and non-local GPU queues
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_command_queue> stream;
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, DeviceStream> deviceStreams;
 
     /*! \brief Events used for synchronization */
     /*! \{ */

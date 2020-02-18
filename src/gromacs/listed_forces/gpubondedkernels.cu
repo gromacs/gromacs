@@ -850,7 +850,7 @@ void GpuBonded::Impl::launchKernel(const t_forcerec* fr, const matrix box)
     config.gridSize[0]  = (fTypeRangeEnd + TPB_BONDED) / TPB_BONDED;
     config.gridSize[1]  = 1;
     config.gridSize[2]  = 1;
-    config.stream       = stream_;
+    config.stream       = deviceStream_.stream();
 
     auto kernelPtr            = exec_kernel_gpu<calcVir, calcEner>;
     kernelParams_.scaleFactor = fr->ic->epsfac * fr->fudgeQQ;

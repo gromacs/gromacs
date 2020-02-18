@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,9 +80,9 @@ public:
     /*! \brief Marks the synchronization point in the \p stream.
      * Should be followed by waitForEvent().
      */
-    inline void markEvent(CommandStream stream)
+    inline void markEvent(const DeviceStream& deviceStream)
     {
-        cudaError_t gmx_used_in_debug stat = cudaEventRecord(event_, stream);
+        cudaError_t gmx_used_in_debug stat = cudaEventRecord(event_, deviceStream.stream());
         GMX_ASSERT(stat == cudaSuccess, "cudaEventRecord failed");
     }
     /*! \brief Synchronizes the host thread on the marked event. */
@@ -92,9 +92,9 @@ public:
         GMX_ASSERT(stat == cudaSuccess, "cudaEventSynchronize failed");
     }
     /*! \brief Enqueues a wait for the recorded event in stream \p stream */
-    inline void enqueueWaitEvent(CommandStream stream)
+    inline void enqueueWaitEvent(const DeviceStream& deviceStream)
     {
-        cudaError_t gmx_used_in_debug stat = cudaStreamWaitEvent(stream, event_, 0);
+        cudaError_t gmx_used_in_debug stat = cudaStreamWaitEvent(deviceStream.stream(), event_, 0);
         GMX_ASSERT(stat == cudaSuccess, "cudaStreamWaitEvent failed");
     }
 
