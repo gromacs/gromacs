@@ -130,7 +130,8 @@ enum tpxv
     tpxv_GenericInternalParameters, /**< Added internal parameters for mdrun modules*/
     tpxv_VSite2FD,                  /**< Added 2FD type virtual site */
     tpxv_AddSizeField, /**< Added field with information about the size of the serialized tpr file in bytes, excluding the header */
-    tpxv_Count         /**< the total number of tpxv versions */
+    tpxv_StoreNonBondedInteractionExclusionGroup, /**< Store the non bonded interaction exclusion group in the topology */
+    tpxv_Count                                    /**< the total number of tpxv versions */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -2589,6 +2590,18 @@ static void do_mtop(gmx::ISerializer* serializer, gmx_mtop_t* mtop, int file_ver
     do_groups(serializer, &mtop->groups, &(mtop->symtab));
 
     mtop->haveMoleculeIndices = true;
+
+    if (file_version >= tpxv_StoreNonBondedInteractionExclusionGroup)
+    {
+        std::int64_t intermolecularExclusionGroupSize = gmx::ssize(mtop->intermolecularExclusionGroup);
+        serializer->doInt64(&intermolecularExclusionGroupSize);
+        GMX_RELEASE_ASSERT(intermolecularExclusionGroupSize >= 0,
+                           "Number of atoms with excluded intermolecular non-bonded interactions "
+                           "is negative.");
+        mtop->intermolecularExclusionGroup.resize(intermolecularExclusionGroupSize); // no effect when writing
+        serializer->doIntArray(mtop->intermolecularExclusionGroup.data(),
+                               mtop->intermolecularExclusionGroup.size());
+    }
 
     if (serializer->reading())
     {
