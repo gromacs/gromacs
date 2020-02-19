@@ -60,12 +60,6 @@ namespace nblib
 namespace detail
 {
 
-// Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
-std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList);
-
-// add offset to all indices in inBlock
-std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
-
 std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList)
 {
     std::vector<gmx::ExclusionBlock> ret;
@@ -95,7 +89,9 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
 
         //! update the upper bound of the range for the next atom
         if (it1 != end(tupleList))
+        {
             it2 = std::upper_bound(it1, std::end(tupleList), *it1, firstLowerThan);
+        }
     }
 
     return ret;
@@ -216,7 +212,7 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
     molecules_.emplace_back(std::make_tuple(molecule, nMolecules));
     numAtoms_ += nMolecules * molecule.numAtomsInMolecule();
 
-    for (auto name_type_tuple : molecule.atomTypes_)
+    for (const auto& name_type_tuple : molecule.atomTypes_)
     {
         //! If we already have the atomType, we need to make
         //! sure that the type's parameters are actually the same

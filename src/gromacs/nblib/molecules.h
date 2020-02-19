@@ -56,10 +56,9 @@
 
 #include "interactions.h"
 
-class TopologyBuilder;
-
 namespace nblib
 {
+class TopologyBuilder;
 
 using AtomName    = std::string;
 using Charge      = real;
@@ -100,7 +99,7 @@ public:
     void addHarmonicBond(HarmonicType harmonicBond);
 
     // TODO: add exclusions based on the unique ID given to the atom of the molecule
-    void addExclusion(const int atomIndex, const int atomIndexToExclude);
+    void addExclusion(int atomIndex, int atomIndexToExclude);
 
     // Specify an exclusion with atom and residue names that have been added to molecule
     void addExclusion(std::tuple<std::string, std::string> atom,

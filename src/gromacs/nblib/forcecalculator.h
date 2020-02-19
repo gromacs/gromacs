@@ -69,7 +69,7 @@ public:
 
     //! Sets up and runs the kernel calls
     //! returns the forces as a vector
-    gmx::PaddedHostVector<gmx::RVec> compute(const bool printTimings = false);
+    gmx::PaddedHostVector<gmx::RVec> compute();
 
     const matrix& box() const;
 
