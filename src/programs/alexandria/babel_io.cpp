@@ -150,30 +150,49 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
     }
 }
 
-static OpenBabel::OBConversion *readBabel(const       char *g09,
-                                          OpenBabel::OBMol *mol,
-                                          einformat        *inputformat)
+static bool isGzipFile(const std::string &fileName,
+                       std::string       *strippedFileName)
 {
-    std::ifstream g09f;
-    bool          isGzip = false;
-    if (!gmx_fexist(g09))
+    auto gzPosition = fileName.find(".gz");
+    if (gzPosition == fileName.size()-3)
     {
-        std::string g09z(g09);
-        g09z += ".gz";
-        g09f.open(g09z.c_str(), std::ios::in);
-        isGzip = g09f.is_open();
+        strippedFileName->assign(fileName.substr(0, gzPosition));
+        return true;
+    }
+    return false;
+}
+
+static OpenBabel::OBConversion *readBabel(const std::string &g09,
+                                          OpenBabel::OBMol  *mol,
+                                          einformat         *inputformat)
+{
+    if (!gmx_fexist(g09.c_str()))
+    {
+        return nullptr;
+    }
+    
+    std::ifstream g09f;
+    std::string   strippedFileName;
+    bool          isGzip = isGzipFile(g09, &strippedFileName);
+    
+    g09f.open(g09, std::ios::in);
+    
+    if (!g09f.is_open())
+    {
+        gmx_fatal(FARGS, "Cannot open file %s for reading", g09.c_str());
+    }
+    
+    OpenBabel::OBConversion *conv       = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
+    auto                     babelfiles = BabelFiles();
+    const char              *informat   = nullptr;
+    if (isGzip)
+    {
+        informat = babelfiles.findBabelFile(strippedFileName)->informat().c_str();
     }
     else
     {
-        g09f.open(g09, std::ios::in);
+        informat = babelfiles.findBabelFile(g09)->informat().c_str();
     }
-    if (!g09f.is_open())
-    {
-        gmx_fatal(FARGS, "Cannot open file %s for reading", g09);
-    }
-    OpenBabel::OBConversion *conv       = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
-    auto                     babelfiles = BabelFiles();
-    auto                     informat   = babelfiles.findBabelFile(g09)->informat().c_str();
 
     if (strcmp (informat, "g03") == 0 || strcmp (informat, "g09") == 0)
     {
@@ -199,12 +218,12 @@ static OpenBabel::OBConversion *readBabel(const       char *g09,
         }
         else
         {
-            fprintf(stderr, "Could not read input file %s with OpenBabel3.\n", g09);
+            fprintf(stderr, "Could not read input file %s with OpenBabel3.\n", g09.c_str());
         }
     }
     else
     {
-        fprintf(stderr, "Input file %s has incomprehensible format.\n", g09);
+        fprintf(stderr, "Input file %s has incomprehensible format.\n", g09.c_str());
     }
     g09f.close();
     return nullptr;

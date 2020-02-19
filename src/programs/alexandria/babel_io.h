@@ -77,6 +77,7 @@ class BabelFiles
     
     BabelFileIterator findBabelFile(const std::string &fn);
     
+    BabelFileIterator endBabelFile() { return bfiles_.end(); }
  private:
     std::vector<BabelFile> bfiles_;
 };

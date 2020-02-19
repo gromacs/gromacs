@@ -42,6 +42,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "alex_modules.h"
@@ -103,11 +104,9 @@ int alex_gentop(int argc, char *argv[])
     immStatus                        imm;
 
     t_filenm                         fnm[] = {
-        { efSTX, "-f",        "conf",      ffOPTRD },
         { efTOP, "-p",        "out",       ffOPTWR },
         { efITP, "-oi",       "out",       ffOPTWR },
         { efSTO, "-c",        "out",       ffWRITE },
-        { efLOG, "-g03",      "gauss",     ffOPTRDMULT},
         { efNDX, "-n",        "renum",     ffOPTWR },
         { efDAT, "-q",        "qout",      ffOPTWR },
         { efDAT, "-mpdb",     "molprops",  ffOPTRD },
@@ -142,13 +141,13 @@ int alex_gentop(int argc, char *argv[])
     static char                     *symm_string    = (char *)"";
     static char                     *conf           = (char *)"minimum";
     static char                     *jobtype        = (char *)"unknown";
+    static char                     *filename       = (char *)"";
     static gmx_bool                  bQsym          = false;
     static gmx_bool                  bITP           = false;
     static gmx_bool                  bPairs         = false;
     static gmx_bool                  bUsePDBcharge  = false;
     static gmx_bool                  bGenVSites     = false;
     static gmx_bool                  bDihedral      = false;
-    static gmx_bool                  bLOG           = false;
     static gmx_bool                  bCUBE          = false;
     static gmx_bool                  bH14           = true;
     static gmx_bool                  bVerbose       = true;
@@ -158,7 +157,10 @@ int alex_gentop(int argc, char *argv[])
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = nullptr;
 
-    t_pargs                          pa[]     = {
+    t_pargs                          pa[]     = 
+    {
+        { "-f",      FALSE, etSTR,  {&filename},
+           "Input file name to be turned into GROMACS input" },
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
         { "-cube",   FALSE, etBOOL, {&bCUBE},
@@ -239,7 +241,11 @@ int alex_gentop(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Charge tolerance should be between 0 and 1 (not %g)", qtol);
     }
-
+    // Check whether there is something to read
+    if (strlen(dbname) == 0 && strlen(filename) == 0)
+    {
+        gmx_fatal(FARGS, "Specify either the -db or the -f option. No output without input");
+    }
     const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
     if (opt2parg_bSet("-ff", asize(pa), pa) && nullptr == gentop_fnm)
     {
@@ -276,11 +282,17 @@ int alex_gentop(int argc, char *argv[])
     }
     if (strlen(dbname) > 0)
     {
+        const char *molpropDatabase = opt2fn_null("-mpdb", NFILE, fnm);
+        if (!molpropDatabase || strlen(molpropDatabase) == 0)
+        {
+            gmx_fatal(FARGS, "Empty database file name");
+        }
         if (bVerbose)
         {
-            printf("Reading molecule database.\n");
+            printf("Looking up %s in molecule database %s.\n",
+                   dbname, molpropDatabase);
         }
-        MolPropRead(opt2fn_null("-mpdb", NFILE, fnm), &mps);
+        MolPropRead(molpropDatabase, &mps);
         for (mpi = mps.begin(); (mpi < mps.end()); mpi++)
         {
             if (strcasecmp(dbname, mpi->getMolname().c_str()) == 0)
@@ -292,22 +304,15 @@ int alex_gentop(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "Molecule %s not found in database", dbname);
         }
+        mymol.Merge(mpi);
     }
     else
     {
-        gmx::ArrayRef<const std::string> fns;
+        std::string fnm = filename;
+        auto fns = gmx::splitString(fnm);
         if (strlen(molnm) == 0)
         {
             molnm = (char *)"MOL";
-        }
-        bLOG = opt2bSet("-g03", NFILE, fnm);
-        if (bLOG)
-        {
-            fns = ftp2fns(efLOG, NFILE, fnm);
-        }
-        else if (opt2bSet("-f", NFILE, fnm))
-        {
-            fns = ftp2fns(efSTX, NFILE, fnm);
         }
         if (fns.size() > 0)
         {
@@ -334,10 +339,10 @@ int alex_gentop(int argc, char *argv[])
         {
             gmx_fatal(FARGS, "No input file has been specified.");
         }
-    }
-    for (auto mpi = mps.begin(); mpi < mps.end(); mpi++)
-    {
-        mymol.Merge(mpi);
+        for (auto mpi = mps.begin(); mpi < mps.end(); mpi++)
+        {
+            mymol.Merge(mpi);
+        }
     }
     mymol.SetForceField(ff[0]);
     fill_inputrec(inputrec);
