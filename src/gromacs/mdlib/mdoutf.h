@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 class energyhistory_t;
 struct gmx_mtop_t;
+struct gmx_multisim_t;
 struct gmx_output_env_t;
 struct ObservablesHistory;
 struct t_commrec;
@@ -77,7 +78,9 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
                          gmx_mtop_t*                   mtop,
                          const gmx_output_env_t*       oenv,
                          gmx_wallcycle_t               wcycle,
-                         gmx::StartingBehavior         startingBehavior);
+                         gmx::StartingBehavior         startingBehavior,
+                         bool                          simulationsShareState,
+                         const gmx_multisim_t*         ms);
 
 /*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);

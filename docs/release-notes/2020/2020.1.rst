@@ -120,6 +120,17 @@ and turn negative, leading to wrong lookup and unphysical values.
 
 :issue:`3391`
 
+Fix checkpoint files getting out of sync with simulations sharing data
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When simulations share data, e.g., replica exchange, AWH with bias sharing
+or NMR ensemble averaging, MPI barrier have now been added before renaming
+the checkpointing files to avoid that checkpoints files from the simulations
+can get out of sync. Now in very unlikely cases some checkpoint files might
+have temporary names, but all content will be in sync.
+
+:issue:`2440`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

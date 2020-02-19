@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1084,9 +1084,10 @@ void LegacySimulator::do_cg()
     /* Init em and store the local state in s_min */
     init_em(fplog, mdlog, CG, cr, inputrec, imdSession, pull_work, state_global, top_global, s_min,
             &top, nrnb, fr, &graph, mdAtoms, &gstat, vsite, constr, nullptr);
-    gmx_mdoutf* outf =
-            init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
-                        inputrec, top_global, nullptr, wcycle, StartingBehavior::NewSimulation);
+    const bool        simulationsShareState = false;
+    gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
+                                   mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
+                                   StartingBehavior::NewSimulation, simulationsShareState, ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr,
                                    false, StartingBehavior::NewSimulation, mdModulesNotifier);
 
@@ -1697,9 +1698,10 @@ void LegacySimulator::do_lbfgs()
     /* Init em */
     init_em(fplog, mdlog, LBFGS, cr, inputrec, imdSession, pull_work, state_global, top_global,
             &ems, &top, nrnb, fr, &graph, mdAtoms, &gstat, vsite, constr, nullptr);
-    gmx_mdoutf* outf =
-            init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
-                        inputrec, top_global, nullptr, wcycle, StartingBehavior::NewSimulation);
+    const bool        simulationsShareState = false;
+    gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
+                                   mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
+                                   StartingBehavior::NewSimulation, simulationsShareState, ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr,
                                    false, StartingBehavior::NewSimulation, mdModulesNotifier);
 
@@ -2377,9 +2379,10 @@ void LegacySimulator::do_steep()
     /* Init em and store the local state in s_try */
     init_em(fplog, mdlog, SD, cr, inputrec, imdSession, pull_work, state_global, top_global, s_try,
             &top, nrnb, fr, &graph, mdAtoms, &gstat, vsite, constr, nullptr);
-    gmx_mdoutf* outf =
-            init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
-                        inputrec, top_global, nullptr, wcycle, StartingBehavior::NewSimulation);
+    const bool        simulationsShareState = false;
+    gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
+                                   mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
+                                   StartingBehavior::NewSimulation, simulationsShareState, ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr,
                                    false, StartingBehavior::NewSimulation, mdModulesNotifier);
 
@@ -2622,9 +2625,10 @@ void LegacySimulator::do_nm()
     /* Init em and store the local state in state_minimum */
     init_em(fplog, mdlog, NM, cr, inputrec, imdSession, pull_work, state_global, top_global,
             &state_work, &top, nrnb, fr, &graph, mdAtoms, &gstat, vsite, constr, &shellfc);
-    gmx_mdoutf* outf =
-            init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
-                        inputrec, top_global, nullptr, wcycle, StartingBehavior::NewSimulation);
+    const bool  simulationsShareState = false;
+    gmx_mdoutf* outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
+                                   mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
+                                   StartingBehavior::NewSimulation, simulationsShareState, ms);
 
     std::vector<int>       atom_index = get_atom_index(top_global);
     std::vector<gmx::RVec> fneg(atom_index.size(), { 0, 0, 0 });

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -226,8 +226,10 @@ void gmx::LegacySimulator::do_mimic()
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
 
-    gmx_mdoutf* outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
-                                   ir, top_global, oenv, wcycle, StartingBehavior::NewSimulation);
+    const bool        simulationsShareState = false;
+    gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
+                                   mdModulesNotifier, ir, top_global, oenv, wcycle,
+                                   StartingBehavior::NewSimulation, simulationsShareState, ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, ir, pull_work,
                                    mdoutf_get_fp_dhdl(outf), true, StartingBehavior::NewSimulation,
                                    mdModulesNotifier);
