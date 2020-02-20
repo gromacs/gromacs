@@ -1083,8 +1083,6 @@ Known limitations
 
 **Please note again the limitations outlined below!**
 
-- PME GPU offload is supported on NVIDIA hardware with CUDA and AMD hardware with OpenCL.
-
 - Only a PME order of 4 is supported on GPUs.
 
 - PME will run on a GPU only when exactly one rank has a
