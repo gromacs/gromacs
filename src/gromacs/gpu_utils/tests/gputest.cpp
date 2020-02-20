@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,7 @@ GpuTest::GpuTest()
     if (isGpuDetectionFunctional(nullptr))
     {
         findGpus(gpuInfo_);
+        compatibleGpuIds_ = getCompatibleGpus(*gpuInfo_);
     }
     // Failing to find valid GPUs does not require further action
 }
@@ -69,9 +70,20 @@ GpuTest::~GpuTest()
     sfree(gpuInfo_);
 }
 
-bool GpuTest::haveValidGpus() const
+bool GpuTest::haveCompatibleGpus() const
 {
-    return gpuInfo_->n_dev_compatible > 0;
+    return !compatibleGpuIds_.empty();
+}
+
+std::vector<const DeviceInformation*> GpuTest::getDeviceInfos() const
+{
+    std::vector<const DeviceInformation*> deviceInfos;
+    deviceInfos.reserve(compatibleGpuIds_.size());
+    for (const auto& id : compatibleGpuIds_)
+    {
+        deviceInfos.emplace_back(getDeviceInfo(*gpuInfo_, id));
+    }
+    return deviceInfos;
 }
 
 } // namespace test

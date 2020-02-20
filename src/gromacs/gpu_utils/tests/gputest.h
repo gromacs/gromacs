@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include <gtest/gtest.h>
 
+struct DeviceInformation;
 struct gmx_gpu_info_t;
 
 namespace gmx
@@ -57,11 +58,15 @@ class GpuTest : public ::testing::Test
 public:
     //! Information about GPUs that are present.
     gmx_gpu_info_t* gpuInfo_;
+    //! Contains the IDs of all compatible GPUs
+    std::vector<int> compatibleGpuIds_;
 
     GpuTest();
     ~GpuTest() override;
-    //! Getter for convenience in testing
-    bool haveValidGpus() const;
+    //! Return whether compatible GPUs were found
+    bool haveCompatibleGpus() const;
+    //! Return a vector of handles, each to a device info for a compatible GPU.
+    std::vector<const DeviceInformation*> getDeviceInfos() const;
 };
 
 } // namespace test

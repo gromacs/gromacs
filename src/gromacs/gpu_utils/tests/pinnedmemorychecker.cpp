@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ using PinnedMemoryCheckerTest = GpuTest;
 
 TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
 {
-    if (!haveValidGpus())
+    if (!haveCompatibleGpus())
     {
         return;
     }
@@ -77,7 +77,7 @@ TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 {
-    if (!haveValidGpus())
+    if (!haveCompatibleGpus())
     {
         return;
     }
@@ -89,7 +89,7 @@ TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 {
-    if (!haveValidGpus())
+    if (!haveCompatibleGpus())
     {
         return;
     }
@@ -101,7 +101,7 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 {
-    if (!haveValidGpus())
+    if (!haveCompatibleGpus())
     {
         return;
     }
@@ -114,7 +114,7 @@ TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinnedCBufferIsRecognized)
 {
-    if (!haveValidGpus())
+    if (!haveCompatibleGpus())
     {
         return;
     }

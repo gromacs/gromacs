@@ -1,0 +1,239 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief Tests GPU stream manager
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \ingroup module_gpu_utils
+ */
+#include "gmxpre.h"
+
+#include "gromacs/gpu_utils/device_stream_manager.h"
+
+#include "config.h"
+
+#include <initializer_list>
+#include <vector>
+
+#include <gtest/gtest.h>
+
+#include "gromacs/utility/enumerationhelpers.h"
+
+#include "gputest.h"
+
+namespace gmx
+{
+
+namespace test
+{
+
+namespace
+{
+
+//! GPU device stream names for outputs.
+const EnumerationArray<DeviceStreamType, std::string> c_deviceStreamNames = {
+    { "non-bonded local", "non-bonded non-local", "PME", "PME-PP transfer", "update" }
+};
+
+//! Test fixture
+class DeviceStreamManagerTest : public GpuTest
+{
+public:
+    //! Helper function to implement readable testing
+    void expectValidStreams(DeviceStreamManager* manager, std::initializer_list<DeviceStreamType> types)
+    {
+        if (canExpectValidStreams_)
+        {
+            for (const DeviceStreamType type : types)
+            {
+                SCOPED_TRACE("Testing " + c_deviceStreamNames[type] + " stream.");
+                EXPECT_TRUE(manager->streamIsValid(type));
+            }
+        }
+    }
+    //! Helper function to implement readable testing
+    void expectInvalidStreams(DeviceStreamManager* manager, std::initializer_list<DeviceStreamType> types)
+    {
+        for (const DeviceStreamType type : types)
+        {
+            SCOPED_TRACE("Testing " + c_deviceStreamNames[type] + " stream.");
+            EXPECT_FALSE(manager->streamIsValid(type));
+        }
+    }
+
+    /*! \brief Non-GPU builds return nullptr instead of streams,
+     * so we have to expect that in such build configurations. */
+    const bool canExpectValidStreams_ = (GMX_GPU != GMX_GPU_NONE);
+};
+
+TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
+{
+    // It would be nice to test that the priority is high when it can
+    // be, but that requires calling the same API calls we're testing
+    // that we've called, so it is not very useful.
+    const bool useTiming = false;
+
+    // TODO Is it enough to only test one device?
+    for (const auto* deviceInfo : getDeviceInfos())
+    {
+        EXPECT_FALSE(deviceInfo == nullptr)
+                << "Device information should be provided for the GPU builds.";
+        // Test all the different cases successively.
+
+        {
+            SCOPED_TRACE("No DD, no PME rank, no GPU update");
+            bool                useGpuForPme              = false;
+            bool                havePpDomainDecomposition = false;
+            bool                doGpuPmePpTransfer        = false;
+            bool                useGpuForUpdate           = false;
+            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
+                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+
+            expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal });
+            expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal,
+                                             DeviceStreamType::Pme, DeviceStreamType::PmePpTransfer,
+                                             DeviceStreamType::UpdateAndConstraints });
+        }
+
+        {
+            SCOPED_TRACE("With DD, no PME rank, no GPU update");
+            bool                useGpuForPme              = false;
+            bool                havePpDomainDecomposition = true;
+            bool                doGpuPmePpTransfer        = false;
+            bool                useGpuForUpdate           = false;
+            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
+                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+
+            expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal,
+                                           DeviceStreamType::NonBondedNonLocal });
+            expectInvalidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::PmePpTransfer,
+                                             DeviceStreamType::UpdateAndConstraints });
+        }
+
+        {
+            SCOPED_TRACE("No DD, with PME rank, no GPU update");
+            bool                useGpuForPme              = true;
+            bool                havePpDomainDecomposition = false;
+            bool                doGpuPmePpTransfer        = true;
+            bool                useGpuForUpdate           = false;
+            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
+                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+
+            expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
+                                           DeviceStreamType::PmePpTransfer,
+                                           DeviceStreamType::UpdateAndConstraints });
+            expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal });
+        }
+
+        {
+            SCOPED_TRACE("With DD, with PME rank, no GPU update");
+            bool                useGpuForPme              = true;
+            bool                havePpDomainDecomposition = true;
+            bool                doGpuPmePpTransfer        = true;
+            bool                useGpuForUpdate           = false;
+            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
+                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+
+            expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
+                                           DeviceStreamType::NonBondedNonLocal, DeviceStreamType::PmePpTransfer,
+                                           DeviceStreamType::UpdateAndConstraints });
+            expectInvalidStreams(&manager, {});
+        }
+
+        {
+            SCOPED_TRACE("No DD, no PME rank, with GPU update");
+            bool                useGpuForPme              = false;
+            bool                havePpDomainDecomposition = false;
+            bool                doGpuPmePpTransfer        = false;
+            bool                useGpuForUpdate           = true;
+            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
+                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+
+            expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal,
+                                           DeviceStreamType::UpdateAndConstraints });
+            expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal,
+                                             DeviceStreamType::Pme, DeviceStreamType::PmePpTransfer });
+        }
+
+        {
+            SCOPED_TRACE("With DD, no PME rank, with GPU update");
+            bool                useGpuForPme              = false;
+            bool                havePpDomainDecomposition = true;
+            bool                doGpuPmePpTransfer        = false;
+            bool                useGpuForUpdate           = true;
+            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
+                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+
+            expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal, DeviceStreamType::NonBondedNonLocal,
+                                           DeviceStreamType::UpdateAndConstraints });
+            expectInvalidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::PmePpTransfer });
+        }
+
+        {
+            SCOPED_TRACE("No DD, with PME rank, with GPU update");
+            bool                useGpuForPme              = true;
+            bool                havePpDomainDecomposition = false;
+            bool                doGpuPmePpTransfer        = true;
+            bool                useGpuForUpdate           = true;
+            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
+                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+
+            expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
+                                           DeviceStreamType::PmePpTransfer,
+                                           DeviceStreamType::UpdateAndConstraints });
+            expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal });
+        }
+
+        {
+            SCOPED_TRACE("With DD, with PME rank, with GPU update");
+            bool                useGpuForPme              = true;
+            bool                havePpDomainDecomposition = true;
+            bool                doGpuPmePpTransfer        = true;
+            bool                useGpuForUpdate           = true;
+            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
+                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+
+            expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
+                                           DeviceStreamType::NonBondedNonLocal, DeviceStreamType::PmePpTransfer,
+                                           DeviceStreamType::UpdateAndConstraints });
+        }
+    }
+}
+
+} // namespace
+} // namespace test
+} // namespace gmx

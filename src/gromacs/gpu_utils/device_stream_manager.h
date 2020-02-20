@@ -1,0 +1,142 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \libinternal \file
+ *
+ * \brief This file declares a manager of GPU context and streams needed for
+ * running workloads on GPUs.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \inlibraryapi
+ * \ingroup module_gpu_utils
+ */
+#ifndef GMX_GPU_UTILS_GPUSTREAMMANAGER_H
+#define GMX_GPU_UTILS_GPUSTREAMMANAGER_H
+
+#include <string>
+
+#include "gromacs/utility/classhelpers.h"
+
+class DeviceContext;
+struct DeviceInformation;
+class DeviceStream;
+
+namespace gmx
+{
+
+/*! \brief Class enum to describe the different logical streams used
+ * for GPU work.
+ *
+ * Whether the actual streams differ is an implementation detail of
+ * the manager class.
+ */
+enum class DeviceStreamType : int
+{
+    //! Stream primarily for short-ranged local nonbonded work.
+    NonBondedLocal,
+    //! Stream primarily for short-ranged nonlocal nonbonded work.
+    NonBondedNonLocal,
+    //! Stream primarily for PME work.
+    Pme,
+    //! Stream primarily for data exchange between PME and PP ranks.
+    PmePpTransfer,
+    //! Stream primarily for update and constraints.
+    UpdateAndConstraints,
+    //! Conventional termination of the enumeration.
+    Count
+};
+
+/*! \libinternal
+ * \brief Device stream and context manager.
+ *
+ * Manages the lifetime of the GPU streams and their association
+ * with context and device information that is needed to use them.
+ *
+ * If supported by the GPU API, the available runtime and the
+ * indicated device, some streams will be configured at high
+ * priority. Otherwise, all streams will share the default priority
+ * appropriate to the situation.
+ */
+class DeviceStreamManager
+{
+public:
+    /*! \brief Constructor.
+     *
+     * \throws InternalError  If any of the required resources could not be initialized.
+     */
+    DeviceStreamManager(const DeviceInformation& deviceInfo,
+                        bool                     useGpuForPme,
+                        bool                     havePpDomainDecomposition,
+                        bool                     doGpuPmePpTransfer,
+                        bool                     useGpuForUpdate,
+                        bool                     useTiming);
+    ~DeviceStreamManager();
+
+    /*! \brief Get the device information object of the associated device.
+     *
+     * \returns reference to device info.
+     */
+    const DeviceInformation& deviceInfo() const;
+
+    /*! \brief Returns a handle to the GPU context.
+     *
+     * \todo This relies on the fact that only one unique device
+     * is described by nonbondedDeviceInfo and pmeDeviceInfo.
+     */
+    const DeviceContext& context() const;
+
+    /*! \brief Returns a handle to the requested GPU stream.
+     *
+     * \param[in] streamToGet Which stream to get.
+     */
+    const DeviceStream& stream(DeviceStreamType streamToGet) const;
+
+    /*! \brief Return whether the requested GPU stream is valid for use.
+     *
+     * \param[in] streamToCheck Which stream to check.
+     *
+     * \returns Whether the stream was initialized.
+     */
+    bool streamIsValid(DeviceStreamType streamToCheck) const;
+
+private:
+    class Impl;
+    PrivateImplPointer<Impl> impl_;
+};
+
+} // namespace gmx
+
+#endif
