@@ -42,6 +42,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -52,6 +53,19 @@
 #include "molprop_xml.h"
 #include "mymol.h"
 #include "poldata_xml.h"
+
+static void print_errors(const char                     *fn,
+                         const std::vector<std::string> &errors,
+                         immStatus                       imm)
+{
+    FILE  *fp   = gmx_ffopen(fn, "w");
+    fprintf(fp, "The detected error is \"%s\"\n", alexandria::immsg(imm));
+    for (auto error : errors)
+    {
+        fprintf(fp, "Error: %s\n", error.c_str());
+    }
+    fclose(fp);
+}
 
 int alex_gentop(int argc, char *argv[])
 {
@@ -104,23 +118,24 @@ int alex_gentop(int argc, char *argv[])
     immStatus                        imm;
 
     t_filenm                         fnm[] = {
-        { efTOP, "-p",        "out",       ffOPTWR },
-        { efITP, "-oi",       "out",       ffOPTWR },
-        { efSTO, "-c",        "out",       ffWRITE },
-        { efNDX, "-n",        "renum",     ffOPTWR },
-        { efDAT, "-q",        "qout",      ffOPTWR },
-        { efDAT, "-mpdb",     "molprops",  ffOPTRD },
-        { efDAT, "-d",        "gentop",    ffOPTRD },
-        { efXVG, "-table",    "table",     ffOPTRD },
-        { efCUB, "-pot",      "potential", ffOPTWR },
-        { efCUB, "-ref",      "refpot",    ffOPTRD },
-        { efCUB, "-diff",     "diffpot",   ffOPTWR },
-        { efCUB, "-rho",      "density",   ffOPTWR },
-        { efXVG, "-diffhist", "diffpot",   ffOPTWR },
-        { efXVG, "-his",      "pot-histo", ffOPTWR },
-        { efXVG, "-pc",       "pot-comp",  ffOPTWR },
-        { efPDB, "-pdbdiff",  "pdbdiff",   ffOPTWR },
-        { efXVG, "-plotESP",  "ESPcorr",   ffOPTWR }
+        { efTOP, "-p",        "out",           ffOPTWR },
+        { efITP, "-oi",       "out",           ffOPTWR },
+        { efSTO, "-c",        "out",           ffWRITE },
+        { efNDX, "-n",        "renum",         ffOPTWR },
+        { efDAT, "-q",        "qout",          ffOPTWR },
+        { efDAT, "-mpdb",     "molprops",      ffOPTRD },
+        { efDAT, "-d",        "gentop",        ffOPTRD },
+        { efXVG, "-table",    "table",         ffOPTRD },
+        { efCUB, "-pot",      "potential",     ffOPTWR },
+        { efCUB, "-ref",      "refpot",        ffOPTRD },
+        { efCUB, "-diff",     "diffpot",       ffOPTWR },
+        { efCUB, "-rho",      "density",       ffOPTWR },
+        { efXVG, "-diffhist", "diffpot",       ffOPTWR },
+        { efXVG, "-his",      "pot-histo",     ffOPTWR },
+        { efXVG, "-pc",       "pot-comp",      ffOPTWR },
+        { efPDB, "-pdbdiff",  "pdbdiff",       ffOPTWR },
+        { efXVG, "-plotESP",  "ESPcorr",       ffOPTWR },
+        { efLOG, "-g",        "gentop_errors", ffWRITE }
     };
 
     const  int                       NFILE          = asize(fnm);
@@ -402,7 +417,7 @@ int alex_gentop(int argc, char *argv[])
         imm = mymol.GenerateChargeGroups(ecg, bUsePDBcharge);
     }
 
-    if (immOK == imm)
+    if (immOK == imm && mymol.errors().size() == 0)
     {
         splitLot(mylot.c_str(), &method, &basis);
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
@@ -417,7 +432,9 @@ int alex_gentop(int argc, char *argv[])
     }
     else
     {
-        gmx_fatal(FARGS, "Alexandria gentop ended prematurely due to \"%s\"\n", alexandria::immsg(imm));
+        auto fn = opt2fn("-g", NFILE, fnm);
+        fprintf(stderr, "\nFatal Error. Please check the %s file for error messages.\n", fn);
+        print_errors(fn, mymol.errors(), imm);
     }
     return 0;
 }

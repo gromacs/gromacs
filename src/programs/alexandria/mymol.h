@@ -137,6 +137,7 @@ class MyMol : public MolProp
         MyForceProvider                 *myforce_;
         GentopVsites                     gvt_;
         std::string                      forcefield_;
+        
 
         //! Array of dipole vectors
         rvec                      mu_qm_[qtNR];
@@ -251,6 +252,8 @@ class MyMol : public MolProp
          * \param[in] q      The charges
          */
         void setQandMoments(qType qt, int natom, real q[]);
+        
+        
 
         double                         isoPol_elec_   = 0;
         double                         isoPol_calc_   = 0;
@@ -284,6 +287,7 @@ class MyMol : public MolProp
         t_fcdata                      *fcd_;
         t_nrnb                         nrnb_;
         gmx_wallcycle_t                wcycle_;
+        std::vector<std::string>       error_messages_;
 
         /*! \brief
          * Constructor
@@ -306,6 +310,9 @@ class MyMol : public MolProp
          * Return Charge vector corresponding to charge type qt.
          */
         const std::vector<double> &chargeQM(qType qt) const { return charge_QM_[qt]; }
+        
+        
+        const std::vector<std::string> &errors() const {return error_messages_;}
 
         /*! \brief Store dipole in appropriate vector
          *

@@ -305,7 +305,8 @@ immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> &plist,
                       t_atoms                   *atoms,
                       bool                       bBASTAT,
-                      std::string                molname)
+                      std::string                molname,
+                      std::vector<std::string>  &errors)
 {
     std::string              aai, aaj, aak, aal, params;
     std::vector<std::string> atomNames, ptr;
@@ -346,16 +347,18 @@ immStatus updatePlist(const Poldata             *pd,
                         }
                         else if (!bBASTAT)
                         {
-                            fprintf(stderr, "Could not find bond information for %s - %s (atoms %d %d) with bondorder of %zu in %s\n",
-                                    aai.c_str(), aaj.c_str(), 1+pwi->a[0], 1+pwi->a[1], bondOrder, molname.c_str());
+                            errors.push_back(gmx::formatString("Could not find bond information for %s - %s (atoms %d %d) with bondorder of %zu in %s\n",
+                                                               aai.c_str(), aaj.c_str(), 
+                                                               1+pwi->a[0], 1+pwi->a[1], 
+                                                               bondOrder, molname.c_str()));
                             return immNotSupportedBond;
                         }
                         bondOrder_index++;
                     }
                     else
                     {
-                        fprintf(stderr, "Unsupported atom types: %d, %d!\n",
-                                pwi->a[0], pwi->a[1]);
+                        errors.push_back(gmx::formatString("Unsupported atom types: %d, %d!\n",
+                                                           pwi->a[0], pwi->a[1]));
                         return immAtomTypes;
                     }
                 }
@@ -389,18 +392,18 @@ immStatus updatePlist(const Poldata             *pd,
                         }
                         else if (!bBASTAT)
                         {
-                            if (debug)
-                            {
-                                fprintf(debug, "Could not find angle information for %s - %s - %s (atoms %d %d %d) in %s\n",
-                                        aai.c_str(), aaj.c_str(), aak.c_str(), 
-                                        1+b->a[0], 1+b->a[1], 1+b->a[2], molname.c_str());
-                            }
+                            errors.push_back(gmx::formatString("Could not find angle information for %s - %s - %s (atoms %d %d %d) in %s\n",
+                                                               aai.c_str(), aaj.c_str(), aak.c_str(), 
+                                                               1+b->a[0], 1+b->a[1], 
+                                                               1+b->a[2], molname.c_str()));
                             return immNotSupportedAngle;
                         }
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d!\n", b->a[0], b->a[1], b->a[2]);
+                        errors.push_back(gmx::formatString("Unsuppotred atom types: %d, %d, %d!\n", 
+                                                           b->a[0], b->a[1], b->a[2]));
+                        return immAtomTypes;
                     }
                 }
             }
@@ -418,26 +421,19 @@ immStatus updatePlist(const Poldata             *pd,
                         {
                             atomNames.push_back(aaa);
                         }
-                        else if (debug)
+                        else
                         {
-                            fprintf(debug, "Cannot find bonded type for %s\n",
-                                    *atoms->atomtype[b->a[j]]);
+                            errors.push_back(gmx::formatString("Cannot find bonded type for %s\n",
+                                                               *atoms->atomtype[b->a[j]]));
                         }
                     }
-                    if (static_cast<int>(atomNames.size()) == 
-                        interaction_function[ftype].nratoms)
+                    if (static_cast<int>(atomNames.size()) == interaction_function[ftype].nratoms)
                     {
                         n     = 0;
                         value = 0;
                         if (fs->searchForce(atomNames, params, &value, &sigma,
                                             &ntrain, iType == eitIMPROPER_DIHEDRALS))
                         {
-                            if (debug)
-                            {
-                                fprintf(debug, "Found angle %g for %s - %s - %s - %s\n",
-                                        value, atomNames[0].c_str(), atomNames[1].c_str(),
-                                        atomNames[2].c_str(), atomNames[3].c_str());
-                            }
                             b->c[n++] = value;
                             ptr       = gmx::splitString(params);
                             int n = 0;
@@ -457,22 +453,22 @@ immStatus updatePlist(const Poldata             *pd,
                         }
                         else if (!bBASTAT)
                         {
-                            if (debug)
-                            {
-                                fprintf(debug, "Could not find %s information for %s - %s - %s - %s (atoms %d %d %d %d) in %s\n",
-                                        iType2string(iType),
-                                        atomNames[0].c_str(), atomNames[1].c_str(),
-                                        atomNames[2].c_str(), atomNames[3].c_str(), 
-                                        1+b->a[0], 1+b->a[1], 1+b->a[2], 1+b->a[3], 
-                                        molname.c_str());
-                            }
+
+                            errors.push_back(gmx::formatString("Could not find %s information for %s - %s - %s - %s (atoms %d %d %d %d) in %s\n",
+                                                               iType2string(iType),
+                                                               atomNames[0].c_str(), atomNames[1].c_str(),
+                                                               atomNames[2].c_str(), atomNames[3].c_str(), 
+                                                               1+b->a[0], 1+b->a[1], 1+b->a[2], 1+b->a[3], 
+                                                               molname.c_str()));
+
                             return immNotSupportedDihedral;
                         }
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsupported atom types: %d, %d, %d, %d!\n",
-                                  b->a[0], b->a[1], b->a[2], b->a[3]);
+                        errors.push_back(gmx::formatString("Unsupported atom types: %d, %d, %d, %d!\n",
+                                                           b->a[0], b->a[1], b->a[2], b->a[3]));
+                        return immAtomTypes;
                     }
                 }
             }
@@ -575,7 +571,7 @@ static void getBhamParams(const Poldata     *pd,
         }
         else
         {
-            gmx_fatal(FARGS, "Can not find atomtype %s looking for BHAM", a.c_str());
+            gmx_fatal(FARGS, "Cannot find atomtype %s looking for BHAM", a.c_str());
         }
     }
 

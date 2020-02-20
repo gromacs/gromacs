@@ -845,7 +845,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
 
         MakeSpecialInteractions(pd, bUseVsites);
 
-        imm = updatePlist(pd, plist_, atoms_, bBASTAT, getMolname());
+        imm = updatePlist(pd, plist_, atoms_, bBASTAT, getMolname(), error_messages_);
     }
     if (immOK == imm)
     {
@@ -978,7 +978,8 @@ void MyMol::addShells(const Poldata *pd)
             }
             else
             {
-                printf("Cannot find atomtype %s in poldata\n", atomtype.c_str());
+                error_messages_.push_back(gmx::formatString("Cannot find atomtype %s in poldata\n", 
+                                                            atomtype.c_str()));
             }
         }
     }

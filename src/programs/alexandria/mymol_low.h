@@ -120,7 +120,8 @@ immStatus updatePlist(const Poldata             *pd,
                       std::vector<PlistWrapper> &plist,
                       t_atoms                   *atoms,
                       bool                       bBASTAT,
-                      std::string                molname);
+                      std::string                molname,
+                      std::vector<std::string>  &errors);
 
 std::vector<double> getDoubles(const std::string &s);
 
