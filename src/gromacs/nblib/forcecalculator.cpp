@@ -272,6 +272,7 @@ void ForceCalculator::unpackTopologyToGmx()
     for (size_t atomI = 0; atomI < numAtoms; atomI++)
     {
         SET_CGINFO_HAS_VDW(atomInfoAllVdw_[atomI]);
+        SET_CGINFO_HAS_Q(atomInfoAllVdw_[atomI]);
     }
 }
 
@@ -286,7 +287,8 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()
     gmx_enerdata_t      enerd(1, 0);
 
     gmx::StepWorkload stepWork;
-    stepWork.computeForces = true;
+    stepWork.computeForces          = true;
+    stepWork.computeNonbondedForces = true;
     if (options_.computeVirialAndEnergy)
     {
         stepWork.computeVirial = true;
@@ -307,7 +309,7 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()
     put_atoms_in_box(PbcType::Xyz, box_, system_.coordinates());
 
     // Run the kernel without force clearing
-    nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local, ic, stepWork, enbvClearFNo,
+    nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local, ic, stepWork, enbvClearFYes,
                                  forceRec, &enerd, &nrnb);
 
     // Todo manage this at a higher level
