@@ -92,6 +92,7 @@ TEST(NBlibTest, canComputeForces)
 {
     auto options      = NBKernelOptions();
     options.nbnxmSimd = BenchMarkKernels::SimdNo;
+    options.coulombType = BenchMarkCoulomb::Cutoff;
 
     SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;
 
