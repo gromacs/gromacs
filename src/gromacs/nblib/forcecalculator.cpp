@@ -311,7 +311,6 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()
                                  forceRec, &enerd, &nrnb);
 
     // Todo manage this at a higher level
-    nbnxn_atomdata_t*                nbat = nbv->nbat.get();
     gmx::PaddedHostVector<gmx::RVec> verletForces(system_.topology().numAtoms(), gmx::RVec(0, 0, 0));
 
     nbv->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces);
