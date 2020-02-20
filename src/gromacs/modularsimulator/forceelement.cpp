@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,8 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #include "energyelement.h"
 #include "freeenergyperturbationelement.h"
@@ -130,6 +132,14 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     gmx_edsam*      ed    = nullptr;
     gmx_multisim_t* ms    = nullptr;
     t_graph*        graph = nullptr;
+
+    if (!DOMAINDECOMP(cr_) && (flags & GMX_FORCE_NS) && inputrecDynamicBox(inputrec_))
+    {
+        // TODO: Correcting the box is done in DomDecHelper (if using DD) or here (non-DD simulations).
+        //       Think about unifying this responsibility, could this be done in one place?
+        auto box = statePropagatorData_->box();
+        correct_box(fplog_, step, box, graph);
+    }
 
     /* The coordinates (x) are shifted (to get whole molecules)
      * in do_force.

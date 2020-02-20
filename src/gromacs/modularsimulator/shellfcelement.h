@@ -127,7 +127,7 @@ private:
     //! IEnergySignallerClient implementation
     SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
     //! The actual do_force call
-    void run(Step step, Time time, unsigned int flags);
+    void run(Step step, Time time, bool isNSStep, unsigned int flags);
 
     //! The shell / FC helper struct
     gmx_shellfc_t* shellfc_;

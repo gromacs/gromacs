@@ -92,6 +92,14 @@ in this situation.
 :issue:`2440`
 :issue:`3990`
 
+Correct skewed box using modular simulator without DD
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using modular simulator without DD, it was not checked whether the box
+was getting overly skewed when using pressure control.
+
+:issue:`3383`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
