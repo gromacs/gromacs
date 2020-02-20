@@ -134,7 +134,7 @@ TEST(NBlibTest, CanIntegrateSystem)
                                              simState.coordinates()));
     }
 }
-
+/*
 TEST(NBlibTest, ForcesAreNotZero)
 {
     auto options          = NBKernelOptions();
@@ -158,6 +158,36 @@ TEST(NBlibTest, ForcesAreNotZero)
         const bool haveNonzeroForces =
                 (forces[atomI][0] != 0.0 || forces[atomI][1] != 0.0 || forces[atomI][2] != 0.0);
         EXPECT_TRUE(haveNonzeroForces);
+    }
+}
+*/
+TEST(NBlibTest, ArgonForcesAreCorrect)
+{
+    auto options          = NBKernelOptions();
+    options.nbnxmSimd     = BenchMarkKernels::SimdNo;
+    options.coulombType   = BenchMarkCoulomb::Cutoff;
+    options.numIterations = 1;
+
+    ArgonSimulationStateBuilder argonSystemBuilder;
+
+    auto simState        = argonSystemBuilder.setupSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
+
+    gmx::PaddedHostVector<gmx::RVec> testForces;
+    for (int iter = 0; iter < options.numIterations; iter++)
+    {
+        testForces = forceCalculator.compute();
+    }
+    gmx::PaddedHostVector<gmx::RVec> refForces(simState.topology().numAtoms(), gmx::RVec(0, 0, 0));
+    // Only 2 atoms are within the cutoff, and Newton says their forces differ by a sign
+    refForces[0] = { -0.412993, -1.098256, -0.113191 };
+    refForces[2] = { 0.412993, 1.098256, 0.113191 };
+    for (int atomI = 0; atomI < simState.topology().numAtoms(); atomI++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            EXPECT_REAL_EQ(refForces[atomI][j], testForces[atomI][j]);
+        }
     }
 }
 
