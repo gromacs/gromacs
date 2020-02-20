@@ -84,7 +84,7 @@ static real combinationFunction(real v, real w, CombinationRule combinationRule)
 {
     if (combinationRule == CombinationRule::Geometric)
     {
-        return sqrt(v * w);
+        return std::sqrt(v * w);
     }
     else
     {
@@ -278,7 +278,7 @@ void ForceCalculator::unpackTopologyToGmx()
 //! Sets up and runs the kernel calls
 //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
 //!      that callers can manipulate directly.
-gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute(const bool printTimings)
+gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()
 {
     // We set the interaction cut-off to the pairlist cut-off
     interaction_const_t ic   = setupInteractionConst(options_);
@@ -296,7 +296,7 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute(const bool printTiming
     std::unique_ptr<nonbonded_verlet_t> nbv = setupNbnxmInstance();
     // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
     // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
-    gmx_cycles_t cycles = gmx_cycles_read();
+    // gmx_cycles_t cycles = gmx_cycles_read();
 
     t_forcerec forceRec;
     forceRec.ntype = system_.topology().getAtomTypes().size();

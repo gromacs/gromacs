@@ -65,10 +65,10 @@ namespace nblib
 
 SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
                                  Box                           box,
-                                 Topology&                     topo,
+                                 Topology                      topology,
                                  const std::vector<gmx::RVec>& vel) :
-    box_(box),
-    topology_(topo)
+    box_(std::move(box)),
+    topology_(std::move(topology))
 {
     if (!checkNumericValues(coord))
     {

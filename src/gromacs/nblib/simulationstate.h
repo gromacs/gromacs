@@ -68,7 +68,7 @@ public:
     //! Constructor
     SimulationState(const std::vector<gmx::RVec>& coord,
                     Box                           box,
-                    Topology&                     topo,
+                    Topology                      topology,
                     const std::vector<gmx::RVec>& vel = {});
 
     //! Copy Constructor
