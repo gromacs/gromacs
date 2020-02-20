@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,13 +124,13 @@ public:
 using PmeBSplineModuliFailureTest = PmeBSplineModuliTest;
 TEST_P(PmeBSplineModuliFailureTest, Throws)
 {
-    EXPECT_THROW(runTest(), InconsistentInputError);
+    EXPECT_THROW_GMX(runTest(), InconsistentInputError);
 }
 //! Correctness test alias
 using PmeBSplineModuliCorrectnessTest = PmeBSplineModuliTest;
 TEST_P(PmeBSplineModuliCorrectnessTest, ReproducesValues)
 {
-    EXPECT_NO_THROW(runTest());
+    EXPECT_NO_THROW_GMX(runTest());
 }
 
 /* Invalid input instances */
