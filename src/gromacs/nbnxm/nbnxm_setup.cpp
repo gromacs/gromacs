@@ -452,7 +452,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
         gpu_nbv = gpu_init(deviceInfo, *deviceContext, fr->ic, pairlistParams, nbat.get(),
-                           cr->nodeid, haveMultipleDomains);
+                           haveMultipleDomains);
 
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }

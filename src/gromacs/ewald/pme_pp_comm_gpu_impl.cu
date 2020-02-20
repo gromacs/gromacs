@@ -64,9 +64,10 @@ PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank, const DeviceContext& device
     GMX_RELEASE_ASSERT(
             GMX_THREAD_MPI,
             "PME-PP GPU Communication is currently only supported with thread-MPI enabled");
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
-    pmePpCommStream_.setStream(stream);
+
+    // In CUDA we only need priority to create stream.
+    // (note that this will be moved from here in the follow-up patch)
+    pmePpCommStream_.init(DeviceInformation(), DeviceContext(), DeviceStreamPriority::Normal, false);
 }
 
 PmePpCommGpu::Impl::~Impl() = default;

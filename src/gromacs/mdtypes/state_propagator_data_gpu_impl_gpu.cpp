@@ -109,12 +109,10 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
 
         // TODO: The update stream should be created only when it is needed.
 #    if (GMX_GPU == GMX_GPU_CUDA)
-        cudaError_t  stat;
-        cudaStream_t stream;
-        stat = cudaStreamCreate(&stream);
-        updateStreamOwn_.setStream(stream);
+        // In CUDA we only need priority to create stream.
+        // (note that this will be moved from here in the follow-up patch)
+        updateStreamOwn_.init(DeviceInformation(), DeviceContext(), DeviceStreamPriority::Normal, false);
         updateStream_ = &updateStreamOwn_;
-        CU_RET_ERR(stat, "CUDA stream creation failed in StatePropagatorDataGpu");
 #    endif
     }
 

@@ -524,32 +524,8 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
      * - default high priority with CUDA
      * - no priorities implemented yet with OpenCL; see #2532
      */
-#if GMX_GPU == GMX_GPU_CUDA
-    cudaError_t stat;
-    int         highest_priority, lowest_priority;
-    stat = cudaDeviceGetStreamPriorityRange(&lowest_priority, &highest_priority);
-    CU_RET_ERR(stat, "PME cudaDeviceGetStreamPriorityRange failed");
-    cudaStream_t stream;
-    stat = cudaStreamCreateWithPriority(&stream,
-                                        cudaStreamDefault, // cudaStreamNonBlocking,
-                                        highest_priority);
-    pmeGpu->archSpecific->pmeStream_.setStream(stream);
-    CU_RET_ERR(stat, "cudaStreamCreateWithPriority on the PME stream failed");
-#elif GMX_GPU == GMX_GPU_OPENCL
-    cl_command_queue_properties queueProperties =
-            pmeGpu->archSpecific->useTiming ? CL_QUEUE_PROFILING_ENABLE : 0;
-    cl_device_id device_id = pmeGpu->deviceInfo->oclDeviceId;
-    cl_int       clError;
-    pmeGpu->archSpecific->pmeStream_.setStream(clCreateCommandQueue(
-            pmeGpu->archSpecific->deviceContext_.context(), device_id, queueProperties, &clError));
-
-
-    if (clError != CL_SUCCESS)
-    {
-        GMX_THROW(gmx::InternalError(
-                gmx::formatString("Failed to create PME command queue (OpenCL error %d)", clError).c_str()));
-    }
-#endif
+    pmeGpu->archSpecific->pmeStream_.init(*pmeGpu->deviceInfo, pmeGpu->archSpecific->deviceContext_,
+                                          DeviceStreamPriority::High, pmeGpu->archSpecific->useTiming);
 }
 
 void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
@@ -812,6 +788,8 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
  */
 static void pme_gpu_init(gmx_pme_t* pme, const DeviceInformation* deviceInfo, const PmeGpuProgram* pmeGpuProgram)
 {
+    GMX_ASSERT(deviceInfo != nullptr,
+               "Device information can not be nullptr when GPU is used for PME.");
     pme->gpu       = new PmeGpu();
     PmeGpu* pmeGpu = pme->gpu;
     changePinningPolicy(&pmeGpu->staging.h_forces, pme_get_pinning_policy());

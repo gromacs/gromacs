@@ -418,8 +418,7 @@ NbnxmGpu* gpu_init(const DeviceInformation* deviceInfo,
                    const interaction_const_t* ic,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
-                   int /*rank*/,
-                   bool bLocalAndNonlocal)
+                   bool                       bLocalAndNonlocal)
 {
     cudaError_t stat;
 
@@ -448,10 +447,8 @@ NbnxmGpu* gpu_init(const DeviceInformation* deviceInfo,
     nb->deviceInfo = deviceInfo;
 
     /* local/non-local GPU streams */
-    cudaStream_t localStream;
-    stat = cudaStreamCreate(&localStream);
-    nb->deviceStreams[InteractionLocality::Local].setStream(localStream);
-    CU_RET_ERR(stat, "cudaStreamCreate on stream[InterationLocality::Local] failed");
+    nb->deviceStreams[InteractionLocality::Local].init(*nb->deviceInfo, DeviceContext(),
+                                                       DeviceStreamPriority::Normal, nb->bDoTime);
     if (nb->bUseTwoStreams)
     {
         init_plist(nb->plist[InteractionLocality::NonLocal]);
@@ -460,15 +457,8 @@ NbnxmGpu* gpu_init(const DeviceInformation* deviceInfo,
          * priorities, because we are querying the priority range which in this
          * case will be a single value.
          */
-        int highest_priority;
-        stat = cudaDeviceGetStreamPriorityRange(nullptr, &highest_priority);
-        CU_RET_ERR(stat, "cudaDeviceGetStreamPriorityRange failed");
-
-        cudaStream_t nonLocalStream;
-        stat = cudaStreamCreateWithPriority(&nonLocalStream, cudaStreamDefault, highest_priority);
-        nb->deviceStreams[InteractionLocality::NonLocal].setStream(nonLocalStream);
-        CU_RET_ERR(stat,
-                   "cudaStreamCreateWithPriority on stream[InteractionLocality::NonLocal] failed");
+        nb->deviceStreams[InteractionLocality::NonLocal].init(
+                *nb->deviceInfo, DeviceContext(), DeviceStreamPriority::High, nb->bDoTime);
     }
 
     /* init events for sychronization (timing disabled for performance reasons!) */

@@ -72,7 +72,6 @@ NbnxmGpu* gpu_init(const DeviceInformation gmx_unused* deviceInfo,
                    const interaction_const_t gmx_unused* ic,
                    const PairlistParams gmx_unused& listParams,
                    const nbnxn_atomdata_t gmx_unused* nbat,
-                   int gmx_unused rank,
                    /* true if both local and non-local are done on GPU */
                    bool gmx_unused bLocalAndNonlocal) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 

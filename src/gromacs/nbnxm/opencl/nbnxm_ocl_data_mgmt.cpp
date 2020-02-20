@@ -560,12 +560,8 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
                    const interaction_const_t* ic,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
-                   const int                  rank,
                    const bool                 bLocalAndNonlocal)
 {
-    cl_int                      cl_error;
-    cl_command_queue_properties queue_properties;
-
     GMX_ASSERT(ic, "Need a valid interaction constants object");
 
     auto nb = new NbnxmGpu;
@@ -596,42 +592,16 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
     /* OpenCL timing disabled if GMX_DISABLE_GPU_TIMING is defined. */
     nb->bDoTime = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
 
-    /* Create queues only after bDoTime has been initialized */
-    if (nb->bDoTime)
-    {
-        queue_properties = CL_QUEUE_PROFILING_ENABLE;
-    }
-    else
-    {
-        queue_properties = 0;
-    }
-
-    cl_command_queue localStream =
-            clCreateCommandQueue(nb->dev_rundata->deviceContext_.context(),
-                                 nb->deviceInfo->oclDeviceId, queue_properties, &cl_error);
     /* local/non-local GPU streams */
-    nb->deviceStreams[InteractionLocality::Local].setStream(localStream);
-
-    if (CL_SUCCESS != cl_error)
-    {
-        gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s: OpenCL error %d", rank,
-                  nb->deviceInfo->device_name, cl_error);
-    }
+    nb->deviceStreams[InteractionLocality::Local].init(*nb->deviceInfo, nb->dev_rundata->deviceContext_,
+                                                       DeviceStreamPriority::Normal, nb->bDoTime);
 
     if (nb->bUseTwoStreams)
     {
         init_plist(nb->plist[InteractionLocality::NonLocal]);
 
-        cl_command_queue nonLocalStream =
-                clCreateCommandQueue(nb->dev_rundata->deviceContext_.context(),
-                                     nb->deviceInfo->oclDeviceId, queue_properties, &cl_error);
-        nb->deviceStreams[InteractionLocality::NonLocal].setStream(nonLocalStream);
-
-        if (CL_SUCCESS != cl_error)
-        {
-            gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s: OpenCL error %d",
-                      rank, nb->deviceInfo->device_name, cl_error);
-        }
+        nb->deviceStreams[InteractionLocality::NonLocal].init(
+                *nb->deviceInfo, nb->dev_rundata->deviceContext_, DeviceStreamPriority::High, nb->bDoTime);
     }
 
     if (nb->bDoTime)
