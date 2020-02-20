@@ -50,6 +50,7 @@
 
 #include "gromacs/ewald/pme_gpu_program.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/utility/gmxassert.h"
 
 struct gmx_hw_info_t;
 
@@ -95,9 +96,12 @@ public:
     TestHardwareContext(CodePath codePath, const char* description, const DeviceInformation* deviceInfo) :
         codePath_(codePath),
         description_(description),
-        deviceInfo_(deviceInfo),
-        program_(buildPmeGpuProgram(deviceInfo_))
+        deviceInfo_(deviceInfo)
     {
+        if (codePath == CodePath::GPU)
+        {
+            program_ = buildPmeGpuProgram(deviceInfo_);
+        }
     }
     ~TestHardwareContext();
 };

@@ -49,6 +49,8 @@
 
 #include <memory>
 
+#include "gromacs/utility/gmxassert.h"
+
 #include "pme_gpu_program_impl.h"
 
 PmeGpuProgram::PmeGpuProgram(const DeviceInformation* deviceInfo) :
@@ -60,10 +62,8 @@ PmeGpuProgram::~PmeGpuProgram() = default;
 
 PmeGpuProgramStorage buildPmeGpuProgram(const DeviceInformation* deviceInfo)
 {
-    if (!deviceInfo)
-    {
-        // This workaround is only needed for CodePath::CPU dummy in testhardwarecontexts.cpp
-        return nullptr;
-    }
+    GMX_RELEASE_ASSERT(
+            deviceInfo != nullptr,
+            "Device information can not be nullptr when building PME GPU program object.");
     return std::make_unique<PmeGpuProgram>(deviceInfo);
 }

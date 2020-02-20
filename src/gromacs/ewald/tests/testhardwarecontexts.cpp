@@ -108,7 +108,7 @@ static gmx_hw_info_t* hardwareInit()
 
 void PmeTestEnvironment::SetUp()
 {
-    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "", nullptr));
+    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "(CPU) ", nullptr));
 
     hardwareInfo_ = hardwareInit();
     if (!pme_gpu_supports_build(nullptr) || !pme_gpu_supports_hardware(*hardwareInfo_, nullptr))
