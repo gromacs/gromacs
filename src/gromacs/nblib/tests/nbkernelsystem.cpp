@@ -90,8 +90,8 @@ void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector
 
 TEST(NBlibTest, canComputeForces)
 {
-    auto options      = NBKernelOptions();
-    options.nbnxmSimd = BenchMarkKernels::SimdNo;
+    auto options        = NBKernelOptions();
+    options.nbnxmSimd   = BenchMarkKernels::SimdNo;
     options.coulombType = BenchMarkCoulomb::Cutoff;
 
     SpcMethanolSimulationStateBuilder spcMethanolSystemBuilder;

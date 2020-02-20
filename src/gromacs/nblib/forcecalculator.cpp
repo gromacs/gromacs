@@ -287,7 +287,7 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()
     gmx_enerdata_t      enerd(1, 0);
 
     gmx::StepWorkload stepWork;
-    stepWork.computeForces = true;
+    stepWork.computeForces          = true;
     stepWork.computeNonbondedForces = true;
     if (options_.computeVirialAndEnergy)
     {
