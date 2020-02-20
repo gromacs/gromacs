@@ -158,8 +158,8 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
 
     const auto kernelArgs = prepareGpuKernelArguments(
             scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, &numAtoms_, &d_x_, &mu);
-    launchGpuKernel(scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, nullptr,
-                    "scaleCoordinates_kernel", kernelArgs);
+    launchGpuKernel(scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, deviceStream_,
+                    nullptr, "scaleCoordinates_kernel", kernelArgs);
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
     //       can affect the perfornamce if nstpcouple is small.
     deviceStream_.synchronize();
@@ -185,7 +185,6 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
     coordinateScalingKernelLaunchConfig_.blockSize[1]     = 1;
     coordinateScalingKernelLaunchConfig_.blockSize[2]     = 1;
     coordinateScalingKernelLaunchConfig_.sharedMemorySize = 0;
-    coordinateScalingKernelLaunchConfig_.stream           = deviceStream_.stream();
 }
 
 UpdateConstrainGpu::Impl::~Impl() {}

@@ -635,7 +635,6 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
 
     KernelLaunchConfig config;
     config.sharedMemorySize = calc_shmem_required_nonbonded(nbp->vdwtype, nb->bPrefetchLjParam);
-    config.stream           = deviceStream.stream();
     config.blockSize[0]     = c_clSize;
     config.blockSize[1]     = c_clSize;
     config.gridSize[0]      = plist->nsci;
@@ -672,7 +671,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
                 &adat->fshift, &adat->lj_comb, &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d,
                 &nbp->coulomb_tab_climg2d, &plist->sci, &plist->cj4, &plist->excl, &computeFshift);
 
-        launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
+        launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
     }
     else
     {
@@ -681,7 +680,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
                 &adat->e_el, &adat->fshift, &adat->atom_types, &adat->shift_vec, &nbp->nbfp_climg2d,
                 &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d, &plist->sci, &plist->cj4,
                 &plist->excl, &computeFshift);
-        launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
+        launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
     }
 
     if (bDoTime)
@@ -795,7 +794,6 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     /* kernel launch config */
     KernelLaunchConfig config;
     config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
-    config.stream           = deviceStream.stream();
     config.blockSize[0]     = c_clSize;
     config.blockSize[1]     = c_clSize;
     config.blockSize[2]     = num_threads_z;
@@ -824,7 +822,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     const auto     kernelArgs   = prepareGpuKernelArguments(pruneKernel, config, &nbparams_params,
                                                       &adat->xq, &adat->shift_vec, &plist->sci,
                                                       &plist->cj4, &plist->imask, &numParts, &part);
-    launchGpuKernel(pruneKernel, config, timingEvent, kernelName, kernelArgs);
+    launchGpuKernel(pruneKernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
 
     if (plist->haveFreshList)
     {

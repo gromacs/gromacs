@@ -1163,7 +1163,6 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     config.blockSize[2] = atomsPerBlock;
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
-    config.stream       = pmeGpu->archSpecific->pmeStream_.stream();
 
     int                                timingId;
     PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
@@ -1203,7 +1202,8 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
             &kernelParamsPtr->atoms.d_coordinates);
 #endif
 
-    launchGpuKernel(kernelPtr, config, timingEvent, "PME spline/spread", kernelArgs);
+    launchGpuKernel(kernelPtr, config, pmeGpu->archSpecific->pmeStream_, timingEvent,
+                    "PME spline/spread", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
     const auto& settings    = pmeGpu->settings;
@@ -1281,7 +1281,6 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
     config.gridSize[1] = (pmeGpu->kernelParams->grid.complexGridSize[middleDim] + gridLinesPerBlock - 1)
                          / gridLinesPerBlock;
     config.gridSize[2] = pmeGpu->kernelParams->grid.complexGridSize[majorDim];
-    config.stream      = pmeGpu->archSpecific->pmeStream_.stream();
 
     int                                timingId  = gtPME_SOLVE;
     PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
@@ -1305,7 +1304,8 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
             kernelPtr, config, kernelParamsPtr, &kernelParamsPtr->grid.d_splineModuli,
             &kernelParamsPtr->constants.d_virialAndEnergy, &kernelParamsPtr->grid.d_fourierGrid);
 #endif
-    launchGpuKernel(kernelPtr, config, timingEvent, "PME solve", kernelArgs);
+    launchGpuKernel(kernelPtr, config, pmeGpu->archSpecific->pmeStream_, timingEvent, "PME solve",
+                    kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
     if (computeEnergyAndVirial)
@@ -1403,7 +1403,6 @@ void pme_gpu_gather(PmeGpu* pmeGpu, const float* h_grid)
     config.blockSize[2] = atomsPerBlock;
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
-    config.stream       = pmeGpu->archSpecific->pmeStream_.stream();
 
     // TODO test different cache configs
 
@@ -1424,7 +1423,8 @@ void pme_gpu_gather(PmeGpu* pmeGpu, const float* h_grid)
             &kernelParamsPtr->atoms.d_dtheta, &kernelParamsPtr->atoms.d_gridlineIndices,
             &kernelParamsPtr->atoms.d_forces);
 #endif
-    launchGpuKernel(kernelPtr, config, timingEvent, "PME gather", kernelArgs);
+    launchGpuKernel(kernelPtr, config, pmeGpu->archSpecific->pmeStream_, timingEvent, "PME gather",
+                    kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
     if (pmeGpu->settings.useGpuForceReduction)

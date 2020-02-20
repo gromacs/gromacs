@@ -214,7 +214,6 @@ void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix          box
     config.gridSize[1]      = 1;
     config.gridSize[2]      = 1;
     config.sharedMemorySize = 0;
-    config.stream           = nonLocalStream_.stream();
 
     const float3* sendBuf  = d_sendBuf_;
     const float3* d_x      = d_x_;
@@ -240,7 +239,8 @@ void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix          box
         const auto kernelArgs = prepareGpuKernelArguments(kernelFn, config, &sendBuf, &d_x,
                                                           &indexMap, &size, &coordinateShift);
 
-        launchGpuKernel(kernelFn, config, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
+        launchGpuKernel(kernelFn, config, nonLocalStream_, nullptr,
+                        "Domdec GPU Apply X Halo Exchange", kernelArgs);
     }
 
     communicateHaloData(d_x_, HaloQuantity::HaloCoordinates, coordinatesReadyOnDeviceEvent);
@@ -285,7 +285,6 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
     config.gridSize[1]      = 1;
     config.gridSize[2]      = 1;
     config.sharedMemorySize = 0;
-    config.stream           = nonLocalStream_.stream();
 
     const float3* recvBuf  = d_recvBuf_;
     const int*    indexMap = d_indexMap_;
@@ -306,7 +305,8 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
         const auto kernelArgs =
                 prepareGpuKernelArguments(kernelFn, config, &d_f, &recvBuf, &indexMap, &size);
 
-        launchGpuKernel(kernelFn, config, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
+        launchGpuKernel(kernelFn, config, nonLocalStream_, nullptr,
+                        "Domdec GPU Apply F Halo Exchange", kernelArgs);
     }
 
     if (pulse_ == 0)

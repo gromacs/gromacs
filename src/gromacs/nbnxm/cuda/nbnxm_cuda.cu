@@ -545,7 +545,6 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = nblock;
     config.sharedMemorySize = calc_shmem_required_nonbonded(num_threads_z, nb->deviceInfo, nbp);
-    config.stream           = deviceStream.stream();
 
     if (debug)
     {
@@ -564,7 +563,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
             (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune), nb->deviceInfo);
     const auto kernelArgs =
             prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &stepWork.computeVirial);
-    launchGpuKernel(kernel, config, timingEvent, "k_calc_nb", kernelArgs);
+    launchGpuKernel(kernel, config, deviceStream, timingEvent, "k_calc_nb", kernelArgs);
 
     if (bDoTime)
     {
@@ -669,7 +668,6 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = nblock;
     config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
-    config.stream           = deviceStream.stream();
 
     if (debug)
     {
@@ -687,7 +685,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     const auto     kernel =
             plist->haveFreshList ? nbnxn_kernel_prune_cuda<true> : nbnxn_kernel_prune_cuda<false>;
     const auto kernelArgs = prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &numParts, &part);
-    launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
+    launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
 
     /* TODO: consider a more elegant way to track which kernel has been called
        (combined or separate 1st pass prune, rolling prune). */
@@ -860,7 +858,6 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         GMX_ASSERT(config.gridSize[0] > 0,
                    "Can not have empty grid, early return above avoids this");
         config.sharedMemorySize = 0;
-        config.stream           = deviceStream.stream();
 
         auto kernelFn = setFillerCoords ? nbnxn_gpu_x_to_nbat_x_kernel<true>
                                         : nbnxn_gpu_x_to_nbat_x_kernel<false>;
@@ -872,7 +869,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         const auto kernelArgs    = prepareGpuKernelArguments(kernelFn, config, &numColumns, &d_xq,
                                                           &d_xFloat3, &d_atomIndices, &d_cxy_na,
                                                           &d_cxy_ind, &cellOffset, &numAtomsPerCell);
-        launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
+        launchGpuKernel(kernelFn, config, deviceStream, nullptr, "XbufferOps", kernelArgs);
     }
 
     // TODO: note that this is not necessary when there astreamre no local atoms, that is:
@@ -926,7 +923,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     config.gridSize[1]  = 1;
     config.gridSize[2]  = 1;
     config.sharedMemorySize = 0;
-    config.stream           = deviceStream.stream();
 
     auto kernelFn = accumulateForce ? nbnxn_gpu_add_nbat_f_to_f_kernel<true, false>
                                     : nbnxn_gpu_add_nbat_f_to_f_kernel<false, false>;
@@ -946,7 +942,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     const auto kernelArgs = prepareGpuKernelArguments(kernelFn, config, &d_fNB, &d_fPme, &d_fTotal,
                                                       &d_cell, &atomStart, &numAtoms);
 
-    launchGpuKernel(kernelFn, config, nullptr, "FbufferOps", kernelArgs);
+    launchGpuKernel(kernelFn, config, deviceStream, nullptr, "FbufferOps", kernelArgs);
 
     if (atomLocality == AtomLocality::Local)
     {

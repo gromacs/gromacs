@@ -311,7 +311,7 @@ void LeapFrogGpu::integrate(const float3*                     d_x,
     const auto kernelArgs = prepareGpuKernelArguments(
             kernelPtr, kernelLaunchConfig_, &numAtoms_, &d_x, &d_xp, &d_v, &d_f, &d_inverseMasses_,
             &dt, &d_lambdas_, &d_tempScaleGroups_, &prVelocityScalingMatrixDiagonal_);
-    launchGpuKernel(kernelPtr, kernelLaunchConfig_, nullptr, "leapfrog_kernel", kernelArgs);
+    launchGpuKernel(kernelPtr, kernelLaunchConfig_, deviceStream_, nullptr, "leapfrog_kernel", kernelArgs);
 
     return;
 }
@@ -328,7 +328,6 @@ LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext, const DeviceStream&
     kernelLaunchConfig_.blockSize[1]     = 1;
     kernelLaunchConfig_.blockSize[2]     = 1;
     kernelLaunchConfig_.sharedMemorySize = 0;
-    kernelLaunchConfig_.stream           = deviceStream_.stream();
 }
 
 LeapFrogGpu::~LeapFrogGpu()

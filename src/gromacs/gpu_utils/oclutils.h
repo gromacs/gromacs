@@ -233,12 +233,14 @@ void* prepareGpuKernelArguments(cl_kernel kernel, const KernelLaunchConfig& conf
  *
  * \param[in] kernel          Kernel function handle
  * \param[in] config          Kernel configuration for launching
+ * \param[in] deviceStream    GPU stream to launch kernel in
  * \param[in] timingEvent     Timing event, fetched from GpuRegionTimer
  * \param[in] kernelName      Human readable kernel description, for error handling only
  * \throws gmx::InternalError on kernel launch failure
  */
 inline void launchGpuKernel(cl_kernel                 kernel,
                             const KernelLaunchConfig& config,
+                            const DeviceStream&       deviceStream,
                             CommandEvent*             timingEvent,
                             const char*               kernelName,
                             const void* /*kernelArgs*/)
@@ -252,9 +254,9 @@ inline void launchGpuKernel(cl_kernel                 kernel,
     {
         globalWorkSize[i] = config.gridSize[i] * config.blockSize[i];
     }
-    cl_int clError = clEnqueueNDRangeKernel(config.stream, kernel, workDimensions, globalWorkOffset,
-                                            globalWorkSize, config.blockSize, waitListSize,
-                                            waitList, timingEvent);
+    cl_int clError = clEnqueueNDRangeKernel(deviceStream.stream(), kernel, workDimensions,
+                                            globalWorkOffset, globalWorkSize, config.blockSize,
+                                            waitListSize, waitList, timingEvent);
     if (CL_SUCCESS != clError)
     {
         const std::string errorMessage = "GPU kernel (" + std::string(kernelName)

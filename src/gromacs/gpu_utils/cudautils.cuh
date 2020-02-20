@@ -313,6 +313,7 @@ std::array<void*, sizeof...(Args)> prepareGpuKernelArguments(KernelPtr kernel,
  * \tparam    Args            Types of all the kernel arguments
  * \param[in] kernel          Kernel function handle
  * \param[in] config          Kernel configuration for launching
+ * \param[in] deviceStream    GPU stream to launch kernel in
  * \param[in] kernelName      Human readable kernel description, for error handling only
  * \param[in] kernelArgs      Array of the pointers to the kernel arguments, prepared by
  * prepareGpuKernelArguments() \throws gmx::InternalError on kernel launch failure
@@ -320,6 +321,7 @@ std::array<void*, sizeof...(Args)> prepareGpuKernelArguments(KernelPtr kernel,
 template<typename... Args>
 void launchGpuKernel(void (*kernel)(Args...),
                      const KernelLaunchConfig& config,
+                     const DeviceStream&       deviceStream,
                      CommandEvent* /*timingEvent */,
                      const char*                               kernelName,
                      const std::array<void*, sizeof...(Args)>& kernelArgs)
@@ -327,7 +329,7 @@ void launchGpuKernel(void (*kernel)(Args...),
     dim3 blockSize(config.blockSize[0], config.blockSize[1], config.blockSize[2]);
     dim3 gridSize(config.gridSize[0], config.gridSize[1], config.gridSize[2]);
     cudaLaunchKernel((void*)kernel, gridSize, blockSize, const_cast<void**>(kernelArgs.data()),
-                     config.sharedMemorySize, config.stream);
+                     config.sharedMemorySize, deviceStream.stream());
 
     cudaError_t status = cudaGetLastError();
     if (cudaSuccess != status)

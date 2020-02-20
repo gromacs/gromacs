@@ -475,14 +475,14 @@ void LincsGpu::apply(const float3* d_x,
     {
         config.sharedMemorySize = c_threadsPerBlock * 3 * sizeof(float);
     }
-    config.stream = deviceStream_.stream();
 
     kernelParams_.pbcAiuc = pbcAiuc;
 
     const auto kernelArgs =
             prepareGpuKernelArguments(kernelPtr, config, &kernelParams_, &d_x, &d_xp, &d_v, &invdt);
 
-    launchGpuKernel(kernelPtr, config, nullptr, "lincs_kernel<updateVelocities, computeVirial>", kernelArgs);
+    launchGpuKernel(kernelPtr, config, deviceStream_, nullptr,
+                    "lincs_kernel<updateVelocities, computeVirial>", kernelArgs);
 
     if (computeVirial)
     {

@@ -73,10 +73,12 @@ using CommandEvent = void;
  */
 struct KernelLaunchConfig
 {
-    size_t       gridSize[3]      = { 1, 1, 1 }; //!< Block counts
-    size_t       blockSize[3]     = { 1, 1, 1 }; //!< Per-block thread counts
-    size_t       sharedMemorySize = 0;           //!< Shared memory size in bytes
-    cudaStream_t stream           = nullptr;     //!< Stream to launch kernel in
+    //! Block counts
+    size_t gridSize[3] = { 1, 1, 1 };
+    //! Per-block thread counts
+    size_t blockSize[3] = { 1, 1, 1 };
+    //! Shared memory size in bytes
+    size_t sharedMemorySize = 0;
 };
 
 //! Sets whether device code can use arrays that are embedded in structs.
