@@ -81,10 +81,11 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 class Topology
 {
 public:
-    const std::vector<AtomType>& getAtomTypes() const;
+    //! Returns the total number of atoms in the system
+    const int& numAtoms() const;
 
     //! Returns a vector of atom names
-    const std::vector<std::string>& getAtomTypes() const;
+    const std::vector<AtomType>& getAtomTypes() const;
 
     //! Return the AtomType ID of all atoms
     const std::vector<int>& getAtomTypeIdOfAllAtoms() const;
@@ -92,9 +93,8 @@ public:
     //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
 
-    // TODO: This function is only needed for testing. Need
-    //       another way for testing exclusion correctness
-    const t_blocka& getGMXexclusions() const { return excls_; }
+    //! Returns exclusions in proper, performant, gromacs layout
+    const gmx::ListOfLists<int>& getGmxExclusions() const { return exclusions_; }
 
 private:
     Topology() = default;

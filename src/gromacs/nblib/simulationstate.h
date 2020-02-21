@@ -71,6 +71,9 @@ public:
                     Topology                      topology,
                     const std::vector<gmx::RVec>& vel = {});
 
+    //! Copy Constructor
+    SimulationState(const SimulationState&) = default;
+
     //! Force generation of a move ctor such that we get a compiler error
     //! if SimulationState gets changed in the future to require a custom
     //! copy ctor

@@ -112,6 +112,7 @@ TEST(NBlibTest, TopologyHasMasses)
     const Mass              refOwMass = waters.water().at("Ow").mass();
     const Mass              refHwMass = waters.water().at("H").mass();
     const std::vector<real> ref = { refOwMass, refHwMass, refHwMass, refOwMass, refHwMass, refHwMass };
+    const std::vector<real> test = expandQuantity(watersTopology, &AtomType::mass);
     EXPECT_EQ(ref, test);
 }
 
@@ -193,18 +194,8 @@ TEST(NBlibTest, TopologyHasNonbondedParameters)
     const std::vector<real> testC6 = expandQuantity(watersTopology, &AtomType::c6);
     const std::vector<real> testC12 = expandQuantity(watersTopology, &AtomType::c12);
 
-TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
-{
-    WaterTopology          waters;
-    Topology               watersTopology = waters.buildTopology(2);
-    const std::vector<int> test           = watersTopology.getAtomInfoAllVdw();
-    std::vector<int>       ref;
-    ref.resize(watersTopology.numAtoms());
-    for (size_t atomI = 0; atomI < ref.size(); atomI++)
-    {
-        SET_CGINFO_HAS_VDW(ref[atomI]);
-    }
-    EXPECT_EQ(ref, test);
+    EXPECT_EQ(refC6, testC6);
+    EXPECT_EQ(refC12, testC12);
 }
 
 //! Todo: this belongs to ForceCalculator

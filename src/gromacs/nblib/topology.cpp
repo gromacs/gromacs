@@ -45,8 +45,7 @@
 
 #include "topology.h"
 
-#include <array>
-#include <vector>
+#include <numeric>
 
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/nblib/atomtype.h"
@@ -200,7 +199,6 @@ Topology TopologyBuilder::buildTopology()
                 return nameToId[data.atomTypeName_];
             });
 
-
     return topology_;
 }
 
@@ -253,12 +251,6 @@ const std::vector<AtomType>& Topology::getAtomTypes() const
 const std::vector<int>& Topology::getAtomTypeIdOfAllAtoms() const
 {
     return atomTypeIdOfAllAtoms_;
-}
-
-
-const std::vector<int>& Topology::getAtomInfoAllVdw() const
-{
-    return atomInfoAllVdw_;
 }
 
 } // namespace nblib

@@ -44,7 +44,7 @@
  */
 #include "gmxpre.h"
 
-#include "atomtype.h"
+#include "simulationstate.h"
 
 #include <vector>
 
