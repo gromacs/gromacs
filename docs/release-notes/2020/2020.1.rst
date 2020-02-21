@@ -100,6 +100,18 @@ was getting overly skewed when using pressure control.
 
 :issue:`3383`
 
+Fix NMR restraints using modular simulator
+""""""""""""""""""""""""""""""""""""""""""
+
+Using NMR restraints (distance or orientation restraints) under modular simulator
+did not work as expected. All orientation restraint simulations would fail with a
+segmentation fault, as would distance restraint simulations using time averaging.
+All other distance restraint simulations would run correctly, but output to the
+energy trajectory would only occur if it coincided with general energy writing
+steps.
+
+:issue:`3388`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
