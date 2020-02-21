@@ -722,10 +722,24 @@ void gmx::LegacySimulator::do_md()
         }
         if (!multisim_int_all_are_equal(ms, ir->init_step))
         {
-            GMX_LOG(mdlog.warning)
-                    .appendText(
-                            "Note: The initial step is not consistent across multi simulations,\n"
-                            "but we are proceeding anyway!");
+            if (simulationsShareState)
+            {
+                if (MASTER(cr))
+                {
+                    gmx_fatal(FARGS,
+                              "The initial step is not consistent across multi simulations which "
+                              "share the state");
+                }
+                gmx_barrier(cr);
+            }
+            else
+            {
+                GMX_LOG(mdlog.warning)
+                        .appendText(
+                                "Note: The initial step is not consistent across multi "
+                                "simulations,\n"
+                                "but we are proceeding anyway!");
+            }
         }
     }
 

@@ -80,6 +80,18 @@ molecules even though no restraints where applied to them.
 
 :issue:`3375`
 
+Add fatal error for mdrun -multidir when simulations sharing state start at different step
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When (re)starting mdrun -multidir for simulations sharing state data
+(e.g., replica exchange, AWH with bias sharing or NMR ensemble averaging)
+having a different initial step only caused a note to be printed, which
+could lead to simulations getting out of sync. Now a fatal error is issued
+in this situation.
+
+:issue:`2440`
+:issue:`3990`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
