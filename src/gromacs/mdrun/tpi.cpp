@@ -195,6 +195,17 @@ void LegacySimulator::do_tpi()
 
     GMX_UNUSED_VALUE(outputProvider);
 
+    if (EVDW_PME(inputrec->vdwtype))
+    {
+        gmx_fatal(FARGS, "Test particle insertion not implemented with LJ-PME");
+    }
+    if (haveEwaldSurfaceContribution(*inputrec))
+    {
+        gmx_fatal(FARGS,
+                  "TPI with PME currently only works in a 3D geometry with tin-foil "
+                  "boundary conditions");
+    }
+
     GMX_LOG(mdlog.info)
             .asParagraph()
             .appendText(

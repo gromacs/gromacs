@@ -219,13 +219,6 @@ void do_force_lowlevel(t_forcerec*                         fr,
             {
                 wallcycle_sub_start(wcycle, ewcsEWALD_CORRECTION);
 
-                if (fr->n_tpi > 0)
-                {
-                    gmx_fatal(FARGS,
-                              "TPI with PME currently only works in a 3D geometry with tin-foil "
-                              "boundary conditions");
-                }
-
                 int nthreads = fr->nthread_ewc;
 #pragma omp parallel for num_threads(nthreads) schedule(static)
                 for (int t = 0; t < nthreads; t++)
@@ -281,11 +274,6 @@ void do_force_lowlevel(t_forcerec*                         fr,
                     {
                         pme_flags |= GMX_PME_CALC_ENER_VIR;
                     }
-                    if (fr->n_tpi > 0)
-                    {
-                        /* We don't calculate f, but we do want the potential */
-                        pme_flags |= GMX_PME_CALC_POT;
-                    }
 
                     /* With domain decomposition we close the CPU side load
                      * balancing region here, because PME does global
@@ -321,11 +309,6 @@ void do_force_lowlevel(t_forcerec*                         fr,
                 }
                 if (fr->n_tpi > 0)
                 {
-                    if (EVDW_PME(ir->vdwtype))
-                    {
-
-                        gmx_fatal(FARGS, "Test particle insertion not implemented with LJ-PME");
-                    }
                     /* Determine the PME grid energy of the test molecule
                      * with the PME grid potential of the other charges.
                      */
