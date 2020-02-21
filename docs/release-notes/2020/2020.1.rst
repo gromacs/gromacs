@@ -112,6 +112,14 @@ steps.
 
 :issue:`3388`
 
+Avoid integer overflow when using dispersioncorrection
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A change in the integer type storing the index meant that the value could overflow
+and turn negative, leading to wrong lookup and unphysical values.
+
+:issue:`3391`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
