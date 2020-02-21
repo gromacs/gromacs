@@ -51,6 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/arrayref.h"

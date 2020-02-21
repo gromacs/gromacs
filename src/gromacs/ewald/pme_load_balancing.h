@@ -47,13 +47,15 @@
 #ifndef GMX_EWALD_PME_LOAD_BALANCING_H
 #define GMX_EWALD_PME_LOAD_BALANCING_H
 
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct nonbonded_verlet_t;
 struct t_commrec;
+struct t_forcerec;
 struct t_inputrec;
+struct interaction_const_t;
+struct gmx_pme_t;
 class t_state;
 
 namespace gmx

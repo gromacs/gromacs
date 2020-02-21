@@ -40,12 +40,11 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/real.h"
 
 struct t_blocka;
+struct t_mdatoms;
 
 /* Structure to collect kernel data not available in forcerec or mdatoms structures.
  * This is only used inside the nonbonded module.

@@ -40,7 +40,6 @@
 
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/arrayref.h"
 
 class DDBalanceRegionHandler;
@@ -67,6 +66,7 @@ struct t_nrnb;
 namespace gmx
 {
 class Awh;
+class ForceOutputs;
 class ForceWithVirial;
 class ImdSession;
 class MdrunScheduleWorkload;

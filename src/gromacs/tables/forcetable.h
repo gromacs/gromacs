@@ -49,10 +49,12 @@
 
 #include <memory>
 
-#include "gromacs/mdtypes/fcdata.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
+
+struct EwaldCorrectionTables;
+struct bondedtable_t;
+struct interaction_const_t;
+struct t_forcetable;
 
 /*! \brief Flag to select user tables for make_tables */
 #define GMX_MAKETABLES_FORCEUSER (1 << 0)

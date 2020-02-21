@@ -38,10 +38,7 @@
 #ifndef GMX_MDLIB_FORCEREC_H
 #define GMX_MDLIB_FORCEREC_H
 
-#include "gromacs/mdlib/force_flags.h"
-#include "gromacs/mdlib/tgroup.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
@@ -49,10 +46,14 @@ struct DeviceInformation;
 struct gmx_hw_info_t;
 struct t_commrec;
 struct t_fcdata;
+struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
 struct gmx_gpu_info_t;
+struct gmx_localtop_t;
+struct gmx_mtop_t;
 struct gmx_wallcycle;
+struct interaction_const_t;
 
 namespace gmx
 {

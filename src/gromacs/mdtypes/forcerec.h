@@ -43,14 +43,12 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 /* Abstract type for PME that is defined only in the routine that use them. */
-struct gmx_ns_t;
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;

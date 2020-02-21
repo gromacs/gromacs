@@ -46,7 +46,6 @@
 #define GMX_LISTED_FORCES_PAIRS_H
 
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"

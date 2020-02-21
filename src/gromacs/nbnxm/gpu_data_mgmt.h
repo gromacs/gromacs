@@ -48,7 +48,6 @@
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
-#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
 
 struct NbnxmGpu;
@@ -58,6 +57,7 @@ struct gmx_wallclock_gpu_nbnxn_t;
 struct nbnxn_atomdata_t;
 struct NbnxnPairlistGpu;
 struct PairlistParams;
+struct interaction_const_t;
 
 namespace Nbnxm
 {
