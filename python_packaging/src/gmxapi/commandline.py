@@ -134,10 +134,11 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription):
     if isinstance(command, (str, bytes)):
         command = [command]
     command = list([arg for arg in command])
-    try:
-        command[0] = shutil.which(command[0])
-    except Exception:
-        raise exceptions.ValueError('command argument could not be resolved to an executable file path.')
+
+    executable = shutil.which(command[0])
+    if executable is None:
+        raise exceptions.ValueError('"{}" is not found or not executable.'.format(command[0]))
+    command[0] = executable
 
     # TODO: (FR9) Can OS input/output filehandles be a responsibility of
     #  the code providing 'resources'?
