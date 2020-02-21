@@ -15,7 +15,7 @@ with individual build information as it comes available. For now we are
 using a combination of building with the previous system on Jenkins
 and post-submit verification on Gitlab.
 
-.. seealso:: :doc:`infrastructure`
+.. seealso:: :doc:`../infrastructure`
 
 .. _releng-triggering-builds:
 
