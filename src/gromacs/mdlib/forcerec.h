@@ -101,7 +101,6 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic);
  * \param[in]  tabfn              Table potential file for non-bonded interactions
  * \param[in]  tabpfn             Table potential file for pair interactions
  * \param[in]  tabbfnm            Table potential files for bonded interactions
- * \param[in]  pmeOnlyRankUsesGpu Whether there is a PME task on a GPU on a PME-only rank
  * \param[in]  print_force        Print forces for atoms with force >= print_force
  */
 void init_forcerec(FILE*                            fplog,
@@ -115,7 +114,6 @@ void init_forcerec(FILE*                            fplog,
                    const char*                      tabfn,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
-                   bool                             pmeOnlyRankUsesGpu,
                    real                             print_force);
 
 /*! \brief Divide exclusions over threads

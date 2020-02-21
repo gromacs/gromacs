@@ -38,8 +38,6 @@
 
 #include "forcerec.h"
 
-#include "config.h"
-
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -99,10 +97,6 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
-
-/*! \brief environment variable to enable GPU P2P communication */
-static const bool c_enableGpuPmePpComms =
-        (getenv("GMX_GPU_PME_PP_COMMS") != nullptr) && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA);
 
 static std::vector<real> mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
 {
@@ -935,7 +929,6 @@ void init_forcerec(FILE*                            fp,
                    const char*                      tabfn,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
-                   const bool                       pmeOnlyRankUsesGpu,
                    real                             print_force)
 {
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
@@ -1410,11 +1403,6 @@ void init_forcerec(FILE*                            fp,
          * after the paragraph, so we should add a newline here.
          */
         fprintf(fp, "\n");
-    }
-
-    if (pmeOnlyRankUsesGpu && c_enableGpuPmePpComms)
-    {
-        fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(cr->mpi_comm_mysim, cr->dd->pme_nodeid);
     }
 }
 

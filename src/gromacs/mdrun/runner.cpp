@@ -1347,8 +1347,12 @@ int Mdrunner::mdrunner()
         init_forcerec(fplog, mdlog, fr, fcd, inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames.size(), filenames.data()),
                       opt2fn("-tablep", filenames.size(), filenames.data()),
-                      opt2fns("-tableb", filenames.size(), filenames.data()),
-                      pmeRunMode == PmeRunMode::GPU && !thisRankHasDuty(cr, DUTY_PME), pforce);
+                      opt2fns("-tableb", filenames.size(), filenames.data()), pforce);
+
+        if (devFlags.enableGpuPmePPComm && !thisRankHasDuty(cr, DUTY_PME))
+        {
+            fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(cr->mpi_comm_mysim, cr->dd->pme_nodeid);
+        }
 
         fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec, fr, cr, *hwinfo, nonbondedDeviceInfo,
                                         &mtop, box, wcycle);
