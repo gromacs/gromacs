@@ -53,6 +53,7 @@
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/energyoutput.h"
+#include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/resethandler.h"
 #include "gromacs/mdlib/stat.h"
@@ -944,6 +945,10 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             isInputCompatible
             && conditionalAssert(!doMembed,
                                  "Membrane embedding is not supported by the modular simulator.");
+    const bool useGraph = !areMoleculesDistributedOverPbc(*inputrec, globalTopology, MDLogger());
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(!useGraph, "Graph is not supported by the modular simulator.");
     // TODO: Change this to the boolean passed when we merge the user interface change for the GPU update.
     isInputCompatible =
             isInputCompatible
