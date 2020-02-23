@@ -586,6 +586,7 @@ void calc_listed_lambda(const t_idef*         idef,
                         const struct t_graph* g,
                         gmx_grppairener_t*    grpp,
                         real*                 epot,
+                        gmx::ArrayRef<real>   dvdl,
                         t_nrnb*               nrnb,
                         const real*           lambda,
                         const t_mdatoms*      md,
@@ -593,7 +594,6 @@ void calc_listed_lambda(const t_idef*         idef,
                         int*                  global_atom_index)
 {
     real          v;
-    real          dvdl_dum[efptNR] = { 0 };
     rvec4*        f;
     rvec*         fshift;
     const t_pbc*  pbc_null;
@@ -637,7 +637,7 @@ void calc_listed_lambda(const t_idef*         idef,
                 gmx::StepWorkload tempFlags;
                 tempFlags.computeEnergy = true;
                 v = calc_one_bond(0, ftype, idef, iatoms, iatoms.ssize(), workDivision, x, f,
-                                  fshift, fr, pbc_null, g, grpp, nrnb, lambda, dvdl_dum, md, fcd,
+                                  fshift, fr, pbc_null, g, grpp, nrnb, lambda, dvdl.data(), md, fcd,
                                   tempFlags, global_atom_index);
                 epot[ftype] += v;
             }
@@ -688,6 +688,7 @@ void do_force_listed(struct gmx_wallcycle*    wcycle,
      */
     if (fepvals->n_lambda > 0 && stepWork.computeDhdl)
     {
+        real dvdl[efptNR] = { 0 };
         posres_wrapper_lambda(wcycle, fepvals, idef, &pbc_full, x, enerd, lambda, fr);
 
         if (idef->ilsort != ilsortNO_FE)
@@ -707,9 +708,14 @@ void do_force_listed(struct gmx_wallcycle*    wcycle,
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i - 1]);
                 }
                 calc_listed_lambda(idef, x, fr, pbc, graph, &(enerd->foreign_grpp),
-                                   enerd->foreign_term, nrnb, lam_i, md, fcd, global_atom_index);
+                                   enerd->foreign_term, dvdl, nrnb, lam_i, md, fcd, global_atom_index);
                 sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
+                for (int j = 0; j < efptNR; j++)
+                {
+                    enerd->dhdlLambda[i] += dvdl[j];
+                    dvdl[j] = 0;
+                }
             }
             wallcycle_sub_stop(wcycle, ewcsLISTED_FEP);
         }

@@ -534,12 +534,13 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
         kernel_data.flags = (donb_flags & ~(GMX_NONBONDED_DO_FORCE | GMX_NONBONDED_DO_SHIFTFORCE))
                             | GMX_NONBONDED_DO_FOREIGNLAMBDA;
         kernel_data.lambda         = lam_i;
+        kernel_data.dvdl           = dvdl_nb;
         kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR].data();
         kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR].data();
-        /* Note that we add to kernel_data.dvdl, but ignore the result */
 
         for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
         {
+            std::fill(std::begin(dvdl_nb), std::end(dvdl_nb), 0);
             for (int j = 0; j < efptNR; j++)
             {
                 lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i - 1]);
@@ -558,6 +559,14 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
 
             sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
             enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
+            enerd->dhdlLambda[i] += dvdl_nb[efptVDW] + dvdl_nb[efptCOUL];
+        }
+    }
+    else
+    {
+        for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
+        {
+            enerd->dhdlLambda[i] += dvdl_nb[efptVDW] + dvdl_nb[efptCOUL];
         }
     }
     wallcycle_sub_stop(wcycle_, ewcsNONBONDED_FEP);

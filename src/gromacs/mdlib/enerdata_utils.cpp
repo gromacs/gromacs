@@ -47,6 +47,7 @@
 gmx_enerdata_t::gmx_enerdata_t(int numEnergyGroups, int numFepLambdas) :
     grpp(numEnergyGroups),
     enerpart_lambda(numFepLambdas == 0 ? 0 : numFepLambdas + 1),
+    dhdlLambda(numFepLambdas == 0 ? 0 : numFepLambdas + 1),
     foreign_grpp(numEnergyGroups)
 {
 }
@@ -95,6 +96,12 @@ void sum_dhdl(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_l
     int index;
 
     enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW]; /* include dispersion correction */
+
+    for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
+    {
+        enerd->dhdlLambda[i] += enerd->term[F_DVDL_VDW];
+    }
+
     enerd->term[F_DVDL] = 0.0;
     for (int i = 0; i < efptNR; i++)
     {
@@ -207,6 +214,15 @@ void reset_foreign_enerdata(gmx_enerdata_t* enerd)
     }
 }
 
+void reset_dvdl_enerdata(gmx_enerdata_t* enerd)
+{
+    for (int i = 0; i < efptNR; i++)
+    {
+        enerd->dvdl_lin[i]    = 0.0;
+        enerd->dvdl_nonlin[i] = 0.0;
+    }
+}
+
 void reset_enerdata(gmx_enerdata_t* enerd)
 {
     int i, j;
@@ -218,11 +234,6 @@ void reset_enerdata(gmx_enerdata_t* enerd)
         {
             enerd->grpp.ener[i][j] = 0.0;
         }
-    }
-    for (i = 0; i < efptNR; i++)
-    {
-        enerd->dvdl_lin[i]    = 0.0;
-        enerd->dvdl_nonlin[i] = 0.0;
     }
 
     /* Normal potential energy components */
@@ -237,6 +248,8 @@ void reset_enerdata(gmx_enerdata_t* enerd)
     enerd->term[F_DVDL_RESTRAINT] = 0.0;
     enerd->term[F_DKDL]           = 0.0;
     std::fill(enerd->enerpart_lambda.begin(), enerd->enerpart_lambda.end(), 0);
-    /* reset foreign energy data - separate function since we also call it elsewhere */
+    std::fill(enerd->dhdlLambda.begin(), enerd->dhdlLambda.end(), 0);
+    /* reset foreign energy data and dvdl - separate functions since they are also called elsewhere */
     reset_foreign_enerdata(enerd);
+    reset_dvdl_enerdata(enerd);
 }

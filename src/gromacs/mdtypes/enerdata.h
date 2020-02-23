@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,6 +81,7 @@ struct gmx_enerdata_t
 
     int                 fep_state = 0; /*current fep state -- just for printing */
     std::vector<double> enerpart_lambda; /* Partial Hamiltonian for lambda and flambda[], includes at least all perturbed terms */
+    std::vector<double> dhdlLambda; /* dHdL at all neighboring lambda points (the current lambda point also at index 0). */
     real foreign_term[F_NRE] = { 0 };      /* alternate array for storing foreign lambda energies */
     struct gmx_grppairener_t foreign_grpp; /* alternate array for storing foreign lambda energies */
 };

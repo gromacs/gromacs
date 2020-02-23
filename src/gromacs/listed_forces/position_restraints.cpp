@@ -443,13 +443,15 @@ void posres_wrapper_lambda(struct gmx_wallcycle* wcycle,
     wallcycle_sub_start_nocount(wcycle, ewcsRESTRAINTS);
     for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
     {
-        real dvdl_dum = 0, lambda_dum;
+        real dvdl = 0;
 
-        lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
+        const real lambda_dum =
+                (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
         v = posres<false>(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms, idef->iparams_posres, x,
-                          nullptr, fr->pbcType == PbcType::No ? nullptr : pbc, lambda_dum,
-                          &dvdl_dum, fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
+                          nullptr, fr->pbcType == PbcType::No ? nullptr : pbc, lambda_dum, &dvdl,
+                          fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
         enerd->enerpart_lambda[i] += v;
+        enerd->dhdlLambda[i] += dvdl;
     }
     wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
 }

@@ -50,6 +50,9 @@ struct t_lambda;
 void reset_foreign_enerdata(gmx_enerdata_t* enerd);
 /* Resets only the foreign energy data */
 
+void reset_dvdl_enerdata(gmx_enerdata_t* enerd);
+/* Resets only the dvdl energy data */
+
 void reset_enerdata(gmx_enerdata_t* enerd);
 /* Resets the energy data */
 

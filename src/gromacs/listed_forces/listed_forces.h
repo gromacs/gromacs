@@ -89,6 +89,8 @@ namespace gmx
 {
 class ForceOutputs;
 class StepWorkload;
+template<typename>
+class ArrayRef;
 } // namespace gmx
 
 //! Type of CPU function to compute a bonded interaction.
@@ -143,6 +145,7 @@ void calc_listed_lambda(const t_idef*         idef,
                         const struct t_graph* g,
                         gmx_grppairener_t*    grpp,
                         real*                 epot,
+                        gmx::ArrayRef<real>   dvdl,
                         t_nrnb*               nrnb,
                         const real*           lambda,
                         const t_mdatoms*      md,
