@@ -264,17 +264,6 @@ void do_force_lowlevel(t_forcerec*                         fr,
                 assert(fr->n_tpi >= 0);
                 if (fr->n_tpi == 0 || stepWork.stateChanged)
                 {
-                    int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
-
-                    if (stepWork.computeForces)
-                    {
-                        pme_flags |= GMX_PME_CALC_F;
-                    }
-                    if (stepWork.computeVirial)
-                    {
-                        pme_flags |= GMX_PME_CALC_ENER_VIR;
-                    }
-
                     /* With domain decomposition we close the CPU side load
                      * balancing region here, because PME does global
                      * communication that acts as a global barrier.
@@ -292,7 +281,7 @@ void do_force_lowlevel(t_forcerec*                         fr,
                             DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0, nrnb, wcycle,
                             ewaldOutput.vir_q, ewaldOutput.vir_lj, &Vlr_q, &Vlr_lj,
                             lambda[efptCOUL], lambda[efptVDW], &ewaldOutput.dvdl[efptCOUL],
-                            &ewaldOutput.dvdl[efptVDW], pme_flags);
+                            &ewaldOutput.dvdl[efptVDW], stepWork);
                     wallcycle_stop(wcycle, ewcPMEMESH);
                     if (status != 0)
                     {

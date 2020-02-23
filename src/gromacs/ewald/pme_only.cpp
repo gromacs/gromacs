@@ -89,6 +89,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
@@ -693,15 +694,18 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
         // of pme_pp (maybe box, energy and virial, too; and likewise
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
-        const int pmeFlags = GMX_PME_DO_ALL_F | (bEnerVir ? GMX_PME_CALC_ENER_VIR : 0);
+        gmx::StepWorkload stepWork;
+        stepWork.computeVirial = bEnerVir;
+        stepWork.computeEnergy = bEnerVir;
+        stepWork.computeForces = true;
         PmeOutput output;
         if (useGpuForPme)
         {
-            const bool boxChanged              = false;
-            const bool useGpuPmeForceReduction = pme_pp->useGpuDirectComm;
+            stepWork.haveDynamicBox      = false;
+            stepWork.useGpuPmeFReduction = pme_pp->useGpuDirectComm;
             // TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
-            pme_gpu_prepare_computation(pme, boxChanged, box, wcycle, pmeFlags, useGpuPmeForceReduction);
+            pme_gpu_prepare_computation(pme, box, wcycle, stepWork);
             if (!pme_pp->useGpuDirectComm)
             {
                 stateGpu->copyCoordinatesToGpu(gmx::ArrayRef<gmx::RVec>(pme_pp->x), gmx::AtomLocality::All);
@@ -711,9 +715,9 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
             auto xReadyOnDevice = nullptr;
 
             pme_gpu_launch_spread(pme, xReadyOnDevice, wcycle);
-            pme_gpu_launch_complex_transforms(pme, wcycle);
+            pme_gpu_launch_complex_transforms(pme, wcycle, stepWork);
             pme_gpu_launch_gather(pme, wcycle);
-            output = pme_gpu_wait_finish_task(pme, pmeFlags, wcycle);
+            output = pme_gpu_wait_finish_task(pme, bEnerVir, wcycle);
             pme_gpu_reinit_computation(pme, wcycle);
         }
         else
@@ -726,7 +730,7 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
                        pme_pp->sigmaB.data(), box, cr, maxshift_x, maxshift_y, mynrnb, wcycle,
                        output.coulombVirial_, output.lennardJonesVirial_, &output.coulombEnergy_,
                        &output.lennardJonesEnergy_, lambda_q, lambda_lj, &dvdlambda_q,
-                       &dvdlambda_lj, pmeFlags);
+                       &dvdlambda_lj, stepWork);
             output.forces_ = pme_pp->f;
         }
 

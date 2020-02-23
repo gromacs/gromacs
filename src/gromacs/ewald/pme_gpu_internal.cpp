@@ -657,18 +657,15 @@ static void pme_gpu_getForceOutput(PmeGpu* pmeGpu, PmeOutput* output)
     }
 }
 
-PmeOutput pme_gpu_getOutput(const gmx_pme_t& pme, const int flags)
+PmeOutput pme_gpu_getOutput(const gmx_pme_t& pme, const bool computeEnergyAndVirial)
 {
-    PmeGpu*    pmeGpu                      = pme.gpu;
-    const bool haveComputedEnergyAndVirial = (flags & GMX_PME_CALC_ENER_VIR) != 0;
+    PmeGpu* pmeGpu = pme.gpu;
 
     PmeOutput output;
 
     pme_gpu_getForceOutput(pmeGpu, &output);
 
-    // The caller knows from the flags that the energy and the virial are not usable
-    // on the else branch
-    if (haveComputedEnergyAndVirial)
+    if (computeEnergyAndVirial)
     {
         if (pme_gpu_settings(pmeGpu).performGPUSolve)
         {

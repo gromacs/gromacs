@@ -425,7 +425,8 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
         case CodePath::GPU:
         {
             // Variable initialization needs a non-switch scope
-            PmeOutput output = pme_gpu_getOutput(*pme, GMX_PME_CALC_F);
+            const bool computeEnergyAndVirial = false;
+            PmeOutput  output                 = pme_gpu_getOutput(*pme, computeEnergyAndVirial);
             GMX_ASSERT(forces.size() == output.forces_.size(),
                        "Size of force buffers did not match");
             pme_gpu_gather(pme->gpu, reinterpret_cast<float*>(fftgrid));

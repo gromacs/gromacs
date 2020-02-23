@@ -614,36 +614,21 @@ static void computeSpecialForces(FILE*                          fplog,
     }
 }
 
-/*! \brief Makes PME flags from StepWorkload data.
- *
- * \param[in]  stepWork     Step schedule flags
- * \returns                 PME flags
- */
-static int makePmeFlags(const StepWorkload& stepWork)
-{
-    return GMX_PME_SPREAD | GMX_PME_SOLVE | (stepWork.computeVirial ? GMX_PME_CALC_ENER_VIR : 0)
-           | (stepWork.computeEnergy ? GMX_PME_CALC_ENER_VIR : 0)
-           | (stepWork.computeForces ? GMX_PME_CALC_F : 0);
-}
-
 /*! \brief Launch the prepare_step and spread stages of PME GPU.
  *
  * \param[in]  pmedata              The PME structure
  * \param[in]  box                  The box matrix
  * \param[in]  stepWork             Step schedule flags
- * \param[in]  pmeFlags             PME flags
  * \param[in]  xReadyOnDevice       Event synchronizer indicating that the coordinates are ready in
  * the device memory. \param[in]  wcycle               The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
                                       const matrix          box,
                                       const StepWorkload&   stepWork,
-                                      int                   pmeFlags,
                                       GpuEventSynchronizer* xReadyOnDevice,
                                       gmx_wallcycle_t       wcycle)
 {
-    pme_gpu_prepare_computation(pmedata, stepWork.haveDynamicBox, box, wcycle, pmeFlags,
-                                stepWork.useGpuPmeFReduction);
+    pme_gpu_prepare_computation(pmedata, box, wcycle, stepWork);
     pme_gpu_launch_spread(pmedata, xReadyOnDevice, wcycle);
 }
 
@@ -653,10 +638,11 @@ static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
  *
  * \param[in]  pmedata        The PME structure
  * \param[in]  wcycle         The wallcycle structure
+ * \param[in]  stepWork       Step schedule flags
  */
-static void launchPmeGpuFftAndGather(gmx_pme_t* pmedata, gmx_wallcycle_t wcycle)
+static void launchPmeGpuFftAndGather(gmx_pme_t* pmedata, gmx_wallcycle_t wcycle, const gmx::StepWorkload& stepWork)
 {
-    pme_gpu_launch_complex_transforms(pmedata, wcycle);
+    pme_gpu_launch_complex_transforms(pmedata, wcycle, stepWork);
     pme_gpu_launch_gather(pmedata, wcycle);
 }
 
@@ -674,7 +660,6 @@ static void launchPmeGpuFftAndGather(gmx_pme_t* pmedata, gmx_wallcycle_t wcycle)
  * \param[in,out] forceOutputs     Output buffer for the forces and virial
  * \param[in,out] enerd            Energy data structure results are reduced into
  * \param[in]     stepWork         Step schedule flags
- * \param[in]     pmeFlags         PME flags
  * \param[in]     wcycle           The wallcycle structure
  */
 static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
@@ -682,7 +667,6 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
                                         gmx::ForceOutputs*  forceOutputs,
                                         gmx_enerdata_t*     enerd,
                                         const StepWorkload& stepWork,
-                                        int                 pmeFlags,
                                         gmx_wallcycle_t     wcycle)
 {
     bool isPmeGpuDone = false;
@@ -700,7 +684,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
         {
             GpuTaskCompletion completionType =
                     (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
-            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, pmeFlags, wcycle, &forceWithVirial,
+            isPmeGpuDone = pme_gpu_try_finish_task(pmedata, stepWork, wcycle, &forceWithVirial,
                                                    enerd, completionType);
         }
 
@@ -952,7 +936,6 @@ void do_force(FILE*                               fplog,
 
 
     const bool useGpuPmeOnThisRank = simulationWork.useGpuPme && thisRankHasDuty(cr, DUTY_PME);
-    const int  pmeFlags            = makePmeFlags(stepWork);
 
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
@@ -1118,7 +1101,7 @@ void do_force(FILE*                               fplog,
 
     if (useGpuPmeOnThisRank)
     {
-        launchPmeGpuSpread(fr->pmedata, box, stepWork, pmeFlags, localXReadyOnDevice, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, stepWork, localXReadyOnDevice, wcycle);
     }
 
     /* do gridding for pair search */
@@ -1275,7 +1258,7 @@ void do_force(FILE*                               fplog,
         // X copy/transform to allow overlap as well as after the GPU NB
         // launch to avoid FFT launch overhead hijacking the CPU and delaying
         // the nonbonded kernel.
-        launchPmeGpuFftAndGather(fr->pmedata, wcycle);
+        launchPmeGpuFftAndGather(fr->pmedata, wcycle, stepWork);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1647,12 +1630,12 @@ void do_force(FILE*                               fplog,
                              && !DOMAINDECOMP(cr) && !stepWork.useGpuFBufferOps);
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &forceOut, enerd, stepWork, pmeFlags, wcycle);
+        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &forceOut, enerd, stepWork, wcycle);
     }
 
     if (!alternateGpuWait && useGpuPmeOnThisRank)
     {
-        pme_gpu_wait_and_reduce(fr->pmedata, pmeFlags, wcycle, &forceOut.forceWithVirial(), enerd);
+        pme_gpu_wait_and_reduce(fr->pmedata, stepWork, wcycle, &forceOut.forceWithVirial(), enerd);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */
