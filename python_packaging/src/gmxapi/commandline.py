@@ -236,17 +236,21 @@ def commandline_operation(executable=None,
         output_files: mapping of command-line flags to output file names
         stdin (str): String input to send to STDIN (terminal input) of the executable (optional).
 
-    Multi-line text sent to *stdin* should be joined into a single string
-    (e.g. ``'\n'.join(list_of_strings) + '\n'``).
+    Multi-line text sent to *stdin* should be joined into a single string.
+    E.g.::
+
+        commandline_operation(..., stdin='\\n'.join(list_of_strings) + '\\n')
+
     If multiple strings are provided to *stdin*, gmxapi will assume an ensemble,
     and will run one operation for each provided string.
 
-    Only string input (:py:func:str) to *stdin* is currently supported.
+    Only string input (:py:func:`str`) to *stdin* is currently supported.
     If you have a use case that requires streaming input or binary input,
     please open an issue or contact the author(s).
 
     Output:
         The output node of the resulting operation handle contains
+
         * ``file``: the mapping of CLI flags to filename strings resulting from the ``output_files`` kwarg
         * ``erroroutput``: A string of error output (if any) if the process failed.
         * ``returncode``: return code of the subprocess.
