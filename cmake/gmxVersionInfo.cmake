@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -240,7 +240,7 @@ set(REGRESSIONTEST_BRANCH "refs/heads/release-2019")
 # build the regressiontests tarball with all the right naming. The
 # naming affects the md5sum that has to go here, and if it isn't right
 # release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "3de77ca9b17eded01a708f7aaeac3c0a" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "668ffee8e4b7b5ac4804c1644613928a" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
@@ -257,8 +257,8 @@ endif()
 # from Zenodo for the manual and source code
 # Has to be done by hand before every final release
 # Use force to override anything given as a cmake command line input
-set(GMX_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
-set(GMX_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
+set(GMX_MANUAL_DOI "10.5281/zenodo.3685925" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
+set(GMX_SOURCE_DOI "10.5281/zenodo.3685922" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
 
 #####################################################################
 # git version info management
