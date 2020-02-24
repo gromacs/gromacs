@@ -1,6 +1,6 @@
 .configure-build-template:
-  # Dockerfiles are from dockerhub, user eriklindahl
-  # image in admin/dockerimages/ci-docs-py27
+  # Docker image uploaded to dockerhub by user eriklindahl
+  # TODO: Get DockerFile for admin/dockerfiles
   stage: configure-build
   image: biophysics/gcc-gromacs
   variables:

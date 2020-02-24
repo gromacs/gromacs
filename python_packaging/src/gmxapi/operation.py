@@ -1792,18 +1792,21 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         # gets used correctly.
 
         # ref: https://docs.python.org/3/library/contextlib.html#contextlib.contextmanager
+        if self._done[ensemble_member]:
+            raise exceptions.ProtocolError('Attempting to publish {}[{}] more than once.'.format(self.operation_id, ensemble_member))
+
         try:
-            if not self._done[ensemble_member]:
-                resource = self.__publishing_data_proxy(instance=weakref.proxy(self),
-                                                        client_id=ensemble_member)
-                yield resource
+            resource = self.__publishing_data_proxy(instance=weakref.proxy(self),
+                                                    client_id=ensemble_member)
         except Exception as e:
-            message = 'Uncaught {} while providing output-publishing resources for {}.'
-            message.format(repr(e), self.operation_id)
-            raise exceptions.ApiError(message) from e
-        finally:
-            logger.debug('Published output for {} member {}'.format(self.operation_id, ensemble_member))
-            self._done[ensemble_member] = True
+            logger.debug('Publishing context could not be created due to {}'.format(e))
+            raise e
+
+        yield resource
+        # Note: The remaining lines are skipped if an exception occurs in the `with` block
+        # for the contextmanager suite, which effectively raises at the line after 'yield'.
+        logger.debug('Published output for {} member {}'.format(self.operation_id, ensemble_member))
+        self._done[ensemble_member] = True
 
     def __init__(self, *,
                  source: DataEdge,
@@ -1920,6 +1923,11 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
         Used internally to implement Futures for the local operation
         associated with this resource manager.
 
+        Raises:
+            exceptions.ApiError if operation runner fails to publish output.
+
+        TODO: More comprehensive error handling for operations that fail to execute.
+
         TODO: We need a different implementation for an operation whose output
          is served by multiple resource managers. E.g. an operation whose output
          is available across the ensemble, but which should only be executed on
@@ -1974,11 +1982,23 @@ class ResourceManager(SourceResource[_OutputDataProxyType, _PublishingDataProxyT
                             # option 1: Make the input and output resources with separate factories and add_resource on
                             # the runner builder.
                             # option 2: Pass resource_builder to input_director and then output_director.
-                            resources = self._resource_factory(input=input, output=output)
+                            error_message = 'Got {} while executing {} for operation {}.'
+                            try:
+                                resources = self._resource_factory(input=input, output=output)
+                            except exceptions.TypeError as e:
+                                message = error_message.format(e, self._resource_factory, self.operation_id)
+                                raise exceptions.ApiError(message) from e
+
                             runner = self._runner_director(resources)
-                            runner()
+                            try:
+                                runner()
+                            except Exception as e:
+                                message = error_message.format(e, runner, self.operation_id)
+                                raise exceptions.ApiError(message) from e
             if not self.done():
-                raise exceptions.ApiError('update_output implementation failed to update all outputs.')
+                message = 'update_output implementation failed to update all outputs for {}.'
+                message = message.format(self.operation_id)
+                raise exceptions.ApiError(message)
 
     def future(self, name: str, description: ResultDescription):
         """Retrieve a Future for a named output.
@@ -2797,6 +2817,9 @@ def function_wrapper(output: dict = None):
 
                 For the Python Context, the protocol is for the Context to call the
                 resource_director instance method, passing input and output containers.
+
+                Raises:
+                    exceptions.TypeError if provided resource type does not match input signature.
                 """
                 resources = PyFunctionRunnerResources()
                 resources.update(input.kwargs)
@@ -2813,7 +2836,11 @@ def function_wrapper(output: dict = None):
                         expected = cls.signature()[name]
                         got = type(value)
                         if got != expected:
-                            raise exceptions.TypeError('Expected {} but got {}.'.format(expected, got))
+                            raise exceptions.TypeError(
+                                'Expected {} but got {} for {} resource {}.'.format(expected,
+                                                                                    got,
+                                                                                    cls.__basename,
+                                                                                    name))
                 return resources
 
         # TODO: (FR4) Update annotations with gmxapi data types. E.g. return -> Future.

@@ -129,15 +129,13 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
 
         compute(-1, CGLO_GSTAT | CGLO_STOPCM, nullSignaller_.get(), false, true);
 
-        auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+        auto v = statePropagatorData_->velocitiesView();
         // At initialization, do not pass x with acceleration-correction mode
         // to avoid (incorrect) correction of the initial coordinates.
-        rvec* xPtr = nullptr;
-        if (vcm_.mode != ecmLINEAR_ACCELERATION_CORRECTION)
-        {
-            xPtr = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-        }
-        process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), xPtr, v);
+        auto x = vcm_.mode == ecmLINEAR_ACCELERATION_CORRECTION ? ArrayRefWithPadding<RVec>()
+                                                                : statePropagatorData_->positionsView();
+        process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x.unpaddedArrayRef(),
+                               v.unpaddedArrayRef());
         inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
     }
 
@@ -285,8 +283,8 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                                                bool                 useLastBox,
                                                bool                 isInit)
 {
-    auto x       = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto v       = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    auto x       = statePropagatorData_->positionsView().unpaddedArrayRef();
+    auto v       = statePropagatorData_->velocitiesView().unpaddedArrayRef();
     auto box     = statePropagatorData_->constBox();
     auto lastbox = useLastBox ? statePropagatorData_->constPreviousBox()
                               : statePropagatorData_->constBox();
