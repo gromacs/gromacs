@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,9 +32,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Implements nblib kernel system
+ * Implements nblib kernel setup options
  *
  * \author Berk Hess <hess@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
@@ -42,44 +42,66 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#ifndef GROMACS_NBKERNELSYSTEM_H
-#define GROMACS_NBKERNELSYSTEM_H
+#ifndef GROMACS_SETUP_H
+#define GROMACS_SETUP_H
 
-#include <vector>
+#include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/nblib/box.h"
-#include "gromacs/topology/block.h"
-#include "gromacs/utility/listoflists.h"
+
+#include "nbkerneldef.h"
+
+struct interaction_const_t;
+struct nonbonded_verlet_t;
 
 namespace nblib
 {
 
-class SimulationState;
+/*! \internal \brief
+ * The options for the nonbonded kernel caller
+ */
+    struct NBKernelOptions
+    {
+        //! Whether to use a GPU, currently GPUs are not supported
+        bool useGpu = false;
+        //! The number of OpenMP threads to use
+        int numThreads = 1;
+        //! The SIMD type for the kernel
+        BenchMarkKernels nbnxmSimd = BenchMarkKernels::SimdAuto;
+        //! The LJ combination rule
+        BenchMarkCombRule ljCombinationRule = BenchMarkCombRule::RuleGeom;
+        //! Use i-cluster half-LJ optimization for clusters with <= half LJ
+        bool useHalfLJOptimization = false;
+        //! The pairlist and interaction cut-off
+        real pairlistCutoff = 1.0;
+        //! Whether to compute energies (shift forces for virial are always computed on CPU)
+        bool computeVirialAndEnergy = false;
+        //! The Coulomb interaction function
+        BenchMarkCoulomb coulombType = BenchMarkCoulomb::Pme;
+        //! Whether to use tabulated PME grid correction instead of analytical, not applicable with simd=no
+        bool useTabulatedEwaldCorr = false;
+        //! The number of iterations for each kernel
+        int numIterations = 100;
+        //! Print cycles/pair instead of pairs/cycle
+        bool cyclesPerPair = false;
+        //! The time step
+        real timestep = 0.001;
+    };
 
-//! Description of the system
-//! TODO Refactor system setup so that t_blocka is not a class member.
-class GmxNonbondedData
-{
-public:
-    NBKernelSystem(SimulationState simState);
+/*! \brief
+ * Sets up and runs nonbonded kernel calls
+ *
+ * The simulated system is a box of 12 Argon molecules scaled
+ * by the factor \p sizeFactor, which has to be a power of 2.
+ * Timings can be printed to stdout.
+ *
+ * \param[in,out] system The atomic system to compute nonbonded forces for
+ * \param[in] options How the benchmark will be run.
+ * \param[in] printTimings Whether to print cycle counters
+ */
+// void nbKernel(NBKernelSystem& system, const NBKernelOptions& options, const bool& printTimings);
 
-    //! Number of different atom types in test system.
-    int numAtoms;
-    //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters;
-    //! Storage for atom type parameters.
-    std::vector<int> atomTypes;
-    //! Storage for atom partial charges.
-    std::vector<real> charges;
-    //! Storage for atom masses.
-    std::vector<real> masses;
-    //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoAllVdw;
-    //! Information about exclusions.
-    gmx::ListOfLists<int> excls;
-};
 
 } // namespace nblib
 
-#endif // GROMACS_NBKERNELSYSTEM_H
+#endif // GROMACS_SETUP_H

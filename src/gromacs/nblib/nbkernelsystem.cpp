@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements nblib kernel system
+ * Implements nblib kernel setup options
  *
  * \author Berk Hess <hess@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
@@ -44,54 +44,69 @@
  */
 #include "gmxpre.h"
 
-#include "nbkernelsystem.h"
+#include "nbkerneloptions.h"
 
-#include <algorithm>
-
-#include "gromacs/math/matrix.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdlib/dispersioncorrection.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/nblib/atomtype.h"
-#include "gromacs/nblib/simulationstate.h"
-#include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/nbnxm/nbnxm_simd.h"
+#include "gromacs/utility/logger.h"
 
 namespace nblib
 {
 
-GmxNonbondedData::GmxNonbondedData(Topology topology)
-{
-    numAtoms                 = topology.numAtoms();
+//! Add the options instance to the list for all requested kernel SIMD types
+//! TODO This should be refactored so that if SimdAuto is set only one kernel
+//!      layout is chosen.
+//! TODO This should be refactored to only return the desired kernel layout
+    static void expandSimdOptionAndPushBack(const NBKernelOptions& options, std::vector<NBKernelOptions>* optionsList)
+    {
+        if (options.nbnxmSimd == BenchMarkKernels::SimdAuto)
+        {
+            bool addedInstance = false;
+#ifdef GMX_NBNXN_SIMD_4XN
+            optionsList->push_back(options);
+            optionsList->back().nbnxmSimd = BenchMarkKernels::Simd4XM;
+            addedInstance                 = true;
+#endif
+#ifdef GMX_NBNXN_SIMD_2XNN
+            optionsList->push_back(options);
+            optionsList->back().nbnxmSimd = BenchMarkKernels::Simd2XMM;
+            addedInstance                 = true;
+#endif
+            if (!addedInstance)
+            {
+                optionsList->push_back(options);
+                optionsList->back().nbnxmSimd = BenchMarkKernels::SimdNo;
+            }
+        }
+        else
+        {
+            optionsList->push_back(options);
+        }
+    }
 
-    charges        = topology.getCharges();
-    masses         = topology.getMasses();
-    excls          = topology.getGmxExclusions();
-    atomInfoAllVdw = topology.getAtomInfoAllVdw();
 
-    std::vector<std::tuple<real, real>> nblibNonbonded = topology.getNonbondedParameters();
-    nonbondedParameters.resize(numAtoms * numAtoms * 2, 0);
-    //! This needs to be filled with all the unique nonbonded params
-    //! Todo: Get unique mapping for nonbonded parameters so this can be correctly filled;
-    //!       currently this only works this a single nonbonded parameter
-    nonbondedParameters[0] = std::get<0>(nblibNonbonded[0]);
-    nonbondedParameters[1] = std::get<1>(nblibNonbonded[0]);
-
-    //! Todo: move this to the appropriate place
-    //put_atoms_in_box(epbcXYZ, box, coordinates);
-
-    //! Todo: Refactor put_atoms_in_box so that this transformation is not needed
-    fillLegacyMatrix(simState.box().matrix(), box);
-    put_atoms_in_box(PbcType::Xyz, box, coordinates);
-
-    atomTypes.resize(topology.numAtoms());
-    //! This needs to be filled with the atomTypes that correspond to the nonbonded params
-    //! Todo: Get unique mapping for atom types so this can be correctly filled;
-    //!       currently this only works this a single atom type
-    std::fill(std::begin(atomTypes), std::end(atomTypes), 0);
-}
+// void nbKernel(NBKernelSystem        &system,
+//              const NBKernelOptions &options,
+//              const bool            &printTimings)
+//{
+//    // We don't want to call gmx_omp_nthreads_init(), so we init what we need
+//    gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
+//    gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
+//
+//    real                       minBoxSize = norm(system.box[XX]);
+//    for (int dim = YY; dim < DIM; dim++)
+//    {
+//        minBoxSize = std::min(minBoxSize, norm(system.box[dim]));
+//    }
+//    if (options.pairlistCutoff > 0.5*minBoxSize)
+//    {
+//        gmx_fatal(FARGS, "The cut-off should be shorter than half the box size");
+//    }
+//
+//    std::vector<NBKernelOptions> optionsList;
+//    expandSimdOptionAndPushBack(options, &optionsList);
+//    GMX_RELEASE_ASSERT(!optionsList.empty(), "Expect at least one benchmark setup");
+//
+//    // setupAndRunInstance(system, optionsList[0], printTimings);
+//}
 
 } // namespace nblib

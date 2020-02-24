@@ -62,42 +62,45 @@ namespace nblib
  * Simulation state description that serves as a snapshot of the system
  * being analysed. Needed to init an MD program. Allows hot-starting simulations.
  */
-class SimulationState
-{
-public:
-    //! Constructor
-    SimulationState(const std::vector<gmx::RVec>& coord,
-                    Box                           box,
-                    Topology                      topology,
-                    const std::vector<gmx::RVec>& vel = {});
+    class SimulationState
+    {
+    public:
+        //! Constructor
+        SimulationState(const std::vector<gmx::RVec>& coord,
+                        Box                           box,
+                        Topology                      topology,
+                        const std::vector<gmx::RVec>& vel = {});
 
-    //! Force generation of a move ctor such that we get a compiler error
-    //! if SimulationState gets changed in the future to require a custom
-    //! copy ctor
-    SimulationState(SimulationState&& simulationState) = default;
+        //! Copy Constructor
+        SimulationState(const SimulationState&) = default;
 
-    //! Move Assignment Constructor
-    SimulationState& operator=(SimulationState&& simulationState) = default;
+        //! Force generation of a move ctor such that we get a compiler error
+        //! if SimulationState gets changed in the future to require a custom
+        //! copy ctor
+        SimulationState(SimulationState&& simulationState) = default;
 
-    //! Returns topology of the current state
-    const Topology& topology() const;
+        //! Move Assignment Constructor
+        SimulationState& operator=(SimulationState&& simulationState) = default;
 
-    //! Returns the box
-    Box& box();
+        //! Returns topology of the current state
+        const Topology& topology() const;
 
-    //! Returns a vector of particle coordinates
-    std::vector<gmx::RVec>& coordinates();
+        //! Returns the box
+        Box& box();
 
-    //! Returns a vector of particle velocities
-    std::vector<gmx::RVec>& velocities();
+        //! Returns a vector of particle coordinates
+        std::vector<gmx::RVec>& coordinates();
+
+        //! Returns a vector of particle velocities
+        std::vector<gmx::RVec>& velocities();
 
 
-private:
-    std::vector<gmx::RVec> coordinates_;
-    Box                    box_;
-    Topology               topology_;
-    std::vector<gmx::RVec> velocities_;
-};
+    private:
+        std::vector<gmx::RVec> coordinates_;
+        Box                    box_;
+        Topology               topology_;
+        std::vector<gmx::RVec> velocities_;
+    };
 
 } // namespace nblib
 

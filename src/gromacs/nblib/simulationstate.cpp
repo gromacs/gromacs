@@ -44,7 +44,7 @@
  */
 #include "gmxpre.h"
 
-#include "atomtype.h"
+#include "simulationstate.h"
 
 #include <vector>
 
@@ -63,44 +63,44 @@
 namespace nblib
 {
 
-SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
-                                 Box                           box,
-                                 Topology                      topology,
-                                 const std::vector<gmx::RVec>& vel) :
-    box_(std::move(box)),
-    topology_(std::move(topology))
-{
-    if (!checkNumericValues(coord))
+    SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
+                                     Box                           box,
+                                     Topology                      topology,
+                                     const std::vector<gmx::RVec>& vel) :
+            box_(std::move(box)),
+            topology_(std::move(topology))
     {
-        GMX_THROW(gmx::InvalidInputError("Input coordinates has at least one NaN"));
+        if (!checkNumericValues(coord))
+        {
+            GMX_THROW(gmx::InvalidInputError("Input coordinates has at least one NaN"));
+        }
+        coordinates_ = coord;
+        if (!checkNumericValues(vel))
+        {
+            GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
+        }
+        velocities_ = vel;
     }
-    coordinates_ = coord;
-    if (!checkNumericValues(vel))
+
+    const Topology& SimulationState::topology() const
     {
-        GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
+        return topology_;
     }
-    velocities_ = vel;
-}
 
-const Topology& SimulationState::topology() const
-{
-    return topology_;
-}
+    Box& SimulationState::box()
+    {
+        return box_;
+    }
 
-Box& SimulationState::box()
-{
-    return box_;
-}
+    std::vector<gmx::RVec>& SimulationState::coordinates()
+    {
+        return coordinates_;
+    }
 
-std::vector<gmx::RVec>& SimulationState::coordinates()
-{
-    return coordinates_;
-}
-
-std::vector<gmx::RVec>& SimulationState::velocities()
-{
-    return velocities_;
-}
+    std::vector<gmx::RVec>& SimulationState::velocities()
+    {
+        return velocities_;
+    }
 
 
 } // namespace nblib

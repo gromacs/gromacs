@@ -62,22 +62,22 @@ namespace test
 namespace
 {
 
-using ::testing::Eq;
-using ::testing::Pointwise;
+    using ::testing::Eq;
+    using ::testing::Pointwise;
 
 //! Compares all element between two lists of lists
 //! Todo: unify this with the identical function in nbkernelsystem test make this a method
 //!       of ListOfLists<>
-template<typename T>
-void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector<T>>& v)
-{
-    ASSERT_EQ(list.size(), v.size());
-    for (std::size_t i = 0; i < list.size(); i++)
+    template<typename T>
+    void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector<T>>& v)
     {
-        ASSERT_EQ(list[i].size(), v[i].size());
-        EXPECT_THAT(list[i], Pointwise(Eq(), v[i]));
+        ASSERT_EQ(list.size(), v.size());
+        for (std::size_t i = 0; i < list.size(); i++)
+        {
+            ASSERT_EQ(list[i].size(), v[i].size());
+            EXPECT_THAT(list[i], Pointwise(Eq(), v[i]));
+        }
     }
-}
 
 // This is defined in src/gromacs/mdtypes/forcerec.h but there is also a
 // legacy C6 macro defined there that conflicts with the nblib C6 type.
@@ -85,127 +85,118 @@ void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector
 //       file can just include forcerec.h
 #define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
 
-TEST(NBlibTest, TopologyHasNumAtoms)
-{
-    WaterTopology waters;
-    Topology      watersTopology = waters.buildTopology(2);
-    const int     test           = watersTopology.numAtoms();
-    const int     ref            = 6;
-    EXPECT_EQ(ref, test);
-}
-
-TEST(NBlibTest, TopologyHasCharges)
-{
-    WaterTopology           waters;
-    Topology                watersTopology = waters.buildTopology(2);
-    const std::vector<real> test           = watersTopology.getCharges();
-    const std::vector<real> ref            = { Charges.at("Ow"), Charges.at("Hw"), Charges.at("Hw"),
-                                    Charges.at("Ow"), Charges.at("Hw"), Charges.at("Hw") };
-    EXPECT_EQ(ref, test);
-}
-
-TEST(NBlibTest, TopologyHasMasses)
-{
-    WaterTopology waters;
-    Topology      watersTopology = waters.buildTopology(2);
-
-    const Mass              refOwMass = waters.water().at("Ow").mass();
-    const Mass              refHwMass = waters.water().at("H").mass();
-    const std::vector<real> ref = { refOwMass, refHwMass, refHwMass, refOwMass, refHwMass, refHwMass };
-    EXPECT_EQ(ref, test);
-}
-
-TEST(NBlibTest, TopologyHasAtomTypes)
-{
-    WaterTopology               waters;
-    Topology                    watersTopology = waters.buildTopology(2);
-    const std::vector<AtomType> test           = watersTopology.getAtomTypes();
-    const AtomType              refOw          = waters.water().at("Ow");
-    const AtomType              refHw          = waters.water().at("H");
-    const std::vector<AtomType> ref            = { refOw, refHw };
-    const std::vector<AtomType> ref2           = { refHw, refOw };
-    EXPECT_TRUE(ref == test || ref2 == test);
-}
-
-TEST(NBlibTest, TopologyHasAtomTypeIds)
-{
-    WaterTopology waters;
-    Topology      watersTopology = waters.buildTopology(2);
-
-    const std::vector<int>      testIds   = watersTopology.getAtomTypeIdOfAllAtoms();
-    const std::vector<AtomType> testTypes = watersTopology.getAtomTypes();
-
-    std::vector<AtomType> testTypesExpanded;
-    for (int i : testIds)
+    TEST(NBlibTest, TopologyHasNumAtoms)
     {
-        testTypesExpanded.push_back(testTypes[i]);
+        WaterTopology waters;
+        Topology      watersTopology = waters.buildTopology(2);
+        const int     test           = watersTopology.numAtoms();
+        const int     ref            = 6;
+        EXPECT_EQ(ref, test);
     }
 
-    const AtomType              refOw = waters.water().at("Ow");
-    const AtomType              refHw = waters.water().at("H");
-    const std::vector<AtomType> ref   = { refOw, refHw, refHw, refOw, refHw, refHw };
-
-    EXPECT_TRUE(ref == testTypesExpanded);
-}
-
-TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
-{
-    //! User error: Two different AtomTypes with the same name
-    AtomType U235(AtomName("Uranium"), Mass(235), C6(6.), C12(12.));
-    AtomType U238(AtomName("Uranium"), Mass(238), C6(6.), C12(12.));
-
-    Molecule ud235("UraniumDimer235");
-    ud235.addAtom(AtomName("U1"), U235);
-    ud235.addAtom(AtomName("U2"), U235);
-
-    Molecule ud238("UraniumDimer238");
-    ud238.addAtom(AtomName("U1"), U238);
-    ud238.addAtom(AtomName("U2"), U238);
-
-    TopologyBuilder topologyBuilder;
-    topologyBuilder.addMolecule(ud235, 1);
-    EXPECT_THROW(topologyBuilder.addMolecule(ud238, 1), gmx::InvalidInputError);
-}
-
-TEST(NBlibTest, TopologyHasExclusions)
-{
-    WaterTopology         waters;
-    Topology              watersTopology = waters.buildTopology(2);
-    gmx::ListOfLists<int> testExclusions = watersTopology.getGmxExclusions();
-
-    const std::vector<std::vector<int>> refExclusions = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
-                                                          { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
-
-    compareLists(testExclusions, refExclusions);
-}
-
-TEST(NBlibTest, TopologyHasNonbondedParameters)
-{
-    WaterTopology waters;
-    Topology      watersTopology = waters.buildTopology(2);
-
-    const Mass              refOwC6  = waters.water().at("Ow").c6();
-    const Mass              refOwC12 = waters.water().at("Ow").c12();
-    const Mass              refHwC6  = waters.water().at("H").c6();
-    const Mass              refHwC12 = waters.water().at("H").c12();
-    const std::vector<real> refC6    = { refOwC6, refHwC6, refHwC6, refOwC6, refHwC6, refHwC6 };
-    const std::vector<real> refC12 = { refOwC12, refHwC12, refHwC12, refOwC12, refHwC12, refHwC12 };
-    const std::vector<real> testC6 = expandQuantity(watersTopology, &AtomType::c6);
-    const std::vector<real> testC12 = expandQuantity(watersTopology, &AtomType::c12);
-
-TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
-{
-    WaterTopology          waters;
-    Topology               watersTopology = waters.buildTopology(2);
-    const std::vector<int> test           = watersTopology.getAtomInfoAllVdw();
-    std::vector<int>       ref;
-    ref.resize(watersTopology.numAtoms());
-    for (size_t atomI = 0; atomI < ref.size(); atomI++)
+    TEST(NBlibTest, TopologyHasCharges)
     {
-        SET_CGINFO_HAS_VDW(ref[atomI]);
+        WaterTopology           waters;
+        Topology                watersTopology = waters.buildTopology(2);
+        const std::vector<real> test           = watersTopology.getCharges();
+        const std::vector<real> ref            = { Charges.at("Ow"), Charges.at("Hw"), Charges.at("Hw"),
+                                                   Charges.at("Ow"), Charges.at("Hw"), Charges.at("Hw") };
+        EXPECT_EQ(ref, test);
     }
-    EXPECT_EQ(ref, test);
-}
+
+    TEST(NBlibTest, TopologyHasMasses)
+    {
+        WaterTopology waters;
+        Topology      watersTopology = waters.buildTopology(2);
+
+        const Mass              refOwMass = waters.water().at("Ow").mass();
+        const Mass              refHwMass = waters.water().at("H").mass();
+        const std::vector<real> ref = { refOwMass, refHwMass, refHwMass, refOwMass, refHwMass, refHwMass };
+        const std::vector<real> test = expandQuantity(watersTopology, &AtomType::mass);
+        EXPECT_EQ(ref, test);
+    }
+
+    TEST(NBlibTest, TopologyHasAtomTypes)
+    {
+        WaterTopology               waters;
+        Topology                    watersTopology = waters.buildTopology(2);
+        const std::vector<AtomType> test           = watersTopology.getAtomTypes();
+        const AtomType              refOw          = waters.water().at("Ow");
+        const AtomType              refHw          = waters.water().at("H");
+        const std::vector<AtomType> ref            = { refOw, refHw };
+        const std::vector<AtomType> ref2           = { refHw, refOw };
+        EXPECT_TRUE(ref == test || ref2 == test);
+    }
+
+    TEST(NBlibTest, TopologyHasAtomTypeIds)
+    {
+        WaterTopology waters;
+        Topology      watersTopology = waters.buildTopology(2);
+
+        const std::vector<int>      testIds   = watersTopology.getAtomTypeIdOfAllAtoms();
+        const std::vector<AtomType> testTypes = watersTopology.getAtomTypes();
+
+        std::vector<AtomType> testTypesExpanded;
+        for (int i : testIds)
+        {
+            testTypesExpanded.push_back(testTypes[i]);
+        }
+
+        const AtomType              refOw = waters.water().at("Ow");
+        const AtomType              refHw = waters.water().at("H");
+        const std::vector<AtomType> ref   = { refOw, refHw, refHw, refOw, refHw, refHw };
+
+        EXPECT_TRUE(ref == testTypesExpanded);
+    }
+
+    TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
+    {
+        //! User error: Two different AtomTypes with the same name
+        AtomType U235(AtomName("Uranium"), Mass(235), C6(6.), C12(12.));
+        AtomType U238(AtomName("Uranium"), Mass(238), C6(6.), C12(12.));
+
+        Molecule ud235("UraniumDimer235");
+        ud235.addAtom(AtomName("U1"), U235);
+        ud235.addAtom(AtomName("U2"), U235);
+
+        Molecule ud238("UraniumDimer238");
+        ud238.addAtom(AtomName("U1"), U238);
+        ud238.addAtom(AtomName("U2"), U238);
+
+        TopologyBuilder topologyBuilder;
+        topologyBuilder.addMolecule(ud235, 1);
+        EXPECT_THROW(topologyBuilder.addMolecule(ud238, 1), gmx::InvalidInputError);
+    }
+
+    TEST(NBlibTest, TopologyHasExclusions)
+    {
+        WaterTopology         waters;
+        Topology              watersTopology = waters.buildTopology(2);
+        gmx::ListOfLists<int> testExclusions = watersTopology.getGmxExclusions();
+
+        const std::vector<std::vector<int>> refExclusions = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
+                                                              { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
+
+        compareLists(testExclusions, refExclusions);
+    }
+
+    TEST(NBlibTest, TopologyHasNonbondedParameters)
+    {
+        WaterTopology waters;
+        Topology      watersTopology = waters.buildTopology(2);
+
+        const Mass              refOwC6  = waters.water().at("Ow").c6();
+        const Mass              refOwC12 = waters.water().at("Ow").c12();
+        const Mass              refHwC6  = waters.water().at("H").c6();
+        const Mass              refHwC12 = waters.water().at("H").c12();
+        const std::vector<real> refC6    = { refOwC6, refHwC6, refHwC6, refOwC6, refHwC6, refHwC6 };
+        const std::vector<real> refC12 = { refOwC12, refHwC12, refHwC12, refOwC12, refHwC12, refHwC12 };
+        const std::vector<real> testC6 = expandQuantity(watersTopology, &AtomType::c6);
+        const std::vector<real> testC12 = expandQuantity(watersTopology, &AtomType::c12);
+
+        EXPECT_EQ(refC6, testC6);
+        EXPECT_EQ(refC12, testC12);
+    }
 
 //! Todo: this belongs to ForceCalculator
 // TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
@@ -222,34 +213,34 @@ TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
 //    EXPECT_EQ(ref, test);
 //}
 
-TEST(NBlibTest, toGmxExclusionBlockWorks)
-{
-    std::vector<std::tuple<int, int>> testInput{ { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 },
-                                                 { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 } };
-
-    std::vector<gmx::ExclusionBlock> reference;
-
-    gmx::ExclusionBlock localBlock;
-    localBlock.atomNumber.push_back(0);
-    localBlock.atomNumber.push_back(1);
-    localBlock.atomNumber.push_back(2);
-
-    reference.push_back(localBlock);
-    reference.push_back(localBlock);
-    reference.push_back(localBlock);
-
-    std::vector<gmx::ExclusionBlock> probe = detail::toGmxExclusionBlock(testInput);
-
-    ASSERT_EQ(reference.size(), probe.size());
-    for (size_t i = 0; i < reference.size(); ++i)
+    TEST(NBlibTest, toGmxExclusionBlockWorks)
     {
-        ASSERT_EQ(reference[i].atomNumber.size(), probe[i].atomNumber.size());
-        for (size_t j = 0; j < reference[i].atomNumber.size(); ++j)
+        std::vector<std::tuple<int, int>> testInput{ { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 },
+                                                     { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 } };
+
+        std::vector<gmx::ExclusionBlock> reference;
+
+        gmx::ExclusionBlock localBlock;
+        localBlock.atomNumber.push_back(0);
+        localBlock.atomNumber.push_back(1);
+        localBlock.atomNumber.push_back(2);
+
+        reference.push_back(localBlock);
+        reference.push_back(localBlock);
+        reference.push_back(localBlock);
+
+        std::vector<gmx::ExclusionBlock> probe = detail::toGmxExclusionBlock(testInput);
+
+        ASSERT_EQ(reference.size(), probe.size());
+        for (size_t i = 0; i < reference.size(); ++i)
         {
-            EXPECT_EQ(reference[i].atomNumber[j], probe[i].atomNumber[j]);
+            ASSERT_EQ(reference[i].atomNumber.size(), probe[i].atomNumber.size());
+            for (size_t j = 0; j < reference[i].atomNumber.size(); ++j)
+            {
+                EXPECT_EQ(reference[i].atomNumber[j], probe[i].atomNumber[j]);
+            }
         }
     }
-}
 
 } // namespace
 } // namespace test

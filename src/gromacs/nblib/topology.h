@@ -52,22 +52,22 @@
 
 namespace gmx
 {
-struct ExclusionBlock;
+    struct ExclusionBlock;
 }
 
 namespace nblib
 {
 
-namespace detail
-{
+    namespace detail
+    {
 
 // Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
-std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList);
+        std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList);
 
 // Add offset to all indices in inBlock
-std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
+        std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
 
-} // namespace detail
+    } // namespace detail
 
 /*! \inpublicapi
  * \ingroup nblib
@@ -78,40 +78,40 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
  * exists in a scope in a valid state after it has been built using a
  * Topology Builder.
  */
-class Topology
-{
-public:
-    const std::vector<AtomType>& getAtomTypes() const;
+    class Topology
+    {
+    public:
+        //! Returns the total number of atoms in the system
+        const int& numAtoms() const;
 
-    //! Returns a vector of atom names
-    const std::vector<std::string>& getAtomTypes() const;
+        //! Returns a vector of atom names
+        const std::vector<AtomType>& getAtomTypes() const;
 
-    //! Return the AtomType ID of all atoms
-    const std::vector<int>& getAtomTypeIdOfAllAtoms() const;
+        //! Return the AtomType ID of all atoms
+        const std::vector<int>& getAtomTypeIdOfAllAtoms() const;
 
-    //! Returns a vector of atom partial charges
-    const std::vector<real>& getCharges() const;
+        //! Returns a vector of atom partial charges
+        const std::vector<real>& getCharges() const;
 
-    // TODO: This function is only needed for testing. Need
-    //       another way for testing exclusion correctness
-    const t_blocka& getGMXexclusions() const { return excls_; }
+        //! Returns exclusions in proper, performant, gromacs layout
+        const gmx::ListOfLists<int>& getGmxExclusions() const { return exclusions_; }
 
-private:
-    Topology() = default;
+    private:
+        Topology() = default;
 
-    friend class TopologyBuilder;
+        friend class TopologyBuilder;
 
-    //! Total number of atoms in the system
-    int numAtoms_;
-    //! unique collection of AtomTypes
-    std::vector<AtomType> atomTypes_;
-    //! store an ID of each atom's type
-    std::vector<int> atomTypeIdOfAllAtoms_;
-    //! Storage for atom partial charges
-    std::vector<real> charges_;
-    //! Information about exclusions.
-    gmx::ListOfLists<int> exclusions_;
-};
+        //! Total number of atoms in the system
+        int numAtoms_;
+        //! unique collection of AtomTypes
+        std::vector<AtomType> atomTypes_;
+        //! store an ID of each atom's type
+        std::vector<int> atomTypeIdOfAllAtoms_;
+        //! Storage for atom partial charges
+        std::vector<real> charges_;
+        //! Information about exclusions.
+        gmx::ListOfLists<int> exclusions_;
+    };
 
 /*! \brief Topology Builder
  *
@@ -123,64 +123,64 @@ private:
  * simulation program.
  *
  */
-class TopologyBuilder
-{
-public:
-    //! Constructor
-    TopologyBuilder();
+    class TopologyBuilder
+    {
+    public:
+        //! Constructor
+        TopologyBuilder();
 
-    /*! \brief
-     * Builds and Returns a valid Topology
-     *
-     * This function accounts for all the molecules added along with their
-     * exclusions and returns a topology with a valid state that is usable
-     * by the GROMACS back-end.
-     */
-    Topology buildTopology();
+        /*! \brief
+         * Builds and Returns a valid Topology
+         *
+         * This function accounts for all the molecules added along with their
+         * exclusions and returns a topology with a valid state that is usable
+         * by the GROMACS back-end.
+         */
+        Topology buildTopology();
 
-    // Adds a molecules of a certain type into the topology
-    TopologyBuilder& addMolecule(const Molecule& moleculeType, int nMolecules);
+        // Adds a molecules of a certain type into the topology
+        TopologyBuilder& addMolecule(const Molecule& moleculeType, int nMolecules);
 
-private:
-    //! Internally stored topology
-    Topology topology_;
+    private:
+        //! Internally stored topology
+        Topology topology_;
 
-    //! Total number of atoms in the system
-    int numAtoms_;
+        //! Total number of atoms in the system
+        int numAtoms_;
 
-    //! List of molecule types and number of molecules
-    std::vector<std::tuple<Molecule, int>> molecules_;
+        //! List of molecule types and number of molecules
+        std::vector<std::tuple<Molecule, int>> molecules_;
 
-    // Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
-    gmx::ListOfLists<int> createExclusionsListOfLists() const;
+        // Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
+        gmx::ListOfLists<int> createExclusionsListOfLists() const;
 
-    // Helper function to extract quantities like mass, charge, etc from the system
-    template<typename T, class Extractor>
-    std::vector<T> extractAtomTypeQuantity(Extractor extractor);
+        // Helper function to extract quantities like mass, charge, etc from the system
+        template<typename T, class Extractor>
+        std::vector<T> extractAtomTypeQuantity(Extractor extractor);
 
-    //! distinct collection of AtomTypes
-    std::unordered_map<std::string, AtomType> atomTypes_;
-};
+        //! distinct collection of AtomTypes
+        std::unordered_map<std::string, AtomType> atomTypes_;
+    };
 
 //! utility function to extract AtomType quantities and expand them to the full
 //! array of length numAtoms()
-template<class F>
-inline auto expandQuantity(const Topology& topology, F atomTypeExtractor)
-{
-    using ValueType = decltype((std::declval<AtomType>().*std::declval<F>())());
-
-    std::vector<ValueType> ret;
-    ret.reserve(topology.numAtoms());
-
-    const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
-
-    for (size_t id : topology.getAtomTypeIdOfAllAtoms())
+    template<class F>
+    inline auto expandQuantity(const Topology& topology, F atomTypeExtractor)
     {
-        ret.push_back((atomTypes[id].*atomTypeExtractor)());
-    }
+        using ValueType = decltype((std::declval<AtomType>().*std::declval<F>())());
 
-    return ret;
-}
+        std::vector<ValueType> ret;
+        ret.reserve(topology.numAtoms());
+
+        const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
+
+        for (size_t id : topology.getAtomTypeIdOfAllAtoms())
+        {
+            ret.push_back((atomTypes[id].*atomTypeExtractor)());
+        }
+
+        return ret;
+    }
 
 } // namespace nblib
 
