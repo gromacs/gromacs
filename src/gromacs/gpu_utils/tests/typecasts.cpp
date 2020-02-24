@@ -44,6 +44,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/testasserts.h"
@@ -66,13 +67,16 @@ TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3OnHost)
     convertRVecToFloat3OnHost(rVecOutput, rVecInput);
     EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));
 }
-/*
+
 TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3OnDevice)
 {
-    std::vector<RVec> rVecOutput(rVecInput.size());
-    convertRVecToFloat3OnDevice(rVecOutput, rVecInput);
-    EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));
+    if (canComputeOnGpu())
+    {
+        std::vector<RVec> rVecOutput(rVecInput.size());
+        convertRVecToFloat3OnDevice(rVecOutput, rVecInput);
+        EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));
+    }
 }
-*/
+
 } // namespace test
 } // namespace gmx

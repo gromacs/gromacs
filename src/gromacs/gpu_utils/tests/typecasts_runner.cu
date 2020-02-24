@@ -48,7 +48,6 @@
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
-#include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -111,42 +110,38 @@ static __global__ void convertRVecToFloat3OnDevice_kernel(DeviceBuffer<float3> g
 
 void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>& h_rVecOutput, const std::vector<gmx::RVec>& h_rVecInput)
 {
-    if (canComputeOnGpu())
-    {
-        const int numElements = h_rVecInput.size();
+    const int numElements = h_rVecInput.size();
 
-        DeviceBuffer<RVec> d_rVecInput;
-        allocateDeviceBuffer(&d_rVecInput, numElements, nullptr);
-        copyToDeviceBuffer(&d_rVecInput, h_rVecInput.data(), 0, numElements, nullptr,
-                           GpuApiCallBehavior::Sync, nullptr);
+    DeviceBuffer<RVec> d_rVecInput;
+    allocateDeviceBuffer(&d_rVecInput, numElements, nullptr);
+    copyToDeviceBuffer(&d_rVecInput, h_rVecInput.data(), 0, numElements, nullptr,
+                       GpuApiCallBehavior::Sync, nullptr);
 
-        DeviceBuffer<float3> d_float3Output;
-        allocateDeviceBuffer(&d_float3Output, numElements * DIM, nullptr);
+    DeviceBuffer<float3> d_float3Output;
+    allocateDeviceBuffer(&d_float3Output, numElements * DIM, nullptr);
 
-        std::vector<float3> h_float3Output(numElements);
+    std::vector<float3> h_float3Output(numElements);
 
-        KernelLaunchConfig kernelLaunchConfig;
-        kernelLaunchConfig.gridSize[0]  = (numElements + c_threadsPerBlock - 1) / c_threadsPerBlock;
-        kernelLaunchConfig.blockSize[0] = c_threadsPerBlock;
-        kernelLaunchConfig.blockSize[1] = 1;
-        kernelLaunchConfig.blockSize[2] = 1;
-        kernelLaunchConfig.sharedMemorySize = 0;
-        kernelLaunchConfig.stream           = nullptr;
+    KernelLaunchConfig kernelLaunchConfig;
+    kernelLaunchConfig.gridSize[0]      = (numElements + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    kernelLaunchConfig.blockSize[0]     = c_threadsPerBlock;
+    kernelLaunchConfig.blockSize[1]     = 1;
+    kernelLaunchConfig.blockSize[2]     = 1;
+    kernelLaunchConfig.sharedMemorySize = 0;
+    kernelLaunchConfig.stream           = nullptr;
 
-        auto       kernelPtr  = convertRVecToFloat3OnDevice_kernel;
-        const auto kernelArgs = prepareGpuKernelArguments(
-                kernelPtr, kernelLaunchConfig, &d_float3Output, &d_rVecInput, &numElements);
-        launchGpuKernel(kernelPtr, kernelLaunchConfig, nullptr,
-                        "convertRVecToFloat3OnDevice_kernel", kernelArgs);
+    auto       kernelPtr  = convertRVecToFloat3OnDevice_kernel;
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, kernelLaunchConfig,
+                                                      &d_float3Output, &d_rVecInput, &numElements);
+    launchGpuKernel(kernelPtr, kernelLaunchConfig, nullptr, "convertRVecToFloat3OnDevice_kernel", kernelArgs);
 
-        copyFromDeviceBuffer(h_float3Output.data(), &d_float3Output, 0, numElements, nullptr,
-                             GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_float3Output.data(), &d_float3Output, 0, numElements, nullptr,
+                         GpuApiCallBehavior::Sync, nullptr);
 
-        saveFloat3InRVecFormat(h_rVecOutput, h_float3Output.data(), numElements);
+    saveFloat3InRVecFormat(h_rVecOutput, h_float3Output.data(), numElements);
 
-        freeDeviceBuffer(&d_rVecInput);
-        freeDeviceBuffer(&d_float3Output);
-    }
+    freeDeviceBuffer(&d_rVecInput);
+    freeDeviceBuffer(&d_float3Output);
 }
 
 } // namespace test
