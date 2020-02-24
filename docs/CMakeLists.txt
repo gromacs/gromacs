@@ -362,6 +362,7 @@ if (SPHINX_FOUND)
         install-guide/index.rst
         release-notes/index.rst
         release-notes/2020/2020.1.rst
+        release-notes/2020/2020.2.rst
         release-notes/2020/major/highlights.rst
         release-notes/2020/major/features.rst
         release-notes/2020/major/performance.rst

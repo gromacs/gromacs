@@ -30,6 +30,7 @@ Patch releases
    :maxdepth: 1
 
    2020/2020.1
+   2020/2020.2
 
 Major release
 ^^^^^^^^^^^^^
