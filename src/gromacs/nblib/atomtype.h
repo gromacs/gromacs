@@ -75,7 +75,7 @@ public:
     //! Force explicit use of correct types
     template<typename T, typename U, typename V, typename W>
     AtomType(T atomName, U mass, V c6, W c12) = delete;
-
+  
     //! Get the name
     AtomName name() const;
 
