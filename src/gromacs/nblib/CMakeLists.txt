@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -31,26 +31,21 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+#
+# \author Victor Holanda <victor.holanda@cscs.ch>
+# \author Joe Jordan <ejjordan@kth.se>
+# \author Prashanth Kanduri <kanduri@cscs.ch>
+# \author Sebastian Keller <keller@cscs.ch>
+#
 
-file(GLOB TOPOLOGY_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TOPOLOGY_SOURCES} PARENT_SCOPE)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
+file(GLOB NBLIB_SOURCES *.cpp)
 
 install(FILES
-        block.h
-        DESTINATION include/gromacs/topology)
+        nbkerneloptions.h
+        DESTINATION include/nblib)
 
-if(GMX_INSTALL_LEGACY_API)
-  install(FILES
-          atoms.h
-          block.h
-          forcefieldparameters.h
-          idef.h
-          ifunc.h
-          symtab.h
-          topology.h
-          DESTINATION include/gromacs/topology)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${NBLIB_SOURCES} PARENT_SCOPE)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
 endif()
