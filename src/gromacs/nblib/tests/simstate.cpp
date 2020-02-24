@@ -45,8 +45,6 @@
 
 #include <vector>
 
-#include "gmxpre.h"
-
 #include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/box.h"
 #include "gromacs/nblib/molecules.h"

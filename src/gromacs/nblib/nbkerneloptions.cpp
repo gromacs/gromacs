@@ -56,32 +56,32 @@ namespace nblib
 //! TODO This should be refactored so that if SimdAuto is set only one kernel
 //!      layout is chosen.
 //! TODO This should be refactored to only return the desired kernel layout
-    static void expandSimdOptionAndPushBack(const NBKernelOptions& options, std::vector<NBKernelOptions>* optionsList)
+static void expandSimdOptionAndPushBack(const NBKernelOptions& options, std::vector<NBKernelOptions>* optionsList)
+{
+    if (options.nbnxmSimd == BenchMarkKernels::SimdAuto)
     {
-        if (options.nbnxmSimd == BenchMarkKernels::SimdAuto)
-        {
-            bool addedInstance = false;
+        bool addedInstance = false;
 #ifdef GMX_NBNXN_SIMD_4XN
-            optionsList->push_back(options);
-            optionsList->back().nbnxmSimd = BenchMarkKernels::Simd4XM;
-            addedInstance                 = true;
+        optionsList->push_back(options);
+        optionsList->back().nbnxmSimd = BenchMarkKernels::Simd4XM;
+        addedInstance                 = true;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-            optionsList->push_back(options);
-            optionsList->back().nbnxmSimd = BenchMarkKernels::Simd2XMM;
-            addedInstance                 = true;
+        optionsList->push_back(options);
+        optionsList->back().nbnxmSimd = BenchMarkKernels::Simd2XMM;
+        addedInstance                 = true;
 #endif
-            if (!addedInstance)
-            {
-                optionsList->push_back(options);
-                optionsList->back().nbnxmSimd = BenchMarkKernels::SimdNo;
-            }
-        }
-        else
+        if (!addedInstance)
         {
             optionsList->push_back(options);
+            optionsList->back().nbnxmSimd = BenchMarkKernels::SimdNo;
         }
     }
+    else
+    {
+        optionsList->push_back(options);
+    }
+}
 
 
 // void nbKernel(NBKernelSystem        &system,
