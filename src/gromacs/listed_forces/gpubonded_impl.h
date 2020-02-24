@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,6 @@
 #ifndef GMX_LISTED_FORCES_GPUBONDED_IMPL_H
 #define GMX_LISTED_FORCES_GPUBONDED_IMPL_H
 
-#include "gromacs/gpu_utils/gpu_vec.cuh"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/gpubonded.h"
@@ -98,9 +97,9 @@ struct BondedCudaKernelParameters
     //! Coordinates before the timestep (on GPU)
     const float4* d_xq;
     //! Forces on atoms (on GPU)
-    fvec* d_f;
+    float3* d_f;
     //! Force shifts on atoms (on GPU)
-    fvec* d_fShift;
+    float3* d_fShift;
     //! Total Energy (on GPU)
     float* d_vTot;
     //! Interaction list atoms (on GPU)
@@ -140,8 +139,8 @@ public:
     void updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
                                                 const t_idef&       idef,
                                                 void*               xqDevice,
-                                                void*               forceDevice,
-                                                void*               fshiftDevice);
+                                                DeviceBuffer<RVec>  forceDevice,
+                                                DeviceBuffer<RVec>  fshiftDevice);
 
     /*! \brief Launches bonded kernel on a GPU */
     template<bool calcVir, bool calcEner>
@@ -172,9 +171,9 @@ private:
     //! Position-charge vector on the device.
     const float4* d_xq_ = nullptr;
     //! Force vector on the device.
-    fvec* d_f_ = nullptr;
+    float3* d_f_ = nullptr;
     //! Shift force vector on the device.
-    fvec* d_fShift_ = nullptr;
+    float3* d_fShift_ = nullptr;
     //! \brief Host-side virial buffer
     HostVector<float> vTot_ = { {}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported) };
     //! \brief Device-side total virial

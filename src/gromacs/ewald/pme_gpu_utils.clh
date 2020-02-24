@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,8 +78,6 @@ inline int getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
  * \param[in] paramIndexBase   Must be result of getSplineParamIndexBase().
  * \param[in] dimIndex         Dimension index (from 0 to 2)
  * \param[in] splineIndex      Spline contribution index (from 0 to \p order - 1)
- * \param[in] order            PME order
- * \param[in] atomsPerWarp     Number of atoms processed by a warp
  *
  * \returns Index into theta or dtheta array using GPU layout.
  */
@@ -93,7 +91,6 @@ inline int getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex
 /*! \brief
  * A function for checking the global atom data indices against the atom data array sizes.
  *
- * \param[in] atomDataIndexGlobal  The atom data index.
  * \param[in] nAtomData            The atom data array element count.
  * \returns                        Non-0 if index is within bounds (or PME data padding is enabled), 0 otherwise.
  *
@@ -113,7 +110,7 @@ inline int pme_gpu_check_atom_data_index(const size_t atomDataIndex, const size_
  */
 inline int pme_gpu_check_atom_charge(const float coefficient)
 {
-    return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
+    return c_skipNeutralAtoms ? (coefficient != 0.0F) : 1;
 }
 
 #endif

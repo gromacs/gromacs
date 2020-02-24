@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,21 +49,21 @@
 
 #include <memory>
 
+#include "gromacs/utility/gmxassert.h"
+
 #include "pme_gpu_program_impl.h"
 
-PmeGpuProgram::PmeGpuProgram(const gmx_device_info_t* deviceInfo) :
+PmeGpuProgram::PmeGpuProgram(const DeviceInformation* deviceInfo) :
     impl_(std::make_unique<PmeGpuProgramImpl>(deviceInfo))
 {
 }
 
 PmeGpuProgram::~PmeGpuProgram() = default;
 
-PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t* deviceInfo)
+PmeGpuProgramStorage buildPmeGpuProgram(const DeviceInformation* deviceInfo)
 {
-    if (!deviceInfo)
-    {
-        // This workaround is only needed for CodePath::CPU dummy in testhardwarecontexts.cpp
-        return nullptr;
-    }
+    GMX_RELEASE_ASSERT(
+            deviceInfo != nullptr,
+            "Device information can not be nullptr when building PME GPU program object.");
     return std::make_unique<PmeGpuProgram>(deviceInfo);
 }

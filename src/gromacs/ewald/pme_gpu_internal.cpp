@@ -231,30 +231,6 @@ void pme_gpu_copy_output_forces(PmeGpu* pmeGpu)
                          pmeGpu->settings.transferKind, nullptr);
 }
 
-void pme_gpu_realloc_coordinates(PmeGpu* pmeGpu)
-{
-    const size_t newCoordinatesSize = pmeGpu->nAtomsAlloc * DIM;
-    GMX_ASSERT(newCoordinatesSize > 0, "Bad number of atoms in PME GPU");
-    reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates, newCoordinatesSize,
-                           &pmeGpu->archSpecific->coordinatesSize,
-                           &pmeGpu->archSpecific->coordinatesSizeAlloc, pmeGpu->archSpecific->context);
-    if (c_usePadding)
-    {
-        const size_t paddingIndex = DIM * pmeGpu->kernelParams->atoms.nAtoms;
-        const size_t paddingCount = DIM * pmeGpu->nAtomsAlloc - paddingIndex;
-        if (paddingCount > 0)
-        {
-            clearDeviceBufferAsync(&pmeGpu->kernelParams->atoms.d_coordinates, paddingIndex,
-                                   paddingCount, pmeGpu->archSpecific->pmeStream);
-        }
-    }
-}
-
-void pme_gpu_free_coordinates(const PmeGpu* pmeGpu)
-{
-    freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates);
-}
-
 void pme_gpu_realloc_and_copy_input_coefficients(PmeGpu* pmeGpu, const float* h_coefficients)
 {
     GMX_ASSERT(h_coefficients, "Bad host-side charge buffer in PME GPU");
@@ -559,7 +535,7 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
 #elif GMX_GPU == GMX_GPU_OPENCL
     cl_command_queue_properties queueProperties =
             pmeGpu->archSpecific->useTiming ? CL_QUEUE_PROFILING_ENABLE : 0;
-    cl_device_id device_id = pmeGpu->deviceInfo->ocl_gpu_id.ocl_device_id;
+    cl_device_id device_id = pmeGpu->deviceInfo->oclDeviceId;
     cl_int       clError;
     pmeGpu->archSpecific->pmeStream =
             clCreateCommandQueue(pmeGpu->archSpecific->context, device_id, queueProperties, &clError);
@@ -843,10 +819,10 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
  * TODO: this should become PmeGpu::PmeGpu()
  *
  * \param[in,out] pme            The PME structure.
- * \param[in,out] gpuInfo        The GPU information structure.
+ * \param[in,out] deviceInfo     The GPU device information structure.
  * \param[in]     pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
  */
-static void pme_gpu_init(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const PmeGpuProgram* pmeGpuProgram)
+static void pme_gpu_init(gmx_pme_t* pme, const DeviceInformation* deviceInfo, const PmeGpuProgram* pmeGpuProgram)
 {
     pme->gpu       = new PmeGpu();
     PmeGpu* pmeGpu = pme->gpu;
@@ -863,7 +839,7 @@ static void pme_gpu_init(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const
 
     pme_gpu_set_testing(pmeGpu, false);
 
-    pmeGpu->deviceInfo = gpuInfo;
+    pmeGpu->deviceInfo = deviceInfo;
     GMX_ASSERT(pmeGpuProgram != nullptr, "GPU kernels must be already compiled");
     pmeGpu->programHandle_ = pmeGpuProgram;
 
@@ -954,7 +930,7 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const PmeGpuProgram* pmeGpuProgram)
+void pme_gpu_reinit(gmx_pme_t* pme, const DeviceInformation* deviceInfo, const PmeGpuProgram* pmeGpuProgram)
 {
     GMX_ASSERT(pme != nullptr, "Need valid PME object");
     if (pme->runMode == PmeRunMode::CPU)
@@ -966,7 +942,7 @@ void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const PmeG
     if (!pme->gpu)
     {
         /* First-time initialization */
-        pme_gpu_init(pme, gpuInfo, pmeGpuProgram);
+        pme_gpu_init(pme, deviceInfo, pmeGpuProgram);
     }
     else
     {
@@ -1409,14 +1385,10 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
  * \param[in]  pmeGpu                   The PME GPU structure.
  * \param[in]  useOrderThreadsPerAtom   bool controlling if we should use order or order*order threads per atom
  * \param[in]  readSplinesFromGlobal    bool controlling if we should write spline data to global memory
- * \param[in]  forceTreatment           Controls if the forces from the gather should increment or replace the input forces.
  *
  * \return Pointer to CUDA kernel
  */
-inline auto selectGatherKernelPtr(const PmeGpu*          pmeGpu,
-                                  bool                   useOrderThreadsPerAtom,
-                                  bool                   readSplinesFromGlobal,
-                                  PmeForceOutputHandling forceTreatment)
+inline auto selectGatherKernelPtr(const PmeGpu* pmeGpu, bool useOrderThreadsPerAtom, bool readSplinesFromGlobal)
 
 {
     PmeGpuProgramImpl::PmeKernelHandle kernelPtr = nullptr;
@@ -1425,44 +1397,30 @@ inline auto selectGatherKernelPtr(const PmeGpu*          pmeGpu,
     {
         if (useOrderThreadsPerAtom)
         {
-            kernelPtr = (forceTreatment == PmeForceOutputHandling::Set)
-                                ? pmeGpu->programHandle_->impl_->gatherKernelReadSplinesThPerAtom4
-                                : pmeGpu->programHandle_->impl_->gatherReduceWithInputKernelReadSplinesThPerAtom4;
+            kernelPtr = pmeGpu->programHandle_->impl_->gatherKernelReadSplinesThPerAtom4;
         }
         else
         {
-            kernelPtr = (forceTreatment == PmeForceOutputHandling::Set)
-                                ? pmeGpu->programHandle_->impl_->gatherKernelReadSplines
-                                : pmeGpu->programHandle_->impl_->gatherReduceWithInputKernelReadSplines;
+            kernelPtr = pmeGpu->programHandle_->impl_->gatherKernelReadSplines;
         }
     }
     else
     {
         if (useOrderThreadsPerAtom)
         {
-            kernelPtr = (forceTreatment == PmeForceOutputHandling::Set)
-                                ? pmeGpu->programHandle_->impl_->gatherKernelThPerAtom4
-                                : pmeGpu->programHandle_->impl_->gatherReduceWithInputKernelThPerAtom4;
+            kernelPtr = pmeGpu->programHandle_->impl_->gatherKernelThPerAtom4;
         }
         else
         {
-            kernelPtr = (forceTreatment == PmeForceOutputHandling::Set)
-                                ? pmeGpu->programHandle_->impl_->gatherKernel
-                                : pmeGpu->programHandle_->impl_->gatherReduceWithInputKernel;
+            kernelPtr = pmeGpu->programHandle_->impl_->gatherKernel;
         }
     }
     return kernelPtr;
 }
 
 
-void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const float* h_grid)
+void pme_gpu_gather(PmeGpu* pmeGpu, const float* h_grid)
 {
-    /* Copying the input CPU forces for reduction */
-    if (forceTreatment != PmeForceOutputHandling::Set)
-    {
-        pme_gpu_copy_input_forces(pmeGpu);
-    }
-
     const auto& settings = pmeGpu->settings;
     if (!settings.performGPUFFT || settings.copyAllOutputs)
     {
@@ -1505,9 +1463,9 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
 
     // TODO test different cache configs
 
-    int                                timingId  = gtPME_GATHER;
-    PmeGpuProgramImpl::PmeKernelHandle kernelPtr = selectGatherKernelPtr(
-            pmeGpu, useOrderThreadsPerAtom, readGlobal || (!recalculateSplines), forceTreatment);
+    int                                timingId = gtPME_GATHER;
+    PmeGpuProgramImpl::PmeKernelHandle kernelPtr =
+            selectGatherKernelPtr(pmeGpu, useOrderThreadsPerAtom, readGlobal || (!recalculateSplines));
     // TODO design kernel selection getters and make PmeGpu a friend of PmeGpuProgramImpl
 
     pme_gpu_start_timing(pmeGpu, timingId);
@@ -1535,15 +1493,6 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
     }
 }
 
-DeviceBuffer<float> pme_gpu_get_kernelparam_coordinates(const PmeGpu* pmeGpu)
-{
-    GMX_ASSERT(pmeGpu && pmeGpu->kernelParams,
-               "PME GPU device buffer was requested in non-GPU build or before the GPU PME was "
-               "initialized.");
-
-    return pmeGpu->kernelParams->atoms.d_coordinates;
-}
-
 void* pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
 {
     if (pmeGpu && pmeGpu->kernelParams)
@@ -1556,38 +1505,7 @@ void* pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
     }
 }
 
-/*! \brief Check the validity of the device buffer.
- *
- * Checks if the buffer is not nullptr and, when possible, if it is big enough.
- *
- * \todo Split and move this function to gpu_utils.
- *
- * \param[in] buffer        Device buffer to be checked.
- * \param[in] requiredSize  Number of elements that the buffer will have to accommodate.
- *
- * \returns If the device buffer can be set.
- */
-template<typename T>
-static bool checkDeviceBuffer(gmx_unused DeviceBuffer<T> buffer, gmx_unused int requiredSize)
-{
-#if GMX_GPU == GMX_GPU_CUDA
-    GMX_ASSERT(buffer != nullptr, "The device pointer is nullptr");
-    return buffer != nullptr;
-#elif GMX_GPU == GMX_GPU_OPENCL
-    size_t size;
-    int    retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size), &size, nullptr);
-    GMX_ASSERT(retval == CL_SUCCESS,
-               gmx::formatString("clGetMemObjectInfo failed with error code #%d", retval).c_str());
-    GMX_ASSERT(static_cast<int>(size) >= requiredSize,
-               "Number of atoms in device buffer is smaller then required size.");
-    return retval == CL_SUCCESS && static_cast<int>(size) >= requiredSize;
-#elif GMX_GPU == GMX_GPU_NONE
-    GMX_ASSERT(false, "Setter for device-side coordinates was called in non-GPU build.");
-    return false;
-#endif
-}
-
-void pme_gpu_set_kernelparam_coordinates(const PmeGpu* pmeGpu, DeviceBuffer<float> d_x)
+void pme_gpu_set_kernelparam_coordinates(const PmeGpu* pmeGpu, DeviceBuffer<gmx::RVec> d_x)
 {
     GMX_ASSERT(pmeGpu && pmeGpu->kernelParams,
                "PME GPU device buffer can not be set in non-GPU builds or before the GPU PME was "

@@ -120,12 +120,12 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
-struct gmx_nbnxm_gpu_t;
+struct NbnxmGpu;
 struct gmx_wallcycle;
 struct interaction_const_t;
 struct nbnxn_atomdata_t;
@@ -138,13 +138,6 @@ struct t_mdatoms;
 struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
-
-/*! \brief Switch for whether to use GPU for buffer ops*/
-enum class BufferOpsUseGpu
-{
-    True,
-    False
-};
 
 class GpuEventSynchronizer;
 
@@ -225,7 +218,7 @@ public:
                        std::unique_ptr<PairSearch>       pairSearch,
                        std::unique_ptr<nbnxn_atomdata_t> nbat,
                        const Nbnxm::KernelSetup&         kernelSetup,
-                       gmx_nbnxm_gpu_t*                  gpu_nbv,
+                       NbnxmGpu*                         gpu_nbv,
                        gmx_wallcycle*                    wcycle);
 
     ~nonbonded_verlet_t();
@@ -293,10 +286,10 @@ public:
      * \param[in] d_x             GPU coordinates buffer in plain rvec format to be transformed.
      * \param[in] xReadyOnDevice  Event synchronizer indicating that the coordinates are ready in the device memory.
      */
-    void convertCoordinatesGpu(gmx::AtomLocality     locality,
-                               bool                  fillLocal,
-                               DeviceBuffer<float>   d_x,
-                               GpuEventSynchronizer* xReadyOnDevice);
+    void convertCoordinatesGpu(gmx::AtomLocality       locality,
+                               bool                    fillLocal,
+                               DeviceBuffer<gmx::RVec> d_x,
+                               GpuEventSynchronizer*   xReadyOnDevice);
 
     //! Init for GPU version of setup coordinates in Nbnxm
     void atomdata_init_copy_x_to_nbat_x_gpu();
@@ -356,7 +349,7 @@ public:
      * \param [in]     accumulateForce      If the total force buffer already contains data
      */
     void atomdata_add_nbat_f_to_f_gpu(gmx::AtomLocality                          locality,
-                                      DeviceBuffer<float>                        totalForcesDevice,
+                                      DeviceBuffer<gmx::RVec>                    totalForcesDevice,
                                       void*                                      forcesPmeDevice,
                                       gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
                                       bool useGpuFPmeReduction,
@@ -403,7 +396,7 @@ private:
 
 public:
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
-    gmx_nbnxm_gpu_t* gpu_nbv;
+    NbnxmGpu* gpu_nbv;
 };
 
 namespace Nbnxm
@@ -411,12 +404,11 @@ namespace Nbnxm
 
 /*! \brief Creates an Nbnxm object */
 std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlog,
-                                                   gmx_bool                 bFEP_NonBonded,
                                                    const t_inputrec*        ir,
                                                    const t_forcerec*        fr,
                                                    const t_commrec*         cr,
                                                    const gmx_hw_info_t&     hardwareInfo,
-                                                   const gmx_device_info_t* deviceInfo,
+                                                   const DeviceInformation* deviceInfo,
                                                    const gmx_mtop_t*        mtop,
                                                    matrix                   box,
                                                    gmx_wallcycle*           wcycle);

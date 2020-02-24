@@ -52,6 +52,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/topology.h"
 
 #include "freeenergyperturbationelement.h"
@@ -67,7 +68,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
                                                         FILE*              fplog,
                                                         const MDLogger&    mdlog,
                                                         t_commrec*         cr,
-                                                        t_inputrec*        inputrec,
+                                                        const t_inputrec*  inputrec,
                                                         const MDAtoms*     mdAtoms,
                                                         t_nrnb*            nrnb,
                                                         gmx_wallcycle*     wcycle,
@@ -77,6 +78,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
                                                         bool               hasReadEkinState) :
     energyReductionStep_(-1),
     virialReductionStep_(-1),
+    vvSchedulingStep_(-1),
     doStopCM_(inputrec->comm_mode != ecmNO),
     nstcomm_(inputrec->nstcomm),
     nstglobalcomm_(nstglobalcomm),
@@ -118,58 +120,42 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
 {
     GMX_ASSERT(localTopology_, "Setup called before local topology was set.");
 
-    // Only do initial communication step for one of the velocity-verlet stages
-    if (algorithm == ComputeGlobalsAlgorithm::LeapFrog
-        || algorithm == ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep)
+    if (doStopCM_ && !inputrec_->bContinuation)
     {
-        unsigned int cglo_flags =
-                (CGLO_TEMPERATURE | CGLO_GSTAT
-                 | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
-                 | (hasReadEkinState_ ? CGLO_READEKIN : 0));
-
-        if (algorithm == ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep)
-        {
-            cglo_flags |= CGLO_PRESSURE | CGLO_CONSTRAINT;
-        }
-
-        const bool stopCM = doStopCM_ && !inputrec_->bContinuation;
-
         // To minimize communication, compute_globals computes the COM velocity
         // and the kinetic energy for the velocities without COM motion removed.
         // Thus to get the kinetic energy without the COM contribution, we need
         // to call compute_globals twice.
-        for (int cgloIteration = 0; cgloIteration < (stopCM ? 2 : 1); cgloIteration++)
-        {
-            unsigned int cglo_flags_iteration = cglo_flags;
-            if (stopCM && cgloIteration == 0)
-            {
-                cglo_flags_iteration |= CGLO_STOPCM;
-                cglo_flags_iteration &= ~CGLO_TEMPERATURE;
-            }
 
-            compute(-1, cglo_flags_iteration, nullSignaller_.get(), false, true);
+        compute(-1, CGLO_GSTAT | CGLO_STOPCM, nullSignaller_.get(), false, true);
 
-            if (cglo_flags_iteration & CGLO_STOPCM)
-            {
-                auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-                // At initialization, do not pass x with acceleration-correction mode
-                // to avoid (incorrect) correction of the initial coordinates.
-                rvec* xPtr = nullptr;
-                if (vcm_.mode != ecmLINEAR_ACCELERATION_CORRECTION)
-                {
-                    xPtr = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-                }
-                process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), xPtr, v);
-                inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
-            }
-        }
+        auto v = statePropagatorData_->velocitiesView();
+        // At initialization, do not pass x with acceleration-correction mode
+        // to avoid (incorrect) correction of the initial coordinates.
+        auto x = vcm_.mode == ecmLINEAR_ACCELERATION_CORRECTION ? ArrayRefWithPadding<RVec>()
+                                                                : statePropagatorData_->positionsView();
+        process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x.unpaddedArrayRef(),
+                               v.unpaddedArrayRef());
+        inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
+    }
 
-        // Calculate the initial half step temperature, and save the ekinh_old
-        for (int i = 0; (i < inputrec_->opts.ngtc); i++)
-        {
-            copy_mat(energyElement_->ekindata()->tcstat[i].ekinh,
-                     energyElement_->ekindata()->tcstat[i].ekinh_old);
-        }
+    unsigned int cglo_flags =
+            (CGLO_TEMPERATURE | CGLO_GSTAT
+             | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
+             | (hasReadEkinState_ ? CGLO_READEKIN : 0));
+
+    if (algorithm == ComputeGlobalsAlgorithm::VelocityVerlet)
+    {
+        cglo_flags |= CGLO_PRESSURE | CGLO_CONSTRAINT;
+    }
+
+    compute(-1, cglo_flags, nullSignaller_.get(), false, true);
+
+    // Calculate the initial half step temperature, and save the ekinh_old
+    for (int i = 0; (i < inputrec_->opts.ngtc); i++)
+    {
+        copy_mat(energyElement_->ekindata()->tcstat[i].ekinh,
+                 energyElement_->ekindata()->tcstat[i].ekinh_old);
     }
 }
 
@@ -225,55 +211,68 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
                     compute(step, flags, signaller.get(), true);
                 }));
     }
-    else if (algorithm == ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep)
+    else if (algorithm == ComputeGlobalsAlgorithm::VelocityVerlet)
     {
-        // For vv, the state at the beginning of the step is positions at time t, velocities at time t - dt/2
-        // The first velocity propagation (+dt/2) therefore actually corresponds to the previous step.
-        // So we need information from the last step in the first half of the integration
-        if (!needGlobalReduction && !do_per_step(step - 1, nstglobalcomm_))
+        // For VV, we schedule two calls to compute globals per step.
+        if (step != vvSchedulingStep_)
         {
-            return;
+            // This is the first scheduling call for this step (positions & velocities at full time
+            // step) Set this as the current scheduling step
+            vvSchedulingStep_ = step;
+
+            // For vv, the state at the beginning of the step is positions at time t, velocities at time t - dt/2
+            // The first velocity propagation (+dt/2) therefore actually corresponds to the previous step.
+            // So we need information from the last step in the first half of the integration
+            if (!needGlobalReduction && !do_per_step(step - 1, nstglobalcomm_))
+            {
+                return;
+            }
+
+            const bool doTemperature = step != initStep_ || inputrec_->bContinuation;
+            const bool doEnergy      = step == energyReductionStep_;
+
+            int flags = (needGlobalReduction ? CGLO_GSTAT : 0) | (doEnergy ? CGLO_ENERGY : 0)
+                        | (doTemperature ? CGLO_TEMPERATURE : 0) | CGLO_PRESSURE | CGLO_CONSTRAINT
+                        | (needComReduction ? CGLO_STOPCM : 0)
+                        | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
+                                                                  : 0)
+                        | CGLO_SCALEEKIN;
+
+            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+                    [this, step, flags]() { compute(step, flags, nullSignaller_.get(), false); }));
         }
-
-        const bool doTemperature = step != initStep_ || inputrec_->bContinuation;
-        const bool doEnergy      = step == energyReductionStep_;
-
-        int flags = (needGlobalReduction ? CGLO_GSTAT : 0) | (doEnergy ? CGLO_ENERGY : 0)
-                    | (doTemperature ? CGLO_TEMPERATURE : 0) | CGLO_PRESSURE | CGLO_CONSTRAINT
-                    | (needComReduction ? CGLO_STOPCM : 0)
-                    | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
-                    | CGLO_SCALEEKIN;
-
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this, step, flags]() { compute(step, flags, nullSignaller_.get(), false); }));
-    }
-    else if (algorithm == ComputeGlobalsAlgorithm::VelocityVerletAfterCoordinateUpdate)
-    {
-        // second call to compute_globals for this step
-        if (!needGlobalReduction)
+        else
         {
-            return;
+            // second call to compute_globals for this step
+            // Reset the scheduling step to avoid confusion if scheduling needs
+            // to be repeated (in case of unexpected simulation termination)
+            vvSchedulingStep_ = -1;
+
+            if (!needGlobalReduction)
+            {
+                return;
+            }
+            int flags = CGLO_GSTAT | CGLO_CONSTRAINT
+                        | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
+                                                                  : 0);
+
+            // Since we're already communicating at this step, we
+            // can propagate intra-simulation signals. Note that
+            // check_nstglobalcomm has the responsibility for
+            // choosing the value of nstglobalcomm which satisfies
+            // the need of the different signallers.
+            const bool doIntraSimSignal = true;
+            // Disable functionality
+            const bool doInterSimSignal = false;
+
+            auto signaller = std::make_shared<SimulationSignaller>(
+                    signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
+
+            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+                    [this, step, flags, signaller = std::move(signaller)]() {
+                        compute(step, flags, signaller.get(), true);
+                    }));
         }
-        int flags = CGLO_GSTAT | CGLO_CONSTRAINT
-                    | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                              : 0);
-
-        // Since we're already communicating at this step, we
-        // can propagate intra-simulation signals. Note that
-        // check_nstglobalcomm has the responsibility for
-        // choosing the value of nstglobalcomm which satisfies
-        // the need of the different signallers.
-        const bool doIntraSimSignal = true;
-        // Disable functionality
-        const bool doInterSimSignal = false;
-
-        auto signaller = std::make_shared<SimulationSignaller>(signals_, cr_, nullptr,
-                                                               doInterSimSignal, doIntraSimSignal);
-
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this, step, flags, signaller = std::move(signaller)]() {
-                    compute(step, flags, signaller.get(), true);
-                }));
     }
 }
 
@@ -284,8 +283,8 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                                                bool                 useLastBox,
                                                bool                 isInit)
 {
-    auto x       = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto v       = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    auto x       = statePropagatorData_->positionsView().unpaddedArrayRef();
+    auto v       = statePropagatorData_->velocitiesView().unpaddedArrayRef();
     auto box     = statePropagatorData_->constBox();
     auto lastbox = useLastBox ? statePropagatorData_->constPreviousBox()
                               : statePropagatorData_->constBox();
@@ -298,7 +297,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     mdAtoms_->mdatoms(), nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr,
                     energyElement_->enerdata(), energyElement_->forceVirial(step),
                     energyElement_->constraintVirial(step), energyElement_->totalVirial(step),
-                    energyElement_->pressure(step), energyElement_->muTot(), constr_, signaller, lastbox,
+                    energyElement_->pressure(step), constr_, signaller, lastbox,
                     &totalNumberOfBondedInteractions_, energyElement_->needToSumEkinhOld(), flags);
     checkNumberOfBondedInteractions(mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_,
                                     localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
@@ -358,7 +357,6 @@ SignallerCallbackPtr ComputeGlobalsElement<algorithm>::registerTrajectorySignall
 //! Explicit template instantiation
 //! @{
 template class ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>;
-template class ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep>;
-template class ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerletAfterCoordinateUpdate>;
+template class ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>;
 //! @}
 } // namespace gmx

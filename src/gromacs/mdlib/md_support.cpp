@@ -64,6 +64,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -153,31 +154,30 @@ int multisim_min(const gmx_multisim_t* ms, int nmin, int n)
 
 /* TODO Specialize this routine into init-time and loop-time versions?
    e.g. bReadEkin is only true when restoring from checkpoint */
-void compute_globals(gmx_global_stat*          gstat,
-                     t_commrec*                cr,
-                     const t_inputrec*         ir,
-                     t_forcerec*               fr,
-                     gmx_ekindata_t*           ekind,
-                     const rvec*               x,
-                     const rvec*               v,
-                     const matrix              box,
-                     real                      vdwLambda,
-                     const t_mdatoms*          mdatoms,
-                     t_nrnb*                   nrnb,
-                     t_vcm*                    vcm,
-                     gmx_wallcycle_t           wcycle,
-                     gmx_enerdata_t*           enerd,
-                     tensor                    force_vir,
-                     tensor                    shake_vir,
-                     tensor                    total_vir,
-                     tensor                    pres,
-                     rvec                      mu_tot,
-                     gmx::Constraints*         constr,
-                     gmx::SimulationSignaller* signalCoordinator,
-                     const matrix              lastbox,
-                     int*                      totalNumberOfBondedInteractions,
-                     gmx_bool*                 bSumEkinhOld,
-                     const int                 flags)
+void compute_globals(gmx_global_stat*               gstat,
+                     t_commrec*                     cr,
+                     const t_inputrec*              ir,
+                     t_forcerec*                    fr,
+                     gmx_ekindata_t*                ekind,
+                     gmx::ArrayRef<const gmx::RVec> x,
+                     gmx::ArrayRef<const gmx::RVec> v,
+                     const matrix                   box,
+                     real                           vdwLambda,
+                     const t_mdatoms*               mdatoms,
+                     t_nrnb*                        nrnb,
+                     t_vcm*                         vcm,
+                     gmx_wallcycle_t                wcycle,
+                     gmx_enerdata_t*                enerd,
+                     tensor                         force_vir,
+                     tensor                         shake_vir,
+                     tensor                         total_vir,
+                     tensor                         pres,
+                     gmx::Constraints*              constr,
+                     gmx::SimulationSignaller*      signalCoordinator,
+                     const matrix                   lastbox,
+                     int*                           totalNumberOfBondedInteractions,
+                     gmx_bool*                      bSumEkinhOld,
+                     const int                      flags)
 {
     gmx_bool bEner, bPres, bTemp;
     gmx_bool bStopCM, bGStat, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
@@ -242,7 +242,7 @@ void compute_globals(gmx_global_stat*          gstat,
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
-                global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot, ir, ekind, constr,
+                global_stat(gstat, cr, enerd, force_vir, shake_vir, ir, ekind, constr,
                             bStopCM ? vcm : nullptr, signalBuffer.size(), signalBuffer.data(),
                             totalNumberOfBondedInteractions, *bSumEkinhOld, flags);
                 wallcycle_stop(wcycle, ewcMoveE);

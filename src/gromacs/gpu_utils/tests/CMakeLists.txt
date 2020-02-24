@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,10 @@ if(GMX_USE_CUDA)
     # CUDA-only test
     list(APPEND SOURCES_FROM_CXX
         pinnedmemorychecker.cpp
+        typecasts.cpp
+        typecasts_runner.cpp
         )
+    gmx_add_libgromacs_sources(typecasts_runner.cu)
     # TODO Making a separate library is heavy handed, but nothing else
     # seems to work. Also don't use a hyphen in its name, because nvcc
     # can't cope with that.

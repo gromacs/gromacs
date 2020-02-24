@@ -1,19 +1,15 @@
 Understanding Jenkins builds
 ============================
 
-This page documents what different Jenkins builds actually run from the
-|Gromacs| source tree.  The purpose is two-fold:
+This page documents what different Jenkins builds actually run at
+http://jenkins.gromacs.org/ from the |Gromacs| source tree.
+The purpose is two-fold:
 
 * Provide information on how to interpret Jenkins failures and how to run the
   same tasks locally to diagnose issues (in most cases, referring to the
   special targets described in :doc:`build-system`).
 * Provide information on what changes in the build system (or other parts of
   the repository) need special care to not break Jenkins builds.
-
-Separate page documents how to interact with the Jenkins UI for these builds:
-:doc:`releng/jenkins-ui`.
-:doc:`releng/jenkins-howto` has information on how to do common things with
-Jenkins builds.
 
 .. todo:: Add a link to a wiki page about general Jenkins documentation, once
    there is more of that.

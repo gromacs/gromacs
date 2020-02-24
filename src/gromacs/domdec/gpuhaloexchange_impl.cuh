@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,8 +72,9 @@ public:
      * \param [in]    mpi_comm_mysim           communicator used for simulation
      * \param [in]    localStream              local NB CUDA stream
      * \param [in]    nonLocalStream           non-local NB CUDA stream
+     * \param [in]    pulse                    the communication pulse for this instance
      */
-    Impl(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* localStream, void* nonLocalStream);
+    Impl(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* localStream, void* nonLocalStream, int pulse);
     ~Impl();
 
     /*! \brief
@@ -184,6 +185,10 @@ private:
     float3* d_f_ = nullptr;
     //! An event recorded once the exchanged forces are ready on the GPU
     GpuEventSynchronizer fReadyOnDevice_;
+    //! The pulse corresponding to this halo exchange instance
+    int pulse_ = 0;
+    //! Number of zones. Always 1 for 1-D case.
+    const int nzone_ = 1;
 };
 
 } // namespace gmx

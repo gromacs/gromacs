@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,6 +105,23 @@ TYPED_TEST(PaddedVectorTest, ConstructsResizesAndReserves)
     EXPECT_LE(v.paddedSize(), vReserved.paddedSize());
 }
 
+TYPED_TEST(PaddedVectorTest, ArrayRefConversionsAreIdentical)
+{
+    using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
+
+    VectorType v;
+    fillInput(&v, 1);
+
+    SCOPED_TRACE("Comparing different paths to create identical unpadded views");
+    compareViews(makeArrayRef(v), v.arrayRefWithPadding().unpaddedArrayRef());
+    compareViews(makeConstArrayRef(v), v.constArrayRefWithPadding().unpaddedConstArrayRef());
+    compareViews(makeConstArrayRef(v), v.constArrayRefWithPadding().unpaddedArrayRef());
+    compareViews(makeConstArrayRef(v), v.arrayRefWithPadding().unpaddedConstArrayRef());
+
+    SCOPED_TRACE("Comparing const to non-const unpadded views");
+    compareViewsIgnoreConst(makeArrayRef(v), makeConstArrayRef(v));
+}
+
 TYPED_TEST(PaddedVectorTest, CanCopyAssign)
 {
     using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
@@ -115,7 +132,7 @@ TYPED_TEST(PaddedVectorTest, CanCopyAssign)
 
     w = v;
     compareViews(v.arrayRefWithPadding().unpaddedArrayRef(), w.arrayRefWithPadding().unpaddedArrayRef());
-    compareViews(makeArrayRef(v), makeArrayRef(v));
+    compareViews(makeArrayRef(v), makeArrayRef(w));
 }
 
 TYPED_TEST(PaddedVectorTest, CanMoveAssign)

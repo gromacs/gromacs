@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,7 @@ int gpu_info_get_stat(const gmx_gpu_info_t& /*unused*/, int /*unused*/)
 
 void free_gpu_info(const gmx_gpu_info_t* gpu_info)
 {
-    sfree(static_cast<void*>(gpu_info->gpu_dev)); // circumvent is_pod check in sfree
+    sfree(static_cast<void*>(gpu_info->deviceInfo)); // circumvent is_pod check in sfree
 }
 
 std::vector<int> getCompatibleGpus(const gmx_gpu_info_t& gpu_info)
@@ -88,7 +88,7 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t& gpu_info)
     compatibleGpus.reserve(gpu_info.n_dev);
     for (int i = 0; i < gpu_info.n_dev; i++)
     {
-        assert(gpu_info.gpu_dev);
+        assert(gpu_info.deviceInfo);
         if (gpu_info_get_stat(gpu_info, i) == egpuCompatible)
         {
             compatibleGpus.push_back(i);

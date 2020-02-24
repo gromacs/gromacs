@@ -54,7 +54,6 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -65,7 +64,7 @@ struct t_inputrec;
 struct t_nrnb;
 struct PmeGpu;
 struct gmx_wallclock_gpu_pme_t;
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_pme_t;
@@ -100,14 +99,6 @@ enum class PmeRunMode
     Mixed, //!< Mixed mode: only spread and gather run on GPU; FFT and solving are done on CPU.
 };
 
-//! PME gathering output forces treatment
-enum class PmeForceOutputHandling
-{
-    Set,             /**< Gather simply writes into provided force buffer */
-    ReduceWithInput, /**< Gather adds its output to the buffer.
-                        On GPU, that means additional H2D copy before the kernel launch. */
-};
-
 /*! \brief Return the smallest allowed PME grid size for \p pmeOrder */
 int minimalPmeGridSize(int pmeOrder);
 
@@ -139,7 +130,7 @@ bool gmx_pme_check_restrictions(int  pme_order,
  * \returns  Pointer to newly allocated and initialized PME data.
  *
  * \todo We should evolve something like a \c GpuManager that holds \c
- * gmx_device_info_t * and \c PmeGpuProgram* and perhaps other
+ * DeviceInformation* and \c PmeGpuProgram* and perhaps other
  * related things whose lifetime can/should exceed that of a task (or
  * perhaps task manager). See Redmine #2522.
  */
@@ -154,7 +145,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
                         int                      nthread,
                         PmeRunMode               runMode,
                         PmeGpu*                  pmeGpu,
-                        const gmx_device_info_t* gpuInfo,
+                        const DeviceInformation* deviceInfo,
                         const PmeGpuProgram*     pmeGpuProgram,
                         const gmx::MDLogger&     mdlog);
 
@@ -377,13 +368,9 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_complex_transforms(gmx_pme_t* GPU_FUNC_AR
  *
  * \param[in]  pme               The PME data structure.
  * \param[in]  wcycle            The wallclock counter.
- * \param[in]  forceTreatment    Tells how data should be treated. The gathering kernel either
- * stores the output reciprocal forces into the host array, or copies its contents to the GPU first
- *                               and accumulates. The reduction is non-atomic.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
-                                              gmx_wallcycle*   GPU_FUNC_ARGUMENT(wcycle),
-                                              PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment)) GPU_FUNC_TERM;
+                                              gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \brief
  * Attempts to complete PME GPU tasks.
@@ -447,20 +434,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t*            GPU_FUNC_A
 GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
                                                    gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
-
-/*! \brief Get pointer to device copy of coordinate data.
- * \param[in] pme            The PME data structure.
- * \returns                  Pointer to coordinate data
- */
-GPU_FUNC_QUALIFIER DeviceBuffer<float> pme_gpu_get_device_x(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
-        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<float>{});
-
 /*! \brief Set pointer to device copy of coordinate data.
  * \param[in] pme            The PME data structure.
  * \param[in] d_x            The pointer to the positions buffer to be set
  */
-GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t*    GPU_FUNC_ARGUMENT(pme),
-                                             DeviceBuffer<float> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t*        GPU_FUNC_ARGUMENT(pme),
+                                             DeviceBuffer<gmx::RVec> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
 
 /*! \brief Get pointer to device copy of force data.
  * \param[in] pme            The PME data structure.

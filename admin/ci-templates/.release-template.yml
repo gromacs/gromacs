@@ -1,4 +1,6 @@
 .release-version-template:
+  # Docker image uploaded to dockerhub by user eriklindahl
+  # TODO: Get DockerFile for admin/dockerfiles
   image: biophysics/gcc-gromacs
   stage: configure-build
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,19 +45,28 @@ struct gmx_moltype_t;
 struct t_atoms;
 struct InteractionsOfType;
 
+namespace gmx
+{
+class MDLogger;
+}
+
 int set_vsites(bool                              bVerbose,
                t_atoms*                          atoms,
                PreprocessingAtomTypes*           atype,
-               gmx::ArrayRef<InteractionsOfType> plist);
+               gmx::ArrayRef<InteractionsOfType> plist,
+               const gmx::MDLogger&              logger);
 /* set parameters for virtual sites, return number of virtual sites */
 
-void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt);
+void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt, const gmx::MDLogger& logger);
 /* set ptype to VSite for virtual sites */
 
 /*! \brief Clean up the bonded interactions
  *
  * Throw away all obsolete bonds, angles and dihedrals.
  * Throw away all constraints. */
-void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> ps, int natoms, bool bRmVSiteBds);
+void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> ps,
+                         int                               natoms,
+                         bool                              bRmVSiteBds,
+                         const gmx::MDLogger&              logger);
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,8 +67,7 @@ class MDLogger;
 enum class ComputeGlobalsAlgorithm
 {
     LeapFrog,
-    VelocityVerletAtFullTimeStep,
-    VelocityVerletAfterCoordinateUpdate
+    VelocityVerlet
 };
 
 //! The function type allowing to request a check of the number of bonded interactions
@@ -113,7 +112,7 @@ public:
                           FILE*                          fplog,
                           const MDLogger&                mdlog,
                           t_commrec*                     cr,
-                          t_inputrec*                    inputrec,
+                          const t_inputrec*              inputrec,
                           const MDAtoms*                 mdAtoms,
                           t_nrnb*                        nrnb,
                           gmx_wallcycle*                 wcycle,
@@ -160,6 +159,9 @@ private:
     Step energyReductionStep_;
     //! Next step at which virial needs to be reduced
     Step virialReductionStep_;
+
+    //! For VV only, we need to schedule twice per step. This keeps track of the scheduling stage.
+    Step vvSchedulingStep_;
 
     //! Whether center of mass motion stopping is enabled
     const bool doStopCM_;
@@ -228,7 +230,7 @@ private:
     //! Handles communication.
     t_commrec* cr_;
     //! Contains user input mdp options.
-    t_inputrec* inputrec_;
+    const t_inputrec* inputrec_;
     //! Full system topology - only needed for checkNumberOfBondedInteractions.
     const gmx_mtop_t* top_global_;
     //! Atom parameters for this domain.

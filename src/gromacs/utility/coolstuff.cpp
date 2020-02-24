@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -447,15 +447,12 @@ std::string getCoolQuote()
         { "Shoot them in the back now", "The Ramones" },
         { "Read me your scripture and I will twist it", "Red Hot Chili Peppers" },
         { "Good Music Saves your Soul", "Lemmy" },
-        { "I believe in miracles cause I'm one", "The Ramones" },
-        { "Gabba Gabba Hey!", "The Ramones" },
-        { "Good Music Saves your Soul", "Lemmy" },
         { "Move about like a Scientist, lay down, get kissed", "Red Hot Chili Peppars" },
         { "California, R.I.P.", "Red Hot Chili Peppars" },
         { "Don't You Wish You Never Met Her, Dirty Blue Gene?", "Captain Beefheart" },
         { "Nobody Never Learnt No-Nothing from No History", "Gogol Bordello" },
         { "I'd be Safe and Warm if I was in L.A.", "The Mamas and the Papas" },
-        { "It's Unacceptable That Choclate Makes You Fat", "MI 3" },
+        { "It's Unacceptable That Chocolate Makes You Fat", "MI 3" },
         { "My Brothers are Protons (Protons!), My Sisters are Neurons (Neurons)",
           "Gogol Bordello" },
         { "Put Me Inside SSC, Let's Test Superstring Theory, Oh Yoi Yoi Accelerate the Protons",
@@ -1504,12 +1501,27 @@ std::string getCoolQuote()
           "Jean Baudrillard" },
         { "Install our Free Energy Patents app! There is energy all around us; and it's free! "
           "Free energy is everywhere, and all around you, just waiting to be extracted! Over "
-          "100+ free energy patents!"
+          "100+ free energy patents!",
           "Mind and Miracle Productions on Twitter, spamming a FEP thread" },
         { "\"A slow sort of country!\" said the Queen. \"Now, HERE, you see, it "
           "takes all the running YOU can do, to keep in the same place. If you want "
-          "to get somewhere else, you must run at least twice as fast as that!\""
+          "to get somewhere else, you must run at least twice as fast as that!\"",
           "Lewis Carroll" },
+        { "More than 10000000 total errors detected.  I'm not reporting any more. "
+          "Final error counts will be inaccurate.  Go fix your program!",
+          "Valgrind while memory debugging mdrun" },
+        { "If we are going to have SYCL, can we have a hammer as well?", "Joe Jordan" },
+        { "We can make it into a friend class. But I don't like having friends.", "Joe Jordan" },
+        { "A method is more important than a discovery, since the right method will lead to new "
+          "and even more important discoveries.",
+          "Lev Landau" },
+        { "Product of optimism and knowledge is a constant.", "Lev Landau" },
+        { "Why add prime numbers? Prime numbers are made to be multiplied.", "Lev Landau" },
+        { "How wonderful that we have met with a paradox. Now we have some hope of making "
+          "progress.",
+          "Niels Bohr" },
+        { "We must be clear that when it comes to atoms, language can be used only as in poetry. ",
+          "Niels Bohr" },
     };
 
     if (beCool())

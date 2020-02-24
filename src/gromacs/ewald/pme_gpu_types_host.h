@@ -87,7 +87,7 @@ typedef PmeGpuKernelParamsBase PmeGpuKernelParams;
 typedef int PmeGpuKernelParams;
 #endif
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 
 /*! \internal \brief
  * The PME GPU structure for all the data copied directly from the CPU PME structure.
@@ -168,7 +168,7 @@ struct PmeGpu
     int nAtomsAlloc;
 
     /*! \brief A pointer to the device used during the execution. */
-    const gmx_device_info_t* deviceInfo;
+    const DeviceInformation* deviceInfo;
 
     /*! \brief Kernel scheduling grid width limit in X - derived from deviceinfo compute capability in CUDA.
      * Declared as very large int to make it useful in computations with type promotion, to avoid overflows.

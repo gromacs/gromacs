@@ -35,7 +35,7 @@ src/gromacs/nbnxm/kernels_simd_2xmm/kernel_common.h: warning: should include "nb
 src/gromacs/nbnxm/kernels_simd_4xm/kernel_common.h: warning: should include "nbnxm_simd.h"
 
 # This seems to be a false positive
-src/gromacs/nbnxm/cuda/nbnxm_cuda_types.h: error: gmx_nbnxm_gpu_t: is in internal file(s), but appears in public documentation
+src/gromacs/nbnxm/cuda/nbnxm_cuda_types.h: error: NbnxmGpu: is in internal file(s), but appears in public documentation
 
 # Temporary while we change the SIMD implementation
 src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"

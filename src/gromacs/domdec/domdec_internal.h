@@ -473,8 +473,8 @@ struct DDSettings
     //! Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise
     int eFlop = 0;
 
-    //! Request 1D domain decomposition with maximum one communication pulse
-    bool request1DAnd1Pulse;
+    //! Request 1D domain decomposition
+    bool request1D;
 
     //! Whether to order the DD dimensions from z to x
     bool useDDOrderZYX = false;

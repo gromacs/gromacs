@@ -184,7 +184,7 @@ public:
      *
      *  \returns GPU positions buffer.
      */
-    DeviceBuffer<float> getCoordinates();
+    DeviceBuffer<RVec> getCoordinates();
 
     /*! \brief Copy positions to the GPU memory.
      *
@@ -245,7 +245,7 @@ public:
      *
      *  \returns GPU velocities buffer.
      */
-    DeviceBuffer<float> getVelocities();
+    DeviceBuffer<RVec> getVelocities();
 
     /*! \brief Copy velocities to the GPU memory.
      *
@@ -280,7 +280,7 @@ public:
      *
      *  \returns GPU force buffer.
      */
-    DeviceBuffer<float> getForces();
+    DeviceBuffer<RVec> getForces();
 
     /*! \brief Copy forces to the GPU memory.
      *

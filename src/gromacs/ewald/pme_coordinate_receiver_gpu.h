@@ -43,6 +43,7 @@
 #define GMX_PMECOORDINATERECEIVERGPU_H
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -63,14 +64,14 @@ public:
      * \param[in] comm            Communicator used for simulation
      * \param[in] ppRanks         List of PP ranks
      */
-    PmeCoordinateReceiverGpu(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    PmeCoordinateReceiverGpu(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
     ~PmeCoordinateReceiverGpu();
 
     /*! \brief
      * send coordinates buffer address to PP rank
      * \param[in] d_x   coordinates buffer in GPU memory
      */
-    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x);
+    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<RVec> d_x);
 
 
     /*! \brief

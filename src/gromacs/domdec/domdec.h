@@ -62,6 +62,7 @@
 
 #include <vector>
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -84,6 +85,7 @@ struct t_nrnb;
 struct gmx_wallcycle;
 enum class PbcType : int;
 class t_state;
+class GpuEventSynchronizer;
 
 namespace gmx
 {
@@ -152,12 +154,12 @@ bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
 /*! \brief Return whether update groups are used */
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd);
 
-/*! \brief Return whether the DD has a single dimension with a single pulse
+/*! \brief Return whether the DD has a single dimension
  *
- * The GPU halo exchange code requires a 1D single-pulse DD, and its
- * setup code can use the returned value to understand what it should
- * do. */
-bool is1DAnd1PulseDD(const gmx_domdec_t& dd);
+ * The GPU halo exchange code requires a 1D DD, and its setup code can
+ * use the returned value to understand what it should do.
+ */
+bool is1D(const gmx_domdec_t& dd);
 
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE*                      fplog,
@@ -259,13 +261,13 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 /* In domdec_top.c */
 
 /*! \brief Print error output when interactions are missing */
-[[noreturn]] void dd_print_missing_interactions(const gmx::MDLogger&  mdlog,
-                                                t_commrec*            cr,
-                                                int                   local_count,
-                                                const gmx_mtop_t*     top_global,
-                                                const gmx_localtop_t* top_local,
-                                                const rvec*           x,
-                                                const matrix          box);
+[[noreturn]] void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
+                                                t_commrec*                     cr,
+                                                int                            local_count,
+                                                const gmx_mtop_t*              top_global,
+                                                const gmx_localtop_t*          top_local,
+                                                gmx::ArrayRef<const gmx::RVec> x,
+                                                const matrix                   box);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE*              fplog,
@@ -315,5 +317,40 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
                            gmx_bool             bBCheck,
                            real*                r_2b,
                            real*                r_mb);
+
+/*! \brief Construct the GPU halo exchange object(s)
+ * \param[in] mdlog          The logger object
+ * \param[in] cr             The commrec object
+ * \param[in] streamLocal    The local GPU stream
+ * \param[in] streamNonLocal The non-local GPU stream
+ */
+void constructGpuHaloExchange(const gmx::MDLogger& mdlog, const t_commrec& cr, void* streamLocal, void* streamNonLocal);
+
+/*! \brief
+ * (Re-) Initialization for GPU halo exchange
+ * \param [in] cr                   The commrec object
+ * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory
+ * \param [in] d_forcesBuffer       pointer to forces buffer in GPU memory
+ */
+void reinitGpuHaloExchange(const t_commrec&        cr,
+                           DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
+                           DeviceBuffer<gmx::RVec> d_forcesBuffer);
+
+
+/*! \brief GPU halo exchange of coordinates buffer.
+ * \param [in] cr                             The commrec object
+ * \param [in] box                            Coordinate box (from which shifts will be constructed)
+ * \param [in] coordinatesReadyOnDeviceEvent  event recorded when coordinates have been copied to device
+ */
+void communicateGpuHaloCoordinates(const t_commrec&      cr,
+                                   const matrix          box,
+                                   GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+
+
+/*! \brief GPU halo exchange of force buffer.
+ * \param [in] cr                The commrec object
+ * \param [in] accumulateForces  True if forces should accumulate, otherwise they are set
+ */
+void communicateGpuHaloForces(const t_commrec& cr, bool accumulateForces);
 
 #endif

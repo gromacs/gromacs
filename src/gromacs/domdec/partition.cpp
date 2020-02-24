@@ -75,6 +75,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -3226,14 +3227,14 @@ void dd_partition_system(FILE*                        fplog,
 }
 
 /*! \brief Check whether bonded interactions are missing, if appropriate */
-void checkNumberOfBondedInteractions(const gmx::MDLogger&  mdlog,
-                                     t_commrec*            cr,
-                                     int                   totalNumberOfBondedInteractions,
-                                     const gmx_mtop_t*     top_global,
-                                     const gmx_localtop_t* top_local,
-                                     const rvec*           x,
-                                     const matrix          box,
-                                     bool*                 shouldCheckNumberOfBondedInteractions)
+void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
+                                     t_commrec*                     cr,
+                                     int                            totalNumberOfBondedInteractions,
+                                     const gmx_mtop_t*              top_global,
+                                     const gmx_localtop_t*          top_local,
+                                     gmx::ArrayRef<const gmx::RVec> x,
+                                     const matrix                   box,
+                                     bool* shouldCheckNumberOfBondedInteractions)
 {
     if (*shouldCheckNumberOfBondedInteractions)
     {

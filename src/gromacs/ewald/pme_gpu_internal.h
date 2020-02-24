@@ -55,7 +55,7 @@
 #include "pme_output.h"
 
 class GpuEventSynchronizer;
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t; // only used in pme_gpu_reinit
@@ -184,22 +184,6 @@ void pme_gpu_copy_output_forces(PmeGpu* pmeGpu);
  * \returns                     True if work in the PME stream has completed.
  */
 bool pme_gpu_stream_query(const PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
- * Reallocates the input coordinates buffer on the GPU (and clears the padded part if needed).
- *
- * \param[in] pmeGpu            The PME GPU structure.
- *
- * Needs to be called on every DD step/in the beginning.
- */
-void pme_gpu_realloc_coordinates(PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
- * Frees the coordinates on the GPU.
- *
- * \param[in] pmeGpu            The PME GPU structure.
- */
-void pme_gpu_free_coordinates(const PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
  * Reallocates the buffer on the GPU and copies the charges/coefficients from the CPU buffer.
@@ -398,27 +382,17 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
  * A GPU force gathering function.
  *
  * \param[in]     pmeGpu           The PME GPU structure.
- * \param[in]     forceTreatment   Tells how data in h_forces should be treated.
- *                                 TODO: determine efficiency/balance of host/device-side
  * reductions. \param[in]     h_grid           The host-side grid buffer (used only in testing mode)
  */
-GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*                GPU_FUNC_ARGUMENT(pmeGpu),
-                                       PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment),
+GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*      GPU_FUNC_ARGUMENT(pmeGpu),
                                        const float* GPU_FUNC_ARGUMENT(h_grid)) GPU_FUNC_TERM;
-
-/*! \brief Return pointer to device copy of coordinate data.
- * \param[in] pmeGpu         The PME GPU structure.
- * \returns                  Pointer to coordinate data
- */
-GPU_FUNC_QUALIFIER DeviceBuffer<float> pme_gpu_get_kernelparam_coordinates(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
-        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<float>{});
 
 /*! \brief Sets the device pointer to coordinate data
  * \param[in] pmeGpu         The PME GPU structure.
  * \param[in] d_x            Pointer to coordinate data
  */
 GPU_FUNC_QUALIFIER void pme_gpu_set_kernelparam_coordinates(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
-                                                            DeviceBuffer<float> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
+                                                            DeviceBuffer<gmx::RVec> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
 
 /*! \brief Return pointer to device copy of force data.
  * \param[in] pmeGpu         The PME GPU structure.
@@ -585,12 +559,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu* GPU_FUNC_ARGUM
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.
  *
  * \param[in,out] pme             The PME structure.
- * \param[in]     gpuInfo         The GPU information structure.
+ * \param[in]     deviceInfo      The GPU device information structure.
  * \param[in]     pmeGpuProgram   The PME GPU program data
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme),
-                                       const gmx_device_info_t* GPU_FUNC_ARGUMENT(gpuInfo),
+                                       const DeviceInformation* GPU_FUNC_ARGUMENT(deviceInfo),
                                        const PmeGpuProgram* GPU_FUNC_ARGUMENT(pmeGpuProgram)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -139,13 +139,13 @@ void dd_partition_system(FILE*                             fplog,
  * \param[in]    box                                    Box matrix for the error message
  * \param[in,out] shouldCheckNumberOfBondedInteractions Whether we should do the check. Always set to false.
  */
-void checkNumberOfBondedInteractions(const gmx::MDLogger&  mdlog,
-                                     t_commrec*            cr,
-                                     int                   totalNumberOfBondedInteractions,
-                                     const gmx_mtop_t*     top_global,
-                                     const gmx_localtop_t* top_local,
-                                     const rvec*           x,
-                                     const matrix          box,
-                                     bool*                 shouldCheckNumberOfBondedInteractions);
+void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
+                                     t_commrec*                     cr,
+                                     int                            totalNumberOfBondedInteractions,
+                                     const gmx_mtop_t*              top_global,
+                                     const gmx_localtop_t*          top_local,
+                                     gmx::ArrayRef<const gmx::RVec> x,
+                                     const matrix                   box,
+                                     bool* shouldCheckNumberOfBondedInteractions);
 
 #endif

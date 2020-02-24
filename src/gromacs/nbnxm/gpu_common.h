@@ -124,9 +124,7 @@ static inline InteractionLocality gpuAtomToInteractionLocality(const AtomLocalit
 
 
 //NOLINTNEXTLINE(misc-definitions-in-headers)
-void setupGpuShortRangeWork(gmx_nbnxm_gpu_t*               nb,
-                            const gmx::GpuBonded*          gpuBonded,
-                            const gmx::InteractionLocality iLocality)
+void setupGpuShortRangeWork(NbnxmGpu* nb, const gmx::GpuBonded* gpuBonded, const gmx::InteractionLocality iLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -146,13 +144,13 @@ void setupGpuShortRangeWork(gmx_nbnxm_gpu_t*               nb,
  * \param[inout]  nb        Pointer to the nonbonded GPU data structure
  * \param[in]     iLocality Interaction locality identifier
  */
-static bool haveGpuShortRangeWork(const gmx_nbnxm_gpu_t& nb, const gmx::InteractionLocality iLocality)
+static bool haveGpuShortRangeWork(const NbnxmGpu& nb, const gmx::InteractionLocality iLocality)
 {
     return nb.haveWork[iLocality];
 }
 
 //NOLINTNEXTLINE(misc-definitions-in-headers)
-bool haveGpuShortRangeWork(const gmx_nbnxm_gpu_t* nb, const gmx::AtomLocality aLocality)
+bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::AtomLocality aLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -362,7 +360,7 @@ static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t* timings,
  * \todo Move into shared source file with gmx_compile_cpp_as_cuda
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers)
-bool gpu_try_finish_task(gmx_nbnxm_gpu_t*         nb,
+bool gpu_try_finish_task(NbnxmGpu*                nb,
                          const gmx::StepWorkload& stepWork,
                          const AtomLocality       aloc,
                          real*                    e_lj,
@@ -420,8 +418,7 @@ bool gpu_try_finish_task(gmx_nbnxm_gpu_t*         nb,
         // TODO: this needs to be moved later because conditional wait could brake timing
         // with a future OpenCL implementation, but with CUDA timing is anyway disabled
         // in all cases where we skip the wait.
-        gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, stepWork,
-                               nb->bDoTime != 0);
+        gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, stepWork, nb->bDoTime);
 
         if (stepWork.computeEnergy || stepWork.computeVirial)
         {
@@ -458,7 +455,7 @@ bool gpu_try_finish_task(gmx_nbnxm_gpu_t*         nb,
  * \return            The number of cycles the gpu wait took
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
-float gpu_wait_finish_task(gmx_nbnxm_gpu_t*         nb,
+float gpu_wait_finish_task(NbnxmGpu*                nb,
                            const gmx::StepWorkload& stepWork,
                            AtomLocality             aloc,
                            real*                    e_lj,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
+#include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/forcefieldparameters.h"
@@ -170,12 +171,14 @@ static inline int roundUpToFactor(const int input, const int factor)
  *  types are assigned in blocks sized as <warp_size>. The beginning and end (thread index) of each
  *  interaction type are stored in kernelParams_. Pointers to the relevant data structures on the
  *  GPU are also stored in kernelParams_.
+ *
+ * \todo Use DeviceBuffer for the d_xqPtr.
  */
 void GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
                                                              const t_idef&       idef,
                                                              void*               d_xqPtr,
-                                                             void*               d_fPtr,
-                                                             void*               d_fShiftPtr)
+                                                             DeviceBuffer<RVec>  d_fPtr,
+                                                             DeviceBuffer<RVec>  d_fShiftPtr)
 {
     // TODO wallcycle sub start
     haveInteractions_ = false;
@@ -243,8 +246,8 @@ void GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>
     }
 
     d_xq_     = static_cast<float4*>(d_xqPtr);
-    d_f_      = static_cast<fvec*>(d_fPtr);
-    d_fShift_ = static_cast<fvec*>(d_fShiftPtr);
+    d_f_      = asFloat3(d_fPtr);
+    d_fShift_ = asFloat3(d_fShiftPtr);
 
     kernelParams_.d_xq          = d_xq_;
     kernelParams_.d_f           = d_f_;
@@ -265,7 +268,6 @@ void GpuBonded::Impl::launchEnergyTransfer()
     GMX_ASSERT(haveInteractions_,
                "No GPU bonded interactions, so no energies will be computed, so transfer should "
                "not be called");
-
     wallcycle_sub_start_nocount(wcycle_, ewcsLAUNCH_GPU_BONDED);
     // TODO add conditional on whether there has been any compute (and make sure host buffer doesn't contain garbage)
     float* h_vTot = vTot_.data();
@@ -320,8 +322,8 @@ GpuBonded::~GpuBonded() = default;
 void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
                                                        const t_idef&       idef,
                                                        void*               d_xq,
-                                                       void*               d_f,
-                                                       void*               d_fShift)
+                                                       DeviceBuffer<RVec>  d_f,
+                                                       DeviceBuffer<RVec>  d_fShift)
 {
     impl_->updateInteractionListsAndDeviceBuffers(nbnxnAtomOrder, idef, d_xq, d_f, d_fShift);
 }

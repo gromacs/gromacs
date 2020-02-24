@@ -192,7 +192,8 @@ def has_feature(name='', enable_exception=False) -> bool:
         if name in _named_features_0_0:
             warnings.warn(
                 'Old feature name. Use `api_is_at_least(0, 1)` instead of `has_feature({})`.'.format(name),
-                category=DeprecationWarning
+                category=DeprecationWarning,
+                stacklevel=2
             )
 
     # Check whether the feature is listed in the API specification amendments.

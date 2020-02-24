@@ -529,16 +529,12 @@ behavior.
     Can be set to "auto", "cpu", "gpu."
     Defaults to "auto," which currently always uses the CPU.
     Setting "gpu" requires that a compatible CUDA GPU is available,
-    the simulation is run as a single thread-MPI thread
-    and that the |Gromacs| binary is not compiled with real MPI.
+    the simulation uses a single rank.
     Update and constraints on a GPU is currently not supported
-    with free-energy, domain decomposition, virtual sites,
-    Ewald surface correction, replica exchange, the pull code,
-    orientation restraints and computational electrophysiology.
-    It is possible to extend the ``-update`` functionality by
-    setting the ``GMX_FORCE_UPDATE_DEFAULT_GPU`` flag to change
-    the default path to use the GPU update if the simulation is
-    compatible.
+    with mass and constraints free-energy perturbation, domain
+    decomposition, virtual sites, Ewald surface correction,
+    replica exchange, constraint pulling, orientation restraints
+    and computational electrophysiology.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
@@ -1117,10 +1113,11 @@ GPU accelerated calculation of bonded interactions (CUDA only)
 |Gromacs| now allows the offloading of the bonded part of the PP
 workload to a CUDA-compatible GPU. This is treated as part of the PP
 work, and requires that the short-ranged non-bonded task also runs on
-a GPU. It is an advantage usually only when the CPU is relatively weak
-compared with the GPU, perhaps because its workload is too large for
-the available cores. This would likely be the case for free-energy
-calculations.
+a GPU. Typically, there is a performance advantage to offloading
+bonded interactions in particular when the amount of CPU resources per GPU
+is relatively little (either because the CPU is weak or there are few CPU
+cores assigned to a GPU in a run) or when there are other computations on the CPU.
+A typical case for the latter is free-energy calculations.
 
 .. _gmx-gpu-update:
 
@@ -1130,15 +1127,33 @@ GPU accelerated calculation of constraints and coordinate update (CUDA only)
 .. TODO again, extend this and add some actual useful information concerning performance etc...
 
 |Gromacs| makes it possible to also perform the coordinate update and (if requested)
-constraint calculation on a CUDA-compatible GPU. This allows to having all (compatible)
-parts of a simulation step on the GPU, so that no unnecessary transfers are needed between
-GPU and CPU. This currently only works with single domain cases, and needs to be explicitly
-requested by the user. It is possible to change the default behaviour by setting the
+constraint calculation on a CUDA-compatible GPU. This allows executing all
+(supported) computation of a simulation step on the GPU. 
+This feature is supported in single domain runs (unless using the experimental
+GPU domain decomposition feature), and needs to be explicitly requested by the user. 
+This is a new parallelization mode where all force and coordinate
+data can be "GPU resident" for a number of steps, typically between neighbor searching steps.
+This has the benefit that there is less coupling between CPU host and GPU and
+on typical MD steps data does not need to be transferred between CPU and GPU.
+In this scheme it is however still possible for part of the computation to be 
+executed on the CPU concurrently with GPU calculation.
+This helps supporting the broad range of |Gromacs| features not all of which are 
+ported to GPUs. At the same time, it also allows improving performance by making 
+use of the otherwise mostly idle CPU. It can often be advantageous to move the bonded 
+or PME calculation back to the CPU, but the details of this will depending on the
+relative performance if the CPU cores paired in a simulation with a GPU.
+
+It is possible to change the default behaviour by setting the
 ``GMX_FORCE_UPDATE_DEFAULT_GPU`` environment variable to a non-zero value. In this
 case simulations will try to run all parts by default on the GPU, and will only fall
 back to the CPU based calculation if the simulation is not compatible.
 
-Using this pathway is usually advantageous if a strong GPU is used with a weak CPU.
+Using this parallelization mode is typically advantageous in cases where a fast GPU is
+used with a weak CPU, in particular if there is only single simulation assigned to a GPU.
+However, in typical throughput cases where multiple runs are assigned to each GPU,
+offloading everything, especially without moving back some of the work to the CPU
+can perform worse than the parallelization mode where only force computation is offloaded.
+
 
 Assigning tasks to GPUs
 .......................

@@ -65,13 +65,16 @@
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -162,6 +165,7 @@ struct pme_load_balancing_t
     gmx_bool bTriggerOnDLB; /**< trigger balancing only on DD DLB */
     gmx_bool bBalance;      /**< are we in the balancing phase, i.e. trying different setups? */
     int      nstage;        /**< the current maximum number of stages */
+    bool     startupTimeDelayElapsed; /**< Has the c_startupTimeDelay elapsed indicating that the balancing can start. */
 
     real                     cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
     real                     rcut_vdw;           /**< Vdw cutoff (does not change) */
@@ -182,9 +186,9 @@ struct pme_load_balancing_t
 
     int stage; /**< the current stage */
 
-    int    cycles_n; /**< step cycle counter cumulative count */
-    double cycles_c; /**< step cycle counter cumulative cycles */
-    double startTime; /**< time stamp when the balancing was started (relative to the UNIX epoch start).*/
+    int    cycles_n;  /**< step cycle counter cumulative count */
+    double cycles_c;  /**< step cycle counter cumulative cycles */
+    double startTime; /**< time stamp when the balancing was started on the master rank (relative to the UNIX epoch start).*/
 };
 
 /* TODO The code in this file should call this getter, rather than
@@ -291,9 +295,13 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     pme_lb->end         = 0;
     pme_lb->elimited    = epmelblimNO;
 
-    pme_lb->cycles_n  = 0;
-    pme_lb->cycles_c  = 0;
-    pme_lb->startTime = gmx_gettime();
+    pme_lb->cycles_n = 0;
+    pme_lb->cycles_c = 0;
+    // only master ranks do timing
+    if (!PAR(cr) || (DOMAINDECOMP(cr) && DDMASTER(cr->dd)))
+    {
+        pme_lb->startTime = gmx_gettime();
+    }
 
     if (!wallcycle_have_counter())
     {
@@ -924,11 +932,19 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
      * We also want to skip a number of steps and seconds while
      * the CPU and GPU, when used, performance stabilizes.
      */
+    if (!PAR(cr) || (DOMAINDECOMP(cr) && DDMASTER(cr->dd)))
+    {
+        pme_lb->startupTimeDelayElapsed = (gmx_gettime() - pme_lb->startTime < c_startupTimeDelay);
+    }
+    if (DOMAINDECOMP(cr))
+    {
+        dd_bcast(cr->dd, sizeof(bool), &pme_lb->startupTimeDelayElapsed);
+    }
+
     if (pme_lb->cycles_n == 0 || step_rel < c_numFirstTuningIntervalSkip * ir.nstlist
-        || gmx_gettime() - pme_lb->startTime < c_startupTimeDelay)
+        || pme_lb->startupTimeDelayElapsed)
     {
         *bPrinting = FALSE;
-
         return;
     }
     /* Sanity check, we expect nstlist cycle counts */
@@ -953,6 +969,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
          */
         else if (step_rel >= c_numFirstTuningIntervalSkipWithSepPme * ir.nstlist)
         {
+            GMX_ASSERT(DOMAINDECOMP(cr), "Domain decomposition should be active here");
             if (DDMASTER(cr->dd))
             {
                 /* If PME rank load is too high, start tuning. If

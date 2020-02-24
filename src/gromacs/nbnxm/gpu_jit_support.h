@@ -46,9 +46,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_nbnxm_gpu_t;
+struct NbnxmGpu;
 
 /*! \brief Handles any JIT compilation of nbnxn kernels for the selected device */
-OPENCL_FUNC_QUALIFIER void nbnxn_gpu_compile_kernels(gmx_nbnxm_gpu_t gmx_unused* nb) OPENCL_FUNC_TERM;
+OPENCL_FUNC_QUALIFIER void nbnxn_gpu_compile_kernels(NbnxmGpu gmx_unused* nb) OPENCL_FUNC_TERM;
 
 #endif

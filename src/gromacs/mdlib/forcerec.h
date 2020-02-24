@@ -38,21 +38,22 @@
 #ifndef GMX_MDLIB_FORCEREC_H
 #define GMX_MDLIB_FORCEREC_H
 
-#include "gromacs/mdlib/force_flags.h"
-#include "gromacs/mdlib/tgroup.h"
-#include "gromacs/mdlib/vsite.h"
-#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_hw_info_t;
 struct t_commrec;
 struct t_fcdata;
+struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
 struct gmx_gpu_info_t;
+struct gmx_localtop_t;
+struct gmx_mtop_t;
 struct gmx_wallcycle;
+struct interaction_const_t;
 
 namespace gmx
 {
@@ -100,12 +101,8 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic);
  * \param[in]  tabfn              Table potential file for non-bonded interactions
  * \param[in]  tabpfn             Table potential file for pair interactions
  * \param[in]  tabbfnm            Table potential files for bonded interactions
- * \param[in]  hardwareInfo       Information about hardware
- * \param[in]  deviceInfo         Info about GPU device to use for short-ranged work
- * \param[in]  useGpuForBonded    Whether bonded interactions will run on a GPU
  * \param[in]  pmeOnlyRankUsesGpu Whether there is a PME task on a GPU on a PME-only rank
  * \param[in]  print_force        Print forces for atoms with force >= print_force
- * \param[out] wcycle             Pointer to cycle counter object
  */
 void init_forcerec(FILE*                            fplog,
                    const gmx::MDLogger&             mdlog,
@@ -118,12 +115,8 @@ void init_forcerec(FILE*                            fplog,
                    const char*                      tabfn,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
-                   const gmx_hw_info_t&             hardwareInfo,
-                   const gmx_device_info_t*         deviceInfo,
-                   bool                             useGpuForBonded,
                    bool                             pmeOnlyRankUsesGpu,
-                   real                             print_force,
-                   gmx_wallcycle*                   wcycle);
+                   real                             print_force);
 
 /*! \brief Divide exclusions over threads
  *

@@ -570,7 +570,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
                         int                      nthread,
                         PmeRunMode               runMode,
                         PmeGpu*                  pmeGpu,
-                        const gmx_device_info_t* gpuInfo,
+                        const DeviceInformation* deviceInfo,
                         const PmeGpuProgram*     pmeGpuProgram,
                         const gmx::MDLogger& /*mdlog*/)
 {
@@ -883,7 +883,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
             GMX_THROW(gmx::NotImplementedError(errorString));
         }
     }
-    pme_gpu_reinit(pme.get(), gpuInfo, pmeGpuProgram);
+    pme_gpu_reinit(pme.get(), deviceInfo, pmeGpuProgram);
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 

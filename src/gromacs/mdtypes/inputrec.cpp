@@ -650,8 +650,6 @@ static void pr_awh_bias_dim(FILE* fp, int indent, gmx::AwhDimParams* awhDimParam
     PR("period", awhDimParams->period);
     PR("force-constant", awhDimParams->forceConstant);
     PR("diffusion", awhDimParams->diffusion);
-    PR("start", awhDimParams->origin);
-    PR("end", awhDimParams->end);
     PR("cover-diameter", awhDimParams->coverDiameter);
 }
 
@@ -1576,4 +1574,16 @@ real maxReferenceTemperature(const t_inputrec& ir)
 bool haveEwaldSurfaceContribution(const t_inputrec& ir)
 {
     return EEL_PME_EWALD(ir.coulombtype) && (ir.ewald_geometry == eewg3DC || ir.epsilon_surface != 0);
+}
+
+bool haveFreeEnergyType(const t_inputrec& ir, const int fepType)
+{
+    for (int i = 0; i < ir.fepvals->n_lambda; i++)
+    {
+        if (ir.fepvals->all_lambda[fepType][i] > 0)
+        {
+            return true;
+        }
+    }
+    return false;
 }

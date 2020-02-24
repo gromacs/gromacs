@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include <cassert>
 
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
+#include "gromacs/gpu_utils/typecasts.cuh"
 
 #include "pme.cuh"
 #include "pme_calculate_splines.cuh"
@@ -212,15 +213,14 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
  * The grid is assumed to be wrapped in dimension Z.
  *
  * \tparam[in] order                The PME order (must be 4 currently).
- * \tparam[in] overwriteForces      True: the forces are written to the output buffer;
- *                                  False: the forces are added non-atomically to the output buffer (e.g. to the bonded forces).
  * \tparam[in] wrapX                Tells if the grid is wrapped in the X dimension.
  * \tparam[in] wrapY                Tells if the grid is wrapped in the Y dimension.
  * \tparam[in] readGlobal           Tells if we should read spline values from global memory
- * \tparam[in] useOrderThreads      Tells if we should use order threads per atom (order*order used if false)
+ * \tparam[in] useOrderThreads      Tells if we should use order threads per atom
+ *                                   (order*order used if false)
  * \param[in]  kernelParams         All the PME GPU data.
  */
-template<const int order, const bool overwriteForces, const bool wrapX, const bool wrapY, const bool readGlobal, const bool useOrderThreads>
+template<const int order, const bool wrapX, const bool wrapY, const bool readGlobal, const bool useOrderThreads>
 __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams)
 {
@@ -321,32 +321,27 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     }
     else
     {
+        const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
         /* Recaclulate  Splines  */
         if (c_useAtomDataPrefetch)
         {
             // charges
             __shared__ float sm_coefficients[atomsPerBlock];
             // Coordinates
-            __shared__ float sm_coordinates[DIM * atomsPerBlock];
+            __shared__ float3 sm_coordinates[atomsPerBlock];
             /* Staging coefficients/charges */
-            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients,
-                                                             kernelParams.atoms.d_coefficients);
+            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients, gm_coefficients);
 
             /* Staging coordinates */
-            pme_gpu_stage_atom_data<float, atomsPerBlock, DIM>(kernelParams, sm_coordinates,
-                                                               kernelParams.atoms.d_coordinates);
+            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(kernelParams, sm_coordinates, gm_coordinates);
             __syncthreads();
-            atomX.x    = sm_coordinates[atomIndexLocal * DIM + XX];
-            atomX.y    = sm_coordinates[atomIndexLocal * DIM + YY];
-            atomX.z    = sm_coordinates[atomIndexLocal * DIM + ZZ];
+            atomX      = sm_coordinates[atomIndexLocal];
             atomCharge = sm_coefficients[atomIndexLocal];
         }
         else
         {
+            atomX      = gm_coordinates[atomIndexGlobal];
             atomCharge = gm_coefficients[atomIndexGlobal];
-            atomX.x    = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + XX];
-            atomX.y    = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + YY];
-            atomX.z    = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + ZZ];
         }
         calculate_splines<order, atomsPerBlock, atomsPerWarp, true, false>(
                 kernelParams, atomIndexOffset, atomX, atomCharge, sm_theta, sm_dtheta, sm_gridlineIndices);
@@ -466,25 +461,14 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
             if (globalOutputCheck)
             {
                 const float outputForceComponent = ((float*)sm_forces)[outputIndexLocal];
-                if (overwriteForces)
-                {
-                    gm_forces[outputIndexGlobal] = outputForceComponent;
-                }
-                else
-                {
-                    gm_forces[outputIndexGlobal] += outputForceComponent;
-                }
+                gm_forces[outputIndexGlobal]     = outputForceComponent;
             }
         }
     }
 }
 
 //! Kernel instantiations
-template __global__ void pme_gather_kernel<4, true, true, true, true, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, true, true, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, false, true, true, true, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, false, true, true, true, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, true, false, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, true, false, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, false, true, true, false, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, false, true, true, false, false>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, true, false>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, false, true>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, false, false>(const PmeGpuCudaKernelParams);

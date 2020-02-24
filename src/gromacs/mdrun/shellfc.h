@@ -40,7 +40,6 @@
 
 #include <cstdio>
 
-#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/atoms.h"
@@ -61,6 +60,10 @@ class t_state;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
+template<typename>
+class ArrayRefWithPadding;
 class Constraints;
 class ImdSession;
 class MdrunScheduleWorkload;

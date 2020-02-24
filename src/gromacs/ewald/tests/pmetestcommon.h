@@ -121,7 +121,7 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
 //! PME initialization
 PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
                               CodePath                 mode,
-                              const gmx_device_info_t* gpuInfo,
+                              const DeviceInformation* deviceInfo,
                               const PmeGpuProgram*     pmeGpuProgram,
                               const Matrix3x3&         box,
                               real                     ewaldCoeff_q  = 1.0F,
@@ -129,7 +129,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
 //! Simple PME initialization (no atom data)
 PmeSafePointer pmeInitEmpty(const t_inputrec*        inputRec,
                             CodePath                 mode          = CodePath::CPU,
-                            const gmx_device_info_t* gpuInfo       = nullptr,
+                            const DeviceInformation* deviceInfo    = nullptr,
                             const PmeGpuProgram*     pmeGpuProgram = nullptr,
                             const Matrix3x3& box = { { 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F } },
                             real             ewaldCoeff_q  = 0.0F,
@@ -152,10 +152,9 @@ void pmePerformSolve(const gmx_pme_t*  pme,
                      GridOrdering      gridOrdering,
                      bool              computeEnergyAndVirial);
 //! PME force gathering
-void pmePerformGather(gmx_pme_t*             pme,
-                      CodePath               mode,
-                      PmeForceOutputHandling inputTreatment,
-                      ForcesVector&          forces); //NOLINT(google-runtime-references)
+void pmePerformGather(gmx_pme_t*    pme,
+                      CodePath      mode,
+                      ForcesVector& forces); //NOLINT(google-runtime-references)
 //! PME test finalization before fetching the outputs
 void pmeFinalizeTest(const gmx_pme_t* pme, CodePath mode);
 

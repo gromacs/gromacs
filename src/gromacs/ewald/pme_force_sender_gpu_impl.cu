@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,8 +55,8 @@ namespace gmx
 {
 
 /*! \brief Create PME-PP GPU communication object */
-PmeForceSenderGpu::Impl::Impl(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
-    pmeStream_(*static_cast<cudaStream_t*>(pmeStream)),
+PmeForceSenderGpu::Impl::Impl(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
+    pmeStream_(*static_cast<const cudaStream_t*>(pmeStream)),
     comm_(comm),
     ppRanks_(ppRanks)
 {
@@ -106,7 +106,7 @@ void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank)
 #endif
 }
 
-PmeForceSenderGpu::PmeForceSenderGpu(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
+PmeForceSenderGpu::PmeForceSenderGpu(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
     impl_(new Impl(pmeStream, comm, ppRanks))
 {
 }

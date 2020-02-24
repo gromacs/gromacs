@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,11 +53,11 @@
 #include "pme_gpu_types_host.h"
 #include "pme_grid.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t* deviceInfo)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation* deviceInfo)
 {
     // Context creation (which should happen outside of this class: #2522)
-    cl_platform_id        platformId = deviceInfo->ocl_gpu_id.ocl_platform_id;
-    cl_device_id          deviceId   = deviceInfo->ocl_gpu_id.ocl_device_id;
+    cl_platform_id        platformId = deviceInfo->oclPlatformId;
+    cl_device_id          deviceId   = deviceInfo->oclDeviceId;
     cl_context_properties contextProperties[3];
     contextProperties[0] = CL_CONTEXT_PLATFORM;
     contextProperties[1] = reinterpret_cast<cl_context_properties>(platformId);
@@ -92,7 +92,6 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     stat |= clReleaseKernel(splineKernel);
     stat |= clReleaseKernel(spreadKernel);
     stat |= clReleaseKernel(gatherKernel);
-    stat |= clReleaseKernel(gatherReduceWithInputKernel);
     stat |= clReleaseKernel(solveXYZKernel);
     stat |= clReleaseKernel(solveXYZEnergyKernel);
     stat |= clReleaseKernel(solveYZXKernel);
@@ -110,11 +109,11 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
  * smaller than the minimum order^2 required in spread/gather ATM which
  * we need to check for.
  */
-static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, const gmx_device_info_t* deviceInfo)
+static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, const DeviceInformation* deviceInfo)
 {
-    if (deviceInfo->vendor_e == OCL_VENDOR_INTEL)
+    if (deviceInfo->deviceVendor == DeviceVendor::Intel)
     {
-        size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo->ocl_gpu_id.ocl_device_id);
+        size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo->oclDeviceId);
 
         if (kernelWarpSize < c_pmeSpreadGatherMinWarpSize)
         {
@@ -128,7 +127,7 @@ static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, cons
     }
 }
 
-void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
+void PmeGpuProgramImpl::compileKernels(const DeviceInformation* deviceInfo)
 {
     // We might consider storing program as a member variable if it's needed later
     cl_program program = nullptr;
@@ -142,7 +141,6 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
         const std::string commonDefines = gmx::formatString(
                 "-Dwarp_size=%zd "
                 "-Dorder=%d "
-                "-DatomsPerWarp=%zd "
                 "-DthreadsPerAtom=%d "
                 // forwarding from pme_grid.h, used for spline computation table sizes only
                 "-Dc_pmeMaxUnitcellShift=%f "
@@ -158,17 +156,17 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
                 "-DDIM=%d -DXX=%d -DYY=%d -DZZ=%d "
                 // decomposition parameter placeholders
                 "-DwrapX=true -DwrapY=true ",
-                warpSize, c_pmeGpuOrder, warpSize / c_pmeSpreadGatherThreadsPerAtom,
-                c_pmeSpreadGatherThreadsPerAtom, static_cast<float>(c_pmeMaxUnitcellShift),
-                static_cast<int>(c_usePadding), static_cast<int>(c_skipNeutralAtoms), c_virialAndEnergyCount,
-                spreadWorkGroupSize, solveMaxWorkGroupSize, gatherWorkGroupSize, DIM, XX, YY, ZZ);
+                warpSize, c_pmeGpuOrder, c_pmeSpreadGatherThreadsPerAtom,
+                static_cast<float>(c_pmeMaxUnitcellShift), static_cast<int>(c_usePadding),
+                static_cast<int>(c_skipNeutralAtoms), c_virialAndEnergyCount, spreadWorkGroupSize,
+                solveMaxWorkGroupSize, gatherWorkGroupSize, DIM, XX, YY, ZZ);
         try
         {
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
-            program = gmx::ocl::compileProgram(stderr, "gromacs/ewald", "pme_program.cl", commonDefines,
-                                               context, deviceInfo->ocl_gpu_id.ocl_device_id,
-                                               deviceInfo->vendor_e);
+            program = gmx::ocl::compileProgram(stderr, "gromacs/ewald", "pme_program.cl",
+                                               commonDefines, context, deviceInfo->oclDeviceId,
+                                               deviceInfo->deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {
@@ -229,12 +227,6 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
             gatherKernel            = kernel;
             gatherKernelReadSplines = kernel;
             checkRequiredWarpSize(gatherKernel, kernelNamesBuffer.data(), deviceInfo);
-        }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherReduceWithInputKernel"))
-        {
-            gatherReduceWithInputKernel            = kernel;
-            gatherReduceWithInputKernelReadSplines = kernel;
-            checkRequiredWarpSize(gatherReduceWithInputKernel, kernelNamesBuffer.data(), deviceInfo);
         }
         else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernel"))
         {

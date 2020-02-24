@@ -142,19 +142,6 @@ enum class GpuApiCallBehavior;
 
 #endif /* CHECK_CUDA_ERRORS */
 
-/*! \brief CUDA device information.
- *
- * The CUDA device information is queried and set at detection and contains
- * both information about the device/hardware returned by the runtime as well
- * as additional data like support status.
- */
-struct gmx_device_info_t
-{
-    int            id;   /* id of the CUDA device */
-    cudaDeviceProp prop; /* CUDA device properties */
-    int            stat; /* result of the device check */
-};
-
 /*! Launches synchronous or asynchronous device to host memory copy.
  *
  *  The copy is launched in stream s or if not specified, in stream 0.

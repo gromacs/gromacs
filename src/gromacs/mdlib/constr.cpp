@@ -1165,14 +1165,14 @@ void do_constrain_first(FILE*                     fplog,
     dvdl_dum = 0;
 
     /* constrain the current position */
-    constr->apply(TRUE, FALSE, step, 0, 1.0, x, x, ArrayRef<RVec>(), box, lambda, &dvdl_dum,
-                  ArrayRefWithPadding<RVec>(), nullptr, gmx::ConstraintVariable::Positions);
+    constr->apply(TRUE, FALSE, step, 0, 1.0, x, x, {}, box, lambda, &dvdl_dum, {}, nullptr,
+                  gmx::ConstraintVariable::Positions);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
         constr->apply(TRUE, FALSE, step, 0, 1.0, x, v, v.unpaddedArrayRef(), box, lambda, &dvdl_dum,
-                      ArrayRefWithPadding<RVec>(), nullptr, gmx::ConstraintVariable::Velocities);
+                      {}, nullptr, gmx::ConstraintVariable::Velocities);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -1198,8 +1198,8 @@ void do_constrain_first(FILE*                     fplog,
             fprintf(fplog, "\nConstraining the coordinates at t0-dt (step %s)\n", gmx_step_str(step, buf));
         }
         dvdl_dum = 0;
-        constr->apply(TRUE, FALSE, step, -1, 1.0, x, savex.arrayRefWithPadding(), ArrayRef<RVec>(),
-                      box, lambda, &dvdl_dum, v, nullptr, gmx::ConstraintVariable::Positions);
+        constr->apply(TRUE, FALSE, step, -1, 1.0, x, savex.arrayRefWithPadding(), {}, box, lambda,
+                      &dvdl_dum, v, nullptr, gmx::ConstraintVariable::Positions);
 
         for (i = start; i < end; i++)
         {

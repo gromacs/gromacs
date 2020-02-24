@@ -52,6 +52,7 @@
 
 #include <algorithm>
 
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"

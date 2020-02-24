@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,20 +47,23 @@
  *
  * Usage examples:
  *
- *  enum class Foo
+ *  enum class Foo : int
  *  {
- *      Bar, Baz, Fooz,
+ *      Bar,
+ *      Baz,
+ *      Fooz,
  *      Count
  *  };
  *
- *  EnumerationWrapper<Foo> iter;
- *
- *  for (Foo c : iter)
+ *  for (Foo c : EnumerationWrapper<Foo>{})
  *  {
  *      // 'c' is a constant from Foo
  *  }
  *
+ *
  *  const EnumerationArray<Foo, std::string> fooStrings = { { "Bar", "Baz", "Fooz" } };
+ *  std::cout << fooStrings[Foo::Baz];
+ *  std::cout << fooStrings[Foo::Count]; // Triggers an assertion
  *
  *  for (Foo c : keysOf(fooStrings))
  *  {

@@ -62,14 +62,14 @@ public:
      * \param[in] comm            Communicator used for simulation
      * \param[in] ppRanks         List of PP ranks
      */
-    Impl(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    Impl(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
     ~Impl();
 
     /*! \brief
      * send coordinates buffer address to PP rank
      * \param[in] d_x   coordinates buffer in GPU memory
      */
-    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x);
+    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<RVec> d_x);
 
     /*! \brief
      * launch receive of coordinate data from PP rank

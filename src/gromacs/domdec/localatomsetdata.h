@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,7 +106,7 @@ public:
     /*! \brief Global indices of the atoms in this set. */
     const std::vector<int> globalIndex_;
     /*! \brief Maps indices on this rank [0..num_atoms_local_) to global atom indicices,
-     * so that localIndex[i] = globalIndex[collectiveIndex[i]].
+     * so that localIndex[i] identifies the same atom as globalIndex[collectiveIndex[i]].
      *
      * This translation of locally dense atom data to global representation,
      * allows to adresses per-atom properties, e.g., scattering factors,

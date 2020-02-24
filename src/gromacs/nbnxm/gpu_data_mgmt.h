@@ -46,40 +46,41 @@
 
 #include <memory>
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
-#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
 
-struct gmx_nbnxm_gpu_t;
+struct NbnxmGpu;
 struct gmx_gpu_info_t;
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_wallclock_gpu_nbnxn_t;
 struct nbnxn_atomdata_t;
 struct NbnxnPairlistGpu;
 struct PairlistParams;
+struct interaction_const_t;
 
 namespace Nbnxm
 {
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
 GPU_FUNC_QUALIFIER
-gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t gmx_unused* deviceInfo,
-                          const interaction_const_t gmx_unused* ic,
-                          const PairlistParams gmx_unused& listParams,
-                          const nbnxn_atomdata_t gmx_unused* nbat,
-                          int gmx_unused rank,
-                          /* true if both local and non-local are done on GPU */
-                          gmx_bool gmx_unused bLocalAndNonlocal) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+NbnxmGpu* gpu_init(const DeviceInformation gmx_unused* deviceInfo,
+                   const interaction_const_t gmx_unused* ic,
+                   const PairlistParams gmx_unused& listParams,
+                   const nbnxn_atomdata_t gmx_unused* nbat,
+                   int gmx_unused rank,
+                   /* true if both local and non-local are done on GPU */
+                   bool gmx_unused bLocalAndNonlocal) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
-void gpu_init_pairlist(gmx_nbnxm_gpu_t gmx_unused*   nb,
+void gpu_init_pairlist(NbnxmGpu gmx_unused*          nb,
                        const struct NbnxnPairlistGpu gmx_unused* h_nblist,
                        gmx::InteractionLocality gmx_unused iloc) GPU_FUNC_TERM;
 
 /** Initializes atom-data on the GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
-void gpu_init_atomdata(gmx_nbnxm_gpu_t gmx_unused* nb, const nbnxn_atomdata_t gmx_unused* nbat) GPU_FUNC_TERM;
+void gpu_init_atomdata(NbnxmGpu gmx_unused* nb, const nbnxn_atomdata_t gmx_unused* nbat) GPU_FUNC_TERM;
 
 /*! \brief Re-generate the GPU Ewald force table, resets rlist, and update the
  *  electrostatic type switching to twin cut-off (or back) if needed.
@@ -90,19 +91,19 @@ void gpu_pme_loadbal_update_param(const struct nonbonded_verlet_t gmx_unused* nb
 
 /** Uploads shift vector to the GPU if the box is dynamic (otherwise just returns). */
 GPU_FUNC_QUALIFIER
-void gpu_upload_shiftvec(gmx_nbnxm_gpu_t gmx_unused* nb, const nbnxn_atomdata_t gmx_unused* nbatom) GPU_FUNC_TERM;
+void gpu_upload_shiftvec(NbnxmGpu gmx_unused* nb, const nbnxn_atomdata_t gmx_unused* nbatom) GPU_FUNC_TERM;
 
 /** Clears GPU outputs: nonbonded force, shift force and energy. */
 GPU_FUNC_QUALIFIER
-void gpu_clear_outputs(gmx_nbnxm_gpu_t gmx_unused* nb, bool gmx_unused computeVirial) GPU_FUNC_TERM;
+void gpu_clear_outputs(NbnxmGpu gmx_unused* nb, bool gmx_unused computeVirial) GPU_FUNC_TERM;
 
 /** Frees all GPU resources used for the nonbonded calculations. */
 GPU_FUNC_QUALIFIER
-void gpu_free(gmx_nbnxm_gpu_t gmx_unused* nb) GPU_FUNC_TERM;
+void gpu_free(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM;
 
 /** Returns the GPU timings structure or NULL if GPU is not used or timing is off. */
 GPU_FUNC_QUALIFIER
-struct gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(gmx_nbnxm_gpu_t gmx_unused* nb)
+struct gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu gmx_unused* nb)
         GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Resets nonbonded GPU timings. */
@@ -112,37 +113,38 @@ void gpu_reset_timings(struct nonbonded_verlet_t gmx_unused* nbv) GPU_FUNC_TERM;
 /** Calculates the minimum size of proximity lists to improve SM load balance
  *  with GPU non-bonded kernels. */
 GPU_FUNC_QUALIFIER
-int gpu_min_ci_balanced(gmx_nbnxm_gpu_t gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(-1);
+int gpu_min_ci_balanced(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(-1);
 
 /** Returns if analytical Ewald GPU kernels are used. */
 GPU_FUNC_QUALIFIER
-gmx_bool gpu_is_kernel_ewald_analytical(const gmx_nbnxm_gpu_t gmx_unused* nb)
-        GPU_FUNC_TERM_WITH_RETURN(FALSE);
+gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(FALSE);
 
 /** Returns an opaque pointer to the GPU command stream
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-void* gpu_get_command_stream(gmx_nbnxm_gpu_t gmx_unused* nb, gmx::InteractionLocality gmx_unused iloc)
+void* gpu_get_command_stream(NbnxmGpu gmx_unused* nb, gmx::InteractionLocality gmx_unused iloc)
         CUDA_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Returns an opaque pointer to the GPU coordinate+charge array
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-void* gpu_get_xq(gmx_nbnxm_gpu_t gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+void* gpu_get_xq(NbnxmGpu gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Returns an opaque pointer to the GPU force array
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-void* gpu_get_f(gmx_nbnxm_gpu_t gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+DeviceBuffer<gmx::RVec> gpu_get_f(NbnxmGpu gmx_unused* nb)
+        CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
 
 /** Returns an opaque pointer to the GPU shift force array
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-rvec* gpu_get_fshift(gmx_nbnxm_gpu_t gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+DeviceBuffer<gmx::RVec> gpu_get_fshift(NbnxmGpu gmx_unused* nb)
+        CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
 
 } // namespace Nbnxm
 

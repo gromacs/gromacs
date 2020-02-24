@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,6 +92,18 @@ void fillInput(PaddedVectorOfT* input, int scaleFactor)
 //! Comparison overload for non-BasicVector
 template<typename T>
 void compareViews(ArrayRef<T> input, ArrayRef<T> output)
+{
+    ASSERT_EQ(input.size(), output.size());
+    for (index i = 0; i != input.ssize(); ++i)
+    {
+        EXPECT_EQ(input[i], output[i]) << "for index " << i;
+    }
+}
+
+//! Comparison for non-BasicVector ignoring const qualifiers
+template<typename T, typename U>
+typename std::enable_if<std::is_same<typename std::remove_const<T>::type, typename std::remove_const<U>::type>::value, void>::type
+compareViewsIgnoreConst(ArrayRef<T> input, ArrayRef<U> output)
 {
     ASSERT_EQ(input.size(), output.size());
     for (index i = 0; i != input.ssize(); ++i)

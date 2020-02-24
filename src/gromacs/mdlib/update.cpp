@@ -67,6 +67,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/mshift.h"
@@ -1042,12 +1043,12 @@ static void do_update_bd(int                  start,
     }
 }
 
-static void calc_ke_part_normal(const rvec       v[],
-                                const t_grpopts* opts,
-                                const t_mdatoms* md,
-                                gmx_ekindata_t*  ekind,
-                                t_nrnb*          nrnb,
-                                gmx_bool         bEkinAveVel)
+static void calc_ke_part_normal(ArrayRef<const RVec> v,
+                                const t_grpopts*     opts,
+                                const t_mdatoms*     md,
+                                gmx_ekindata_t*      ekind,
+                                t_nrnb*              nrnb,
+                                gmx_bool             bEkinAveVel)
 {
     int                         g;
     gmx::ArrayRef<t_grp_tcstat> tcstat  = ekind->tcstat;
@@ -1158,14 +1159,14 @@ static void calc_ke_part_normal(const rvec       v[],
     inc_nrnb(nrnb, eNR_EKIN, md->homenr);
 }
 
-static void calc_ke_part_visc(const matrix     box,
-                              const rvec       x[],
-                              const rvec       v[],
-                              const t_grpopts* opts,
-                              const t_mdatoms* md,
-                              gmx_ekindata_t*  ekind,
-                              t_nrnb*          nrnb,
-                              gmx_bool         bEkinAveVel)
+static void calc_ke_part_visc(const matrix         box,
+                              ArrayRef<const RVec> x,
+                              ArrayRef<const RVec> v,
+                              const t_grpopts*     opts,
+                              const t_mdatoms*     md,
+                              gmx_ekindata_t*      ekind,
+                              t_nrnb*              nrnb,
+                              gmx_bool             bEkinAveVel)
 {
     int                         start = 0, homenr = md->homenr;
     int                         g, d, n, m, gt = 0;
@@ -1235,14 +1236,14 @@ static void calc_ke_part_visc(const matrix     box,
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(const rvec*      x,
-                  const rvec*      v,
-                  const matrix     box,
-                  const t_grpopts* opts,
-                  const t_mdatoms* md,
-                  gmx_ekindata_t*  ekind,
-                  t_nrnb*          nrnb,
-                  gmx_bool         bEkinAveVel)
+void calc_ke_part(ArrayRef<const RVec> x,
+                  ArrayRef<const RVec> v,
+                  const matrix         box,
+                  const t_grpopts*     opts,
+                  const t_mdatoms*     md,
+                  gmx_ekindata_t*      ekind,
+                  t_nrnb*              nrnb,
+                  gmx_bool             bEkinAveVel)
 {
     if (ekind->cosacc.cos_accel == 0)
     {

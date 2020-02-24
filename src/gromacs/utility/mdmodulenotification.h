@@ -202,10 +202,6 @@ class IndexGroupsAndNames;
 struct MdModulesCheckpointReadingDataOnMaster;
 struct MdModulesCheckpointReadingBroadcast;
 struct MdModulesWriteCheckpointData;
-struct PeriodicBoundaryConditionType
-{
-    PbcType pbcType;
-};
 
 struct MdModulesEnergyOutputToDensityFittingRequestChecker
 {
@@ -253,21 +249,75 @@ struct SimulationTimeStep
     const double delta_t;
 };
 
+/*! \libinternal
+ * \brief Collection of callbacks to MDModules at differnt run-times.
+ *
+ * MDModules use members of this struct to sign up for callback functionality.
+ *
+ * The members of the struct represent callbacks at these run-times:
+ *
+ *  When pre-processing the simulation data
+ *  When reading and writing check-pointing data
+ *  When setting up simulation after reading in the tpr file
+ *
+ * The template arguments to the members of this struct directly reflect
+ * the callback function signature. Arguments passed as pointers are always
+ * meant to be modified, but never meant to be stored (in line with the policy
+ * everywhere else).
+ */
 struct MdModulesNotifier
 {
-    //! Register callback function types for MdModule
-    registerMdModuleNotification<const t_commrec&,
-                                 EnergyCalculationFrequencyErrors*,
-                                 IndexGroupsAndNames,
-                                 KeyValueTreeObjectBuilder,
-                                 const KeyValueTreeObject&,
+    /*! \brief Pre-processing callback functions.
+     *
+     * EnergyCalculationFrequencyErrors* allows modules to check if they match
+     *                                   their required calculation frequency
+     *                                   and add their error message if needed
+     *                                   to the collected error messages
+     * IndexGroupsAndNames provides modules with atom indices and their names
+     * KeyValueTreeObjectBuilder enables writing of module internal data to
+     *                           .tpr files.
+     */
+    registerMdModuleNotification<EnergyCalculationFrequencyErrors*, IndexGroupsAndNames, KeyValueTreeObjectBuilder>::type preProcessingNotifications_;
+
+    /*! \brief Checkpointing callback functions.
+     *
+     * MdModulesCheckpointReadingDataOnMaster provides modules with their
+     *                                        checkpointed data on the master
+     *                                        node and checkpoint file version
+     * MdModulesCheckpointReadingBroadcast provides modules with a communicator
+     *                                     and the checkpoint file version to
+     *                                     distribute their data
+     * MdModulesWriteCheckpointData provides the modules with a key-value-tree
+     *                              builder to store their checkpoint data and
+     *                              the checkpoint file version
+     */
+    registerMdModuleNotification<MdModulesCheckpointReadingDataOnMaster,
+                                 MdModulesCheckpointReadingBroadcast,
+                                 MdModulesWriteCheckpointData>::type checkpointingNotifications_;
+
+    /*! \brief Callbacks during simulation setup.
+     *
+     * const KeyValueTreeObject& provides modules with the internal data they
+     *                           wrote to .tpr files
+     * LocalAtomSetManager* enables modules to add atom indices to local atom sets
+     *                      to be managed
+     * MdModulesEnergyOutputToDensityFittingRequestChecker* enables modules to
+     *                      report if they want to write their energy output
+     *                      to the density fitting field in the energy files
+     * const PbcType& provides modules with the periodic boundary condition type
+     *                that is used during the simulation
+     * const SimulationTimeStep& provides modules with the simulation time-step
+     *                           that allows them to interconvert between step
+     *                           time information
+     * const t_commrec& provides a communicator to the modules during simulation
+     *                  setup
+     */
+    registerMdModuleNotification<const KeyValueTreeObject&,
                                  LocalAtomSetManager*,
                                  MdModulesEnergyOutputToDensityFittingRequestChecker*,
-                                 MdModulesCheckpointReadingDataOnMaster,
-                                 MdModulesCheckpointReadingBroadcast,
-                                 MdModulesWriteCheckpointData,
-                                 PeriodicBoundaryConditionType,
-                                 const SimulationTimeStep&>::type notifier_;
+                                 const PbcType&,
+                                 const SimulationTimeStep&,
+                                 const t_commrec&>::type simulationSetupNotifications_;
 };
 
 } // namespace gmx

@@ -49,6 +49,7 @@
 #ifndef GMX_LISTED_FORCES_GPUBONDED_H
 #define GMX_LISTED_FORCES_GPUBONDED_H
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
@@ -120,8 +121,8 @@ public:
     void updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
                                                 const t_idef&       idef,
                                                 void*               xqDevice,
-                                                void*               forceDevice,
-                                                void*               fshiftDevice);
+                                                DeviceBuffer<RVec>  forceDevice,
+                                                DeviceBuffer<RVec>  fshiftDevice);
     /*! \brief Returns whether there are bonded interactions
      * assigned to the GPU */
     bool haveInteractions() const;

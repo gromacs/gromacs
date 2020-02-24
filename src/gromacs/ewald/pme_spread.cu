@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013-2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <cassert>
 
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
+#include "gromacs/gpu_utils/typecasts.cuh"
 
 #include "pme.cuh"
 #include "pme_calculate_splines.cuh"
@@ -59,14 +60,15 @@
  * Optional second stage of the spline_and_spread_kernel.
  *
  * \tparam[in] order                PME interpolation order.
- * \tparam[in] wrapX                A boolean which tells if the grid overlap in dimension X should
- * be wrapped. \tparam[in] wrapY                A boolean which tells if the grid overlap in
- * dimension Y should be wrapped. \tparam[in] useOrderThreads      A boolean which Tells if we
- * should use order threads per atom (order*order used if false) \param[in]  kernelParams Input PME
- * CUDA data in constant memory. \param[in]  atomIndexOffset      Starting atom index for the
- * execution block w.r.t. global memory. \param[in]  atomCharge           Atom charge/coefficient of
- * atom processed by thread. \param[in]  sm_gridlineIndices   Atom gridline indices in the shared
- * memory. \param[in]  sm_theta             Atom spline values in the shared memory.
+ * \tparam[in] wrapX                Whether the grid overlap in dimension X should be wrapped.
+ * \tparam[in] wrapY                Whether the grid overlap in dimension Y should be wrapped.
+ * \tparam[in] useOrderThreads      Whether we should use order threads per atom (order*order used if false).
+ *
+ * \param[in]  kernelParams         Input PME CUDA data in constant memory.
+ * \param[in]  atomIndexOffset      Starting atom index for the execution block w.r.t. global memory.
+ * \param[in]  atomCharge           Atom charge/coefficient of atom processed by thread.
+ * \param[in]  sm_gridlineIndices   Atom gridline indices in the shared memory.
+ * \param[in]  sm_theta             Atom spline values in the shared memory.
  */
 template<const int order, const bool wrapX, const bool wrapY, const bool useOrderThreads>
 __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams kernelParams,
@@ -228,24 +230,20 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
 
     if (computeSplines)
     {
+        const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
         if (c_useAtomDataPrefetch)
         {
             // Coordinates
-            __shared__ float sm_coordinates[DIM * atomsPerBlock];
+            __shared__ float3 sm_coordinates[atomsPerBlock];
 
             /* Staging coordinates */
-            pme_gpu_stage_atom_data<float, atomsPerBlock, DIM>(kernelParams, sm_coordinates,
-                                                               kernelParams.atoms.d_coordinates);
+            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(kernelParams, sm_coordinates, gm_coordinates);
             __syncthreads();
-            atomX.x = sm_coordinates[atomIndexLocal * DIM + XX];
-            atomX.y = sm_coordinates[atomIndexLocal * DIM + YY];
-            atomX.z = sm_coordinates[atomIndexLocal * DIM + ZZ];
+            atomX = sm_coordinates[atomIndexLocal];
         }
         else
         {
-            atomX.x = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + XX];
-            atomX.y = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + YY];
-            atomX.z = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + ZZ];
+            atomX = gm_coordinates[atomIndexGlobal];
         }
         calculate_splines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal>(
                 kernelParams, atomIndexOffset, atomX, atomCharge, sm_theta, &dtheta, sm_gridlineIndices);

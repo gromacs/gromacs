@@ -50,6 +50,7 @@
 
 #include "gromacs/ewald/pme_gpu_program.h"
 #include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/utility/gmxassert.h"
 
 struct gmx_hw_info_t;
 
@@ -78,7 +79,7 @@ struct TestHardwareContext
     //! Readable description
     std::string description_;
     //! Device information pointer
-    const gmx_device_info_t* deviceInfo_;
+    const DeviceInformation* deviceInfo_;
     //! Persistent compiled GPU kernels for PME.
     PmeGpuProgramStorage program_;
 
@@ -88,16 +89,19 @@ public:
     //! Returns a human-readable context description line
     std::string getDescription() const { return description_; }
     //! Returns the device info pointer
-    const gmx_device_info_t* getDeviceInfo() const { return deviceInfo_; }
+    const DeviceInformation* getDeviceInfo() const { return deviceInfo_; }
     //! Returns the persistent PME GPU kernels
     const PmeGpuProgram* getPmeGpuProgram() const { return program_.get(); }
     //! Constructs the context
-    TestHardwareContext(CodePath codePath, const char* description, const gmx_device_info_t* deviceInfo) :
+    TestHardwareContext(CodePath codePath, const char* description, const DeviceInformation* deviceInfo) :
         codePath_(codePath),
         description_(description),
-        deviceInfo_(deviceInfo),
-        program_(buildPmeGpuProgram(deviceInfo_))
+        deviceInfo_(deviceInfo)
     {
+        if (codePath == CodePath::GPU)
+        {
+            program_ = buildPmeGpuProgram(deviceInfo_);
+        }
     }
     ~TestHardwareContext();
 };

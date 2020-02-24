@@ -329,7 +329,7 @@
     rcvdw2_S = SimdReal(ic->rvdw * ic->rvdw);
 #endif
 
-    minRsq_S = SimdReal(NBNXN_MIN_RSQ);
+    minRsq_S = SimdReal(c_nbnxnMinDistanceSquared);
 
     const real* gmx_restrict q        = nbatParams.q.data();
     const real               facel    = ic->epsfac;

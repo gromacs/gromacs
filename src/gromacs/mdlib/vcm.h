@@ -43,13 +43,18 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct SimulationGroups;
 struct t_inputrec;
 struct t_mdatoms;
+
+namespace gmx
+{
+template<typename T>
+class ArrayRef;
+}
 
 struct t_vcm_thread
 {
@@ -114,7 +119,10 @@ void reportComRemovalInfo(FILE* fp, const t_vcm& vcm);
 
 
 /* Do a per group center of mass things */
-void calc_vcm_grp(const t_mdatoms& md, const rvec x[], const rvec v[], t_vcm* vcm);
+void calc_vcm_grp(const t_mdatoms&               md,
+                  gmx::ArrayRef<const gmx::RVec> x,
+                  gmx::ArrayRef<const gmx::RVec> v,
+                  t_vcm*                         vcm);
 
 /* Set the COM velocity to zero and potentially correct the COM position.
  *
@@ -124,6 +132,10 @@ void calc_vcm_grp(const t_mdatoms& md, const rvec x[], const rvec v[], t_vcm* vc
  * and a pointer to the coordinates at normal MD steps.
  * When fplog != nullptr, a warning is printed to fplog with high COM velocity.
  */
-void process_and_stopcm_grp(FILE* fplog, t_vcm* vcm, const t_mdatoms& mdatoms, rvec x[], rvec v[]);
+void process_and_stopcm_grp(FILE*                    fplog,
+                            t_vcm*                   vcm,
+                            const t_mdatoms&         mdatoms,
+                            gmx::ArrayRef<gmx::RVec> x,
+                            gmx::ArrayRef<gmx::RVec> v);
 
 #endif

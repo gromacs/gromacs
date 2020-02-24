@@ -58,7 +58,7 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/update_constrain_cuda.h"
+#include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -429,6 +429,37 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
     return false;
 }
 
+
+PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFftTarget, const t_inputrec& inputrec)
+{
+    if (!EEL_PME(inputrec.coulombtype))
+    {
+        return PmeRunMode::None;
+    }
+
+    if (useGpuForPme)
+    {
+        if (pmeFftTarget == TaskTarget::Cpu)
+        {
+            return PmeRunMode::Mixed;
+        }
+        else
+        {
+            return PmeRunMode::GPU;
+        }
+    }
+    else
+    {
+        if (pmeFftTarget == TaskTarget::Gpu)
+        {
+            gmx_fatal(FARGS,
+                      "Assigning FFTs to GPU requires PME to be assigned to GPU as well. With PME "
+                      "on CPU you should not be using -pmefft.");
+        }
+        return PmeRunMode::CPU;
+    }
+}
+
 bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
                                      const bool       useGpuForPme,
                                      const TaskTarget bondedTarget,
@@ -544,11 +575,19 @@ bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
         errorMessage +=
                 "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
     }
-    // Since only direct GPU communications are supported with GPU update, PME should be fully offloaded in DD and PME only cases.
-    if (pmeRunMode != PmeRunMode::GPU && (isDomainDecomposition || havePmeOnlyRank))
+
+    // If PME is active (i.e. not PmeRunMode::None), then GPU update requires
+    // either a single-rank run, or that PME runs fully on the GPU.
+    const bool pmeRunningOnCpu = (pmeRunMode == PmeRunMode::CPU || pmeRunMode == PmeRunMode::Mixed);
+    if (pmeRunningOnCpu && isDomainDecomposition)
     {
-        errorMessage += "PME should run on GPU.\n";
+        errorMessage += "With domain decomposition, PME must run fully on the GPU.\n";
     }
+    if (pmeRunningOnCpu && havePmeOnlyRank)
+    {
+        errorMessage += "With separate PME rank(s), PME must run fully on the GPU.\n";
+    }
+
     if (!gpusWereDetected)
     {
         errorMessage += "Compatible GPUs must have been found.\n";
@@ -591,10 +630,15 @@ bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
         // The graph is needed, but not supported
         errorMessage += "Orientation restraints are not supported.\n";
     }
-    if (inputrec.efep != efepNO)
+    if (inputrec.efep != efepNO
+        && (haveFreeEnergyType(inputrec, efptBONDED) || haveFreeEnergyType(inputrec, efptMASS)))
     {
-        // Actually all free-energy options except for mass and constraint perturbation are supported
-        errorMessage += "Free energy perturbations are not supported.\n";
+        errorMessage += "Free energy perturbation for mass and constraints are not supported.\n";
+    }
+    const auto particleTypes = gmx_mtop_particletype_count(mtop);
+    if (particleTypes[eptShell] > 0)
+    {
+        errorMessage += "Shells are not supported.\n";
     }
     if (useReplicaExchange)
     {
@@ -615,10 +659,10 @@ bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
     {
         errorMessage += "Non-connecting constraints are not supported";
     }
-    if (!UpdateConstrainCuda::isNumCoupledConstraintsSupported(mtop))
+    if (!UpdateConstrainGpu::isNumCoupledConstraintsSupported(mtop))
     {
         errorMessage +=
-                "The number of coupled constraints is higher than supported in the CUDA LINCS "
+                "The number of coupled constraints is higher than supported in the GPU LINCS "
                 "code.\n";
     }
 

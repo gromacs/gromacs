@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,6 @@
 #ifndef GMX_PBCUTIL_PBC_AIUC_CUDA_CUH
 #define GMX_PBCUTIL_PBC_AIUC_CUDA_CUH
 
-#include "gromacs/gpu_utils/gpu_vec.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 
@@ -83,23 +82,23 @@
  */
 template<bool returnShift>
 static __forceinline__ __device__ int
-                       pbcDxAiuc(const PbcAiuc& pbcAiuc, const float4& r1, const float4& r2, fvec dr)
+                       pbcDxAiuc(const PbcAiuc& pbcAiuc, const float4 r1, const float4 r2, float3& dr)
 {
-    dr[XX] = r1.x - r2.x;
-    dr[YY] = r1.y - r2.y;
-    dr[ZZ] = r1.z - r2.z;
+    dr.x = r1.x - r2.x;
+    dr.y = r1.y - r2.y;
+    dr.z = r1.z - r2.z;
 
-    float shz = rintf(dr[ZZ] * pbcAiuc.invBoxDiagZ);
-    dr[XX] -= shz * pbcAiuc.boxZX;
-    dr[YY] -= shz * pbcAiuc.boxZY;
-    dr[ZZ] -= shz * pbcAiuc.boxZZ;
+    float shz = rintf(dr.z * pbcAiuc.invBoxDiagZ);
+    dr.x -= shz * pbcAiuc.boxZX;
+    dr.y -= shz * pbcAiuc.boxZY;
+    dr.z -= shz * pbcAiuc.boxZZ;
 
-    float shy = rintf(dr[YY] * pbcAiuc.invBoxDiagY);
-    dr[XX] -= shy * pbcAiuc.boxYX;
-    dr[YY] -= shy * pbcAiuc.boxYY;
+    float shy = rintf(dr.y * pbcAiuc.invBoxDiagY);
+    dr.x -= shy * pbcAiuc.boxYX;
+    dr.y -= shy * pbcAiuc.boxYY;
 
-    float shx = rintf(dr[XX] * pbcAiuc.invBoxDiagX);
-    dr[XX] -= shx * pbcAiuc.boxXX;
+    float shx = rintf(dr.x * pbcAiuc.invBoxDiagX);
+    dr.x -= shx * pbcAiuc.boxXX;
 
     if (returnShift)
     {

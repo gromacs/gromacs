@@ -95,12 +95,12 @@ std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomL
     return std::make_tuple(0, 0);
 }
 
-DeviceBuffer<float> StatePropagatorDataGpu::getCoordinates()
+DeviceBuffer<RVec> StatePropagatorDataGpu::getCoordinates()
 {
     GMX_ASSERT(false,
                "A CPU stub method from GPU state propagator data was called instead of one from "
                "GPU implementation.");
-    return DeviceBuffer<float>{};
+    return {};
 }
 
 GpuEventSynchronizer* StatePropagatorDataGpu::getCoordinatesReadyOnDeviceEvent(
@@ -153,12 +153,12 @@ void StatePropagatorDataGpu::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> /* 
 }
 
 
-DeviceBuffer<float> StatePropagatorDataGpu::getVelocities()
+DeviceBuffer<RVec> StatePropagatorDataGpu::getVelocities()
 {
     GMX_ASSERT(false,
                "A CPU stub method from GPU state propagator data was called instead of one from "
                "GPU implementation.");
-    return DeviceBuffer<float>{};
+    return {};
 }
 
 void StatePropagatorDataGpu::copyVelocitiesToGpu(const gmx::ArrayRef<const gmx::RVec> /* h_v */,
@@ -193,12 +193,12 @@ void StatePropagatorDataGpu::waitVelocitiesReadyOnHost(AtomLocality /* atomLocal
 }
 
 
-DeviceBuffer<float> StatePropagatorDataGpu::getForces()
+DeviceBuffer<RVec> StatePropagatorDataGpu::getForces()
 {
     GMX_ASSERT(false,
                "A CPU stub method from GPU state propagator data was called instead of one from "
                "GPU implementation.");
-    return DeviceBuffer<float>{};
+    return {};
 }
 
 void StatePropagatorDataGpu::copyForcesToGpu(const gmx::ArrayRef<const gmx::RVec> /* h_f          */,

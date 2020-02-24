@@ -144,11 +144,11 @@ public:
     //! Get pointer to box
     rvec* box();
     //! Get const pointer to box
-    const rvec* constBox();
+    const rvec* constBox() const;
     //! Get pointer to previous box
     rvec* previousBox();
     //! Get const pointer to previous box
-    const rvec* constPreviousBox();
+    const rvec* constPreviousBox() const;
     //! Get the local number of atoms
     int localNumAtoms();
 

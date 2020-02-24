@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/classhelpers.h"
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 
 /*! \internal
  * \brief
@@ -126,12 +126,8 @@ struct PmeGpuProgramImpl
      */
     size_t gatherWorkGroupSize;
 
-    PmeKernelHandle gatherReduceWithInputKernel;
-    PmeKernelHandle gatherReduceWithInputKernelThPerAtom4;
     PmeKernelHandle gatherKernel;
     PmeKernelHandle gatherKernelThPerAtom4;
-    PmeKernelHandle gatherReduceWithInputKernelReadSplines;
-    PmeKernelHandle gatherReduceWithInputKernelReadSplinesThPerAtom4;
     PmeKernelHandle gatherKernelReadSplines;
     PmeKernelHandle gatherKernelReadSplinesThPerAtom4;
     //@}
@@ -150,13 +146,13 @@ struct PmeGpuProgramImpl
 
     PmeGpuProgramImpl() = delete;
     //! Constructor for the given device
-    explicit PmeGpuProgramImpl(const gmx_device_info_t* deviceInfo);
+    explicit PmeGpuProgramImpl(const DeviceInformation* deviceInfo);
     ~PmeGpuProgramImpl();
     GMX_DISALLOW_COPY_AND_ASSIGN(PmeGpuProgramImpl);
 
 private:
     // Compiles kernels, if supported. Called by the constructor.
-    void compileKernels(const gmx_device_info_t* deviceInfo);
+    void compileKernels(const DeviceInformation* deviceInfo);
 };
 
 #endif

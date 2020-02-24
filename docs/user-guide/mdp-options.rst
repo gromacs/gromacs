@@ -2006,7 +2006,7 @@ AWH adaptive biasing
       The file name can be changed with the ``-awh`` option.
       The first :mdp:`awh1-ndim` columns of
       each input file should contain the coordinate values, such that each row defines a point in
-      coordinate space. Column :mdp:`awh1-ndim` + 1 should contain the PMF value for each point.
+      coordinate space. Column :mdp:`awh1-ndim` + 1 should contain the PMF value (in kT) for each point.
       The target distribution column can either follow the PMF (column  :mdp:`awh1-ndim` + 2) or
       be in the same column as written by :ref:`gmx awh`.
 
@@ -2456,10 +2456,6 @@ Free energy calculations
 
    (6)
    power 6 for the radial term in the soft-core equation.
-
-   (48)
-   (deprecated) power 48 for the radial term in the soft-core equation. 
-   Note that sc-alpha should generally be much lower (between 0.001 and 0.003).
 
 .. mdp:: sc-coul
 

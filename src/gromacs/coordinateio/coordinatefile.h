@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,20 +43,21 @@
 #ifndef GMX_COORDINATEIO_COORDINATEFILE_H
 #define GMX_COORDINATEIO_COORDINATEFILE_H
 
-#include <algorithm>
+#include <string>
 #include <utility>
 
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/coordinateio/outputadaptercontainer.h"
-#include "gromacs/fileio/filetypes.h"
-#include "gromacs/fileio/trxio.h"
-#include "gromacs/selection/selection.h"
-#include "gromacs/topology/mtop_util.h"
-#include "gromacs/topology/topology.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/atoms.h"
+
+struct gmx_mtop_t;
+struct t_trxstatus;
 
 namespace gmx
 {
 
+class Selection;
 class TrajectoryFrameWriter;
 struct OutputRequirements;
 

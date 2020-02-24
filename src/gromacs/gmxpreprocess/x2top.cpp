@@ -65,7 +65,10 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/filestream.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "hackblock.h"
@@ -114,11 +117,6 @@ static void mk_bonds(int                 nnm,
     }
     for (i = 0; (i < atoms->nr); i++)
     {
-        if ((i % 10) == 0)
-        {
-            fprintf(stderr, "\ratom %d", i);
-            fflush(stderr);
-        }
         for (j = i + 1; (j < atoms->nr); j++)
         {
             if (bPBC)
@@ -141,8 +139,6 @@ static void mk_bonds(int                 nnm,
             }
         }
     }
-    fprintf(stderr, "\ratom %d\n", i);
-    fflush(stderr);
 }
 
 static int* set_cgnr(t_atoms* atoms, bool bUsePDBcharge, real* qtot, real* mtot)
@@ -178,7 +174,8 @@ static void set_atom_type(PreprocessingAtomTypes* atypes,
                           InteractionsOfType*     bonds,
                           int*                    nbonds,
                           int                     nnm,
-                          t_nm2type               nm2t[])
+                          t_nm2type               nm2t[],
+                          const gmx::MDLogger&    logger)
 {
     int nresolved;
 
@@ -189,7 +186,9 @@ static void set_atom_type(PreprocessingAtomTypes* atypes,
         gmx_fatal(FARGS, "Could only find a forcefield type for %d out of %d atoms", nresolved, atoms->nr);
     }
 
-    fprintf(stderr, "There are %zu different atom types in your sample\n", atypes->size());
+    GMX_LOG(logger.info)
+            .asParagraph()
+            .appendTextFormatted("There are %zu different atom types in your sample", atypes->size());
 }
 
 static void lo_set_force_const(InteractionsOfType* plist, real c[], int nrfp, bool bRound, bool bDih, bool bParam)
@@ -478,9 +477,16 @@ int gmx_x2top(int argc, char* argv[])
         gmx_fatal(FARGS, "Specify at least one output file");
     }
 
+    gmx::LoggerBuilder builder;
+    builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &gmx::TextOutputFile::standardOutput());
+    builder.addTargetStream(gmx::MDLogger::LogLevel::Warning, &gmx::TextOutputFile::standardError());
+    gmx::LoggerOwner logOwner(builder.build());
+    gmx::MDLogger    logger(logOwner.logger());
+
+
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff, forcefield, sizeof(forcefield), ffdir,
-              sizeof(ffdir));
+              sizeof(ffdir), logger);
 
     bOPLS = (strcmp(forcefield, "oplsaa") == 0);
 
@@ -507,41 +513,47 @@ int gmx_x2top(int argc, char* argv[])
     }
     else
     {
-        printf("There are %d name to type translations in file %s\n", nnm, n2t);
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("There are %d name to type translations in file %s", nnm, n2t);
     }
     if (debug)
     {
         dump_nm2type(debug, nnm, nm2t);
     }
-    printf("Generating bonds from distances...\n");
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("Generating bonds from distances...");
     snew(nbonds, atoms->nr);
     mk_bonds(nnm, nm2t, atoms, x, &(plist[F_BONDS]), nbonds, bPBC, box);
 
     open_symtab(&symtab);
     PreprocessingAtomTypes atypes;
-    set_atom_type(&atypes, &symtab, atoms, &(plist[F_BONDS]), nbonds, nnm, nm2t);
+    set_atom_type(&atypes, &symtab, atoms, &(plist[F_BONDS]), nbonds, nnm, nm2t, logger);
 
     /* Make Angles and Dihedrals */
     snew(excls, atoms->nr);
-    printf("Generating angles and dihedrals from bonds...\n");
+    GMX_LOG(logger.info)
+            .asParagraph()
+            .appendTextFormatted("Generating angles and dihedrals from bonds...");
     gen_pad(atoms, gmx::arrayRefFromArray(&rtp_header_settings, 1), plist, excls, {}, TRUE);
 
     if (!bPairs)
     {
         plist[F_LJ14].interactionTypes.clear();
     }
-    fprintf(stderr,
-            "There are %4zu %s dihedrals, %4zu impropers, %4zu angles\n"
-            "          %4zu pairs,     %4zu bonds and  %4d atoms\n",
-            plist[F_PDIHS].size(), bOPLS ? "Ryckaert-Bellemans" : "proper", plist[F_IDIHS].size(),
-            plist[F_ANGLES].size(), plist[F_LJ14].size(), plist[F_BONDS].size(), atoms->nr);
+    GMX_LOG(logger.info)
+            .asParagraph()
+            .appendTextFormatted(
+                    "There are %4zu %s dihedrals, %4zu impropers, %4zu angles\n"
+                    "          %4zu pairs,     %4zu bonds and  %4d atoms\n",
+                    plist[F_PDIHS].size(), bOPLS ? "Ryckaert-Bellemans" : "proper", plist[F_IDIHS].size(),
+                    plist[F_ANGLES].size(), plist[F_LJ14].size(), plist[F_BONDS].size(), atoms->nr);
 
     calc_angles_dihs(&plist[F_ANGLES], &plist[F_PDIHS], x, bPBC, box);
 
     set_force_const(plist, kb, kt, kp, bRound, bParam);
 
     cgnr = set_cgnr(atoms, bUsePDBcharge, &qtot, &mtot);
-    printf("Total charge is %g, total mass is %g\n", qtot, mtot);
+    GMX_LOG(logger.info).asParagraph().appendTextFormatted("Total charge is %g, total mass is %g", qtot, mtot);
     if (bOPLS)
     {
         bts[2] = 3;
@@ -570,10 +582,12 @@ int gmx_x2top(int argc, char* argv[])
     }
     close_symtab(&symtab);
 
-    printf("\nWARNING: topologies generated by %s can not be trusted at face value.\n",
-           output_env_get_program_display_name(oenv));
-    printf("         Please verify atomtypes and charges by comparison to other\n");
-    printf("         topologies.\n");
+    GMX_LOG(logger.warning)
+            .asParagraph()
+            .appendTextFormatted(
+                    "Topologies generated by %s can not be trusted at face value. "
+                    "Please verify atomtypes and charges by comparison to other topologies.",
+                    output_env_get_program_display_name(oenv));
 
     return 0;
 }

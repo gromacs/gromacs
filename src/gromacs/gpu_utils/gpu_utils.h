@@ -54,7 +54,7 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_gpu_info_t;
 
 namespace gmx
@@ -108,7 +108,7 @@ bool isGpuDetectionFunctional(std::string* GPU_FUNC_ARGUMENT(errorMessage))
  *  Will detect every GPU supported by the device driver in use.
  *  Must only be called if canPerformGpuDetection() has returned true.
  *  This routine also checks for the compatibility of each and fill the
- *  gpu_info->gpu_dev array with the required information on each the
+ *  gpu_info->deviceInfo array with the required information on each the
  *  device: ID, device properties, status.
  *
  *  Note that this function leaves the GPU runtime API error state clean;
@@ -158,7 +158,7 @@ void free_gpu_info(const gmx_gpu_info_t* gpu_info);
  * initialization.
  */
 GPU_FUNC_QUALIFIER
-void init_gpu(const gmx_device_info_t* GPU_FUNC_ARGUMENT(deviceInfo)) GPU_FUNC_TERM;
+void init_gpu(const DeviceInformation* GPU_FUNC_ARGUMENT(deviceInfo)) GPU_FUNC_TERM;
 
 /*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
  *
@@ -176,7 +176,7 @@ void init_gpu(const gmx_device_info_t* GPU_FUNC_ARGUMENT(deviceInfo)) GPU_FUNC_T
  * \returns                 true if no error occurs during the freeing.
  */
 CUDA_FUNC_QUALIFIER
-void free_gpu(const gmx_device_info_t* CUDA_FUNC_ARGUMENT(deviceInfo)) CUDA_FUNC_TERM;
+void free_gpu(const DeviceInformation* CUDA_FUNC_ARGUMENT(deviceInfo)) CUDA_FUNC_TERM;
 
 /*! \brief Return a pointer to the device info for \c deviceId
  *
@@ -186,7 +186,7 @@ void free_gpu(const gmx_device_info_t* CUDA_FUNC_ARGUMENT(deviceInfo)) CUDA_FUNC
  * \returns                 Pointer to the device info for \c deviceId.
  */
 GPU_FUNC_QUALIFIER
-gmx_device_info_t* getDeviceInfo(const gmx_gpu_info_t& GPU_FUNC_ARGUMENT(gpu_info),
+DeviceInformation* getDeviceInfo(const gmx_gpu_info_t& GPU_FUNC_ARGUMENT(gpu_info),
                                  int GPU_FUNC_ARGUMENT(deviceId)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Returns the device ID of the CUDA GPU currently in use.

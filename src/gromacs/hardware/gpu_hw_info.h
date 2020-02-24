@@ -38,7 +38,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 
 /*! \brief Possible results of the GPU detection/check.
  *
@@ -73,7 +73,7 @@ struct gmx_gpu_info_t
     //! Total number of GPU devices detected on this physical node
     int n_dev;
     //! Information about each GPU device detected on this physical node
-    gmx_device_info_t* gpu_dev;
+    DeviceInformation* deviceInfo;
     //! Number of GPU devices detected on this physical node that are compatible.
     int n_dev_compatible;
 };

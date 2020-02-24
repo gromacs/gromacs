@@ -57,6 +57,11 @@ struct warninp;
 enum struct GmxQmmmMode;
 typedef warninp* warninp_t;
 
+namespace gmx
+{
+class MDLogger;
+}
+
 double check_mol(const gmx_mtop_t* mtop, warninp_t wi);
 /* Check mass and charge */
 
@@ -76,9 +81,10 @@ char** do_top(bool                                  bVerbose,
               const t_inputrec*                     ir,
               std::vector<gmx_molblock_t>*          molblock,
               bool*                                 ffParametrizedWithHBondConstraints,
-              warninp_t                             wi);
+              warninp_t                             wi,
+              const gmx::MDLogger&                  logger);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
-void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, warninp_t wi, GmxQmmmMode qmmmMode);
+void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, warninp_t wi, GmxQmmmMode qmmmMode, const gmx::MDLogger& logger);
 
 #endif

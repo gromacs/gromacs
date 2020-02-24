@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,9 @@ class PmeForceSenderGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmeForceSenderGpu::PmeForceSenderGpu(void gmx_unused* pmeStream,
-                                     MPI_Comm gmx_unused    comm,
-                                     gmx::ArrayRef<PpRanks> gmx_unused ppRanks) :
+PmeForceSenderGpu::PmeForceSenderGpu(const void* /*pmeStream */,
+                                     MPI_Comm /* comm     */,
+                                     gmx::ArrayRef<PpRanks> /* ppRanks */) :
     impl_(nullptr)
 {
     GMX_ASSERT(false,
@@ -74,14 +74,14 @@ PmeForceSenderGpu::PmeForceSenderGpu(void gmx_unused* pmeStream,
 PmeForceSenderGpu::~PmeForceSenderGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec gmx_unused* d_f)
+void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec* /* d_f */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "
                "correct implementation.");
 }
 
-void PmeForceSenderGpu::sendFToPpCudaDirect(int gmx_unused ppRank)
+void PmeForceSenderGpu::sendFToPpCudaDirect(int /* ppRank */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

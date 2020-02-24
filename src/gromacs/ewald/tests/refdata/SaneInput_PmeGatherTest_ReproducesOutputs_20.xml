@@ -24,9 +24,14 @@
       <Real Name="Z">0</Real>
     </Vector>
     <Vector>
-      <Real Name="X">0</Real>
-      <Real Name="Y">0</Real>
-      <Real Name="Z">0</Real>
+      <Real Name="X">-0.72589890716513583</Real>
+      <Real Name="Y">-24.710884942780222</Real>
+      <Real Name="Z">-4.3321274070179072</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-2.3815237342072924</Real>
+      <Real Name="Y">-1.4624040861760008</Real>
+      <Real Name="Z">-2.5707897210960202</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
@@ -37,11 +42,6 @@
       <Real Name="X">0</Real>
       <Real Name="Y">0</Real>
       <Real Name="Z">0</Real>
-    </Vector>
-    <Vector>
-      <Real Name="X">-2.9109058261904628</Real>
-      <Real Name="Y">-11.975420811795583</Real>
-      <Real Name="Z">-18.523630115333241</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>

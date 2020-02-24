@@ -44,13 +44,13 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;
+struct t_mdatoms;
 
 namespace gmx
 {

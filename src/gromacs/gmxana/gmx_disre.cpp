@@ -63,6 +63,7 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"

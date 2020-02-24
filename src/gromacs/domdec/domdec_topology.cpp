@@ -61,7 +61,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -327,13 +329,13 @@ static void print_missing_interactions_atoms(const gmx::MDLogger& mdlog,
     }
 }
 
-void dd_print_missing_interactions(const gmx::MDLogger&  mdlog,
-                                   t_commrec*            cr,
-                                   int                   local_count,
-                                   const gmx_mtop_t*     top_global,
-                                   const gmx_localtop_t* top_local,
-                                   const rvec*           x,
-                                   const matrix          box)
+void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
+                                   t_commrec*                     cr,
+                                   int                            local_count,
+                                   const gmx_mtop_t*              top_global,
+                                   const gmx_localtop_t*          top_local,
+                                   gmx::ArrayRef<const gmx::RVec> x,
+                                   const matrix                   box)
 {
     int           ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
     int           ftype, nral;
@@ -397,7 +399,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&  mdlog,
     }
 
     print_missing_interactions_atoms(mdlog, cr, top_global, &top_local->idef);
-    write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr, -1, x, box);
+    write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr, -1, as_rvec_array(x.data()), box);
 
     std::string errorMessage;
 

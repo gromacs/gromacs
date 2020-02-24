@@ -46,12 +46,13 @@
 #define GMX_NBNXM_KERNELS_REFERENCE_KERNEL_GPU_REF_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct NbnxnPairlistGpu;
 struct nbnxn_atomdata_t;
+struct interaction_const_t;
+struct t_forcerec;
 
 namespace gmx
 {

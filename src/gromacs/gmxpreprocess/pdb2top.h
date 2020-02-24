@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,12 @@
 #include "gromacs/utility/arrayref.h"
 
 class PreprocessingAtomTypes;
+
+namespace gmx
+{
+class MDLogger;
+}
+
 struct t_atoms;
 struct t_excls;
 struct MoleculePatchDatabase;
@@ -67,13 +73,18 @@ enum
 };
 extern const char* hh[ehisNR];
 
-void choose_ff(const char* ffsel, char* forcefield, int ff_maxlen, char* ffdir, int ffdir_maxlen);
+void choose_ff(const char*          ffsel,
+               char*                forcefield,
+               int                  ff_maxlen,
+               char*                ffdir,
+               int                  ffdir_maxlen,
+               const gmx::MDLogger& logger);
 /* Find force fields in the current and libdirs and choose an ff.
  * If ffsel!=NULL: search for ffsel.
  * If ffsel==NULL: interactive selection.
  */
 
-void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel);
+void choose_watermodel(const char* wmsel, const char* ffdir, char** watermodel, const gmx::MDLogger& logger);
 /* Choose, possibly interactively, which water model to include,
  * based on the wmsel command line option choice and watermodels.dat
  * in ffdir.
@@ -90,7 +101,8 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
                         gmx::ArrayRef<MoleculePatchDatabase*>  ctdb,
                         gmx::ArrayRef<const int>               rn,
                         gmx::ArrayRef<const int>               rc,
-                        bool                                   bAllowMissing);
+                        bool                                   bAllowMissing,
+                        const gmx::MDLogger&                   logger);
 /* Get the database entries for the nres residues in resinfo
  * and store them in restp and hb.
  */
@@ -100,7 +112,8 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
                               t_atoms*                             pdba,
                               t_symtab*                            symtab,
                               gmx::ArrayRef<gmx::RVec>             x,
-                              bool                                 bVerbose);
+                              bool                                 bVerbose,
+                              const gmx::MDLogger&                 logger);
 /* Check if atom in pdba need to be deleted of renamed due to tdb or hdb.
  * If renaming involves atoms added wrt to the rtp database,
  * add these atoms to restp.
@@ -152,9 +165,10 @@ void pdb2top(FILE*                                  top_file,
              bool                                   bChargeGroups,
              bool                                   bCmap,
              bool                                   bRenumRes,
-             bool                                   bRTPresname);
+             bool                                   bRTPresname,
+             const gmx::MDLogger&                   logger);
 /* Create a topology ! */
 
-void print_sums(const t_atoms* atoms, bool bSystem);
+void print_sums(const t_atoms* atoms, bool bSystem, const gmx::MDLogger& logger);
 
 #endif

@@ -51,8 +51,11 @@
 #include "gromacs/listed_forces/bonded.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -188,12 +191,11 @@ static real free_energy_evaluate_single(real        r2,
     real       fscal_vdw[2], fscal_elec[2];
     real       velec[2], vvdw[2];
     int        i, ntab;
-    const real half        = 0.5;
-    const real minusOne    = -1.0;
-    const real one         = 1.0;
-    const real two         = 2.0;
-    const real six         = 6.0;
-    const real fourtyeight = 48.0;
+    const real half     = 0.5;
+    const real minusOne = -1.0;
+    const real one      = 1.0;
+    const real two      = 2.0;
+    const real six      = 6.0;
 
     qq[0]  = qqA;
     qq[1]  = qqB;
@@ -206,14 +208,6 @@ static real free_energy_evaluate_single(real        r2,
     {
         rpm2 = r2 * r2;   /* r4 */
         rp   = rpm2 * r2; /* r6 */
-    }
-    else if (sc_r_power == fourtyeight)
-    {
-        rp   = r2 * r2 * r2; /* r6 */
-        rp   = rp * rp;      /* r12 */
-        rp   = rp * rp;      /* r24 */
-        rp   = rp * rp;      /* r48 */
-        rpm2 = rp / r2;      /* r46 */
     }
     else
     {
@@ -247,12 +241,6 @@ static real free_energy_evaluate_single(real        r2,
         if (sc_r_power == six)
         {
             sigma_pow[i] = sigma6[i];
-        }
-        else if (sc_r_power == fourtyeight)
-        {
-            sigma_pow[i] = sigma6[i] * sigma6[i];       /* sigma^12 */
-            sigma_pow[i] = sigma_pow[i] * sigma_pow[i]; /* sigma^24 */
-            sigma_pow[i] = sigma_pow[i] * sigma_pow[i]; /* sigma^48 */
         }
         else
         { /* not really supported as input, but in here for testing the general case*/

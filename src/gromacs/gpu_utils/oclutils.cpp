@@ -73,19 +73,17 @@ int ocl_copy_H2D(cl_mem             d_dest,
         case GpuApiCallBehavior::Async:
             cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_FALSE, offset, bytes, h_src,
                                             0, nullptr, copy_event);
-            assert(cl_error == CL_SUCCESS);
-            // TODO: handle errors
             break;
 
         case GpuApiCallBehavior::Sync:
             cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_TRUE, offset, bytes, h_src, 0,
                                             nullptr, copy_event);
-            assert(cl_error == CL_SUCCESS);
-            // TODO: handle errors
             break;
 
         default: throw;
     }
+    GMX_ASSERT(cl_error == CL_SUCCESS,
+               ("clEnqueueWriteBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
     return 0;
 }
@@ -133,19 +131,18 @@ int ocl_copy_D2H(void*              h_dest,
         case GpuApiCallBehavior::Async:
             cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_FALSE, offset, bytes, h_dest, 0,
                                            nullptr, copy_event);
-            assert(cl_error == CL_SUCCESS);
-            // TODO: handle errors
             break;
 
         case GpuApiCallBehavior::Sync:
             cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_TRUE, offset, bytes, h_dest, 0,
                                            nullptr, copy_event);
-            assert(cl_error == CL_SUCCESS);
-            // TODO: handle errors
             break;
 
         default: throw;
     }
+    GMX_ASSERT(cl_error == CL_SUCCESS,
+               ("clEnqueueWriteBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+
 
     return 0;
 }

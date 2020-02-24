@@ -338,9 +338,11 @@ if (SPHINX_FOUND)
         dev-manual/doxygen.rst
         dev-manual/error-handling.rst
         dev-manual/formatting.rst
+        dev-manual/gitlab.rst
         dev-manual/gmxtree.rst
         dev-manual/includestyle.rst
         dev-manual/index.rst
+        dev-manual/infrastructure.rst
         dev-manual/jenkins.rst
         dev-manual/known-issues.rst
         dev-manual/language-features.rst
@@ -517,8 +519,6 @@ if (SPHINX_FOUND)
     else()
         gmx_add_sphinx_source_files(FILES
             dev-manual/releng/index.rst
-            dev-manual/releng/jenkins-howto.rst
-            dev-manual/releng/jenkins-ui.rst
             )
     endif()
 

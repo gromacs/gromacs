@@ -141,7 +141,6 @@ void global_stat(const gmx_global_stat*  gs,
                  gmx_enerdata_t*         enerd,
                  tensor                  fvir,
                  tensor                  svir,
-                 rvec                    mu_tot,
                  const t_inputrec*       inputrec,
                  gmx_ekindata_t*         ekind,
                  const gmx::Constraints* constr,
@@ -155,7 +154,7 @@ void global_stat(const gmx_global_stat*  gs,
 {
     t_bin* rb;
     int *  itc0, *itc1;
-    int    ie = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
+    int    ie = 0, ifv = 0, isv = 0, irmsd = 0;
     int idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
     int      isig = -1;
     int      icj = -1, ici = -1, icx = -1;
@@ -247,10 +246,6 @@ void global_stat(const gmx_global_stat*  gs,
             {
                 irmsd = add_binr(rb, 2, rmsdData.data());
             }
-        }
-        if (!inputrecNeedMutot(inputrec))
-        {
-            imu = add_binr(rb, DIM, mu_tot);
         }
 
         for (j = 0; (j < egNR); j++)
@@ -346,10 +341,6 @@ void global_stat(const gmx_global_stat*  gs,
         if (!rmsdData.empty())
         {
             extract_binr(rb, irmsd, rmsdData);
-        }
-        if (!inputrecNeedMutot(inputrec))
-        {
-            extract_binr(rb, imu, DIM, mu_tot);
         }
 
         for (j = 0; (j < egNR); j++)

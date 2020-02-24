@@ -80,6 +80,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -382,7 +383,8 @@ static char** read_topol(const char*                           infile,
                          bool                                  bFEP,
                          bool                                  bZero,
                          bool                                  usingFullRangeElectrostatics,
-                         warninp*                              wi)
+                         warninp*                              wi,
+                         const gmx::MDLogger&                  logger)
 {
     FILE*                out;
     int                  sl, nb_funct;
@@ -694,19 +696,24 @@ static char** read_topol(const char*                           infile,
                                 generate_nbparams(*combination_rule, nb_funct,
                                                   &(interactions[nb_funct]), atypes, wi);
                                 ncopy = copy_nbparams(nbparam, nb_funct, &(interactions[nb_funct]), ntype);
-                                fprintf(stderr,
-                                        "Generated %d of the %d non-bonded parameter "
-                                        "combinations\n",
-                                        ncombs - ncopy, ncombs);
+                                GMX_LOG(logger.info)
+                                        .asParagraph()
+                                        .appendTextFormatted(
+                                                "Generated %d of the %d non-bonded parameter "
+                                                "combinations",
+                                                ncombs - ncopy, ncombs);
                                 free_nbparam(nbparam, ntype);
                                 if (bGenPairs)
                                 {
                                     gen_pairs((interactions[nb_funct]), &(interactions[F_LJ14]),
                                               fudgeLJ, *combination_rule);
                                     ncopy = copy_nbparams(pair, nb_funct, &(interactions[F_LJ14]), ntype);
-                                    fprintf(stderr,
-                                            "Generated %d of the %d 1-4 parameter combinations\n",
-                                            ncombs - ncopy, ncombs);
+                                    GMX_LOG(logger.info)
+                                            .asParagraph()
+                                            .appendTextFormatted(
+                                                    "Generated %d of the %d 1-4 parameter "
+                                                    "combinations",
+                                                    ncombs - ncopy, ncombs);
                                     free_nbparam(pair, ntype);
                                 }
                                 /* Copy GBSA parameters to atomtype array? */
@@ -819,14 +826,17 @@ static char** read_topol(const char*                           infile,
                             {
                                 gmx_fatal(FARGS, "Molecule type '%s' contains no atoms", *mi0->name);
                             }
-                            fprintf(stderr, "Excluding %d bonded neighbours molecule type '%s'\n",
-                                    mi0->nrexcl, *mi0->name);
+                            GMX_LOG(logger.info)
+                                    .asParagraph()
+                                    .appendTextFormatted(
+                                            "Excluding %d bonded neighbours molecule type '%s'",
+                                            mi0->nrexcl, *mi0->name);
                             sum_q(&mi0->atoms, nrcopies, &qt, &qBt);
                             if (!mi0->bProcessed)
                             {
                                 generate_excl(mi0->nrexcl, mi0->atoms.nr, mi0->interactions, &(mi0->excls));
                                 gmx::mergeExclusions(&(mi0->excls), exclusionBlocks[whichmol]);
-                                make_shake(mi0->interactions, &mi0->atoms, opts->nshake);
+                                make_shake(mi0->interactions, &mi0->atoms, opts->nshake, logger);
 
                                 if (bCouple)
                                 {
@@ -840,7 +850,9 @@ static char** read_topol(const char*                           infile,
                             break;
                         }
                         default:
-                            fprintf(stderr, "case: %d\n", static_cast<int>(d));
+                            GMX_LOG(logger.warning)
+                                    .asParagraph()
+                                    .appendTextFormatted("case: %d", static_cast<int>(d));
                             gmx_incons("unknown directive");
                     }
                 }
@@ -905,7 +917,10 @@ static char** read_topol(const char*                           infile,
         {
             gmx_fatal(FARGS, "Did not find any molecules of type '%s' for coupling", opts->couple_moltype);
         }
-        fprintf(stderr, "Coupling %d copies of molecule type '%s'\n", nmol_couple, opts->couple_moltype);
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("Coupling %d copies of molecule type '%s'", nmol_couple,
+                                     opts->couple_moltype);
     }
 
     /* this is not very clean, but fixes core dump on empty system name */
@@ -961,7 +976,8 @@ char** do_top(bool                                  bVerbose,
               const t_inputrec*                     ir,
               std::vector<gmx_molblock_t>*          molblock,
               bool*                                 ffParametrizedWithHBondConstraints,
-              warninp*                              wi)
+              warninp*                              wi,
+              const gmx::MDLogger&                  logger)
 {
     /* Tmpfile might contain a long path */
     const char* tmpfile;
@@ -978,12 +994,12 @@ char** do_top(bool                                  bVerbose,
 
     if (bVerbose)
     {
-        printf("processing topology...\n");
+        GMX_LOG(logger.info).asParagraph().appendTextFormatted("processing topology...");
     }
     title = read_topol(topfile, tmpfile, opts->define, opts->include, symtab, atypes, molinfo,
                        intermolecular_interactions, interactions, combination_rule, repulsion_power,
                        opts, fudgeQQ, molblock, ffParametrizedWithHBondConstraints,
-                       ir->efep != efepNO, bZero, EEL_FULL(ir->coulombtype), wi);
+                       ir->efep != efepNO, bZero, EEL_FULL(ir->coulombtype), wi, logger);
 
     if ((*combination_rule != eCOMB_GEOMETRIC) && (ir->vdwtype == evdwUSER))
     {
@@ -1004,12 +1020,17 @@ char** do_top(bool                                  bVerbose,
  * CONNBOND and, when MiMiC is not used, removes bonded interactions between QM and link atoms.
  * Finally, in case if MiMiC QM/MM is used - charges of QM atoms are set to 0
  *
- * @param molt molecule type with QM atoms
- * @param grpnr group informatio
- * @param ir input record
- * @param qmmmMode QM/MM mode switch: original/MiMiC
+ * \param[in,out] molt molecule type with QM atoms
+ * \param[in] grpnr group informatio
+ * \param[in,out] ir input record
+ * \param[in,out] qmmmMode QM/MM mode switch: original/MiMiC
+ * \param[in] logger Handle to logging interface.
  */
-static void generate_qmexcl_moltype(gmx_moltype_t* molt, const unsigned char* grpnr, t_inputrec* ir, GmxQmmmMode qmmmMode)
+static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
+                                    const unsigned char* grpnr,
+                                    t_inputrec*          ir,
+                                    GmxQmmmMode          qmmmMode,
+                                    const gmx::MDLogger& logger)
 {
     /* This routine expects molt->ilist to be of size F_NRE and ordered. */
 
@@ -1083,7 +1104,10 @@ static void generate_qmexcl_moltype(gmx_moltype_t* molt, const unsigned char* gr
     int ind_connbond   = 0;
     if (molt->ilist[F_CONNBONDS].size() != 0)
     {
-        fprintf(stderr, "nr. of CONNBONDS present already: %d\n", molt->ilist[F_CONNBONDS].size() / 3);
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("nr. of CONNBONDS present already: %d",
+                                     molt->ilist[F_CONNBONDS].size() / 3);
         ftype_connbond = molt->ilist[F_CONNBONDS].iatoms[0];
         ind_connbond   = molt->ilist[F_CONNBONDS].size();
     }
@@ -1310,7 +1334,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t* molt, const unsigned char* gr
     free(blink);
 } /* generate_qmexcl */
 
-void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, warninp* wi, GmxQmmmMode qmmmMode)
+void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, warninp* wi, GmxQmmmMode qmmmMode, const gmx::MDLogger& logger)
 {
     /* This routine expects molt->molt[m].ilist to be of size F_NRE and ordered.
      */
@@ -1387,7 +1411,7 @@ void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, warninp* wi, GmxQmmmMode q
                     /* Set the molecule type for the QMMM molblock */
                     molb->type = sys->moltype.size() - 1;
                 }
-                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, qmmmMode);
+                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, qmmmMode, logger);
             }
             if (grpnr)
             {

@@ -700,4 +700,13 @@ real maxReferenceTemperature(const t_inputrec& ir);
  */
 bool haveEwaldSurfaceContribution(const t_inputrec& ir);
 
+/*! \brief Check if calculation of the specific FEP type was requested.
+ *
+ * \param[in] ir       Input record.
+ * \param[in] fepType  Free-energy perturbation type to check for.
+ *
+ * \returns If the \p fepType is perturbed in this run.
+ */
+bool haveFreeEnergyType(const t_inputrec& ir, int fepType);
+
 #endif /* GMX_MDTYPES_INPUTREC_H */

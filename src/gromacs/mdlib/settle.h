@@ -44,7 +44,6 @@
 #ifndef GMX_MDLIB_SETTLE_H
 #define GMX_MDLIB_SETTLE_H
 
-#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/topology/idef.h"
 
 struct gmx_cmap_t;
@@ -56,6 +55,10 @@ struct t_pbc;
 namespace gmx
 {
 
+template<typename>
+class ArrayRef;
+template<typename>
+class ArrayRefWithPadding;
 enum class ConstraintVariable : int;
 
 /* Abstract type for SETTLE that is defined only in the file that uses it */

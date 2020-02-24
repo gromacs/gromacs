@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
 static int count_hydrogens(char*** atomname, int nra, gmx::ArrayRef<const int> a)
@@ -74,7 +75,7 @@ static int count_hydrogens(char*** atomname, int nra, gmx::ArrayRef<const int> a
     return nh;
 }
 
-void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nshake)
+void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nshake, const gmx::MDLogger& logger)
 {
     char*** info = atoms->atomname;
     real    b_ij, b_jk;
@@ -82,10 +83,26 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
     {
         switch (nshake)
         {
-            case eshHBONDS: printf("turning H bonds into constraints...\n"); break;
-            case eshALLBONDS: printf("turning all bonds into constraints...\n"); break;
-            case eshHANGLES: printf("turning all bonds and H angles into constraints...\n"); break;
-            case eshALLANGLES: printf("turning all bonds and angles into constraints...\n"); break;
+            case eshHBONDS:
+                GMX_LOG(logger.info)
+                        .asParagraph()
+                        .appendTextFormatted("turning H bonds into constraints...");
+                break;
+            case eshALLBONDS:
+                GMX_LOG(logger.info)
+                        .asParagraph()
+                        .appendTextFormatted("turning all bonds into constraints...");
+                break;
+            case eshHANGLES:
+                GMX_LOG(logger.info)
+                        .asParagraph()
+                        .appendTextFormatted("turning all bonds and H angles into constraints...");
+                break;
+            case eshALLANGLES:
+                GMX_LOG(logger.info)
+                        .asParagraph()
+                        .appendTextFormatted("turning all bonds and angles into constraints...");
+                break;
             default: gmx_fatal(FARGS, "Invalid option for make_shake (%d)", nshake);
         }
 
@@ -111,7 +128,10 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
                             {
                                 const InteractionOfType* ang = &(*parm);
 #ifdef DEBUG
-                                printf("Angle: %d-%d-%d\n", ang->ai(), ang->aj(), ang->ak());
+                                GMX_LOG(logger.info)
+                                        .asParagraph()
+                                        .appendTextFormatted("Angle: %d-%d-%d", ang->ai(),
+                                                             ang->aj(), ang->ak());
 #endif
                                 int numhydrogens = count_hydrogens(info, 3, ang->atoms());
                                 if ((nshake == eshALLANGLES) || (numhydrogens > 1)
@@ -155,8 +175,11 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
                                         }
                                         /* apply law of cosines */
 #ifdef DEBUG
-                                        printf("p: %d, q: %d, dist: %12.5e\n", atomNumbers[0],
-                                               atomNumbers[1], forceParm[0]);
+                                        GMX_LOG(logger.info)
+                                                .asParagraph()
+                                                .appendTextFormatted("p: %d, q: %d, dist: %12.5e",
+                                                                     atomNumbers[0], atomNumbers[1],
+                                                                     forceParm[0]);
 #endif
                                         add_param_to_list(&(plist[F_CONSTR]),
                                                           InteractionOfType(atomNumbers, forceParm));

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Output"><![CDATA[
+    Test title (3):
+       Test title[0]="foo"
+       Test title[1]="Bar"
+       Test title[2]="Foo"
+]]></String>
+</ReferenceData>

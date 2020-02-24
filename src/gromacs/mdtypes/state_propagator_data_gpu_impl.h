@@ -181,7 +181,7 @@ public:
      *
      *  \returns GPU positions buffer.
      */
-    DeviceBuffer<float> getCoordinates();
+    DeviceBuffer<RVec> getCoordinates();
 
     /*! \brief Copy positions to the GPU memory.
      *
@@ -242,7 +242,7 @@ public:
      *
      *  \returns GPU velocities buffer.
      */
-    DeviceBuffer<float> getVelocities();
+    DeviceBuffer<RVec> getVelocities();
 
     /*! \brief Copy velocities to the GPU memory.
      *
@@ -277,7 +277,7 @@ public:
      *
      *  \returns GPU force buffer.
      */
-    DeviceBuffer<float> getForces();
+    DeviceBuffer<RVec> getForces();
 
     /*! \brief Copy forces to the GPU memory.
      *
@@ -395,21 +395,21 @@ private:
     int numAtomsAll_ = -1;
 
     //! Device positions buffer
-    DeviceBuffer<float> d_x_;
+    DeviceBuffer<RVec> d_x_;
     //! Number of particles saved in the positions buffer
     int d_xSize_ = -1;
     //! Allocation size for the positions buffer
     int d_xCapacity_ = -1;
 
     //! Device velocities buffer
-    DeviceBuffer<float> d_v_;
+    DeviceBuffer<RVec> d_v_;
     //! Number of particles saved in the velocities buffer
     int d_vSize_ = -1;
     //! Allocation size for the velocities buffer
     int d_vCapacity_ = -1;
 
     //! Device force buffer
-    DeviceBuffer<float> d_f_;
+    DeviceBuffer<RVec> d_f_;
     //! Number of particles saved in the force buffer
     int d_fSize_ = -1;
     //! Allocation size for the force buffer
@@ -428,7 +428,7 @@ private:
      *  \param[in]  atomLocality   If all, local or non-local ranges should be copied.
      *  \param[in]  commandStream  GPU stream to execute copy in.
      */
-    void copyToDevice(DeviceBuffer<float>            d_data,
+    void copyToDevice(DeviceBuffer<RVec>             d_data,
                       gmx::ArrayRef<const gmx::RVec> h_data,
                       int                            dataSize,
                       AtomLocality                   atomLocality,
@@ -443,7 +443,7 @@ private:
      *  \param[in]  commandStream  GPU stream to execute copy in.
      */
     void copyFromDevice(gmx::ArrayRef<gmx::RVec> h_data,
-                        DeviceBuffer<float>      d_data,
+                        DeviceBuffer<RVec>       d_data,
                         int                      dataSize,
                         AtomLocality             atomLocality,
                         CommandStream            commandStream);

@@ -63,6 +63,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"

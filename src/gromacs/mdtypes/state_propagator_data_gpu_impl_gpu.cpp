@@ -193,18 +193,18 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
         numAtomsPadded = numAtomsAll_;
     }
 
-    reallocateDeviceBuffer(&d_x_, DIM * numAtomsPadded, &d_xSize_, &d_xCapacity_, deviceContext_);
+    reallocateDeviceBuffer(&d_x_, numAtomsPadded, &d_xSize_, &d_xCapacity_, deviceContext_);
 
     const size_t paddingAllocationSize = numAtomsPadded - numAtomsAll_;
     if (paddingAllocationSize > 0)
     {
         // The PME stream is used here because the padding region of d_x_ is only in the PME task.
-        clearDeviceBufferAsync(&d_x_, DIM * numAtomsAll_, DIM * paddingAllocationSize, pmeStream_);
+        clearDeviceBufferAsync(&d_x_, numAtomsAll_, paddingAllocationSize, pmeStream_);
     }
 
-    reallocateDeviceBuffer(&d_v_, DIM * numAtomsAll_, &d_vSize_, &d_vCapacity_, deviceContext_);
+    reallocateDeviceBuffer(&d_v_, numAtomsAll_, &d_vSize_, &d_vCapacity_, deviceContext_);
     const int d_fOldCapacity = d_fCapacity_;
-    reallocateDeviceBuffer(&d_f_, DIM * numAtomsAll_, &d_fSize_, &d_fCapacity_, deviceContext_);
+    reallocateDeviceBuffer(&d_f_, numAtomsAll_, &d_fSize_, &d_fCapacity_, deviceContext_);
     // Clearing of the forces can be done in local stream since the nonlocal stream cannot reach
     // the force accumulation stage before syncing with the local stream. Only done in CUDA,
     // since the force buffer ops are not implemented in OpenCL.
@@ -249,7 +249,7 @@ std::tuple<int, int> StatePropagatorDataGpu::Impl::getAtomRangesFromAtomLocality
     return std::make_tuple(atomsStartAt, numAtomsToCopy);
 }
 
-void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<float>                  d_data,
+void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<RVec>                   d_data,
                                                 const gmx::ArrayRef<const gmx::RVec> h_data,
                                                 int                                  dataSize,
                                                 AtomLocality                         atomLocality,
@@ -269,18 +269,15 @@ void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<float>             
     int atomsStartAt, numAtomsToCopy;
     std::tie(atomsStartAt, numAtomsToCopy) = getAtomRangesFromAtomLocality(atomLocality);
 
-    int elementsStartAt   = atomsStartAt * DIM;
-    int numElementsToCopy = numAtomsToCopy * DIM;
-
     if (numAtomsToCopy != 0)
     {
-        GMX_ASSERT(elementsStartAt + numElementsToCopy <= dataSize,
+        GMX_ASSERT(atomsStartAt + numAtomsToCopy <= dataSize,
                    "The device allocation is smaller than requested copy range.");
         GMX_ASSERT(atomsStartAt + numAtomsToCopy <= h_data.ssize(),
                    "The host buffer is smaller than the requested copy range.");
 
-        copyToDeviceBuffer(&d_data, reinterpret_cast<const float*>(&h_data.data()[atomsStartAt]),
-                           elementsStartAt, numElementsToCopy, commandStream, transferKind_, nullptr);
+        copyToDeviceBuffer(&d_data, reinterpret_cast<const RVec*>(&h_data.data()[atomsStartAt]),
+                           atomsStartAt, numAtomsToCopy, commandStream, transferKind_, nullptr);
     }
 
     wallcycle_sub_stop(wcycle_, ewcsLAUNCH_STATE_PROPAGATOR_DATA);
@@ -288,7 +285,7 @@ void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<float>             
 }
 
 void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_data,
-                                                  DeviceBuffer<float>      d_data,
+                                                  DeviceBuffer<RVec>       d_data,
                                                   int                      dataSize,
                                                   AtomLocality             atomLocality,
                                                   CommandStream            commandStream)
@@ -307,25 +304,22 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_dat
     int atomsStartAt, numAtomsToCopy;
     std::tie(atomsStartAt, numAtomsToCopy) = getAtomRangesFromAtomLocality(atomLocality);
 
-    int elementsStartAt   = atomsStartAt * DIM;
-    int numElementsToCopy = numAtomsToCopy * DIM;
-
     if (numAtomsToCopy != 0)
     {
-        GMX_ASSERT(elementsStartAt + numElementsToCopy <= dataSize,
+        GMX_ASSERT(atomsStartAt + numAtomsToCopy <= dataSize,
                    "The device allocation is smaller than requested copy range.");
         GMX_ASSERT(atomsStartAt + numAtomsToCopy <= h_data.ssize(),
                    "The host buffer is smaller than the requested copy range.");
 
-        copyFromDeviceBuffer(reinterpret_cast<float*>(&h_data.data()[atomsStartAt]), &d_data,
-                             elementsStartAt, numElementsToCopy, commandStream, transferKind_, nullptr);
+        copyFromDeviceBuffer(reinterpret_cast<RVec*>(&h_data.data()[atomsStartAt]), &d_data,
+                             atomsStartAt, numAtomsToCopy, commandStream, transferKind_, nullptr);
     }
 
     wallcycle_sub_stop(wcycle_, ewcsLAUNCH_STATE_PROPAGATOR_DATA);
     wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
-DeviceBuffer<float> StatePropagatorDataGpu::Impl::getCoordinates()
+DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getCoordinates()
 {
     return d_x_;
 }
@@ -422,7 +416,7 @@ void StatePropagatorDataGpu::Impl::waitCoordinatesReadyOnHost(AtomLocality atomL
 }
 
 
-DeviceBuffer<float> StatePropagatorDataGpu::Impl::getVelocities()
+DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getVelocities()
 {
     return d_v_;
 }
@@ -476,7 +470,7 @@ void StatePropagatorDataGpu::Impl::waitVelocitiesReadyOnHost(AtomLocality atomLo
 }
 
 
-DeviceBuffer<float> StatePropagatorDataGpu::Impl::getForces()
+DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getForces()
 {
     return d_f_;
 }
@@ -595,7 +589,7 @@ std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomL
 }
 
 
-DeviceBuffer<float> StatePropagatorDataGpu::getCoordinates()
+DeviceBuffer<RVec> StatePropagatorDataGpu::getCoordinates()
 {
     return impl_->getCoordinates();
 }
@@ -635,7 +629,7 @@ void StatePropagatorDataGpu::waitCoordinatesReadyOnHost(AtomLocality atomLocalit
 }
 
 
-DeviceBuffer<float> StatePropagatorDataGpu::getVelocities()
+DeviceBuffer<RVec> StatePropagatorDataGpu::getVelocities()
 {
     return impl_->getVelocities();
 }
@@ -662,7 +656,7 @@ void StatePropagatorDataGpu::waitVelocitiesReadyOnHost(AtomLocality atomLocality
 }
 
 
-DeviceBuffer<float> StatePropagatorDataGpu::getForces()
+DeviceBuffer<RVec> StatePropagatorDataGpu::getForces()
 {
     return impl_->getForces();
 }

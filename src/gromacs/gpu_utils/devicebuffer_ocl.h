@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -216,10 +216,11 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
 /*! \brief
  * Clears the device buffer asynchronously.
  *
- * \tparam        ValueType        Raw value type of the \p buffer.
- * \param[in,out] buffer           Pointer to the device-side buffer
- * \param[in]     startingOffset   Offset (in values) at the device-side buffer to start clearing
- * at. \param[in]     numValues        Number of values to clear. \param[in]     stream GPU stream.
+ * \tparam        ValueType       Raw value type of the \p buffer.
+ * \param[in,out] buffer          Pointer to the device-side buffer
+ * \param[in]     startingOffset  Offset (in values) at the device-side buffer to start clearing at.
+ * \param[in]     numValues       Number of values to clear.
+ * \param[in]     stream          GPU stream.
  */
 template<typename ValueType>
 void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer, size_t startingOffset, size_t numValues, CommandStream stream)
@@ -227,7 +228,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer, size_t startingOffs
     GMX_ASSERT(buffer, "needs a buffer pointer");
     const size_t    offset        = startingOffset * sizeof(ValueType);
     const size_t    bytes         = numValues * sizeof(ValueType);
-    const ValueType pattern       = 0;
+    const int       pattern       = 0;
     const cl_uint   numWaitEvents = 0;
     const cl_event* waitEvents    = nullptr;
     cl_event        commandEvent;
@@ -237,6 +238,27 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer, size_t startingOffs
                        gmx::formatString("Couldn't clear the device buffer (OpenCL error %d: %s)",
                                          clError, ocl_get_error_string(clError).c_str())
                                .c_str());
+}
+
+/*! \brief Check the validity of the device buffer.
+ *
+ * Checks if the buffer is not nullptr and if its allocation is big enough.
+ *
+ * \param[in] buffer        Device buffer to be checked.
+ * \param[in] requiredSize  Number of elements that the buffer will have to accommodate.
+ *
+ * \returns Whether the device buffer can be set.
+ */
+template<typename T>
+static bool checkDeviceBuffer(DeviceBuffer<T> buffer, int requiredSize)
+{
+    size_t size;
+    int    retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size), &size, nullptr);
+    GMX_ASSERT(retval == CL_SUCCESS,
+               gmx::formatString("clGetMemObjectInfo failed with error code #%d", retval).c_str());
+    GMX_ASSERT(static_cast<int>(size) >= requiredSize,
+               "Number of atoms in device buffer is smaller then required size.");
+    return retval == CL_SUCCESS && static_cast<int>(size) >= requiredSize;
 }
 
 #endif

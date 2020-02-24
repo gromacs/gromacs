@@ -95,8 +95,7 @@ namespace Nbnxm
 
 /*! \brief Convenience constants */
 //@{
-static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
-static const int c_clSize          = c_nbnxnGpuClusterSize;
+static constexpr int c_clSize = c_nbnxnGpuClusterSize;
 //@}
 
 
@@ -104,12 +103,12 @@ static const int c_clSize          = c_nbnxnGpuClusterSize;
  */
 static inline void validate_global_work_size(const KernelLaunchConfig& config,
                                              int                       work_dim,
-                                             const gmx_device_info_t*  dinfo)
+                                             const DeviceInformation*  dinfo)
 {
     cl_uint device_size_t_size_bits;
     cl_uint host_size_t_size_bits;
 
-    assert(dinfo);
+    GMX_ASSERT(dinfo, "Need a valid device info object");
 
     size_t global_work_size[3];
     GMX_ASSERT(work_dim <= 3, "Not supporting hyper-grids just yet");
@@ -341,14 +340,16 @@ static inline cl_kernel selectPruneKernel(cl_kernel kernel_pruneonly[], bool fir
  *  OpenCL kernel objects are cached in nb. If the requested kernel is not
  *  found in the cache, it will be created and the cache will be updated.
  */
-static inline cl_kernel select_nbnxn_kernel(gmx_nbnxm_gpu_t* nb, int eeltype, int evdwtype, bool bDoEne, bool bDoPrune)
+static inline cl_kernel select_nbnxn_kernel(NbnxmGpu* nb, int eeltype, int evdwtype, bool bDoEne, bool bDoPrune)
 {
     const char* kernel_name_to_run;
     cl_kernel*  kernel_ptr;
     cl_int      cl_error;
 
-    assert(eeltype < eelOclNR);
-    assert(evdwtype < evdwOclNR);
+    GMX_ASSERT(eeltype < eelOclNR,
+               "The electrostatics type requested is not implemented in the OpenCL kernels.");
+    GMX_ASSERT(evdwtype < evdwOclNR,
+               "The VdW type requested is not implemented in the OpenCL kernels.");
 
     if (bDoEne)
     {
@@ -380,9 +381,9 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxm_gpu_t* nb, int eeltype, in
     if (nullptr == kernel_ptr[0])
     {
         *kernel_ptr = clCreateKernel(nb->dev_rundata->program, kernel_name_to_run, &cl_error);
-        assert(cl_error == CL_SUCCESS);
+        GMX_ASSERT(cl_error == CL_SUCCESS,
+                   ("clCreateKernel failed: " + ocl_get_error_string(cl_error)).c_str());
     }
-    // TODO: handle errors
 
     return *kernel_ptr;
 }
@@ -396,7 +397,7 @@ static inline int calc_shmem_required_nonbonded(int vdwType, bool bPrefetchLjPar
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
+    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately
      * TODO: in the "nowarp kernels we load cj only once  so the factor 2 is not needed.
      */
@@ -406,12 +407,13 @@ static inline int calc_shmem_required_nonbonded(int vdwType, bool bPrefetchLjPar
         if (useLjCombRule(vdwType))
         {
             /* i-atom LJ combination parameters in shared memory */
-            shmem += c_numClPerSupercl * c_clSize * 2 * sizeof(float); /* atib abused for ljcp, float2 */
+            shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * 2
+                     * sizeof(float); /* atib abused for ljcp, float2 */
         }
         else
         {
             /* i-atom types in shared memory */
-            shmem += c_numClPerSupercl * c_clSize * sizeof(int); /* atib */
+            shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(int); /* atib */
         }
     }
     /* force reduction buffers in shared memory */
@@ -466,12 +468,13 @@ static void sync_ocl_event(cl_command_queue stream, cl_event* ocl_event)
 
     /* Release event and reset it to 0. It is ok to release it as enqueuewaitforevents performs implicit retain for events. */
     cl_error = clReleaseEvent(*ocl_event);
-    assert(CL_SUCCESS == cl_error);
+    GMX_ASSERT(cl_error == CL_SUCCESS,
+               ("clReleaseEvent failed: " + ocl_get_error_string(cl_error)).c_str());
     *ocl_event = nullptr;
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
+void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -485,7 +488,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, con
     cl_timers_t*     t      = nb->timers;
     cl_command_queue stream = nb->stream[iloc];
 
-    bool bDoTime = (nb->bDoTime) != 0;
+    bool bDoTime = nb->bDoTime;
 
     /* Don't launch the non-local H2D copy if there is no dependent
        work to do: neither non-local nor other (e.g. bonded) work
@@ -540,14 +543,16 @@ void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, con
         {
             cl_int gmx_used_in_debug cl_error = clEnqueueMarkerWithWaitList(
                     stream, 0, nullptr, &(nb->misc_ops_and_local_H2D_done));
-            assert(CL_SUCCESS == cl_error);
+            GMX_ASSERT(cl_error == CL_SUCCESS,
+                       ("clEnqueueMarkerWithWaitList failed: " + ocl_get_error_string(cl_error)).c_str());
 
             /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
              * in the local stream in order to be able to sync with the above event
              * from the non-local stream.
              */
             cl_error = clFlush(stream);
-            assert(CL_SUCCESS == cl_error);
+            GMX_ASSERT(cl_error == CL_SUCCESS,
+                       ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
         }
         else
         {
@@ -575,7 +580,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, con
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
  */
-void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
+void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
 {
     cl_atomdata_t*   adat   = nb->atdat;
     cl_nbparam_t*    nbp    = nb->nbparam;
@@ -583,7 +588,7 @@ void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, c
     cl_timers_t*     t      = nb->timers;
     cl_command_queue stream = nb->stream[iloc];
 
-    bool bDoTime = (nb->bDoTime) != 0;
+    bool bDoTime = nb->bDoTime;
 
     cl_nbparam_params_t nbparams_params;
 
@@ -634,7 +639,7 @@ void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, c
     config.blockSize[1]     = c_clSize;
     config.gridSize[0]      = plist->nsci;
 
-    validate_global_work_size(config, 3, nb->dev_info);
+    validate_global_work_size(config, 3, nb->deviceInfo);
 
     if (debug)
     {
@@ -643,7 +648,8 @@ void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, c
                 "Global work size : %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2],
                 config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1],
-                plist->nsci * c_numClPerSupercl, c_numClPerSupercl, plist->na_c);
+                plist->nsci * c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuNumClusterPerSupercluster, plist->na_c);
     }
 
     fillin_ocl_structures(nbp, &nbparams_params);
@@ -697,7 +703,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     int shmem;
 
     /* i-atom x in shared memory (for convenience we load all 4 components including q) */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4;
+    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float) * 4;
     /* cj in shared memory, for each warp separately
      * Note: only need to load once per wavefront, but to keep the code simple,
      * for now we load twice on AMD.
@@ -713,14 +719,14 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
  * Launch the pairlist prune only kernel for the given locality.
  * \p numParts tells in how many parts, i.e. calls the list will be pruned.
  */
-void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality iloc, const int numParts)
+void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
     cl_atomdata_t*   adat    = nb->atdat;
     cl_nbparam_t*    nbp     = nb->nbparam;
     cl_plist_t*      plist   = nb->plist[iloc];
     cl_timers_t*     t       = nb->timers;
     cl_command_queue stream  = nb->stream[iloc];
-    bool             bDoTime = nb->bDoTime == CL_TRUE;
+    bool             bDoTime = nb->bDoTime;
 
     if (plist->haveFreshList)
     {
@@ -782,7 +788,8 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality 
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    int num_threads_z = getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e);
+    int num_threads_z = c_oclPruneKernelJ4ConcurrencyDEFAULT;
+
 
     /* kernel launch config */
     KernelLaunchConfig config;
@@ -793,7 +800,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality 
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = numSciInPart;
 
-    validate_global_work_size(config, 3, nb->dev_info);
+    validate_global_work_size(config, 3, nb->deviceInfo);
 
     if (debug)
     {
@@ -803,7 +810,8 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality 
                 "\tShMem: %zu\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2],
                 config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1],
-                plist->nsci * c_numClPerSupercl, c_numClPerSupercl, plist->na_c, config.sharedMemorySize);
+                plist->nsci * c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuNumClusterPerSupercluster, plist->na_c, config.sharedMemorySize);
     }
 
     cl_nbparam_params_t nbparams_params;
@@ -839,7 +847,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality 
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
  */
-void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
+void gpu_launch_cpyback(NbnxmGpu*                nb,
                         struct nbnxn_atomdata_t* nbatom,
                         const gmx::StepWorkload& stepWork,
                         const AtomLocality       aloc)
@@ -854,7 +862,7 @@ void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
 
     cl_atomdata_t*   adat    = nb->atdat;
     cl_timers_t*     t       = nb->timers;
-    bool             bDoTime = nb->bDoTime == CL_TRUE;
+    bool             bDoTime = nb->bDoTime;
     cl_command_queue stream  = nb->stream[iloc];
 
     /* don't launch non-local copy-back if there was no non-local work to do */
@@ -888,13 +896,14 @@ void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
     }
 
     /* DtoH f */
-    ocl_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f,
-                       adat_begin * 3 * sizeof(float), (adat_len)*adat->f_elem_size, stream,
+    ocl_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * DIM, adat->f,
+                       adat_begin * DIM * sizeof(nbatom->out[0].f[0]),
+                       adat_len * DIM * sizeof(nbatom->out[0].f[0]), stream,
                        bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
 
     /* kick off work */
     cl_error = clFlush(stream);
-    assert(CL_SUCCESS == cl_error);
+    GMX_ASSERT(cl_error == CL_SUCCESS, ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
@@ -903,7 +912,8 @@ void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
     if (iloc == InteractionLocality::NonLocal)
     {
         cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &(nb->nonlocal_done));
-        assert(CL_SUCCESS == cl_error);
+        GMX_ASSERT(cl_error == CL_SUCCESS,
+                   ("clEnqueueMarkerWithWaitList failed: " + ocl_get_error_string(cl_error)).c_str());
         nb->bNonLocalStreamActive = CL_TRUE;
     }
 
@@ -913,7 +923,7 @@ void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
         /* DtoH fshift when virial is needed */
         if (stepWork.computeVirial)
         {
-            ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0, SHIFTS * adat->fshift_elem_size,
+            ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0, SHIFTS * sizeof(nb->nbst.fshift[0]),
                                stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
         }
 
@@ -956,8 +966,6 @@ int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
 
     /* OpenCL: By default, use analytical Ewald
      * TODO: tabulated does not work, it needs fixing, see init_nbparam() in nbnxn_ocl_data_mgmt.cpp
-     *
-     * TODO: decide if dev_info parameter should be added to recognize NVIDIA CC>=3.0 devices.
      *
      */
     /* By default use analytical Ewald. */

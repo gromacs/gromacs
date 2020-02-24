@@ -427,7 +427,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
 
                     // This rank will have its data accessed directly by PP rank, so needs to send the remote addresses.
                     pme_pp->pmeCoordinateReceiverGpu->sendCoordinateBufferAddressToPpRanks(
-                            pme_gpu_get_device_x(pme));
+                            stateGpu->getCoordinates());
                     pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(
                             reinterpret_cast<rvec*>(pme_gpu_get_device_f(pme)));
                 }
@@ -618,33 +618,30 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
     pmedata.push_back(pme);
 
     auto pme_pp = gmx_pme_pp_init(cr);
+
+    std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
     // TODO the variable below should be queried from the task assignment info
-    const bool  useGpuForPme  = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
-    const void* commandStream = useGpuForPme ? pme_gpu_get_device_stream(pme) : nullptr;
-    const void* deviceContext = useGpuForPme ? pme_gpu_get_device_context(pme) : nullptr;
-    const int   paddingSize   = pme_gpu_get_padding_size(pme);
+    const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
     if (useGpuForPme)
     {
+        const void* commandStream = pme_gpu_get_device_stream(pme);
+        const void* deviceContext = pme_gpu_get_device_context(pme);
+
         changePinningPolicy(&pme_pp->chargeA, pme_get_pinning_policy());
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
         if (c_enableGpuPmePpComms)
         {
             pme_pp->pmeCoordinateReceiverGpu = std::make_unique<gmx::PmeCoordinateReceiverGpu>(
-                    pme_gpu_get_device_stream(pme), pme_pp->mpi_comm_mysim, pme_pp->ppRanks);
+                    commandStream, pme_pp->mpi_comm_mysim, pme_pp->ppRanks);
             pme_pp->pmeForceSenderGpu = std::make_unique<gmx::PmeForceSenderGpu>(
-                    pme_gpu_get_device_stream(pme), pme_pp->mpi_comm_mysim, pme_pp->ppRanks);
+                    commandStream, pme_pp->mpi_comm_mysim, pme_pp->ppRanks);
         }
-    }
-
-    std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
-    if (useGpuForPme)
-    {
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.
         stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                commandStream, deviceContext, GpuApiCallBehavior::Async, paddingSize, wcycle);
+                commandStream, deviceContext, GpuApiCallBehavior::Async,
+                pme_gpu_get_padding_size(pme), wcycle);
     }
-
 
     clear_nrnb(mynrnb);
 
@@ -715,7 +712,7 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
 
             pme_gpu_launch_spread(pme, xReadyOnDevice, wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle);
-            pme_gpu_launch_gather(pme, wcycle, PmeForceOutputHandling::Set);
+            pme_gpu_launch_gather(pme, wcycle);
             output = pme_gpu_wait_finish_task(pme, pmeFlags, wcycle);
             pme_gpu_reinit_computation(pme, wcycle);
         }

@@ -62,7 +62,7 @@ class PmeCoordinateReceiverGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void* /* pmeStream */,
+PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(const void* /* pmeStream */,
                                                    MPI_Comm /* comm */,
                                                    gmx::ArrayRef<PpRanks> /* ppRanks */) :
     impl_(nullptr)
@@ -75,7 +75,7 @@ PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void* /* pmeStream */,
 PmeCoordinateReceiverGpu::~PmeCoordinateReceiverGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> /* d_x */)
+void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<RVec> /* d_x */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "

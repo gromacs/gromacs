@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,7 +108,7 @@ static gmx_hw_info_t* hardwareInit()
 
 void PmeTestEnvironment::SetUp()
 {
-    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "", nullptr));
+    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "(CPU) ", nullptr));
 
     hardwareInfo_ = hardwareInit();
     if (!pme_gpu_supports_build(nullptr) || !pme_gpu_supports_hardware(*hardwareInfo_, nullptr))
@@ -119,7 +119,7 @@ void PmeTestEnvironment::SetUp()
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     for (int gpuIndex : getCompatibleGpus(hardwareInfo_->gpu_info))
     {
-        const gmx_device_info_t* deviceInfo = getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex);
+        const DeviceInformation* deviceInfo = getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex);
         init_gpu(deviceInfo);
 
         char stmp[200] = {};

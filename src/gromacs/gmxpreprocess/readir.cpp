@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017, The GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -561,7 +562,7 @@ void check_ir(const char*                   mdparin,
         // Inquire all MdModules, if their parameters match with the energy
         // calculation frequency
         gmx::EnergyCalculationFrequencyErrors energyCalculationFrequencyErrors(ir->nstcalcenergy);
-        mdModulesNotifier.notifier_.notify(&energyCalculationFrequencyErrors);
+        mdModulesNotifier.preProcessingNotifications_.notify(&energyCalculationFrequencyErrors);
 
         // Emit all errors from the energy calculation frequency checks
         for (const std::string& energyFrequencyErrorMessage :
@@ -667,9 +668,11 @@ void check_ir(const char*                   mdparin,
         sprintf(err_buf, "The soft-core power is %d and can only be 1 or 2", fep->sc_power);
         CHECK(fep->sc_alpha != 0 && fep->sc_power != 1 && fep->sc_power != 2);
 
-        sprintf(err_buf, "The soft-core sc-r-power is %d and can only be 6 or 48",
+        sprintf(err_buf,
+                "The soft-core sc-r-power is %d and can only be 6. (sc-r-power 48 is no longer "
+                "supported.)",
                 static_cast<int>(fep->sc_r_power));
-        CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0);
+        CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0);
 
         sprintf(err_buf,
                 "Can't use positive delta-lambda (%g) if initial state/lambda does not start at "
@@ -1565,17 +1568,6 @@ static void do_fep_params(t_inputrec* ir, char fep_lambda[][STRLEN], char weight
         }
     }
 
-
-    /* make it easier if sc_r_power = 48 by increasing it to the 4th power, to be in the right scale. */
-    if (fep->sc_r_power == 48)
-    {
-        if (fep->sc_alpha > 0.1)
-        {
-            gmx_fatal(FARGS,
-                      "sc_alpha (%f) for sc_r_power = 48 should usually be between 0.001 and 0.004",
-                      fep->sc_alpha);
-        }
-    }
 
     /* now read in the weights */
     parse_n_real(weights, &nweights, &(expand->init_lambda_weights), wi);
@@ -3623,7 +3615,7 @@ void do_index(const char*                   mdparin,
 
     gmx::IndexGroupsAndNames defaultIndexGroupsAndNames(
             *defaultIndexGroups, gmx::arrayRefFromArray(gnames, defaultIndexGroups->nr));
-    notifier.notifier_.notify(defaultIndexGroupsAndNames);
+    notifier.preProcessingNotifications_.notify(defaultIndexGroupsAndNames);
 
     auto accelerations          = gmx::splitString(is->acc);
     auto accelerationGroupNames = gmx::splitString(is->accgrps);
@@ -4099,7 +4091,8 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     {
         warning_note(wi,
                      "Removing center of mass motion in the presence of position restraints might "
-                     "cause artifacts");
+                     "cause artifacts. When you are using position restraints to equilibrate a "
+                     "macro-molecule, the artifacts are usually negligible.");
     }
 
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 && ir->nstlist > 1

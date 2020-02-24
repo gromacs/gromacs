@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,30 @@
 //! Controls if the atom and charge data is prefeched into shared memory or loaded per thread from global
 static const bool c_useAtomDataPrefetch = true;
 
+/*! \brief Asserts if the argument is finite.
+ *
+ *  The function works for any data type, that can be casted to float. Note that there is also
+ *  a specialized implementation for float3 data type.
+ *
+ * \param[in] arg  Argument to check.
+ */
+template<typename T>
+__device__ inline void assertIsFinite(T arg);
+
+template<>
+__device__ inline void assertIsFinite(float3 arg)
+{
+    assert(isfinite(float(arg.x)));
+    assert(isfinite(float(arg.y)));
+    assert(isfinite(float(arg.z)));
+}
+
+template<typename T>
+__device__ inline void assertIsFinite(T arg)
+{
+    assert(isfinite(float(arg)));
+}
+
 /*! \brief
  * General purpose function for loading atom-related data from global to shared memory.
  *
@@ -79,7 +103,7 @@ __device__ __forceinline__ void pme_gpu_stage_atom_data(const PmeGpuCudaKernelPa
             pme_gpu_check_atom_data_index(globalIndex, kernelParams.atoms.nAtoms * dataCountPerAtom);
     if ((localIndex < atomsPerBlock * dataCountPerAtom) & globalCheck)
     {
-        assert(isfinite(float(gm_source[globalIndex])));
+        assertIsFinite(gm_source[globalIndex]);
         sm_destination[localIndex] = gm_source[globalIndex];
     }
 }

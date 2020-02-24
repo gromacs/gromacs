@@ -93,7 +93,8 @@
     - grep -i "error" docs/sphinx-*.log | tee sphinxDiagnostics.log || true
     - grep -i "warning" docs/sphinx-*.log | tee -a sphinxDiagnostics.log || true
     - if [ -s pythonErrors.log ] ; then echo "Found Python Errors during build"; exit 1; fi
-    - if [ -s sphinxErrors.log ] ; then echo "Found errors during Sphinx documentation build"; cat sphinxDiagnostics.log; exit 1; fi
+    - if [ -s sphinxErrors.log ] ; then echo "Found errors during Sphinx documentation build"; cat sphinxErrors.log; exit 1; fi
+    - if [ -s sphinxDiagnostics.log ] ; then echo "Found diagnostic warnings during Sphinx documentation build"; cat sphinxDiagnostics.log; exit 1; fi
     - cd ..
   artifacts:
     name: docs-artifacts-$CI_COMMIT_REF_SLUG

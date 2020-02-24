@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,6 @@
  */
 
 // Assert placeholders, to not rip them out from OpenCL implementation - hopefully they come in handy some day with OpenCL 2
-#define static_assert(a, b)
 #define assert(a)
 
 #define PmeOpenCLKernelParams PmeGpuKernelParamsBase
@@ -58,6 +57,7 @@
 /* SPREAD/SPLINE */
 
 #define atomsPerBlock (c_spreadWorkGroupSize / threadsPerAtom)
+#define atomsPerWarp (warp_size / threadsPerAtom)
 
 // spline/spread fused
 #define computeSplines 1
@@ -95,17 +95,8 @@
 #define atomsPerBlock (c_gatherWorkGroupSize / threadsPerAtom)
 
 // gather
-#define overwriteForces 1
 #define CUSTOMIZED_KERNEL_NAME(x) pmeGatherKernel
 #include "pme_gather.clh"
-#undef overwriteForces
-#undef CUSTOMIZED_KERNEL_NAME
-
-// gather with reduction
-#define overwriteForces 0
-#define CUSTOMIZED_KERNEL_NAME(x) pmeGatherReduceWithInputKernel
-#include "pme_gather.clh"
-#undef overwriteForces
 #undef CUSTOMIZED_KERNEL_NAME
 
 

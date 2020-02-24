@@ -158,22 +158,14 @@ static void init_atomdata_first(cl_atomdata_t* ad, int ntypes, gmx_device_runtim
 
     ad->ntypes = ntypes;
 
-    /* An element of the shift_vec device buffer has the same size as one element
-       of the host side shift_vec buffer. */
-    ad->shift_vec_elem_size = sizeof(*nbnxn_atomdata_t::shift_vec.data());
-
     ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
-                                   SHIFTS * ad->shift_vec_elem_size, nullptr, &cl_error);
+                                   SHIFTS * sizeof(nbnxn_atomdata_t::shift_vec[0]), nullptr, &cl_error);
     GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                        ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
     ad->bShiftVecUploaded = CL_FALSE;
 
-    /* An element of the fshift device buffer has the same size as one element
-       of the host side fshift buffer. */
-    ad->fshift_elem_size = sizeof(*cl_nb_staging_t::fshift);
-
     ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
-                                SHIFTS * ad->fshift_elem_size, nullptr, &cl_error);
+                                SHIFTS * sizeof(nb_staging_t::fshift[0]), nullptr, &cl_error);
     GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                        ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
@@ -407,8 +399,8 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interacti
     {
         return;
     }
-    gmx_nbnxm_gpu_t* nb  = nbv->gpu_nbv;
-    cl_nbparam_t*    nbp = nb->nbparam;
+    NbnxmGpu*     nb  = nbv->gpu_nbv;
+    cl_nbparam_t* nbp = nb->nbparam;
 
     set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
@@ -485,12 +477,12 @@ static void CL_CALLBACK ocl_notify_fn(const char* pErrInfo,
  *
  * A fatal error results if creation fails.
  *
- * \param[inout] runtimeData runtime data including program and context
- * \param[in]    devInfo     device info struct
+ * \param[inout] runtimeData Runtime data including program and context
+ * \param[in]    deviceInfo  Device info struct
  * \param[in]    rank        MPI rank (for error reporting)
  */
 static void nbnxn_gpu_create_context(gmx_device_runtime_data_t* runtimeData,
-                                     const gmx_device_info_t*   devInfo,
+                                     const DeviceInformation*   deviceInfo,
                                      int                        rank)
 {
     cl_context_properties context_properties[5];
@@ -499,11 +491,11 @@ static void nbnxn_gpu_create_context(gmx_device_runtime_data_t* runtimeData,
     cl_context            context;
     cl_int                cl_error;
 
-    assert(runtimeData != nullptr);
-    assert(devInfo != nullptr);
+    GMX_ASSERT(runtimeData, "Need a valid runtimeData object");
+    GMX_ASSERT(deviceInfo, "Need a valid device info object");
 
-    platform_id = devInfo->ocl_gpu_id.ocl_platform_id;
-    device_id   = devInfo->ocl_gpu_id.ocl_device_id;
+    platform_id = deviceInfo->oclPlatformId;
+    device_id   = deviceInfo->oclDeviceId;
 
     int i                   = 0;
     context_properties[i++] = CL_CONTEXT_PLATFORM;
@@ -520,14 +512,14 @@ static void nbnxn_gpu_create_context(gmx_device_runtime_data_t* runtimeData,
     if (CL_SUCCESS != cl_error)
     {
         gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s:\n OpenCL error %d: %s",
-                  rank, devInfo->device_name, cl_error, ocl_get_error_string(cl_error).c_str());
+                  rank, deviceInfo->device_name, cl_error, ocl_get_error_string(cl_error).c_str());
     }
 
     runtimeData->context = context;
 }
 
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
-static cl_kernel nbnxn_gpu_create_kernel(gmx_nbnxm_gpu_t* nb, const char* kernel_name)
+static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
 {
     cl_kernel kernel;
     cl_int    cl_error;
@@ -536,7 +528,7 @@ static cl_kernel nbnxn_gpu_create_kernel(gmx_nbnxm_gpu_t* nb, const char* kernel
     if (CL_SUCCESS != cl_error)
     {
         gmx_fatal(FARGS, "Failed to create kernel '%s' for GPU #%s: OpenCL error %d", kernel_name,
-                  nb->dev_info->device_name, cl_error);
+                  nb->deviceInfo->device_name, cl_error);
     }
 
     return kernel;
@@ -544,7 +536,7 @@ static cl_kernel nbnxn_gpu_create_kernel(gmx_nbnxm_gpu_t* nb, const char* kernel
 
 /*! \brief Clears nonbonded shift force output array and energy outputs on the GPU.
  */
-static void nbnxn_ocl_clear_e_fshift(gmx_nbnxm_gpu_t* nb)
+static void nbnxn_ocl_clear_e_fshift(NbnxmGpu* nb)
 {
 
     cl_int           cl_error;
@@ -577,7 +569,7 @@ static void nbnxn_ocl_clear_e_fshift(gmx_nbnxm_gpu_t* nb)
 }
 
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
-static void nbnxn_gpu_init_kernels(gmx_nbnxm_gpu_t* nb)
+static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
 {
     /* Init to 0 main kernel arrays */
     /* They will be later on initialized in select_nbnxn_kernel */
@@ -606,7 +598,7 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxm_gpu_t* nb)
  *  Initializes members of the atomdata and nbparam structs and
  *  clears e/fshift output buffers.
  */
-static void nbnxn_ocl_init_const(gmx_nbnxm_gpu_t*                nb,
+static void nbnxn_ocl_init_const(NbnxmGpu*                       nb,
                                  const interaction_const_t*      ic,
                                  const PairlistParams&           listParams,
                                  const nbnxn_atomdata_t::Params& nbatParams)
@@ -617,20 +609,19 @@ static void nbnxn_ocl_init_const(gmx_nbnxm_gpu_t*                nb,
 
 
 //! This function is documented in the header file
-gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t*   deviceInfo,
-                          const interaction_const_t* ic,
-                          const PairlistParams&      listParams,
-                          const nbnxn_atomdata_t*    nbat,
-                          const int                  rank,
-                          const gmx_bool             bLocalAndNonlocal)
+NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
+                   const interaction_const_t* ic,
+                   const PairlistParams&      listParams,
+                   const nbnxn_atomdata_t*    nbat,
+                   const int                  rank,
+                   const bool                 bLocalAndNonlocal)
 {
-    gmx_nbnxm_gpu_t*            nb;
     cl_int                      cl_error;
     cl_command_queue_properties queue_properties;
 
-    assert(ic);
+    GMX_ASSERT(ic, "Need a valid interaction constants object");
 
-    snew(nb, 1);
+    auto nb = new NbnxmGpu;
     snew(nb->atdat, 1);
     snew(nb->nbparam, 1);
     snew(nb->plist[InteractionLocality::Local], 1);
@@ -639,13 +630,13 @@ gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t*   deviceInfo,
         snew(nb->plist[InteractionLocality::NonLocal], 1);
     }
 
-    nb->bUseTwoStreams = static_cast<cl_bool>(bLocalAndNonlocal);
+    nb->bUseTwoStreams = bLocalAndNonlocal;
 
     nb->timers = new cl_timers_t();
     snew(nb->timings, 1);
 
     /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = deviceInfo;
+    nb->deviceInfo = deviceInfo;
     snew(nb->dev_rundata, 1);
 
     /* init nbst */
@@ -656,7 +647,7 @@ gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t*   deviceInfo,
     init_plist(nb->plist[InteractionLocality::Local]);
 
     /* OpenCL timing disabled if GMX_DISABLE_GPU_TIMING is defined. */
-    nb->bDoTime = static_cast<cl_bool>(getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
+    nb->bDoTime = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
 
     /* Create queues only after bDoTime has been initialized */
     if (nb->bDoTime)
@@ -668,28 +659,27 @@ gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t*   deviceInfo,
         queue_properties = 0;
     }
 
-    nbnxn_gpu_create_context(nb->dev_rundata, nb->dev_info, rank);
+    nbnxn_gpu_create_context(nb->dev_rundata, nb->deviceInfo, rank);
 
     /* local/non-local GPU streams */
     nb->stream[InteractionLocality::Local] = clCreateCommandQueue(
-            nb->dev_rundata->context, nb->dev_info->ocl_gpu_id.ocl_device_id, queue_properties, &cl_error);
+            nb->dev_rundata->context, nb->deviceInfo->oclDeviceId, queue_properties, &cl_error);
     if (CL_SUCCESS != cl_error)
     {
         gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s: OpenCL error %d", rank,
-                  nb->dev_info->device_name, cl_error);
+                  nb->deviceInfo->device_name, cl_error);
     }
 
     if (nb->bUseTwoStreams)
     {
         init_plist(nb->plist[InteractionLocality::NonLocal]);
 
-        nb->stream[InteractionLocality::NonLocal] =
-                clCreateCommandQueue(nb->dev_rundata->context, nb->dev_info->ocl_gpu_id.ocl_device_id,
-                                     queue_properties, &cl_error);
+        nb->stream[InteractionLocality::NonLocal] = clCreateCommandQueue(
+                nb->dev_rundata->context, nb->deviceInfo->oclDeviceId, queue_properties, &cl_error);
         if (CL_SUCCESS != cl_error)
         {
             gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s: OpenCL error %d",
-                      rank, nb->dev_info->device_name, cl_error);
+                      rank, nb->deviceInfo->device_name, cl_error);
         }
     }
 
@@ -704,8 +694,8 @@ gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t*   deviceInfo,
      * TODO: decide about NVIDIA
      */
     nb->bPrefetchLjParam = (getenv("GMX_OCL_DISABLE_I_PREFETCH") == nullptr)
-                           && ((nb->dev_info->vendor_e == OCL_VENDOR_AMD)
-                               || (nb->dev_info->vendor_e == OCL_VENDOR_INTEL)
+                           && ((nb->deviceInfo->deviceVendor == DeviceVendor::Amd)
+                               || (nb->deviceInfo->deviceVendor == DeviceVendor::Intel)
                                || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != nullptr));
 
     /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
@@ -728,7 +718,7 @@ gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t*   deviceInfo,
 
 /*! \brief Clears the first natoms_clear elements of the GPU nonbonded force output array.
  */
-static void nbnxn_ocl_clear_f(gmx_nbnxm_gpu_t* nb, int natoms_clear)
+static void nbnxn_ocl_clear_f(NbnxmGpu* nb, int natoms_clear)
 {
     if (natoms_clear == 0)
     {
@@ -748,7 +738,7 @@ static void nbnxn_ocl_clear_f(gmx_nbnxm_gpu_t* nb, int natoms_clear)
 }
 
 //! This function is documented in the header file
-void gpu_clear_outputs(gmx_nbnxm_gpu_t* nb, bool computeVirial)
+void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 {
     nbnxn_ocl_clear_f(nb, nb->atdat->natoms);
     /* clear shift force array and energies if the outputs were
@@ -761,17 +751,17 @@ void gpu_clear_outputs(gmx_nbnxm_gpu_t* nb, bool computeVirial)
     /* kick off buffer clearing kernel to ensure concurrency with constraints/update */
     cl_int gmx_unused cl_error;
     cl_error = clFlush(nb->stream[InteractionLocality::Local]);
-    assert(CL_SUCCESS == cl_error);
+    GMX_ASSERT(cl_error == CL_SUCCESS, ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 }
 
 //! This function is documented in the header file
-void gpu_init_pairlist(gmx_nbnxm_gpu_t* nb, const NbnxnPairlistGpu* h_plist, const InteractionLocality iloc)
+void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const InteractionLocality iloc)
 {
     char sbuf[STRLEN];
     // Timing accumulation should happen only if there was work to do
     // because getLastRangeTime() gets skipped with empty lists later
     // which leads to the counter not being reset.
-    bool             bDoTime = ((nb->bDoTime == CL_TRUE) && !h_plist->sci.empty());
+    bool             bDoTime = (nb->bDoTime && !h_plist->sci.empty());
     cl_command_queue stream  = nb->stream[iloc];
     cl_plist_t*      d_plist = nb->plist[iloc];
 
@@ -826,7 +816,7 @@ void gpu_init_pairlist(gmx_nbnxm_gpu_t* nb, const NbnxnPairlistGpu* h_plist, con
 }
 
 //! This function is documented in the header file
-void gpu_upload_shiftvec(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom)
+void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 {
     cl_atomdata_t*   adat = nb->atdat;
     cl_command_queue ls   = nb->stream[InteractionLocality::Local];
@@ -835,18 +825,18 @@ void gpu_upload_shiftvec(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom)
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
         ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec.data(), 0,
-                           SHIFTS * adat->shift_vec_elem_size, ls, nullptr);
+                           SHIFTS * sizeof(nbatom->shift_vec[0]), ls, nullptr);
         adat->bShiftVecUploaded = CL_TRUE;
     }
 }
 
 //! This function is documented in the header file
-void gpu_init_atomdata(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbat)
+void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 {
     cl_int           cl_error;
     int              nalloc, natoms;
     bool             realloced;
-    bool             bDoTime = nb->bDoTime == CL_TRUE;
+    bool             bDoTime = nb->bDoTime;
     cl_timers_t*     timers  = nb->timers;
     cl_atomdata_t*   d_atdat = nb->atdat;
     cl_command_queue ls      = nb->stream[InteractionLocality::Local];
@@ -875,10 +865,8 @@ void gpu_init_atomdata(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbat)
             freeDeviceBuffer(&d_atdat->atom_types);
         }
 
-        d_atdat->f_elem_size = sizeof(rvec);
-
         d_atdat->f = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
-                                    nalloc * d_atdat->f_elem_size, nullptr, &cl_error);
+                                    nalloc * DIM * sizeof(nbat->out[0].f[0]), nullptr, &cl_error);
         GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                            ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
@@ -944,7 +932,7 @@ static void free_kernel(cl_kernel* kernel_ptr)
 {
     cl_int gmx_unused cl_error;
 
-    assert(nullptr != kernel_ptr);
+    GMX_ASSERT(kernel_ptr, "Need a valid kernel pointer");
 
     if (*kernel_ptr)
     {
@@ -1001,7 +989,7 @@ static void free_gpu_device_runtime_data(gmx_device_runtime_data_t* runData)
 }
 
 //! This function is documented in the header file
-void gpu_free(gmx_nbnxm_gpu_t* nb)
+void gpu_free(NbnxmGpu* nb)
 {
     if (nb == nullptr)
     {
@@ -1093,7 +1081,7 @@ void gpu_free(gmx_nbnxm_gpu_t* nb)
     /* Free timers and timings */
     delete nb->timers;
     sfree(nb->timings);
-    sfree(nb);
+    delete nb;
 
     if (debug)
     {
@@ -1102,7 +1090,7 @@ void gpu_free(gmx_nbnxm_gpu_t* nb)
 }
 
 //! This function is documented in the header file
-gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(gmx_nbnxm_gpu_t* nb)
+gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* nb)
 {
     return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;
 }
@@ -1117,13 +1105,13 @@ void gpu_reset_timings(nonbonded_verlet_t* nbv)
 }
 
 //! This function is documented in the header file
-int gpu_min_ci_balanced(gmx_nbnxm_gpu_t* nb)
+int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
-    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->dev_info->compute_units : 0;
+    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceInfo->compute_units : 0;
 }
 
 //! This function is documented in the header file
-gmx_bool gpu_is_kernel_ewald_analytical(const gmx_nbnxm_gpu_t* nb)
+gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
 {
     return ((nb->nbparam->eeltype == eelOclEWALD_ANA) || (nb->nbparam->eeltype == eelOclEWALD_ANA_TWIN));
 }

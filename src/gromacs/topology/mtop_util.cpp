@@ -1,8 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010.
- * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2008,2009,2010, The GROMACS development team.
+ * Copyright (c) 2012,2013,2014,2015,2016 The GROMACS development team.
  * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -523,6 +523,22 @@ int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, const int unsigned if_fla
     }
 
     return n;
+}
+
+std::array<int, eptNR> gmx_mtop_particletype_count(const gmx_mtop_t& mtop)
+{
+    std::array<int, eptNR> count = { { 0 } };
+
+    for (const auto& molblock : mtop.molblock)
+    {
+        const t_atoms& atoms = mtop.moltype[molblock.type].atoms;
+        for (int a = 0; a < atoms.nr; a++)
+        {
+            count[atoms.atom[a].ptype] += molblock.nmol;
+        }
+    }
+
+    return count;
 }
 
 static void atomcat(t_atoms* dest, const t_atoms* src, int copies, int maxres_renum, int* maxresnr)
@@ -1122,4 +1138,25 @@ void convertAtomsToMtop(t_symtab* symtab, char** name, t_atoms* atoms, gmx_mtop_
     mtop->haveMoleculeIndices = false;
 
     gmx_mtop_finalize(mtop);
+}
+
+bool haveFepPerturbedNBInteractions(const gmx_mtop_t* mtop)
+{
+    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
+    {
+        const gmx_molblock_t& molb = mtop->molblock[mb];
+        const gmx_moltype_t&  molt = mtop->moltype[molb.type];
+        for (int m = 0; m < molb.nmol; m++)
+        {
+            for (int a = 0; a < molt.atoms.nr; a++)
+            {
+                const t_atom& atom = molt.atoms.atom[a];
+                if (PERTURBED(atom))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }

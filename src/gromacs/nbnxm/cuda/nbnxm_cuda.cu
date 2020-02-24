@@ -56,6 +56,7 @@
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
@@ -125,16 +126,16 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t, const cu_nbparam_t, co
 /*********************************/
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
-static inline int calc_nb_kernel_nblock(int nwork_units, const gmx_device_info_t* dinfo)
+static inline int calc_nb_kernel_nblock(int nwork_units, const DeviceInformation* deviceInfo)
 {
     int max_grid_x_size;
 
-    assert(dinfo);
+    assert(deviceInfo);
     /* CUDA does not accept grid dimension of 0 (which can happen e.g. with an
        empty domain) and that case should be handled before this point. */
     assert(nwork_units > 0);
 
-    max_grid_x_size = dinfo->prop.maxGridSize[0];
+    max_grid_x_size = deviceInfo->prop.maxGridSize[0];
 
     /* do we exceed the grid x dimension limit? */
     if (nwork_units > max_grid_x_size)
@@ -284,7 +285,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     e
                                                        int                     evdwtype,
                                                        bool                    bDoEne,
                                                        bool                    bDoPrune,
-                                                       const gmx_device_info_t gmx_unused* devInfo)
+                                                       const DeviceInformation gmx_unused* deviceInfo)
 {
     nbnxn_cu_kfunc_ptr_t res;
 
@@ -295,7 +296,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     e
 
     /* assert assumptions made by the kernels */
     GMX_ASSERT(c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit
-                       == devInfo->prop.warpSize,
+                       == deviceInfo->prop.warpSize,
                "The CUDA kernels require the "
                "cluster_size_i*cluster_size_j/nbnxn_gpu_clusterpair_split to match the warp size "
                "of the architecture targeted.");
@@ -328,29 +329,29 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     e
 
 /*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use. */
 static inline int calc_shmem_required_nonbonded(const int               num_threads_z,
-                                                const gmx_device_info_t gmx_unused* dinfo,
+                                                const DeviceInformation gmx_unused* deviceInfo,
                                                 const cu_nbparam_t*                 nbp)
 {
     int shmem;
 
-    assert(dinfo);
+    assert(deviceInfo);
 
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float4);
+    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
 
     if (nbp->vdwtype == evdwCuCUTCOMBGEOM || nbp->vdwtype == evdwCuCUTCOMBLB)
     {
         /* i-atom LJ combination parameters in shared memory */
-        shmem += c_numClPerSupercl * c_clSize * sizeof(float2);
+        shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float2);
     }
     else
     {
         /* i-atom types in shared memory */
-        shmem += c_numClPerSupercl * c_clSize * sizeof(int);
+        shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(int);
     }
 
     return shmem;
@@ -363,7 +364,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
  *  the local, this function records the event if called with the local stream as
  *  argument and inserts in the GPU stream a wait on the event on the nonlocal.
  */
-void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxm_gpu_t* nb, const InteractionLocality interactionLocality)
+void nbnxnInsertNonlocalGpuDependency(const NbnxmGpu* nb, const InteractionLocality interactionLocality)
 {
     cudaStream_t stream = nb->stream[interactionLocality];
 
@@ -389,7 +390,7 @@ void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxm_gpu_t* nb, const Interacti
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
+void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -477,7 +478,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, con
    the local x+q H2D (and all preceding) tasks are complete and synchronize
    with this event in the non-local stream before launching the non-bonded kernel.
  */
-void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
+void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
     cu_atomdata_t* adat   = nb->atdat;
     cu_nbparam_t*  nbp    = nb->nbparam;
@@ -530,11 +531,11 @@ void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, c
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if (nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7)
+    if (nb->deviceInfo->prop.major == 3 && nb->deviceInfo->prop.minor == 7)
     {
         num_threads_z = 2;
     }
-    int nblock = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
+    int nblock = calc_nb_kernel_nblock(plist->nsci, nb->deviceInfo);
 
 
     KernelLaunchConfig config;
@@ -542,7 +543,7 @@ void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, c
     config.blockSize[1]     = c_clSize;
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = nblock;
-    config.sharedMemorySize = calc_shmem_required_nonbonded(num_threads_z, nb->dev_info, nbp);
+    config.sharedMemorySize = calc_shmem_required_nonbonded(num_threads_z, nb->deviceInfo, nbp);
     config.stream           = stream;
 
     if (debug)
@@ -552,14 +553,14 @@ void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, c
                 "\tGrid: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %zu\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2], config.gridSize[0],
-                config.gridSize[1], plist->nsci * c_numClPerSupercl, c_numClPerSupercl, plist->na_c,
-                config.sharedMemorySize);
+                config.gridSize[1], plist->nsci * c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuNumClusterPerSupercluster, plist->na_c, config.sharedMemorySize);
     }
 
     auto*      timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     const auto kernel      = select_nbnxn_kernel(
             nbp->eeltype, nbp->vdwtype, stepWork.computeEnergy,
-            (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune), nb->dev_info);
+            (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune), nb->deviceInfo);
     const auto kernelArgs =
             prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &stepWork.computeVirial);
     launchGpuKernel(kernel, config, timingEvent, "k_calc_nb", kernelArgs);
@@ -582,14 +583,14 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     int shmem;
 
     /* i-atom x in shared memory */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float4);
+    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
 
     return shmem;
 }
 
-void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality iloc, const int numParts)
+void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
     cu_atomdata_t* adat   = nb->atdat;
     cu_nbparam_t*  nbp    = nb->nbparam;
@@ -660,7 +661,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality 
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int                num_threads_z = c_cudaPruneKernelJ4Concurrency;
-    int                nblock        = calc_nb_kernel_nblock(numSciInPart, nb->dev_info);
+    int                nblock        = calc_nb_kernel_nblock(numSciInPart, nb->deviceInfo);
     KernelLaunchConfig config;
     config.blockSize[0]     = c_clSize;
     config.blockSize[1]     = c_clSize;
@@ -676,8 +677,8 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality 
                 "\tGrid: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %zu\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2], config.gridSize[0],
-                config.gridSize[1], numSciInPart * c_numClPerSupercl, c_numClPerSupercl,
-                plist->na_c, config.sharedMemorySize);
+                config.gridSize[1], numSciInPart * c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuNumClusterPerSupercluster, plist->na_c, config.sharedMemorySize);
     }
 
     auto*          timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;
@@ -713,7 +714,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality 
     }
 }
 
-void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
+void gpu_launch_cpyback(NbnxmGpu*                nb,
                         nbnxn_atomdata_t*        nbatom,
                         const gmx::StepWorkload& stepWork,
                         const AtomLocality       atomLocality)
@@ -817,8 +818,8 @@ void cuda_set_cacheconfig()
 /* X buffer operations on GPU: performs conversion from rvec to nb format. */
 void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
                            bool                      setFillerCoords,
-                           gmx_nbnxm_gpu_t*          nb,
-                           DeviceBuffer<float>       d_x,
+                           NbnxmGpu*                 nb,
+                           DeviceBuffer<gmx::RVec>   d_x,
                            GpuEventSynchronizer*     xReadyOnDevice,
                            const Nbnxm::AtomLocality locality,
                            int                       gridId,
@@ -862,12 +863,13 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         auto kernelFn = setFillerCoords ? nbnxn_gpu_x_to_nbat_x_kernel<true>
                                         : nbnxn_gpu_x_to_nbat_x_kernel<false>;
         float4*    d_xq          = adat->xq;
+        float3*    d_xFloat3     = asFloat3(d_x);
         const int* d_atomIndices = nb->atomIndices;
         const int* d_cxy_na      = &nb->cxy_na[numColumnsMax * gridId];
         const int* d_cxy_ind     = &nb->cxy_ind[numColumnsMax * gridId];
-        const auto kernelArgs =
-                prepareGpuKernelArguments(kernelFn, config, &numColumns, &d_xq, &d_x, &d_atomIndices,
-                                          &d_cxy_na, &d_cxy_ind, &cellOffset, &numAtomsPerCell);
+        const auto kernelArgs    = prepareGpuKernelArguments(kernelFn, config, &numColumns, &d_xq,
+                                                          &d_xFloat3, &d_atomIndices, &d_cxy_na,
+                                                          &d_cxy_ind, &cellOffset, &numAtomsPerCell);
         launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
     }
 
@@ -884,8 +886,8 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
  *       forces only after Local stream already done so.
  */
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLocality,
-                               DeviceBuffer<float>                        totalForcesDevice,
-                               gmx_nbnxm_gpu_t*                           nb,
+                               DeviceBuffer<gmx::RVec>                    totalForcesDevice,
+                               NbnxmGpu*                                  nb,
                                void*                                      pmeForcesDevice,
                                gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
                                int                                        atomStart,
@@ -935,8 +937,8 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     }
 
     const float3* d_fNB    = adat->f;
-    const float3* d_fPme   = (float3*)pmeForcesDevice;
-    float3*       d_fTotal = (float3*)totalForcesDevice;
+    const float3* d_fPme   = static_cast<float3*>(pmeForcesDevice);
+    float3*       d_fTotal = asFloat3(totalForcesDevice);
     const int*    d_cell   = nb->cell;
 
     const auto kernelArgs = prepareGpuKernelArguments(kernelFn, config, &d_fNB, &d_fPme, &d_fTotal,
