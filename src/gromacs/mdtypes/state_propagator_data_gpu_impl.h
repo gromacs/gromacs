@@ -85,35 +85,15 @@ public:
      * ops are offloaded. This feature is currently not available in OpenCL and
      * hence these streams are not set in these builds.
      *
-     * \note In CUDA, the update stream is created in the constructor as a temporary
-     *       solution, in place until the stream manager is introduced.
-     *       Note that this makes it impossible to construct this object in CUDA
-     *       builds executing on a host without any CUDA-capable device available.
-     *
-     * \note In CUDA, \p deviceContext is unused, hence always nullptr;
-     *       all stream arguments can also be nullptr in runs where the
-     *       respective streams are not required.
-     *       In OpenCL, \p deviceContext needs to be a valid device context.
-     *       In OpenCL runs StatePropagatorDataGpu is currently only used
-     *       with PME offload, and only on ranks with PME duty. Hence, the
-     *       \p pmeStream argument needs to be a valid OpenCL queue object
-     *       which must have been created in \p deviceContext.
-     *
-     *  \param[in] pmeStream       Device PME stream, nullptr allowed.
-     *  \param[in] localStream     Device NBNXM local stream, nullptr allowed.
-     *  \param[in] nonLocalStream  Device NBNXM non-local stream, nullptr allowed.
-     *  \param[in] deviceContext   Device context, nullptr allowed.
-     *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
+     *  \param[in] deviceStreamManager         Object that owns the DeviceContext and DeviceStreams.
+     *  \param[in] transferKind                H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
-     *  \param[in] wcycle          Wall cycle counter data.
+     *  \param[in] wcycle                      Wall cycle counter data.
      */
-    Impl(const DeviceStream*  pmeStream,
-         const DeviceStream*  localStream,
-         const DeviceStream*  nonLocalStream,
-         const DeviceContext& deviceContext,
-         GpuApiCallBehavior   transferKind,
-         int                  allocationBlockSizeDivisor,
-         gmx_wallcycle*       wcycle);
+    Impl(const DeviceStreamManager& deviceStreamManager,
+         GpuApiCallBehavior         transferKind,
+         int                        allocationBlockSizeDivisor,
+         gmx_wallcycle*             wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
      *
@@ -345,9 +325,6 @@ private:
     const DeviceStream* nonLocalStream_;
     //! GPU Update-constreaints stream.
     const DeviceStream* updateStream_;
-
-    //! An owning pointer to the update stream, in case we manage its lifetime here. Temporary.
-    DeviceStream updateStreamOwn_;
 
     // Streams to use for coordinates H2D and D2H copies (one event for each atom locality)
     EnumerationArray<AtomLocality, const DeviceStream*> xCopyStreams_ = { { nullptr } };

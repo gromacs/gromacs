@@ -487,7 +487,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     cl_atomdata_t*      adat         = nb->atdat;
     cl_plist_t*         plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
-    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
 
@@ -587,7 +587,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
     cl_nbparam_t*       nbp          = nb->nbparam;
     cl_plist_t*         plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
-    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
 
@@ -725,7 +725,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     cl_nbparam_t*       nbp          = nb->nbparam;
     cl_plist_t*         plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
-    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
     bool                bDoTime      = nb->bDoTime;
 
     if (plist->haveFreshList)
@@ -862,7 +862,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     cl_atomdata_t*      adat         = nb->atdat;
     cl_timers_t*        t            = nb->timers;
     bool                bDoTime      = nb->bDoTime;
-    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     /* don't launch non-local copy-back if there was no non-local work to do */
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))

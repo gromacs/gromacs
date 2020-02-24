@@ -46,10 +46,13 @@
 #include "gromacs/utility/gmxmpi.h"
 
 class DeviceContext;
+class DeviceStream;
 class GpuEventSynchronizer;
 
 namespace gmx
 {
+
+class DeviceStreamManager;
 
 /*! \libinternal
 
@@ -63,8 +66,9 @@ public:
      * \param[in] comm            Communicator used for simulation
      * \param[in] pmeRank         Rank of PME task
      * \param[in] deviceContext   GPU context.
+     * \param[in] deviceStream    GPU stream.
      */
-    PmePpCommGpu(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext);
+    PmePpCommGpu(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext, const DeviceStream& deviceStream);
     ~PmePpCommGpu();
 
     /*! \brief Perform steps required when buffer size changes

@@ -399,7 +399,7 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
             // GpuTaskCompletion::Wait mode the timing is expected to be done in the caller.
             wallcycle_start_nocount(wcycle, ewcWAIT_GPU_NB_L);
 
-            if (!haveStreamTasksCompleted(nb->deviceStreams[iLocality]))
+            if (!haveStreamTasksCompleted(*nb->deviceStreams[iLocality]))
             {
                 wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
@@ -412,7 +412,7 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
         }
         else if (haveResultToWaitFor)
         {
-            nb->deviceStreams[iLocality].synchronize();
+            nb->deviceStreams[iLocality]->synchronize();
         }
 
         // TODO: this needs to be moved later because conditional wait could brake timing

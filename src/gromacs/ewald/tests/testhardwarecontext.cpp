@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,16 +37,20 @@
  * Implements test environment class which performs hardware enumeration for unit tests.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
  * \ingroup module_ewald
  */
 
 #include "gmxpre.h"
 
-#include "testhardwarecontexts.h"
+#include "testhardwarecontext.h"
 
 #include <memory>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hw_info.h"
@@ -60,67 +64,60 @@ namespace gmx
 namespace test
 {
 
-/* Implements the "construct on first use" idiom to avoid any static
- * initialization order fiasco.
- *
- * Note that thread-safety of the initialization is guaranteed by the
- * C++11 language standard.
- *
- * The pointer itself (not the memory it points to) has no destructor,
- * so there is no deinitialization issue.  See
- * https://isocpp.org/wiki/faq/ctors for discussion of alternatives
- * and trade-offs. */
-const PmeTestEnvironment* getPmeTestEnv()
+TestHardwareContext::TestHardwareContext(CodePath codePath, const char* description) :
+    codePath_(codePath),
+    description_(description)
 {
-    static PmeTestEnvironment* pmeTestEnvironment = nullptr;
-    if (pmeTestEnvironment == nullptr)
+    GMX_RELEASE_ASSERT(codePath == CodePath::CPU,
+                       "A GPU code path should provide DeviceInformation to the "
+                       "TestHerdwareContext constructor.");
+    deviceContext_ = nullptr;
+    deviceStream_  = nullptr;
+}
+
+TestHardwareContext::TestHardwareContext(CodePath                 codePath,
+                                         const char*              description,
+                                         const DeviceInformation& deviceInfo) :
+    codePath_(codePath),
+    description_(description)
+{
+    GMX_RELEASE_ASSERT(codePath == CodePath::GPU,
+                       "TestHardwareContext tries to construct DeviceContext and PmeGpuProgram "
+                       "in CPU build.");
+    deviceContext_ = new DeviceContext(deviceInfo);
+    deviceStream_  = new DeviceStream(*deviceContext_, DeviceStreamPriority::Normal, false);
+    program_       = buildPmeGpuProgram(*deviceContext_);
+}
+
+TestHardwareContext::~TestHardwareContext()
+{
+    delete (deviceStream_);
+    delete (deviceContext_);
+}
+
+const DeviceInformation* TestHardwareContext::deviceInfo() const
+{
+    return &deviceContext_->deviceInfo();
+}
+
+const DeviceContext* TestHardwareContext::deviceContext() const
+{
+    return deviceContext_;
+}
+//! Get the device stream
+const DeviceStream* TestHardwareContext::deviceStream() const
+{
+    return deviceStream_;
+}
+
+const char* codePathToString(CodePath codePath)
+{
+    switch (codePath)
     {
-        // Ownership of the TestEnvironment is taken by GoogleTest, so nothing can leak
-        pmeTestEnvironment = static_cast<PmeTestEnvironment*>(
-                ::testing::AddGlobalTestEnvironment(new PmeTestEnvironment));
+        case CodePath::CPU: return "CPU";
+        case CodePath::GPU: return "GPU";
+        default: GMX_THROW(NotImplementedError("This CodePath should support codePathToString"));
     }
-    return pmeTestEnvironment;
-}
-
-void callAddGlobalTestEnvironment()
-{
-    getPmeTestEnv();
-}
-
-//! Simple hardware initialization
-static gmx_hw_info_t* hardwareInit()
-{
-    PhysicalNodeCommunicator physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
-    return gmx_detect_hardware(MDLogger{}, physicalNodeComm);
-}
-
-void PmeTestEnvironment::SetUp()
-{
-    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "(CPU) "));
-
-    hardwareInfo_ = hardwareInit();
-    if (!pme_gpu_supports_build(nullptr) || !pme_gpu_supports_hardware(*hardwareInfo_, nullptr))
-    {
-        // PME can only run on the CPU, so don't make any more test contexts.
-        return;
-    }
-    // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
-    for (int gpuIndex : getCompatibleGpus(hardwareInfo_->gpu_info))
-    {
-        const DeviceInformation* deviceInfo = getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex);
-        init_gpu(deviceInfo);
-
-        char stmp[200] = {};
-        get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
-        std::string description = "(GPU " + std::string(stmp) + ") ";
-        hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(
-                CodePath::GPU, description.c_str(), *deviceInfo));
-    }
-}
-
-void PmeTestEnvironment::TearDown()
-{
-    hardwareContexts_.clear();
 }
 
 } // namespace test

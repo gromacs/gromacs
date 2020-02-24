@@ -55,17 +55,20 @@ struct t_nrnb;
 struct gmx_pme_t;
 struct gmx_wallcycle;
 
-class DeviceContext;
 enum class PmeRunMode;
+namespace gmx
+{
+class DeviceStreamManager;
+}
 
 /*! \brief Called on the nodes that do PME exclusively */
-int gmx_pmeonly(gmx_pme_t*                pme,
-                const t_commrec*          cr,
-                t_nrnb*                   mynrnb,
-                gmx_wallcycle*            wcycle,
-                gmx_walltime_accounting_t walltime_accounting,
-                t_inputrec*               ir,
-                PmeRunMode                runMode,
-                const DeviceContext*      deviceContext);
+int gmx_pmeonly(gmx_pme_t*                      pme,
+                const t_commrec*                cr,
+                t_nrnb*                         mynrnb,
+                gmx_wallcycle*                  wcycle,
+                gmx_walltime_accounting_t       walltime_accounting,
+                t_inputrec*                     ir,
+                PmeRunMode                      runMode,
+                const gmx::DeviceStreamManager* deviceStreamManager);
 
 #endif

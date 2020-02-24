@@ -64,7 +64,6 @@ struct t_inputrec;
 struct t_nrnb;
 struct PmeGpu;
 struct gmx_wallclock_gpu_pme_t;
-struct DeviceInformation;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_pme_t;
@@ -137,20 +136,21 @@ bool gmx_pme_check_restrictions(int  pme_order,
  * related things whose lifetime can/should exceed that of a task (or
  * perhaps task manager). See Redmine #2522.
  */
-gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
-                        const NumPmeDomains&     numPmeDomains,
-                        const t_inputrec*        ir,
-                        gmx_bool                 bFreeEnergy_q,
-                        gmx_bool                 bFreeEnergy_lj,
-                        gmx_bool                 bReproducible,
-                        real                     ewaldcoeff_q,
-                        real                     ewaldcoeff_lj,
-                        int                      nthread,
-                        PmeRunMode               runMode,
-                        PmeGpu*                  pmeGpu,
-                        const DeviceInformation* deviceInfo,
-                        const PmeGpuProgram*     pmeGpuProgram,
-                        const gmx::MDLogger&     mdlog);
+gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
+                        const NumPmeDomains& numPmeDomains,
+                        const t_inputrec*    ir,
+                        gmx_bool             bFreeEnergy_q,
+                        gmx_bool             bFreeEnergy_lj,
+                        gmx_bool             bReproducible,
+                        real                 ewaldcoeff_q,
+                        real                 ewaldcoeff_lj,
+                        int                  nthread,
+                        PmeRunMode           runMode,
+                        PmeGpu*              pmeGpu,
+                        const DeviceContext* deviceContext,
+                        const DeviceStream*  deviceStream,
+                        const PmeGpuProgram* pmeGpuProgram,
+                        const gmx::MDLogger& mdlog);
 
 /*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients, from
  * pme_src. This is only called when the PME cut-off/grid size changes.
@@ -431,13 +431,6 @@ GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t*        GPU_FUNC_AR
  * \returns                  Pointer to force data
  */
 GPU_FUNC_QUALIFIER void* pme_gpu_get_device_f(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
-        GPU_FUNC_TERM_WITH_RETURN(nullptr);
-
-/*! \brief Returns the pointer to the GPU stream.
- *  \param[in] pme            The PME data structure.
- *  \returns                  Pointer to GPU stream object.
- */
-GPU_FUNC_QUALIFIER const DeviceStream* pme_gpu_get_device_stream(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
         GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Get pointer to the device synchronizer object that allows syncing on PME force calculation completion

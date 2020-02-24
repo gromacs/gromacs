@@ -54,10 +54,7 @@ class StatePropagatorDataGpu::Impl
 {
 };
 
-StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStream* /* pmeStream       */,
-                                               const DeviceStream* /* localStream     */,
-                                               const DeviceStream* /* nonLocalStream  */,
-                                               const DeviceContext& /* deviceContext   */,
+StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStreamManager& /* deviceStreamManager */,
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* allocationBlockSizeDivisor */,
                                                gmx_wallcycle* /*   wcycle */) :

@@ -59,6 +59,7 @@ struct t_QMMMrec;
 
 namespace gmx
 {
+class DeviceStreamManager;
 class GpuBonded;
 class ForceProviders;
 class StatePropagatorDataGpu;
@@ -284,6 +285,8 @@ struct t_forcerec
     // TODO: This is not supposed to be here. StatePropagatorDataGpu should be a part of
     //       general StatePropagatorData object that is passed around
     gmx::StatePropagatorDataGpu* stateGpu = nullptr;
+    // TODO: Should not be here. This is here only to pass the pointer around.
+    gmx::DeviceStreamManager* deviceStreamManager = nullptr;
 
     //! GPU device context
     DeviceContext* deviceContext = nullptr;

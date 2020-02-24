@@ -171,7 +171,6 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
                                            DeviceStreamType::NonBondedNonLocal, DeviceStreamType::PmePpTransfer,
                                            DeviceStreamType::UpdateAndConstraints });
-            expectInvalidStreams(&manager, {});
         }
 
         {

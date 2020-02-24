@@ -67,6 +67,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/manage_threading.h"
@@ -353,6 +354,7 @@ void gmx::LegacySimulator::do_md()
 
     StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 
+    // TODO: the assertions below should be handled by UpdateConstraintsBuilder.
     if (useGpuForUpdate)
     {
         GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr) || ddUsesUpdateGroups(*cr->dd) || constr == nullptr
@@ -397,14 +399,17 @@ void gmx::LegacySimulator::do_md()
         {
             GMX_LOG(mdlog.info).asParagraph().appendText("Updating coordinates on the GPU.");
         }
-
-        GMX_RELEASE_ASSERT(fr->deviceContext != nullptr,
-                           "GPU device context should be initialized to use GPU update.");
-        GMX_RELEASE_ASSERT(stateGpu->getUpdateStream() != nullptr,
-                           "Update stream can not be nullptr when update is on a GPU.");
-        integrator = std::make_unique<UpdateConstrainGpu>(*ir, *top_global, *fr->deviceContext,
-                                                          *stateGpu->getUpdateStream(),
-                                                          stateGpu->xUpdatedOnDevice());
+        GMX_RELEASE_ASSERT(fr->deviceStreamManager != nullptr,
+                           "Device stream manager should be initialized in order to use GPU "
+                           "update-constraints.");
+        GMX_RELEASE_ASSERT(
+                fr->deviceStreamManager->streamIsValid(gmx::DeviceStreamType::UpdateAndConstraints),
+                "Update stream should be initialized in order to use GPU "
+                "update-constraints.");
+        integrator = std::make_unique<UpdateConstrainGpu>(
+                *ir, *top_global, fr->deviceStreamManager->context(),
+                fr->deviceStreamManager->stream(gmx::DeviceStreamType::UpdateAndConstraints),
+                stateGpu->xUpdatedOnDevice());
 
         integrator->setPbc(PbcType::Xyz, state->box);
     }
@@ -864,21 +869,11 @@ void gmx::LegacySimulator::do_md()
                 if (havePPDomainDecomposition(cr) && simulationWork.useGpuHaloExchange
                     && useGpuForNonbonded && is1D(*cr->dd))
                 {
+                    GMX_RELEASE_ASSERT(fr->deviceStreamManager != nullptr,
+                                       "GPU device manager has to be initialized to use GPU "
+                                       "version of halo exchange.");
                     // TODO remove need to pass local stream into GPU halo exchange - Redmine #3093
-                    const DeviceStream* localStream =
-                            Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::Local);
-                    const DeviceStream* nonLocalStream = Nbnxm::gpu_get_command_stream(
-                            fr->nbv->gpu_nbv, InteractionLocality::NonLocal);
-                    GMX_RELEASE_ASSERT(
-                            fr->deviceContext != nullptr,
-                            "GPU device context should be initialized to use GPU halo exchange.");
-                    GMX_RELEASE_ASSERT(localStream != nullptr,
-                                       "Local non-bonded stream can't be nullptr when using GPU "
-                                       "halo exchange.");
-                    GMX_RELEASE_ASSERT(nonLocalStream != nullptr,
-                                       "Non-local non-bonded stream can't be nullptr when using "
-                                       "GPU halo exchange.");
-                    constructGpuHaloExchange(mdlog, *cr, *fr->deviceContext, *localStream, *nonLocalStream);
+                    constructGpuHaloExchange(mdlog, *cr, *fr->deviceStreamManager);
                 }
             }
         }

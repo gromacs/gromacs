@@ -109,13 +109,13 @@ public:
         TestReferenceData refData;
         for (const auto& context : getPmeTestEnv()->getHardwareContexts())
         {
-            CodePath   codePath = context->getCodePath();
+            CodePath   codePath = context->codePath();
             const bool supportedInput =
                     pmeSupportsInputForMode(*getPmeTestEnv()->hwinfo(), &inputRec, codePath);
             if (!supportedInput)
             {
                 /* Testing the failure for the unsupported input */
-                EXPECT_THROW_GMX(pmeInitEmpty(&inputRec, codePath, nullptr, nullptr, box,
+                EXPECT_THROW_GMX(pmeInitEmpty(&inputRec, codePath, nullptr, nullptr, nullptr, box,
                                               ewaldCoeff_q, ewaldCoeff_lj),
                                  NotImplementedError);
                 continue;
@@ -137,13 +137,13 @@ public:
                             "size %d %d %d, Ewald coefficients %g %g",
                             (method == PmeSolveAlgorithm::LennardJones) ? "Lennard-Jones" : "Coulomb",
                             gridOrdering.second.c_str(), computeEnergyAndVirial ? "with" : "without",
-                            codePathToString(codePath), context->getDescription().c_str(),
+                            codePathToString(codePath), context->description().c_str(),
                             gridSize[XX], gridSize[YY], gridSize[ZZ], ewaldCoeff_q, ewaldCoeff_lj));
 
                     /* Running the test */
-                    PmeSafePointer pmeSafe =
-                            pmeInitEmpty(&inputRec, codePath, context->getDeviceInfo(),
-                                         context->getPmeGpuProgram(), box, ewaldCoeff_q, ewaldCoeff_lj);
+                    PmeSafePointer pmeSafe = pmeInitEmpty(
+                            &inputRec, codePath, context->deviceContext(), context->deviceStream(),
+                            context->pmeGpuProgram(), box, ewaldCoeff_q, ewaldCoeff_lj);
                     pmeSetComplexGrid(pmeSafe.get(), codePath, gridOrdering.first, nonZeroGridValues);
                     const real cellVolume = box[0] * box[4] * box[8];
                     // FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure

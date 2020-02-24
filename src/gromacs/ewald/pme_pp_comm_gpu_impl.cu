@@ -49,6 +49,7 @@
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/utility/gmxmpi.h"
@@ -56,18 +57,18 @@
 namespace gmx
 {
 
-PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext) :
+PmePpCommGpu::Impl::Impl(MPI_Comm             comm,
+                         int                  pmeRank,
+                         const DeviceContext& deviceContext,
+                         const DeviceStream&  deviceStream) :
     deviceContext_(deviceContext),
+    pmePpCommStream_(deviceStream),
     comm_(comm),
     pmeRank_(pmeRank)
 {
     GMX_RELEASE_ASSERT(
             GMX_THREAD_MPI,
             "PME-PP GPU Communication is currently only supported with thread-MPI enabled");
-
-    // In CUDA we only need priority to create stream.
-    // (note that this will be moved from here in the follow-up patch)
-    pmePpCommStream_.init(deviceContext, DeviceStreamPriority::Normal, false);
 }
 
 PmePpCommGpu::Impl::~Impl() = default;
@@ -158,8 +159,11 @@ void* PmePpCommGpu::Impl::getForcesReadySynchronizer()
     return static_cast<void*>(&forcesReadySynchronizer_);
 }
 
-PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext) :
-    impl_(new Impl(comm, pmeRank, deviceContext))
+PmePpCommGpu::PmePpCommGpu(MPI_Comm             comm,
+                           int                  pmeRank,
+                           const DeviceContext& deviceContext,
+                           const DeviceStream&  deviceStream) :
+    impl_(new Impl(comm, pmeRank, deviceContext, deviceStream))
 {
 }
 

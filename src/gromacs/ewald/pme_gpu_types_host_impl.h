@@ -71,9 +71,14 @@ struct PmeGpuSpecific
 {
     /*! \brief Constructor
      *
-     * \param[in] deviceContext GPU device context.
+     * \param[in] deviceContext  GPU device context
+     * \param[in] pmeStream      GPU pme stream.
      */
-    PmeGpuSpecific(const DeviceContext& deviceContext) : deviceContext_(deviceContext) {}
+    PmeGpuSpecific(const DeviceContext& deviceContext, const DeviceStream& pmeStream) :
+        deviceContext_(deviceContext),
+        pmeStream_(pmeStream)
+    {
+    }
 
     /*! \brief
      * A handle to the GPU context.
@@ -84,7 +89,7 @@ struct PmeGpuSpecific
     const DeviceContext& deviceContext_;
 
     /*! \brief The GPU stream where everything related to the PME happens. */
-    DeviceStream pmeStream_;
+    const DeviceStream& pmeStream_;
 
     /* Synchronization events */
     /*! \brief Triggered after the PME Force Calculations have been completed */

@@ -55,6 +55,8 @@
 
 namespace gmx
 {
+
+class DeviceStreamManager;
 namespace test
 {
 
@@ -118,26 +120,31 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder);
 // PME stages
 
 //! PME initialization
-PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
-                              CodePath                 mode,
-                              const DeviceInformation* deviceInfo,
-                              const PmeGpuProgram*     pmeGpuProgram,
-                              const Matrix3x3&         box,
-                              real                     ewaldCoeff_q  = 1.0F,
-                              real                     ewaldCoeff_lj = 1.0F);
+PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
+                              CodePath             mode,
+                              const DeviceContext* deviceContext,
+                              const DeviceStream*  deviceStream,
+                              const PmeGpuProgram* pmeGpuProgram,
+                              const Matrix3x3&     box,
+                              real                 ewaldCoeff_q  = 1.0F,
+                              real                 ewaldCoeff_lj = 1.0F);
 //! Simple PME initialization (no atom data)
-PmeSafePointer pmeInitEmpty(const t_inputrec*        inputRec,
-                            CodePath                 mode,
-                            const DeviceInformation* deviceInfo,
-                            const PmeGpuProgram*     pmeGpuProgram,
-                            const Matrix3x3&         box,
-                            real                     ewaldCoeff_q,
-                            real                     ewaldCoeff_lj);
+PmeSafePointer pmeInitEmpty(const t_inputrec*    inputRec,
+                            CodePath             mode,
+                            const DeviceContext* deviceContext,
+                            const DeviceStream*  deviceStream,
+                            const PmeGpuProgram* pmeGpuProgram,
+                            const Matrix3x3&     box,
+                            real                 ewaldCoeff_q,
+                            real                 ewaldCoeff_lj);
+
 //! Simple PME initialization based on inputrec only
 PmeSafePointer pmeInitEmpty(const t_inputrec* inputRec);
+
 //! Make a GPU state-propagator manager
 std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t&     pme,
-                                                                   const DeviceContext& deviceContext);
+                                                                   const DeviceContext* deviceContext,
+                                                                   const DeviceStream* deviceStream);
 //! PME initialization with atom data and system box
 void pmeInitAtoms(gmx_pme_t*               pme,
                   StatePropagatorDataGpu*  stateGpu,

@@ -156,6 +156,24 @@ const DeviceStream& DeviceStreamManager::stream(DeviceStreamType streamToGet) co
     return impl_->streams_[streamToGet];
 }
 
+const DeviceStream& DeviceStreamManager::bondedStream(bool hasPPDomainDecomposition) const
+{
+    if (hasPPDomainDecomposition)
+    {
+        GMX_RELEASE_ASSERT(stream(DeviceStreamType::NonBondedNonLocal).isValid(),
+                           "GPU non-bonded non-local stream should be valid in order to use GPU "
+                           "version of bonded forces with domain decomposition.");
+        return stream(DeviceStreamType::NonBondedNonLocal);
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(stream(DeviceStreamType::NonBondedLocal).isValid(),
+                           "GPU non-bonded local stream should be valid in order to use GPU "
+                           "version of bonded forces without domain decomposition.");
+        return stream(DeviceStreamType::NonBondedLocal);
+    }
+}
+
 bool DeviceStreamManager::streamIsValid(DeviceStreamType streamToCheck) const
 {
     return impl_->streams_[streamToCheck].isValid();

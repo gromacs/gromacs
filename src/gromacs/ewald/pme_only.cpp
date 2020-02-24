@@ -82,6 +82,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/units.h"
@@ -597,14 +598,14 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
 #endif
 }
 
-int gmx_pmeonly(struct gmx_pme_t*         pme,
-                const t_commrec*          cr,
-                t_nrnb*                   mynrnb,
-                gmx_wallcycle*            wcycle,
-                gmx_walltime_accounting_t walltime_accounting,
-                t_inputrec*               ir,
-                PmeRunMode                runMode,
-                const DeviceContext*      deviceContext)
+int gmx_pmeonly(struct gmx_pme_t*               pme,
+                const t_commrec*                cr,
+                t_nrnb*                         mynrnb,
+                gmx_wallcycle*                  wcycle,
+                gmx_walltime_accounting_t       walltime_accounting,
+                t_inputrec*                     ir,
+                PmeRunMode                      runMode,
+                const gmx::DeviceStreamManager* deviceStreamManager)
 {
     int     ret;
     int     natoms = 0;
@@ -629,25 +630,27 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
     const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
     if (useGpuForPme)
     {
-        const DeviceStream& deviceStream = *pme_gpu_get_device_stream(pme);
-
+        GMX_RELEASE_ASSERT(
+                deviceStreamManager != nullptr,
+                "Device stream manager can not be nullptr when using GPU in PME-only rank.");
+        GMX_RELEASE_ASSERT(deviceStreamManager->streamIsValid(gmx::DeviceStreamType::Pme),
+                           "Device stream can not be nullptr when using GPU in PME-only rank");
         changePinningPolicy(&pme_pp->chargeA, pme_get_pinning_policy());
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());
         if (c_enableGpuPmePpComms)
         {
             pme_pp->pmeCoordinateReceiverGpu = std::make_unique<gmx::PmeCoordinateReceiverGpu>(
-                    deviceStream, pme_pp->mpi_comm_mysim, pme_pp->ppRanks);
+                    deviceStreamManager->stream(gmx::DeviceStreamType::Pme), pme_pp->mpi_comm_mysim,
+                    pme_pp->ppRanks);
             pme_pp->pmeForceSenderGpu = std::make_unique<gmx::PmeForceSenderGpu>(
-                    deviceStream, pme_pp->mpi_comm_mysim, pme_pp->ppRanks);
+                    deviceStreamManager->stream(gmx::DeviceStreamType::Pme), pme_pp->mpi_comm_mysim,
+                    pme_pp->ppRanks);
         }
-        GMX_RELEASE_ASSERT(
-                deviceContext != nullptr,
-                "Device context can not be nullptr when building GPU propagator data object.");
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.
-        stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(&deviceStream, *deviceContext,
-                                                                 GpuApiCallBehavior::Async,
-                                                                 pme_gpu_get_block_size(pme), wcycle);
+        stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
+                &deviceStreamManager->stream(gmx::DeviceStreamType::Pme), deviceStreamManager->context(),
+                GpuApiCallBehavior::Async, pme_gpu_get_block_size(pme), wcycle);
     }
 
     clear_nrnb(mynrnb);

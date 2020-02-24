@@ -62,7 +62,10 @@ class PmePpCommGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmePpCommGpu::PmePpCommGpu(MPI_Comm /* comm */, int /* pmeRank */, const DeviceContext& /* deviceContext */) :
+PmePpCommGpu::PmePpCommGpu(MPI_Comm /* comm */,
+                           int /* pmeRank */,
+                           const DeviceContext& /* deviceContext */,
+                           const DeviceStream& /* deviceStream */) :
     impl_(nullptr)
 {
     GMX_ASSERT(false,

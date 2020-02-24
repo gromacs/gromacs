@@ -58,6 +58,7 @@
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
@@ -121,8 +122,8 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
     // Make sure that the forces are ready on device before proceeding with the update.
     fReadyOnDevice->enqueueWaitEvent(deviceStream_);
 
-    // The integrate should save a copy of the current coordinates in d_xp_ and write updated once
-    // into d_x_. The d_xp_ is only needed by constraints.
+    // The integrate should save a copy of the current coordinates in d_xp_ and write updated
+    // once into d_x_. The d_xp_ is only needed by constraints.
     integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, doTemperatureScaling, tcstat,
                            doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
     // Constraints need both coordinates before (d_x_) and after (d_xp_) update. However, after constraints

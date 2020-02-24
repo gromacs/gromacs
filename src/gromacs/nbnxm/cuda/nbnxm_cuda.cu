@@ -366,7 +366,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
  */
 void nbnxnInsertNonlocalGpuDependency(const NbnxmGpu* nb, const InteractionLocality interactionLocality)
 {
-    const DeviceStream& deviceStream = nb->deviceStreams[interactionLocality];
+    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
 
     /* When we get here all misc operations issued in the local stream as well as
        the local xq H2D are done,
@@ -405,7 +405,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     cu_atomdata_t*      adat         = nb->atdat;
     cu_plist_t*         plist        = nb->plist[iloc];
     cu_timers_t*        t            = nb->timers;
-    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
 
@@ -485,7 +485,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     cu_nbparam_t*       nbp          = nb->nbparam;
     cu_plist_t*         plist        = nb->plist[iloc];
     cu_timers_t*        t            = nb->timers;
-    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
 
@@ -598,7 +598,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     cu_nbparam_t*       nbp          = nb->nbparam;
     cu_plist_t*         plist        = nb->plist[iloc];
     cu_timers_t*        t            = nb->timers;
-    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
 
@@ -732,7 +732,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     cu_atomdata_t*      adat         = nb->atdat;
     cu_timers_t*        t            = nb->timers;
     bool                bDoTime      = nb->bDoTime;
-    const DeviceStream& deviceStream = nb->deviceStreams[iloc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     /* don't launch non-local copy-back if there was no non-local work to do */
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
@@ -836,7 +836,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
     const int                  numAtomsPerCell = grid.numAtomsPerCell();
     Nbnxm::InteractionLocality interactionLoc  = gpuAtomToInteractionLocality(locality);
 
-    const DeviceStream& deviceStream = nb->deviceStreams[interactionLoc];
+    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLoc];
 
     int numAtoms = grid.srcAtomEnd() - grid.srcAtomBegin();
     // avoid empty kernel launch, skip to inserting stream dependency
@@ -901,7 +901,7 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     GMX_ASSERT(totalForcesDevice, "Need a valid totalForcesDevice pointer");
 
     const InteractionLocality iLocality    = gpuAtomToInteractionLocality(atomLocality);
-    const DeviceStream&       deviceStream = nb->deviceStreams[iLocality];
+    const DeviceStream&       deviceStream = *nb->deviceStreams[iLocality];
     cu_atomdata_t*            adat         = nb->atdat;
 
     size_t gmx_used_in_debug numDependency = static_cast<size_t>((useGpuFPmeReduction == true))

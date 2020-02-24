@@ -57,11 +57,13 @@ class PmePpCommGpu::Impl
 
 public:
     /*! \brief Creates PME-PP GPU communication object.
+     *
      * \param[in] comm            Communicator used for simulation
      * \param[in] pmeRank         Rank of PME task
      * \param[in] deviceContext   GPU context.
+     * \param[in] deviceStream    GPU stream.
      */
-    Impl(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext);
+    Impl(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext, const DeviceStream& deviceStream);
     ~Impl();
 
     /*! \brief Perform steps required when buffer size changes
@@ -116,10 +118,10 @@ public:
     void* getForcesReadySynchronizer();
 
 private:
-    //! Device context object
+    //! GPU context handle (not used in CUDA)
     const DeviceContext& deviceContext_;
-    //! CUDA stream used for the communication operations in this class
-    DeviceStream pmePpCommStream_;
+    //! Handle for CUDA stream used for the communication operations in this class
+    const DeviceStream& pmePpCommStream_;
     //! Remote location of PME coordinate data buffer
     void* remotePmeXBuffer_ = nullptr;
     //! Remote location of PME force data buffer

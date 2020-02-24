@@ -124,6 +124,12 @@ public:
      */
     const DeviceStream& stream(DeviceStreamType streamToGet) const;
 
+    /*! \brief Returns a handle to the GPU stream to compute bonded forces in.
+     *
+     * \param[in] hasPPDomainDecomposition Whether there is a particle-particle domain decomposition.
+     */
+    const DeviceStream& bondedStream(bool hasPPDomainDecomposition) const;
+
     /*! \brief Return whether the requested GPU stream is valid for use.
      *
      * \param[in] streamToCheck Which stream to check.

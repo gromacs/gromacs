@@ -56,6 +56,8 @@
 #include <string>
 
 #include "gromacs/ewald/ewald_utils.h"
+#include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/units.h"
@@ -462,16 +464,22 @@ void pme_gpu_sync_spread_grid(const PmeGpu* pmeGpu)
     pmeGpu->archSpecific->syncSpreadGridD2H.waitForEvent();
 }
 
-void pme_gpu_init_internal(PmeGpu* pmeGpu)
+/*! \brief Internal GPU initialization for PME.
+ *
+ * \param[in]  pmeGpu         GPU PME data.
+ * \param[in]  deviceContext  GPU context.
+ * \param[in]  deviceStream   GPU stream.
+ */
+static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceContext, const DeviceStream& deviceStream)
 {
 #if GMX_GPU == GMX_GPU_CUDA
     // Prepare to use the device that this PME task was assigned earlier.
     // Other entities, such as CUDA timing events, are known to implicitly use the device context.
-    CU_RET_ERR(cudaSetDevice(pmeGpu->deviceInfo->id), "Switching to PME CUDA device");
+    CU_RET_ERR(cudaSetDevice(deviceContext.deviceInfo().id), "Switching to PME CUDA device");
 #endif
 
     /* Allocate the target-specific structures */
-    pmeGpu->archSpecific.reset(new PmeGpuSpecific(pmeGpu->programHandle_->impl_->deviceContext_));
+    pmeGpu->archSpecific.reset(new PmeGpuSpecific(deviceContext, deviceStream));
     pmeGpu->kernelParams.reset(new PmeGpuKernelParams());
 
     pmeGpu->archSpecific->performOutOfPlaceFFT = true;
@@ -480,33 +488,12 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
      * TODO: PME could also try to pick up nice grid sizes (with factors of 2, 3, 5, 7).
      */
 
-    // timing enabling - TODO put this in gpu_utils (even though generally this is just option handling?) and reuse in NB
-    if (GMX_GPU == GMX_GPU_CUDA)
-    {
-        /* WARNING: CUDA timings are incorrect with multiple streams.
-         *          This is the main reason why they are disabled by default.
-         */
-        // TODO: Consider turning on by default when we can detect nr of streams.
-        pmeGpu->archSpecific->useTiming = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
-    }
-    else if (GMX_GPU == GMX_GPU_OPENCL)
-    {
-        pmeGpu->archSpecific->useTiming = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
-    }
-
 #if GMX_GPU == GMX_GPU_CUDA
-    pmeGpu->maxGridWidthX = pmeGpu->deviceInfo->prop.maxGridSize[0];
+    pmeGpu->maxGridWidthX = deviceContext.deviceInfo().prop.maxGridSize[0];
 #elif GMX_GPU == GMX_GPU_OPENCL
     pmeGpu->maxGridWidthX = INT32_MAX / 2;
     // TODO: is there no really global work size limit in OpenCL?
 #endif
-
-    /* Creating a PME GPU stream:
-     * - default high priority with CUDA
-     * - no priorities implemented yet with OpenCL; see #2532
-     */
-    pmeGpu->archSpecific->pmeStream_.init(pmeGpu->archSpecific->deviceContext_,
-                                          DeviceStreamPriority::High, pmeGpu->archSpecific->useTiming);
 }
 
 void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
@@ -721,13 +708,15 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
  * TODO: this should become PmeGpu::PmeGpu()
  *
  * \param[in,out] pme            The PME structure.
- * \param[in,out] deviceInfo     The GPU device information structure.
- * \param[in]     pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
+ * \param[in]     deviceContext  The GPU context.
+ * \param[in]     deviceStream   The GPU stream.
+ * \param[in,out] pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
  */
-static void pme_gpu_init(gmx_pme_t* pme, const DeviceInformation* deviceInfo, const PmeGpuProgram* pmeGpuProgram)
+static void pme_gpu_init(gmx_pme_t*           pme,
+                         const DeviceContext& deviceContext,
+                         const DeviceStream&  deviceStream,
+                         const PmeGpuProgram* pmeGpuProgram)
 {
-    GMX_ASSERT(deviceInfo != nullptr,
-               "Device information can not be nullptr when GPU is used for PME.");
     pme->gpu       = new PmeGpu();
     PmeGpu* pmeGpu = pme->gpu;
     changePinningPolicy(&pmeGpu->staging.h_forces, pme_get_pinning_policy());
@@ -743,13 +732,12 @@ static void pme_gpu_init(gmx_pme_t* pme, const DeviceInformation* deviceInfo, co
 
     pme_gpu_set_testing(pmeGpu, false);
 
-    pmeGpu->deviceInfo = deviceInfo;
     GMX_ASSERT(pmeGpuProgram != nullptr, "GPU kernels must be already compiled");
     pmeGpu->programHandle_ = pmeGpuProgram;
 
     pmeGpu->initializedClfftLibrary_ = std::make_unique<gmx::ClfftInitializer>();
 
-    pme_gpu_init_internal(pmeGpu);
+    pme_gpu_init_internal(pmeGpu, deviceContext, deviceStream);
     pme_gpu_alloc_energy_virial(pmeGpu);
 
     pme_gpu_copy_common_data_from(pme);
@@ -773,19 +761,21 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t* pme, const DeviceInformation* deviceInfo, const PmeGpuProgram* pmeGpuProgram)
+void pme_gpu_reinit(gmx_pme_t*           pme,
+                    const DeviceContext* deviceContext,
+                    const DeviceStream*  deviceStream,
+                    const PmeGpuProgram* pmeGpuProgram)
 {
     GMX_ASSERT(pme != nullptr, "Need valid PME object");
-    if (pme->runMode == PmeRunMode::CPU)
-    {
-        GMX_ASSERT(pme->gpu == nullptr, "Should not have PME GPU object");
-        return;
-    }
 
     if (!pme->gpu)
     {
+        GMX_RELEASE_ASSERT(deviceContext != nullptr,
+                           "Device context can not be nullptr when setting up PME on GPU.");
+        GMX_RELEASE_ASSERT(deviceStream != nullptr,
+                           "Device stream can not be nullptr when setting up PME on GPU.");
         /* First-time initialization */
-        pme_gpu_init(pme, deviceInfo, pmeGpuProgram);
+        pme_gpu_init(pme, *deviceContext, *deviceStream, pmeGpuProgram);
     }
     else
     {
@@ -1356,18 +1346,6 @@ void pme_gpu_set_kernelparam_coordinates(const PmeGpu* pmeGpu, DeviceBuffer<gmx:
                "The device-side buffer can not be set.");
 
     pmeGpu->kernelParams->atoms.d_coordinates = d_x;
-}
-
-const DeviceStream* pme_gpu_get_stream(const PmeGpu* pmeGpu)
-{
-    if (pmeGpu)
-    {
-        return &pmeGpu->archSpecific->pmeStream_;
-    }
-    else
-    {
-        return nullptr;
-    }
 }
 
 GpuEventSynchronizer* pme_gpu_get_forces_ready_synchronizer(const PmeGpu* pmeGpu)

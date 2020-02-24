@@ -54,8 +54,10 @@
 #include "pme_gpu_types_host.h"
 #include "pme_output.h"
 
-class GpuEventSynchronizer;
+class DeviceContext;
 struct DeviceInformation;
+class DeviceStream;
+class GpuEventSynchronizer;
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t; // only used in pme_gpu_reinit
@@ -71,7 +73,7 @@ struct t_complex;
 namespace gmx
 {
 class MDLogger;
-}
+} // namespace gmx
 
 //! Type of spline data
 enum class PmeSplineDataType
@@ -300,14 +302,6 @@ void pme_gpu_copy_input_gather_atom_data(const PmeGpu* pmeGpu);
 void pme_gpu_sync_spread_grid(const PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
- * Does the one-time GPU-framework specific PME initialization.
- * For CUDA, the PME stream is created with the highest priority.
- *
- * \param[in] pmeGpu  The PME GPU structure.
- */
-void pme_gpu_init_internal(PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
  * Initializes the CUDA FFT structures.
  *
  * \param[in] pmeGpu  The PME GPU structure.
@@ -385,13 +379,6 @@ GPU_FUNC_QUALIFIER void pme_gpu_set_kernelparam_coordinates(const PmeGpu* GPU_FU
  * \returns                  Pointer to force data
  */
 GPU_FUNC_QUALIFIER void* pme_gpu_get_kernelparam_forces(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
-        GPU_FUNC_TERM_WITH_RETURN(nullptr);
-
-/*! \brief Return pointer to GPU stream.
- * \param[in] pmeGpu         The PME GPU structure.
- * \returns                  Pointer to stream object.
- */
-GPU_FUNC_QUALIFIER const DeviceStream* pme_gpu_get_stream(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
         GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Return pointer to the sync object triggered after the PME force calculation completion
@@ -498,13 +485,16 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu* GPU_FUNC_ARGUM
 /*! \libinternal \brief
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.
  *
- * \param[in,out] pme             The PME structure.
- * \param[in]     deviceInfo      The GPU device information structure.
- * \param[in]     pmeGpuProgram   The PME GPU program data
+ * \param[in,out] pme            The PME structure.
+ * \param[in]     deviceContext  The GPU context.
+ * \param[in]     deviceStream   The GPU stream.
+ * \param[in,out] pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
+ *
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme),
-                                       const DeviceInformation* GPU_FUNC_ARGUMENT(deviceInfo),
+GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t*           GPU_FUNC_ARGUMENT(pme),
+                                       const DeviceContext* GPU_FUNC_ARGUMENT(deviceContext),
+                                       const DeviceStream*  GPU_FUNC_ARGUMENT(deviceStream),
                                        const PmeGpuProgram* GPU_FUNC_ARGUMENT(pmeGpuProgram)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief

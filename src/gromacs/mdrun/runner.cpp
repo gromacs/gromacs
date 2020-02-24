@@ -74,6 +74,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
@@ -1141,19 +1142,23 @@ int Mdrunner::mdrunner()
             EEL_PME(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
 
     // Get the device handles for the modules, nullptr when no task is assigned.
-    int                            deviceId      = -1;
-    DeviceInformation*             deviceInfo    = gpuTaskAssignments.initDevice(&deviceId);
-    std::unique_ptr<DeviceContext> deviceContext = nullptr;
-    if (deviceInfo != nullptr)
-    {
-        if (DOMAINDECOMP(cr) && thisRankHasDuty(cr, DUTY_PP))
-        {
-            dd_setup_dlb_resource_sharing(cr, deviceId);
-        }
-        deviceContext = std::make_unique<DeviceContext>(*deviceInfo);
-    }
+    int                deviceId   = -1;
+    DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice(&deviceId);
 
-    // TODO Initialize GPU streams here.
+    // timing enabling - TODO put this in gpu_utils (even though generally this is just option handling?)
+    bool useTiming = true;
+    if (GMX_GPU == GMX_GPU_CUDA)
+    {
+        /* WARNING: CUDA timings are incorrect with multiple streams.
+         *          This is the main reason why they are disabled by default.
+         */
+        // TODO: Consider turning on by default when we can detect nr of streams.
+        useTiming = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
+    }
+    else if (GMX_GPU == GMX_GPU_OPENCL)
+    {
+        useTiming = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
+    }
 
     // TODO Currently this is always built, yet DD partition code
     // checks if it is built before using it. Probably it should
@@ -1189,6 +1194,19 @@ int Mdrunner::mdrunner()
 
     const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
+
+    std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
+
+    if (deviceInfo != nullptr)
+    {
+        if (DOMAINDECOMP(cr) && thisRankHasDuty(cr, DUTY_PP))
+        {
+            dd_setup_dlb_resource_sharing(cr, deviceId);
+        }
+        deviceStreamManager = std::make_unique<DeviceStreamManager>(
+                *deviceInfo, useGpuForPme, useGpuForNonbonded, havePPDomainDecomposition(cr),
+                useGpuForUpdate, useTiming);
+    }
 
     // If the user chose a task assignment, give them some hints
     // where appropriate.
@@ -1348,32 +1366,36 @@ int Mdrunner::mdrunner()
                       opt2fn("-tablep", filenames.size(), filenames.data()),
                       opt2fns("-tableb", filenames.size(), filenames.data()), pforce);
 
-        fr->deviceContext = deviceContext.get();
+        // Save a handle to device stream manager to use elsewhere in the code
+        // TODO: Forcerec is not a correct place to store it.
+        fr->deviceStreamManager = deviceStreamManager.get();
 
         if (devFlags.enableGpuPmePPComm && !thisRankHasDuty(cr, DUTY_PME))
         {
             GMX_RELEASE_ASSERT(
-                    deviceContext != nullptr,
-                    "Device context can not be nullptr when PME-PP direct communications object.");
+                    deviceStreamManager != nullptr,
+                    "GPU device stream manager should be valid in order to use PME-PP direct "
+                    "communications.");
+            GMX_RELEASE_ASSERT(
+                    deviceStreamManager->streamIsValid(DeviceStreamType::PmePpTransfer),
+                    "GPU PP-PME stream should be valid in order to use GPU PME-PP direct "
+                    "communications.");
             fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(
-                    cr->mpi_comm_mysim, cr->dd->pme_nodeid, *deviceContext);
+                    cr->mpi_comm_mysim, cr->dd->pme_nodeid, deviceStreamManager->context(),
+                    deviceStreamManager->stream(DeviceStreamType::PmePpTransfer));
         }
 
-        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec, fr, cr, *hwinfo, deviceInfo,
-                                        fr->deviceContext, &mtop, box, wcycle);
+        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec, fr, cr, *hwinfo, useGpuForNonbonded,
+                                        deviceStreamManager.get(), &mtop, box, wcycle);
+        // TODO: Move the logic below to a GPU bonded builder
         if (useGpuForBonded)
         {
-            auto stream = havePPDomainDecomposition(cr)
-                                  ? Nbnxm::gpu_get_command_stream(
-                                            fr->nbv->gpu_nbv, gmx::InteractionLocality::NonLocal)
-                                  : Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv,
-                                                                  gmx::InteractionLocality::Local);
-            GMX_RELEASE_ASSERT(
-                    fr->deviceContext != nullptr,
-                    "Device context can not be nullptr when computing bonded interactions on GPU.");
-            GMX_RELEASE_ASSERT(stream != nullptr,
-                               "Can'r run GPU version of bonded forces in nullptr stream.");
-            gpuBonded = std::make_unique<GpuBonded>(mtop.ffparams, *fr->deviceContext, *stream, wcycle);
+            GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
+                               "GPU device stream manager should be valid in order to use GPU "
+                               "version of bonded forces.");
+            gpuBonded = std::make_unique<GpuBonded>(
+                    mtop.ffparams, deviceStreamManager->context(),
+                    deviceStreamManager->bondedStream(havePPDomainDecomposition(cr)), wcycle);
             fr->gpuBonded = gpuBonded.get();
         }
 
@@ -1450,9 +1472,11 @@ int Mdrunner::mdrunner()
     if (thisRankHasPmeGpuTask)
     {
         GMX_RELEASE_ASSERT(
-                deviceContext != nullptr,
-                "Device context can not be nullptr when building PME GPU program object.");
-        pmeGpuProgram = buildPmeGpuProgram(*deviceContext);
+                (deviceStreamManager != nullptr),
+                "GPU device stream manager should be initialized in order to use GPU for PME.");
+        GMX_RELEASE_ASSERT((deviceInfo != nullptr),
+                           "GPU device should be initialized in order to use GPU for PME.");
+        pmeGpuProgram = buildPmeGpuProgram(deviceStreamManager->context());
     }
 
     /* Initiate PME if necessary,
@@ -1478,10 +1502,23 @@ int Mdrunner::mdrunner()
         {
             try
             {
+                // TODO: This should be in the builder.
+                GMX_RELEASE_ASSERT(!useGpuForPme || (deviceStreamManager != nullptr),
+                                   "Device stream manager should be valid in order to use GPU "
+                                   "version of PME.");
+                GMX_RELEASE_ASSERT(
+                        !useGpuForPme || deviceStreamManager->streamIsValid(DeviceStreamType::Pme),
+                        "GPU PME stream should be valid in order to use GPU version of PME.");
+
+                const DeviceContext* deviceContext =
+                        useGpuForPme ? &deviceStreamManager->context() : nullptr;
+                const DeviceStream* pmeStream =
+                        useGpuForPme ? &deviceStreamManager->stream(DeviceStreamType::Pme) : nullptr;
+
                 pmedata = gmx_pme_init(cr, getNumPmeDomains(cr->dd), inputrec, nChargePerturbed != 0,
                                        nTypePerturbed != 0, mdrunOptions.reproducible, ewaldcoeff_q,
                                        ewaldcoeff_lj, gmx_omp_nthreads_get(emntPME), pmeRunMode,
-                                       nullptr, deviceInfo, pmeGpuProgram.get(), mdlog);
+                                       nullptr, deviceContext, pmeStream, pmeGpuProgram.get(), mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -1581,24 +1618,13 @@ int Mdrunner::mdrunner()
             && ((useGpuForPme && thisRankHasDuty(cr, DUTY_PME))
                 || runScheduleWork.simulationWork.useGpuBufferOps))
         {
-            const DeviceStream* pmeStream = pme_gpu_get_device_stream(fr->pmedata);
-            const DeviceStream* localStream =
-                    fr->nbv->gpu_nbv != nullptr
-                            ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::Local)
-                            : nullptr;
-            const DeviceStream* nonLocalStream =
-                    fr->nbv->gpu_nbv != nullptr
-                            ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::NonLocal)
-                            : nullptr;
             GpuApiCallBehavior transferKind = (inputrec->eI == eiMD && !doRerun && !useModularSimulator)
                                                       ? GpuApiCallBehavior::Async
                                                       : GpuApiCallBehavior::Sync;
-            GMX_RELEASE_ASSERT(
-                    deviceContext != nullptr,
-                    "Device context can not be nullptr when building GPU propagator data object.");
+            GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
+                               "GPU device stream manager should be initialized to use GPU.");
             stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                    pmeStream, localStream, nonLocalStream, *deviceContext, transferKind,
-                    pme_gpu_get_block_size(fr->pmedata), wcycle);
+                    *deviceStreamManager, transferKind, pme_gpu_get_block_size(fr->pmedata), wcycle);
             fr->stateGpu = stateGpu.get();
         }
 
@@ -1634,7 +1660,7 @@ int Mdrunner::mdrunner()
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
         gmx_pmeonly(pmedata, cr, &nrnb, wcycle, walltime_accounting, inputrec, pmeRunMode,
-                    deviceContext.get());
+                    deviceStreamManager.get());
     }
 
     wallcycle_stop(wcycle, ewcRUN);
@@ -1648,6 +1674,7 @@ int Mdrunner::mdrunner()
     // clean up cycle counter
     wallcycle_destroy(wcycle);
 
+    deviceStreamManager.reset(nullptr);
     // Free PME data
     if (pmedata)
     {
@@ -1695,7 +1722,6 @@ int Mdrunner::mdrunner()
     }
 
     free_gpu(deviceInfo);
-    deviceContext.reset(nullptr);
     sfree(fcd);
 
     if (doMembed)
@@ -1732,7 +1758,7 @@ int Mdrunner::mdrunner()
     }
 #endif
     return rc;
-}
+} // namespace gmx
 
 Mdrunner::~Mdrunner()
 {

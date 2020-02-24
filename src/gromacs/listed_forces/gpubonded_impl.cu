@@ -51,6 +51,7 @@
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/mdtypes/enerdata.h"
@@ -71,6 +72,9 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
     deviceContext_(deviceContext),
     deviceStream_(deviceStream)
 {
+    GMX_RELEASE_ASSERT(deviceStream.isValid(),
+                       "Can't run GPU version of bonded forces in stream that is not valid.");
+
     wcycle_ = wcycle;
 
     allocateDeviceBuffer(&d_forceParams_, ffparams.numTypes(), deviceContext_);
@@ -81,7 +85,7 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
                        deviceStream_, GpuApiCallBehavior::Sync, nullptr);
     vTot_.resize(F_NRE);
     allocateDeviceBuffer(&d_vTot_, F_NRE, deviceContext_);
-    clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, deviceStream);
+    clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, deviceStream_);
 
     kernelParams_.d_forceParams = d_forceParams_;
     kernelParams_.d_xq          = d_xq_;
