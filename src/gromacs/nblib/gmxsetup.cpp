@@ -234,14 +234,18 @@ void NbvSetupUtil::unpackTopologyToGmx()
     //! initial self-handling of combination rules
     //! size: 2*(numAtomTypes^2)
     nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
+
+    constexpr real c6factor = 6.0;
+    constexpr real c12factor = 12.0;
+
     for (const AtomType& atomType1 : atomTypes)
     {
-        real c6_1  = atomType1.c6();
-        real c12_1 = atomType1.c12();
+        real c6_1  = atomType1.c6() * c6factor;
+        real c12_1 = atomType1.c12() * c12factor;
         for (const AtomType& atomType2 : atomTypes)
         {
-            real c6_2  = atomType2.c6();
-            real c12_2 = atomType2.c12();
+            real c6_2  = atomType2.c6() * c6factor;
+            real c12_2 = atomType2.c12() * c12factor;
 
             real c6_combo  = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
             real c12_combo = detail::combinationFunction(c12_1, c12_2, CombinationRule::Geometric);
@@ -337,7 +341,7 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     put_atoms_in_box(PbcType::Xyz, box_, system_->coordinates());
 
     nbnxn_atomdata_t*                nbat = gmxForceCalculator_p->nbv_->nbat.get();
-    gmxForceCalculator_p->verletForces_ = gmx::PaddedHostVector<gmx::RVec>(nbat->numAtoms(), gmx::RVec(0, 0, 0));
+    gmxForceCalculator_p->verletForces_ = gmx::PaddedHostVector<gmx::RVec>(system_->topology().numAtoms(), gmx::RVec(0, 0, 0));
 
     return gmxForceCalculator_p;
 }
@@ -355,7 +359,7 @@ GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> sy
         stepWork_.computeEnergy = true;
     }
 
-    forcerec_.ntype = system->topology().getAtomTypes().size();
+    forcerec_.ntype = system->topology().numAtoms();
 }
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
