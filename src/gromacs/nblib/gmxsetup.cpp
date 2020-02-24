@@ -340,7 +340,6 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
 
     put_atoms_in_box(PbcType::Xyz, box_, system_->coordinates());
 
-    nbnxn_atomdata_t*                nbat = gmxForceCalculator_p->nbv_->nbat.get();
     gmxForceCalculator_p->verletForces_ = gmx::PaddedHostVector<gmx::RVec>(system_->topology().numAtoms(), gmx::RVec(0, 0, 0));
 
     return gmxForceCalculator_p;
