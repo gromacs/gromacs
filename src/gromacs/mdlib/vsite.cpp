@@ -2006,8 +2006,13 @@ int countInterUpdategroupVsites(const gmx_mtop_t&                           mtop
     return n_intercg_vsite;
 }
 
-int countVsites(const gmx_mtop_t& mtop)
+std::unique_ptr<gmx_vsite_t> initVsite(const gmx_mtop_t& mtop, const t_commrec* cr)
 {
+    GMX_RELEASE_ASSERT(cr != nullptr, "We need a valid commrec");
+
+    std::unique_ptr<gmx_vsite_t> vsite;
+
+    /* check if there are vsites */
     int nvsite = 0;
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -2024,17 +2029,6 @@ int countVsites(const gmx_mtop_t& mtop)
                        "c_ftypeVsiteStart and/or c_ftypeVsiteEnd do not have correct values");
         }
     }
-    return nvsite;
-}
-
-std::unique_ptr<gmx_vsite_t> initVsite(const gmx_mtop_t& mtop, const t_commrec* cr)
-{
-    GMX_RELEASE_ASSERT(cr != nullptr, "We need a valid commrec");
-
-    std::unique_ptr<gmx_vsite_t> vsite;
-
-    /* check if there are vsites */
-    int nvsite = countVsites(mtop);
 
     if (nvsite == 0)
     {

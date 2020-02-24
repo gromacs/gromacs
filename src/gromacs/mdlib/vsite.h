@@ -147,17 +147,6 @@ int countNonlinearVsites(const gmx_mtop_t& mtop);
 int countInterUpdategroupVsites(const gmx_mtop_t&                           mtop,
                                 gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingPerMoleculetype);
 
-/*! \brief Return the number of virtual sites
- *
- * \note This is used to determine whether modular simulator can be used.
- *       This function can be made static once modular simulator supports
- *       virtual sites.
- *
- * \param[in] mtop  The global topology
- * \return          The number of virtual sites found in the topology
- */
-int countVsites(const gmx_mtop_t& mtop);
-
 /* Initialize the virtual site struct,
  *
  * \param[in] mtop  The global topology
