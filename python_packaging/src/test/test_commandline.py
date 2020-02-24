@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -90,6 +90,23 @@ class SimpleCliTestCase(unittest.TestCase):
         # TODO: (FR5+) do we want to pipeline or checkpoint stdout somehow?
         operation = commandline.cli(command=[shutil.which('echo'), 'hi', 'there'], shell=False)
         assert operation.output.returncode.result() == 0
+
+    def test_command_with_stdin(self):
+        """Test that cli() can handle string input."""
+        stdin = 'hi\nthere\n'
+        subcommand = '{wc} -l | {grep} -q 2'.format(wc=shutil.which('wc'), grep=shutil.which('grep'))
+
+        operation = commandline.cli(command=['/bin/sh', '-c', subcommand], shell=False, stdin=stdin)
+        assert operation.output.returncode.result() == 0
+        operation = commandline.commandline_operation('/bin/sh', ['-c', subcommand], stdin=stdin)
+        assert operation.output.returncode.result() == 0
+
+        subcommand = '{wc} -l | {grep} -q 1'.format(wc=shutil.which('wc'), grep=shutil.which('grep'))
+
+        operation = commandline.cli(command=['/bin/sh', '-c', subcommand], shell=False, stdin=stdin)
+        assert operation.output.returncode.result() != 0
+        operation = commandline.commandline_operation('/bin/sh', ['-c', subcommand], stdin=stdin)
+        assert operation.output.returncode.result() != 0
 
 
 class CommandLineOperationSimpleTestCase(unittest.TestCase):
