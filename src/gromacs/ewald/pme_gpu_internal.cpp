@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -987,7 +987,6 @@ void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, PmeGpuProg
      * update for mixed mode on grid switch. TODO: use shared recipbox field.
      */
     std::memset(pme->gpu->common->previousBox, 0, sizeof(pme->gpu->common->previousBox));
-    pme_gpu_select_best_performing_pme_spreadgather_kernels(pme->gpu);
 }
 
 void pme_gpu_destroy(PmeGpu* pmeGpu)
@@ -1035,6 +1034,7 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* charges)
         pme_gpu_realloc_spline_data(pmeGpu);
         pme_gpu_realloc_grid_indices(pmeGpu);
     }
+    pme_gpu_select_best_performing_pme_spreadgather_kernels(pmeGpu);
 }
 
 void pme_gpu_3dfft(const PmeGpu* pmeGpu, gmx_fft_direction dir, int grid_index)
