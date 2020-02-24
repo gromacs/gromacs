@@ -131,6 +131,8 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription):
     if shell:
         raise exceptions.UsageError("Operation does not support shell processing.")
 
+    stdin = None
+
     if isinstance(command, (str, bytes)):
         command = [command]
     command = list([arg for arg in command])
@@ -146,31 +148,25 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription):
     erroroutput = ''
     logger.debug('executing subprocess')
     try:
-        # TODO: If Python >=3.5 is required, switch to subprocess.run()
-        command_output = subprocess.check_output(command,
-                                                 shell=shell,
-                                                 stdin=subprocess.DEVNULL,
-                                                 stderr=subprocess.STDOUT,
-                                                 )
-        returncode = 0
+        completed_process = subprocess.run(command,
+                                           shell=shell,
+                                           input=stdin,
+                                           check=True,
+                                           stdout=subprocess.PIPE,
+                                           stderr=subprocess.STDOUT,
+                                           universal_newlines=True
+                                           )
+        returncode = completed_process.returncode
         # TODO: Resource management code should manage a safe data object for `output`.
-        # WARNING: We have no reason to assume the output is utf-8 encoded text!!!
-        for line in command_output.decode('utf-8').split('\n'):
+        for line in completed_process.stdout.split('\n'):
             logger.debug(line)
     except subprocess.CalledProcessError as e:
         logger.info("commandline operation had non-zero return status when calling {}".format(e.cmd))
-        erroroutput = e.output.decode('utf-8')
+        erroroutput = e.output
         returncode = e.returncode
-    # resources.output.erroroutput.publish(erroroutput)
-    # resources.output.returncode.publish(returncode)
-    # `publish` is descriptive, but redundant. Access to the output data handler is
-    # assumed to coincide with publishing, and we assume data is published when the
-    # handler is released. A class with a single `publish` method is overly complex
-    # since we can just use the assignment operator.
+    # Publish outputs.
     output.erroroutput = erroroutput
     output.returncode = returncode
-    # TODO: Handle the file output at the higher level wrapper.
-    # output.file = None
 
 
 # TODO: (FR4) Make this a formal operation to properly handle gmxapi data dependencies.
