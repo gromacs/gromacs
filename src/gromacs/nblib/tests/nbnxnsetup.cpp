@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements nblib AtomType
+ * This implements nbnxn setup tests
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -44,44 +44,19 @@
 
 #include "gmxpre.h"
 
-#include "atomtype.h"
+#include "gromacs/nblib/gmxsetup.h"
 
-namespace nblib
+#include "testutils/testasserts.h"
+
+namespace nblib {
+
+namespace test {
+/*
+TEST(NBlibTest, NbfpSetCorrectly)
 {
 
-AtomType::AtomType() noexcept : name_(AtomName("")), mass_(Mass(0)), c6_(C6Param(0)), c12_(C12Param(0)) {}
-
-AtomType::AtomType(AtomName atomName, Mass mass, C6Param c6, C12Param c12) :
-    name_(std::move(atomName)),
-    mass_(mass),
-    c6_(c6),
-    c12_(c12)
-{
 }
-
-AtomName AtomType::name() const
-{
-    return name_;
-}
-
-Mass AtomType::mass() const
-{
-    return mass_;
-}
-
-C6Param AtomType::c6() const
-{
-    return c6_;
-}
-
-C12Param AtomType::c12() const
-{
-    return c12_;
-}
-
-bool operator==(const AtomType& a, const AtomType& b)
-{
-    return a.name() == b.name() && a.mass() == b.mass() && a.c6() == b.c6() && a.c12() == b.c12();
-}
+*/
+} // namespace test
 
 } // namespace nblib

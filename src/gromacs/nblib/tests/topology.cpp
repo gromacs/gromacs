@@ -152,8 +152,8 @@ TEST(NBlibTest, TopologyHasAtomTypeIds)
 TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
 {
     //! User error: Two different AtomTypes with the same name
-    AtomType U235(AtomName("Uranium"), Mass(235), C6(6.), C12(12.));
-    AtomType U238(AtomName("Uranium"), Mass(238), C6(6.), C12(12.));
+    AtomType U235(AtomName("Uranium"), Mass(235), C6Param(6.), C12Param(12.));
+    AtomType U238(AtomName("Uranium"), Mass(238), C6Param(6.), C12Param(12.));
 
     Molecule ud235("UraniumDimer235");
     ud235.addAtom(AtomName("U1"), U235);

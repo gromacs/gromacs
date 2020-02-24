@@ -52,32 +52,32 @@ struct OwAtom
 {
     AtomName name = "Ow";
     Mass     mass = 15.99940;
-    C6       c6   = 0.0026173456;
-    C12      c12  = 2.634129e-06;
+    C6Param       c6   = 0.0026173456;
+    C12Param      c12  = 2.634129e-06;
 };
 
 struct HAtom
 {
     AtomName name = "H";
     Mass     mass = 1.008;
-    C6       c6   = 0;
-    C12      c12  = 0;
+    C6Param       c6   = 0;
+    C12Param      c12  = 0;
 };
 
 struct OMetAtom
 {
     AtomName name = "OMet";
     Mass     mass = 15.999;
-    C6       c6   = 0.0022619536;
-    C12      c12  = 1.505529e-06;
+    C6Param       c6   = 0.0022619536;
+    C12Param      c12  = 1.505529e-06;
 };
 
 struct CMetAtom
 {
     AtomName name = "CMet";
     Mass     mass = 15.035; // United atom
-    C6       c6   = 0.0088755241;
-    C12      c12  = 2.0852922e-05;
+    C6Param       c6   = 0.0088755241;
+    C12Param      c12  = 2.0852922e-05;
 };
 
 std::unordered_map<std::string, Charge> Charges{ { "Ow", -0.82 },

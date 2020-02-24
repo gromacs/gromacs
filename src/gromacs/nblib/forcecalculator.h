@@ -54,12 +54,8 @@
 
 namespace nblib
 {
-
-enum class CombinationRule : int
-{
-    Geometric = 0,
-    Count     = 1
-};
+struct NbvSetupUtil;
+struct GmxForceCalculator;
 
 class ForceCalculator
 {
@@ -71,28 +67,20 @@ public:
     //! returns the forces as a vector
     gmx::PaddedHostVector<gmx::RVec> compute();
 
-    const matrix& box() const;
-
 private:
-    void                                unpackTopologyToGmx();
-    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
 
     // void printTimingsOutput(const NBKernelOptions &options,
     //                        const SimulationState &system,
     //                        const gmx::index      &numPairs,
     //                        gmx_cycles_t           cycles);
 
-    SimulationState system_;
-    NBKernelOptions options_;
+    //! Struct to handle translation from NBLIB inputs to setup GMX data structures
+    std::unique_ptr <NbvSetupUtil>       nbvSetupUtil_;
+    //! GROMACS force calculator to compute forces
+    std::unique_ptr<GmxForceCalculator>  gmxForceCalculator_;
 
-    //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters_;
-    //! Atom masses
-    std::vector<real> masses_;
-    //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoAllVdw_;
-    //! Legacy matrix for box
-    matrix box_;
+    //    //! Atom masses
+    //    std::vector<real> masses_;
 };
 
 } // namespace nblib
