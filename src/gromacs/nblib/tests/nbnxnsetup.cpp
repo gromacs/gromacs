@@ -32,77 +32,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \inpublicapi \file
+/*! \internal \file
  * \brief
- * Implements nblib simulation box
+ * This implements nbnxn setup tests
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
- * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_BONDS_H
-#define GROMACS_BONDS_H
 
-#include <vector>
+#include "gmxpre.h"
 
-#include "atomtype.h"
+#include "gromacs/nblib/gmxsetup.h"
 
-namespace nblib
+#include "testutils/testasserts.h"
+
+namespace nblib {
+
+namespace test {
+/*
+TEST(NBlibTest, NbfpSetCorrectly)
 {
-using ParticleName  = std::string;
-using ForceConstant = real;
-using EquilDistance = real;
 
-//! Harmonic bond type
-//
-// It represents the interaction of the form
-// V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^2
-class HarmonicBond
-{
-public:
-    HarmonicBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
-
-private:
-    ParticleName atomNameI_;
-    ParticleName atomNameJ_;
-    ForceConstant forceConstant_;
-    EquilDistance equilDistance_;
-};
-
-
-//! GROMOS bond type
-//
-// It represents the interaction of the form
-// V(r; forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilDistance^2)^2
-class G96Bond
-{
-public:
-    G96Bond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
-
-private:
-    ParticleName atomNameI_;
-    ParticleName atomNameJ_;
-    ForceConstant forceConstant_;
-    EquilDistance equilDistance_;
-};
-
-//! Half-attractive quartic bond type
-//
-// It represents the interaction of the form
-// V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^4
-class HalfAttractiveQuarticBond
-{
-public:
-    HalfAttractiveQuarticBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
-
-private:
-    ParticleName atomNameI_;
-    ParticleName atomNameJ_;
-    ForceConstant forceConstant_;
-    EquilDistance equilDistance_;
-};
+}
+*/
+} // namespace test
 
 } // namespace nblib
-#endif // GROMACS_BONDS_H

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,59 +32,74 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \inpublicapi \file
  * \brief
- * Implements nblib AtomType
+ * Implements nblib simulation box
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_ATOMS_H
-#define GROMACS_ATOMS_H
+#ifndef GROMACS_BONDTYPES_H
+#define GROMACS_BONDTYPES_H
 
-#include <string>
-#include <tuple>
-#include <unordered_map>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
-
-#include "interactions.h"
-
-class TopologyBuilder;
+#include "atomtype.h"
 
 namespace nblib
 {
+using BondTypeName  = std::string;
+using ForceConstant = real;
+using EquilDistance = real;
 
-class Atom {
+//! Harmonic bond type
+//
+// It represents the interaction of the form
+// V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^2
+class HarmonicBondType
+{
 public:
-    Atom() noexcept;
-
-    Atom(std::string atomName,
-             real mass,
-             real charge,
-             real c6,
-             real c12);
-
-    std::string name() const;
-
-    real mass() const;
-
-    real charge() const;
-
-    real c6() const;
-
-    real c12() const;
+    HarmonicBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    std::string name_;
-    real mass_;
-    real charge_;
-    real c6_;
-    real c12_;
+    BondTypeName bondTypeName_;
+    ForceConstant forceConstant_;
+    EquilDistance equilDistance_;
 };
 
-} //namespace nblib
-#endif //GROMACS_MOLECULES_H
+
+//! GROMOS bond type
+//
+// It represents the interaction of the form
+// V(r; forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilDistance^2)^2
+class G96BondType
+{
+public:
+    G96BondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
+
+private:
+    BondTypeName bondTypeName_;
+    ForceConstant forceConstant_;
+    EquilDistance equilDistance_;
+};
+
+//! Half-attractive quartic bond type
+//
+// It represents the interaction of the form
+// V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^4
+class HalfAttractiveQuarticBondType
+{
+public:
+    HalfAttractiveQuarticBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
+
+private:
+    BondTypeName bondTypeName_;
+    ForceConstant forceConstant_;
+    EquilDistance equilDistance_;
+};
+
+} // namespace nblib
+#endif // GROMACS_BONDTYPES_H

@@ -43,31 +43,28 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
-#include "bonds.h"
+#include "bondtypes.h"
 
 namespace nblib
 {
 
-HarmonicBond::HarmonicBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance)
+HarmonicBondType::HarmonicBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    atomNameI_ = atomNameI;
-    atomNameJ_ = atomNameJ;
+    bondTypeName_ = bondTypeName;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }
 
-G96Bond::G96Bond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance)
+G96BondType::G96BondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    atomNameI_ = atomNameI;
-    atomNameJ_ = atomNameJ;
+    bondTypeName_ = bondTypeName;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }
 
-HalfAttractiveQuarticBond::HalfAttractiveQuarticBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance)
+HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    atomNameJ_ = atomNameJ;
-    atomNameJ_ = atomNameJ;
+    bondTypeName_ = bondTypeName;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }

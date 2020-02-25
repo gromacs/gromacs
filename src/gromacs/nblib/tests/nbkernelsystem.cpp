@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/forcecalculator.h"
+#include "gromacs/nblib/gmxsetup.h"
 #include "gromacs/nblib/integrator.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
@@ -128,11 +129,13 @@ TEST(NBlibTest, CanIntegrateSystem)
     auto simState        = spcMethanolSystemBuilder.setupSimulationState();
     auto forceCalculator = ForceCalculator(simState, options);
 
+    matrix box;
+    gmx::fillLegacyMatrix(simState.box().matrix(), box);
+
     for (int iter = 0; iter < options.numIterations; iter++)
     {
         gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
-        EXPECT_NO_THROW(integrateCoordinates(forces, options, forceCalculator.box(),
-                                             simState.coordinates()));
+        EXPECT_NO_THROW(integrateCoordinates(forces, options, box, simState.coordinates()));
     }
 }
 /*

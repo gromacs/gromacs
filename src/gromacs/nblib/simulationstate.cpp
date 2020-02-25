@@ -87,7 +87,7 @@ const Topology& SimulationState::topology() const
     return topology_;
 }
 
-Box& SimulationState::box()
+const Box& SimulationState::box()
 {
     return box_;
 }
