@@ -62,13 +62,13 @@ using EquilDistance = real;
 class HarmonicBond
 {
 public:
-    HarmonicBond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance);
+    HarmonicBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName atomName_;
+    ParticleName atomNameI_;
+    ParticleName atomNameJ_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
-
 };
 
 
@@ -79,13 +79,13 @@ private:
 class G96Bond
 {
 public:
-    G96Bond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance);
+    G96Bond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName atomName_;
+    ParticleName atomNameI_;
+    ParticleName atomNameJ_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
-
 };
 
 //! Half-attractive quartic bond type
@@ -95,13 +95,13 @@ private:
 class HalfAttractiveQuarticBond
 {
 public:
-    HalfAttractiveQuarticBond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance);
+    HalfAttractiveQuarticBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName atomName_;
+    ParticleName atomNameI_;
+    ParticleName atomNameJ_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
-
 };
 
 } // namespace nblib

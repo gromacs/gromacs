@@ -48,23 +48,26 @@
 namespace nblib
 {
 
-HarmonicBond::HarmonicBond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance)
+HarmonicBond::HarmonicBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    atomName_ = atomName;
+    atomNameI_ = atomNameI;
+    atomNameJ_ = atomNameJ;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }
 
-G96Bond::G96Bond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance)
+G96Bond::G96Bond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    atomName_ = atomName;
+    atomNameI_ = atomNameI;
+    atomNameJ_ = atomNameJ;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }
 
-HalfAttractiveQuarticBond::HalfAttractiveQuarticBond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance)
+HalfAttractiveQuarticBond::HalfAttractiveQuarticBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    atomName_ = atomName;
+    atomNameJ_ = atomNameJ;
+    atomNameJ_ = atomNameJ;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }
