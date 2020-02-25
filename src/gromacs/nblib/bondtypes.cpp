@@ -48,26 +48,25 @@
 namespace nblib
 {
 
-HarmonicBondType::HarmonicBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
-{
-    bondTypeName_ = bondTypeName;
-    forceConstant_ = forceConstant;
-    equilDistance_ = equilDistance;
-}
+HarmonicBondType::HarmonicBondType()
+{}
 
-G96BondType::G96BondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
-{
-    bondTypeName_ = bondTypeName;
-    forceConstant_ = forceConstant;
-    equilDistance_ = equilDistance;
-}
+HarmonicBondType::HarmonicBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :
+    bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
+{}
 
-HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
-{
-    bondTypeName_ = bondTypeName;
-    forceConstant_ = forceConstant;
-    equilDistance_ = equilDistance;
-}
+G96BondType::G96BondType()
+{}
 
+G96BondType::G96BondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :
+    bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
+{}
+
+HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType()
+{}
+
+HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :
+    bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
+{}
 
 }

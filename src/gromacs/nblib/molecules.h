@@ -136,6 +136,17 @@ private:
         real        charge_;
     };
 
+    template <class Bond>
+    struct BondData {
+        std::unordered_map<BondName, Bond> bondTypes_;
+        std::vector<std::tuple<ParticleName, ParticleName, BondName>> bonds_;
+    };
+
+    // template <class BondTypes...>
+    // struct BondTypesData {
+
+    // }
+
     //! one entry per atom in molecule
     std::vector<AtomData> atoms_;
 
@@ -149,14 +160,9 @@ private:
     //! so we delay the conversion until TopologyBuilder requests it
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> exclusionsByName_;
 
-    std::unordered_map<BondTypeName, HarmonicBondType> harmonicBondTypes_;
-    std::vector<std::tuple<ParticleName, ParticleName, BondTypeName>> harmonicBonds_;
-
-    std::unordered_map<BondTypeName, G96BondType> g96BondTypes_;
-    std::vector<std::tuple<ParticleName, ParticleName, BondTypeName>> g96Bonds_;
-
-    std::unordered_map<BondTypeName, HalfAttractiveQuarticBondType> halfAttractiveBondTypes_;
-    std::vector<std::tuple<ParticleName, ParticleName, BondTypeName>> halfAttractiveBonds_;
+    BondData<HarmonicBondType> harmonicBonds_;
+    BondData<G96BondType> g96Bonds_;
+    BondData<HalfAttractiveQuarticBondType> halfAttractiveBonds_;
 
 };
 

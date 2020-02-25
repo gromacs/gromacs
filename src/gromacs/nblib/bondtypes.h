@@ -51,7 +51,7 @@
 
 namespace nblib
 {
-using BondTypeName  = std::string;
+using BondName  = std::string;
 using ForceConstant = real;
 using EquilDistance = real;
 
@@ -62,10 +62,12 @@ using EquilDistance = real;
 class HarmonicBondType
 {
 public:
-    HarmonicBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
+    HarmonicBondType();
 
-    BondTypeName bondTypeName() const {
-        return bondTypeName_;
+    HarmonicBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
+
+    BondName bondTypeName() const {
+        return bondName_;
     }
 
     ForceConstant forceConstant() const {
@@ -77,7 +79,7 @@ public:
     }
 
 private:
-    BondTypeName bondTypeName_;
+    BondName bondName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
@@ -90,10 +92,13 @@ private:
 class G96BondType
 {
 public:
-    G96BondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondTypeName bondTypeName() const {
-        return bondTypeName_;
+    G96BondType();
+
+    G96BondType(BondName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
+
+    BondName bondTypeName() const {
+        return bondName_;
     }
 
     ForceConstant forceConstant() const {
@@ -105,7 +110,7 @@ public:
     }
 
 private:
-    BondTypeName bondTypeName_;
+    BondName bondName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
@@ -117,10 +122,13 @@ private:
 class HalfAttractiveQuarticBondType
 {
 public:
-    HalfAttractiveQuarticBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondTypeName bondTypeName() const {
-        return bondTypeName_;
+    HalfAttractiveQuarticBondType();
+
+    HalfAttractiveQuarticBondType(BondName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
+
+    BondName bondTypeName() const {
+        return bondName_;
     }
 
     ForceConstant forceConstant() const {
@@ -131,7 +139,7 @@ public:
         return equilDistance_;
     }
 private:
-    BondTypeName bondTypeName_;
+    BondName bondName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
