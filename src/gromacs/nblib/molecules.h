@@ -43,8 +43,8 @@
  * \inpublicapi
  * \ingroup nblib
  */
-#ifndef GROMACS_MOLECULES_H
-#define GROMACS_MOLECULES_H
+#ifndef GMX_NBLIB_MOLECULES_H
+#define GMX_NBLIB_MOLECULES_H
 
 #include <string>
 #include <tuple>
@@ -161,4 +161,4 @@ private:
 };
 
 } // namespace nblib
-#endif // GROMACS_MOLECULES_H
+#endif // GMX_NBLIB_MOLECULES_H
