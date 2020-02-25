@@ -65,9 +65,9 @@ public:
     HarmonicBond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName _atomName;
-    ForceConstant _forceConstant;
-    EquilDistance _equilDistance;
+    ParticleName atomName_;
+    ForceConstant forceConstant_;
+    EquilDistance equilDistance_;
 
 };
 
@@ -82,9 +82,9 @@ public:
     G96Bond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName _atomName;
-    ForceConstant _forceConstant;
-    EquilDistance _equilDistance;
+    ParticleName atomName_;
+    ForceConstant forceConstant_;
+    EquilDistance equilDistance_;
 
 };
 
@@ -98,9 +98,9 @@ public:
     HalfAttractiveQuartic(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName _atomName;
-    ForceConstant _forceConstant;
-    EquilDistance _equilDistance;
+    ParticleName atomName_;
+    ForceConstant forceConstant_;
+    EquilDistance equilDistance_;
 
 };
 
