@@ -35,6 +35,15 @@ applied to them.
 
 :issue:`3375`
 
+Calculate Coulomb and LJ reciprocal terms in rerun
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Reruns would not calculate Coulomb and LJ reciprocal terms, leading
+to wrong potential energies. This bug only showed up if GROMACS was
+compiled without GPU support.
+
+:issue:`3400`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

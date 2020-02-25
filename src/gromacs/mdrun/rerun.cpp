@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,8 +40,6 @@
  * \ingroup module_mdrun
  */
 #include "gmxpre.h"
-
-#include "config.h"
 
 #include <cinttypes>
 #include <cmath>
@@ -553,7 +551,7 @@ void gmx::Integrator::do_rerun()
         force_flags = (GMX_FORCE_STATECHANGED |
                        GMX_FORCE_DYNAMICBOX |
                        GMX_FORCE_ALLFORCES |
-                       (GMX_GPU ? GMX_FORCE_VIRIAL : 0) |  // TODO: Get rid of this once #2649 is solved
+                       GMX_FORCE_VIRIAL |  // TODO: Get rid of this once #2649 and #3400 are solved
                        GMX_FORCE_ENERGY |
                        (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
 
