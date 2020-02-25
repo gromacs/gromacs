@@ -68,7 +68,7 @@ Molecule& Molecule::addParticle(const ParticleName& particleName,
 
     particles_.emplace_back(ParticleData{ particleName, residueName, particleType.name(), charge });
 
-    //! Add self exclusion. We just added the atom, so we know its index and that the exclusion doesn't exist yet
+    //! Add self exclusion. We just added the particle, so we know its index and that the exclusion doesn't exist yet
     std::size_t id = particles_.size() - 1;
     exclusions_.emplace_back(std::make_tuple(id, id));
 
@@ -112,28 +112,29 @@ void Molecule::addHarmonicBond(HarmonicType harmonicBond)
     harmonicInteractions_.push_back(std::move(harmonicBond));
 }
 
-void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
+void Molecule::addExclusion(const int particleIndex, const int particleIndexToExclude)
 {
-    // We do not need to add exclusion in case the atom indexes are the same
-    // because self exclusion are added by addAtom
-    if (atomIndex != atomIndexToExclude)
+    // We do not need to add exclusion in case the particle indexes are the same
+    // because self exclusion are added by addParticle
+    if (particleIndex != particleIndexToExclude)
     {
-        exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndexToExclude));
-        exclusions_.emplace_back(std::make_tuple(atomIndexToExclude, atomIndex));
+        exclusions_.emplace_back(std::make_tuple(particleIndex, particleIndexToExclude));
+        exclusions_.emplace_back(std::make_tuple(particleIndexToExclude, particleIndex));
     }
 }
 
-void Molecule::addExclusion(std::tuple<std::string, std::string> atom,
-                            std::tuple<std::string, std::string> atomToExclude)
+void Molecule::addExclusion(std::tuple<std::string, std::string> particle,
+                            std::tuple<std::string, std::string> particleToExclude)
 {
     //! duplication for the swapped pair happens in getExclusions()
-    exclusionsByName_.emplace_back(std::make_tuple(
-            std::get<0>(atom), std::get<1>(atom), std::get<0>(atomToExclude), std::get<1>(atomToExclude)));
+    exclusionsByName_.emplace_back(std::make_tuple(std::get<0>(particle), std::get<1>(particle),
+                                                   std::get<0>(particleToExclude),
+                                                   std::get<1>(particleToExclude)));
 }
 
-void Molecule::addExclusion(const std::string& atomName, const std::string& atomNameToExclude)
+void Molecule::addExclusion(const std::string& particleName, const std::string& particleNameToExclude)
 {
-    addExclusion(std::make_tuple(atomName, name_), std::make_tuple(atomNameToExclude, name_));
+    addExclusion(std::make_tuple(particleName, name_), std::make_tuple(particleNameToExclude, name_));
 }
 
 const ParticleType& Molecule::at(const std::string& particleTypeName) const
@@ -143,7 +144,7 @@ const ParticleType& Molecule::at(const std::string& particleTypeName) const
 
 std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 {
-    //! tuples of (atomName, residueName, index)
+    //! tuples of (particleName, residueName, index)
     std::vector<std::tuple<std::string, std::string, int>> indexKey;
     indexKey.reserve(numParticlesInMolecule());
 
@@ -172,20 +173,20 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
     //! convert exclusions given by names to indices and append
     for (auto& tup : exclusionsByName_)
     {
-        const std::string& atomName1    = std::get<0>(tup);
-        const std::string& residueName1 = std::get<1>(tup);
-        const std::string& atomName2    = std::get<2>(tup);
-        const std::string& residueName2 = std::get<3>(tup);
+        const std::string& particleName1 = std::get<0>(tup);
+        const std::string& residueName1  = std::get<1>(tup);
+        const std::string& particleName2 = std::get<2>(tup);
+        const std::string& residueName2  = std::get<3>(tup);
 
         //! look up first index (binary search)
         auto it1 = std::lower_bound(std::begin(indexKey), std::end(indexKey),
-                                    std::make_tuple(atomName1, residueName2, 0), sortKey);
+                                    std::make_tuple(particleName1, residueName2, 0), sortKey);
 
-        //! make sure we have the (atomName,residueName) combo
-        if (it1 == std::end(indexKey) or std::get<0>(*it1) != atomName1 or std::get<1>(*it1) != residueName1)
+        //! make sure we have the (particleName,residueName) combo
+        if (it1 == std::end(indexKey) or std::get<0>(*it1) != particleName1 or std::get<1>(*it1) != residueName1)
         {
-            throw std::runtime_error((std::string("Atom ") += atomName1 + std::string(" in residue ") +=
-                                      residueName1 + std::string(" not found in list of atoms\n"))
+            throw std::runtime_error((std::string("Particle ") += particleName1 + std::string(" in residue ") +=
+                                      residueName1 + std::string(" not found in list of particles\n"))
                                              .c_str());
         }
 
@@ -193,13 +194,13 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 
         //! look up second index (binary search)
         auto it2 = std::lower_bound(std::begin(indexKey), std::end(indexKey),
-                                    std::make_tuple(atomName2, residueName2, 0), sortKey);
+                                    std::make_tuple(particleName2, residueName2, 0), sortKey);
 
-        //! make sure we have the (atomName,residueName) combo
-        if (it2 == std::end(indexKey) or std::get<0>(*it2) != atomName2 or std::get<1>(*it2) != residueName2)
+        //! make sure we have the (particleName,residueName) combo
+        if (it2 == std::end(indexKey) or std::get<0>(*it2) != particleName2 or std::get<1>(*it2) != residueName2)
         {
-            throw std::runtime_error((std::string("Atom ") += atomName2 + std::string(" in residue ") +=
-                                      residueName2 + std::string(" not found in list of atoms\n"))
+            throw std::runtime_error((std::string("Particle ") += particleName2 + std::string(" in residue ") +=
+                                      residueName2 + std::string(" not found in list of particles\n"))
                                              .c_str());
         }
 

@@ -70,7 +70,7 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
     };
 
     //! initialize pair of iterators delimiting the range of exclusions for
-    //! the first atom in the list
+    //! the first particle in the list
     GMX_ASSERT(!tupleList.empty(), "tupleList must not be empty\n");
     auto range = std::equal_range(std::begin(tupleList), std::end(tupleList), tupleList[0], firstLowerThan);
     auto it1 = range.first;
@@ -80,15 +80,15 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
     while (it1 != std::end(tupleList))
     {
         gmx::ExclusionBlock localBlock;
-        //! loop over all exclusions for current atom
+        //! loop over all exclusions for current particle
         for (; it1 != it2; ++it1)
         {
-            localBlock.atomNumber.push_back(std::get<1>(*it1));
+            localBlock.particleNumber.push_back(std::get<1>(*it1));
         }
 
         ret.push_back(localBlock);
 
-        //! update the upper bound of the range for the next atom
+        //! update the upper bound of the range for the next particle
         if (it1 != end(tupleList))
         {
             it2 = std::upper_bound(it1, std::end(tupleList), *it1, firstLowerThan);
@@ -100,11 +100,11 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
 
 std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset)
 {
-    //! shift atom numbers by offset
+    //! shift particle numbers by offset
     for (auto& localBlock : inBlock)
     {
-        std::transform(std::begin(localBlock.atomNumber), std::end(localBlock.atomNumber),
-                       std::begin(localBlock.atomNumber), [offset](auto i) { return i + offset; });
+        std::transform(std::begin(localBlock.particleNumber), std::end(localBlock.particleNumber),
+                       std::begin(localBlock.particleNumber), [offset](auto i) { return i + offset; });
     }
 
     return inBlock;
@@ -121,7 +121,7 @@ gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
     std::vector<gmx::ExclusionBlock> exclusionBlockGlobal;
     exclusionBlockGlobal.reserve(numParticles_);
 
-    size_t atomNumberOffset = 0;
+    size_t particleNumberOffset = 0;
     for (const auto& molNumberTuple : moleculesList)
     {
         const Molecule& molecule = std::get<0>(molNumberTuple);
@@ -133,19 +133,20 @@ gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
         //! duplicate the exclusionBlockPerMolecule for the number of Molecules of (numMols)
         for (size_t i = 0; i < numMols; ++i)
         {
-            auto offsetExclusions = detail::offsetGmxBlock(exclusionBlockPerMolecule, atomNumberOffset);
+            auto offsetExclusions =
+                    detail::offsetGmxBlock(exclusionBlockPerMolecule, particleNumberOffset);
 
             std::copy(std::begin(offsetExclusions), std::end(offsetExclusions),
                       std::back_inserter(exclusionBlockGlobal));
 
-            atomNumberOffset += molecule.numParticlesInMolecule();
+            particleNumberOffset += molecule.numParticlesInMolecule();
         }
     }
 
     gmx::ListOfLists<int> exclusionsListOfListsGlobal;
     for (const auto& block : exclusionBlockGlobal)
     {
-        exclusionsListOfListsGlobal.pushBack(block.atomNumber);
+        exclusionsListOfListsGlobal.pushBack(block.particleNumber);
     }
 
     return exclusionsListOfListsGlobal;
@@ -167,9 +168,9 @@ std::vector<T> TopologyBuilder::extractParticleTypeQuantity(Extractor extractor)
 
         for (size_t i = 0; i < numMols; ++i)
         {
-            for (auto& atomData : molecule.particles_)
+            for (auto& particleData : molecule.particles_)
             {
-                ret.push_back(extractor(atomData, molecule.particleTypes_));
+                ret.push_back(extractor(particleData, molecule.particleTypes_));
             }
         }
     }

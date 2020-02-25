@@ -60,33 +60,33 @@ namespace nblib
 /*! \internal \brief
  * The options for the nonbonded kernel caller
  */
-    struct NBKernelOptions
-    {
-        //! Whether to use a GPU, currently GPUs are not supported
-        bool useGpu = false;
-        //! The number of OpenMP threads to use
-        int numThreads = 1;
-        //! The SIMD type for the kernel
-        BenchMarkKernels nbnxmSimd = BenchMarkKernels::SimdAuto;
-        //! The LJ combination rule
-        BenchMarkCombRule ljCombinationRule = BenchMarkCombRule::RuleGeom;
-        //! Use i-cluster half-LJ optimization for clusters with <= half LJ
-        bool useHalfLJOptimization = false;
-        //! The pairlist and interaction cut-off
-        real pairlistCutoff = 1.0;
-        //! Whether to compute energies (shift forces for virial are always computed on CPU)
-        bool computeVirialAndEnergy = false;
-        //! The Coulomb interaction function
-        BenchMarkCoulomb coulombType = BenchMarkCoulomb::Pme;
-        //! Whether to use tabulated PME grid correction instead of analytical, not applicable with simd=no
-        bool useTabulatedEwaldCorr = false;
-        //! The number of iterations for each kernel
-        int numIterations = 100;
-        //! Print cycles/pair instead of pairs/cycle
-        bool cyclesPerPair = false;
-        //! The time step
-        real timestep = 0.001;
-    };
+struct NBKernelOptions
+{
+    //! Whether to use a GPU, currently GPUs are not supported
+    bool useGpu = false;
+    //! The number of OpenMP threads to use
+    int numThreads = 1;
+    //! The SIMD type for the kernel
+    BenchMarkKernels nbnxmSimd = BenchMarkKernels::SimdAuto;
+    //! The LJ combination rule
+    BenchMarkCombRule ljCombinationRule = BenchMarkCombRule::RuleGeom;
+    //! Use i-cluster half-LJ optimization for clusters with <= half LJ
+    bool useHalfLJOptimization = false;
+    //! The pairlist and interaction cut-off
+    real pairlistCutoff = 1.0;
+    //! Whether to compute energies (shift forces for virial are always computed on CPU)
+    bool computeVirialAndEnergy = false;
+    //! The Coulomb interaction function
+    BenchMarkCoulomb coulombType = BenchMarkCoulomb::Pme;
+    //! Whether to use tabulated PME grid correction instead of analytical, not applicable with simd=no
+    bool useTabulatedEwaldCorr = false;
+    //! The number of iterations for each kernel
+    int numIterations = 100;
+    //! Print cycles/pair instead of pairs/cycle
+    bool cyclesPerPair = false;
+    //! The time step
+    real timestep = 0.001;
+};
 
 /*! \brief
  * Sets up and runs nonbonded kernel calls
@@ -95,7 +95,7 @@ namespace nblib
  * by the factor \p sizeFactor, which has to be a power of 2.
  * Timings can be printed to stdout.
  *
- * \param[in,out] system The atomic system to compute nonbonded forces for
+ * \param[in,out] system The particle system to compute nonbonded forces for
  * \param[in] options How the benchmark will be run.
  * \param[in] printTimings Whether to print cycle counters
  */

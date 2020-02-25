@@ -93,13 +93,13 @@ TEST(NBlibTest, CanConstructMoleculeWithChargeWithResidueName)
     EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), ResidueName("ar2"), Charge(0), Ar));
 }
 
-TEST(NBlibTest, CanGetNumAtomsInMolecule)
+TEST(NBlibTest, CanGetNumParticlesInMolecule)
 {
     WaterMoleculeBuilder waterMolecule;
-    Molecule             water    = waterMolecule.waterMolecule();
-    auto                 numAtoms = water.numParticlesInMolecule();
+    Molecule             water        = waterMolecule.waterMolecule();
+    auto                 numParticles = water.numParticlesInMolecule();
 
-    EXPECT_EQ(3, numAtoms);
+    EXPECT_EQ(3, numParticles);
 }
 
 TEST(NBlibTest, CanConstructExclusionListFromNames)

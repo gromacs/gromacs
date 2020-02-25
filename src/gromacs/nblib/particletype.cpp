@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements nblib AtomType
+ * Implements nblib ParticleType
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>

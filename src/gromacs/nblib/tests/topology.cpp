@@ -85,7 +85,7 @@ void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector
 //       file can just include forcerec.h
 #define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
 
-TEST(NBlibTest, TopologyHasNumAtoms)
+TEST(NBlibTest, TopologyHasNumParticles)
 {
     WaterTopology waters;
     Topology      watersTopology = waters.buildTopology(2);
@@ -116,7 +116,7 @@ TEST(NBlibTest, TopologyHasMasses)
     EXPECT_EQ(ref, test);
 }
 
-TEST(NBlibTest, TopologyHasAtomTypes)
+TEST(NBlibTest, TopologyHasParticleTypes)
 {
     WaterTopology                   waters;
     Topology                        watersTopology = waters.buildTopology(2);
@@ -128,7 +128,7 @@ TEST(NBlibTest, TopologyHasAtomTypes)
     EXPECT_TRUE(ref == test || ref2 == test);
 }
 
-TEST(NBlibTest, TopologyHasAtomTypeIds)
+TEST(NBlibTest, TopologyHasParticleTypeIds)
 {
     WaterTopology waters;
     Topology      watersTopology = waters.buildTopology(2);
@@ -149,9 +149,9 @@ TEST(NBlibTest, TopologyHasAtomTypeIds)
     EXPECT_TRUE(ref == testTypesExpanded);
 }
 
-TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
+TEST(NBlibTest, TopologyThrowsIdenticalParticleType)
 {
-    //! User error: Two different AtomTypes with the same name
+    //! User error: Two different ParticleTypes with the same name
     ParticleType U235(ParticleName("Uranium"), Mass(235), C6(6.), C12(12.));
     ParticleType U238(ParticleName("Uranium"), Mass(238), C6(6.), C12(12.));
 
@@ -199,16 +199,16 @@ TEST(NBlibTest, TopologyHasNonbondedParameters)
 }
 
 //! Todo: this belongs to ForceCalculator
-// TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
+// TEST(NBlibTest, TopologyHasParticlesInfoAllVdw)
 //{
 //    TwoWaterMolecules      waters;
 //    Topology               watersTopology = waters.buildTopology();
-//    const std::vector<int> test           = watersTopology.getAtomInfoAllVdw();
+//    const std::vector<int> test           = watersTopology.getParticleInfoAllVdw();
 //    std::vector<int>       ref;
-//    ref.resize(watersTopology.numAtoms());
-//    for (size_t atomI = 0; atomI < ref.size(); atomI++)
+//    ref.resize(watersTopology.numParticles());
+//    for (size_t particleI = 0; particleI < ref.size(); particleI++)
 //    {
-//        SET_CGINFO_HAS_VDW(ref[atomI]);
+//        SET_CGINFO_HAS_VDW(ref[particleI]);
 //    }
 //    EXPECT_EQ(ref, test);
 //}
@@ -221,9 +221,9 @@ TEST(NBlibTest, toGmxExclusionBlockWorks)
     std::vector<gmx::ExclusionBlock> reference;
 
     gmx::ExclusionBlock localBlock;
-    localBlock.atomNumber.push_back(0);
-    localBlock.atomNumber.push_back(1);
-    localBlock.atomNumber.push_back(2);
+    localBlock.particleNumber.push_back(0);
+    localBlock.particleNumber.push_back(1);
+    localBlock.particleNumber.push_back(2);
 
     reference.push_back(localBlock);
     reference.push_back(localBlock);
@@ -234,10 +234,10 @@ TEST(NBlibTest, toGmxExclusionBlockWorks)
     ASSERT_EQ(reference.size(), probe.size());
     for (size_t i = 0; i < reference.size(); ++i)
     {
-        ASSERT_EQ(reference[i].atomNumber.size(), probe[i].atomNumber.size());
-        for (size_t j = 0; j < reference[i].atomNumber.size(); ++j)
+        ASSERT_EQ(reference[i].particleNumber.size(), probe[i].particleNumber.size());
+        for (size_t j = 0; j < reference[i].particleNumber.size(); ++j)
         {
-            EXPECT_EQ(reference[i].atomNumber[j], probe[i].atomNumber[j]);
+            EXPECT_EQ(reference[i].particleNumber[j], probe[i].particleNumber[j]);
         }
     }
 }

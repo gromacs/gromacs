@@ -158,7 +158,7 @@ TEST(NBlibTest, ForcesAreNotZero)
     }
     for (int particleI = 0; particleI < simState.topology().numParticles(); particleI++)
     {
-        // At least one of the force components on each atom should be nonzero
+        // At least one of the force components on each particle should be nonzero
         const bool haveNonzeroForces =
                 (forces[particleI][0] != 0.0 || forces[particleI][1] != 0.0 || forces[particleI][2]
 != 0.0); EXPECT_TRUE(haveNonzeroForces);
@@ -183,7 +183,7 @@ TEST(NBlibTest, ArgonForcesAreCorrect)
         testForces = forceCalculator.compute();
     }
     gmx::PaddedHostVector<gmx::RVec> refForces(simState.topology().numParticles(), gmx::RVec(0, 0, 0));
-    // Only 2 atoms are within the cutoff, and Newton says their forces differ by a sign
+    // Only 2 particles are within the cutoff, and Newton says their forces differ by a sign
     refForces[0] = { -0.412993, -1.098256, -0.113191 };
     refForces[2] = { 0.412993, 1.098256, 0.113191 };
     for (int particleI = 0; particleI < simState.topology().numParticles(); particleI++)

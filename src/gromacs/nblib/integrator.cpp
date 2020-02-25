@@ -58,13 +58,13 @@ void integrateCoordinates(gmx::PaddedHostVector<gmx::RVec> forces,
 {
     std::vector<gmx::RVec> nextCoords;
     nextCoords.resize(currentCoords.size());
-    for (size_t atomI = 0; atomI < currentCoords.size(); atomI++)
+    for (size_t particleI = 0; particleI < currentCoords.size(); particleI++)
     {
         for (int dim = 0; dim < DIM; dim++)
         {
-            real vel               = forces[atomI][dim] * options.timestep;
-            real newCoord          = currentCoords[atomI][dim] + vel * options.timestep;
-            nextCoords[atomI][dim] = newCoord;
+            real vel                   = forces[particleI][dim] * options.timestep;
+            real newCoord              = currentCoords[particleI][dim] + vel * options.timestep;
+            nextCoords[particleI][dim] = newCoord;
         }
     }
     put_atoms_in_box(PbcType::Xyz, box, nextCoords);

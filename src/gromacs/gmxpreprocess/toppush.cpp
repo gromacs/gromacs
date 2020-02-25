@@ -2544,9 +2544,9 @@ void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp* wi)
             if ((1 <= j) && (j <= b2.ssize()))
             {
                 j--;
-                b2[i].atomNumber.push_back(j);
+                b2[i].particleNumber.push_back(j);
                 /* also add the reverse exclusion! */
-                b2[j].atomNumber.push_back(i);
+                b2[j].particleNumber.push_back(i);
                 strcat(base, "%*d");
             }
             else

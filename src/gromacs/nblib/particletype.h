@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Implements nblib AtomType
+ * Declares nblib ParticleTypes
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>

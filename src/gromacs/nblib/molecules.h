@@ -89,14 +89,14 @@ public:
                           const ResidueName&  residueName,
                           ParticleType const& particleType);
 
-    // Add a particle to the molecule with residueName set using atomName
+    // Add a particle to the molecule with residueName set using particleName
     Molecule& addParticle(const ParticleName& particleName, const Charge& charge, ParticleType const& particleType);
 
     // Force explicit use of correct types, covers both implicit charge and residueName
     template<typename T, typename U>
     Molecule& addParticle(const T& particleName, const U& charge, ParticleType const& particleType) = delete;
 
-    // Add a particle to the molecule with residueName set using atomName with implicit charge of 0
+    // Add a particle to the molecule with residueName set using particleName with implicit charge of 0
     Molecule& addParticle(const ParticleName& particleName, ParticleType const& particleType);
 
     // Force explicit use of correct types
@@ -105,12 +105,12 @@ public:
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
-    // TODO: add exclusions based on the unique ID given to the atom of the molecule
-    void addExclusion(int atomIndex, int atomIndexToExclude);
+    // TODO: add exclusions based on the unique ID given to the particle of the molecule
+    void addExclusion(int particleIndex, int particleIndexToExclude);
 
-    // Specify an exclusion with atom and residue names that have been added to molecule
-    void addExclusion(std::tuple<std::string, std::string> atom,
-                      std::tuple<std::string, std::string> atomToExclude);
+    // Specify an exclusion with particle and residue names that have been added to molecule
+    void addExclusion(std::tuple<std::string, std::string> particle,
+                      std::tuple<std::string, std::string> particleToExclude);
 
     // Specify an exclusion with particle names that have been added to molecule
     void addExclusion(const std::string& particleName, const std::string& particleNameToExclude);
@@ -145,7 +145,7 @@ private:
     //! collection of distinct particle types in molecule
     std::unordered_map<std::string, ParticleType> particleTypes_;
 
-    //! Used for calculated exclusions based on atom indices in molecule
+    //! Used for calculated exclusions based on particle indices in molecule
     std::vector<std::tuple<int, int>> exclusions_;
 
     //! we cannot efficiently compute indices during the build-phase

@@ -99,7 +99,7 @@ private:
     //! The molecule
     Molecule water_;
 
-    //! Add the exclusions from atom names. Private to prevent multiple calls
+    //! Add the exclusions from particle names. Private to prevent multiple calls
     void addExclusionsFromNames();
 };
 
@@ -152,7 +152,7 @@ class ArgonTopologyBuilder
 {
 public:
     //! Build a topology with specified argon molecules
-    ArgonTopologyBuilder(const int& numAtoms);
+    ArgonTopologyBuilder(const int& numParticles);
 
     //! Get the topology with specified argon molecules
     Topology argonTopology();
@@ -167,9 +167,9 @@ class ArgonSimulationStateBuilder
 public:
     ArgonSimulationStateBuilder();
 
-    void setCoordinate(int atomNum, int dimension, real value);
+    void setCoordinate(int particleNum, int dimension, real value);
 
-    void setVelocity(int atomNum, int dimension, real value);
+    void setVelocity(int particleNum, int dimension, real value);
 
     SimulationState setupSimulationState();
 

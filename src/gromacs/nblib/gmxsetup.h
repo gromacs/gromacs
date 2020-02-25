@@ -78,7 +78,7 @@ struct GmxForceCalculator
     gmx_enerdata_t enerd_;
 
     //! Non-Bonded Verlet object for force calculation
-    std::unique_ptr <nonbonded_verlet_t> nbv_;
+    std::unique_ptr<nonbonded_verlet_t> nbv_;
 
     //! The massive class from which nbfp, shift_vec and ntypes would be used
     t_forcerec forcerec_;
@@ -86,7 +86,8 @@ struct GmxForceCalculator
     //! Tasks to perform in an MD Step
     gmx::StepWorkload stepWork_;
 
-    explicit GmxForceCalculator(const std::shared_ptr<SimulationState> system, const std::shared_ptr<NBKernelOptions> options);
+    explicit GmxForceCalculator(const std::shared_ptr<SimulationState> system,
+                                const std::shared_ptr<NBKernelOptions> options);
 
     //! Contains array for computed forces
     gmx::PaddedHostVector<gmx::RVec> verletForces_;
@@ -100,7 +101,7 @@ struct GmxForceCalculator
 
 struct NbvSetupUtil
 {
-    NbvSetupUtil(SimulationState  system, const NBKernelOptions& options);
+    NbvSetupUtil(SimulationState system, const NBKernelOptions& options);
 
     void unpackTopologyToGmx();
 
@@ -114,10 +115,9 @@ struct NbvSetupUtil
     //! Storage for parameters for short range interactions.
     std::vector<real> nonbondedParameters_;
 
-    //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoAllVdw_;
-
+    //! Particle info where all particles are marked to have Van der Waals interactions
+    std::vector<int> particleInfoAllVdw_;
 };
 
-}      // namespace nblib
-#endif //GROMACS_GMXSETUP_H
+} // namespace nblib
+#endif // GROMACS_GMXSETUP_H

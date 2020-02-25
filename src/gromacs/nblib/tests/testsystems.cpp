@@ -89,13 +89,13 @@ std::unordered_map<std::string, Charge> Charges{ { "Ow", -0.82 },
 
 WaterMoleculeBuilder::WaterMoleculeBuilder() : water_("SOL")
 {
-    //! Define Atom Types
+    //! Define Particle Types
     OwAtom       owAtom;
     ParticleType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
     HAtom        hwAtom;
     ParticleType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
 
-    //! Add the atoms
+    //! Add the particles
     water_.addParticle(ParticleName("Oxygen"), Charges.at("Ow"), Ow);
     water_.addParticle(ParticleName("H1"), Charges.at("Hw"), Hw);
     water_.addParticle(ParticleName("H2"), Charges.at("Hw"), Hw);
@@ -121,7 +121,7 @@ void WaterMoleculeBuilder::addExclusionsFromNames()
 
 MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_("MeOH")
 {
-    //! Define Atom Types
+    //! Define Particle Types
     CMetAtom     cMetAtom;
     ParticleType CMet(cMetAtom.name, cMetAtom.mass, cMetAtom.c6, cMetAtom.c12);
     OMetAtom     oMetAtom;
@@ -129,7 +129,7 @@ MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_("MeOH")
     HAtom        hAtom;
     ParticleType H(hAtom.name, hAtom.mass, hAtom.c6, hAtom.c12);
 
-    //! Add the atoms
+    //! Add the particles
     methanol_.addParticle(ParticleName("Me1"), Charges.at("CMet"), CMet);
     methanol_.addParticle(ParticleName("O2"), Charges.at("OMet"), OMet);
     methanol_.addParticle(ParticleName("H3"), Charges.at("HMet"), H);
@@ -180,7 +180,7 @@ Molecule SpcMethanolTopologyBuilder::water()
     return waterMolecule_.waterMolecule();
 }
 
-ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numAtoms)
+ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numParticles)
 {
     ArAtom       arAtom;
     ParticleType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
@@ -188,7 +188,7 @@ ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numAtoms)
     Molecule argonMolecule("AR");
     argonMolecule.addParticle(ParticleName("AR"), argonAtom);
 
-    topologyBuilder_.addMolecule(argonMolecule, numAtoms);
+    topologyBuilder_.addMolecule(argonMolecule, numParticles);
 }
 
 Topology ArgonTopologyBuilder::argonTopology()
@@ -216,16 +216,16 @@ ArgonSimulationStateBuilder::ArgonSimulationStateBuilder() :
     };
 }
 
-void ArgonSimulationStateBuilder::setCoordinate(int atomNum, int dimension, real value)
+void ArgonSimulationStateBuilder::setCoordinate(int particleNum, int dimension, real value)
 {
     GMX_ASSERT((dimension >= 0 and dimension <= 2), "Must provide a valid dimension\n");
-    coordinates_.at(atomNum)[dimension] = value;
+    coordinates_.at(particleNum)[dimension] = value;
 }
 
-void ArgonSimulationStateBuilder::setVelocity(int atomNum, int dimension, real value)
+void ArgonSimulationStateBuilder::setVelocity(int particleNum, int dimension, real value)
 {
     GMX_ASSERT((dimension >= 0 and dimension <= 2), "Must provide a valid dimension\n");
-    velocities_.at(atomNum)[dimension] = value;
+    velocities_.at(particleNum)[dimension] = value;
 }
 
 SimulationState ArgonSimulationStateBuilder::setupSimulationState()
