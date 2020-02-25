@@ -62,7 +62,7 @@ G96Bond::G96Bond(ParticleName atomName, ForceConstant forceConstant, EquilDistan
     equilDistance_ = equilDistance;
 }
 
-HalfAttractiveQuartic::HalfAttractiveQuartic(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance)
+HalfAttractiveQuarticBond::HalfAttractiveQuarticBond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance)
 {
     atomName_ = atomName;
     forceConstant_ = forceConstant;

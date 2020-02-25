@@ -92,10 +92,10 @@ private:
 //
 // It represents the interaction of the form
 // V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^4
-class HalfAttractiveQuartic
+class HalfAttractiveQuarticBond
 {
 public:
-    HalfAttractiveQuartic(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance);
+    HalfAttractiveQuarticBond(ParticleName atomName, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
     ParticleName atomName_;
