@@ -69,7 +69,7 @@ enum class CombinationRule : int
 
 struct NbvSetupUtil
 {
-    NbvSetupUtil(SimulationState  system, const NBKernelOptions& options);
+    NbvSetupUtil(SimulationState system, const NBKernelOptions& options);
 
     void unpackTopologyToGmx();
 
@@ -85,8 +85,7 @@ struct NbvSetupUtil
 
     //! Atom info where all atoms are marked to have Van der Waals interactions
     std::vector<int> atomInfoAllVdw_;
-
 };
 
-}      // namespace nblib
-#endif //GROMACS_GMXSETUP_H
+} // namespace nblib
+#endif // GROMACS_GMXSETUP_H

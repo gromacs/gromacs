@@ -69,7 +69,7 @@ struct GmxForceCalculator
     gmx_enerdata_t enerd_;
 
     //! Non-Bonded Verlet object for force calculation
-    std::unique_ptr <nonbonded_verlet_t> nbv_;
+    std::unique_ptr<nonbonded_verlet_t> nbv_;
 
     //! The massive class from which nbfp, shift_vec and ntypes would be used
     t_forcerec forcerec_;
@@ -77,7 +77,8 @@ struct GmxForceCalculator
     //! Tasks to perform in an MD Step
     gmx::StepWorkload stepWork_;
 
-    explicit GmxForceCalculator(const std::shared_ptr<SimulationState> system, const std::shared_ptr<NBKernelOptions> options);
+    explicit GmxForceCalculator(const std::shared_ptr<SimulationState> system,
+                                const std::shared_ptr<NBKernelOptions> options);
 
     //! Contains array for computed forces
     gmx::PaddedHostVector<gmx::RVec> verletForces_;
@@ -91,4 +92,4 @@ struct GmxForceCalculator
 
 } // namespace nblib
 
-#endif //GROMACS_GMXCALCULATOR_H
+#endif // GROMACS_GMXCALCULATOR_H

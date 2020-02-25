@@ -110,13 +110,15 @@ static interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelO
     return ic;
 }
 
-GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system, const std::shared_ptr<NBKernelOptions> options) : enerd_(1, 0), verletForces_({})
+GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system,
+                                       const std::shared_ptr<NBKernelOptions> options) :
+    enerd_(1, 0), verletForces_({})
 {
     interactionConst_ = setupInteractionConst(options);
 
     gmx::fillLegacyMatrix(system->box().matrix(), box_);
 
-    stepWork_.computeForces = true;
+    stepWork_.computeForces          = true;
     stepWork_.computeNonbondedForces = true;
 
     if (options->computeVirialAndEnergy)
@@ -128,11 +130,12 @@ GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> sy
     forcerec_.ntype = system->topology().numAtoms();
 }
 
-gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute() {
-    t_nrnb              nrnb = { 0 };
+gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
+{
+    t_nrnb nrnb = { 0 };
 
-    nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local, interactionConst_, stepWork_, enbvClearFNo,
-                                  forcerec_, &enerd_, &nrnb);
+    nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local, interactionConst_, stepWork_,
+                                  enbvClearFNo, forcerec_, &enerd_, &nrnb);
 
     nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces_);
 

@@ -51,12 +51,12 @@ namespace nblib
 
 ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOptions& options)
 {
-    nbvSetupUtil_ = std::make_unique <NbvSetupUtil> (system, options);
+    nbvSetupUtil_ = std::make_unique<NbvSetupUtil>(system, options);
 
     gmxForceCalculator_ = nbvSetupUtil_->setupGmxForceCalculator();
 
-//    //! size: numAtoms
-//    masses_ = expandQuantity(system.topology(), &AtomType::mass);
+    //    //! size: numAtoms
+    //    masses_ = expandQuantity(system.topology(), &AtomType::mass);
 }
 
 //! Sets up and runs the kernel calls
