@@ -258,6 +258,7 @@ void NbvSetupUtil::unpackTopologyToGmx()
     for (size_t atomI = 0; atomI < numAtoms; atomI++)
     {
         SET_CGINFO_HAS_VDW(atomInfoAllVdw_[atomI]);
+        SET_CGINFO_HAS_Q(atomInfoAllVdw_[atomI]);
     }
 }
 
