@@ -89,7 +89,7 @@ TEST(NBlibTest, TopologyHasNumAtoms)
 {
     WaterTopology waters;
     Topology      watersTopology = waters.buildTopology(2);
-    const int     test           = watersTopology.numAtoms();
+    const int     test           = watersTopology.numParticles();
     const int     ref            = 6;
     EXPECT_EQ(ref, test);
 }
@@ -120,7 +120,7 @@ TEST(NBlibTest, TopologyHasAtomTypes)
 {
     WaterTopology                   waters;
     Topology                        watersTopology = waters.buildTopology(2);
-    const std::vector<ParticleType> test           = watersTopology.getAtomTypes();
+    const std::vector<ParticleType> test           = watersTopology.getParticleTypes();
     const ParticleType              refOw          = waters.water().at("Ow");
     const ParticleType              refHw          = waters.water().at("H");
     const std::vector<ParticleType> ref            = { refOw, refHw };
@@ -133,8 +133,8 @@ TEST(NBlibTest, TopologyHasAtomTypeIds)
     WaterTopology waters;
     Topology      watersTopology = waters.buildTopology(2);
 
-    const std::vector<int>          testIds   = watersTopology.getAtomTypeIdOfAllAtoms();
-    const std::vector<ParticleType> testTypes = watersTopology.getAtomTypes();
+    const std::vector<int>          testIds   = watersTopology.getParticleTypeIdOfAllParticles();
+    const std::vector<ParticleType> testTypes = watersTopology.getParticleTypes();
 
     std::vector<ParticleType> testTypesExpanded;
     for (int i : testIds)
@@ -152,16 +152,16 @@ TEST(NBlibTest, TopologyHasAtomTypeIds)
 TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
 {
     //! User error: Two different AtomTypes with the same name
-    ParticleType U235(AtomName("Uranium"), Mass(235), C6(6.), C12(12.));
-    ParticleType U238(AtomName("Uranium"), Mass(238), C6(6.), C12(12.));
+    ParticleType U235(ParticleName("Uranium"), Mass(235), C6(6.), C12(12.));
+    ParticleType U238(ParticleName("Uranium"), Mass(238), C6(6.), C12(12.));
 
     Molecule ud235("UraniumDimer235");
-    ud235.addAtom(AtomName("U1"), U235);
-    ud235.addAtom(AtomName("U2"), U235);
+    ud235.addParticle(ParticleName("U1"), U235);
+    ud235.addParticle(ParticleName("U2"), U235);
 
     Molecule ud238("UraniumDimer238");
-    ud238.addAtom(AtomName("U1"), U238);
-    ud238.addAtom(AtomName("U2"), U238);
+    ud238.addParticle(ParticleName("U1"), U238);
+    ud238.addParticle(ParticleName("U2"), U238);
 
     TopologyBuilder topologyBuilder;
     topologyBuilder.addMolecule(ud235, 1);
