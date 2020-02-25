@@ -53,13 +53,13 @@ namespace nblib
 ParticleType::ParticleType() noexcept :
     name_(ParticleTypeName("")),
     mass_(Mass(0)),
-    c6_(C6Param(0)),
-    c12_(C12Param(0))
+    c6_(C6(0)),
+    c12_(C12(0))
 {
 }
 
-ParticleType::ParticleType(ParticleTypeName atomName, Mass mass, C6Param c6, C12Param c12) :
-    name_(std::move(atomName)),
+ParticleType::ParticleType(ParticleTypeName name, Mass mass, C6 c6, C12 c12) :
+    name_(std::move(name)),
     mass_(mass),
     c6_(c6),
     c12_(c12)
@@ -76,12 +76,13 @@ Mass ParticleType::mass() const
     return mass_;
 }
 
-C6Param ParticleType::c6() const
+
+C6 ParticleType::c6() const
 {
     return c6_;
 }
 
-C12Param ParticleType::c12() const
+C12 ParticleType::c12() const
 {
     return c12_;
 }

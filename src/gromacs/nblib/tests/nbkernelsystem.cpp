@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/particletype.h"
 #include "gromacs/nblib/forcecalculator.h"
+#include "gromacs/nblib/gmxsetup.h"
 #include "gromacs/nblib/integrator.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"

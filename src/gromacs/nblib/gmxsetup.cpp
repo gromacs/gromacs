@@ -358,7 +358,9 @@ GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> sy
 
     gmx::fillLegacyMatrix(system->box().matrix(), box_);
 
-    stepWork_.computeForces = true;
+    stepWork_.computeForces          = true;
+    stepWork_.computeNonbondedForces = true;
+
     if (options->computeVirialAndEnergy)
     {
         stepWork_.computeVirial = true;
