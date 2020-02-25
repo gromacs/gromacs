@@ -33,8 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief
- * Implements nblib ForceCalculator
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -44,22 +42,21 @@
 #include "gmxpre.h"
 
 #include "forcecalculator.h"
-
-#include "integrator.h"
+#include "gmxcalculator.h"
 #include "gmxsetup.h"
-
+#include "integrator.h"
 
 namespace nblib
 {
 
 ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOptions& options)
 {
-    nbvSetupUtil_ = std::make_unique <NbvSetupUtil> (system, options);
+    nbvSetupUtil_ = std::make_unique<NbvSetupUtil>(system, options);
 
     gmxForceCalculator_ = nbvSetupUtil_->setupGmxForceCalculator();
 
-//    //! size: numAtoms
-//    masses_ = expandQuantity(system.topology(), &AtomType::mass);
+    //    //! size: numAtoms
+    //    masses_ = expandQuantity(system.topology(), &AtomType::mass);
 }
 
 //! Sets up and runs the kernel calls
