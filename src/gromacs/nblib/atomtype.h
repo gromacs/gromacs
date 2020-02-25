@@ -61,8 +61,8 @@ class TopologyBuilder;
 
 using AtomName = std::string;
 using Mass     = real;
-using C6Param  = real;
-using C12Param = real;
+using C6       = real;
+using C12      = real;
 
 class AtomType
 {
@@ -70,12 +70,12 @@ public:
     AtomType() noexcept;
 
     //! Constructor with explicit type specification
-    AtomType(AtomName atomName, Mass mass, C6Param c6, C12Param c12);
+    AtomType(AtomName atomName, Mass mass, C6 c6, C12 c12);
 
     //! Force explicit use of correct types
     template<typename T, typename U, typename V, typename W>
     AtomType(T atomName, U mass, V c6, W c12) = delete;
-  
+
     //! Get the name
     AtomName name() const;
 
@@ -83,10 +83,10 @@ public:
     Mass mass() const;
 
     //! Get the c6 param
-    C6Param c6() const;
+    C6 c6() const;
 
     //! Get the c12 param
-    C12Param c12() const;
+    C12 c12() const;
 
 private:
     //! The name
@@ -94,9 +94,9 @@ private:
     //! The mass
     Mass mass_;
     //! The c12 param
-    C6Param c6_;
+    C6 c6_;
     //! The c12 param
-    C12Param c12_;
+    C12 c12_;
 };
 
 //! comparison operator

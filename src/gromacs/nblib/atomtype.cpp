@@ -49,9 +49,9 @@
 namespace nblib
 {
 
-AtomType::AtomType() noexcept : name_(AtomName("")), mass_(Mass(0)), c6_(C6Param(0)), c12_(C12Param(0)) {}
+AtomType::AtomType() noexcept : name_(AtomName("")), mass_(Mass(0)), c6_(C6(0)), c12_(C12(0)) {}
 
-AtomType::AtomType(AtomName atomName, Mass mass, C6Param c6, C12Param c12) :
+AtomType::AtomType(AtomName atomName, Mass mass, C6 c6, C12 c12) :
     name_(std::move(atomName)),
     mass_(mass),
     c6_(c6),
@@ -69,12 +69,12 @@ Mass AtomType::mass() const
     return mass_;
 }
 
-C6Param AtomType::c6() const
+C6 AtomType::c6() const
 {
     return c6_;
 }
 
-C12Param AtomType::c12() const
+C12 AtomType::c12() const
 {
     return c12_;
 }
