@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -50,34 +51,34 @@ namespace nblib
 
 struct OwAtom
 {
-    AtomName name = "Ow";
-    Mass     mass = 15.99940;
-    C6Param  c6   = 0.0026173456;
-    C12Param c12  = 2.634129e-06;
+    ParticleName name = "Ow";
+    Mass         mass = 15.99940;
+    C6Param      c6   = 0.0026173456;
+    C12Param     c12  = 2.634129e-06;
 };
 
 struct HAtom
 {
-    AtomName name = "H";
-    Mass     mass = 1.008;
-    C6Param  c6   = 0;
-    C12Param c12  = 0;
+    ParticleName name = "H";
+    Mass         mass = 1.008;
+    C6Param      c6   = 0;
+    C12Param     c12  = 0;
 };
 
 struct OMetAtom
 {
-    AtomName name = "OMet";
-    Mass     mass = 15.999;
-    C6Param  c6   = 0.0022619536;
-    C12Param c12  = 1.505529e-06;
+    ParticleName name = "OMet";
+    Mass         mass = 15.999;
+    C6Param      c6   = 0.0022619536;
+    C12Param     c12  = 1.505529e-06;
 };
 
 struct CMetAtom
 {
-    AtomName name = "CMet";
-    Mass     mass = 15.035; // United atom
-    C6Param  c6   = 0.0088755241;
-    C12Param c12  = 2.0852922e-05;
+    ParticleName name = "CMet";
+    Mass         mass = 15.035; // United atom
+    C6Param      c6   = 0.0088755241;
+    C12Param     c12  = 2.0852922e-05;
 };
 
 std::unordered_map<std::string, Charge> Charges{ { "Ow", -0.82 },
@@ -95,9 +96,9 @@ WaterMoleculeBuilder::WaterMoleculeBuilder() : water_("SOL")
     ParticleType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
 
     //! Add the atoms
-    water_.addAtom(AtomName("Oxygen"), Charges.at("Ow"), Ow);
-    water_.addAtom(AtomName("H1"), Charges.at("Hw"), Hw);
-    water_.addAtom(AtomName("H2"), Charges.at("Hw"), Hw);
+    water_.addParticle(ParticleName("Oxygen"), Charges.at("Ow"), Ow);
+    water_.addParticle(ParticleName("H1"), Charges.at("Hw"), Hw);
+    water_.addParticle(ParticleName("H2"), Charges.at("Hw"), Hw);
 }
 
 Molecule WaterMoleculeBuilder::waterMolecule()
@@ -129,9 +130,9 @@ MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_("MeOH")
     ParticleType H(hAtom.name, hAtom.mass, hAtom.c6, hAtom.c12);
 
     //! Add the atoms
-    methanol_.addAtom(AtomName("Me1"), Charges.at("CMet"), CMet);
-    methanol_.addAtom(AtomName("O2"), Charges.at("OMet"), OMet);
-    methanol_.addAtom(AtomName("H3"), Charges.at("HMet"), H);
+    methanol_.addParticle(ParticleName("Me1"), Charges.at("CMet"), CMet);
+    methanol_.addParticle(ParticleName("O2"), Charges.at("OMet"), OMet);
+    methanol_.addParticle(ParticleName("H3"), Charges.at("HMet"), H);
 
     //! Add the exclusions
     methanol_.addExclusion("Me1", "O2");
@@ -185,7 +186,7 @@ ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numAtoms)
     ParticleType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
 
     Molecule argonMolecule("AR");
-    argonMolecule.addAtom(AtomName("AR"), argonAtom);
+    argonMolecule.addParticle(ParticleName("AR"), argonAtom);
 
     topologyBuilder_.addMolecule(argonMolecule, numAtoms);
 }

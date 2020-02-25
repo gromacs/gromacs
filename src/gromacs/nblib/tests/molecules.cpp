@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -65,7 +66,7 @@ TEST(NBlibTest, CanConstructMoleculeWithoutChargeOrResidueName)
     ArAtom       arAtom;
     ParticleType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
     Molecule     argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), Ar));
+    EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithChargeWithoutResidueName)
@@ -73,7 +74,7 @@ TEST(NBlibTest, CanConstructMoleculeWithChargeWithoutResidueName)
     ArAtom       arAtom;
     ParticleType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
     Molecule     argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), Charge(0), Ar));
+    EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), Charge(0), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithoutChargeWithResidueName)
@@ -81,7 +82,7 @@ TEST(NBlibTest, CanConstructMoleculeWithoutChargeWithResidueName)
     ArAtom       arAtom;
     ParticleType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
     Molecule     argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), ResidueName("ar2"), Ar));
+    EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), ResidueName("ar2"), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithChargeWithResidueName)
@@ -89,14 +90,14 @@ TEST(NBlibTest, CanConstructMoleculeWithChargeWithResidueName)
     ArAtom       arAtom;
     ParticleType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
     Molecule     argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), ResidueName("ar2"), Charge(0), Ar));
+    EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), ResidueName("ar2"), Charge(0), Ar));
 }
 
 TEST(NBlibTest, CanGetNumAtomsInMolecule)
 {
     WaterMoleculeBuilder waterMolecule;
     Molecule             water    = waterMolecule.waterMolecule();
-    auto                 numAtoms = water.numAtomsInMolecule();
+    auto                 numAtoms = water.numParticlesInMolecule();
 
     EXPECT_EQ(3, numAtoms);
 }

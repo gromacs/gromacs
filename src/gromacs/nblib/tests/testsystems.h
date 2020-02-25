@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #ifndef GROMACS_SETUPHELPERS_H
 #define GROMACS_SETUPHELPERS_H
@@ -61,10 +62,10 @@ namespace nblib
 //! \internal \brief Parameters from gromos43A1
 struct ArAtom
 {
-    AtomName name = "Ar";
-    Mass     mass = 39.94800;
-    C6Param  c6   = 0.0062647225;
-    C12Param c12  = 9.847044e-06;
+    ParticleName name = "Ar";
+    Mass         mass = 39.94800;
+    C6Param      c6   = 0.0062647225;
+    C12Param     c12  = 9.847044e-06;
 };
 
 //! Parameters from gromos43A1 SPC Oxygen

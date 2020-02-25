@@ -167,7 +167,7 @@ std::vector<T> TopologyBuilder::extractParticleTypeQuantity(Extractor extractor)
 
         for (size_t i = 0; i < numMols; ++i)
         {
-            for (auto& atomData : molecule.atoms_)
+            for (auto& atomData : molecule.particles_)
             {
                 ret.push_back(extractor(atomData, molecule.particleTypes_));
             }

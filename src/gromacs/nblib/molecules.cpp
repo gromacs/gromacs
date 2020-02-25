@@ -56,51 +56,55 @@ namespace nblib
 
 Molecule::Molecule(std::string moleculeName) : name_(std::move(moleculeName)) {}
 
-Molecule& Molecule::addAtom(const AtomName&     atomName,
-                            const ResidueName&  residueName,
-                            const Charge&       charge,
-                            ParticleType const& particleType)
+Molecule& Molecule::addParticle(const ParticleName& particleName,
+                                const ResidueName&  residueName,
+                                const Charge&       charge,
+                                ParticleType const& particleType)
 {
     if (particleTypes_.count(particleType.name()) == 0)
     {
         particleTypes_[particleType.name()] = particleType;
     }
 
-    atoms_.emplace_back(AtomData{ atomName, residueName, particleType.name(), charge });
+    particles_.emplace_back(ParticleData{ particleName, residueName, particleType.name(), charge });
 
     //! Add self exclusion. We just added the atom, so we know its index and that the exclusion doesn't exist yet
-    std::size_t id = atoms_.size() - 1;
+    std::size_t id = particles_.size() - 1;
     exclusions_.emplace_back(std::make_tuple(id, id));
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& atomName, const ResidueName& residueName, ParticleType const& particleType)
+Molecule& Molecule::addParticle(const ParticleName& particleName,
+                                const ResidueName&  residueName,
+                                ParticleType const& particleType)
 {
     real charge = 0;
-    addAtom(atomName, residueName, charge, particleType);
+    addParticle(particleName, residueName, charge, particleType);
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& atomName, const Charge& charge, ParticleType const& particleType)
+Molecule& Molecule::addParticle(const ParticleName& particleName,
+                                const Charge&       charge,
+                                ParticleType const& particleType)
 {
-    addAtom(atomName, name_, charge, particleType);
+    addParticle(particleName, name_, charge, particleType);
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& atomName, const ParticleType& particleType)
+Molecule& Molecule::addParticle(const ParticleName& particleName, const ParticleType& particleType)
 {
     real charge = 0;
-    addAtom(atomName, name_, charge, particleType);
+    addParticle(particleName, name_, charge, particleType);
 
     return *this;
 }
 
 int Molecule::numParticlesInMolecule() const
 {
-    return atoms_.size();
+    return particles_.size();
 }
 
 void Molecule::addHarmonicBond(HarmonicType harmonicBond)
@@ -145,7 +149,7 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 
     for (int i = 0; i < numParticlesInMolecule(); ++i)
     {
-        indexKey.emplace_back(std::make_tuple(atoms_[i].atomName_, atoms_[i].residueName_, i));
+        indexKey.emplace_back(std::make_tuple(particles_[i].particleName_, particles_[i].residueName_, i));
     }
 
     std::sort(std::begin(indexKey), std::end(indexKey));
