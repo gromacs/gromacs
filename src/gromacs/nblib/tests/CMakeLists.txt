@@ -52,7 +52,7 @@ set(exename "nblib-setup-test")
 gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
-    atoms.cpp
+    particletype.cpp
     molecules.cpp
     box.cpp
     util.cpp

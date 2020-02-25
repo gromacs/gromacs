@@ -45,7 +45,7 @@
 
 #include "gromacs/nblib/forcecalculator.h"
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/topology/block.h"
@@ -79,17 +79,17 @@ public:
     {
         constexpr int numWaters = 2;
 
-        //! Define Atom Type
-        AtomType Ow(AtomName("Ow"), Mass(16), C6(6.), C12(12.));
-        AtomType Hw(AtomName("Hw"), Mass(1), C6(0.6), C12(0.12));
+        //! Define Particle Type
+        ParticleType Ow(ParticleName("Ow"), Mass(16), C6(6.), C12(12.));
+        ParticleType Hw(ParticleName("Hw"), Mass(1), C6(0.6), C12(0.12));
 
         //! Define Molecule
         Molecule water("water");
 
-        //! Add the atoms
-        water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
-        water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
-        water.addAtom(AtomName("H2"), Charge(+0.3), Hw);
+        //! Add the particles
+        water.addParticle(ParticleName("Oxygen"), Charge(-0.6), Ow);
+        water.addParticle(ParticleName("H1"), Charge(+0.3), Hw);
+        water.addParticle(ParticleName("H2"), Charge(+0.3), Hw);
 
         //! Add the exclusions
         water.addExclusion("Oxygen", "H1");
@@ -124,11 +124,11 @@ public:
 };
 
 /*
-TEST(NBlibTest, KernelSystemHasNumAtoms)
+TEST(NBlibTest, KernelSystemHasNumParticles)
 {
     KernelSystemTester kernelSystemTester;
     auto kernelSystem = kernelSystemTester.setupKernelSystem();
-    const int test = kernelSystem.numAtoms;
+    const int test = kernelSystem.numParticles;
     const int ref  = 6;
     EXPECT_EQ(ref, test);
 }
@@ -139,19 +139,19 @@ TEST(NBlibTest, KernelSystemHasNonbondedParameters)
     auto kernelSystem = kernelSystemTester.setupKernelSystem();
     const std::vector<real> test = kernelSystem.nonbondedParameters;
     std::vector<real> ref;
-    ref.resize(kernelSystem.numAtoms*kernelSystem.numAtoms*2, 0);
+    ref.resize(kernelSystem.numParticles*kernelSystem.numParticles*2, 0);
     ref[0] = 6;
     ref[1] = 12;
     EXPECT_EQ(ref, test);
 }
 
-TEST(NBlibTest, KernelSystemHasAtomTypes)
+TEST(NBlibTest, KernelSystemHasParticlesTypes)
 {
     KernelSystemTester kernelSystemTester;
     auto kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<int> test = kernelSystem.atomTypes;
+    const std::vector<int> test = kernelSystem.particleTypes;
     std::vector<int> ref;
-    ref.resize(kernelSystem.numAtoms, 0);
+    ref.resize(kernelSystem.numParticles, 0);
     EXPECT_EQ(ref, test);
 }
 
@@ -173,16 +173,16 @@ TEST(NBlibTest, KernelSystemHasMasses)
     EXPECT_EQ(ref, test);
 }
 
-TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
+TEST(NBlibTest, TopologyHasParticleInfoAllVdw)
 {
     KernelSystemTester kernelSystemTester;
     auto kernelSystem = kernelSystemTester.setupKernelSystem();
-    const std::vector<int> test = kernelSystem.atomInfoAllVdw;
+    const std::vector<int> test = kernelSystem.particleInfoAllVdw;
     std::vector<int> ref;
-    ref.resize(kernelSystem.numAtoms);
-    for (size_t atomI = 0; atomI < ref.size(); atomI++)
+    ref.resize(kernelSystem.numParticles);
+    for (size_t particleI = 0; particleI < ref.size(); particleI++)
     {
-        SET_CGINFO_HAS_VDW(ref[atomI]);
+        SET_CGINFO_HAS_VDW(ref[particleI]);
     }
     EXPECT_EQ(ref, test);
 }
@@ -221,17 +221,17 @@ TEST(NBlibTest, KernelSystemHasExclusions)
     std::vector<gmx::ExclusionBlock> testExclusionBlocks;
 
     //! Setting t_blocka.nr is needed for conversion to ExclusionBlock
-    testBlocka.nr = kernelSystem.numAtoms;
-    testExclusionBlocks.resize(kernelSystem.numAtoms);
+    testBlocka.nr = kernelSystem.numParticles;
+    testExclusionBlocks.resize(kernelSystem.numParticles);
     blockaToExclusionBlocks(&testBlocka, testExclusionBlocks);
 
     std::vector<std::vector<int>> refExclusionBlocks = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
                                                          { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
-    for (size_t atom = 0; atom < refExclusionBlocks.size(); atom++)
+    for (size_t particle = 0; particle < refExclusionBlocks.size(); particle++)
     {
-        for (size_t exclusion = 0; exclusion < refExclusionBlocks[atom].size(); exclusion++)
+        for (size_t exclusion = 0; exclusion < refExclusionBlocks[particle].size(); exclusion++)
         {
-            EXPECT_EQ(refExclusionBlocks[atom][exclusion], testExclusionBlocks[atom].atomNumber[exclusion]);
+            EXPECT_EQ(refExclusionBlocks[particle][exclusion], testExclusionBlocks[particle].particleNumber[exclusion]);
         }
     }
 }

@@ -95,7 +95,7 @@ struct NBKernelOptions
  * by the factor \p sizeFactor, which has to be a power of 2.
  * Timings can be printed to stdout.
  *
- * \param[in,out] system The atomic system to compute nonbonded forces for
+ * \param[in,out] system The particle system to compute nonbonded forces for
  * \param[in] options How the benchmark will be run.
  * \param[in] printTimings Whether to print cycle counters
  */

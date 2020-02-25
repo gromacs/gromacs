@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -47,7 +48,7 @@
 
 #include <iostream>
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 
 #include "testutils/testasserts.h"
 
@@ -62,43 +63,43 @@ namespace
 
 TEST(NBlibTest, CanConstructMoleculeWithoutChargeOrResidueName)
 {
-    ArAtom   arAtom;
-    AtomType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    Molecule argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), Ar));
+    ArAtom       arAtom;
+    ParticleType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
+    Molecule     argon("Ar");
+    EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithChargeWithoutResidueName)
 {
-    ArAtom   arAtom;
-    AtomType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    Molecule argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), Charge(0), Ar));
+    ArAtom       arAtom;
+    ParticleType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
+    Molecule     argon("Ar");
+    EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), Charge(0), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithoutChargeWithResidueName)
 {
-    ArAtom   arAtom;
-    AtomType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    Molecule argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), ResidueName("ar2"), Ar));
+    ArAtom       arAtom;
+    ParticleType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
+    Molecule     argon("Ar");
+    EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), ResidueName("ar2"), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithChargeWithResidueName)
 {
-    ArAtom   arAtom;
-    AtomType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    Molecule argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), ResidueName("ar2"), Charge(0), Ar));
+    ArAtom       arAtom;
+    ParticleType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
+    Molecule     argon("Ar");
+    EXPECT_NO_THROW(argon.addParticle(ParticleName("Ar"), ResidueName("ar2"), Charge(0), Ar));
 }
 
-TEST(NBlibTest, CanGetNumAtomsInMolecule)
+TEST(NBlibTest, CanGetNumParticlesInMolecule)
 {
     WaterMoleculeBuilder waterMolecule;
-    Molecule             water    = waterMolecule.waterMolecule();
-    auto                 numAtoms = water.numAtomsInMolecule();
+    Molecule             water        = waterMolecule.waterMolecule();
+    auto                 numParticles = water.numParticlesInMolecule();
 
-    EXPECT_EQ(3, numAtoms);
+    EXPECT_EQ(3, numParticles);
 }
 
 TEST(NBlibTest, CanConstructExclusionListFromNames)

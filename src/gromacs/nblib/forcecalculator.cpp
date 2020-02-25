@@ -55,8 +55,8 @@ ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOp
 
     gmxForceCalculator_ = nbvSetupUtil_->setupGmxForceCalculator();
 
-    //    //! size: numAtoms
-    //    masses_ = expandQuantity(system.topology(), &AtomType::mass);
+    //    //! size: numParticles
+    //    masses_ = expandQuantity(system.topology(), &ParticleType::mass);
 }
 
 //! Sets up and runs the kernel calls
@@ -77,8 +77,8 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()
 //    const gmx::EnumerationArray<BenchMarkCombRule, std::string> combruleNames = { "geom.", "LB", "none" };
 //
 //    // Generate an, accurate, estimate of the number of non-zero pair interactions
-//    const real                          atomDensity          = system.coordinates.size()/det(system.box);
-//    const real                          numPairsWithinCutoff = atomDensity*4.0/3.0*M_PI*std::pow(options.pairlistCutoff, 3);
+//    const real                          particlesDensity          = system.coordinates.size()/det(system.box);
+//    const real                          numPairsWithinCutoff = particlesDensity*4.0/3.0*M_PI*std::pow(options.pairlistCutoff, 3);
 //    const real                          numUsefulPairs       = system.coordinates.size()*0.5*(numPairsWithinCutoff + 1);
 //#if GMX_SIMD
 //    if (options.nbnxmSimd != BenchMarkKernels::SimdNo)
@@ -86,7 +86,7 @@ gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()
 //        fprintf(stdout, "SIMD width:           %d\n", GMX_SIMD_REAL_WIDTH);
 //    }
 //#endif
-//    fprintf(stdout, "System size:          %zu atoms\n", system.coordinates.size());
+//    fprintf(stdout, "System size:          %zu particles\n", system.coordinates.size());
 //    fprintf(stdout, "Cut-off radius:       %g nm\n", options.pairlistCutoff);
 //    fprintf(stdout, "Number of threads:    %d\n", options.numThreads);
 //    fprintf(stdout, "Number of iterations: %d\n", options.numIterations);

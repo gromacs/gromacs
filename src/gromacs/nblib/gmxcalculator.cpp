@@ -112,7 +112,8 @@ static interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelO
 
 GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system,
                                        const std::shared_ptr<NBKernelOptions> options) :
-    enerd_(1, 0), verletForces_({})
+    enerd_(1, 0),
+    verletForces_({})
 {
     interactionConst_ = setupInteractionConst(options);
 
@@ -127,7 +128,7 @@ GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> sy
         stepWork_.computeEnergy = true;
     }
 
-    forcerec_.ntype = system->topology().numAtoms();
+    forcerec_.ntype = system->topology().numParticles();
 }
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
