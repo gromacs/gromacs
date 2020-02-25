@@ -42,8 +42,8 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_BONDTYPES_H
-#define GROMACS_BONDTYPES_H
+#ifndef GMX_NBLIB_BONDTYPES_H
+#define GMX_NBLIB_BONDTYPES_H
 
 #include <vector>
 
@@ -74,7 +74,7 @@ public:
         return forceConstant_;
     }
 
-    EquilDistance equilibriumDistance() const {
+    EquilDistance equilDistance() const {
         return equilDistance_;
     }
 
@@ -105,7 +105,7 @@ public:
         return forceConstant_;
     }
 
-    EquilDistance equilibriumDistance() const {
+    EquilDistance equilDistance() const {
         return equilDistance_;
     }
 
@@ -135,7 +135,7 @@ public:
         return forceConstant_;
     }
 
-    EquilDistance equilibriumDistance() const {
+    EquilDistance equilDistance() const {
         return equilDistance_;
     }
 private:
@@ -145,4 +145,4 @@ private:
 };
 
 } // namespace nblib
-#endif // GROMACS_BONDTYPES_H
+#endif // GMX_NBLIB_BONDTYPES_H
