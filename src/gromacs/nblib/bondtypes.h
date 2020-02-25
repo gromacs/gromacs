@@ -64,6 +64,18 @@ class HarmonicBondType
 public:
     HarmonicBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
+    BondTypeName bondTypeName() const {
+        return bondTypeName_;
+    }
+
+    ForceConstant forceConstant() const {
+        return forceConstant_;
+    }
+
+    EquilDistance equilibriumDistance() const {
+        return equilDistance_;
+    }
+
 private:
     BondTypeName bondTypeName_;
     ForceConstant forceConstant_;
@@ -80,6 +92,18 @@ class G96BondType
 public:
     G96BondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
+    BondTypeName bondTypeName() const {
+        return bondTypeName_;
+    }
+
+    ForceConstant forceConstant() const {
+        return forceConstant_;
+    }
+
+    EquilDistance equilibriumDistance() const {
+        return equilDistance_;
+    }
+
 private:
     BondTypeName bondTypeName_;
     ForceConstant forceConstant_;
@@ -95,6 +119,17 @@ class HalfAttractiveQuarticBondType
 public:
     HalfAttractiveQuarticBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
+    BondTypeName bondTypeName() const {
+        return bondTypeName_;
+    }
+
+    ForceConstant forceConstant() const {
+        return forceConstant_;
+    }
+
+    EquilDistance equilibriumDistance() const {
+        return equilDistance_;
+    }
 private:
     BondTypeName bondTypeName_;
     ForceConstant forceConstant_;

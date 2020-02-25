@@ -54,7 +54,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nblib/atomtype.h"
 
-#include "bonds.h"
+#include "bondtypes.h"
 
 namespace nblib
 {
@@ -106,11 +106,11 @@ public:
     // Specify an exclusion with atoms names that have been added to molecule
     void addExclusion(const std::string& particleName, const std::string& particleNameToExclude);
 
-    void addInteraction(HarmonicBond bond);
+    void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HarmonicBondType bondType);
 
-    void addInteraction(G96Bond bond);
+    void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, G96BondType bondType);
 
-    void addInteraction(HalfAttractiveQuarticBond bond);
+    void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HalfAttractiveQuarticBondType bondType);
 
     // The number of molecules
     int numAtomsInMolecule() const;
@@ -149,11 +149,14 @@ private:
     //! so we delay the conversion until TopologyBuilder requests it
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> exclusionsByName_;
 
-    std::vector<HarmonicBond> harmonicBonds_;
+    std::unordered_map<BondTypeName, HarmonicBondType> harmonicBondTypes_;
+    std::vector<std::tuple<ParticleName, ParticleName, BondTypeName>> harmonicBonds_;
 
-    std::vector<G96Bond> g96Bonds_;
+    std::unordered_map<BondTypeName, G96BondType> g96BondTypes_;
+    std::vector<std::tuple<ParticleName, ParticleName, BondTypeName>> g96Bonds_;
 
-    std::vector<HalfAttractiveQuarticBond> halfAttractiveBonds_;
+    std::unordered_map<BondTypeName, HalfAttractiveQuarticBondType> halfAttractiveBondTypes_;
+    std::vector<std::tuple<ParticleName, ParticleName, BondTypeName>> halfAttractiveBonds_;
 
 };
 
