@@ -128,7 +128,7 @@ void Molecule::addExclusion(const std::string& particleName, const std::string& 
 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HarmonicBondType bondType)
 {
-    halfAttractiveBonds_.emplace_back(std::make::tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
+    halfAttractiveBonds_.emplace_back(std::make_tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
     if (harmonicBondTypes_.count(bondType.bondTypeName()) == 0) {
         harmonicBondTypes_[bondType.bondTypeName()] = std::move(bondType);
     }
@@ -136,14 +136,15 @@ void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleN
 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, G96BondType bondType)
 {
-    g96Bonds_.emplace_back(std::make::tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
+    g96Bonds_.emplace_back(std::make_tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
     if (g96BondTypes_.count(bondType.bondTypeName()) == 0) {
         g96BondTypes_[bondType.bondTypeName()] = std::move(bondType);
     }
+}
 
-void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HalfAttractiveQuarticBondType bond)
+void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HalfAttractiveQuarticBondType bondType)
 {
-    halfAttractiveBonds_.emplace_back(std::make::tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
+    halfAttractiveBonds_.emplace_back(std::make_tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
     if (halfAttractiveBondTypes_.count(bondType.bondTypeName()) == 0) {
         halfAttractiveBondTypes_[bondType.bondTypeName()] = std::move(bondType);
     }
