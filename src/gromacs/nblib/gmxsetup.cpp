@@ -224,8 +224,8 @@ NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& option
 void NbvSetupUtil::unpackTopologyToGmx()
 
 {
-    const Topology&                  topology  = system_->topology();
-    const std::vector<ParticleType>& atomTypes = topology.getAtomTypes();
+    const Topology&                  topology      = system_->topology();
+    const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
 
     size_t numAtoms = topology.numAtoms();
 
@@ -233,16 +233,16 @@ void NbvSetupUtil::unpackTopologyToGmx()
     //!
     //! initial self-handling of combination rules
     //! size: 2*(numAtomTypes^2)
-    nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
+    nonbondedParameters_.reserve(2 * particleTypes.size() * particleTypes.size());
 
     constexpr real c6factor  = 6.0;
     constexpr real c12factor = 12.0;
 
-    for (const ParticleType& atomType1 : atomTypes)
+    for (const ParticleType& atomType1 : particleTypes)
     {
         real c6_1  = atomType1.c6() * c6factor;
         real c12_1 = atomType1.c12() * c12factor;
-        for (const ParticleType& atomType2 : atomTypes)
+        for (const ParticleType& atomType2 : particleTypes)
         {
             real c6_2  = atomType2.c6() * c6factor;
             real c12_2 = atomType2.c12() * c12factor;
@@ -295,7 +295,8 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
 
     //! Needs to be called with the number of unique AtomTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
-                        system_->topology().getAtomTypes().size(), nonbondedParameters_, 1, numThreads);
+                        system_->topology().getParticleTypes().size(), nonbondedParameters_, 1,
+                        numThreads);
 
     matrix box_;
     gmx::fillLegacyMatrix(system_->box().matrix(), box_);
@@ -316,7 +317,7 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA   = const_cast<int*>(system_->topology().getAtomTypeIdOfAllAtoms().data());
+    mdatoms.typeA = const_cast<int*>(system_->topology().getParticleTypeIdOfAllParticles().data());
     mdatoms.chargeA = const_cast<real*>(system_->topology().getCharges().data());
     nbv->setAtomProperties(mdatoms, atomInfoAllVdw_);
 

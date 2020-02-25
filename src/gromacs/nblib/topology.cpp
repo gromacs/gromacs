@@ -151,7 +151,7 @@ gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
 }
 
 template<typename T, class Extractor>
-std::vector<T> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
+std::vector<T> TopologyBuilder::extractParticleTypeQuantity(Extractor extractor)
 {
     auto& moleculesList = molecules_;
 
@@ -181,20 +181,20 @@ Topology TopologyBuilder::buildTopology()
     topology_.numAtoms_ = numAtoms_;
 
     topology_.exclusions_ = createExclusionsListOfLists();
-    topology_.charges_    = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
+    topology_.charges_    = extractParticleTypeQuantity<real>([](const auto& data, auto& map) {
         ignore_unused(map);
         return data.charge_;
     });
 
     std::unordered_map<std::string, int> nameToId;
-    for (auto& name_atomType_tuple : atomTypes_)
+    for (auto& name_particleType_tuple : particleTypes_)
     {
-        topology_.atomTypes_.push_back(name_atomType_tuple.second);
-        nameToId[name_atomType_tuple.first] = nameToId.size();
+        topology_.particleTypes_.push_back(name_particleType_tuple.second);
+        nameToId[name_particleType_tuple.first] = nameToId.size();
     }
 
-    topology_.atomTypeIdOfAllAtoms_ =
-            extractAtomTypeQuantity<int>([&nameToId](const auto& data, auto& map) {
+    topology_.particleTypeIdOfAllParticles_ =
+            extractParticleTypeQuantity<int>([&nameToId](const auto& data, auto& map) {
                 ignore_unused(map);
                 return nameToId[data.particleTypeName_];
             });
@@ -214,21 +214,21 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
 
     for (const auto& name_type_tuple : molecule.particleTypes_)
     {
-        //! If we already have the atomType, we need to make
+        //! If we already have the particleType, we need to make
         //! sure that the type's parameters are actually the same
         //! otherwise we would overwrite them
-        if (atomTypes_.count(name_type_tuple.first) > 0)
+        if (particleTypes_.count(name_type_tuple.first) > 0)
         {
-            if (!(atomTypes_[name_type_tuple.first] == name_type_tuple.second))
+            if (!(particleTypes_[name_type_tuple.first] == name_type_tuple.second))
             {
                 GMX_THROW(gmx::InvalidInputError(
-                        "Differing AtomTypes with identical names encountered"));
+                        "Differing ParticleTypes with identical names encountered"));
             }
         }
     }
 
     // Note: insert does nothing if the key already exists
-    atomTypes_.insert(molecule.particleTypes_.begin(), molecule.particleTypes_.end());
+    particleTypes_.insert(molecule.particleTypes_.begin(), molecule.particleTypes_.end());
 
     return *this;
 }
@@ -243,14 +243,14 @@ const std::vector<real>& Topology::getCharges() const
     return charges_;
 }
 
-const std::vector<ParticleType>& Topology::getAtomTypes() const
+const std::vector<ParticleType>& Topology::getParticleTypes() const
 {
-    return atomTypes_;
+    return particleTypes_;
 }
 
-const std::vector<int>& Topology::getAtomTypeIdOfAllAtoms() const
+const std::vector<int>& Topology::getParticleTypeIdOfAllParticles() const
 {
-    return atomTypeIdOfAllAtoms_;
+    return particleTypeIdOfAllParticles_;
 }
 
 } // namespace nblib
