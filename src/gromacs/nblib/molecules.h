@@ -54,15 +54,15 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nblib/atomtype.h"
 
-#include "interactions.h"
+#include "bonds.h"
 
 namespace nblib
 {
 class TopologyBuilder;
 
-using AtomName    = std::string;
-using Charge      = real;
-using ResidueName = std::string;
+using ParticleName = std::string;
+using Charge       = real;
+using ResidueName  = std::string;
 
 class Molecule
 {
@@ -70,33 +70,31 @@ public:
     Molecule(std::string moleculeName);
 
     // Add an atom to the molecule with full specification of parameters.
-    Molecule& addAtom(const AtomName&    atomName,
+    Molecule& addAtom(const ParticleName&    particleName,
                       const ResidueName& residueName,
                       const Charge&      charge,
-                      AtomType const&    atomType);
+                      AtomType const&    particleType);
 
     // Force explicit use of correct types
     template<typename T, typename U, typename V>
-    Molecule& addAtom(const T& atomName, const U& residueName, const V& charge, AtomType const& atomType) = delete;
+    Molecule& addAtom(const T& particleName, const U& residueName, const V& charge, AtomType const& particleType) = delete;
 
     // Add an atom to the molecule with implicit charge of 0
-    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const& atomType);
+    Molecule& addAtom(const ParticleName& particleName, const ResidueName& residueName, AtomType const& particleType);
 
-    // Add an atom to the molecule with residueName set using atomName
-    Molecule& addAtom(const AtomName& atomName, const Charge& charge, AtomType const& atomType);
+    // Add an atom to the molecule with residueName set using particleName
+    Molecule& addAtom(const ParticleName& particleName, const Charge& charge, AtomType const& particleType);
 
     // Force explicit use of correct types, covers both implicit charge and residueName
     template<typename T, typename U>
-    Molecule& addAtom(const T& atomName, const U& charge, AtomType const& atomType) = delete;
+    Molecule& addAtom(const T& particleName, const U& charge, AtomType const& particleType) = delete;
 
-    // Add an atom to the molecule with residueName set using atomName with implicit charge of 0
-    Molecule& addAtom(const AtomName& atomName, AtomType const& atomType);
+    // Add an atom to the molecule with residueName set using particleName with implicit charge of 0
+    Molecule& addAtom(const ParticleName& particleName, AtomType const& particleType);
 
     // Force explicit use of correct types
     template<typename T>
-    Molecule& addAtom(const T& atomName, AtomType const& atomType) = delete;
-
-    void addHarmonicBond(HarmonicType harmonicBond);
+    Molecule& addAtom(const T& particleName, AtomType const& particleType) = delete;
 
     // TODO: add exclusions based on the unique ID given to the atom of the molecule
     void addExclusion(int atomIndex, int atomIndexToExclude);
@@ -106,13 +104,19 @@ public:
                       std::tuple<std::string, std::string> atomToExclude);
 
     // Specify an exclusion with atoms names that have been added to molecule
-    void addExclusion(const std::string& atomName, const std::string& atomNameToExclude);
+    void addExclusion(const std::string& particleName, const std::string& particleNameToExclude);
+
+    void addInteraction(HarmonicBond bond);
+
+    void addInteraction(G96Bond bond);
+
+    void addInteraction(HalfAttractiveQuarticBond bond);
 
     // The number of molecules
     int numAtomsInMolecule() const;
 
     // Return the AtomType data for a specific atom name that has been added to the molecule
-    const AtomType& at(const std::string& atomTypeName) const;
+    const AtomType& at(const std::string& particleTypeName) const;
 
     // convert exclusions given by name to indices and unify with exclusions given by indices
     // returns a sorted vector containing no duplicates of atoms to exclude by indices
@@ -126,9 +130,9 @@ private:
 
     struct AtomData
     {
-        std::string atomName_;
+        std::string particleName_;
         std::string residueName_;
-        std::string atomTypeName_;
+        std::string particleTypeName_;
         real        charge_;
     };
 
@@ -136,7 +140,7 @@ private:
     std::vector<AtomData> atoms_;
 
     //! collection of distinct Atoms in molecule
-    std::unordered_map<std::string, AtomType> atomTypes_;
+    std::unordered_map<std::string, AtomType> particleTypes_;
 
     //! Used for calculated exclusions based on atom indices in molecule
     std::vector<std::tuple<int, int>> exclusions_;
@@ -145,7 +149,12 @@ private:
     //! so we delay the conversion until TopologyBuilder requests it
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> exclusionsByName_;
 
-    std::vector<HarmonicType> harmonicInteractions_;
+    std::vector<HarmonicBond> harmonicBonds_;
+
+    std::vector<G96Bond> g96Bonds_;
+
+    std::vector<HalfAttractiveQuarticBond> halfAttractiveBonds_;
+
 };
 
 } // namespace nblib

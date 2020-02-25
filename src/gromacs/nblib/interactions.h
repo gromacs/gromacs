@@ -49,16 +49,5 @@
 namespace nblib
 {
 
-//! Type of interaction
-struct HarmonicType
-{
-    real        equiDist;
-    real        forceConstant;
-    std::string atomIDi;
-    std::string atomIDj;
-    // int atomI;
-    // int atomJ;
-};
-
 } // namespace nblib
 #endif // GROMACS_INTERACTIONS_H
