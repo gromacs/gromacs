@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -111,14 +112,14 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 
 } // namespace detail
 
-TopologyBuilder::TopologyBuilder() : numAtoms_(0) {}
+TopologyBuilder::TopologyBuilder() : numParticles_(0) {}
 
 gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
 {
     const auto& moleculesList = molecules_;
 
     std::vector<gmx::ExclusionBlock> exclusionBlockGlobal;
-    exclusionBlockGlobal.reserve(numAtoms_);
+    exclusionBlockGlobal.reserve(numParticles_);
 
     size_t atomNumberOffset = 0;
     for (const auto& molNumberTuple : moleculesList)
@@ -137,7 +138,7 @@ gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
             std::copy(std::begin(offsetExclusions), std::end(offsetExclusions),
                       std::back_inserter(exclusionBlockGlobal));
 
-            atomNumberOffset += molecule.numAtomsInMolecule();
+            atomNumberOffset += molecule.numParticlesInMolecule();
         }
     }
 
@@ -157,7 +158,7 @@ std::vector<T> TopologyBuilder::extractParticleTypeQuantity(Extractor extractor)
 
     //! returned object
     std::vector<T> ret;
-    ret.reserve(numAtoms_);
+    ret.reserve(numParticles_);
 
     for (auto& molNumberTuple : moleculesList)
     {
@@ -178,7 +179,7 @@ std::vector<T> TopologyBuilder::extractParticleTypeQuantity(Extractor extractor)
 
 Topology TopologyBuilder::buildTopology()
 {
-    topology_.numAtoms_ = numAtoms_;
+    topology_.numParticles_ = numParticles_;
 
     topology_.exclusions_ = createExclusionsListOfLists();
     topology_.charges_    = extractParticleTypeQuantity<real>([](const auto& data, auto& map) {
@@ -210,7 +211,7 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
      */
 
     molecules_.emplace_back(std::make_tuple(molecule, nMolecules));
-    numAtoms_ += nMolecules * molecule.numAtomsInMolecule();
+    numParticles_ += nMolecules * molecule.numParticlesInMolecule();
 
     for (const auto& name_type_tuple : molecule.particleTypes_)
     {
@@ -233,9 +234,9 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
     return *this;
 }
 
-const int& Topology::numAtoms() const
+const int& Topology::numParticles() const
 {
-    return numAtoms_;
+    return numParticles_;
 }
 
 const std::vector<real>& Topology::getCharges() const

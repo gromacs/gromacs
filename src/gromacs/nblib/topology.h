@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #ifndef GMX_NBLIB_TOPOLOGY_H
 #define GMX_NBLIB_TOPOLOGY_H
@@ -81,16 +82,16 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 class Topology
 {
 public:
-    //! Returns the total number of atoms in the system
-    const int& numAtoms() const;
+    //! Returns the total number of particles in the system
+    const int& numParticles() const;
 
-    //! Returns a vector of atom names
+    //! Returns a vector of particle types
     const std::vector<ParticleType>& getParticleTypes() const;
 
-    //! Return the ParticleType ID of all atoms
+    //! Return the ParticleType ID of all particles
     const std::vector<int>& getParticleTypeIdOfAllParticles() const;
 
-    //! Returns a vector of atom partial charges
+    //! Returns a vector of particles partial charges
     const std::vector<real>& getCharges() const;
 
     //! Returns exclusions in proper, performant, GROMACS layout
@@ -101,13 +102,13 @@ private:
 
     friend class TopologyBuilder;
 
-    //! Total number of atoms in the system
-    int numAtoms_;
+    //! Total number of particles in the system
+    int numParticles_;
     //! unique collection of ParticleTypes
     std::vector<ParticleType> particleTypes_;
-    //! store an ID of each atom's type
+    //! store an ID of each particles's type
     std::vector<int> particleTypeIdOfAllParticles_;
-    //! Storage for atom partial charges
+    //! Storage for particles partial charges
     std::vector<real> charges_;
     //! Information about exclusions.
     gmx::ListOfLists<int> exclusions_;
@@ -145,8 +146,8 @@ private:
     //! Internally stored topology
     Topology topology_;
 
-    //! Total number of atoms in the system
-    int numAtoms_;
+    //! Total number of particles in the system
+    int numParticles_;
 
     //! List of molecule types and number of molecules
     std::vector<std::tuple<Molecule, int>> molecules_;
@@ -163,14 +164,14 @@ private:
 };
 
 //! utility function to extract Particle quantities and expand them to the full
-//! array of length numAtoms()
+//! array of length numParticles()
 template<class F>
 inline auto expandQuantity(const Topology& topology, F particleTypeExtractor)
 {
     using ValueType = decltype((std::declval<ParticleType>().*std::declval<F>())());
 
     std::vector<ValueType> ret;
-    ret.reserve(topology.numAtoms());
+    ret.reserve(topology.numParticles());
 
     const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
 

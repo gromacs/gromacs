@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -97,7 +98,7 @@ Molecule& Molecule::addAtom(const AtomName& atomName, const ParticleType& partic
     return *this;
 }
 
-int Molecule::numAtomsInMolecule() const
+int Molecule::numParticlesInMolecule() const
 {
     return atoms_.size();
 }
@@ -140,9 +141,9 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 {
     //! tuples of (atomName, residueName, index)
     std::vector<std::tuple<std::string, std::string, int>> indexKey;
-    indexKey.reserve(numAtomsInMolecule());
+    indexKey.reserve(numParticlesInMolecule());
 
-    for (int i = 0; i < numAtomsInMolecule(); ++i)
+    for (int i = 0; i < numParticlesInMolecule(); ++i)
     {
         indexKey.emplace_back(std::make_tuple(atoms_[i].atomName_, atoms_[i].residueName_, i));
     }

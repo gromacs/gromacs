@@ -227,7 +227,7 @@ void NbvSetupUtil::unpackTopologyToGmx()
     const Topology&                  topology      = system_->topology();
     const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
 
-    size_t numAtoms = topology.numAtoms();
+    size_t numAtoms = topology.numParticles();
 
     //! Todo: Refactor nbnxm to take this (nonbondedParameters_) directly
     //!
@@ -344,7 +344,7 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     put_atoms_in_box(PbcType::Xyz, box_, system_->coordinates());
 
     gmxForceCalculator_p->verletForces_ =
-            gmx::PaddedHostVector<gmx::RVec>(system_->topology().numAtoms(), gmx::RVec(0, 0, 0));
+            gmx::PaddedHostVector<gmx::RVec>(system_->topology().numParticles(), gmx::RVec(0, 0, 0));
 
     return gmxForceCalculator_p;
 }
@@ -365,7 +365,7 @@ GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> sy
         stepWork_.computeEnergy = true;
     }
 
-    forcerec_.ntype = system->topology().numAtoms();
+    forcerec_.ntype = system->topology().numParticles();
 }
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()

@@ -40,11 +40,13 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
  * \inpublicapi
  * \ingroup nblib
  */
-#ifndef GROMACS_MOLECULES_H
-#define GROMACS_MOLECULES_H
+#ifndef GMX_NBLIB_MOLECULES_H
+#define GMX_NBLIB_MOLECULES_H
 
 #include <string>
 #include <tuple>
@@ -112,7 +114,7 @@ public:
     void addExclusion(const std::string& atomName, const std::string& atomNameToExclude);
 
     // The number of molecules
-    int numAtomsInMolecule() const;
+    int numParticlesInMolecule() const;
 
     // Return the ParticleType data for a specific atom name that has been added to the molecule
     const ParticleType& at(const std::string& particlesTypeName) const;
@@ -152,4 +154,4 @@ private:
 };
 
 } // namespace nblib
-#endif // GROMACS_MOLECULES_H
+#endif // GMX_NBLIB_MOLECULES_H
