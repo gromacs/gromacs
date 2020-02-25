@@ -50,21 +50,21 @@ namespace nblib
 
 HarmonicBondType::HarmonicBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    BondTypeName bondTypeName_;
+    bondTypeName_ = bondTypeName;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }
 
 G96BondType::G96BondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    BondTypeName bondTypeName_;
+    bondTypeName_ = bondTypeName;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }
 
 HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance)
 {
-    BondTypeName bondTypeName_;
+    bondTypeName_ = bondTypeName;
     forceConstant_ = forceConstant;
     equilDistance_ = equilDistance;
 }
