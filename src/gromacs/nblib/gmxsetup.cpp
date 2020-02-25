@@ -56,7 +56,7 @@
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlistset.h"
@@ -109,18 +109,18 @@ static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
 static gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions& options)
 {
     GMX_RELEASE_ASSERT(options.nbnxmSimd < BenchMarkKernels::Count
-                       && options.nbnxmSimd != BenchMarkKernels::SimdAuto,
+                               && options.nbnxmSimd != BenchMarkKernels::SimdAuto,
                        "Need a valid kernel SIMD type");
 
     // Check SIMD support
     if ((options.nbnxmSimd != BenchMarkKernels::SimdNo && !GMX_SIMD)
-        #ifndef GMX_NBNXN_SIMD_4XN
+#ifndef GMX_NBNXN_SIMD_4XN
         || options.nbnxmSimd == BenchMarkKernels::Simd4XM
-        #endif
-        #ifndef GMX_NBNXN_SIMD_2XNN
+#endif
+#ifndef GMX_NBNXN_SIMD_2XNN
         || options.nbnxmSimd == BenchMarkKernels::Simd2XMM
 #endif
-            )
+    )
     {
         return "the requested SIMD kernel was not set up at configuration time";
     }
@@ -148,8 +148,8 @@ static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
     else
     {
         kernelSetup.ewaldExclusionType = options.useTabulatedEwaldCorr
-                                         ? Nbnxm::EwaldExclusionType::Table
-                                         : Nbnxm::EwaldExclusionType::Analytical;
+                                                 ? Nbnxm::EwaldExclusionType::Table
+                                                 : Nbnxm::EwaldExclusionType::Analytical;
     }
 
     return kernelSetup;
@@ -209,9 +209,9 @@ static interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelO
     return ic;
 }
 
-NbvSetupUtil::NbvSetupUtil(SimulationState  system, const NBKernelOptions& options)
+NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& options)
 {
-    system_ = std::make_shared<SimulationState>(system);
+    system_  = std::make_shared<SimulationState>(system);
     options_ = std::make_shared<NBKernelOptions>(options);
 
     //! Todo: find a more general way to initialize hardware
@@ -224,8 +224,8 @@ NbvSetupUtil::NbvSetupUtil(SimulationState  system, const NBKernelOptions& optio
 void NbvSetupUtil::unpackTopologyToGmx()
 
 {
-    const Topology&              topology  = system_->topology();
-    const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
+    const Topology&                  topology  = system_->topology();
+    const std::vector<ParticleType>& atomTypes = topology.getAtomTypes();
 
     size_t numAtoms = topology.numAtoms();
 
@@ -235,14 +235,14 @@ void NbvSetupUtil::unpackTopologyToGmx()
     //! size: 2*(numAtomTypes^2)
     nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
 
-    constexpr real c6factor = 6.0;
+    constexpr real c6factor  = 6.0;
     constexpr real c12factor = 12.0;
 
-    for (const AtomType& atomType1 : atomTypes)
+    for (const ParticleType& atomType1 : atomTypes)
     {
         real c6_1  = atomType1.c6() * c6factor;
         real c12_1 = atomType1.c12() * c12factor;
-        for (const AtomType& atomType2 : atomTypes)
+        for (const ParticleType& atomType2 : atomTypes)
         {
             real c6_2  = atomType2.c6() * c6factor;
             real c12_2 = atomType2.c12() * c12factor;
@@ -311,7 +311,8 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
                       system_->coordinates(), 0, nullptr);
 
     t_nrnb nrnb;
-    nbv->constructPairlist(gmx::InteractionLocality::Local, system_->topology().getGmxExclusions(), 0, &nrnb);
+    nbv->constructPairlist(gmx::InteractionLocality::Local, system_->topology().getGmxExclusions(),
+                           0, &nrnb);
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
@@ -335,18 +336,22 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     matrix box_;
     gmx::fillLegacyMatrix(system_->box().matrix(), box_);
 
-    gmxForceCalculator_p->forcerec_.nbfp  = nonbondedParameters_;
+    gmxForceCalculator_p->forcerec_.nbfp = nonbondedParameters_;
     snew(gmxForceCalculator_p->forcerec_.shift_vec, SHIFTS);
     calc_shifts(box_, gmxForceCalculator_p->forcerec_.shift_vec);
 
     put_atoms_in_box(PbcType::Xyz, box_, system_->coordinates());
 
-    gmxForceCalculator_p->verletForces_ = gmx::PaddedHostVector<gmx::RVec>(system_->topology().numAtoms(), gmx::RVec(0, 0, 0));
+    gmxForceCalculator_p->verletForces_ =
+            gmx::PaddedHostVector<gmx::RVec>(system_->topology().numAtoms(), gmx::RVec(0, 0, 0));
 
     return gmxForceCalculator_p;
 }
 
-GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system, const std::shared_ptr<NBKernelOptions> options) : enerd_(1, 0), verletForces_({})
+GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system,
+                                       const std::shared_ptr<NBKernelOptions> options) :
+    enerd_(1, 0),
+    verletForces_({})
 {
     interactionConst_ = setupInteractionConst(options);
 
@@ -364,13 +369,13 @@ GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> sy
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
 {
-    t_nrnb              nrnb = { 0 };
+    t_nrnb nrnb = { 0 };
 
-    nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local, interactionConst_, stepWork_, enbvClearFNo,
-                                 forcerec_, &enerd_, &nrnb);
+    nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local, interactionConst_, stepWork_,
+                                  enbvClearFNo, forcerec_, &enerd_, &nrnb);
 
     nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces_);
 
     return verletForces_;
 }
-} //namespace nblib
+} // namespace nblib

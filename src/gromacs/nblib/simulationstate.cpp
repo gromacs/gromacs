@@ -51,7 +51,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/nblib/util.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"

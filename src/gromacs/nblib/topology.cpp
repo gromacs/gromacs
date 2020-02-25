@@ -48,7 +48,7 @@
 #include <numeric>
 
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/nblib/util.h"
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/utility/exceptions.h"
@@ -168,7 +168,7 @@ std::vector<T> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
         {
             for (auto& atomData : molecule.atoms_)
             {
-                ret.push_back(extractor(atomData, molecule.atomTypes_));
+                ret.push_back(extractor(atomData, molecule.particleTypes_));
             }
         }
     }
@@ -196,7 +196,7 @@ Topology TopologyBuilder::buildTopology()
     topology_.atomTypeIdOfAllAtoms_ =
             extractAtomTypeQuantity<int>([&nameToId](const auto& data, auto& map) {
                 ignore_unused(map);
-                return nameToId[data.atomTypeName_];
+                return nameToId[data.particleTypeName_];
             });
 
     return topology_;
@@ -212,7 +212,7 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
     molecules_.emplace_back(std::make_tuple(molecule, nMolecules));
     numAtoms_ += nMolecules * molecule.numAtomsInMolecule();
 
-    for (const auto& name_type_tuple : molecule.atomTypes_)
+    for (const auto& name_type_tuple : molecule.particleTypes_)
     {
         //! If we already have the atomType, we need to make
         //! sure that the type's parameters are actually the same
@@ -228,7 +228,7 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
     }
 
     // Note: insert does nothing if the key already exists
-    atomTypes_.insert(molecule.atomTypes_.begin(), molecule.atomTypes_.end());
+    atomTypes_.insert(molecule.particleTypes_.begin(), molecule.particleTypes_.end());
 
     return *this;
 }
@@ -243,7 +243,7 @@ const std::vector<real>& Topology::getCharges() const
     return charges_;
 }
 
-const std::vector<AtomType>& Topology::getAtomTypes() const
+const std::vector<ParticleType>& Topology::getAtomTypes() const
 {
     return atomTypes_;
 }

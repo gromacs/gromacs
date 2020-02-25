@@ -45,7 +45,7 @@
 
 #include <vector>
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/nblib/box.h"
 #include "gromacs/nblib/molecules.h"
 #include "gromacs/nblib/nbkerneloptions.h"

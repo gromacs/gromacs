@@ -32,57 +32,75 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \file
  * \brief
- * This implements basic nblib AtomType tests
+ * Implements nblib AtomType
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \inpublicapi
+ * \ingroup nblib
  */
-#include "gmxpre.h"
+#ifndef GMX_NBLIB_PARTICLETYPE_H
+#define GMX_NBLIB_PARTICLETYPE_H
 
-#include <cmath>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/math/vectypes.h"
 
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-
-#include "testsystems.h"
-
-using gmx::test::defaultRealTolerance;
+#include "interactions.h"
 
 namespace nblib
 {
+class TopologyBuilder;
 
-TEST(NBlibTest, AtomNameCanBeConstructed)
-{
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    EXPECT_EQ(argonAtom.name(), arAtom.name);
-}
+using ParticleTypeName = std::string;
+using Mass             = real;
+using C6Param          = real;
+using C12Param         = real;
 
-TEST(NBlibTest, AtomMassCanBeConstructed)
+class ParticleType
 {
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    EXPECT_EQ(argonAtom.mass(), arAtom.mass);
-}
+public:
+    ParticleType() noexcept;
 
-TEST(NBlibTest, AtomC6CanBeConstructed)
-{
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    EXPECT_EQ(argonAtom.c6(), arAtom.c6);
-}
+    //! Constructor with explicit type specification
+    ParticleType(ParticleTypeName name, Mass mass, C6Param c6, C12Param c12);
 
-TEST(NBlibTest, AtomC12CanBeConstructed)
-{
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    EXPECT_EQ(argonAtom.c12(), arAtom.c12);
-}
+    //! Force explicit use of correct types
+    template<typename T, typename U, typename V, typename W>
+    ParticleType(T name, U mass, V c6, W c12) = delete;
+
+    //! Get the name
+    ParticleTypeName name() const;
+
+    //! Get the mass
+    Mass mass() const;
+
+    //! Get the c6 param
+    C6Param c6() const;
+
+    //! Get the c12 param
+    C12Param c12() const;
+
+private:
+    //! The name
+    ParticleTypeName name_;
+    //! The mass
+    Mass mass_;
+    //! The c12 param
+    C6Param c6_;
+    //! The c12 param
+    C12Param c12_;
+};
+
+//! comparison operator
+bool operator==(const ParticleType& a, const ParticleType& b);
 
 } // namespace nblib
+#endif // GMX_NBLIB_PARTICLETYPE_H

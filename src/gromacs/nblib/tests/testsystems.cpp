@@ -52,32 +52,32 @@ struct OwAtom
 {
     AtomName name = "Ow";
     Mass     mass = 15.99940;
-    C6Param       c6   = 0.0026173456;
-    C12Param      c12  = 2.634129e-06;
+    C6Param  c6   = 0.0026173456;
+    C12Param c12  = 2.634129e-06;
 };
 
 struct HAtom
 {
     AtomName name = "H";
     Mass     mass = 1.008;
-    C6Param       c6   = 0;
-    C12Param      c12  = 0;
+    C6Param  c6   = 0;
+    C12Param c12  = 0;
 };
 
 struct OMetAtom
 {
     AtomName name = "OMet";
     Mass     mass = 15.999;
-    C6Param       c6   = 0.0022619536;
-    C12Param      c12  = 1.505529e-06;
+    C6Param  c6   = 0.0022619536;
+    C12Param c12  = 1.505529e-06;
 };
 
 struct CMetAtom
 {
     AtomName name = "CMet";
     Mass     mass = 15.035; // United atom
-    C6Param       c6   = 0.0088755241;
-    C12Param      c12  = 2.0852922e-05;
+    C6Param  c6   = 0.0088755241;
+    C12Param c12  = 2.0852922e-05;
 };
 
 std::unordered_map<std::string, Charge> Charges{ { "Ow", -0.82 },
@@ -89,10 +89,10 @@ std::unordered_map<std::string, Charge> Charges{ { "Ow", -0.82 },
 WaterMoleculeBuilder::WaterMoleculeBuilder() : water_("SOL")
 {
     //! Define Atom Types
-    OwAtom   owAtom;
-    AtomType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
-    HAtom    hwAtom;
-    AtomType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
+    OwAtom       owAtom;
+    ParticleType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
+    HAtom        hwAtom;
+    ParticleType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
 
     //! Add the atoms
     water_.addAtom(AtomName("Oxygen"), Charges.at("Ow"), Ow);
@@ -121,12 +121,12 @@ void WaterMoleculeBuilder::addExclusionsFromNames()
 MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_("MeOH")
 {
     //! Define Atom Types
-    CMetAtom cMetAtom;
-    AtomType CMet(cMetAtom.name, cMetAtom.mass, cMetAtom.c6, cMetAtom.c12);
-    OMetAtom oMetAtom;
-    AtomType OMet(oMetAtom.name, oMetAtom.mass, oMetAtom.c6, oMetAtom.c12);
-    HAtom    hAtom;
-    AtomType H(hAtom.name, hAtom.mass, hAtom.c6, hAtom.c12);
+    CMetAtom     cMetAtom;
+    ParticleType CMet(cMetAtom.name, cMetAtom.mass, cMetAtom.c6, cMetAtom.c12);
+    OMetAtom     oMetAtom;
+    ParticleType OMet(oMetAtom.name, oMetAtom.mass, oMetAtom.c6, oMetAtom.c12);
+    HAtom        hAtom;
+    ParticleType H(hAtom.name, hAtom.mass, hAtom.c6, hAtom.c12);
 
     //! Add the atoms
     methanol_.addAtom(AtomName("Me1"), Charges.at("CMet"), CMet);
@@ -181,8 +181,8 @@ Molecule SpcMethanolTopologyBuilder::water()
 
 ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numAtoms)
 {
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
+    ArAtom       arAtom;
+    ParticleType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
 
     Molecule argonMolecule("AR");
     argonMolecule.addAtom(AtomName("AR"), argonAtom);

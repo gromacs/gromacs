@@ -85,7 +85,7 @@ public:
     const int& numAtoms() const;
 
     //! Returns a vector of atom names
-    const std::vector<AtomType>& getAtomTypes() const;
+    const std::vector<ParticleType>& getAtomTypes() const;
 
     //! Return the AtomType ID of all atoms
     const std::vector<int>& getAtomTypeIdOfAllAtoms() const;
@@ -104,7 +104,7 @@ private:
     //! Total number of atoms in the system
     int numAtoms_;
     //! unique collection of AtomTypes
-    std::vector<AtomType> atomTypes_;
+    std::vector<ParticleType> atomTypes_;
     //! store an ID of each atom's type
     std::vector<int> atomTypeIdOfAllAtoms_;
     //! Storage for atom partial charges
@@ -159,7 +159,7 @@ private:
     std::vector<T> extractAtomTypeQuantity(Extractor extractor);
 
     //! distinct collection of AtomTypes
-    std::unordered_map<std::string, AtomType> atomTypes_;
+    std::unordered_map<std::string, ParticleType> atomTypes_;
 };
 
 //! utility function to extract AtomType quantities and expand them to the full
@@ -167,12 +167,12 @@ private:
 template<class F>
 inline auto expandQuantity(const Topology& topology, F atomTypeExtractor)
 {
-    using ValueType = decltype((std::declval<AtomType>().*std::declval<F>())());
+    using ValueType = decltype((std::declval<ParticleType>().*std::declval<F>())());
 
     std::vector<ValueType> ret;
     ret.reserve(topology.numAtoms());
 
-    const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
+    const std::vector<ParticleType>& atomTypes = topology.getAtomTypes();
 
     for (size_t id : topology.getAtomTypeIdOfAllAtoms())
     {

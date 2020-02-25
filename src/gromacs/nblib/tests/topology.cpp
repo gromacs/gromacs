@@ -48,7 +48,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/topology/exclusionblocks.h"
 
 #include "testutils/testasserts.h"
@@ -112,19 +112,19 @@ TEST(NBlibTest, TopologyHasMasses)
     const Mass              refOwMass = waters.water().at("Ow").mass();
     const Mass              refHwMass = waters.water().at("H").mass();
     const std::vector<real> ref = { refOwMass, refHwMass, refHwMass, refOwMass, refHwMass, refHwMass };
-    const std::vector<real> test = expandQuantity(watersTopology, &AtomType::mass);
+    const std::vector<real> test = expandQuantity(watersTopology, &ParticleType::mass);
     EXPECT_EQ(ref, test);
 }
 
 TEST(NBlibTest, TopologyHasAtomTypes)
 {
-    WaterTopology               waters;
-    Topology                    watersTopology = waters.buildTopology(2);
-    const std::vector<AtomType> test           = watersTopology.getAtomTypes();
-    const AtomType              refOw          = waters.water().at("Ow");
-    const AtomType              refHw          = waters.water().at("H");
-    const std::vector<AtomType> ref            = { refOw, refHw };
-    const std::vector<AtomType> ref2           = { refHw, refOw };
+    WaterTopology                   waters;
+    Topology                        watersTopology = waters.buildTopology(2);
+    const std::vector<ParticleType> test           = watersTopology.getAtomTypes();
+    const ParticleType              refOw          = waters.water().at("Ow");
+    const ParticleType              refHw          = waters.water().at("H");
+    const std::vector<ParticleType> ref            = { refOw, refHw };
+    const std::vector<ParticleType> ref2           = { refHw, refOw };
     EXPECT_TRUE(ref == test || ref2 == test);
 }
 
@@ -133,18 +133,18 @@ TEST(NBlibTest, TopologyHasAtomTypeIds)
     WaterTopology waters;
     Topology      watersTopology = waters.buildTopology(2);
 
-    const std::vector<int>      testIds   = watersTopology.getAtomTypeIdOfAllAtoms();
-    const std::vector<AtomType> testTypes = watersTopology.getAtomTypes();
+    const std::vector<int>          testIds   = watersTopology.getAtomTypeIdOfAllAtoms();
+    const std::vector<ParticleType> testTypes = watersTopology.getAtomTypes();
 
-    std::vector<AtomType> testTypesExpanded;
+    std::vector<ParticleType> testTypesExpanded;
     for (int i : testIds)
     {
         testTypesExpanded.push_back(testTypes[i]);
     }
 
-    const AtomType              refOw = waters.water().at("Ow");
-    const AtomType              refHw = waters.water().at("H");
-    const std::vector<AtomType> ref   = { refOw, refHw, refHw, refOw, refHw, refHw };
+    const ParticleType              refOw = waters.water().at("Ow");
+    const ParticleType              refHw = waters.water().at("H");
+    const std::vector<ParticleType> ref   = { refOw, refHw, refHw, refOw, refHw, refHw };
 
     EXPECT_TRUE(ref == testTypesExpanded);
 }
@@ -152,8 +152,8 @@ TEST(NBlibTest, TopologyHasAtomTypeIds)
 TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
 {
     //! User error: Two different AtomTypes with the same name
-    AtomType U235(AtomName("Uranium"), Mass(235), C6Param(6.), C12Param(12.));
-    AtomType U238(AtomName("Uranium"), Mass(238), C6Param(6.), C12Param(12.));
+    ParticleType U235(AtomName("Uranium"), Mass(235), C6Param(6.), C12Param(12.));
+    ParticleType U238(AtomName("Uranium"), Mass(238), C6Param(6.), C12Param(12.));
 
     Molecule ud235("UraniumDimer235");
     ud235.addAtom(AtomName("U1"), U235);
@@ -191,8 +191,8 @@ TEST(NBlibTest, TopologyHasNonbondedParameters)
     const Mass              refHwC12 = waters.water().at("H").c12();
     const std::vector<real> refC6    = { refOwC6, refHwC6, refHwC6, refOwC6, refHwC6, refHwC6 };
     const std::vector<real> refC12 = { refOwC12, refHwC12, refHwC12, refOwC12, refHwC12, refHwC12 };
-    const std::vector<real> testC6 = expandQuantity(watersTopology, &AtomType::c6);
-    const std::vector<real> testC12 = expandQuantity(watersTopology, &AtomType::c12);
+    const std::vector<real> testC6 = expandQuantity(watersTopology, &ParticleType::c6);
+    const std::vector<real> testC12 = expandQuantity(watersTopology, &ParticleType::c12);
 
     EXPECT_EQ(refC6, testC6);
     EXPECT_EQ(refC12, testC12);

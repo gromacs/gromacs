@@ -47,7 +47,7 @@
 
 #include <tuple>
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 
 namespace nblib
 {
@@ -55,17 +55,17 @@ namespace nblib
 
 Molecule::Molecule(std::string moleculeName) : name_(std::move(moleculeName)) {}
 
-Molecule& Molecule::addAtom(const AtomName&    atomName,
-                            const ResidueName& residueName,
-                            const Charge&      charge,
-                            AtomType const&    atomType)
+Molecule& Molecule::addAtom(const AtomName&     atomName,
+                            const ResidueName&  residueName,
+                            const Charge&       charge,
+                            ParticleType const& particleType)
 {
-    if (atomTypes_.count(atomType.name()) == 0)
+    if (particleTypes_.count(particleType.name()) == 0)
     {
-        atomTypes_[atomType.name()] = atomType;
+        particleTypes_[particleType.name()] = particleType;
     }
 
-    atoms_.emplace_back(AtomData{ atomName, residueName, atomType.name(), charge });
+    atoms_.emplace_back(AtomData{ atomName, residueName, particleType.name(), charge });
 
     //! Add self exclusion. We just added the atom, so we know its index and that the exclusion doesn't exist yet
     std::size_t id = atoms_.size() - 1;
@@ -74,25 +74,25 @@ Molecule& Molecule::addAtom(const AtomName&    atomName,
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const& atomType)
+Molecule& Molecule::addAtom(const AtomName& atomName, const ResidueName& residueName, ParticleType const& particleType)
 {
     real charge = 0;
-    addAtom(atomName, residueName, charge, atomType);
+    addAtom(atomName, residueName, charge, particleType);
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& atomName, const Charge& charge, AtomType const& atomType)
+Molecule& Molecule::addAtom(const AtomName& atomName, const Charge& charge, ParticleType const& particleType)
 {
-    addAtom(atomName, name_, charge, atomType);
+    addAtom(atomName, name_, charge, particleType);
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& atomName, const AtomType& atomType)
+Molecule& Molecule::addAtom(const AtomName& atomName, const ParticleType& particleType)
 {
     real charge = 0;
-    addAtom(atomName, name_, charge, atomType);
+    addAtom(atomName, name_, charge, particleType);
 
     return *this;
 }
@@ -131,9 +131,9 @@ void Molecule::addExclusion(const std::string& atomName, const std::string& atom
     addExclusion(std::make_tuple(atomName, name_), std::make_tuple(atomNameToExclude, name_));
 }
 
-const AtomType& Molecule::at(const std::string& atomTypeName) const
+const ParticleType& Molecule::at(const std::string& particleTypeName) const
 {
-    return atomTypes_.at(atomTypeName);
+    return particleTypes_.at(particleTypeName);
 }
 
 std::vector<std::tuple<int, int>> Molecule::getExclusions() const

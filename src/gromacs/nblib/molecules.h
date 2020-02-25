@@ -52,7 +52,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 
 #include "interactions.h"
 
@@ -70,31 +70,34 @@ public:
     Molecule(std::string moleculeName);
 
     // Add an atom to the molecule with full specification of parameters.
-    Molecule& addAtom(const AtomName&    atomName,
-                      const ResidueName& residueName,
-                      const Charge&      charge,
-                      AtomType const&    atomType);
+    Molecule& addAtom(const AtomName&     atomName,
+                      const ResidueName&  residueName,
+                      const Charge&       charge,
+                      ParticleType const& particleType);
 
     // Force explicit use of correct types
     template<typename T, typename U, typename V>
-    Molecule& addAtom(const T& atomName, const U& residueName, const V& charge, AtomType const& atomType) = delete;
+    Molecule& addAtom(const T&            atomName,
+                      const U&            residueName,
+                      const V&            charge,
+                      ParticleType const& particleType) = delete;
 
     // Add an atom to the molecule with implicit charge of 0
-    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const& atomType);
+    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, ParticleType const& particleType);
 
     // Add an atom to the molecule with residueName set using atomName
-    Molecule& addAtom(const AtomName& atomName, const Charge& charge, AtomType const& atomType);
+    Molecule& addAtom(const AtomName& atomName, const Charge& charge, ParticleType const& particleType);
 
     // Force explicit use of correct types, covers both implicit charge and residueName
     template<typename T, typename U>
-    Molecule& addAtom(const T& atomName, const U& charge, AtomType const& atomType) = delete;
+    Molecule& addAtom(const T& atomName, const U& charge, ParticleType const& particleType) = delete;
 
     // Add an atom to the molecule with residueName set using atomName with implicit charge of 0
-    Molecule& addAtom(const AtomName& atomName, AtomType const& atomType);
+    Molecule& addAtom(const AtomName& atomName, ParticleType const& particleType);
 
     // Force explicit use of correct types
     template<typename T>
-    Molecule& addAtom(const T& atomName, AtomType const& atomType) = delete;
+    Molecule& addAtom(const T& atomName, ParticleType const& particleType) = delete;
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
@@ -111,8 +114,8 @@ public:
     // The number of molecules
     int numAtomsInMolecule() const;
 
-    // Return the AtomType data for a specific atom name that has been added to the molecule
-    const AtomType& at(const std::string& atomTypeName) const;
+    // Return the ParticleType data for a specific atom name that has been added to the molecule
+    const ParticleType& at(const std::string& particlesTypeName) const;
 
     // convert exclusions given by name to indices and unify with exclusions given by indices
     // returns a sorted vector containing no duplicates of atoms to exclude by indices
@@ -128,7 +131,7 @@ private:
     {
         std::string atomName_;
         std::string residueName_;
-        std::string atomTypeName_;
+        std::string particleTypeName_;
         real        charge_;
     };
 
@@ -136,7 +139,7 @@ private:
     std::vector<AtomData> atoms_;
 
     //! collection of distinct Atoms in molecule
-    std::unordered_map<std::string, AtomType> atomTypes_;
+    std::unordered_map<std::string, ParticleType> particleTypes_;
 
     //! Used for calculated exclusions based on atom indices in molecule
     std::vector<std::tuple<int, int>> exclusions_;

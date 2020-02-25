@@ -48,7 +48,7 @@
 
 #include <cmath>
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/nblib/box.h"
 #include "gromacs/nblib/molecules.h"
 #include "gromacs/nblib/simulationstate.h"
@@ -63,8 +63,8 @@ struct ArAtom
 {
     AtomName name = "Ar";
     Mass     mass = 39.94800;
-    C6Param       c6   = 0.0062647225;
-    C12Param      c12  = 9.847044e-06;
+    C6Param  c6   = 0.0062647225;
+    C12Param c12  = 9.847044e-06;
 };
 
 //! Parameters from gromos43A1 SPC Oxygen
