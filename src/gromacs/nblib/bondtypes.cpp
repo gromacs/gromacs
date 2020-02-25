@@ -48,21 +48,12 @@
 namespace nblib
 {
 
-HarmonicBondType::HarmonicBondType()
-{}
-
 HarmonicBondType::HarmonicBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :
     bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {}
 
-G96BondType::G96BondType()
-{}
-
 G96BondType::G96BondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :
     bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
-{}
-
-HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType()
 {}
 
 HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :

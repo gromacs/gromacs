@@ -62,7 +62,7 @@ using EquilDistance = real;
 class HarmonicBondType
 {
 public:
-    HarmonicBondType();
+    HarmonicBondType() = default;
 
     HarmonicBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
 
@@ -93,7 +93,7 @@ class G96BondType
 {
 public:
 
-    G96BondType();
+    G96BondType() = default;
 
     G96BondType(BondName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
@@ -123,7 +123,7 @@ class HalfAttractiveQuarticBondType
 {
 public:
 
-    HalfAttractiveQuarticBondType();
+    HalfAttractiveQuarticBondType() = default;
 
     HalfAttractiveQuarticBondType(BondName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
