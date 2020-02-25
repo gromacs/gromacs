@@ -33,9 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief
- * Implements the translation layer between the user scope and
- * GROMACS data structures for force calculations
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -53,7 +50,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/nblib/atomtype.h"
@@ -94,12 +90,6 @@ static Nbnxm::KernelType translateBenchmarkEnum(const BenchMarkKernels& kernel)
 {
     int kernelInt = static_cast<int>(kernel);
     return static_cast<Nbnxm::KernelType>(kernelInt);
-}
-
-
-static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
-{
-    return calc_ewaldcoeff_q(pairlistCutoff, ewald_rtol);
 }
 
 /*! \brief Checks the kernel setup
@@ -153,60 +143,6 @@ static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
     }
 
     return kernelSetup;
-}
-
-
-//! Return an interaction constants struct with members used in the benchmark set appropriately
-static interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions> options)
-{
-    interaction_const_t ic;
-
-    ic.vdwtype      = evdwCUT;
-    ic.vdw_modifier = eintmodPOTSHIFT;
-    ic.rvdw         = options->pairlistCutoff;
-
-    switch (options->coulombType)
-    {
-        case BenchMarkCoulomb::Pme: ic.eeltype = eelPME; break;
-        case BenchMarkCoulomb::Cutoff: ic.eeltype = eelCUT; break;
-        case BenchMarkCoulomb::ReactionField: ic.eeltype = eelRF; break;
-        case BenchMarkCoulomb::Count:
-            GMX_THROW(gmx::InvalidInputError("Unsupported electrostatic interaction"));
-    }
-    ic.coulomb_modifier = eintmodPOTSHIFT;
-    ic.rcoulomb         = options->pairlistCutoff;
-    //! Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
-    ic.dispersion_shift.cpot = -1.0 / gmx::power6(ic.rvdw);
-    ic.repulsion_shift.cpot  = -1.0 / gmx::power12(ic.rvdw);
-
-    // These are the initialized values but we leave them here so that later
-    // these can become options.
-    ic.epsilon_r  = 1.0;
-    ic.epsilon_rf = 1.0;
-
-    /* Set the Coulomb energy conversion factor */
-    if (ic.epsilon_r != 0)
-    {
-        ic.epsfac = ONE_4PI_EPS0 / ic.epsilon_r;
-    }
-    else
-    {
-        /* eps = 0 is infinite dieletric: no Coulomb interactions */
-        ic.epsfac = 0;
-    }
-
-    calc_rffac(nullptr, ic.epsilon_r, ic.epsilon_rf, ic.rcoulomb, &ic.k_rf, &ic.c_rf);
-
-    if (EEL_PME_EWALD(ic.eeltype))
-    {
-        // Ewald coefficients, we ignore the potential shift
-        ic.ewaldcoeff_q = ewaldCoeff(1e-5, options->pairlistCutoff);
-        GMX_RELEASE_ASSERT(ic.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");
-        ic.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
-        init_interaction_const_tables(nullptr, &ic);
-    }
-
-    return ic;
 }
 
 NbvSetupUtil::NbvSetupUtil(SimulationState  system, const NBKernelOptions& options)
@@ -346,33 +282,4 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     return gmxForceCalculator_p;
 }
 
-GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system, const std::shared_ptr<NBKernelOptions> options) : enerd_(1, 0), verletForces_({})
-{
-    interactionConst_ = setupInteractionConst(options);
-
-    gmx::fillLegacyMatrix(system->box().matrix(), box_);
-
-    stepWork_.computeForces = true;
-    stepWork_.computeNonbondedForces = true;
-
-    if (options->computeVirialAndEnergy)
-    {
-        stepWork_.computeVirial = true;
-        stepWork_.computeEnergy = true;
-    }
-
-    forcerec_.ntype = system->topology().numAtoms();
-}
-
-gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
-{
-    t_nrnb              nrnb = { 0 };
-
-    nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local, interactionConst_, stepWork_, enbvClearFNo,
-                                 forcerec_, &enerd_, &nrnb);
-
-    nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces_);
-
-    return verletForces_;
-}
 } //namespace nblib

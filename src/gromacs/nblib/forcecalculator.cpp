@@ -33,8 +33,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief
- * Implements nblib ForceCalculator
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -44,10 +42,9 @@
 #include "gmxpre.h"
 
 #include "forcecalculator.h"
-
-#include "integrator.h"
+#include "gmxcalculator.h"
 #include "gmxsetup.h"
-
+#include "integrator.h"
 
 namespace nblib
 {

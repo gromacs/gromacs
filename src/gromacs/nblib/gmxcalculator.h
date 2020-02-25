@@ -34,9 +34,8 @@
  */
 /*! \internal \file
  * \brief
- * Implements the translation layer between the user scope and
- * GROMACS data structures for force calculations. Sets up the
- * non-bonded verlet.
+ * Implements a force calculator based on GROMACS data structures.
+ * Intended for internal use inside the ForceCalculator.
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -44,8 +43,8 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 
-#ifndef GROMACS_GMXSETUP_H
-#define GROMACS_GMXSETUP_H
+#ifndef GROMACS_GMXCALCULATOR_H
+#define GROMACS_GMXCALCULATOR_H
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -55,38 +54,41 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 
-#include "gmxcalculator.h"
-#include "nbkerneloptions.h"
-
 namespace nblib
 {
 
-enum class CombinationRule : int
+class SimulationState;
+struct NBKernelOptions;
+
+struct GmxForceCalculator
 {
-    Geometric = 0,
-    Count     = 1
+    //! Parameters for various interactions in the system
+    interaction_const_t interactionConst_;
+
+    //! Energies of different interaction types
+    gmx_enerdata_t enerd_;
+
+    //! Non-Bonded Verlet object for force calculation
+    std::unique_ptr <nonbonded_verlet_t> nbv_;
+
+    //! The massive class from which nbfp, shift_vec and ntypes would be used
+    t_forcerec forcerec_;
+
+    //! Tasks to perform in an MD Step
+    gmx::StepWorkload stepWork_;
+
+    explicit GmxForceCalculator(const std::shared_ptr<SimulationState> system, const std::shared_ptr<NBKernelOptions> options);
+
+    //! Contains array for computed forces
+    gmx::PaddedHostVector<gmx::RVec> verletForces_;
+
+    //! Compute forces and return
+    gmx::PaddedHostVector<gmx::RVec> compute();
+
+    //! Legacy matrix for box
+    matrix box_;
 };
 
-struct NbvSetupUtil
-{
-    NbvSetupUtil(SimulationState  system, const NBKernelOptions& options);
+} // namespace nblib
 
-    void unpackTopologyToGmx();
-
-    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
-
-    std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator();
-
-    std::shared_ptr<SimulationState> system_;
-    std::shared_ptr<NBKernelOptions> options_;
-
-    //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters_;
-
-    //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoAllVdw_;
-
-};
-
-}      // namespace nblib
-#endif //GROMACS_GMXSETUP_H
+#endif //GROMACS_GMXCALCULATOR_H
