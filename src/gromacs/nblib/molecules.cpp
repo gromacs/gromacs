@@ -108,8 +108,8 @@ void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
     // because self exclusion are added by addAtom
     if (atomIndex != atomIndexToExclude)
     {
-        exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndexToExclude));
-        exclusions_.emplace_back(std::make_tuple(atomIndexToExclude, atomIndex));
+        exclusions_.emplace_back(atomIndex, atomIndexToExclude);
+        exclusions_.emplace_back(atomIndexToExclude, atomIndex);
     }
 }
 
@@ -117,8 +117,8 @@ void Molecule::addExclusion(std::tuple<std::string, std::string> atom,
                             std::tuple<std::string, std::string> atomToExclude)
 {
     //! duplication for the swapped pair happens in getExclusions()
-    exclusionsByName_.emplace_back(std::make_tuple(
-            std::get<0>(atom), std::get<1>(atom), std::get<0>(atomToExclude), std::get<1>(atomToExclude)));
+    exclusionsByName_.emplace_back(
+            std::get<0>(atom), std::get<1>(atom), std::get<0>(atomToExclude), std::get<1>(atomToExclude));
 }
 
 void Molecule::addExclusion(const std::string& particleName, const std::string& particleNameToExclude)
@@ -128,7 +128,7 @@ void Molecule::addExclusion(const std::string& particleName, const std::string& 
 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HarmonicBondType bondType)
 {
-    halfAttractiveBonds_.bonds_.emplace_back(std::make_tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
+    halfAttractiveBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondTypeName());
     if (harmonicBonds_.bondTypes_.count(bondType.bondTypeName()) == 0) {
         harmonicBonds_.bondTypes_[bondType.bondTypeName()] = std::move(bondType);
     }
@@ -136,7 +136,7 @@ void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleN
 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, G96BondType bondType)
 {
-    g96Bonds_.bonds_.emplace_back(std::make_tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
+    g96Bonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondTypeName());
     if (g96Bonds_.bondTypes_.count(bondType.bondTypeName()) == 0) {
         g96Bonds_.bondTypes_[bondType.bondTypeName()] = std::move(bondType);
     }
@@ -144,7 +144,7 @@ void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleN
 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HalfAttractiveQuarticBondType bondType)
 {
-    halfAttractiveBonds_.bonds_.emplace_back(std::make_tuple(particleNameI, particleNameJ, bondType.bondTypeName()));
+    halfAttractiveBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondTypeName());
     if (halfAttractiveBonds_.bondTypes_.count(bondType.bondTypeName()) == 0) {
         halfAttractiveBonds_.bondTypes_[bondType.bondTypeName()] = std::move(bondType);
     }
@@ -163,7 +163,7 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 
     for (int i = 0; i < numAtomsInMolecule(); ++i)
     {
-        indexKey.emplace_back(std::make_tuple(atoms_[i].particleName_, atoms_[i].residueName_, i));
+        indexKey.emplace_back(atoms_[i].particleName_, atoms_[i].residueName_, i);
     }
 
     std::sort(std::begin(indexKey), std::end(indexKey));
@@ -219,8 +219,8 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 
         int secondIndex = std::get<2>(*it2);
 
-        ret.emplace_back(std::make_tuple(firstIndex, secondIndex));
-        ret.emplace_back(std::make_tuple(secondIndex, firstIndex));
+        ret.emplace_back(firstIndex, secondIndex);
+        ret.emplace_back(secondIndex, firstIndex);
     }
 
     std::sort(std::begin(ret), std::end(ret));
