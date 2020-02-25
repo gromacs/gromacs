@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,57 +34,29 @@
  */
 /*! \internal \file
  * \brief
- * Implements nblib AtomType
+ * This implements nbnxn setup tests
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#ifndef GROMACS_ATOMS_H
-#define GROMACS_ATOMS_H
 
-#include <string>
-#include <tuple>
-#include <unordered_map>
-#include <vector>
+#include "gmxpre.h"
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/nblib/gmxsetup.h"
 
-#include "interactions.h"
+#include "testutils/testasserts.h"
 
-class TopologyBuilder;
+namespace nblib {
 
-namespace nblib
+namespace test {
+/*
+TEST(NBlibTest, NbfpSetCorrectly)
 {
 
-class Atom {
-public:
-    Atom() noexcept;
+}
+*/
+} // namespace test
 
-    Atom(std::string atomName,
-             real mass,
-             real charge,
-             real c6,
-             real c12);
-
-    std::string name() const;
-
-    real mass() const;
-
-    real charge() const;
-
-    real c6() const;
-
-    real c12() const;
-
-private:
-    std::string name_;
-    real mass_;
-    real charge_;
-    real c6_;
-    real c12_;
-};
-
-} //namespace nblib
-#endif //GROMACS_MOLECULES_H
+} // namespace nblib
