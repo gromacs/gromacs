@@ -42,8 +42,8 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_BONDS_H
-#define GROMACS_BONDS_H
+#ifndef GROMACS_BONDTYPES_H
+#define GROMACS_BONDTYPES_H
 
 #include <vector>
 
@@ -51,7 +51,7 @@
 
 namespace nblib
 {
-using ParticleName  = std::string;
+using BondTypeName  = std::string;
 using ForceConstant = real;
 using EquilDistance = real;
 
@@ -59,14 +59,13 @@ using EquilDistance = real;
 //
 // It represents the interaction of the form
 // V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^2
-class HarmonicBond
+class HarmonicBondType
 {
 public:
-    HarmonicBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
+    HarmonicBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName atomNameI_;
-    ParticleName atomNameJ_;
+    BondTypeName bondTypeName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
@@ -76,14 +75,13 @@ private:
 //
 // It represents the interaction of the form
 // V(r; forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilDistance^2)^2
-class G96Bond
+class G96BondType
 {
 public:
-    G96Bond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
+    G96BondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName atomNameI_;
-    ParticleName atomNameJ_;
+    BondTypeName bondTypeName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
@@ -92,17 +90,16 @@ private:
 //
 // It represents the interaction of the form
 // V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^4
-class HalfAttractiveQuarticBond
+class HalfAttractiveQuarticBondType
 {
 public:
-    HalfAttractiveQuarticBond(ParticleName atomNameI, ParticleName atomNameJ, ForceConstant forceConstant, EquilDistance equilDistance);
+    HalfAttractiveQuarticBondType(BondTypeName bondTypeName, ForceConstant forceConstant, EquilDistance equilDistance);
 
 private:
-    ParticleName atomNameI_;
-    ParticleName atomNameJ_;
+    BondTypeName bondTypeName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
 
 } // namespace nblib
-#endif // GROMACS_BONDS_H
+#endif // GROMACS_BONDTYPES_H
