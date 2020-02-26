@@ -46,6 +46,7 @@
 #ifndef GROMACS_GMXCALCULATOR_H
 #define GROMACS_GMXCALCULATOR_H
 
+#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -60,34 +61,45 @@ namespace nblib
 class SimulationState;
 struct NBKernelOptions;
 
-struct GmxForceCalculator
+class GmxForceCalculator
 {
+public:
+    explicit GmxForceCalculator(std::shared_ptr<SimulationState> system,
+                                std::shared_ptr<NBKernelOptions> options);
+
+    //! Compute forces and return
+    gmx::PaddedHostVector<gmx::RVec> compute();
+
+    //! Set up StepWorkload data
+    void setupStepWorkload(std::shared_ptr<NBKernelOptions> options);
+
+    //! Return an interaction constants struct with members set appropriately
+    void setupInteractionConst(std::shared_ptr<NBKernelOptions> options);
+
     //! Parameters for various interactions in the system
     interaction_const_t interactionConst_;
-
-    //! Energies of different interaction types
-    gmx_enerdata_t enerd_;
 
     //! Non-Bonded Verlet object for force calculation
     std::unique_ptr<nonbonded_verlet_t> nbv_;
 
-    //! The massive class from which nbfp, shift_vec and ntypes would be used
+    //! Only nbfp, shift_vec and ntypes are used
     t_forcerec forcerec_;
 
     //! Tasks to perform in an MD Step
     gmx::StepWorkload stepWork_;
 
-    explicit GmxForceCalculator(const std::shared_ptr<SimulationState> system,
-                                const std::shared_ptr<NBKernelOptions> options);
-
     //! Contains array for computed forces
     gmx::PaddedHostVector<gmx::RVec> verletForces_;
 
-    //! Compute forces and return
-    gmx::PaddedHostVector<gmx::RVec> compute();
+private:
+    //! Energies of different interaction types; currently only needed as an argument for dispatchNonbondedKernel
+    gmx_enerdata_t enerd_;
+
+    //! Non-bonded flop counter; currently only needed as an argument for dispatchNonbondedKernel
+    t_nrnb nrnb_ = { 0 };
 
     //! Legacy matrix for box
-    matrix box_;
+    matrix box_ = { { 0 } };
 };
 
 } // namespace nblib
