@@ -54,8 +54,6 @@ namespace nblib
  */
 class Exclusion
 {
-public:
-    Exclusion() = default;
 };
 
 /*! \brief
@@ -65,8 +63,6 @@ public:
  */
 class LJExclusion
 {
-public:
-    LJExclusion() = default;
 };
 
 /*! \brief
@@ -76,8 +72,6 @@ public:
  */
 class BuckinghamExclusion
 {
-public:
-    BuckinghamExclusion() = default;
 };
 
 /*! \brief
@@ -87,8 +81,6 @@ public:
  */
 class CoulombExclusion
 {
-public:
-    CoulombExclusion() = default;
 };
 
 
