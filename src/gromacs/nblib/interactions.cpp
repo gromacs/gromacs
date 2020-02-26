@@ -43,8 +43,6 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
-#include <sstream>
-
 #include "gmxpre.h"
 
 #include "interactions.h"
