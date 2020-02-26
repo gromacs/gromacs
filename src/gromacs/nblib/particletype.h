@@ -75,7 +75,8 @@ class ParticleType
 {
 public:
     //! Default constructor.
-    ParticleType() noexcept;
+    //! todo: why is the default constructor needed?
+    ParticleType() = default;
 
     /*! \brief Constructor with explicit name and mass specification.
      *
@@ -99,7 +100,7 @@ public:
 
     //! Force explicit use of correct types
     template<typename T, typename U, typename V, typename W>
-    ParticleType(T name, U mass) = delete;
+    ParticleType(T name, U mass, V c6, W c12) = delete;
 
     //! Get the type name
     ParticleTypeName name() const;
