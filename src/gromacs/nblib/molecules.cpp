@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -47,7 +48,7 @@
 
 #include <tuple>
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 
 namespace nblib
 {
@@ -55,70 +56,75 @@ namespace nblib
 
 Molecule::Molecule(std::string moleculeName) : name_(std::move(moleculeName)) {}
 
-Molecule& Molecule::addAtom(const AtomName&    particleName,
-                            const ResidueName& residueName,
-                            const Charge&      charge,
-                            AtomType const&    particleType)
+Molecule& Molecule::addParticle(const ParticleName& particleName,
+                                const ResidueName&  residueName,
+                                const Charge&       charge,
+                                ParticleType const& particleType)
 {
     if (particleTypes_.count(particleType.name()) == 0)
     {
         particleTypes_[particleType.name()] = particleType;
     }
 
-    atoms_.emplace_back(AtomData{ particleName, residueName, particleType.name(), charge });
+    particles_.emplace_back(ParticleData{ particleName, residueName, particleType.name(), charge });
 
-    //! Add self exclusion. We just added the atom, so we know its index and that the exclusion doesn't exist yet
-    std::size_t id = atoms_.size() - 1;
+    //! Add self exclusion. We just added the particle, so we know its index and that the exclusion doesn't exist yet
+    std::size_t id = particles_.size() - 1;
     exclusions_.emplace_back(std::make_tuple(id, id));
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& particleName, const ResidueName& residueName, AtomType const& particleType)
+Molecule& Molecule::addParticle(const ParticleName& particleName,
+                                const ResidueName&  residueName,
+                                ParticleType const& particleType)
 {
     real charge = 0;
-    addAtom(particleName, residueName, charge, particleType);
+    addParticle(particleName, residueName, charge, particleType);
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& particleName, const Charge& charge, AtomType const& particleType)
+Molecule& Molecule::addParticle(const ParticleName& particleName,
+                                const Charge&       charge,
+                                ParticleType const& particleType)
 {
-    addAtom(particleName, name_, charge, particleType);
+    addParticle(particleName, name_, charge, particleType);
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const AtomName& particleName, const AtomType& particleType)
+Molecule& Molecule::addParticle(const ParticleName& particleName, const ParticleType& particleType)
 {
     real charge = 0;
-    addAtom(particleName, name_, charge, particleType);
+    addParticle(particleName, name_, charge, particleType);
 
     return *this;
 }
 
-int Molecule::numAtomsInMolecule() const
+int Molecule::numParticlesInMolecule() const
 {
-    return atoms_.size();
+    return particles_.size();
 }
 
-void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
+void Molecule::addExclusion(const int particleIndex, const int particleIndexToExclude)
 {
-    // We do not need to add exclusion in case the atom indexes are the same
-    // because self exclusion are added by addAtom
-    if (atomIndex != atomIndexToExclude)
+    // We do not need to add exclusion in case the particle indexes are the same
+    // because self exclusion are added by addParticle
+    if (particleIndex != particleIndexToExclude)
     {
-        exclusions_.emplace_back(atomIndex, atomIndexToExclude);
-        exclusions_.emplace_back(atomIndexToExclude, atomIndex);
+        exclusions_.emplace_back(particleIndex, particleIndexToExclude);
+        exclusions_.emplace_back(particleIndexToExclude, particleIndex);
     }
 }
 
-void Molecule::addExclusion(std::tuple<std::string, std::string> atom,
-                            std::tuple<std::string, std::string> atomToExclude)
+void Molecule::addExclusion(std::tuple<std::string, std::string> particle,
+                            std::tuple<std::string, std::string> particleToExclude)
 {
     //! duplication for the swapped pair happens in getExclusions()
-    exclusionsByName_.emplace_back(
-            std::get<0>(atom), std::get<1>(atom), std::get<0>(atomToExclude), std::get<1>(atomToExclude));
+    exclusionsByName_.emplace_back(std::make_tuple(std::get<0>(particle), std::get<1>(particle),
+                                                   std::get<0>(particleToExclude),
+                                                   std::get<1>(particleToExclude)));
 }
 
 void Molecule::addExclusion(const std::string& particleName, const std::string& particleNameToExclude)
@@ -128,29 +134,53 @@ void Molecule::addExclusion(const std::string& particleName, const std::string& 
 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HarmonicBondType bondType)
 {
-    halfAttractiveBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondTypeName());
-    if (harmonicBonds_.bondTypes_.count(bondType.bondTypeName()) == 0) {
-        harmonicBonds_.bondTypes_[bondType.bondTypeName()] = std::move(bondType);
+    halfAttractiveBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
+    if (harmonicBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+        harmonicBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }
 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, G96BondType bondType)
 {
-    g96Bonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondTypeName());
-    if (g96Bonds_.bondTypes_.count(bondType.bondTypeName()) == 0) {
-        g96Bonds_.bondTypes_[bondType.bondTypeName()] = std::move(bondType);
+    g96Bonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
+    if (g96Bonds_.bondTypes_.count(bondType.bondName()) == 0) {
+        g96Bonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
+    }
+}
+
+void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, CubicBondType bondType)
+{
+    cubicBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
+    if (cubicBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+        cubicBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
+    }
+}
+
+void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, FENEBondType bondType)
+{
+    feneBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
+    if (feneBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+        feneBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
+    }
+}
+
+void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, MorseBondType bondType)
+{
+    morseBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
+    if (morseBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+        morseBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }
 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HalfAttractiveQuarticBondType bondType)
 {
-    halfAttractiveBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondTypeName());
-    if (halfAttractiveBonds_.bondTypes_.count(bondType.bondTypeName()) == 0) {
-        halfAttractiveBonds_.bondTypes_[bondType.bondTypeName()] = std::move(bondType);
+    halfAttractiveBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
+    if (halfAttractiveBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+        halfAttractiveBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }
 
-const AtomType& Molecule::at(const std::string& particleTypeName) const
+const ParticleType& Molecule::at(const std::string& particleTypeName) const
 {
     return particleTypes_.at(particleTypeName);
 }
@@ -159,11 +189,11 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 {
     //! tuples of (particleName, residueName, index)
     std::vector<std::tuple<std::string, std::string, int>> indexKey;
-    indexKey.reserve(numAtomsInMolecule());
+    indexKey.reserve(numParticlesInMolecule());
 
-    for (int i = 0; i < numAtomsInMolecule(); ++i)
+    for (int i = 0; i < numParticlesInMolecule(); ++i)
     {
-        indexKey.emplace_back(atoms_[i].particleName_, atoms_[i].residueName_, i);
+        indexKey.emplace_back(particles_[i].particleName_, particles_[i].residueName_, i);
     }
 
     std::sort(std::begin(indexKey), std::end(indexKey));
@@ -186,10 +216,10 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
     //! convert exclusions given by names to indices and append
     for (auto& tup : exclusionsByName_)
     {
-        const std::string& particleName1    = std::get<0>(tup);
-        const std::string& residueName1 = std::get<1>(tup);
-        const std::string& particleName2    = std::get<2>(tup);
-        const std::string& residueName2 = std::get<3>(tup);
+        const std::string& particleName1 = std::get<0>(tup);
+        const std::string& residueName1  = std::get<1>(tup);
+        const std::string& particleName2 = std::get<2>(tup);
+        const std::string& residueName2  = std::get<3>(tup);
 
         //! look up first index (binary search)
         auto it1 = std::lower_bound(std::begin(indexKey), std::end(indexKey),
@@ -198,8 +228,8 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
         //! make sure we have the (particleName,residueName) combo
         if (it1 == std::end(indexKey) or std::get<0>(*it1) != particleName1 or std::get<1>(*it1) != residueName1)
         {
-            throw std::runtime_error((std::string("Atom ") += particleName1 + std::string(" in residue ") +=
-                                      residueName1 + std::string(" not found in list of atoms\n"))
+            throw std::runtime_error((std::string("Particle ") += particleName1 + std::string(" in residue ") +=
+                                      residueName1 + std::string(" not found in list of particles\n"))
                                              .c_str());
         }
 
@@ -212,8 +242,8 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
         //! make sure we have the (particleName,residueName) combo
         if (it2 == std::end(indexKey) or std::get<0>(*it2) != particleName2 or std::get<1>(*it2) != residueName2)
         {
-            throw std::runtime_error((std::string("Atom ") += particleName2 + std::string(" in residue ") +=
-                                      residueName2 + std::string(" not found in list of atoms\n"))
+            throw std::runtime_error((std::string("Particle ") += particleName2 + std::string(" in residue ") +=
+                                      residueName2 + std::string(" not found in list of particles\n"))
                                              .c_str());
         }
 

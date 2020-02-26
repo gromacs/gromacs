@@ -68,18 +68,17 @@ public:
     gmx::PaddedHostVector<gmx::RVec> compute();
 
 private:
-
     // void printTimingsOutput(const NBKernelOptions &options,
     //                        const SimulationState &system,
     //                        const gmx::index      &numPairs,
     //                        gmx_cycles_t           cycles);
 
     //! Struct to handle translation from NBLIB inputs to setup GMX data structures
-    std::unique_ptr <NbvSetupUtil>       nbvSetupUtil_;
+    std::unique_ptr<NbvSetupUtil> nbvSetupUtil_;
     //! GROMACS force calculator to compute forces
-    std::unique_ptr<GmxForceCalculator>  gmxForceCalculator_;
+    std::unique_ptr<GmxForceCalculator> gmxForceCalculator_;
 
-    //    //! Atom masses
+    //    //! Particles masses
     //    std::vector<real> masses_;
 };
 

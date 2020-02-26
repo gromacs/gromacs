@@ -52,7 +52,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlistset.h"
@@ -160,28 +160,28 @@ NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& option
 void NbvSetupUtil::unpackTopologyToGmx()
 
 {
-    const Topology&              topology  = system_->topology();
-    const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
+    const Topology&                  topology      = system_->topology();
+    const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
 
-    size_t numAtoms = topology.numAtoms();
+    size_t numParticles = topology.numParticles();
 
     //! Todo: Refactor nbnxm to take this (nonbondedParameters_) directly
     //!
     //! initial self-handling of combination rules
-    //! size: 2*(numAtomTypes^2)
-    nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
+    //! size: 2*(numParticleTypes^2)
+    nonbondedParameters_.reserve(2 * particleTypes.size() * particleTypes.size());
 
     constexpr real c6factor  = 6.0;
     constexpr real c12factor = 12.0;
 
-    for (const AtomType& atomType1 : atomTypes)
+    for (const ParticleType& particleType1 : particleTypes)
     {
-        real c6_1  = atomType1.c6() * c6factor;
-        real c12_1 = atomType1.c12() * c12factor;
-        for (const AtomType& atomType2 : atomTypes)
+        real c6_1  = particleType1.c6() * c6factor;
+        real c12_1 = particleType1.c12() * c12factor;
+        for (const ParticleType& particleType2 : particleTypes)
         {
-            real c6_2  = atomType2.c6() * c6factor;
-            real c12_2 = atomType2.c12() * c12factor;
+            real c6_2  = particleType2.c6() * c6factor;
+            real c12_2 = particleType2.c12() * c12factor;
 
             real c6_combo  = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
             real c12_combo = detail::combinationFunction(c12_1, c12_2, CombinationRule::Geometric);
@@ -190,11 +190,11 @@ void NbvSetupUtil::unpackTopologyToGmx()
         }
     }
 
-    atomInfoAllVdw_.resize(numAtoms);
-    for (size_t atomI = 0; atomI < numAtoms; atomI++)
+    particleInfoAllVdw_.resize(numParticles);
+    for (size_t particleI = 0; particleI < numParticles; particleI++)
     {
-        SET_CGINFO_HAS_VDW(atomInfoAllVdw_[atomI]);
-        SET_CGINFO_HAS_Q(atomInfoAllVdw_[atomI]);
+        SET_CGINFO_HAS_VDW(particleInfoAllVdw_[particleI]);
+        SET_CGINFO_HAS_Q(particleInfoAllVdw_[particleI]);
     }
 }
 
@@ -229,9 +229,10 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
     auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
                                                     std::move(atomData), kernelSetup, nullptr, nullptr);
 
-    //! Needs to be called with the number of unique AtomTypes
+    //! Needs to be called with the number of unique ParticleTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
-                        system_->topology().getAtomTypes().size(), nonbondedParameters_, 1, numThreads);
+                        system_->topology().getParticleTypes().size(), nonbondedParameters_, 1,
+                        numThreads);
 
     matrix box_;
     gmx::fillLegacyMatrix(system_->box().matrix(), box_);
@@ -240,11 +241,11 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
     const rvec lowerCorner = { 0, 0, 0 };
     const rvec upperCorner = { box_[XX][XX], box_[YY][YY], box_[ZZ][ZZ] };
 
-    const real atomDensity = system_->coordinates().size() / det(box_);
+    const real particleDensity = system_->coordinates().size() / det(box_);
 
     nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
-                      { 0, int(system_->coordinates().size()) }, atomDensity, atomInfoAllVdw_,
-                      system_->coordinates(), 0, nullptr);
+                      { 0, int(system_->coordinates().size()) }, particleDensity,
+                      particleInfoAllVdw_, system_->coordinates(), 0, nullptr);
 
     t_nrnb nrnb;
     nbv->constructPairlist(gmx::InteractionLocality::Local, system_->topology().getGmxExclusions(),
@@ -252,9 +253,9 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA   = const_cast<int*>(system_->topology().getAtomTypeIdOfAllAtoms().data());
+    mdatoms.typeA = const_cast<int*>(system_->topology().getParticleTypeIdOfAllParticles().data());
     mdatoms.chargeA = const_cast<real*>(system_->topology().getCharges().data());
-    nbv->setAtomProperties(mdatoms, atomInfoAllVdw_);
+    nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);
 
     return nbv;
 }
@@ -279,7 +280,7 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     put_atoms_in_box(PbcType::Xyz, box_, system_->coordinates());
 
     gmxForceCalculator_p->verletForces_ =
-            gmx::PaddedHostVector<gmx::RVec>(system_->topology().numAtoms(), gmx::RVec(0, 0, 0));
+            gmx::PaddedHostVector<gmx::RVec>(system_->topology().numParticles(), gmx::RVec(0, 0, 0));
 
     return gmxForceCalculator_p;
 }

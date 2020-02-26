@@ -60,7 +60,7 @@ void listOfListsToExclusionBlocks(const ListOfLists<int>& b, gmx::ArrayRef<Exclu
     {
         for (int jAtom : b[i])
         {
-            b2[i].atomNumber.push_back(jAtom);
+            b2[i].particleNumber.push_back(jAtom);
         }
     }
 }
@@ -72,7 +72,7 @@ void exclusionBlocksToListOfLists(gmx::ArrayRef<const ExclusionBlock> b2, ListOf
 
     for (const auto& block : b2)
     {
-        b->pushBack(block.atomNumber);
+        b->pushBack(block.particleNumber);
     }
 }
 
@@ -84,7 +84,7 @@ void blockaToExclusionBlocks(const t_blocka* b, gmx::ArrayRef<ExclusionBlock> b2
     {
         for (int j = b->index[i]; (j < b->index[i + 1]); j++)
         {
-            b2[i].atomNumber.push_back(b->a[j]);
+            b2[i].particleNumber.push_back(b->a[j]);
         }
     }
 }
@@ -97,7 +97,7 @@ void exclusionBlocksToBlocka(gmx::ArrayRef<const ExclusionBlock> b2, t_blocka* b
     {
         b->index[i] = nra;
         int j       = 0;
-        for (const auto& entry : block.atomNumber)
+        for (const auto& entry : block.particleNumber)
         {
             b->a[nra + j] = entry;
             j++;
@@ -121,15 +121,15 @@ int countAndSortExclusions(gmx::ArrayRef<ExclusionBlock> b2)
         if (block.nra() > 0)
         {
             /* remove double entries */
-            std::sort(block.atomNumber.begin(), block.atomNumber.end());
-            for (auto atom = block.atomNumber.begin() + 1; atom != block.atomNumber.end();)
+            std::sort(block.particleNumber.begin(), block.particleNumber.end());
+            for (auto atom = block.particleNumber.begin() + 1; atom != block.particleNumber.end();)
             {
-                GMX_RELEASE_ASSERT(atom < block.atomNumber.end(),
+                GMX_RELEASE_ASSERT(atom < block.particleNumber.end(),
                                    "Need to stay in range of the size of the blocks");
                 auto prev = atom - 1;
                 if (*prev == *atom)
                 {
-                    atom = block.atomNumber.erase(atom);
+                    atom = block.particleNumber.erase(atom);
                 }
                 else
                 {

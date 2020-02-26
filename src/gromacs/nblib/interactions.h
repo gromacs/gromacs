@@ -40,9 +40,10 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_INTERACTIONS_H
-#define GROMACS_INTERACTIONS_H
+#ifndef GMX_NBLIB_INTERACTIONS_H
+#define GMX_NBLIB_INTERACTIONS_H
 
 #include "gromacs/math/vectypes.h"
 
@@ -50,4 +51,4 @@ namespace nblib
 {
 
 } // namespace nblib
-#endif // GROMACS_INTERACTIONS_H
+#endif // GMX_NBLIB_INTERACTIONS_H

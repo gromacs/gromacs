@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #ifndef GROMACS_SETUPHELPERS_H
 #define GROMACS_SETUPHELPERS_H
@@ -48,7 +49,7 @@
 
 #include <cmath>
 
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 #include "gromacs/nblib/box.h"
 #include "gromacs/nblib/molecules.h"
 #include "gromacs/nblib/simulationstate.h"
@@ -60,10 +61,10 @@ namespace nblib
 //! \internal \brief Parameters from gromos43A1
 struct ArAtom
 {
-    AtomName name = "Ar";
-    Mass     mass = 39.94800;
-    C6       c6   = 0.0062647225;
-    C12      c12  = 9.847044e-06;
+    ParticleName name = "Ar";
+    Mass         mass = 39.94800;
+    C6           c6   = 0.0062647225;
+    C12          c12  = 9.847044e-06;
 };
 
 //! Parameters from gromos43A1 SPC Oxygen
@@ -98,7 +99,7 @@ private:
     //! The molecule
     Molecule water_;
 
-    //! Add the exclusions from atom names. Private to prevent multiple calls
+    //! Add the exclusions from particle names. Private to prevent multiple calls
     void addExclusionsFromNames();
 };
 
@@ -151,7 +152,7 @@ class ArgonTopologyBuilder
 {
 public:
     //! Build a topology with specified argon molecules
-    ArgonTopologyBuilder(const int& numAtoms);
+    ArgonTopologyBuilder(const int& numParticles);
 
     //! Get the topology with specified argon molecules
     Topology argonTopology();
@@ -166,9 +167,9 @@ class ArgonSimulationStateBuilder
 public:
     ArgonSimulationStateBuilder();
 
-    void setCoordinate(int atomNum, int dimension, real value);
+    void setCoordinate(int particleNum, int dimension, real value);
 
-    void setVelocity(int atomNum, int dimension, real value);
+    void setVelocity(int particleNum, int dimension, real value);
 
     SimulationState setupSimulationState();
 

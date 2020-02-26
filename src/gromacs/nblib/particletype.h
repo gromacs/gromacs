@@ -34,17 +34,19 @@
  */
 /*! \file
  * \brief
- * Implements nblib AtomType
+ * Declares nblib ParticleTypes
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
  * \inpublicapi
  * \ingroup nblib
  */
-#ifndef GROMACS_ATOMS_H
-#define GROMACS_ATOMS_H
+#ifndef GMX_NBLIB_PARTICLETYPE_H
+#define GMX_NBLIB_PARTICLETYPE_H
 
 #include <string>
 #include <tuple>
@@ -59,25 +61,25 @@ namespace nblib
 {
 class TopologyBuilder;
 
-using AtomName = std::string;
-using Mass     = real;
-using C6       = real;
-using C12      = real;
+using ParticleTypeName = std::string;
+using Mass             = real;
+using C6               = real;
+using C12              = real;
 
-class AtomType
+class ParticleType
 {
 public:
-    AtomType() noexcept;
+    ParticleType() noexcept;
 
     //! Constructor with explicit type specification
-    AtomType(AtomName atomName, Mass mass, C6 c6, C12 c12);
+    ParticleType(ParticleTypeName name, Mass mass, C6 c6, C12 c12);
 
     //! Force explicit use of correct types
     template<typename T, typename U, typename V, typename W>
-    AtomType(T atomName, U mass, V c6, W c12) = delete;
+    ParticleType(T name, U mass, V c6, W c12) = delete;
 
     //! Get the name
-    AtomName name() const;
+    ParticleTypeName name() const;
 
     //! Get the mass
     Mass mass() const;
@@ -90,7 +92,7 @@ public:
 
 private:
     //! The name
-    AtomName name_;
+    ParticleTypeName name_;
     //! The mass
     Mass mass_;
     //! The c12 param
@@ -100,7 +102,7 @@ private:
 };
 
 //! comparison operator
-bool operator==(const AtomType& a, const AtomType& b);
+bool operator==(const ParticleType& a, const ParticleType& b);
 
 } // namespace nblib
-#endif // GROMACS_MOLECULES_H
+#endif // GMX_NBLIB_PARTICLETYPE_H
