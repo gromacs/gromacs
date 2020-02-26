@@ -32,9 +32,9 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \inpublicapi \file
  * \brief
- * Implements nblib ParticleType
+ * Implements nblib supported bondtypes
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -43,47 +43,50 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
-#include "gmxpre.h"
-
-#include "particletype.h"
+#include "bondtypes.h"
 
 namespace nblib
 {
 
-ParticleType::ParticleType() noexcept :
-    name_(ParticleTypeName("")), mass_(Mass(0)), c6_(C6(0)), c12_(C12(0))
+HarmonicBondType::HarmonicBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
+    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {
 }
 
-ParticleType::ParticleType(ParticleTypeName name, Mass mass, C6 c6, C12 c12) :
-    name_(std::move(name)), mass_(mass), c6_(c6), c12_(c12)
+G96BondType::G96BondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
+    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {
 }
 
-ParticleTypeName ParticleType::name() const
+CubicBondType::CubicBondType(Name          name,
+                             ForceConstant quadraticForceConstant,
+                             ForceConstant cubicForceConstant,
+                             EquilDistance equilDistance) :
+    name_(name),
+    quadraticForceConstant_(quadraticForceConstant),
+    cubicForceConstant_(cubicForceConstant),
+    equilDistance_(equilDistance)
 {
-    return name_;
 }
 
-Mass ParticleType::mass() const
+FENEBondType::FENEBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
+    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {
-    return mass_;
 }
 
-
-C6 ParticleType::c6() const
+MorseBondType::MorseBondType(Name          name,
+                             ForceConstant forceConstant,
+                             Exponent      exponent,
+                             EquilDistance equilDistance) :
+    name_(name), forceConstant_(forceConstant), exponent_(exponent), equilDistance_(equilDistance)
 {
-    return c6_;
 }
 
-C12 ParticleType::c12() const
+HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(Name          name,
+                                                             ForceConstant forceConstant,
+                                                             EquilDistance equilDistance) :
+    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {
-    return c12_;
-}
-
-bool operator==(const ParticleType& a, const ParticleType& b)
-{
-    return a.name() == b.name() && a.mass() == b.mass() && a.c6() == b.c6() && a.c12() == b.c12();
 }
 
 } // namespace nblib

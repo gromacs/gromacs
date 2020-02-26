@@ -48,9 +48,11 @@
 
 #include "testutils/testasserts.h"
 
-namespace nblib {
+namespace nblib
+{
 
-namespace test {
+namespace test
+{
 /*
 TEST(NBlibTest, NbfpSetCorrectly)
 {
