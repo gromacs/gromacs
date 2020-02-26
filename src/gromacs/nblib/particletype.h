@@ -66,19 +66,42 @@ using Mass             = real;
 using C6               = real;
 using C12              = real;
 
+/*! \brief Class that represents the particle type.
+ *
+ * The particle type is used in lookup tables for masses, non-bonded parameters, etc.
+ * Every particle has to assigned an atom type.
+ */
 class ParticleType
 {
 public:
+    //! Default constructor.
     ParticleType() noexcept;
 
-    //! Constructor with explicit type specification
+    /*! \brief Constructor with explicit name and mass specification.
+     *
+     * \param[in] name The unique name to reference the particle type.
+     * \param[in] mass The mass of the particle of this type.
+     */
+    ParticleType(ParticleTypeName name, Mass mass);
+
+    /*! Constructor with explicit type specification
+     *
+     * \param[in] name The unique name to reference the particle type.
+     * \param[in] mass The mass of the particle of this type.
+     * \param[in] c6   The C6 Lennard-Jones parameter.
+     * \param[in] c12  The C12 Lennard-Jones parameter.
+     */
     ParticleType(ParticleTypeName name, Mass mass, C6 c6, C12 c12);
 
     //! Force explicit use of correct types
-    template<typename T, typename U, typename V, typename W>
-    ParticleType(T name, U mass, V c6, W c12) = delete;
+    template<typename T, typename U>
+    ParticleType(T name, U mass) = delete;
 
-    //! Get the name
+    //! Force explicit use of correct types
+    template<typename T, typename U, typename V, typename W>
+    ParticleType(T name, U mass) = delete;
+
+    //! Get the type name
     ParticleTypeName name() const;
 
     //! Get the mass
@@ -101,7 +124,12 @@ private:
     C12 c12_;
 };
 
-//! comparison operator
+/*! Comparison operator
+ *
+ * \param[in] a First type.
+ * \param[in] b Second type.
+ * \returns If the types are identical.
+ */
 bool operator==(const ParticleType& a, const ParticleType& b);
 
 } // namespace nblib

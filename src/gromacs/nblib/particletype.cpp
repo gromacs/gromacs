@@ -58,6 +58,14 @@ ParticleType::ParticleType() noexcept :
 {
 }
 
+ParticleType::ParticleType(ParticleTypeName name, Mass mass) :
+    name_(std::move(name)),
+    mass_(mass),
+    c6_(C6(0)),
+    c12_(C12(0))
+{
+}
+
 ParticleType::ParticleType(ParticleTypeName name, Mass mass, C6 c6, C12 c12) :
     name_(std::move(name)),
     mass_(mass),
