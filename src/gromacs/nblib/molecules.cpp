@@ -65,7 +65,7 @@ Molecule& Molecule::addParticle(const ParticleName& particleName,
     auto found = particleTypes_.find(particleType.name());
     if (found == particleTypes_.end())
     {
-        particleTypes_[particleType.name()] = particleType;
+        particleTypes_.insert(std::make_pair(particleType.name(), particleType));
     }
     else
     {

@@ -74,10 +74,6 @@ using C12              = real;
 class ParticleType
 {
 public:
-    //! Default constructor.
-    //! todo: why is the default constructor needed?
-    ParticleType() = default;
-
     /*! \brief Constructor with explicit name and mass specification.
      *
      * \param[in] name The unique name to reference the particle type.
