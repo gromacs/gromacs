@@ -140,7 +140,7 @@ public:
         {
             interactionContainer.interactionTypes_[interaction.name()] = std::move(interaction);
         }
-    }
+     }
 
     // The number of molecules
     int numParticlesInMolecule() const;

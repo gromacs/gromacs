@@ -65,7 +65,7 @@ inline void ignore_unused(T& x)
 
 namespace detail {
 
-    template <class T, class U>
+     template <class T, class U>
     struct disjunction : std::integral_constant<bool, T::value || U::value>
     {};
 
