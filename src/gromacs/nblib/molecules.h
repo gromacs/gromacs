@@ -123,7 +123,9 @@ public:
 
     void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, MorseBondType bondType);
 
-    void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HalfAttractiveQuarticBondType bondType);
+    void addInteraction(ParticleName                  particleNameI,
+                        ParticleName                  particleNameJ,
+                        HalfAttractiveQuarticBondType bondType);
 
     // The number of molecules
     int numParticlesInMolecule() const;
@@ -149,9 +151,10 @@ private:
         real        charge_;
     };
 
-    template <class Bond>
-    struct BondData {
-        std::unordered_map<BondName, Bond> bondTypes_;
+    template<class Bond>
+    struct BondData
+    {
+        std::unordered_map<BondName, Bond>                            bondTypes_;
         std::vector<std::tuple<ParticleName, ParticleName, BondName>> bonds_;
     };
 
@@ -168,13 +171,12 @@ private:
     //! so we delay the conversion until TopologyBuilder requests it
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> exclusionsByName_;
 
-    BondData<HarmonicBondType> harmonicBonds_;
-    BondData<G96BondType> g96Bonds_;
-    BondData<CubicBondType> cubicBonds_;
-    BondData<FENEBondType> feneBonds_;
-    BondData<MorseBondType> morseBonds_;
+    BondData<HarmonicBondType>              harmonicBonds_;
+    BondData<G96BondType>                   g96Bonds_;
+    BondData<CubicBondType>                 cubicBonds_;
+    BondData<FENEBondType>                  feneBonds_;
+    BondData<MorseBondType>                 morseBonds_;
     BondData<HalfAttractiveQuarticBondType> halfAttractiveBonds_;
-
 };
 
 } // namespace nblib

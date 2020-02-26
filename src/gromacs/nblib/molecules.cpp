@@ -135,7 +135,8 @@ void Molecule::addExclusion(const std::string& particleName, const std::string& 
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HarmonicBondType bondType)
 {
     halfAttractiveBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
-    if (harmonicBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+    if (harmonicBonds_.bondTypes_.count(bondType.bondName()) == 0)
+    {
         harmonicBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }
@@ -143,7 +144,8 @@ void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleN
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, G96BondType bondType)
 {
     g96Bonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
-    if (g96Bonds_.bondTypes_.count(bondType.bondName()) == 0) {
+    if (g96Bonds_.bondTypes_.count(bondType.bondName()) == 0)
+    {
         g96Bonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }
@@ -151,7 +153,8 @@ void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleN
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, CubicBondType bondType)
 {
     cubicBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
-    if (cubicBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+    if (cubicBonds_.bondTypes_.count(bondType.bondName()) == 0)
+    {
         cubicBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }
@@ -159,7 +162,8 @@ void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleN
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, FENEBondType bondType)
 {
     feneBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
-    if (feneBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+    if (feneBonds_.bondTypes_.count(bondType.bondName()) == 0)
+    {
         feneBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }
@@ -167,15 +171,19 @@ void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleN
 void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, MorseBondType bondType)
 {
     morseBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
-    if (morseBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+    if (morseBonds_.bondTypes_.count(bondType.bondName()) == 0)
+    {
         morseBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }
 
-void Molecule::addInteraction(ParticleName particleNameI, ParticleName particleNameJ, HalfAttractiveQuarticBondType bondType)
+void Molecule::addInteraction(ParticleName                  particleNameI,
+                              ParticleName                  particleNameJ,
+                              HalfAttractiveQuarticBondType bondType)
 {
     halfAttractiveBonds_.bonds_.emplace_back(particleNameI, particleNameJ, bondType.bondName());
-    if (halfAttractiveBonds_.bondTypes_.count(bondType.bondName()) == 0) {
+    if (halfAttractiveBonds_.bondTypes_.count(bondType.bondName()) == 0)
+    {
         halfAttractiveBonds_.bondTypes_[bondType.bondName()] = std::move(bondType);
     }
 }

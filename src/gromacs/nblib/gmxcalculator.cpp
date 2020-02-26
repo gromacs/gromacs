@@ -112,8 +112,7 @@ static interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelO
 
 GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system,
                                        const std::shared_ptr<NBKernelOptions> options) :
-    enerd_(1, 0),
-    verletForces_({})
+    enerd_(1, 0), verletForces_({})
 {
     interactionConst_ = setupInteractionConst(options);
 

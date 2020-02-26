@@ -67,20 +67,14 @@ public:
 
     HarmonicBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondName bondName() const {
-        return bondName_;
-    }
+    BondName bondName() const { return bondName_; }
 
-    ForceConstant forceConstant() const {
-        return forceConstant_;
-    }
+    ForceConstant forceConstant() const { return forceConstant_; }
 
-    EquilDistance equilDistance() const {
-        return equilDistance_;
-    }
+    EquilDistance equilDistance() const { return equilDistance_; }
 
 private:
-    BondName bondName_;
+    BondName      bondName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
@@ -93,25 +87,18 @@ private:
 class G96BondType
 {
 public:
-
     G96BondType() = default;
 
     G96BondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondName bondName() const {
-        return bondName_;
-    }
+    BondName bondName() const { return bondName_; }
 
-    ForceConstant forceConstant() const {
-        return forceConstant_;
-    }
+    ForceConstant forceConstant() const { return forceConstant_; }
 
-    EquilDistance equilDistance() const {
-        return equilDistance_;
-    }
+    EquilDistance equilDistance() const { return equilDistance_; }
 
 private:
-    BondName bondName_;
+    BondName      bondName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
@@ -119,33 +106,28 @@ private:
 //! Cubic bond type
 //
 // It represents the interaction of the form
-// V(r; quadraticForceConstant, cubicForceConstant, equilDistance) = quadraticForceConstant * (r - equilDistance)^2 +
-// forceconstant1 * cubicForceConstant * (r - equilDistance)
+// V(r; quadraticForceConstant, cubicForceConstant, equilDistance) = quadraticForceConstant * (r -
+// equilDistance)^2 + forceconstant1 * cubicForceConstant * (r - equilDistance)
 class CubicBondType
 {
 public:
-
     CubicBondType() = default;
 
-    CubicBondType(BondName bondName, ForceConstant quadraticForceConstant, ForceConstant cubicForceConstant, EquilDistance equilDistance);
+    CubicBondType(BondName      bondName,
+                  ForceConstant quadraticForceConstant,
+                  ForceConstant cubicForceConstant,
+                  EquilDistance equilDistance);
 
-    BondName bondName() const {
-        return bondName_;
-    }
+    BondName bondName() const { return bondName_; }
 
-    ForceConstant quadraticForceConstant() const {
-        return quadraticForceConstant_;
-    }
+    ForceConstant quadraticForceConstant() const { return quadraticForceConstant_; }
 
-    ForceConstant cubicForceConstant() const {
-        return cubicForceConstant_;
-    }
+    ForceConstant cubicForceConstant() const { return cubicForceConstant_; }
 
-    EquilDistance equilDistance() const {
-        return equilDistance_;
-    }
+    EquilDistance equilDistance() const { return equilDistance_; }
+
 private:
-    BondName bondName_;
+    BondName      bondName_;
     ForceConstant quadraticForceConstant_;
     ForceConstant cubicForceConstant_;
     EquilDistance equilDistance_;
@@ -158,24 +140,18 @@ private:
 class FENEBondType
 {
 public:
-
     FENEBondType() = default;
 
     FENEBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondName bondName() const {
-        return bondName_;
-    }
+    BondName bondName() const { return bondName_; }
 
-    ForceConstant forceConstant() const {
-        return forceConstant_;
-    }
+    ForceConstant forceConstant() const { return forceConstant_; }
 
-    EquilDistance equilDistance() const {
-        return equilDistance_;
-    }
+    EquilDistance equilDistance() const { return equilDistance_; }
+
 private:
-    BondName bondName_;
+    BondName      bondName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
@@ -187,30 +163,22 @@ private:
 class MorseBondType
 {
 public:
-
     MorseBondType() = default;
 
     MorseBondType(BondName bondName, ForceConstant forceConstant, Exponent exponent, EquilDistance equilDistance);
 
-    BondName bondName() const {
-        return bondName_;
-    }
+    BondName bondName() const { return bondName_; }
 
-    ForceConstant forceConstant() const {
-        return forceConstant_;
-    }
+    ForceConstant forceConstant() const { return forceConstant_; }
 
-    Exponent exponent() const {
-        return exponent_;
-    }
+    Exponent exponent() const { return exponent_; }
 
-    EquilDistance equilDistance() const {
-        return equilDistance_;
-    }
+    EquilDistance equilDistance() const { return equilDistance_; }
+
 private:
-    BondName bondName_;
+    BondName      bondName_;
     ForceConstant forceConstant_;
-    Exponent exponent_;
+    Exponent      exponent_;
     EquilDistance equilDistance_;
 };
 
@@ -221,24 +189,18 @@ private:
 class HalfAttractiveQuarticBondType
 {
 public:
-
     HalfAttractiveQuarticBondType() = default;
 
     HalfAttractiveQuarticBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondName bondName() const {
-        return bondName_;
-    }
+    BondName bondName() const { return bondName_; }
 
-    ForceConstant forceConstant() const {
-        return forceConstant_;
-    }
+    ForceConstant forceConstant() const { return forceConstant_; }
 
-    EquilDistance equilDistance() const {
-        return equilDistance_;
-    }
+    EquilDistance equilDistance() const { return equilDistance_; }
+
 private:
-    BondName bondName_;
+    BondName      bondName_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
