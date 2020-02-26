@@ -34,7 +34,7 @@
  */
 /*! \inpublicapi \file
  * \brief
- * Implements nblib simulation box
+ * Implements nblib supported bondtypes
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -48,44 +48,44 @@
 namespace nblib
 {
 
-HarmonicBondType::HarmonicBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :
-    bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
+HarmonicBondType::HarmonicBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
+    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {
 }
 
-G96BondType::G96BondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :
-    bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
+G96BondType::G96BondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
+    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {
 }
 
-CubicBondType::CubicBondType(BondName      bondName,
+CubicBondType::CubicBondType(Name          name,
                              ForceConstant quadraticForceConstant,
                              ForceConstant cubicForceConstant,
                              EquilDistance equilDistance) :
-    bondName_(bondName),
+    name_(name),
     quadraticForceConstant_(quadraticForceConstant),
     cubicForceConstant_(cubicForceConstant),
     equilDistance_(equilDistance)
 {
 }
 
-FENEBondType::FENEBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance) :
-    bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
+FENEBondType::FENEBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
+    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {
 }
 
-MorseBondType::MorseBondType(BondName      bondName,
+MorseBondType::MorseBondType(Name          name,
                              ForceConstant forceConstant,
                              Exponent      exponent,
                              EquilDistance equilDistance) :
-    bondName_(bondName), forceConstant_(forceConstant), exponent_(exponent), equilDistance_(equilDistance)
+    name_(name), forceConstant_(forceConstant), exponent_(exponent), equilDistance_(equilDistance)
 {
 }
 
-HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(BondName      bondName,
+HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(Name          name,
                                                              ForceConstant forceConstant,
                                                              EquilDistance equilDistance) :
-    bondName_(bondName), forceConstant_(forceConstant), equilDistance_(equilDistance)
+    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
 {
 }
 

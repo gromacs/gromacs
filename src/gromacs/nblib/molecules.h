@@ -74,14 +74,15 @@ class Molecule
     {
         using type = Bond;
 
-        std::unordered_map<BondName, Bond>                            interactionTypes_;
-        std::vector<std::tuple<ParticleName, ParticleName, BondName>> interactions_;
+        std::unordered_map<Name, Bond>                            interactionTypes_;
+        std::vector<std::tuple<ParticleName, ParticleName, Name>> interactions_;
     };
 
     using InteractionTuple = std::tuple<BondData<HarmonicBondType>,
                                         BondData<G96BondType>,
                                         BondData<CubicBondType>,
-                                        BondData<FENEBondType>>;
+                                        BondData<FENEBondType>,
+                                        BondData<HalfAttractiveQuarticBondType>>;
 
 public:
     Molecule(std::string moleculeName);
@@ -134,10 +135,10 @@ public:
     void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, Interaction interaction)
     {
         auto& interactionContainer = pickType<BondData<Interaction>>(interactionData_);
-        interactionContainer.interactions_.emplace_back(particleNameI, particleNameJ, interaction.bondName());
-        if (interactionContainer.interactionTypes_.count(interaction.bondName()) == 0)
+        interactionContainer.interactions_.emplace_back(particleNameI, particleNameJ, interaction.name());
+        if (interactionContainer.interactionTypes_.count(interaction.name()) == 0)
         {
-            interactionContainer.interactionTypes_[interaction.bondName()] = std::move(interaction);
+            interactionContainer.interactionTypes_[interaction.name()] = std::move(interaction);
         }
     }
 

@@ -34,7 +34,7 @@
  */
 /*! \inpublicapi \file
  * \brief
- * Implements nblib simulation box
+ * Implements nblib supported bondtypes
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -49,74 +49,77 @@
 
 namespace nblib
 {
-using BondName      = std::string;
+using Name          = std::string;
 using ForceConstant = real;
 using EquilDistance = real;
 using Exponent      = real;
 
-//! Harmonic bond type
-//
-// It represents the interaction of the form
-// V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^2
+/*! \brief Harmonic bond type
+ *
+ *  It represents the interaction of the form
+ * V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^2
+ */
 class HarmonicBondType
 {
 public:
     HarmonicBondType() = default;
 
-    HarmonicBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
+    HarmonicBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondName bondName() const { return bondName_; }
+    Name name() const { return name_; }
 
     ForceConstant forceConstant() const { return forceConstant_; }
 
     EquilDistance equilDistance() const { return equilDistance_; }
 
 private:
-    BondName      bondName_;
+    Name          name_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
 
 
-//! GROMOS bond type
-//
-// It represents the interaction of the form
-// V(r; forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilDistance^2)^2
+/*! \brief GROMOS bond type
+ *
+ * It represents the interaction of the form
+ * V(r; forceConstant, equilDistance) = 0.25 * forceConstant * (r^2 - equilDistance^2)^2
+ */
 class G96BondType
 {
 public:
     G96BondType() = default;
 
-    G96BondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
+    G96BondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondName bondName() const { return bondName_; }
+    Name name() const { return name_; }
 
     ForceConstant forceConstant() const { return forceConstant_; }
 
     EquilDistance equilDistance() const { return equilDistance_; }
 
 private:
-    BondName      bondName_;
+    Name          name_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
 
-//! Cubic bond type
-//
-// It represents the interaction of the form
-// V(r; quadraticForceConstant, cubicForceConstant, equilDistance) = quadraticForceConstant * (r -
-// equilDistance)^2 + forceconstant1 * cubicForceConstant * (r - equilDistance)
+/*! \brief Cubic bond type
+ *
+ * It represents the interaction of the form
+ * V(r; quadraticForceConstant, cubicForceConstant, equilDistance) = quadraticForceConstant * (r -
+ * equilDistance)^2 + quadraticForceConstant * cubicForceConstant * (r - equilDistance)
+ */
 class CubicBondType
 {
 public:
     CubicBondType() = default;
 
-    CubicBondType(BondName      bondName,
+    CubicBondType(Name          name,
                   ForceConstant quadraticForceConstant,
                   ForceConstant cubicForceConstant,
                   EquilDistance equilDistance);
 
-    BondName bondName() const { return bondName_; }
+    Name name() const { return name_; }
 
     ForceConstant quadraticForceConstant() const { return quadraticForceConstant_; }
 
@@ -125,47 +128,49 @@ public:
     EquilDistance equilDistance() const { return equilDistance_; }
 
 private:
-    BondName      bondName_;
+    Name          name_;
     ForceConstant quadraticForceConstant_;
     ForceConstant cubicForceConstant_;
     EquilDistance equilDistance_;
 };
 
-//! FENE bond type
-//
-// It represents the interaction of the form
-// V(r; forceConstant, equilDistance) = - 0.5 * forceConstant * equilDistance^2 * log( 1 - (r / equilDistance)^2)
+/*! \brief FENE bond type
+ *
+ * It represents the interaction of the form
+ * V(r; forceConstant, equilDistance) = - 0.5 * forceConstant * equilDistance^2 * log( 1 - (r / equilDistance)^2)
+ */
 class FENEBondType
 {
 public:
     FENEBondType() = default;
 
-    FENEBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
+    FENEBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondName bondName() const { return bondName_; }
+    Name name() const { return name_; }
 
     ForceConstant forceConstant() const { return forceConstant_; }
 
     EquilDistance equilDistance() const { return equilDistance_; }
 
 private:
-    BondName      bondName_;
+    Name          name_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
 
-//! Morse bond type
-//
-// It represents the interaction of the form
-// V(r; forceConstant, exponent, equilDistance) = forceConstant * ( 1 - exp( -exponent * (r - equilDistance))
+/*! \brief Morse bond type
+ *
+ * It represents the interaction of the form
+ * V(r; forceConstant, exponent, equilDistance) = forceConstant * ( 1 - exp( -exponent * (r - equilDistance))
+ */
 class MorseBondType
 {
 public:
     MorseBondType() = default;
 
-    MorseBondType(BondName bondName, ForceConstant forceConstant, Exponent exponent, EquilDistance equilDistance);
+    MorseBondType(Name name, ForceConstant forceConstant, Exponent exponent, EquilDistance equilDistance);
 
-    BondName bondName() const { return bondName_; }
+    Name name() const { return name_; }
 
     ForceConstant forceConstant() const { return forceConstant_; }
 
@@ -174,31 +179,32 @@ public:
     EquilDistance equilDistance() const { return equilDistance_; }
 
 private:
-    BondName      bondName_;
+    Name          name_;
     ForceConstant forceConstant_;
     Exponent      exponent_;
     EquilDistance equilDistance_;
 };
 
-//! Half-attractive quartic bond type
-//
-// It represents the interaction of the form
-// V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^4
+/*! \brief Half-attractive quartic bond type
+ *
+ * It represents the interaction of the form
+ * V(r; forceConstant, equilDistance) = 0.5 * forceConstant * (r - equilDistance)^4
+ */
 class HalfAttractiveQuarticBondType
 {
 public:
     HalfAttractiveQuarticBondType() = default;
 
-    HalfAttractiveQuarticBondType(BondName bondName, ForceConstant forceConstant, EquilDistance equilDistance);
+    HalfAttractiveQuarticBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance);
 
-    BondName bondName() const { return bondName_; }
+    Name name() const { return name_; }
 
     ForceConstant forceConstant() const { return forceConstant_; }
 
     EquilDistance equilDistance() const { return equilDistance_; }
 
 private:
-    BondName      bondName_;
+    Name          name_;
     ForceConstant forceConstant_;
     EquilDistance equilDistance_;
 };
