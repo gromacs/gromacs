@@ -34,73 +34,51 @@
  */
 /*! \file
  * \brief
- * Declares nblib ParticleTypes
+ * Implements nblib particle-types interactions
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
- *
- * \inpublicapi
- * \ingroup nblib
  */
-#ifndef GMX_NBLIB_PARTICLETYPE_H
-#define GMX_NBLIB_PARTICLETYPE_H
 
-#include <string>
-#include <tuple>
-#include <unordered_map>
-#include <vector>
+#include <sstream>
 
-#include "gromacs/math/vectypes.h"
+#include "gmxpre.h"
+
+#include "interactions.h"
+
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace nblib
 {
-class TopologyBuilder;
 
-using ParticleTypeName = std::string;
-using Mass             = real;
-using C6               = real;
-using C12              = real;
-
-class ParticleType
+void ParticleTypesInteractons::add(ParticleType particleType, C6 c6, C12 c12)
 {
-public:
-    ParticleType() noexcept;
+    if (particleInteractions_.count(particleType.name()) == 0)
+    {
+        particleInteractions_[particleType.name()] = std::make_tuple(c6, c12);
+    } else {
+        std::string message = gmx::formatString("Attempting to add nonbonded interaction %s twice", particleType.name().c_str());
+        GMX_THROW(gmx::InvalidInputError(message));
+    }
+}
 
-    //! Constructor with explicit type specification
-    ParticleType(ParticleTypeName name, Mass mass, C6 c6, C12 c12);
+void ParticleTypesInteractons::add(ParticleType particleType1, ParticleType particleType2, C6 c6, C12 c12)
+{
+    std::string interactionKey = particleType1.name() + "-" + particleType2.name();
+    std::string possibleInteractionKey = particleType2.name() + "-" + particleType1.name();
+    if (particleInteractions_.count(interactionKey) == 0)
+    {
+        std::string message = gmx::formatString("Attempting to add nonbonded interaction between %s %s twice", particleType1.name().c_str(), particleType2.name().c_str());
+        GMX_RELEASE_ASSERT(particleInteractions_.count(possibleInteractionKey) == 0, message.c_str());
 
-    //! Force explicit use of correct types
-    template<typename T, typename U, typename V, typename W>
-    ParticleType(T name, U mass, V c6, W c12) = delete;
+        particleInteractions_[interactionKey] = std::make_tuple(c6, c12);
+        particleInteractions_[possibleInteractionKey] = std::make_tuple(c6, c12);
+    }
+}
 
-    //! Get the name
-    ParticleTypeName name() const;
 
-    //! Get the mass
-    Mass mass() const;
-
-    //! Get the c6 param
-    C6 c6() const;
-
-    //! Get the c12 param
-    C12 c12() const;
-
-private:
-    //! The name
-    ParticleTypeName name_;
-    //! The mass
-    Mass mass_;
-    //! The c12 param
-    C6 c6_;
-    //! The c12 param
-    C12 c12_;
-};
-
-//! comparison operator
-bool operator==(const ParticleType& a, const ParticleType& b);
-
-} // namespace nblib
-#endif // GMX_NBLIB_PARTICLETYPE_H
+}

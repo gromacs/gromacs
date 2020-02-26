@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Implements nblib HarmonicType
+ * Implements nblib particle-types interactions
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -47,18 +47,31 @@
 
 #include "gromacs/math/vectypes.h"
 
+#include "particletype.h"
+
 namespace nblib
 {
 
-//! Type of interaction
-struct HarmonicType
+//! Enum for selecting coulomb type
+enum class CombinationRule : int
 {
-    real        equiDist;
-    real        forceConstant;
-    std::string particleIDi;
-    std::string particleIDj;
-    // int particleI;
-    // int particleJ;
+    Geometric,
+    Count
+};
+
+class ParticleTypesInteractons
+{
+public:
+    ParticleTypesInteractons() = default;
+
+    void add(ParticleType particleType, C6 c6, C12 c12);
+
+    void add(ParticleType particleType1, ParticleType particleType2, C6 c6, C12 c12);
+
+    // void generateTable(CombinationRule combinationRule);
+
+private:
+    std::unordered_map<ParticleTypeName, std::tuple<C6, C12>> particleInteractions_;
 };
 
 } // namespace nblib
