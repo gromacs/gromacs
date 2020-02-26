@@ -34,7 +34,7 @@
  */
 /*! \inpublicapi \file
  * \brief
- * Implements nblib simulation box
+ * Implements exclusion classes
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -48,39 +48,43 @@
 namespace nblib
 {
 
-//! Exclusion type
-//
-// It represents that two particles are excluded for all types of nonbonded interactions
+/*! \brief
+ * Exclusion type
+ * It represents that two particles are excluded for all types of nonbonded interactions
+ */
 class Exclusion
 {
 public:
     Exclusion() = default;
 };
 
-//! LJExclusion type
-//
-// It represents that two particles are excluded for interactions using
-// the C6/C12 and epsilon/sigma functional forms
+/*! \brief
+ * LJExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the C6/C12 and epsilon/sigma functional forms
+ */
 class LJExclusion
 {
 public:
     LJExclusion() = default;
 };
 
-//! BuckinghamExclusion type
-//
-// It represents that two particles are excluded for interactions using
-// the Buckingham functional form
+/*! \brief
+ * BuckinghamExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the Buckingham functional form
+ */
 class BuckinghamExclusion
 {
 public:
     BuckinghamExclusion() = default;
 };
 
-//! CoulombExclusion type
-//
-// It represents that two particles are excluded for interactions using
-// the Buckingham functional form
+/*! \brief
+ * CoulombExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the Buckingham functional form
+ */
 class CoulombExclusion
 {
 public:
