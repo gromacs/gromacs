@@ -32,56 +32,57 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \inpublicapi \file
  * \brief
- * Implements nblib ForceCalculator
+ * Implements exclusion classes
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_FORCECALCULATOR_H
-#define GROMACS_FORCECALCULATOR_H
-
-#include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/nblib/simulationstate.h"
-#include "gromacs/timing/cyclecounter.h"
-
-#include "nbkerneldef.h"
-#include "nbkerneloptions.h"
-
+#ifndef GMX_NBLIB_EXCLUSIONS_H
+#define GMX_NBLIB_EXCLUSIONS_H
 
 namespace nblib
 {
-struct NbvSetupUtil;
-class GmxForceCalculator;
 
-class ForceCalculator
+/*! \brief
+ * Exclusion type
+ * It represents that two particles are excluded for all types of nonbonded interactions
+ */
+class Exclusion
 {
-public:
-    // TODO: Depend on simulationState
-    ForceCalculator(const SimulationState& system, const NBKernelOptions& options);
-
-    //! Sets up and runs the kernel calls
-    //! returns the forces as a vector
-    gmx::PaddedHostVector<gmx::RVec> compute();
-
-private:
-    // void printTimingsOutput(const NBKernelOptions &options,
-    //                        const SimulationState &system,
-    //                        const gmx::index      &numPairs,
-    //                        gmx_cycles_t           cycles);
-
-    //! Struct to handle translation from NBLIB inputs to setup GMX data structures
-    std::unique_ptr<NbvSetupUtil> nbvSetupUtil_;
-    //! GROMACS force calculator to compute forces
-    std::unique_ptr<GmxForceCalculator> gmxForceCalculator_;
-
-    //    //! Particles masses
-    //    std::vector<real> masses_;
 };
 
-} // namespace nblib
+/*! \brief
+ * LJExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the C6/C12 and epsilon/sigma functional forms
+ */
+class LJExclusion
+{
+};
 
-#endif // GROMACS_FORCECALCULATOR_H
+/*! \brief
+ * BuckinghamExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the Buckingham functional form
+ */
+class BuckinghamExclusion
+{
+};
+
+/*! \brief
+ * CoulombExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the Buckingham functional form
+ */
+class CoulombExclusion
+{
+};
+
+
+} // namespace nblib
+#endif // GMX_NBLIB_EXCLUSIONS_H
