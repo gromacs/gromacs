@@ -52,10 +52,10 @@ class ListOfLists;
  */
 struct ExclusionBlock
 {
-    //! Atom numbers for exclusion.
-    std::vector<int> atomNumber;
-    //! Number of atoms in the exclusion.
-    int nra() const { return atomNumber.size(); }
+    //! Particle numbers for exclusion.
+    std::vector<int> particleNumber;
+    //! Number of particles in the exclusion.
+    int nra() const { return particleNumber.size(); }
 };
 
 /*! \brief Merge the contents of \c b2 into \c excl.

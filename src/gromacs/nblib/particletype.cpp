@@ -34,55 +34,62 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic nblib AtomType tests
+ * Implements nblib ParticleType
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
+
 #include "gmxpre.h"
 
-#include <cmath>
-
-#include "gromacs/nblib/atomtype.h"
-
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-
-#include "testsystems.h"
-
-using gmx::test::defaultRealTolerance;
+#include "particletype.h"
 
 namespace nblib
 {
 
-TEST(NBlibTest, AtomNameCanBeConstructed)
+ParticleType::ParticleType() noexcept :
+    name_(ParticleTypeName("")),
+    mass_(Mass(0)),
+    c6_(C6(0)),
+    c12_(C12(0))
 {
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    EXPECT_EQ(argonAtom.name(), arAtom.name);
 }
 
-TEST(NBlibTest, AtomMassCanBeConstructed)
+ParticleType::ParticleType(ParticleTypeName name, Mass mass, C6 c6, C12 c12) :
+    name_(std::move(name)),
+    mass_(mass),
+    c6_(c6),
+    c12_(c12)
 {
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    EXPECT_EQ(argonAtom.mass(), arAtom.mass);
 }
 
-TEST(NBlibTest, AtomC6CanBeConstructed)
+ParticleTypeName ParticleType::name() const
 {
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    EXPECT_EQ(argonAtom.c6(), arAtom.c6);
+    return name_;
 }
 
-TEST(NBlibTest, AtomC12CanBeConstructed)
+Mass ParticleType::mass() const
 {
-    ArAtom   arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
-    EXPECT_EQ(argonAtom.c12(), arAtom.c12);
+    return mass_;
+}
+
+
+C6 ParticleType::c6() const
+{
+    return c6_;
+}
+
+C12 ParticleType::c12() const
+{
+    return c12_;
+}
+
+bool operator==(const ParticleType& a, const ParticleType& b)
+{
+    return a.name() == b.name() && a.mass() == b.mass() && a.c6() == b.c6() && a.c12() == b.c12();
 }
 
 } // namespace nblib

@@ -78,7 +78,7 @@ private:
     //! GROMACS force calculator to compute forces
     std::unique_ptr<GmxForceCalculator> gmxForceCalculator_;
 
-    //    //! Atom masses
+    //    //! Particles masses
     //    std::vector<real> masses_;
 };
 

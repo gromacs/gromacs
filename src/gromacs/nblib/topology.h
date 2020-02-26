@@ -40,9 +40,10 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_TOPOLOGY_H
-#define GROMACS_TOPOLOGY_H
+#ifndef GMX_NBLIB_TOPOLOGY_H
+#define GMX_NBLIB_TOPOLOGY_H
 
 #include <vector>
 
@@ -61,7 +62,7 @@ namespace nblib
 namespace detail
 {
 
-// Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
+// Converts tuples of particle indices to exclude to the gmx::ExclusionBlock format
 std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList);
 
 // Add offset to all indices in inBlock
@@ -81,19 +82,19 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 class Topology
 {
 public:
-    //! Returns the total number of atoms in the system
-    const int& numAtoms() const;
+    //! Returns the total number of particles in the system
+    const int& numParticles() const;
 
-    //! Returns a vector of atom names
-    const std::vector<AtomType>& getAtomTypes() const;
+    //! Returns a vector of particle types
+    const std::vector<ParticleType>& getParticleTypes() const;
 
-    //! Return the AtomType ID of all atoms
-    const std::vector<int>& getAtomTypeIdOfAllAtoms() const;
+    //! Return the ParticleType ID of all particles
+    const std::vector<int>& getParticleTypeIdOfAllParticles() const;
 
-    //! Returns a vector of atom partial charges
+    //! Returns a vector of particles partial charges
     const std::vector<real>& getCharges() const;
 
-    //! Returns exclusions in proper, performant, gromacs layout
+    //! Returns exclusions in proper, performant, GROMACS layout
     const gmx::ListOfLists<int>& getGmxExclusions() const { return exclusions_; }
 
 private:
@@ -101,13 +102,13 @@ private:
 
     friend class TopologyBuilder;
 
-    //! Total number of atoms in the system
-    int numAtoms_;
-    //! unique collection of AtomTypes
-    std::vector<AtomType> atomTypes_;
-    //! store an ID of each atom's type
-    std::vector<int> atomTypeIdOfAllAtoms_;
-    //! Storage for atom partial charges
+    //! Total number of particles in the system
+    int numParticles_;
+    //! unique collection of ParticleTypes
+    std::vector<ParticleType> particleTypes_;
+    //! store an ID of each particles's type
+    std::vector<int> particleTypeIdOfAllParticles_;
+    //! Storage for particles partial charges
     std::vector<real> charges_;
     //! Information about exclusions.
     gmx::ListOfLists<int> exclusions_;
@@ -145,8 +146,8 @@ private:
     //! Internally stored topology
     Topology topology_;
 
-    //! Total number of atoms in the system
-    int numAtoms_;
+    //! Total number of particles in the system
+    int numParticles_;
 
     //! List of molecule types and number of molecules
     std::vector<std::tuple<Molecule, int>> molecules_;
@@ -156,27 +157,27 @@ private:
 
     // Helper function to extract quantities like mass, charge, etc from the system
     template<typename T, class Extractor>
-    std::vector<T> extractAtomTypeQuantity(Extractor extractor);
+    std::vector<T> extractParticleTypeQuantity(Extractor extractor);
 
-    //! distinct collection of AtomTypes
-    std::unordered_map<std::string, AtomType> atomTypes_;
+    //! distinct collection of ParticleTypes
+    std::unordered_map<std::string, ParticleType> particleTypes_;
 };
 
-//! utility function to extract AtomType quantities and expand them to the full
-//! array of length numAtoms()
+//! utility function to extract Particle quantities and expand them to the full
+//! array of length numParticles()
 template<class F>
-inline auto expandQuantity(const Topology& topology, F atomTypeExtractor)
+inline auto expandQuantity(const Topology& topology, F particleTypeExtractor)
 {
-    using ValueType = decltype((std::declval<AtomType>().*std::declval<F>())());
+    using ValueType = decltype((std::declval<ParticleType>().*std::declval<F>())());
 
     std::vector<ValueType> ret;
-    ret.reserve(topology.numAtoms());
+    ret.reserve(topology.numParticles());
 
-    const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
+    const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
 
-    for (size_t id : topology.getAtomTypeIdOfAllAtoms())
+    for (size_t id : topology.getParticleTypeIdOfAllParticles())
     {
-        ret.push_back((atomTypes[id].*atomTypeExtractor)());
+        ret.push_back((particleTypes[id].*particleTypeExtractor)());
     }
 
     return ret;
@@ -184,4 +185,4 @@ inline auto expandQuantity(const Topology& topology, F atomTypeExtractor)
 
 } // namespace nblib
 
-#endif // GROMACS_TOPOLOGY_H
+#endif // GMX_NBLIB_TOPOLOGY_H

@@ -55,8 +55,8 @@ ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOp
 
     gmxForceCalculator_ = nbvSetupUtil_->setupGmxForceCalculator();
 
-    //    //! size: numAtoms
-    //    masses_ = expandQuantity(system.topology(), &AtomType::mass);
+    //    //! size: numParticles
+    //    masses_ = expandQuantity(system.topology(), &ParticleType::mass);
 }
 
 //! Sets up and runs the kernel calls

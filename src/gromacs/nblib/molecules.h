@@ -40,11 +40,13 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
  * \inpublicapi
  * \ingroup nblib
  */
-#ifndef GROMACS_MOLECULES_H
-#define GROMACS_MOLECULES_H
+#ifndef GMX_NBLIB_MOLECULES_H
+#define GMX_NBLIB_MOLECULES_H
 
 #include <string>
 #include <tuple>
@@ -52,7 +54,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/particletype.h"
 
 #include "interactions.h"
 
@@ -60,62 +62,67 @@ namespace nblib
 {
 class TopologyBuilder;
 
-using AtomName    = std::string;
-using Charge      = real;
-using ResidueName = std::string;
+using ParticleName = std::string;
+using Charge       = real;
+using ResidueName  = std::string;
 
 class Molecule
 {
 public:
     Molecule(std::string moleculeName);
 
-    // Add an atom to the molecule with full specification of parameters.
-    Molecule& addAtom(const AtomName&    atomName,
-                      const ResidueName& residueName,
-                      const Charge&      charge,
-                      AtomType const&    atomType);
+    // Add a particle to the molecule with full specification of parameters.
+    Molecule& addParticle(const ParticleName& particleName,
+                          const ResidueName&  residueName,
+                          const Charge&       charge,
+                          ParticleType const& particleType);
 
     // Force explicit use of correct types
     template<typename T, typename U, typename V>
-    Molecule& addAtom(const T& atomName, const U& residueName, const V& charge, AtomType const& atomType) = delete;
+    Molecule& addParticle(const T&            particleName,
+                          const U&            residueName,
+                          const V&            charge,
+                          ParticleType const& particleType) = delete;
 
-    // Add an atom to the molecule with implicit charge of 0
-    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const& atomType);
+    // Add a particle to the molecule with implicit charge of 0
+    Molecule& addParticle(const ParticleName& particleName,
+                          const ResidueName&  residueName,
+                          ParticleType const& particleType);
 
-    // Add an atom to the molecule with residueName set using atomName
-    Molecule& addAtom(const AtomName& atomName, const Charge& charge, AtomType const& atomType);
+    // Add a particle to the molecule with residueName set using particleName
+    Molecule& addParticle(const ParticleName& particleName, const Charge& charge, ParticleType const& particleType);
 
     // Force explicit use of correct types, covers both implicit charge and residueName
     template<typename T, typename U>
-    Molecule& addAtom(const T& atomName, const U& charge, AtomType const& atomType) = delete;
+    Molecule& addParticle(const T& particleName, const U& charge, ParticleType const& particleType) = delete;
 
-    // Add an atom to the molecule with residueName set using atomName with implicit charge of 0
-    Molecule& addAtom(const AtomName& atomName, AtomType const& atomType);
+    // Add a particle to the molecule with residueName set using particleName with implicit charge of 0
+    Molecule& addParticle(const ParticleName& particleName, ParticleType const& particleType);
 
     // Force explicit use of correct types
     template<typename T>
-    Molecule& addAtom(const T& atomName, AtomType const& atomType) = delete;
+    Molecule& addParticle(const T& particleName, ParticleType const& particleType) = delete;
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
-    // TODO: add exclusions based on the unique ID given to the atom of the molecule
-    void addExclusion(int atomIndex, int atomIndexToExclude);
+    // TODO: add exclusions based on the unique ID given to the particle of the molecule
+    void addExclusion(int particleIndex, int particleIndexToExclude);
 
-    // Specify an exclusion with atom and residue names that have been added to molecule
-    void addExclusion(std::tuple<std::string, std::string> atom,
-                      std::tuple<std::string, std::string> atomToExclude);
+    // Specify an exclusion with particle and residue names that have been added to molecule
+    void addExclusion(std::tuple<std::string, std::string> particle,
+                      std::tuple<std::string, std::string> particleToExclude);
 
-    // Specify an exclusion with atoms names that have been added to molecule
-    void addExclusion(const std::string& atomName, const std::string& atomNameToExclude);
+    // Specify an exclusion with particle names that have been added to molecule
+    void addExclusion(const std::string& particleName, const std::string& particleNameToExclude);
 
     // The number of molecules
-    int numAtomsInMolecule() const;
+    int numParticlesInMolecule() const;
 
-    // Return the AtomType data for a specific atom name that has been added to the molecule
-    const AtomType& at(const std::string& atomTypeName) const;
+    // Return the ParticleType data for a specific particle name that has been added to the molecule
+    const ParticleType& at(const std::string& particlesTypeName) const;
 
     // convert exclusions given by name to indices and unify with exclusions given by indices
-    // returns a sorted vector containing no duplicates of atoms to exclude by indices
+    // returns a sorted vector containing no duplicates of particles to exclude by indices
     std::vector<std::tuple<int, int>> getExclusions() const;
 
     friend class TopologyBuilder;
@@ -124,21 +131,21 @@ private:
     //! Name of the molecule
     std::string name_;
 
-    struct AtomData
+    struct ParticleData
     {
-        std::string atomName_;
+        std::string particleName_;
         std::string residueName_;
-        std::string atomTypeName_;
+        std::string particleTypeName_;
         real        charge_;
     };
 
-    //! one entry per atom in molecule
-    std::vector<AtomData> atoms_;
+    //! one entry per particle in molecule
+    std::vector<ParticleData> particles_;
 
-    //! collection of distinct Atoms in molecule
-    std::unordered_map<std::string, AtomType> atomTypes_;
+    //! collection of distinct particle types in molecule
+    std::unordered_map<std::string, ParticleType> particleTypes_;
 
-    //! Used for calculated exclusions based on atom indices in molecule
+    //! Used for calculated exclusions based on particle indices in molecule
     std::vector<std::tuple<int, int>> exclusions_;
 
     //! we cannot efficiently compute indices during the build-phase
@@ -149,4 +156,4 @@ private:
 };
 
 } // namespace nblib
-#endif // GROMACS_MOLECULES_H
+#endif // GMX_NBLIB_MOLECULES_H

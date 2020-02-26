@@ -129,6 +129,7 @@ GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> sy
     gmx::fillLegacyMatrix(system->box().matrix(), box_);
 
     setupStepWorkload(options);
+
 }
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()

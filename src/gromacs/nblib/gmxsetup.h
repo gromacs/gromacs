@@ -83,8 +83,8 @@ struct NbvSetupUtil
     //! Storage for parameters for short range interactions.
     std::vector<real> nonbondedParameters_;
 
-    //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoAllVdw_;
+    //! Particle info where all particles are marked to have Van der Waals interactions
+    std::vector<int> particleInfoAllVdw_;
 };
 
 } // namespace nblib
