@@ -45,12 +45,15 @@
 #ifndef GMX_NBLIB_INTERACTIONS_H
 #define GMX_NBLIB_INTERACTIONS_H
 
+#include <map>
+
 #include "gromacs/math/vectypes.h"
 
 #include "particletype.h"
 
 namespace nblib
 {
+using ParticleTypeName = std::string;
 
 //! Enum for selecting coulomb type
 enum class CombinationRule : int
@@ -59,10 +62,10 @@ enum class CombinationRule : int
     Count
 };
 
-class ParticleTypesInteractons
+class ParticleTypesInteractions
 {
 public:
-    ParticleTypesInteractons() = default;
+    ParticleTypesInteractions() = default;
 
     void add(ParticleType particleType, C6 c6, C12 c12);
 
@@ -71,7 +74,9 @@ public:
     // void generateTable(CombinationRule combinationRule);
 
 private:
-    std::unordered_map<ParticleTypeName, std::tuple<C6, C12>> particleInteractions_;
+
+    std::unordered_map<ParticleTypeName, std::tuple<C6, C12>> singleParticleInteractionsMap_;
+    std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>> twoParticlesInteractionsMap_;
 };
 
 } // namespace nblib

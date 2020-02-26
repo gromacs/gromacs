@@ -55,28 +55,28 @@
 namespace nblib
 {
 
-void ParticleTypesInteractons::add(ParticleType particleType, C6 c6, C12 c12)
+void ParticleTypesInteractions::add(ParticleType particleType, C6 c6, C12 c12)
 {
-    if (particleInteractions_.count(particleType.name()) == 0)
+    if (singleParticleInteractionsMap_.count(particleType.name()) == 0)
     {
-        particleInteractions_[particleType.name()] = std::make_tuple(c6, c12);
+        singleParticleInteractionsMap_[particleType.name()] = std::make_tuple(c6, c12);
     } else {
         std::string message = gmx::formatString("Attempting to add nonbonded interaction %s twice", particleType.name().c_str());
         GMX_THROW(gmx::InvalidInputError(message));
     }
 }
 
-void ParticleTypesInteractons::add(ParticleType particleType1, ParticleType particleType2, C6 c6, C12 c12)
+void ParticleTypesInteractions::add(ParticleType particleType1, ParticleType particleType2, C6 c6, C12 c12)
 {
-    std::string interactionKey = particleType1.name() + "-" + particleType2.name();
-    std::string possibleInteractionKey = particleType2.name() + "-" + particleType1.name();
-    if (particleInteractions_.count(interactionKey) == 0)
+    auto interactionKey = std::make_tuple(particleType1.name(), particleType2.name());
+    auto possibleInteractionKey = std::make_tuple(particleType2.name(), particleType1.name());
+    if (twoParticlesInteractionsMap_.count(interactionKey) == 0)
     {
         std::string message = gmx::formatString("Attempting to add nonbonded interaction between %s %s twice", particleType1.name().c_str(), particleType2.name().c_str());
-        GMX_RELEASE_ASSERT(particleInteractions_.count(possibleInteractionKey) == 0, message.c_str());
+        GMX_RELEASE_ASSERT(twoParticlesInteractionsMap_.count(possibleInteractionKey) == 0, message.c_str());
 
-        particleInteractions_[interactionKey] = std::make_tuple(c6, c12);
-        particleInteractions_[possibleInteractionKey] = std::make_tuple(c6, c12);
+        twoParticlesInteractionsMap_[interactionKey] = std::make_tuple(c6, c12);
+        twoParticlesInteractionsMap_[possibleInteractionKey] = std::make_tuple(c6, c12);
     }
 }
 
