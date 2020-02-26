@@ -57,6 +57,7 @@
 
 #include "gmxcalculator.h"
 #include "nbkerneloptions.h"
+#include "simulationstate.h"
 
 namespace nblib
 {
@@ -77,7 +78,7 @@ struct NbvSetupUtil
 
     std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator();
 
-    std::shared_ptr<SimulationState> system_;
+    SimulationState system_;
     std::shared_ptr<NBKernelOptions> options_;
 
     //! Storage for parameters for short range interactions.

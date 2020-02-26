@@ -62,25 +62,25 @@ namespace nblib
  * Simulation state description that serves as a snapshot of the system
  * being analysed. Needed to init an MD program. Allows hot-starting simulations.
  */
-class SimulationState
+class SimulationState_impl
 {
 public:
     //! Constructor
-    SimulationState(const std::vector<gmx::RVec>& coord,
-                    Box                           box,
-                    Topology                      topology,
-                    const std::vector<gmx::RVec>& vel = {});
+    SimulationState_impl(const std::vector<gmx::RVec>& coord,
+                         Box                           box,
+                         Topology                      topology,
+                         const std::vector<gmx::RVec>& vel = {});
 
     //! Copy Constructor
-    SimulationState(const SimulationState&) = default;
+    SimulationState_impl(const SimulationState_impl&) = default;
 
     //! Force generation of a move ctor such that we get a compiler error
     //! if SimulationState gets changed in the future to require a custom
     //! copy ctor
-    SimulationState(SimulationState&& simulationState) = default;
+    SimulationState_impl(SimulationState_impl&& simulationState) = default;
 
     //! Move Assignment Constructor
-    SimulationState& operator=(SimulationState&& simulationState) = default;
+    SimulationState_impl& operator=(SimulationState_impl&& simulationState) = default;
 
     //! Returns topology of the current state
     const Topology& topology() const;
@@ -100,6 +100,43 @@ private:
     Box                    box_;
     Topology               topology_;
     std::vector<gmx::RVec> velocities_;
+};
+
+class SimulationState
+{
+public:
+    SimulationState(const std::vector<gmx::RVec>& coord,
+                    Box                           box,
+                    Topology                      topology,
+                    const std::vector<gmx::RVec>& vel = {})
+            : ptr_(std::make_shared<SimulationState_impl>(coord, box, topology, vel))
+    {}
+
+    //! Returns topology of the current state
+    const Topology& topology() const
+    {
+        return ptr_->topology();
+    }
+
+    //! Returns the box
+    const Box& box()
+    {
+        return ptr_->box();
+    }
+
+    //! Returns a vector of particle coordinates
+    std::vector<gmx::RVec>& coordinates()
+    {
+        return ptr_->coordinates();
+    }
+
+    //! Returns a vector of particle velocities
+    std::vector<gmx::RVec>& velocities()
+    {
+        return ptr_->velocities();
+    }
+private:
+    std::shared_ptr<SimulationState_impl> ptr_;
 };
 
 } // namespace nblib
