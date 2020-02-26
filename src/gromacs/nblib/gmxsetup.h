@@ -67,17 +67,32 @@ enum class CombinationRule : int
     Count     = 1
 };
 
-struct NbvSetupUtil
+class NbvSetupUtil
 {
+public:
     NbvSetupUtil(SimulationState system, const NBKernelOptions& options);
 
-    void unpackTopologyToGmx();
-
-    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
-
+    //! Sets up and returns a GmxForceCalculator
     std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator();
 
+private:
+    //! Reads Topology data from the user-facing layer to translate to GMX data structures
+    void unpackTopologyToGmx();
+
+    //! Puts particles on a grid based on bounds specified by the box
+    void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv);
+
+    //! Sets Particle Types and Charges and VdW params
+    void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv);
+
+    //! Sets up non-bonded verlet on the GmxFOrceCalculator
+    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
+
+public:
+    //! Pointer to the SimulationState
     std::shared_ptr<SimulationState> system_;
+
+    //! Pointer to the NBKernelOptions
     std::shared_ptr<NBKernelOptions> options_;
 
     //! Storage for parameters for short range interactions.
