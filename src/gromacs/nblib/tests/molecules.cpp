@@ -172,6 +172,27 @@ TEST(NBlibTest, AtThrows)
     EXPECT_THROW(water.at("Hw"), std::out_of_range);
 }
 
+TEST(NBlibTest, CanAddInteractions)
+{
+    WaterMoleculeBuilder waterMolecule;
+    Molecule             water = waterMolecule.waterMolecule();
+
+    HarmonicBondType hb("hb1", 1,2);
+    CubicBondType    cub("cub", 1, 2, 3);
+
+    water.addInteraction("O", "H1", hb);
+    water.addInteraction("O", "H2", hb);
+    water.addInteraction("H1", "H2", cub);
+
+    const auto& interactionData = water.interactionData();
+
+    //! harmonic bonds
+    EXPECT_EQ(std::get<0>(interactionData).interactionTypes_.size(), 1);
+    EXPECT_EQ(std::get<0>(interactionData).interactions_.size(), 2);
+    //! cubic bonds
+    EXPECT_EQ(std::get<2>(interactionData).interactionTypes_.size(), 1);
+}
+
 } // namespace
 } // namespace test
 } // namespace nblib

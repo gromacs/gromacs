@@ -41,7 +41,9 @@
 #ifndef GROMACS_UTIL_H
 #define GROMACS_UTIL_H
 
+#include <functional>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -60,6 +62,43 @@ inline void ignore_unused(T& x)
 {
     static_cast<void>(x);
 }
+
+namespace detail {
+
+     template<int N, typename T, typename Tuple>
+     struct CompareField: std::is_same<T,
+        typename std::tuple_element<N, Tuple>::type>
+     { };
+
+     template <int N, class T, class Tuple, bool Match = false>
+     struct MatchingField
+     {
+         static T& get(Tuple& tp)
+         {
+             // check next element
+             return MatchingField<N+1, T, Tuple, CompareField<N+1, T, Tuple>::value>::get(tp);
+         }
+     };
+
+     template <int N, class T, class Tuple>
+     struct MatchingField<N, T, Tuple, true>
+     {
+        static T& get(Tuple& tp)
+        {
+            return std::get<N>(tp);
+        }
+     };
+
+}
+
+//! Function to return the element in Tuple whose type matches T
+//! Note: if there are more than one, the first occurrence will be returned
+template <typename T, typename Tuple>
+T& pickType(Tuple& tup)
+{
+    return detail::MatchingField<0, T, Tuple, detail::CompareField<0, T, Tuple>::value>::get(tup);
+}
+
 
 } // namespace nblib
 
