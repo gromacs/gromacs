@@ -55,7 +55,7 @@
 namespace nblib
 {
 struct NbvSetupUtil;
-struct GmxForceCalculator;
+class GmxForceCalculator;
 
 class ForceCalculator
 {

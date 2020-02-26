@@ -43,7 +43,8 @@
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/rf_util.h"
-#include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/nbnxm/nbnxm.h"
 
 #include "gmxcalculator.h"
 #include "nbkerneloptions.h"
@@ -57,68 +58,57 @@ static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
     return calc_ewaldcoeff_q(pairlistCutoff, ewald_rtol);
 }
 
-//! Return an interaction constants struct with members used in the benchmark set appropriately
-static interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions> options)
+void GmxForceCalculator::setupInteractionConst(const std::shared_ptr<NBKernelOptions> options)
 {
-    interaction_const_t ic;
-
-    ic.vdwtype      = evdwCUT;
-    ic.vdw_modifier = eintmodPOTSHIFT;
-    ic.rvdw         = options->pairlistCutoff;
+    interactionConst_.vdwtype      = evdwCUT;
+    interactionConst_.vdw_modifier = eintmodPOTSHIFT;
+    interactionConst_.rvdw         = options->pairlistCutoff;
 
     switch (options->coulombType)
     {
-        case BenchMarkCoulomb::Pme: ic.eeltype = eelPME; break;
-        case BenchMarkCoulomb::Cutoff: ic.eeltype = eelCUT; break;
-        case BenchMarkCoulomb::ReactionField: ic.eeltype = eelRF; break;
+        case BenchMarkCoulomb::Pme: interactionConst_.eeltype = eelPME; break;
+        case BenchMarkCoulomb::Cutoff: interactionConst_.eeltype = eelCUT; break;
+        case BenchMarkCoulomb::ReactionField: interactionConst_.eeltype = eelRF; break;
         case BenchMarkCoulomb::Count:
             GMX_THROW(gmx::InvalidInputError("Unsupported electrostatic interaction"));
     }
-    ic.coulomb_modifier = eintmodPOTSHIFT;
-    ic.rcoulomb         = options->pairlistCutoff;
+    interactionConst_.coulomb_modifier = eintmodPOTSHIFT;
+    interactionConst_.rcoulomb         = options->pairlistCutoff;
     //! Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
-    ic.dispersion_shift.cpot = -1.0 / gmx::power6(ic.rvdw);
-    ic.repulsion_shift.cpot  = -1.0 / gmx::power12(ic.rvdw);
+    interactionConst_.dispersion_shift.cpot = -1.0 / gmx::power6(interactionConst_.rvdw);
+    interactionConst_.repulsion_shift.cpot  = -1.0 / gmx::power12(interactionConst_.rvdw);
 
     // These are the initialized values but we leave them here so that later
     // these can become options.
-    ic.epsilon_r  = 1.0;
-    ic.epsilon_rf = 1.0;
+    interactionConst_.epsilon_r  = 1.0;
+    interactionConst_.epsilon_rf = 1.0;
 
     /* Set the Coulomb energy conversion factor */
-    if (ic.epsilon_r != 0)
+    if (interactionConst_.epsilon_r != 0)
     {
-        ic.epsfac = ONE_4PI_EPS0 / ic.epsilon_r;
+        interactionConst_.epsfac = ONE_4PI_EPS0 / interactionConst_.epsilon_r;
     }
     else
     {
         /* eps = 0 is infinite dieletric: no Coulomb interactions */
-        ic.epsfac = 0;
+        interactionConst_.epsfac = 0;
     }
 
-    calc_rffac(nullptr, ic.epsilon_r, ic.epsilon_rf, ic.rcoulomb, &ic.k_rf, &ic.c_rf);
+    calc_rffac(nullptr, interactionConst_.epsilon_r, interactionConst_.epsilon_rf,
+               interactionConst_.rcoulomb, &interactionConst_.k_rf, &interactionConst_.c_rf);
 
-    if (EEL_PME_EWALD(ic.eeltype))
+    if (EEL_PME_EWALD(interactionConst_.eeltype))
     {
         // Ewald coefficients, we ignore the potential shift
-        ic.ewaldcoeff_q = ewaldCoeff(1e-5, options->pairlistCutoff);
-        GMX_RELEASE_ASSERT(ic.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");
-        ic.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
-        init_interaction_const_tables(nullptr, &ic);
+        interactionConst_.ewaldcoeff_q = ewaldCoeff(1e-5, options->pairlistCutoff);
+        GMX_RELEASE_ASSERT(interactionConst_.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");
+        interactionConst_.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
+        init_interaction_const_tables(nullptr, &interactionConst_);
     }
-
-    return ic;
 }
 
-GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system,
-                                       const std::shared_ptr<NBKernelOptions> options) :
-    enerd_(1, 0),
-    verletForces_({})
+void GmxForceCalculator::setupStepWorkload(const std::shared_ptr<NBKernelOptions> options)
 {
-    interactionConst_ = setupInteractionConst(options);
-
-    gmx::fillLegacyMatrix(system->box().matrix(), box_);
-
     stepWork_.computeForces          = true;
     stepWork_.computeNonbondedForces = true;
 
@@ -127,16 +117,26 @@ GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> sy
         stepWork_.computeVirial = true;
         stepWork_.computeEnergy = true;
     }
+}
 
-    forcerec_.ntype = system->topology().numParticles();
+GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system,
+                                       const std::shared_ptr<NBKernelOptions> options) :
+    verletForces_({}),
+    enerd_(1, 0)
+{
+    setupInteractionConst(options);
+
+    gmx::fillLegacyMatrix(system->box().matrix(), box_);
+
+    setupStepWorkload(options);
+
 }
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
 {
-    t_nrnb nrnb = { 0 };
 
     nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local, interactionConst_, stepWork_,
-                                  enbvClearFNo, forcerec_, &enerd_, &nrnb);
+                                  enbvClearFNo, forcerec_, &enerd_, &nrnb_);
 
     nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces_);
 
