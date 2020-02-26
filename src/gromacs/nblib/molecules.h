@@ -134,7 +134,7 @@ public:
     template <class Interaction>
     void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, Interaction interaction)
     {
-        auto& interactionContainer = pickType<BondData<Interaction>>(interactionData_);
+        auto& interactionContainer = pickType<Interaction>(interactionData_);
         interactionContainer.interactions_.emplace_back(particleNameI, particleNameJ, interaction.name());
         if (interactionContainer.interactionTypes_.count(interaction.name()) == 0)
         {

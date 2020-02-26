@@ -187,10 +187,10 @@ TEST(NBlibTest, CanAddInteractions)
     const auto& interactionData = water.interactionData();
 
     //! harmonic bonds
-    EXPECT_EQ(std::get<0>(interactionData).interactionTypes_.size(), 1);
-    EXPECT_EQ(std::get<0>(interactionData).interactions_.size(), 2);
+    EXPECT_EQ(pickType<HarmonicBondType>(interactionData).interactionTypes_.size(), 1);
+    EXPECT_EQ(pickType<HarmonicBondType>(interactionData).interactions_.size(), 2);
     //! cubic bonds
-    EXPECT_EQ(std::get<2>(interactionData).interactionTypes_.size(), 1);
+    EXPECT_EQ(pickType<CubicBondType>(interactionData).interactionTypes_.size(), 1);
 }
 
 } // namespace
