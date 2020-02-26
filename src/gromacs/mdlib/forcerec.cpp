@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019, by the GROMACS development team, led by
+ * Copyright (c) 2013-2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -936,6 +936,75 @@ static void init_interaction_const(FILE*                 fp,
     *interaction_const = ic;
 }
 
+bool areMoleculesDistributedOverPbc(const t_inputrec& ir, const gmx_mtop_t& mtop, const gmx::MDLogger& mdlog)
+{
+    bool       areMoleculesDistributedOverPbc = false;
+    const bool useEwaldSurfaceCorrection = (EEL_PME_EWALD(ir.coulombtype) && ir.epsilon_surface != 0);
+
+    const bool bSHAKE =
+            (ir.eConstrAlg == econtSHAKE
+             && (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0 || gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0));
+
+    /* The group cut-off scheme and SHAKE assume charge groups
+     * are whole, but not using molpbc is faster in most cases.
+     * With intermolecular interactions we need PBC for calculating
+     * distances between atoms in different molecules.
+     */
+    if (bSHAKE && !mtop.bIntermolecularInteractions)
+    {
+        areMoleculesDistributedOverPbc = ir.bPeriodicMols;
+
+        if (areMoleculesDistributedOverPbc)
+        {
+            gmx_fatal(FARGS, "SHAKE is not supported with periodic molecules");
+        }
+    }
+    else
+    {
+        /* Not making molecules whole is faster in most cases,
+         * but with orientation restraints or non-tinfoil boundary
+         * conditions we need whole molecules.
+         */
+        areMoleculesDistributedOverPbc =
+                (gmx_mtop_ftype_count(mtop, F_ORIRES) == 0 && !useEwaldSurfaceCorrection);
+
+        if (getenv("GMX_USE_GRAPH") != nullptr)
+        {
+            areMoleculesDistributedOverPbc = false;
+
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_USE_GRAPH is set, using the graph for bonded "
+                            "interactions");
+
+            if (mtop.bIntermolecularInteractions)
+            {
+                GMX_LOG(mdlog.warning)
+                        .asParagraph()
+                        .appendText(
+                                "WARNING: Molecules linked by intermolecular interactions "
+                                "have to reside in the same periodic image, otherwise "
+                                "artifacts will occur!");
+            }
+        }
+
+        GMX_RELEASE_ASSERT(areMoleculesDistributedOverPbc || !mtop.bIntermolecularInteractions,
+                           "We need to use PBC within molecules with inter-molecular interactions");
+
+        if (bSHAKE && areMoleculesDistributedOverPbc)
+        {
+            gmx_fatal(FARGS,
+                      "SHAKE is not properly supported with intermolecular interactions. "
+                      "For short simulations where linked molecules remain in the same "
+                      "periodic image, the environment variable GMX_USE_GRAPH can be used "
+                      "to override this check.\n");
+        }
+    }
+
+    return areMoleculesDistributedOverPbc;
+}
+
 void init_forcerec(FILE*                            fp,
                    const gmx::MDLogger&             mdlog,
                    t_forcerec*                      fr,
@@ -1075,70 +1144,13 @@ void init_forcerec(FILE*                            fp,
                 (EEL_PME_EWALD(ir->coulombtype) && ir->epsilon_surface != 0);
         if (!DOMAINDECOMP(cr))
         {
-            gmx_bool bSHAKE;
-
-            bSHAKE = (ir->eConstrAlg == econtSHAKE
-                      && (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0
-                          || gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0));
-
-            /* The group cut-off scheme and SHAKE assume charge groups
-             * are whole, but not using molpbc is faster in most cases.
-             * With intermolecular interactions we need PBC for calculating
-             * distances between atoms in different molecules.
-             */
-            if (bSHAKE && !mtop->bIntermolecularInteractions)
-            {
-                fr->bMolPBC = ir->bPeriodicMols;
-
-                if (bSHAKE && fr->bMolPBC)
-                {
-                    gmx_fatal(FARGS, "SHAKE is not supported with periodic molecules");
-                }
-            }
-            else
-            {
-                /* Not making molecules whole is faster in most cases,
-                 * but with orientation restraints or non-tinfoil boundary
-                 * conditions we need whole molecules.
-                 */
-                fr->bMolPBC = (fcd->orires.nr == 0 && !useEwaldSurfaceCorrection);
-
-                if (getenv("GMX_USE_GRAPH") != nullptr)
-                {
-                    fr->bMolPBC = FALSE;
-                    if (fp)
-                    {
-                        GMX_LOG(mdlog.warning)
-                                .asParagraph()
-                                .appendText(
-                                        "GMX_USE_GRAPH is set, using the graph for bonded "
-                                        "interactions");
-                    }
-
-                    if (mtop->bIntermolecularInteractions)
-                    {
-                        GMX_LOG(mdlog.warning)
-                                .asParagraph()
-                                .appendText(
-                                        "WARNING: Molecules linked by intermolecular interactions "
-                                        "have to reside in the same periodic image, otherwise "
-                                        "artifacts will occur!");
-                    }
-                }
-
-                GMX_RELEASE_ASSERT(
-                        fr->bMolPBC || !mtop->bIntermolecularInteractions,
-                        "We need to use PBC within molecules with inter-molecular interactions");
-
-                if (bSHAKE && fr->bMolPBC)
-                {
-                    gmx_fatal(FARGS,
-                              "SHAKE is not properly supported with intermolecular interactions. "
-                              "For short simulations where linked molecules remain in the same "
-                              "periodic image, the environment variable GMX_USE_GRAPH can be used "
-                              "to override this check.\n");
-                }
-            }
+            fr->bMolPBC = areMoleculesDistributedOverPbc(*ir, *mtop, mdlog);
+            // The assert below is equivalent to fcd->orires.nr != gmx_mtop_ftype_count(mtop, F_ORIRES)
+            GMX_RELEASE_ASSERT(!fr->bMolPBC || fcd->orires.nr == 0,
+                               "Molecules broken over PBC exist in a simulation including "
+                               "orientation restraints. "
+                               "This likely means that the global topology and the force constant "
+                               "data have gotten out of sync.");
         }
         else
         {
