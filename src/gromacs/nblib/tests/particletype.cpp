@@ -45,11 +45,10 @@
  */
 #include "gmxpre.h"
 
-#include <cmath>
-
 #include "gromacs/nblib/particletype.h"
 
-#include "testutils/refdata.h"
+#include <cmath>
+
 #include "testutils/testasserts.h"
 
 #include "testsystems.h"

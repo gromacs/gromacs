@@ -54,10 +54,9 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nblib/bondtypes.h"
 #include "gromacs/nblib/particletype.h"
-
-#include "bondtypes.h"
-#include "util.h"
+#include "gromacs/nblib/util.h"
 
 namespace nblib
 {
@@ -78,11 +77,8 @@ class Molecule
         std::vector<std::tuple<ParticleName, ParticleName, Name>> interactions_;
     };
 
-    using InteractionTuple = std::tuple<BondData<HarmonicBondType>,
-                                        BondData<G96BondType>,
-                                        BondData<CubicBondType>,
-                                        BondData<FENEBondType>,
-                                        BondData<HalfAttractiveQuarticBondType>>;
+    using InteractionTuple =
+            std::tuple<BondData<HarmonicBondType>, BondData<G96BondType>, BondData<CubicBondType>, BondData<FENEBondType>, BondData<HalfAttractiveQuarticBondType>>;
 
 public:
     Molecule(std::string moleculeName);
@@ -131,7 +127,7 @@ public:
 
     //! add various types of interactions to the molecule
     //! Note: adding an interaction type not listed in InteractionTuple in this class results in a compilation error
-    template <class Interaction>
+    template<class Interaction>
     void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, Interaction interaction)
     {
         auto& interactionContainer = pickType<BondData<Interaction>>(interactionData_);
