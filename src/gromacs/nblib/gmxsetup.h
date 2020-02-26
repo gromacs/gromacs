@@ -78,7 +78,7 @@ struct NbvSetupUtil
 
     std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator();
 
-    SimulationState system_;
+    SimulationState                  system_;
     std::shared_ptr<NBKernelOptions> options_;
 
     //! Storage for parameters for short range interactions.

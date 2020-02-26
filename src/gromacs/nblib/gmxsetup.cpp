@@ -144,8 +144,8 @@ static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
     return kernelSetup;
 }
 
-NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& options)
-: system_(std::move(system))
+NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& options) :
+    system_(std::move(system))
 {
     options_ = std::make_shared<NBKernelOptions>(options);
 
@@ -230,8 +230,7 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
 
     //! Needs to be called with the number of unique ParticleTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
-                        system_.topology().getParticleTypes().size(), nonbondedParameters_, 1,
-                        numThreads);
+                        system_.topology().getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
 
     matrix box_;
     gmx::fillLegacyMatrix(system_.box().matrix(), box_);
@@ -247,12 +246,11 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
                       particleInfoAllVdw_, system_.coordinates(), 0, nullptr);
 
     t_nrnb nrnb;
-    nbv->constructPairlist(gmx::InteractionLocality::Local, system_.topology().getGmxExclusions(),
-                           0, &nrnb);
+    nbv->constructPairlist(gmx::InteractionLocality::Local, system_.topology().getGmxExclusions(), 0, &nrnb);
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA = const_cast<int*>(system_.topology().getParticleTypeIdOfAllParticles().data());
+    mdatoms.typeA   = const_cast<int*>(system_.topology().getParticleTypeIdOfAllParticles().data());
     mdatoms.chargeA = const_cast<real*>(system_.topology().getCharges().data());
     nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);
 

@@ -108,33 +108,23 @@ public:
     SimulationState(const std::vector<gmx::RVec>& coord,
                     Box                           box,
                     Topology                      topology,
-                    const std::vector<gmx::RVec>& vel = {})
-            : ptr_(std::make_shared<SimulationState_impl>(coord, box, topology, vel))
-    {}
+                    const std::vector<gmx::RVec>& vel = {}) :
+        ptr_(std::make_shared<SimulationState_impl>(coord, box, topology, vel))
+    {
+    }
 
     //! Returns topology of the current state
-    const Topology& topology() const
-    {
-        return ptr_->topology();
-    }
+    const Topology& topology() const { return ptr_->topology(); }
 
     //! Returns the box
-    const Box& box()
-    {
-        return ptr_->box();
-    }
+    const Box& box() { return ptr_->box(); }
 
     //! Returns a vector of particle coordinates
-    std::vector<gmx::RVec>& coordinates()
-    {
-        return ptr_->coordinates();
-    }
+    std::vector<gmx::RVec>& coordinates() { return ptr_->coordinates(); }
 
     //! Returns a vector of particle velocities
-    std::vector<gmx::RVec>& velocities()
-    {
-        return ptr_->velocities();
-    }
+    std::vector<gmx::RVec>& velocities() { return ptr_->velocities(); }
+
 private:
     std::shared_ptr<SimulationState_impl> ptr_;
 };
