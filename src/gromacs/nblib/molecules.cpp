@@ -118,19 +118,14 @@ int Molecule::numParticlesInMolecule() const
     return particles_.size();
 }
 
-void Molecule::addHarmonicBond(HarmonicType harmonicBond)
-{
-    harmonicInteractions_.push_back(std::move(harmonicBond));
-}
-
 void Molecule::addExclusion(const int particleIndex, const int particleIndexToExclude)
 {
     // We do not need to add exclusion in case the particle indexes are the same
     // because self exclusion are added by addParticle
     if (particleIndex != particleIndexToExclude)
     {
-        exclusions_.emplace_back(std::make_tuple(particleIndex, particleIndexToExclude));
-        exclusions_.emplace_back(std::make_tuple(particleIndexToExclude, particleIndex));
+        exclusions_.emplace_back(particleIndex, particleIndexToExclude);
+        exclusions_.emplace_back(particleIndexToExclude, particleIndex);
     }
 }
 
@@ -148,6 +143,11 @@ void Molecule::addExclusion(const std::string& particleName, const std::string& 
     addExclusion(std::make_tuple(particleName, name_), std::make_tuple(particleNameToExclude, name_));
 }
 
+const Molecule::InteractionTuple& Molecule::interactionData() const
+{
+    return interactionData_;
+}
+
 const ParticleType& Molecule::at(const std::string& particleTypeName) const
 {
     return particleTypes_.at(particleTypeName);
@@ -161,7 +161,7 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 
     for (int i = 0; i < numParticlesInMolecule(); ++i)
     {
-        indexKey.emplace_back(std::make_tuple(particles_[i].particleName_, particles_[i].residueName_, i));
+        indexKey.emplace_back(particles_[i].particleName_, particles_[i].residueName_, i);
     }
 
     std::sort(std::begin(indexKey), std::end(indexKey));
@@ -217,8 +217,8 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
 
         int secondIndex = std::get<2>(*it2);
 
-        ret.emplace_back(std::make_tuple(firstIndex, secondIndex));
-        ret.emplace_back(std::make_tuple(secondIndex, firstIndex));
+        ret.emplace_back(firstIndex, secondIndex);
+        ret.emplace_back(secondIndex, firstIndex);
     }
 
     std::sort(std::begin(ret), std::end(ret));

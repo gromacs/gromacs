@@ -50,16 +50,5 @@
 namespace nblib
 {
 
-//! Type of interaction
-struct HarmonicType
-{
-    real        equiDist;
-    real        forceConstant;
-    std::string particleIDi;
-    std::string particleIDj;
-    // int particleI;
-    // int particleJ;
-};
-
 } // namespace nblib
 #endif // GMX_NBLIB_INTERACTIONS_H

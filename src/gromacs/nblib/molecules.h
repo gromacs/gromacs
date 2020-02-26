@@ -56,7 +56,8 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nblib/particletype.h"
 
-#include "interactions.h"
+#include "bondtypes.h"
+#include "util.h"
 
 namespace nblib
 {
@@ -68,6 +69,18 @@ using ResidueName  = std::string;
 
 class Molecule
 {
+    template<class Bond>
+    struct BondData
+    {
+        using type = Bond;
+
+        std::unordered_map<Name, Bond>                            interactionTypes_;
+        std::vector<std::tuple<ParticleName, ParticleName, Name>> interactions_;
+    };
+
+    using InteractionTuple =
+            std::tuple<BondData<HarmonicBondType>, BondData<G96BondType>, BondData<CubicBondType>, BondData<FENEBondType>, BondData<HalfAttractiveQuarticBondType>>;
+
 public:
     Molecule(std::string moleculeName);
 
@@ -103,8 +116,6 @@ public:
     template<typename T>
     Molecule& addParticle(const T& particleName, ParticleType const& particleType) = delete;
 
-    void addHarmonicBond(HarmonicType harmonicBond);
-
     // TODO: add exclusions based on the unique ID given to the particle of the molecule
     void addExclusion(int particleIndex, int particleIndexToExclude);
 
@@ -115,6 +126,19 @@ public:
     // Specify an exclusion with particle names that have been added to molecule
     void addExclusion(const std::string& particleName, const std::string& particleNameToExclude);
 
+    //! add various types of interactions to the molecule
+    //! Note: adding an interaction type not listed in InteractionTuple in this class results in a compilation error
+    template<class Interaction>
+    void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, Interaction interaction)
+    {
+        auto& interactionContainer = pickType<BondData<Interaction>>(interactionData_);
+        interactionContainer.interactions_.emplace_back(particleNameI, particleNameJ, interaction.name());
+        if (interactionContainer.interactionTypes_.count(interaction.name()) == 0)
+        {
+            interactionContainer.interactionTypes_[interaction.name()] = std::move(interaction);
+        }
+    }
+
     // The number of molecules
     int numParticlesInMolecule() const;
 
@@ -124,6 +148,9 @@ public:
     // convert exclusions given by name to indices and unify with exclusions given by indices
     // returns a sorted vector containing no duplicates of particles to exclude by indices
     std::vector<std::tuple<int, int>> getExclusions() const;
+
+    //! return all interactions stored in Molecule
+    const InteractionTuple& interactionData() const;
 
     friend class TopologyBuilder;
 
@@ -152,7 +179,8 @@ private:
     //! so we delay the conversion until TopologyBuilder requests it
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> exclusionsByName_;
 
-    std::vector<HarmonicType> harmonicInteractions_;
+    //! collection of data for all types of interactions
+    InteractionTuple interactionData_;
 };
 
 } // namespace nblib

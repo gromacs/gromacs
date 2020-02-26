@@ -31,73 +31,58 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \inpublicapi \file
+ * \brief
+ * Implements exclusion classes
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-
-#ifndef GROMACS_UTIL_H
-#define GROMACS_UTIL_H
-
-#include <functional>
-#include <tuple>
-#include <type_traits>
-#include <vector>
-
-#include "gromacs/math/vectypes.h"
+#ifndef GMX_NBLIB_EXCLUSIONS_H
+#define GMX_NBLIB_EXCLUSIONS_H
 
 namespace nblib
 {
 
-//! generate Velocites from a Maxwell Boltzmann distro, masses should be the
-//! same as the ones specified for the Topology object
-std::vector<gmx::RVec> generateVelocity(real Temperature, unsigned int seed, std::vector<real> const& masses);
-
-bool checkNumericValues(const std::vector<gmx::RVec>& values);
-
-template<class T>
-inline void ignore_unused(T& x)
-{
-    static_cast<void>(x);
-}
-
-namespace detail
-{
-
-template<int N, typename T, typename Tuple>
-struct CompareField : std::is_same<T, typename std::tuple_element<N, Tuple>::type>
+/*! \brief
+ * Exclusion type
+ * It represents that two particles are excluded for all types of nonbonded interactions
+ */
+class Exclusion
 {
 };
 
-template<int N, class T, class Tuple, bool Match = false>
-struct MatchingField
+/*! \brief
+ * LJExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the C6/C12 and epsilon/sigma functional forms
+ */
+class LJExclusion
 {
-    static T& get(Tuple& tp)
-    {
-        // check next element
-        return MatchingField<N + 1, T, Tuple, CompareField<N + 1, T, Tuple>::value>::get(tp);
-    }
 };
 
-template<int N, class T, class Tuple>
-struct MatchingField<N, T, Tuple, true>
+/*! \brief
+ * BuckinghamExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the Buckingham functional form
+ */
+class BuckinghamExclusion
 {
-    static T& get(Tuple& tp) { return std::get<N>(tp); }
 };
 
-} // namespace detail
-
-//! Function to return the element in Tuple whose type matches T
-//! Note: if there are more than one, the first occurrence will be returned
-template<typename T, typename Tuple>
-T& pickType(Tuple& tup)
+/*! \brief
+ * CoulombExclusion type
+ * It represents that two particles are excluded for interactions using
+ * the Buckingham functional form
+ */
+class CoulombExclusion
 {
-    return detail::MatchingField<0, T, Tuple, detail::CompareField<0, T, Tuple>::value>::get(tup);
-}
+};
 
 
 } // namespace nblib
-
-#endif // GROMACS_UTIL_H
+#endif // GMX_NBLIB_EXCLUSIONS_H
