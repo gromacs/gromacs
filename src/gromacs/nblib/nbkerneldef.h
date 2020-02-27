@@ -41,8 +41,8 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#ifndef GROMACS_NBKERNELDEF_H
-#define GROMACS_NBKERNELDEF_H
+#ifndef GMX_NBLIB_NBKERNELDEF_H
+#define GMX_NBLIB_NBKERNELDEF_H
 
 //! Enum for selecting the SIMD kernel type
 enum class BenchMarkKernels : int
@@ -59,6 +59,7 @@ enum class CombinationRule : int
 {
     Geometric,
     LorentzBerthelot,
+    None,
     Count
 };
 
@@ -72,4 +73,4 @@ enum class BenchMarkCoulomb : int
 };
 
 
-#endif // GROMACS_NBKERNELDEF_H
+#endif // GMX_NBLIB_NBKERNELDEF_H
