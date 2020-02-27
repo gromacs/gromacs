@@ -94,11 +94,7 @@ class GromacsInterface(object):
 
     @includepath.setter
     def includepath(self, path):
-        try:  # py2/3 compatibility
-            basestring
-        except NameError:
-            basestring = str
-        if isinstance(path, basestring):
+        if isinstance(path, str):
             path = [path]
         self._includepath = path
 
