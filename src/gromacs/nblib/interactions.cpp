@@ -59,7 +59,7 @@ real combineNonbondedParameters(real v, real w, CombinationRule combinationRule)
 {
     if (combinationRule == CombinationRule::Geometric)
     {
-        return sqrt(v * w);
+        return std::sqrt(v * w);
     }
     else
     {

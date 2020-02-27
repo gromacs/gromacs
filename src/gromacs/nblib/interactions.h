@@ -51,19 +51,13 @@
 #include "gromacs/math/vectypes.h"
 
 #include "particletype.h"
+#include "nbkerneldef.h"
 
 namespace nblib
 {
 using ParticleTypeName = std::string;
 using NonBondedInteractionMap =
         std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>>;
-
-//! Enum for selecting coulomb type
-enum class CombinationRule : int
-{
-    Geometric,
-    Count
-};
 
 namespace detail
 {
