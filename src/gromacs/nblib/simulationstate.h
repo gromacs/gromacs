@@ -109,23 +109,23 @@ public:
                     Box                           box,
                     Topology                      topology,
                     const std::vector<gmx::RVec>& velocities = {}) :
-        simState_impl_ptr_(std::make_shared<SimulationState_impl>(coord, box, topology, velocities))
+            simulationStatePtr_(std::make_shared<SimulationState_impl>(coord, box, topology, velocities))
     {}
 
     //! Returns topology of the current state
-    const Topology& topology() const { return simState_impl_ptr_->topology(); }
+    const Topology& topology() const { return simulationStatePtr_->topology(); }
 
     //! Returns the box
-    const Box& box() { return simState_impl_ptr_->box(); }
+    const Box& box() { return simulationStatePtr_->box(); }
 
     //! Returns a vector of particle coordinates
-    std::vector<gmx::RVec>& coordinates() { return simState_impl_ptr_->coordinates(); }
+    std::vector<gmx::RVec>& coordinates() { return simulationStatePtr_->coordinates(); }
 
     //! Returns a vector of particle velocities
-    std::vector<gmx::RVec>& velocities() { return simState_impl_ptr_->velocities(); }
+    std::vector<gmx::RVec>& velocities() { return simulationStatePtr_->velocities(); }
 
 private:
-    std::shared_ptr<SimulationState_impl> simState_impl_ptr_;
+    std::shared_ptr<SimulationState_impl> simulationStatePtr_;
 };
 
 } // namespace nblib
