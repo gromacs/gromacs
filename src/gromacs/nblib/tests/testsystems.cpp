@@ -197,7 +197,8 @@ Topology ArgonTopologyBuilder::argonTopology()
 }
 
 ArgonSimulationStateBuilder::ArgonSimulationStateBuilder() :
-    box_(6.05449), topology_(ArgonTopologyBuilder(12).argonTopology())
+    box_(6.05449),
+    topology_(ArgonTopologyBuilder(12).argonTopology())
 {
 
     coordinates_ = {
@@ -253,7 +254,8 @@ std::vector<gmx::RVec>& ArgonSimulationStateBuilder::velocities()
 }
 
 SpcMethanolSimulationStateBuilder::SpcMethanolSimulationStateBuilder() :
-    box_(3.01000), topology_(SpcMethanolTopologyBuilder().buildTopology(1, 1))
+    box_(3.01000),
+    topology_(SpcMethanolTopologyBuilder().buildTopology(1, 1))
 {
     coordinates_ = {
         { 1.970, 1.460, 1.209 }, // Me1

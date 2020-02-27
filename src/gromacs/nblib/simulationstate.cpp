@@ -67,7 +67,8 @@ SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
                                  Box                           box,
                                  Topology                      topology,
                                  const std::vector<gmx::RVec>& vel) :
-    box_(std::move(box)), topology_(std::move(topology))
+    box_(std::move(box)),
+    topology_(std::move(topology))
 {
     if (!checkNumericValues(coord))
     {

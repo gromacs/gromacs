@@ -54,10 +54,9 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nblib/bondtypes.h"
 #include "gromacs/nblib/particletype.h"
-
-#include "bondtypes.h"
-#include "util.h"
+#include "gromacs/nblib/util.h"
 
 namespace nblib
 {

@@ -42,6 +42,7 @@
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
+#include "gmxpre.h"
 
 #include "bondtypes.h"
 
@@ -49,12 +50,16 @@ namespace nblib
 {
 
 HarmonicBondType::HarmonicBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
-    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
+    name_(name),
+    forceConstant_(forceConstant),
+    equilDistance_(equilDistance)
 {
 }
 
 G96BondType::G96BondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
-    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
+    name_(name),
+    forceConstant_(forceConstant),
+    equilDistance_(equilDistance)
 {
 }
 
@@ -70,22 +75,26 @@ CubicBondType::CubicBondType(Name          name,
 }
 
 FENEBondType::FENEBondType(Name name, ForceConstant forceConstant, EquilDistance equilDistance) :
-    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
+    name_(name),
+    forceConstant_(forceConstant),
+    equilDistance_(equilDistance)
 {
 }
 
-MorseBondType::MorseBondType(Name          name,
-                             ForceConstant forceConstant,
-                             Exponent      exponent,
-                             EquilDistance equilDistance) :
-    name_(name), forceConstant_(forceConstant), exponent_(exponent), equilDistance_(equilDistance)
+MorseBondType::MorseBondType(Name name, ForceConstant forceConstant, Exponent exponent, EquilDistance equilDistance) :
+    name_(name),
+    forceConstant_(forceConstant),
+    exponent_(exponent),
+    equilDistance_(equilDistance)
 {
 }
 
 HalfAttractiveQuarticBondType::HalfAttractiveQuarticBondType(Name          name,
                                                              ForceConstant forceConstant,
                                                              EquilDistance equilDistance) :
-    name_(name), forceConstant_(forceConstant), equilDistance_(equilDistance)
+    name_(name),
+    forceConstant_(forceConstant),
+    equilDistance_(equilDistance)
 {
 }
 

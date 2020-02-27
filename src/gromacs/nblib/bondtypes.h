@@ -45,7 +45,7 @@
 #ifndef GMX_NBLIB_BONDTYPES_H
 #define GMX_NBLIB_BONDTYPES_H
 
-#include "particletype.h"
+#include "gromacs/nblib/particletype.h"
 
 namespace nblib
 {
