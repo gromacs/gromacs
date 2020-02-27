@@ -59,6 +59,7 @@ enum class CombinationRule : int
 {
     Geometric,
     LorentzBerthelot,
+    None,
     Count
 };
 
