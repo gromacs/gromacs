@@ -67,9 +67,10 @@ class SimulationState
 public:
     //! Constructor
     SimulationState(const std::vector<gmx::RVec>& coord,
+                    const std::vector<gmx::RVec>& vel,
+                    const std::vector<gmx::RVec>& forces,
                     Box                           box,
-                    Topology                      topology,
-                    const std::vector<gmx::RVec>& vel = {});
+                    Topology                      topology);
 
     //! Copy Constructor
     SimulationState(const SimulationState&) = default;
@@ -94,12 +95,16 @@ public:
     //! Returns a vector of particle velocities
     std::vector<gmx::RVec>& velocities();
 
+    //! Returns a vector of forces
+    std::vector<gmx::RVec>& forces();
+
 
 private:
     std::vector<gmx::RVec> coordinates_;
+    std::vector<gmx::RVec> velocities_ = {};
+    std::vector<gmx::RVec> forces_     = {};
     Box                    box_;
     Topology               topology_;
-    std::vector<gmx::RVec> velocities_;
 };
 
 } // namespace nblib

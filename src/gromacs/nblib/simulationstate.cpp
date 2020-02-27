@@ -64,9 +64,10 @@ namespace nblib
 {
 
 SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
+                                 const std::vector<gmx::RVec>& vel,
+                                 const std::vector<gmx::RVec>& forces,
                                  Box                           box,
-                                 Topology                      topology,
-                                 const std::vector<gmx::RVec>& vel) :
+                                 Topology                      topology) :
     box_(std::move(box)),
     topology_(std::move(topology))
 {
@@ -80,6 +81,8 @@ SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
         GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
     }
     velocities_ = vel;
+
+    forces_ = forces;
 }
 
 const Topology& SimulationState::topology() const
@@ -100,6 +103,11 @@ std::vector<gmx::RVec>& SimulationState::coordinates()
 std::vector<gmx::RVec>& SimulationState::velocities()
 {
     return velocities_;
+}
+
+std::vector<gmx::RVec>& SimulationState::forces()
+{
+    return forces_;
 }
 
 
