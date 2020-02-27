@@ -70,8 +70,9 @@ public:
                     Box                           box,
                     Topology                      topology,
                     const std::vector<gmx::RVec>& velocities = {}) :
-            simulationStatePtr_(std::make_shared<Impl>(coord, box, topology, velocities))
-    {}
+        simulationStatePtr_(std::make_shared<Impl>(coord, box, topology, velocities))
+    {
+    }
 
     //! Returns topology of the current state
     const Topology& topology() const;

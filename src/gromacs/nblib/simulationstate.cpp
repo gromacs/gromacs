@@ -63,12 +63,11 @@
 namespace nblib
 {
 
-SimulationState::Impl::Impl( const std::vector<gmx::RVec>& coord,
-                       Box                           box,
-                       Topology                      topology,
-                       const std::vector<gmx::RVec>& velocities) :
-    box_(std::move(box)),
-    topology_(std::move(topology))
+SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coord,
+                            Box                           box,
+                            Topology                      topology,
+                            const std::vector<gmx::RVec>& velocities) :
+    box_(std::move(box)), topology_(std::move(topology))
 {
     if (!checkNumericValues(coord))
     {
