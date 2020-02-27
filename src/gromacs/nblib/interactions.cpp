@@ -79,9 +79,12 @@ void ParticleTypesInteractions::add(ParticleType particleType, C6 c6, C12 c12)
     else
     {
         std::tuple<C6, C12> pair = singleParticleInteractionsMap_.at(particleType.name());
-        if (std::get<0>(pair) != c6 || std::get<1>(pair) != c12) {
-            std::string message = gmx::formatString("Attempting to add nonbonded interaction parameters for particle "
-                                                    "type %s twice", particleType.name().c_str());
+        if (std::get<0>(pair) != c6 || std::get<1>(pair) != c12)
+        {
+            std::string message = gmx::formatString(
+                    "Attempting to add nonbonded interaction parameters for particle "
+                    "type %s twice",
+                    particleType.name().c_str());
             GMX_THROW(gmx::InvalidInputError(message));
         }
     }
@@ -93,11 +96,12 @@ void ParticleTypesInteractions::add(ParticleType particleType1, ParticleType par
     auto possibleInteractionKey = std::make_tuple(particleType2.name(), particleType1.name());
     if (twoParticlesInteractionsMap_.count(interactionKey) == 0)
     {
-        std::string message = gmx::formatString("Attempting to add nonbonded interaction parameters between the "
-                                                "particle types %s %s when the reverse was already defined",
-                                                particleType1.name().c_str(), particleType2.name().c_str());
+        std::string message = gmx::formatString(
+                "Attempting to add nonbonded interaction parameters between the "
+                "particle types %s %s when the reverse was already defined",
+                particleType1.name().c_str(), particleType2.name().c_str());
         GMX_RELEASE_ASSERT(twoParticlesInteractionsMap_.count(possibleInteractionKey) == 0,
-                        message.c_str());
+                           message.c_str());
 
         twoParticlesInteractionsMap_[interactionKey]         = std::make_tuple(c6, c12);
         twoParticlesInteractionsMap_[possibleInteractionKey] = std::make_tuple(c6, c12);
@@ -108,10 +112,12 @@ void ParticleTypesInteractions::add(ParticleType particleType1, ParticleType par
     else
     {
         std::tuple<C6, C12> pair = twoParticlesInteractionsMap_.at(interactionKey);
-        if (std::get<0>(pair) != c6 || std::get<1>(pair) != c12) {
-            std::string message =
-                    gmx::formatString("Attempting to add nonbonded interaction parameters between the particle types "
-                                      "%s %s twice", particleType1.name().c_str(), particleType2.name().c_str());
+        if (std::get<0>(pair) != c6 || std::get<1>(pair) != c12)
+        {
+            std::string message = gmx::formatString(
+                    "Attempting to add nonbonded interaction parameters between the particle types "
+                    "%s %s twice",
+                    particleType1.name().c_str(), particleType2.name().c_str());
             GMX_THROW(gmx::InvalidInputError(message));
         }
     }

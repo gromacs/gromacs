@@ -66,11 +66,11 @@ namespace nblib
 class SimulationState
 {
 public:
-    SimulationState(const std::vector<gmx::RVec>& coord,
+    SimulationState(const std::vector<gmx::RVec>& coordinates,
                     Box                           box,
                     Topology                      topology,
                     const std::vector<gmx::RVec>& velocities = {}) :
-        simulationStatePtr_(std::make_shared<Impl>(coord, box, topology, velocities))
+        simulationStatePtr_(std::make_shared<Impl>(coordinates, box, topology, velocities))
     {
     }
 
@@ -95,7 +95,7 @@ class SimulationState::Impl
 {
 public:
     //! Constructor
-    Impl(const std::vector<gmx::RVec>& coord,
+    Impl(const std::vector<gmx::RVec>& coordinates,
          Box                           box,
          Topology                      topology,
          const std::vector<gmx::RVec>& velocities = {});
