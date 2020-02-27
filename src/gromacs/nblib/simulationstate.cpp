@@ -63,10 +63,10 @@
 namespace nblib
 {
 
-SimulationState_impl::SimulationState_impl(const std::vector<gmx::RVec>& coord,
-                                           Box                           box,
-                                           Topology                      topology,
-                                           const std::vector<gmx::RVec>& velocities) :
+SimulationState::Impl::Impl( const std::vector<gmx::RVec>& coord,
+                       Box                           box,
+                       Topology                      topology,
+                       const std::vector<gmx::RVec>& velocities) :
     box_(std::move(box)),
     topology_(std::move(topology))
 {
@@ -82,24 +82,44 @@ SimulationState_impl::SimulationState_impl(const std::vector<gmx::RVec>& coord,
     velocities_ = velocities;
 }
 
-const Topology& SimulationState_impl::topology() const
+const Topology& SimulationState::Impl::topology() const
 {
     return topology_;
 }
 
-const Box& SimulationState_impl::box()
+const Box& SimulationState::Impl::box()
 {
     return box_;
 }
 
-std::vector<gmx::RVec>& SimulationState_impl::coordinates()
+std::vector<gmx::RVec>& SimulationState::Impl::coordinates()
 {
     return coordinates_;
 }
 
-std::vector<gmx::RVec>& SimulationState_impl::velocities()
+std::vector<gmx::RVec>& SimulationState::Impl::velocities()
 {
     return velocities_;
+}
+
+const Topology& SimulationState::topology() const
+{
+    return simulationStatePtr_->topology();
+}
+
+const Box& SimulationState::box()
+{
+    return simulationStatePtr_->box();
+}
+
+std::vector<gmx::RVec>& SimulationState::coordinates()
+{
+    return simulationStatePtr_->coordinates();
+}
+
+std::vector<gmx::RVec>& SimulationState::velocities()
+{
+    return simulationStatePtr_->velocities();
 }
 
 

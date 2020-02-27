@@ -62,25 +62,53 @@ namespace nblib
  * Simulation state description that serves as a snapshot of the system
  * being analysed. Needed to init an MD program. Allows hot-starting simulations.
  */
-class SimulationState_impl
+
+class SimulationState
+{
+public:
+    SimulationState(const std::vector<gmx::RVec>& coord,
+                    Box                           box,
+                    Topology                      topology,
+                    const std::vector<gmx::RVec>& velocities = {}) :
+            simulationStatePtr_(std::make_shared<Impl>(coord, box, topology, velocities))
+    {}
+
+    //! Returns topology of the current state
+    const Topology& topology() const;
+
+    //! Returns the box
+    const Box& box();
+
+    //! Returns a vector of particle coordinates
+    std::vector<gmx::RVec>& coordinates();
+
+    //! Returns a vector of particle velocities
+    std::vector<gmx::RVec>& velocities();
+
+private:
+    class Impl;
+    std::shared_ptr<SimulationState::Impl> simulationStatePtr_;
+};
+
+class SimulationState::Impl
 {
 public:
     //! Constructor
-    SimulationState_impl(const std::vector<gmx::RVec>& coord,
-                         Box                           box,
-                         Topology                      topology,
-                         const std::vector<gmx::RVec>& velocities = {});
+    Impl(const std::vector<gmx::RVec>& coord,
+         Box                           box,
+         Topology                      topology,
+         const std::vector<gmx::RVec>& velocities = {});
 
     //! Copy Constructor
-    SimulationState_impl(const SimulationState_impl&) = default;
+    Impl(const SimulationState::Impl&) = default;
 
     //! Force generation of a move ctor such that we get a compiler error
     //! if SimulationState gets changed in the future to require a custom
     //! copy ctor
-    SimulationState_impl(SimulationState_impl&& simulationState) = default;
+    Impl(SimulationState::Impl&& simulationState) = default;
 
     //! Move Assignment Constructor
-    SimulationState_impl& operator=(SimulationState_impl&& simulationState) = default;
+    Impl& operator=(SimulationState::Impl&& simulationState) = default;
 
     //! Returns topology of the current state
     const Topology& topology() const;
@@ -100,32 +128,6 @@ private:
     Box                    box_;
     Topology               topology_;
     std::vector<gmx::RVec> velocities_;
-};
-
-class SimulationState
-{
-public:
-    SimulationState(const std::vector<gmx::RVec>& coord,
-                    Box                           box,
-                    Topology                      topology,
-                    const std::vector<gmx::RVec>& velocities = {}) :
-            simulationStatePtr_(std::make_shared<SimulationState_impl>(coord, box, topology, velocities))
-    {}
-
-    //! Returns topology of the current state
-    const Topology& topology() const { return simulationStatePtr_->topology(); }
-
-    //! Returns the box
-    const Box& box() { return simulationStatePtr_->box(); }
-
-    //! Returns a vector of particle coordinates
-    std::vector<gmx::RVec>& coordinates() { return simulationStatePtr_->coordinates(); }
-
-    //! Returns a vector of particle velocities
-    std::vector<gmx::RVec>& velocities() { return simulationStatePtr_->velocities(); }
-
-private:
-    std::shared_ptr<SimulationState_impl> simulationStatePtr_;
 };
 
 } // namespace nblib
