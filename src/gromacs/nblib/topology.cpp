@@ -221,7 +221,7 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
         //! otherwise we would overwrite them
         if (particleTypes_.count(name_type_tuple.first) > 0)
         {
-            if (!(particleTypes_[name_type_tuple.first] == name_type_tuple.second))
+            if (!(particleTypes_.at(name_type_tuple.first) == name_type_tuple.second))
             {
                 GMX_THROW(gmx::InvalidInputError(
                         "Differing ParticleTypes with identical names encountered"));

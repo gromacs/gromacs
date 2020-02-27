@@ -42,6 +42,7 @@
 #include "gmxpre.h"
 
 #include "forcecalculator.h"
+
 #include "gmxcalculator.h"
 #include "gmxsetup.h"
 #include "integrator.h"
