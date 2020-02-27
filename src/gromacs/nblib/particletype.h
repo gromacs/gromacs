@@ -55,8 +55,6 @@
 
 #include "gromacs/math/vectypes.h"
 
-#include "interactions.h"
-
 namespace nblib
 {
 class TopologyBuilder;
