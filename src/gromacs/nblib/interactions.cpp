@@ -53,11 +53,28 @@
 namespace nblib
 {
 
+namespace detail
+{
+real combineNonbondedParameters(real v, real w, CombinationRule combinationRule)
+{
+    if (combinationRule == CombinationRule::Geometric)
+    {
+        return sqrt(v * w);
+    }
+    else
+    {
+        throw gmx::InvalidInputError("unknown LJ Combination rule specified\n");
+    }
+}
+
+} // namespace detail
+
 void ParticleTypesInteractions::add(ParticleType particleType, C6 c6, C12 c12)
 {
     if (singleParticleInteractionsMap_.count(particleType.name()) == 0)
     {
         singleParticleInteractionsMap_[particleType.name()] = std::make_tuple(c6, c12);
+        particleTypesSet_.insert(particleType.name());
     } else {
         std::string message = gmx::formatString("Attempting to add nonbonded interaction %s twice", particleType.name().c_str());
         GMX_THROW(gmx::InvalidInputError(message));
@@ -75,8 +92,62 @@ void ParticleTypesInteractions::add(ParticleType particleType1, ParticleType par
 
         twoParticlesInteractionsMap_[interactionKey] = std::make_tuple(c6, c12);
         twoParticlesInteractionsMap_[possibleInteractionKey] = std::make_tuple(c6, c12);
+
+        particleTypesSet_.insert(particleType1.name());
+        particleTypesSet_.insert(particleType2.name());
     }
 }
 
+NonBondedInteractionMap ParticleTypesInteractions::generateTable(CombinationRule combinationRule)
+{
+    //! Todo: Refactor nbnxm to take this (nonbondedParameters_) directly
+    //!
+    //! initial self-handling of combination rules
+    //! size: 2*(numParticleTypes^2)
+    NonBondedInteractionMap nonbondedParameters_;
+
+    // creating the combination rule based interaction matrix
+    for (const auto& particleType1 : singleParticleInteractionsMap_)
+    {
+        real c6_1  = std::get<0>(particleType1.second);
+        real c12_1 = std::get<1>(particleType1.second);
+
+        for (const auto& particleType2 : singleParticleInteractionsMap_)
+        {
+            real c6_2  = std::get<0>(particleType2.second);
+            real c12_2 = std::get<1>(particleType2.second);
+
+            real c6_combo  = detail::combineNonbondedParameters(c6_1, c6_2, combinationRule);
+            real c12_combo = detail::combineNonbondedParameters(c12_1, c12_2, combinationRule);
+
+            auto interactionKey = std::make_tuple(particleType1.first, particleType2.first);
+            nonbondedParameters_[interactionKey] = std::make_tuple(c6_combo, c12_combo);
+        }
+    }
+
+    // updating the interaction matrix based on the user fine tunned parameters
+    for (const auto& particleTypeTuple : twoParticlesInteractionsMap_)
+    {
+        real c6_combo  = std::get<0>(particleTypeTuple.second);
+        real c12_combo = std::get<1>(particleTypeTuple.second);
+
+        nonbondedParameters_[particleTypeTuple.first] = std::make_tuple(c6_combo, c12_combo);
+    }
+
+    // check whether there is any missing interaction
+    for (const ParticleTypeName& particleTypeName1 : particleTypesSet_)
+    {
+        for (const ParticleTypeName& particleTypeName2 : particleTypesSet_)
+        {
+            auto interactionKey = std::make_tuple(particleTypeName1, particleTypeName2);
+            if(nonbondedParameters_.count(interactionKey) == 0)
+            {
+                std::string message = gmx::formatString("Missing interaction between %s %s", particleTypeName1.c_str(), particleTypeName2.c_str());
+                GMX_THROW(gmx::InvalidInputError(message));
+            }
+        }
+    }
+    return nonbondedParameters_;
+}
 
 }

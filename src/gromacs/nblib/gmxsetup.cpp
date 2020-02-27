@@ -68,23 +68,6 @@
 namespace nblib
 {
 
-namespace detail
-{
-
-static real combinationFunction(real v, real w, CombinationRule combinationRule)
-{
-    if (combinationRule == CombinationRule::Geometric)
-    {
-        return sqrt(v * w);
-    }
-    else
-    {
-        throw gmx::InvalidInputError("unknown LJ Combination rule specified\n");
-    }
-}
-
-} // namespace detail
-
 //! Helper to translate between the different enumeration values.
 static Nbnxm::KernelType translateBenchmarkEnum(const BenchMarkKernels& kernel)
 {
@@ -183,8 +166,8 @@ void NbvSetupUtil::unpackTopologyToGmx()
             real c6_2  = particleType2.c6() * c6factor;
             real c12_2 = particleType2.c12() * c12factor;
 
-            real c6_combo  = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
-            real c12_combo = detail::combinationFunction(c12_1, c12_2, CombinationRule::Geometric);
+            real c6_combo  = detail::combineNonbondedParameters(c6_1, c6_2, CombinationRule::Geometric);
+            real c12_combo = detail::combineNonbondedParameters(c12_1, c12_2, CombinationRule::Geometric);
             nonbondedParameters_.push_back(c6_combo);
             nonbondedParameters_.push_back(c12_combo);
         }
