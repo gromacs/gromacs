@@ -54,8 +54,9 @@
 
 namespace nblib
 {
-using ParticleTypeName        = std::string;
-using NonBondedInteractionMap = std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>>;
+using ParticleTypeName = std::string;
+using NonBondedInteractionMap =
+        std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>>;
 
 //! Enum for selecting coulomb type
 enum class CombinationRule : int
@@ -84,7 +85,6 @@ public:
     NonBondedInteractionMap generateTable(CombinationRule combinationRule);
 
 private:
-
     std::unordered_map<ParticleTypeName, std::tuple<C6, C12>> singleParticleInteractionsMap_;
     std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>> twoParticlesInteractionsMap_;
 

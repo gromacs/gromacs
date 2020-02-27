@@ -75,22 +75,28 @@ void ParticleTypesInteractions::add(ParticleType particleType, C6 c6, C12 c12)
     {
         singleParticleInteractionsMap_[particleType.name()] = std::make_tuple(c6, c12);
         particleTypesSet_.insert(particleType.name());
-    } else {
-        std::string message = gmx::formatString("Attempting to add nonbonded interaction %s twice", particleType.name().c_str());
+    }
+    else
+    {
+        std::string message = gmx::formatString("Attempting to add nonbonded interaction %s twice",
+                                                particleType.name().c_str());
         GMX_THROW(gmx::InvalidInputError(message));
     }
 }
 
 void ParticleTypesInteractions::add(ParticleType particleType1, ParticleType particleType2, C6 c6, C12 c12)
 {
-    auto interactionKey = std::make_tuple(particleType1.name(), particleType2.name());
+    auto interactionKey         = std::make_tuple(particleType1.name(), particleType2.name());
     auto possibleInteractionKey = std::make_tuple(particleType2.name(), particleType1.name());
     if (twoParticlesInteractionsMap_.count(interactionKey) == 0)
     {
-        std::string message = gmx::formatString("Attempting to add nonbonded interaction between %s %s twice", particleType1.name().c_str(), particleType2.name().c_str());
-        GMX_RELEASE_ASSERT(twoParticlesInteractionsMap_.count(possibleInteractionKey) == 0, message.c_str());
+        std::string message =
+                gmx::formatString("Attempting to add nonbonded interaction between %s %s twice",
+                                  particleType1.name().c_str(), particleType2.name().c_str());
+        GMX_RELEASE_ASSERT(twoParticlesInteractionsMap_.count(possibleInteractionKey) == 0,
+                           message.c_str());
 
-        twoParticlesInteractionsMap_[interactionKey] = std::make_tuple(c6, c12);
+        twoParticlesInteractionsMap_[interactionKey]         = std::make_tuple(c6, c12);
         twoParticlesInteractionsMap_[possibleInteractionKey] = std::make_tuple(c6, c12);
 
         particleTypesSet_.insert(particleType1.name());
@@ -140,9 +146,11 @@ NonBondedInteractionMap ParticleTypesInteractions::generateTable(CombinationRule
         for (const ParticleTypeName& particleTypeName2 : particleTypesSet_)
         {
             auto interactionKey = std::make_tuple(particleTypeName1, particleTypeName2);
-            if(nonbondedParameters_.count(interactionKey) == 0)
+            if (nonbondedParameters_.count(interactionKey) == 0)
             {
-                std::string message = gmx::formatString("Missing interaction between %s %s", particleTypeName1.c_str(), particleTypeName2.c_str());
+                std::string message =
+                        gmx::formatString("Missing interaction between %s %s",
+                                          particleTypeName1.c_str(), particleTypeName2.c_str());
                 GMX_THROW(gmx::InvalidInputError(message));
             }
         }
@@ -150,4 +158,4 @@ NonBondedInteractionMap ParticleTypesInteractions::generateTable(CombinationRule
     return nonbondedParameters_;
 }
 
-}
+} // namespace nblib

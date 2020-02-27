@@ -166,7 +166,7 @@ void NbvSetupUtil::unpackTopologyToGmx()
             real c6_2  = particleType2.c6() * c6factor;
             real c12_2 = particleType2.c12() * c12factor;
 
-            real c6_combo  = detail::combineNonbondedParameters(c6_1, c6_2, CombinationRule::Geometric);
+            real c6_combo = detail::combineNonbondedParameters(c6_1, c6_2, CombinationRule::Geometric);
             real c12_combo = detail::combineNonbondedParameters(c12_1, c12_2, CombinationRule::Geometric);
             nonbondedParameters_.push_back(c6_combo);
             nonbondedParameters_.push_back(c12_combo);
