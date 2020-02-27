@@ -55,11 +55,10 @@ enum class BenchMarkKernels : int
 };
 
 //! Enum for selecting the combination rule
-enum class BenchMarkCombRule : int
+enum class CombinationRule : int
 {
-    RuleGeom,
-    RuleLB,
-    RuleNone,
+    Geometric,
+    LorentzBerthelot,
     Count
 };
 

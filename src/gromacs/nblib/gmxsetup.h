@@ -58,15 +58,10 @@
 #include "gmxcalculator.h"
 #include "nbkerneloptions.h"
 #include "simulationstate.h"
+#include "interactions.h"
 
 namespace nblib
 {
-
-enum class CombinationRule : int
-{
-    Geometric = 0,
-    Count     = 1
-};
 
 struct NbvSetupUtil
 {
