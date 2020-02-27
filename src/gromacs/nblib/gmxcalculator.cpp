@@ -121,14 +121,13 @@ void GmxForceCalculator::setupStepWorkload(const std::shared_ptr<NBKernelOptions
     }
 }
 
-GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system,
+GmxForceCalculator::GmxForceCalculator(SimulationState                        system,
                                        const std::shared_ptr<NBKernelOptions> options) :
-    verletForces_({}),
-    enerd_(1, 0)
+    verletForces_({}), enerd_(1, 0)
 {
     setupInteractionConst(options);
 
-    gmx::fillLegacyMatrix(system->box().matrix(), box_);
+    gmx::fillLegacyMatrix(system.box().matrix(), box_);
 
     setupStepWorkload(options);
 }
