@@ -78,11 +78,8 @@ class Molecule
         std::vector<std::tuple<ParticleName, ParticleName, Name>> interactions_;
     };
 
-    using InteractionTuple = std::tuple<BondData<HarmonicBondType>,
-                                        BondData<G96BondType>,
-                                        BondData<CubicBondType>,
-                                        BondData<FENEBondType>,
-                                        BondData<HalfAttractiveQuarticBondType>>;
+    using InteractionTuple =
+            std::tuple<BondData<HarmonicBondType>, BondData<G96BondType>, BondData<CubicBondType>, BondData<FENEBondType>, BondData<HalfAttractiveQuarticBondType>>;
 
 public:
     Molecule(std::string moleculeName);
@@ -131,7 +128,7 @@ public:
 
     //! add various types of interactions to the molecule
     //! Note: adding an interaction type not listed in InteractionTuple in this class results in a compilation error
-    template <class Interaction>
+    template<class Interaction>
     void addInteraction(ParticleName particleNameI, ParticleName particleNameJ, Interaction interaction)
     {
         auto& interactionContainer = pickType<Interaction>(interactionData_);
@@ -140,7 +137,7 @@ public:
         {
             interactionContainer.interactionTypes_[interaction.name()] = std::move(interaction);
         }
-     }
+    }
 
     // The number of molecules
     int numParticlesInMolecule() const;
