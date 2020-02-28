@@ -137,8 +137,8 @@ TEST(NBlibTest, CanIntegrateSystem)
 
     for (int iter = 0; iter < options.numIterations; iter++)
     {
-        // gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
-        // EXPECT_NO_THROW(integrator.integrate(1.0));
+        gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
+        EXPECT_NO_THROW(integrator.integrate(1.0));
     }
 }
 /*
