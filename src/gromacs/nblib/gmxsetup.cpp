@@ -101,10 +101,19 @@ static gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions
     return {};
 }
 
+NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& options) :
+        system_(std::move(system))
+{
+    options_ = std::make_shared<NBKernelOptions>(options);
 
-/*! \brief Returns the kernel setup
- */
-static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
+    //! Todo: find a more general way to initialize hardware
+    gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
+    gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
+
+    unpackTopologyToGmx();
+}
+
+Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
 {
     auto messageWhenInvalid = checkKernelSetup(options);
     GMX_RELEASE_ASSERT(!messageWhenInvalid, "Need valid options");
@@ -126,18 +135,6 @@ static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
     }
 
     return kernelSetup;
-}
-
-NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& options) :
-    system_(std::move(system))
-{
-    options_ = std::make_shared<NBKernelOptions>(options);
-
-    //! Todo: find a more general way to initialize hardware
-    gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
-    gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
-
-    unpackTopologyToGmx();
 }
 
 void NbvSetupUtil::unpackTopologyToGmx()

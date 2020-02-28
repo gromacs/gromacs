@@ -71,9 +71,18 @@ public:
     //! Sets up and returns a GmxForceCalculator
     std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator();
 
+    //! Storage for parameters for short range interactions.
+    std::vector<real> nonbondedParameters_;
+
+    //! Particle info where all particles are marked to have Van der Waals interactions
+    std::vector<int> particleInfoAllVdw_;
+
 private:
     //! Reads Topology data from the user-facing layer to translate to GMX data structures
     void unpackTopologyToGmx();
+
+    //! Returns the kernel setup
+    Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions &options);
 
     //! Puts particles on a grid based on bounds specified by the box
     void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv);
@@ -81,18 +90,11 @@ private:
     //! Sets Particle Types and Charges and VdW params
     void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv);
 
-    //! Sets up non-bonded verlet on the GmxFOrceCalculator
+    //! Sets up non-bonded verlet on the GmxForceCalculator
     std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
 
-public:
     SimulationState                  system_;
     std::shared_ptr<NBKernelOptions> options_;
-
-    //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters_;
-
-    //! Particle info where all particles are marked to have Van der Waals interactions
-    std::vector<int> particleInfoAllVdw_;
 };
 
 } // namespace nblib
