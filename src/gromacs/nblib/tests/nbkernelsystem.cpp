@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -102,6 +103,24 @@ TEST(NBlibTest, canComputeForces)
 
     gmx::PaddedHostVector<gmx::RVec> forces;
     ASSERT_NO_THROW(forces = forceCalculator.compute());
+    EXPECT_REAL_EQ_TOL(forces[0][0], -0.381826401, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[0][1], 0.879227996, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[0][2], -6.14063454, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[1][0], 8.30332947, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[1][1], -7.33883095, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[1][2], 27.7837372, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[2][0], -9.42212677, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[2][1], 6.2920804, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[2][2], -33.9860725, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[3][0], 27.4943237, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[3][1], 8.39151382, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[3][2], 39.6937485, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[4][0], -19.0098705, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[4][1], -5.39751482, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[4][2], -15.5456524, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[5][0], -6.98382664, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[5][1], -2.8264761, gmx::test::defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(forces[5][2], -11.8051271, gmx::test::defaultRealTolerance());
 }
 
 TEST(NBlibTest, ExpectedNumberOfForces)
@@ -132,10 +151,12 @@ TEST(NBlibTest, CanIntegrateSystem)
     matrix box;
     gmx::fillLegacyMatrix(simState.box().matrix(), box);
 
+    LeapFrog integrator(simState);
+
     for (int iter = 0; iter < options.numIterations; iter++)
     {
         gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
-        EXPECT_NO_THROW(integrateCoordinates(forces, options, box, simState.coordinates()));
+        EXPECT_NO_THROW(integrator.integrate(1.0));
     }
 }
 /*

@@ -41,9 +41,10 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_SIMULATIONSTATE_H
-#define GROMACS_SIMULATIONSTATE_H
+#ifndef GMX_NBLIB_SIMULATIONSTATE_H
+#define GMX_NBLIB_SIMULATIONSTATE_H
 
 #include <vector>
 
@@ -66,11 +67,13 @@ namespace nblib
 class SimulationState
 {
 public:
+    //! Constructor
     SimulationState(const std::vector<gmx::RVec>& coordinates,
+                    const std::vector<gmx::RVec>& velocities,
+                    const std::vector<gmx::RVec>& forces,
                     Box                           box,
-                    Topology                      topology,
-                    const std::vector<gmx::RVec>& velocities = {}) :
-        simulationStatePtr_(std::make_shared<Impl>(coordinates, box, topology, velocities))
+                    Topology                      topology) :
+        simulationStatePtr_(std::make_shared<Impl>(coordinates, velocities, forces, box, topology))
     {
     }
 
@@ -86,6 +89,9 @@ public:
     //! Returns a vector of particle velocities
     std::vector<gmx::RVec>& velocities();
 
+    //! Returns a vector of forces
+    std::vector<gmx::RVec>& forces();
+
 private:
     class Impl;
     std::shared_ptr<SimulationState::Impl> simulationStatePtr_;
@@ -96,9 +102,10 @@ class SimulationState::Impl
 public:
     //! Constructor
     Impl(const std::vector<gmx::RVec>& coordinates,
+         const std::vector<gmx::RVec>& velocities,
+         const std::vector<gmx::RVec>& forces,
          Box                           box,
-         Topology                      topology,
-         const std::vector<gmx::RVec>& velocities = {});
+         Topology                      topology);
 
     //! Copy Constructor
     Impl(const SimulationState::Impl&) = default;
@@ -123,14 +130,17 @@ public:
     //! Returns a vector of particle velocities
     std::vector<gmx::RVec>& velocities();
 
+    //! Returns a vector of forces
+    std::vector<gmx::RVec>& forces();
 
 private:
     std::vector<gmx::RVec> coordinates_;
+    std::vector<gmx::RVec> velocities_ = {};
+    std::vector<gmx::RVec> forces_     = {};
     Box                    box_;
     Topology               topology_;
-    std::vector<gmx::RVec> velocities_;
 };
 
 } // namespace nblib
 
-#endif // GROMACS_SIMULATIONSTATE_H
+#endif // GMX_NBLIB_SIMULATIONSTATE_H

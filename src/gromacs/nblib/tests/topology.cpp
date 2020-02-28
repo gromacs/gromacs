@@ -221,9 +221,9 @@ TEST(NBlibTest, toGmxExclusionBlockWorks)
     std::vector<gmx::ExclusionBlock> reference;
 
     gmx::ExclusionBlock localBlock;
-    localBlock.particleNumber.push_back(0);
-    localBlock.particleNumber.push_back(1);
-    localBlock.particleNumber.push_back(2);
+    localBlock.atomNumber.push_back(0);
+    localBlock.atomNumber.push_back(1);
+    localBlock.atomNumber.push_back(2);
 
     reference.push_back(localBlock);
     reference.push_back(localBlock);
@@ -234,10 +234,10 @@ TEST(NBlibTest, toGmxExclusionBlockWorks)
     ASSERT_EQ(reference.size(), probe.size());
     for (size_t i = 0; i < reference.size(); ++i)
     {
-        ASSERT_EQ(reference[i].particleNumber.size(), probe[i].particleNumber.size());
-        for (size_t j = 0; j < reference[i].particleNumber.size(); ++j)
+        ASSERT_EQ(reference[i].atomNumber.size(), probe[i].atomNumber.size());
+        for (size_t j = 0; j < reference[i].atomNumber.size(); ++j)
         {
-            EXPECT_EQ(reference[i].particleNumber[j], probe[i].particleNumber[j]);
+            EXPECT_EQ(reference[i].atomNumber[j], probe[i].atomNumber[j]);
         }
     }
 }

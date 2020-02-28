@@ -214,6 +214,12 @@ ArgonSimulationStateBuilder::ArgonSimulationStateBuilder() :
         { 0.0484, -0.0357, 0.0168 },   { 0.0530, 0.0295, -0.2694 },  { -0.0550, -0.0896, 0.0494 },
         { -0.0799, -0.2534, -0.0079 }, { 0.0436, -0.1557, 0.1849 },  { -0.0214, 0.0446, 0.0758 },
     };
+    forces_ = {
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+    };
 }
 
 void ArgonSimulationStateBuilder::setCoordinate(int particleNum, int dimension, real value)
@@ -230,7 +236,7 @@ void ArgonSimulationStateBuilder::setVelocity(int particleNum, int dimension, re
 
 SimulationState ArgonSimulationStateBuilder::setupSimulationState()
 {
-    return SimulationState(coordinates_, box_, topology_, velocities_);
+    return SimulationState(coordinates_, velocities_, forces_, box_, topology_);
 }
 
 const Topology& ArgonSimulationStateBuilder::topology() const
@@ -270,11 +276,16 @@ SpcMethanolSimulationStateBuilder::SpcMethanolSimulationStateBuilder() :
         { -0.8587, -0.1344, -0.0643 }, { 0.0623, -0.1787, 0.0036 }, { -0.5020, -0.9564, 0.0997 },
         { 0.869, 1.245, 1.665 },       { 0.169, 0.275, 1.565 },     { 0.269, 2.275, 1.465 },
     };
+
+    forces_ = {
+        { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 },
+        { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 },
+    };
 }
 
 SimulationState SpcMethanolSimulationStateBuilder::setupSimulationState()
 {
-    return SimulationState(coordinates_, box_, topology_, velocities_);
+    return SimulationState(coordinates_, velocities_, forces_, box_, topology_);
 }
 
 std::vector<gmx::RVec>& SpcMethanolSimulationStateBuilder::coordinates()

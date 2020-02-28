@@ -34,49 +34,60 @@
  */
 /*! \internal \file
  * \brief
- * Implements nblib integrator
+ * This implements basic nblib utility tests
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
- * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
-#include "integrator.h"
+#include <gtest/gtest.h>
 
-#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/nblib/gmxsetup.h"
+#include "gromacs/nblib/simulationstate.h"
+
+#include "testhelpers.h"
+#include "testsystems.h"
 
 namespace nblib
 {
-
-LeapFrog::LeapFrog(SimulationState simulationState) : simulationState_(simulationState)
+namespace test
 {
-    inverseMasses_.resize(simulationState_.topology().numParticles());
-    for (int i = 0; i < simulationState_.topology().numParticles(); i++)
-    {
-        int typeIndex     = simulationState_.topology().getParticleTypeIdOfAllParticles()[i];
-        inverseMasses_[i] = 1.0 / simulationState_.topology().getParticleTypes()[typeIndex].mass();
-    }
+namespace
+{
+
+TEST(NBlibTest, CanConstructGmxForceCalculator)
+{
+    ArgonSimulationStateBuilder      argonSystemBuilder;
+    SimulationState                  simState = argonSystemBuilder.setupSimulationState();
+    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
+    EXPECT_NO_THROW(GmxForceCalculator(simState, options));
 }
 
-void LeapFrog::integrate(const real dt)
+TEST(NBlibTest, GmxForceCalculatorCanCompute)
 {
-    std::vector<gmx::RVec>& x = simulationState_.coordinates();
-    std::vector<gmx::RVec>& v = simulationState_.velocities();
-    std::vector<gmx::RVec>& f = simulationState_.forces();
-    for (size_t i = 0; i < x.size(); i++)
-    {
-        for (int dim = 0; dim < DIM; dim++)
-        {
-            v[i][dim] += f[i][dim] * dt * inverseMasses_[i];
-            x[i][dim] += v[i][dim] * dt;
-        }
-    }
-    matrix box;
-    gmx::fillLegacyMatrix(simulationState_.box().matrix(), box);
-    put_atoms_in_box(PbcType::Xyz, box, x);
+    ArgonSimulationStateBuilder argonSystemBuilder;
+    SimulationState             simState       = argonSystemBuilder.setupSimulationState();
+    NBKernelOptions             options        = NBKernelOptions();
+    options.nbnxmSimd                          = BenchMarkKernels::SimdNo;
+    std::unique_ptr<NbvSetupUtil> nbvSetupUtil = std::make_unique<NbvSetupUtil>(simState, options);
+    std::unique_ptr<GmxForceCalculator> gmxForceCalculator = nbvSetupUtil->setupGmxForceCalculator();
+    EXPECT_NO_THROW(gmxForceCalculator->compute());
 }
 
+TEST(NBlibTest, CanSetupStepWorkload)
+{
+    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
+    EXPECT_NO_THROW(setupStepWorkload(options));
+}
+
+TEST(NBlibTest, GmxForceCalculatorCanSetupInteractionConst)
+{
+    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
+    EXPECT_NO_THROW(setupInteractionConst(options));
+}
+} // namespace
+} // namespace test
 } // namespace nblib
