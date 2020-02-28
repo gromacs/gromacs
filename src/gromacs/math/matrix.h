@@ -82,7 +82,7 @@ constexpr real trace(Matrix3x3ConstSpan matrixView)
 }
 
 //! Calculate the transpose of a 3x3 matrix, from its view
-static Matrix3x3 transpose(Matrix3x3ConstSpan matrixView)
+static inline Matrix3x3 transpose(Matrix3x3ConstSpan matrixView)
 {
 
     return Matrix3x3({ matrixView(0, 0), matrixView(1, 0), matrixView(2, 0), matrixView(0, 1),

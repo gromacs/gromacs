@@ -83,7 +83,7 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
         //! loop over all exclusions for current particle
         for (; it1 != it2; ++it1)
         {
-            localBlock.particleNumber.push_back(std::get<1>(*it1));
+            localBlock.atomNumber.push_back(std::get<1>(*it1));
         }
 
         ret.push_back(localBlock);
@@ -103,8 +103,8 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
     //! shift particle numbers by offset
     for (auto& localBlock : inBlock)
     {
-        std::transform(std::begin(localBlock.particleNumber), std::end(localBlock.particleNumber),
-                       std::begin(localBlock.particleNumber), [offset](auto i) { return i + offset; });
+        std::transform(std::begin(localBlock.atomNumber), std::end(localBlock.atomNumber),
+                       std::begin(localBlock.atomNumber), [offset](auto i) { return i + offset; });
     }
 
     return inBlock;
@@ -146,7 +146,7 @@ gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
     gmx::ListOfLists<int> exclusionsListOfListsGlobal;
     for (const auto& block : exclusionBlockGlobal)
     {
-        exclusionsListOfListsGlobal.pushBack(block.particleNumber);
+        exclusionsListOfListsGlobal.pushBack(block.atomNumber);
     }
 
     return exclusionsListOfListsGlobal;
