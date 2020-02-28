@@ -33,6 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
+ * \brief Implements a force calculator based on GROMACS data structures.
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -76,7 +77,7 @@ void GmxForceCalculator::setupInteractionConst(const std::shared_ptr<NBKernelOpt
     }
     interactionConst_.coulomb_modifier = eintmodPOTSHIFT;
     interactionConst_.rcoulomb         = options->pairlistCutoff;
-    //! Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
+    // Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
     interactionConst_.dispersion_shift.cpot = -1.0 / gmx::power6(interactionConst_.rvdw);
     interactionConst_.repulsion_shift.cpot  = -1.0 / gmx::power12(interactionConst_.rvdw);
 
@@ -123,7 +124,8 @@ void GmxForceCalculator::setupStepWorkload(const std::shared_ptr<NBKernelOptions
 
 GmxForceCalculator::GmxForceCalculator(SimulationState                        system,
                                        const std::shared_ptr<NBKernelOptions> options) :
-    verletForces_({}), enerd_(1, 0)
+    verletForces_({}),
+    enerd_(1, 0)
 {
     setupInteractionConst(options);
 

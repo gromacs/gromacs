@@ -35,6 +35,7 @@
 /*! \internal \file
  * \brief
  * Implements a force calculator based on GROMACS data structures.
+ *
  * Intended for internal use inside the ForceCalculator.
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
