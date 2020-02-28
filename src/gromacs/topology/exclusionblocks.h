@@ -53,9 +53,9 @@ class ListOfLists;
 struct ExclusionBlock
 {
     //! Particle numbers for exclusion.
-    std::vector<int> particleNumber;
+    std::vector<int> atomNumber;
     //! Number of particles in the exclusion.
-    int nra() const { return particleNumber.size(); }
+    int nra() const { return atomNumber.size(); }
 };
 
 /*! \brief Merge the contents of \c b2 into \c excl.
