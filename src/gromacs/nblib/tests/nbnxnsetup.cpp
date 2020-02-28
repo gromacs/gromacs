@@ -57,12 +57,12 @@ namespace nblib
 namespace test
 {
 
-TEST(NBlibTest, NbfpSetCorrectly)
+TEST(NBlibTest, CanConstructNbvSetupUtil)
 {
     ArgonSimulationStateBuilder argonSimulationStateBuilder;
     SimulationState             system = argonSimulationStateBuilder.setupSimulationState();
     NBKernelOptions             options;
-    auto nbvSetupUtil = std::make_unique<NbvSetupUtil>(system, options);
+    EXPECT_NO_THROW(auto nbvSetupUtil = std::make_unique<NbvSetupUtil>(system, options));
 }
 
 } // namespace test
