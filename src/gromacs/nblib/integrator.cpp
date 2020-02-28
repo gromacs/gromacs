@@ -46,29 +46,26 @@
 
 #include "integrator.h"
 
-#include "gromacs/nblib/simulationstate.h"
-#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/pbcutil/pbc.h"
 
 namespace nblib
 {
 
-LeapFrog::LeapFrog(std::shared_ptr<SimulationState> simulationState) :
-    simulationState_(simulationState)
+LeapFrog::LeapFrog(SimulationState simulationState) : simulationState_(simulationState)
 {
-    inverseMasses_.resize(simulationState_->topology().numParticles());
-    for (int i = 0; i < simulationState_->topology().numParticles(); i++)
+    inverseMasses_.resize(simulationState_.topology().numParticles());
+    for (int i = 0; i < simulationState_.topology().numParticles(); i++)
     {
-        int typeIndex     = simulationState_->topology().getParticleTypeIdOfAllParticles()[i];
-        inverseMasses_[i] = 1.0 / simulationState_->topology().getParticleTypes()[typeIndex].mass();
+        int typeIndex     = simulationState_.topology().getParticleTypeIdOfAllParticles()[i];
+        inverseMasses_[i] = 1.0 / simulationState_.topology().getParticleTypes()[typeIndex].mass();
     }
 }
 
 void LeapFrog::integrate(const real dt)
 {
-    std::vector<gmx::RVec>& x = simulationState_->coordinates();
-    std::vector<gmx::RVec>& v = simulationState_->velocities();
-    std::vector<gmx::RVec>& f = simulationState_->forces();
+    std::vector<gmx::RVec>& x = simulationState_.coordinates();
+    std::vector<gmx::RVec>& v = simulationState_.velocities();
+    std::vector<gmx::RVec>& f = simulationState_.forces();
     for (size_t i = 0; i < x.size(); i++)
     {
         for (int dim = 0; dim < DIM; dim++)
@@ -78,7 +75,7 @@ void LeapFrog::integrate(const real dt)
         }
     }
     matrix box;
-    gmx::fillLegacyMatrix(simulationState_->box().matrix(), box);
+    gmx::fillLegacyMatrix(simulationState_.box().matrix(), box);
     put_atoms_in_box(PbcType::Xyz, box, x);
 }
 

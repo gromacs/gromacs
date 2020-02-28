@@ -92,7 +92,7 @@ TEST(NBlibTest, IntegratorWorks)
 
     SimulationState simulationState(x, v, f, box, topology);
 
-    LeapFrog integrator(std::make_shared<SimulationState>(simulationState));
+    LeapFrog integrator(simulationState);
 
     gmx::test::FloatingPointTolerance tolerance = gmx::test::absoluteTolerance(numSteps * 0.000005);
     for (int step = 0; step < numSteps; step++)

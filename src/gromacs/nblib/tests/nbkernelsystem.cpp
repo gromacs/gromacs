@@ -133,7 +133,7 @@ TEST(NBlibTest, CanIntegrateSystem)
     matrix box;
     gmx::fillLegacyMatrix(simState.box().matrix(), box);
 
-    LeapFrog integrator(std::make_shared<SimulationState>(simState));
+    LeapFrog integrator(simState);
 
     for (int iter = 0; iter < options.numIterations; iter++)
     {

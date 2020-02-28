@@ -49,8 +49,7 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
-
-#include "nbkerneloptions.h"
+#include "gromacs/nblib/simulationstate.h"
 
 namespace nblib
 {
@@ -66,7 +65,7 @@ public:
      *
      * \param[in] simulationState  Simulation state data.
      */
-    LeapFrog(std::shared_ptr<SimulationState> simulationState);
+    LeapFrog(SimulationState simulationState);
 
     /*! \brief Integrate
      *
@@ -81,7 +80,7 @@ private:
     //! 1/mass for all atoms (GPU)
     std::vector<real> inverseMasses_;
     //! Local copy of simulation state
-    std::shared_ptr<SimulationState> simulationState_;
+    SimulationState simulationState_;
 };
 
 } // namespace nblib
