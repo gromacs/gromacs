@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 // move to a single place in gpu_utils.
 /* Names of the GPU detection/check results (see e_gpu_detect_res_t in hw_info.h). */
 const char* const gpu_detect_res_str[egpuNR] = {
-    "compatible", "nonexistent", "incompatible",
-    "incompatible (please recompile with GMX_OPENCL_NB_CLUSTER_SIZE=4)", "insane"
+    "compatible",   "nonexistent",
+    "incompatible", "incompatible (please recompile with GMX_OPENCL_NB_CLUSTER_SIZE=4)",
+    "insane",       "unavailable"
 };

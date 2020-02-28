@@ -1,8 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2016, The GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,28 +75,25 @@ static bool cudaProfilerRun = ((getenv("NVPROF_ID") != nullptr));
 /** Dummy kernel used for sanity checking. */
 static __global__ void k_dummy_test(void) {}
 
-static void checkCompiledTargetCompatibility(int deviceId, const cudaDeviceProp& deviceProp)
+static cudaError_t checkCompiledTargetCompatibility(int deviceId, const cudaDeviceProp& deviceProp)
 {
     cudaFuncAttributes attributes;
     cudaError_t        stat = cudaFuncGetAttributes(&attributes, k_dummy_test);
 
     if (cudaErrorInvalidDeviceFunction == stat)
     {
-        gmx_fatal(FARGS,
-                  "The %s binary does not include support for the CUDA architecture of a "
-                  "detected GPU: %s, ID #%d (compute capability %d.%d). "
-                  "By default, GROMACS supports all architectures of compute "
-                  "capability >= 3.0, so your GPU "
-                  "might be rare, or some architectures were disabled in the build. "
-                  "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
-                  "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture. "
-                  "To work around this error, use the CUDA_VISIBLE_DEVICES environment"
-                  "variable to pass a list of GPUs that excludes the ID %d.",
-                  gmx::getProgramContext().displayName(), deviceProp.name, deviceId,
-                  deviceProp.major, deviceProp.minor, deviceId);
+        fprintf(stderr,
+                "\nWARNING: The %s binary does not include support for the CUDA architecture of "
+                "the GPU ID #%d (compute capability %d.%d) detected during detection. "
+                "By default, GROMACS supports all architectures of compute "
+                "capability >= 3.0, so your GPU "
+                "might be rare, or some architectures were disabled in the build. \n"
+                "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
+                "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture. \n",
+                gmx::getProgramContext().displayName(), deviceId, deviceProp.major, deviceProp.minor);
     }
 
-    CU_RET_ERR(stat, "cudaFuncGetAttributes failed");
+    return stat;
 }
 
 bool isHostMemoryPinned(const void* h_ptr)
@@ -129,7 +126,7 @@ bool isHostMemoryPinned(const void* h_ptr)
  *
  * \param[in]  dev_id      the device ID of the GPU or -1 if the device has already been initialized
  * \param[in]  dev_prop    The device properties structure
- * \returns                0 if the device looks OK
+ * \returns                0 if the device looks OK, -1 if it sanity checks failed, and -2 if the device is busy
  *
  * TODO: introduce errors codes and handle errors more smoothly.
  */
@@ -200,13 +197,36 @@ static int do_sanity_checks(int dev_id, const cudaDeviceProp& dev_prop)
         }
     }
 
-    /* try to execute a dummy kernel */
-    checkCompiledTargetCompatibility(dev_id, dev_prop);
+    cu_err = checkCompiledTargetCompatibility(dev_id, dev_prop);
+    // Avoid triggering an error if GPU devices are in exclusive or prohibited mode;
+    // it is enough to check for cudaErrorDevicesUnavailable only here because
+    // if we encounter it that will happen in cudaFuncGetAttributes in the above function.
+    if (cu_err == cudaErrorDevicesUnavailable)
+    {
+        return -2;
+    }
+    else if (cu_err != cudaSuccess)
+    {
+        return -1;
+    }
 
-    KernelLaunchConfig config;
-    config.blockSize[0]       = 512;
-    const auto dummyArguments = prepareGpuKernelArguments(k_dummy_test, config);
-    launchGpuKernel(k_dummy_test, config, nullptr, "Dummy kernel", dummyArguments);
+    /* try to execute a dummy kernel */
+    try
+    {
+        KernelLaunchConfig config;
+        config.blockSize[0]       = 512;
+        const auto dummyArguments = prepareGpuKernelArguments(k_dummy_test, config);
+        launchGpuKernel(k_dummy_test, config, nullptr, "Dummy kernel", dummyArguments);
+    }
+    catch (gmx::GromacsException& ex)
+    {
+        // launchGpuKernel error is not fatal and should continue with marking the device bad
+        fprintf(stderr,
+                "Error occurred while running dummy kernel sanity check on device #%d:\n %s\n", id,
+                formatExceptionMessageToString(ex).c_str());
+        return -1;
+    }
+
     if (cudaDeviceSynchronize() != cudaSuccess)
     {
         return -1;
@@ -315,12 +335,16 @@ static int is_gmx_supported_gpu_id(int deviceId, const cudaDeviceProp& devicePro
      * the dummy test kernel fails to execute with a "device busy message" we
      * should appropriately report that the device is busy instead of insane.
      */
-    if (do_sanity_checks(deviceId, deviceProp) != 0)
+    const int checkResult = do_sanity_checks(deviceId, deviceProp);
+    switch (checkResult)
     {
-        return egpuInsane;
+        case 0: return egpuCompatible;
+        case -1: return egpuInsane;
+        case -2: return egpuUnavailable;
+        default:
+            GMX_RELEASE_ASSERT(false, "Invalid do_sanity_checks() return value");
+            return egpuCompatible;
     }
-
-    return egpuCompatible;
 }
 
 bool isGpuDetectionFunctional(std::string* errorMessage)

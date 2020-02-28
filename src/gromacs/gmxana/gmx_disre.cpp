@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -181,11 +181,33 @@ static void check_viol(FILE*       log,
         vvindex[j] = 0;
     }
     nat = interaction_function[F_DISRES].nratoms + 1;
+    // Check internal consistency of disres.label
+    // The label for a distance restraint should be at most one larger
+    // than the previous label.
+    int label_old = forceparams[forceatoms[0]].disres.label;
+    for (i = 0; (i < disres->nr); i += nat)
+    {
+        type  = forceatoms[i];
+        label = forceparams[type].disres.label;
+        if ((label == label_old) || (label == label_old + 1))
+        {
+            label_old = label;
+        }
+        else
+        {
+            gmx_fatal(FARGS,
+                      "Label mismatch in distance restrains. Label for restraint %d is %d, "
+                      "expected it to be either %d or %d",
+                      i / nat, label, label_old, label_old + 1);
+        }
+    }
+    // Get offset for label index
+    label_old = forceparams[forceatoms[0]].disres.label;
     for (i = 0; (i < disres->nr);)
     {
         type  = forceatoms[i];
         n     = 0;
-        label = forceparams[type].disres.label;
+        label = forceparams[type].disres.label - label_old;
         if (debug)
         {
             fprintf(debug, "DISRE: ndr = %d, label = %d  i=%d, n =%d\n", ndr, label, i, n);
@@ -193,7 +215,8 @@ static void check_viol(FILE*       log,
         do
         {
             n += nat;
-        } while (((i + n) < disres->nr) && (forceparams[forceatoms[i + n]].disres.label == label));
+        } while (((i + n) < disres->nr)
+                 && (forceparams[forceatoms[i + n]].disres.label == label + label_old));
 
         calc_disres_R_6(nullptr, nullptr, n, &forceatoms[i], x, pbc, fcd, nullptr);
 
