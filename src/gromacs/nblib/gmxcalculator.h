@@ -64,8 +64,7 @@ struct NBKernelOptions;
 class GmxForceCalculator
 {
 public:
-    explicit GmxForceCalculator(std::shared_ptr<SimulationState> system,
-                                std::shared_ptr<NBKernelOptions> options);
+    explicit GmxForceCalculator(SimulationState system, std::shared_ptr<NBKernelOptions> options);
 
     //! Compute forces and return
     gmx::PaddedHostVector<gmx::RVec> compute();

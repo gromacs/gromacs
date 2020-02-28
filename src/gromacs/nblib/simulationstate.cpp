@@ -41,6 +41,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -63,52 +64,82 @@
 namespace nblib
 {
 
-SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
-                                 const std::vector<gmx::RVec>& vel,
+SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coordinates,
+                                 const std::vector<gmx::RVec>& velocities,
                                  const std::vector<gmx::RVec>& forces,
                                  Box                           box,
                                  Topology                      topology) :
     box_(std::move(box)),
     topology_(std::move(topology))
 {
-    if (!checkNumericValues(coord))
+    if (!checkNumericValues(coordinates))
     {
         GMX_THROW(gmx::InvalidInputError("Input coordinates has at least one NaN"));
     }
-    coordinates_ = coord;
-    if (!checkNumericValues(vel))
+    coordinates_ = coordinates;
+    if (!checkNumericValues(velocities))
     {
         GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
     }
-    velocities_ = vel;
+
+    velocities_ = velocities;
 
     forces_ = forces;
+
+    velocities_ = velocities;
+
 }
 
-const Topology& SimulationState::topology() const
+const Topology& SimulationState::Impl::topology() const
 {
     return topology_;
 }
 
-const Box& SimulationState::box()
+const Box& SimulationState::Impl::box()
 {
     return box_;
 }
 
-std::vector<gmx::RVec>& SimulationState::coordinates()
+std::vector<gmx::RVec>& SimulationState::Impl::coordinates()
 {
     return coordinates_;
 }
 
-std::vector<gmx::RVec>& SimulationState::velocities()
+std::vector<gmx::RVec>& SimulationState::Impl::velocities()
 {
     return velocities_;
 }
 
-std::vector<gmx::RVec>& SimulationState::forces()
+std::vector<gmx::RVec>& SimulationState::Impl::forces()
 {
     return forces_;
 }
 
+
+
+const Topology& SimulationState::topology() const
+{
+    return simulationStatePtr_->topology();
+}
+
+const Box& SimulationState::box()
+{
+    return simulationStatePtr_->box();
+}
+
+std::vector<gmx::RVec>& SimulationState::coordinates()
+{
+    return simulationStatePtr_->coordinates();
+}
+
+std::vector<gmx::RVec>& SimulationState::velocities()
+{
+    return simulationStatePtr_->velocities();
+}
+
+std::vector<gmx::RVec>& SimulationState::forces()
+{
+    return simulationStatePtr_->forces();
+}
 
 } // namespace nblib

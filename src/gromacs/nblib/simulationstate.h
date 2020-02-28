@@ -41,9 +41,10 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GROMACS_SIMULATIONSTATE_H
-#define GROMACS_SIMULATIONSTATE_H
+#ifndef GMX_NBLIB_SIMULATIONSTATE_H
+#define GMX_NBLIB_SIMULATIONSTATE_H
 
 #include <vector>
 
@@ -62,26 +63,19 @@ namespace nblib
  * Simulation state description that serves as a snapshot of the system
  * being analysed. Needed to init an MD program. Allows hot-starting simulations.
  */
+
 class SimulationState
 {
 public:
     //! Constructor
-    SimulationState(const std::vector<gmx::RVec>& coord,
-                    const std::vector<gmx::RVec>& vel,
+    SimulationState(const std::vector<gmx::RVec>& coordinates,
+                    const std::vector<gmx::RVec>& velocities,
                     const std::vector<gmx::RVec>& forces,
                     Box                           box,
-                    Topology                      topology);
-
-    //! Copy Constructor
-    SimulationState(const SimulationState&) = default;
-
-    //! Force generation of a move ctor such that we get a compiler error
-    //! if SimulationState gets changed in the future to require a custom
-    //! copy ctor
-    SimulationState(SimulationState&& simulationState) = default;
-
-    //! Move Assignment Constructor
-    SimulationState& operator=(SimulationState&& simulationState) = default;
+                    Topology                      topology) :
+        simulationStatePtr_(std::make_shared<Impl>(coordinates, velocities, forces, box, topology))
+    {
+    }
 
     //! Returns topology of the current state
     const Topology& topology() const;
@@ -98,6 +92,46 @@ public:
     //! Returns a vector of forces
     std::vector<gmx::RVec>& forces();
 
+private:
+    class Impl;
+    std::shared_ptr<SimulationState::Impl> simulationStatePtr_;
+};
+
+class SimulationState::Impl
+{
+public:
+    //! Constructor
+    Impl(const std::vector<gmx::RVec>& coordinates,
+         const std::vector<gmx::RVec>& velocities,
+         const std::vector<gmx::RVec>& forces,
+         Box                           box,
+         Topology                      topology);
+
+    //! Copy Constructor
+    Impl(const SimulationState::Impl&) = default;
+
+    //! Force generation of a move ctor such that we get a compiler error
+    //! if SimulationState gets changed in the future to require a custom
+    //! copy ctor
+    Impl(SimulationState::Impl&& simulationState) = default;
+
+    //! Move Assignment Constructor
+    Impl& operator=(SimulationState::Impl&& simulationState) = default;
+
+    //! Returns topology of the current state
+    const Topology& topology() const;
+
+    //! Returns the box
+    const Box& box();
+
+    //! Returns a vector of particle coordinates
+    std::vector<gmx::RVec>& coordinates();
+
+    //! Returns a vector of particle velocities
+    std::vector<gmx::RVec>& velocities();
+
+    //! Returns a vector of forces
+    std::vector<gmx::RVec>& forces();
 
 private:
     std::vector<gmx::RVec> coordinates_;
@@ -109,4 +143,4 @@ private:
 
 } // namespace nblib
 
-#endif // GROMACS_SIMULATIONSTATE_H
+#endif // GMX_NBLIB_SIMULATIONSTATE_H

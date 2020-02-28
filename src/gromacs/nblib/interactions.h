@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Implements nblib HarmonicType
+ * Implements nblib particle-types interactions
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -45,10 +45,46 @@
 #ifndef GMX_NBLIB_INTERACTIONS_H
 #define GMX_NBLIB_INTERACTIONS_H
 
+#include <map>
+#include <set>
+
 #include "gromacs/math/vectypes.h"
+
+#include "particletype.h"
+#include "nbkerneldef.h"
 
 namespace nblib
 {
+using ParticleTypeName = std::string;
+using NonBondedInteractionMap =
+        std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>>;
+
+namespace detail
+{
+
+real combineNonbondedParameters(real v, real w, CombinationRule combinationRule);
+
+}
+
+
+class ParticleTypesInteractions
+{
+public:
+    ParticleTypesInteractions() = default;
+
+    void add(ParticleType particleType, C6 c6, C12 c12);
+
+    void add(ParticleType particleType1, ParticleType particleType2, C6 c6, C12 c12);
+
+    NonBondedInteractionMap generateTable(CombinationRule combinationRule);
+
+private:
+    std::unordered_map<ParticleTypeName, std::tuple<C6, C12>> singleParticleInteractionsMap_;
+    std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>> twoParticlesInteractionsMap_;
+
+    // Helper data structure to collect the unique ParticleTypes
+    std::set<ParticleTypeName> particleTypesSet_;
+};
 
 } // namespace nblib
 #endif // GMX_NBLIB_INTERACTIONS_H
