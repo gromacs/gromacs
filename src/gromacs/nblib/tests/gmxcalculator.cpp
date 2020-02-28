@@ -77,22 +77,16 @@ TEST(NBlibTest, GmxForceCalculatorCanCompute)
     EXPECT_NO_THROW(gmxForceCalculator->compute());
 }
 
-TEST(NBlibTest, GmxForceCalculatorCanSetupStepWorkload)
+TEST(NBlibTest, CanSetupStepWorkload)
 {
-    ArgonSimulationStateBuilder      argonSystemBuilder;
-    SimulationState                  simState = argonSystemBuilder.setupSimulationState();
     std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
-    GmxForceCalculator               gmxForceCalculator(simState, options);
-    EXPECT_NO_THROW(gmxForceCalculator.setupStepWorkload(options));
+    EXPECT_NO_THROW(setupStepWorkload(options));
 }
 
 TEST(NBlibTest, GmxForceCalculatorCanSetupInteractionConst)
 {
-    ArgonSimulationStateBuilder      argonSystemBuilder;
-    SimulationState                  simState = argonSystemBuilder.setupSimulationState();
     std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
-    GmxForceCalculator               gmxForceCalculator(simState, options);
-    EXPECT_NO_THROW(gmxForceCalculator.setupInteractionConst(options));
+    EXPECT_NO_THROW(setupInteractionConst(options));
 }
 } // namespace
 } // namespace test
