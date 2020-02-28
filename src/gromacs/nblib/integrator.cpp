@@ -56,18 +56,19 @@ namespace nblib
 LeapFrog::LeapFrog(std::shared_ptr<SimulationState> simulationState) :
     simulationState_(simulationState)
 {
-    inverseMasses_.reserve(simulationState_->topology().numParticles());
+    inverseMasses_.resize(simulationState_->topology().numParticles());
     for (int i = 0; i < simulationState_->topology().numParticles(); i++)
     {
-        inverseMasses_[i] = 1.0 / simulationState_->topology().getParticleTypes()[i].mass();
+        int typeIndex     = simulationState_->topology().getParticleTypeIdOfAllParticles()[i];
+        inverseMasses_[i] = 1.0 / simulationState_->topology().getParticleTypes()[typeIndex].mass();
     }
 }
 
 void LeapFrog::integrate(const real dt)
 {
-    std::vector<gmx::RVec> x = simulationState_->coordinates();
-    std::vector<gmx::RVec> v = simulationState_->velocities();
-    std::vector<gmx::RVec> f = simulationState_->forces();
+    std::vector<gmx::RVec>& x = simulationState_->coordinates();
+    std::vector<gmx::RVec>& v = simulationState_->velocities();
+    std::vector<gmx::RVec>& f = simulationState_->forces();
     for (size_t i = 0; i < x.size(); i++)
     {
         for (int dim = 0; dim < DIM; dim++)

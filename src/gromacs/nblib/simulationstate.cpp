@@ -65,10 +65,10 @@ namespace nblib
 {
 
 SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coordinates,
-                                 const std::vector<gmx::RVec>& velocities,
-                                 const std::vector<gmx::RVec>& forces,
-                                 Box                           box,
-                                 Topology                      topology) :
+                            const std::vector<gmx::RVec>& velocities,
+                            const std::vector<gmx::RVec>& forces,
+                            Box                           box,
+                            Topology                      topology) :
     box_(std::move(box)),
     topology_(std::move(topology))
 {
@@ -87,7 +87,6 @@ SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coordinates,
     forces_ = forces;
 
     velocities_ = velocities;
-
 }
 
 const Topology& SimulationState::Impl::topology() const
@@ -114,7 +113,6 @@ std::vector<gmx::RVec>& SimulationState::Impl::forces()
 {
     return forces_;
 }
-
 
 
 const Topology& SimulationState::topology() const

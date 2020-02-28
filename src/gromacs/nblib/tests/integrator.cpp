@@ -66,7 +66,7 @@ namespace
 TEST(NBlibTest, IntegratorWorks)
 {
     int  numAtoms = 1;
-    int  numSteps = 1000;
+    int  numSteps = 100;
     real dt       = 0.001;
 
     ParticleType particleType(ParticleName("H"), Mass(1.0));
@@ -82,10 +82,10 @@ TEST(NBlibTest, IntegratorWorks)
     std::vector<gmx::RVec> f(numAtoms);
 
     f[0][XX] = 1.0;
-    f[0][YY] = -2.0;
+    f[0][YY] = 2.0;
     f[0][ZZ] = 0.0;
 
-    Box box(10);
+    Box box(100);
 
     std::vector<gmx::RVec> x0(x);
     std::vector<gmx::RVec> v0(v);
@@ -107,19 +107,25 @@ TEST(NBlibTest, IntegratorWorks)
             for (int d = 0; d < DIM; d++)
             {
                 // Analytical solution for constant-force particle movement
-                real im = 1.0 / simulationState.topology().getParticleTypes()[i].mass();
+                int  typeIndex = simulationState.topology().getParticleTypeIdOfAllParticles()[i];
+                real im = 1.0 / simulationState.topology().getParticleTypes()[typeIndex].mass();
                 xAnalytical[d] =
                         x0[i][d] + v0[i][d] * totalTime + 0.5 * f[i][d] * totalTime * totalTime * im;
                 vAnalytical[d] = v0[i][d] + f[i][d] * totalTime * im;
 
-                integrator.integrate(dt);
+                EXPECT_REAL_EQ_TOL(xAnalytical[d], simulationState.coordinates()[i][d], tolerance)
+                        << gmx::formatString(
+                                   "Coordinate %d of atom %d is different from analytical solution "
+                                   "at step %d.",
+                                   d, i, step);
 
-                EXPECT_REAL_EQ_TOL(xAnalytical[d], x[i][d], tolerance) << gmx::formatString(
-                        "Coordinate %d of atom %d is different from analytical solution.", d, i);
-
-                EXPECT_REAL_EQ_TOL(vAnalytical[d], v[i][d], tolerance) << gmx::formatString(
-                        "Velocity component %d of atom %d is different from analytical solution.", d, i);
+                EXPECT_REAL_EQ_TOL(vAnalytical[d], simulationState.velocities()[i][d], tolerance)
+                        << gmx::formatString(
+                                   "Velocity component %d of atom %d is different from analytical "
+                                   "solution at step %d.",
+                                   d, i, step);
             }
+            integrator.integrate(dt);
         }
     }
 }
