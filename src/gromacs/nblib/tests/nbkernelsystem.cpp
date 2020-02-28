@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -150,10 +151,12 @@ TEST(NBlibTest, CanIntegrateSystem)
     matrix box;
     gmx::fillLegacyMatrix(simState.box().matrix(), box);
 
+    LeapFrog integrator(simState);
+
     for (int iter = 0; iter < options.numIterations; iter++)
     {
         gmx::PaddedHostVector<gmx::RVec> forces = forceCalculator.compute();
-        EXPECT_NO_THROW(integrateCoordinates(forces, options, box, simState.coordinates()));
+        EXPECT_NO_THROW(integrator.integrate(1.0));
     }
 }
 /*
