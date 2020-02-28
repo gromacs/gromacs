@@ -63,7 +63,7 @@
 namespace nblib
 {
 
-struct NbvSetupUtil
+class NbvSetupUtil
 {
 public:
     NbvSetupUtil(SimulationState system, const NBKernelOptions& options);
@@ -85,9 +85,6 @@ private:
     std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
 
 public:
-    //! Pointer to the SimulationState
-    std::shared_ptr<SimulationState> system_;
-
     SimulationState                  system_;
     std::shared_ptr<NBKernelOptions> options_;
 

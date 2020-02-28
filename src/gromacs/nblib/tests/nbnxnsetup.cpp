@@ -48,17 +48,23 @@
 
 #include "testutils/testasserts.h"
 
+#include "testhelpers.h"
+#include "testsystems.h"
+
 namespace nblib
 {
 
 namespace test
 {
-/*
+
 TEST(NBlibTest, NbfpSetCorrectly)
 {
-
+    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    SimulationState             system = argonSimulationStateBuilder.setupSimulationState();
+    NBKernelOptions             options;
+    auto nbvSetupUtil = std::make_unique<NbvSetupUtil>(system, options);
 }
-*/
+
 } // namespace test
 
 } // namespace nblib

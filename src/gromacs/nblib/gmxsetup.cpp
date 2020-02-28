@@ -185,25 +185,25 @@ void NbvSetupUtil::setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv)
 {
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA = const_cast<int*>(system_->topology().getParticleTypeIdOfAllParticles().data());
-    mdatoms.chargeA = const_cast<real*>(system_->topology().getCharges().data());
+    mdatoms.typeA = const_cast<int*>(system_.topology().getParticleTypeIdOfAllParticles().data());
+    mdatoms.chargeA = const_cast<real*>(system_.topology().getCharges().data());
     nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);
 }
 
 void NbvSetupUtil::setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv)
 {
     matrix box_;
-    gmx::fillLegacyMatrix(system_->box().matrix(), box_);
+    gmx::fillLegacyMatrix(system_.box().matrix(), box_);
 
     GMX_RELEASE_ASSERT(!TRICLINIC(box_), "Only rectangular unit-cells are supported here");
     const rvec lowerCorner = { 0, 0, 0 };
     const rvec upperCorner = { box_[XX][XX], box_[YY][YY], box_[ZZ][ZZ] };
 
-    const real particleDensity = system_->coordinates().size() / det(box_);
+    const real particleDensity = system_.coordinates().size() / det(box_);
 
     nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
-                      { 0, int(system_->coordinates().size()) }, particleDensity,
-                      particleInfoAllVdw_, system_->coordinates(), 0, nullptr);
+                      { 0, int(system_.coordinates().size()) }, particleDensity,
+                      particleInfoAllVdw_, system_.coordinates(), 0, nullptr);
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
