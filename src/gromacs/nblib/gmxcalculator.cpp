@@ -39,16 +39,18 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "gmxpre.h"
+
+#include "gmxcalculator.h"
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nbnxm/nbnxm.h"
 
-#include "gmxcalculator.h"
 #include "nbkerneloptions.h"
-#include "simulationstate.h"
 
 namespace nblib
 {
@@ -119,17 +121,15 @@ void GmxForceCalculator::setupStepWorkload(const std::shared_ptr<NBKernelOptions
     }
 }
 
-GmxForceCalculator::GmxForceCalculator(const std::shared_ptr<SimulationState> system,
+GmxForceCalculator::GmxForceCalculator(SimulationState                        system,
                                        const std::shared_ptr<NBKernelOptions> options) :
-    verletForces_({}),
-    enerd_(1, 0)
+    verletForces_({}), enerd_(1, 0)
 {
     setupInteractionConst(options);
 
-    gmx::fillLegacyMatrix(system->box().matrix(), box_);
+    gmx::fillLegacyMatrix(system.box().matrix(), box_);
 
     setupStepWorkload(options);
-
 }
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()

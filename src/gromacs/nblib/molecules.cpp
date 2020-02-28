@@ -49,6 +49,7 @@
 #include <tuple>
 
 #include "gromacs/nblib/particletype.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace nblib
 {
@@ -61,9 +62,19 @@ Molecule& Molecule::addParticle(const ParticleName& particleName,
                                 const Charge&       charge,
                                 ParticleType const& particleType)
 {
-    if (particleTypes_.count(particleType.name()) == 0)
+    auto found = particleTypes_.find(particleType.name());
+    if (found == particleTypes_.end())
     {
-        particleTypes_[particleType.name()] = particleType;
+        particleTypes_.insert(std::make_pair(particleType.name(), particleType));
+    }
+    else
+    {
+        if (!(found->second == particleType))
+        {
+            GMX_THROW(
+                    gmx::InvalidInputError("Differing ParticleTypes with identical names "
+                                           "encountered in the same molecule."));
+        }
     }
 
     particles_.emplace_back(ParticleData{ particleName, residueName, particleType.name(), charge });
@@ -132,7 +143,10 @@ void Molecule::addExclusion(const std::string& particleName, const std::string& 
     addExclusion(std::make_tuple(particleName, name_), std::make_tuple(particleNameToExclude, name_));
 }
 
-const Molecule::InteractionTuple& Molecule::interactionData() const { return interactionData_; }
+const Molecule::InteractionTuple& Molecule::interactionData() const
+{
+    return interactionData_;
+}
 
 const ParticleType& Molecule::at(const std::string& particleTypeName) const
 {

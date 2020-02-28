@@ -47,8 +47,8 @@
 
 #include <vector>
 
-#include "box.h"
-#include "topology.h"
+#include "gromacs/nblib/box.h"
+#include "gromacs/nblib/topology.h"
 
 struct RVec;
 
@@ -62,25 +62,54 @@ namespace nblib
  * Simulation state description that serves as a snapshot of the system
  * being analysed. Needed to init an MD program. Allows hot-starting simulations.
  */
+
 class SimulationState
 {
 public:
-    //! Constructor
-    SimulationState(const std::vector<gmx::RVec>& coord,
+    SimulationState(const std::vector<gmx::RVec>& coordinates,
                     Box                           box,
                     Topology                      topology,
-                    const std::vector<gmx::RVec>& vel = {});
+                    const std::vector<gmx::RVec>& velocities = {}) :
+        simulationStatePtr_(std::make_shared<Impl>(coordinates, box, topology, velocities))
+    {
+    }
+
+    //! Returns topology of the current state
+    const Topology& topology() const;
+
+    //! Returns the box
+    const Box& box();
+
+    //! Returns a vector of particle coordinates
+    std::vector<gmx::RVec>& coordinates();
+
+    //! Returns a vector of particle velocities
+    std::vector<gmx::RVec>& velocities();
+
+private:
+    class Impl;
+    std::shared_ptr<SimulationState::Impl> simulationStatePtr_;
+};
+
+class SimulationState::Impl
+{
+public:
+    //! Constructor
+    Impl(const std::vector<gmx::RVec>& coordinates,
+         Box                           box,
+         Topology                      topology,
+         const std::vector<gmx::RVec>& velocities = {});
 
     //! Copy Constructor
-    SimulationState(const SimulationState&) = default;
+    Impl(const SimulationState::Impl&) = default;
 
     //! Force generation of a move ctor such that we get a compiler error
     //! if SimulationState gets changed in the future to require a custom
     //! copy ctor
-    SimulationState(SimulationState&& simulationState) = default;
+    Impl(SimulationState::Impl&& simulationState) = default;
 
     //! Move Assignment Constructor
-    SimulationState& operator=(SimulationState&& simulationState) = default;
+    Impl& operator=(SimulationState::Impl&& simulationState) = default;
 
     //! Returns topology of the current state
     const Topology& topology() const;

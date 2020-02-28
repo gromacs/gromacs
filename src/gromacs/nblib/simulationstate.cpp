@@ -63,42 +63,62 @@
 namespace nblib
 {
 
-SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
-                                 Box                           box,
-                                 Topology                      topology,
-                                 const std::vector<gmx::RVec>& vel) :
+SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coordinates,
+                            Box                           box,
+                            Topology                      topology,
+                            const std::vector<gmx::RVec>& velocities) :
     box_(std::move(box)), topology_(std::move(topology))
 {
-    if (!checkNumericValues(coord))
+    if (!checkNumericValues(coordinates))
     {
         GMX_THROW(gmx::InvalidInputError("Input coordinates has at least one NaN"));
     }
-    coordinates_ = coord;
-    if (!checkNumericValues(vel))
+    coordinates_ = coordinates;
+    if (!checkNumericValues(velocities))
     {
         GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
     }
-    velocities_ = vel;
+    velocities_ = velocities;
 }
 
-const Topology& SimulationState::topology() const
+const Topology& SimulationState::Impl::topology() const
 {
     return topology_;
 }
 
-const Box& SimulationState::box()
+const Box& SimulationState::Impl::box()
 {
     return box_;
 }
 
-std::vector<gmx::RVec>& SimulationState::coordinates()
+std::vector<gmx::RVec>& SimulationState::Impl::coordinates()
 {
     return coordinates_;
 }
 
-std::vector<gmx::RVec>& SimulationState::velocities()
+std::vector<gmx::RVec>& SimulationState::Impl::velocities()
 {
     return velocities_;
+}
+
+const Topology& SimulationState::topology() const
+{
+    return simulationStatePtr_->topology();
+}
+
+const Box& SimulationState::box()
+{
+    return simulationStatePtr_->box();
+}
+
+std::vector<gmx::RVec>& SimulationState::coordinates()
+{
+    return simulationStatePtr_->coordinates();
+}
+
+std::vector<gmx::RVec>& SimulationState::velocities()
+{
+    return simulationStatePtr_->velocities();
 }
 
 

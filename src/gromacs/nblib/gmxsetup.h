@@ -57,17 +57,13 @@
 
 #include "gmxcalculator.h"
 #include "nbkerneloptions.h"
+#include "simulationstate.h"
+#include "interactions.h"
 
 namespace nblib
 {
 
-enum class CombinationRule : int
-{
-    Geometric = 0,
-    Count     = 1
-};
-
-class NbvSetupUtil
+struct NbvSetupUtil
 {
 public:
     NbvSetupUtil(SimulationState system, const NBKernelOptions& options);
@@ -92,7 +88,7 @@ public:
     //! Pointer to the SimulationState
     std::shared_ptr<SimulationState> system_;
 
-    //! Pointer to the NBKernelOptions
+    SimulationState                  system_;
     std::shared_ptr<NBKernelOptions> options_;
 
     //! Storage for parameters for short range interactions.

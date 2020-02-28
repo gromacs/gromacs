@@ -63,38 +63,61 @@ inline void ignore_unused(T& x)
     static_cast<void>(x);
 }
 
-namespace detail {
+namespace detail
+{
 
-     template<int N, typename T, typename Tuple>
-     struct CompareField: std::is_same<T,
-        typename std::tuple_element<N, Tuple>::type>
-     { };
+template<class T, class U>
+struct disjunction : std::integral_constant<bool, T::value || U::value>
+{
+};
 
-     template <int N, class T, class Tuple, bool Match = false>
-     struct MatchingField
-     {
-         static T& get(Tuple& tp)
-         {
-             // check next element
-             return MatchingField<N+1, T, Tuple, CompareField<N+1, T, Tuple>::value>::get(tp);
-         }
-     };
+template<class T>
+struct void_t
+{
+    typedef void type;
+};
 
-     template <int N, class T, class Tuple>
-     struct MatchingField<N, T, Tuple, true>
-     {
-        static T& get(Tuple& tp)
-        {
-            return std::get<N>(tp);
-        }
-     };
+template<class T, class Enable = void>
+struct HasTypeMember
+{
+    typedef T type;
+};
 
-}
+template<class T>
+struct HasTypeMember<T, typename void_t<typename T::type>::type>
+{
+    typedef typename T::type type;
+};
+
+template<int N, typename T, typename Tuple>
+struct CompareField :
+    disjunction<std::is_same<T, typename std::tuple_element<N, Tuple>::type>,
+                std::is_same<T, typename HasTypeMember<typename std::tuple_element<N, Tuple>::type>::type>>
+{
+};
+
+template<int N, class T, class Tuple, bool Match = false>
+struct MatchingField
+{
+    static decltype(auto) get(Tuple& tp)
+    {
+        // check next element
+        return MatchingField<N + 1, T, Tuple, CompareField<N + 1, T, Tuple>::value>::get(tp);
+    }
+};
+
+template<int N, class T, class Tuple>
+struct MatchingField<N, T, Tuple, true>
+{
+    static decltype(auto) get(Tuple& tp) { return std::get<N>(tp); }
+};
+
+} // namespace detail
 
 //! Function to return the element in Tuple whose type matches T
 //! Note: if there are more than one, the first occurrence will be returned
-template <typename T, typename Tuple>
-T& pickType(Tuple& tup)
+template<typename T, typename Tuple>
+decltype(auto) pickType(Tuple& tup)
 {
     return detail::MatchingField<0, T, Tuple, detail::CompareField<0, T, Tuple>::value>::get(tup);
 }

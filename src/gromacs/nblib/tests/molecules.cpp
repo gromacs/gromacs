@@ -161,15 +161,70 @@ TEST(NBlibTest, AtWorks)
 {
     WaterMoleculeBuilder waterMolecule;
     Molecule             water = waterMolecule.waterMolecule();
-    EXPECT_NO_THROW(water.at("Ow"));
-    EXPECT_NO_THROW(water.at("H"));
+    EXPECT_NO_THROW_GMX(water.at("Ow"));
+    EXPECT_NO_THROW_GMX(water.at("H"));
 }
 
 TEST(NBlibTest, AtThrows)
 {
     WaterMoleculeBuilder waterMolecule;
     Molecule             water = waterMolecule.waterMolecule();
-    EXPECT_THROW(water.at("Hw"), std::out_of_range);
+    EXPECT_THROW_GMX(water.at("Hw"), std::out_of_range);
+}
+
+TEST(NBlibTest, MoleculeThrowsSameParticleTypeNameDifferentMass)
+{
+    //! User error: Two different ParticleTypes with the same name
+    ParticleType atom1(ParticleName("Atom"), Mass(1));
+    ParticleType atom2(ParticleName("Atom"), Mass(2));
+
+    Molecule molecule("UraniumDimer");
+    EXPECT_NO_THROW_GMX(molecule.addParticle(ParticleName("U1"), atom1));
+    EXPECT_THROW_GMX(molecule.addParticle(ParticleName("U2"), atom2), gmx::InvalidInputError);
+}
+
+TEST(NBlibTest, MoleculeDontThrowsSameParticleTypeNameDifferentMass)
+{
+    //! User error: Two different ParticleTypes with the same name
+    ParticleType atom1(ParticleName("Atom"), Mass(1));
+    ParticleType atom2(ParticleName("Atom"), Mass(1));
+
+    Molecule molecule("UraniumDimer");
+    EXPECT_NO_THROW_GMX(molecule.addParticle(ParticleName("U1"), atom1));
+    EXPECT_NO_THROW_GMX(molecule.addParticle(ParticleName("U2"), atom2));
+}
+
+TEST(NBlibTest, MoleculeThrowsSameParticleTypeNameDifferentC6)
+{
+    //! User error: Two different ParticleTypes with the same name
+    ParticleType atom1(ParticleName("Atom"), Mass(1), C6(1), C12(0));
+    ParticleType atom2(ParticleName("Atom"), Mass(1), C6(2), C12(0));
+
+    Molecule molecule("UraniumDimer");
+    EXPECT_NO_THROW_GMX(molecule.addParticle(ParticleName("U1"), atom1));
+    EXPECT_THROW_GMX(molecule.addParticle(ParticleName("U2"), atom2), gmx::InvalidInputError);
+}
+
+TEST(NBlibTest, MoleculeThrowsSameParticleTypeNameDifferentC12)
+{
+    //! User error: Two different ParticleTypes with the same name
+    ParticleType atom1(ParticleName("Atom"), Mass(1), C6(1), C12(2));
+    ParticleType atom2(ParticleName("Atom"), Mass(1), C6(1), C12(4));
+
+    Molecule molecule("UraniumDimer");
+    EXPECT_NO_THROW_GMX(molecule.addParticle(ParticleName("U1"), atom1));
+    EXPECT_THROW_GMX(molecule.addParticle(ParticleName("U2"), atom2), gmx::InvalidInputError);
+}
+
+TEST(NBlibTest, MoleculeNoThrowsSameParticleTypeName)
+{
+    //! User error: Two different ParticleTypes with the same name
+    ParticleType atom1(ParticleName("Atom"), Mass(1), C6(2), C12(3));
+    ParticleType atom2(ParticleName("Atom"), Mass(1), C6(2), C12(3));
+
+    Molecule molecule("UraniumDimer");
+    EXPECT_NO_THROW_GMX(molecule.addParticle(ParticleName("U1"), atom1));
+    EXPECT_NO_THROW_GMX(molecule.addParticle(ParticleName("U2"), atom2));
 }
 
 TEST(NBlibTest, CanAddInteractions)
@@ -177,7 +232,7 @@ TEST(NBlibTest, CanAddInteractions)
     WaterMoleculeBuilder waterMolecule;
     Molecule             water = waterMolecule.waterMolecule();
 
-    HarmonicBondType hb("hb1", 1,2);
+    HarmonicBondType hb("hb1", 1, 2);
     CubicBondType    cub("cub", 1, 2, 3);
 
     water.addInteraction("O", "H1", hb);
@@ -187,10 +242,10 @@ TEST(NBlibTest, CanAddInteractions)
     const auto& interactionData = water.interactionData();
 
     //! harmonic bonds
-    EXPECT_EQ(std::get<0>(interactionData).interactionTypes_.size(), 1);
-    EXPECT_EQ(std::get<0>(interactionData).interactions_.size(), 2);
+    EXPECT_EQ(pickType<HarmonicBondType>(interactionData).interactionTypes_.size(), 1);
+    EXPECT_EQ(pickType<HarmonicBondType>(interactionData).interactions_.size(), 2);
     //! cubic bonds
-    EXPECT_EQ(std::get<2>(interactionData).interactionTypes_.size(), 1);
+    EXPECT_EQ(pickType<CubicBondType>(interactionData).interactionTypes_.size(), 1);
 }
 
 } // namespace
