@@ -139,10 +139,7 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
     }
 
-    unsigned int cglo_flags =
-            (CGLO_TEMPERATURE | CGLO_GSTAT
-             | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0)
-             | (hasReadEkinState_ ? CGLO_READEKIN : 0));
+    unsigned int cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT | (hasReadEkinState_ ? CGLO_READEKIN : 0));
 
     if (algorithm == ComputeGlobalsAlgorithm::VelocityVerlet)
     {
@@ -188,10 +185,9 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
         }
 
         const bool doEnergy = step == energyReductionStep_;
-        int        flags =
-                (needGlobalReduction ? CGLO_GSTAT : 0) | (doEnergy ? CGLO_ENERGY : 0)
-                | (needComReduction ? CGLO_STOPCM : 0) | CGLO_TEMPERATURE | CGLO_PRESSURE | CGLO_CONSTRAINT
-                | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0);
+        int        flags    = (needGlobalReduction ? CGLO_GSTAT : 0) | (doEnergy ? CGLO_ENERGY : 0)
+                    | (needComReduction ? CGLO_STOPCM : 0) | CGLO_TEMPERATURE | CGLO_PRESSURE
+                    | CGLO_CONSTRAINT;
 
         // Since we're already communicating at this step, we
         // can propagate intra-simulation signals. Note that
@@ -233,10 +229,7 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
 
             int flags = (needGlobalReduction ? CGLO_GSTAT : 0) | (doEnergy ? CGLO_ENERGY : 0)
                         | (doTemperature ? CGLO_TEMPERATURE : 0) | CGLO_PRESSURE | CGLO_CONSTRAINT
-                        | (needComReduction ? CGLO_STOPCM : 0)
-                        | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                  : 0)
-                        | CGLO_SCALEEKIN;
+                        | (needComReduction ? CGLO_STOPCM : 0) | CGLO_SCALEEKIN;
 
             (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
                     [this, step, flags]() { compute(step, flags, nullSignaller_.get(), false); }));
@@ -252,9 +245,7 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
             {
                 return;
             }
-            int flags = CGLO_GSTAT | CGLO_CONSTRAINT
-                        | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                  : 0);
+            int flags = CGLO_GSTAT | CGLO_CONSTRAINT;
 
             // Since we're already communicating at this step, we
             // can propagate intra-simulation signals. Note that
@@ -293,12 +284,13 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                                    ? freeEnergyPerturbationElement_->constLambdaView()[efptVDW]
                                    : 0;
 
-    compute_globals(gstat_, cr_, inputrec_, fr_, energyElement_->ekindata(), x, v, box, vdwLambda,
-                    mdAtoms_->mdatoms(), nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr,
-                    energyElement_->enerdata(), energyElement_->forceVirial(step),
-                    energyElement_->constraintVirial(step), energyElement_->totalVirial(step),
-                    energyElement_->pressure(step), constr_, signaller, lastbox,
-                    &totalNumberOfBondedInteractions_, energyElement_->needToSumEkinhOld(), flags);
+    compute_globals(
+            gstat_, cr_, inputrec_, fr_, energyElement_->ekindata(), x, v, box, vdwLambda,
+            mdAtoms_->mdatoms(), nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr, energyElement_->enerdata(),
+            energyElement_->forceVirial(step), energyElement_->constraintVirial(step),
+            energyElement_->totalVirial(step), energyElement_->pressure(step), constr_, signaller,
+            lastbox, &totalNumberOfBondedInteractions_, energyElement_->needToSumEkinhOld(),
+            flags | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     checkNumberOfBondedInteractions(mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_,
                                     localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
     if (flags & CGLO_STOPCM && !isInit)
