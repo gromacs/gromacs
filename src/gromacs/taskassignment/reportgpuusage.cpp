@@ -138,6 +138,8 @@ void reportGpuUsage(const MDLogger&                   mdlog,
         output += gmx::formatString(
                 "PP tasks will do (non-perturbed) short-ranged%s interactions on the GPU\n",
                 useGpuForBonded ? " and most bonded" : "");
+        output += gmx::formatString("PP task will update and constrain coordinates on the %s",
+                                    useGpuForUpdate ? "GPU" : "CPU");
         if (pmeRunMode == PmeRunMode::Mixed)
         {
             output += gmx::formatString("PME tasks will do only spread and gather on the GPU\n");
@@ -146,8 +148,6 @@ void reportGpuUsage(const MDLogger&                   mdlog,
         {
             output += gmx::formatString("PME tasks will do all aspects on the GPU\n");
         }
-        output += gmx::formatString("Coordinates will be updated and constrained on the %s.",
-                                    useGpuForUpdate ? "GPU" : "CPU");
     }
 
     /* NOTE: this print is only for and on one physical node */
