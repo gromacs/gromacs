@@ -1,19 +1,56 @@
+This is an unofficial version of GROMACS. Please do not use it for
+production simulation work. It exists to show a working prototype from
+which the GROMACS team expects to extract code useful for implementing
+functionality in future major releases of GROMACS.
 
-               Welcome to the official version of GROMACS!
+This code is contained in a git branch available from the main GROMACS
+code review server. The latest version can be obtained via
 
-If you are familiar with Unix, it should be fairly trivial to compile and
-install GROMACS. GROMACS uses only the CMake build sytem, and our
-installation guide can be found at
-http://manual.gromacs.org/documentation/current/install-guide/index.html
+  git clone https://gerrit.gromacs.org/gromacs.git -b sandbox-gmxapi --single-branch
 
-Of course we will do our utmost to help you with any problems, but PLEASE 
-READ THE INSTALLATION INSTRUCTIONS BEFORE CONTACTING US!
+For more information, refer to python_packaging/README.md, docs/install-guide,
+and Redmine issue https://redmine.gromacs.org/issues/2045
+or email info@gmxapi.org. Developers may also consider the git commit history
+and Gerrit issues tagged with the topic "gmxapi".
 
-There are also several other online resources available from the homepage, 
-and special information for developers.
+When the functionality is integrated, then this branch will no longer
+be useful and will be removed from the gerrit server.  If there is no
+activity in twelve months, then the core GROMACS team will deem it
+inactive and remove it.
 
-If you are a developer, or change the source for any other reason, check
-out http://www.gromacs.org/Developer_Zone.
+The team interested in this branch includes
+* Eric Irrgang, Peter Kasson (UVA/MolSSI)
+* Mark Abraham, Paul Bauer, Joe Jordan, Christian Blau (KTH/BioExcel)
+
+Current branch policy is that any of the members of the gerrit
+"gmxapi" or "gmxcore" groups may push either normal or merge
+commits to it. The history of this branch is of no real interest.
+Commits to it will not be reviewed per se. As with all shared
+branches, it will never be rebased. Periodically, master branch will
+be merged into it, so that it stays up to date. The GROMACS Jenkins CI
+server currently does not do any verification on this branch, so it
+will not be as stable or widely useful as GROMACS master branch. This
+branch will not be mirrored on the GROMACS github.
+
+To push to this branch, use
+
+  git push ssh://USER@gerrit.gromacs.org HEAD:refs/heads/sandbox-gmxapi
+
+The gerrit server will not require that a ChangeId exists, so you do
+not need the usual GROMACS git post-commit hook installed to work with
+this branch. Do not push to refs/for/sandbox-gmxapi, because that is
+the invocation that opens a patch set for review for this branch,
+which we do not intend to do.
+
+Code will be extracted from this branch in manageable chunks and
+proposed for integration in master branch in the usual way for
+GROMACS. This branch merely provides convenient context for reviewers
+about the context into which that chunk will later fit. For example,
+they could see that functionality works suitably, or test performance.
+
+As such code is integrated into master branch, the content of this branch
+will be updated so that the next chunk to be staged into master can
+be reviewed in the appropriate context.
 
                                * * * * *
 
