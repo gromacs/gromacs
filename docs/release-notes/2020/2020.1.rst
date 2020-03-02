@@ -112,7 +112,7 @@ steps.
 
 :issue:`3388`
 
-Avoid integer overflow when using dispersioncorrection
+Avoid integer overflow when using dispersion correction
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 A change in the integer type storing the index meant that the value could overflow
@@ -146,6 +146,15 @@ Simulations using modular simulator and a graph object would fail with a
 segmentation fault.
 
 :issue:`3389`
+
+Fix temperature calculation when center of mass motion is removed for part of the system
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In the uncommon case where the center of mass motion is removed for part of the system
+but not the whole system, the number of degrees of freedom for the part without
+COMM removal would be incorrectly lowered by 3.
+
+:issue:`3406`
 
 Fix possible issue with picking undefined NB kernel types
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""

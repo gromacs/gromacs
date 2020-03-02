@@ -3038,17 +3038,19 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, char** gnames)
 
     if (ir->nstcomm != 0)
     {
-        int ndim_rm_vcm;
+        GMX_RELEASE_ASSERT(!groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].empty(),
+                           "Expect at least one group when removing COM motion");
 
         /* We remove COM motion up to dim ndof_com() */
-        ndim_rm_vcm = ndof_com(ir);
+        const int ndim_rm_vcm = ndof_com(ir);
 
         /* Subtract ndim_rm_vcm (or less with frozen dimensions) from
          * the number of degrees of freedom in each vcm group when COM
          * translation is removed and 6 when rotation is removed as well.
+         * Note that we do not and should not include the rest group here.
          */
         for (gmx::index j = 0;
-             j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1; j++)
+             j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]); j++)
         {
             switch (ir->comm_mode)
             {
