@@ -143,7 +143,7 @@
 #endif
 #ifdef LJ_EWALD_GEOM
     real     lj_ewaldcoeff2, lj_ewaldcoeff6_6;
-    SimdReal mone_S, half_S, lje_c2_S, lje_c6_6_S;
+    SimdReal half_S, lje_c2_S, lje_c6_6_S;
 #endif
 
 #ifdef LJ_COMB_LB
@@ -311,7 +311,6 @@
 #    endif
 #endif
 #ifdef LJ_EWALD_GEOM
-    mone_S           = SimdReal(-1.0);
     half_S           = SimdReal(0.5);
     lj_ewaldcoeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
     lj_ewaldcoeff6_6 = lj_ewaldcoeff2 * lj_ewaldcoeff2 * lj_ewaldcoeff2 / 6;
