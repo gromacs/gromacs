@@ -147,6 +147,18 @@ segmentation fault.
 
 :issue:`3389`
 
+Fix center of mass motion removal with frozen atoms
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When frozen atoms were part of center of mass motion removal groups,
+they would still contribute to the mass of those groups. This meant that
+the COM velocity correction was (slightly) too small. Now completely
+frozen atoms are removed from COM removal groups by grompp.
+When atoms are only frozen along one or two dimensions and part of
+a COM removal group, grompp now issues a warning.
+
+:issue:`2553`
+
 Fix temperature calculation when center of mass motion is removed for part of the system
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
