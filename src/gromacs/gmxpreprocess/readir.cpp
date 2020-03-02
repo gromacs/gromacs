@@ -3686,26 +3686,6 @@ void do_index(const char*                   mdparin,
                 "This may lead to artifacts.\n"
                 "In most cases one should use one group for the whole system.");
     }
-    /* Including frozen atoms in center of mass removal groups would lead to their
-     * mass contributing to the total group mass, while not being moved with the other atoms.
-     * This would mean that the total movement for the atoms in the group would be too small.
-     * To avoid this, frozen atoms are explicitly removed from the center of mass removal groups.
-     */
-    for (const auto& atom : groups->groupNumbers[SimulationAtomGroupType::Freeze])
-    {
-        auto position = std::find(
-                groups->groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval].begin(),
-                groups->groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval].end(), atom);
-        if (position != groups->groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval].end())
-        {
-            std::string message = gmx::formatString(
-                    "Can not have atoms in both Freeze and Center of Mass removal groups"
-                    "Removing atom %d from Center of Mass removal",
-                    static_cast<int>(atom));
-            warning_note(wi, message);
-            groups->groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval].erase(position);
-        }
-    }
 
     /* Now we have filled the freeze struct, so we can calculate NRDF */
     calc_nrdf(mtop, ir, gnames);
