@@ -120,6 +120,14 @@ and turn negative, leading to wrong lookup and unphysical values.
 
 :issue:`3391`
 
+Fix too small pairlist buffer on Intel GPUs
+"""""""""""""""""""""""""""""""""""""""""""
+
+The pairlist buffer generated for Intel GPUs was slightly too small,
+because it assumed a 4x4 atom-cluster pair kernel instead of 4x2.
+
+:issue:`3407`
+
 Fix checkpoint files getting out of sync with simulations sharing data
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
