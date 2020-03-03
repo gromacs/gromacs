@@ -33,6 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
+ * \brief Implements nblib ForceCalculator
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -60,9 +61,6 @@ ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOp
     //    masses_ = expandQuantity(system.topology(), &ParticleType::mass);
 }
 
-//! Sets up and runs the kernel calls
-//! TODO Refactor this function to return a handle to dispatchNonbondedKernel
-//!      that callers can manipulate directly.
 gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()
 {
     return gmxForceCalculator_->compute();
