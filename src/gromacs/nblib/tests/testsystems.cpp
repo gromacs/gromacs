@@ -89,13 +89,13 @@ std::unordered_map<std::string, Charge> Charges{ { "Ow", -0.82 },
 
 WaterMoleculeBuilder::WaterMoleculeBuilder() : water_("SOL")
 {
-    //! Define Particle Types
+    // Define Particle Types
     OwAtom       owAtom;
     ParticleType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
     HAtom        hwAtom;
     ParticleType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
 
-    //! Add the particles
+    // Add the particles
     water_.addParticle(ParticleName("Oxygen"), Charges.at("Ow"), Ow);
     water_.addParticle(ParticleName("H1"), Charges.at("Hw"), Hw);
     water_.addParticle(ParticleName("H2"), Charges.at("Hw"), Hw);
@@ -121,7 +121,7 @@ void WaterMoleculeBuilder::addExclusionsFromNames()
 
 MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_("MeOH")
 {
-    //! Define Particle Types
+    // Define Particle Types
     CMetAtom     cMetAtom;
     ParticleType CMet(cMetAtom.name, cMetAtom.mass, cMetAtom.c6, cMetAtom.c12);
     OMetAtom     oMetAtom;
@@ -129,12 +129,12 @@ MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_("MeOH")
     HAtom        hAtom;
     ParticleType H(hAtom.name, hAtom.mass, hAtom.c6, hAtom.c12);
 
-    //! Add the particles
+    // Add the particles
     methanol_.addParticle(ParticleName("Me1"), Charges.at("CMet"), CMet);
     methanol_.addParticle(ParticleName("O2"), Charges.at("OMet"), OMet);
     methanol_.addParticle(ParticleName("H3"), Charges.at("HMet"), H);
 
-    //! Add the exclusions
+    // Add the exclusions
     methanol_.addExclusion("Me1", "O2");
     methanol_.addExclusion("Me1", "H3");
     methanol_.addExclusion("H3", "O2");
@@ -148,7 +148,7 @@ Molecule MethanolMoleculeBuilder::methanolMolecule()
 
 Topology WaterTopology::buildTopology(int numMolecules)
 {
-    //! Add some molecules to the topology
+    // Add some molecules to the topology
     TopologyBuilder topologyBuilder;
     topologyBuilder.addMolecule(water(), numMolecules);
     Topology topology = topologyBuilder.buildTopology();
@@ -162,7 +162,7 @@ Molecule WaterTopology::water()
 
 Topology SpcMethanolTopologyBuilder::buildTopology(int numWater, int numMethanol)
 {
-    //! Add some molecules to the topology
+    // Add some molecules to the topology
     TopologyBuilder topologyBuilder;
     topologyBuilder.addMolecule(methanol(), numMethanol);
     topologyBuilder.addMolecule(water(), numWater);
@@ -214,6 +214,12 @@ ArgonSimulationStateBuilder::ArgonSimulationStateBuilder() :
         { 0.0484, -0.0357, 0.0168 },   { 0.0530, 0.0295, -0.2694 },  { -0.0550, -0.0896, 0.0494 },
         { -0.0799, -0.2534, -0.0079 }, { 0.0436, -0.1557, 0.1849 },  { -0.0214, 0.0446, 0.0758 },
     };
+    forces_ = {
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+    };
 }
 
 void ArgonSimulationStateBuilder::setCoordinate(int particleNum, int dimension, real value)
@@ -230,7 +236,7 @@ void ArgonSimulationStateBuilder::setVelocity(int particleNum, int dimension, re
 
 SimulationState ArgonSimulationStateBuilder::setupSimulationState()
 {
-    return SimulationState(coordinates_, box_, topology_, velocities_);
+    return SimulationState(coordinates_, velocities_, forces_, box_, topology_);
 }
 
 const Topology& ArgonSimulationStateBuilder::topology() const
@@ -270,11 +276,16 @@ SpcMethanolSimulationStateBuilder::SpcMethanolSimulationStateBuilder() :
         { -0.8587, -0.1344, -0.0643 }, { 0.0623, -0.1787, 0.0036 }, { -0.5020, -0.9564, 0.0997 },
         { 0.869, 1.245, 1.665 },       { 0.169, 0.275, 1.565 },     { 0.269, 2.275, 1.465 },
     };
+
+    forces_ = {
+        { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 },
+        { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 },
+    };
 }
 
 SimulationState SpcMethanolSimulationStateBuilder::setupSimulationState()
 {
-    return SimulationState(coordinates_, box_, topology_, velocities_);
+    return SimulationState(coordinates_, velocities_, forces_, box_, topology_);
 }
 
 std::vector<gmx::RVec>& SpcMethanolSimulationStateBuilder::coordinates()

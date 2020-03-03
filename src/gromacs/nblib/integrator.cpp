@@ -40,35 +40,43 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
 #include "integrator.h"
 
-#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/pbcutil/pbc.h"
 
 namespace nblib
 {
 
-void integrateCoordinates(gmx::PaddedHostVector<gmx::RVec> forces,
-                          const NBKernelOptions&           options,
-                          const matrix&                    box,
-                          std::vector<gmx::RVec>&          currentCoords)
+LeapFrog::LeapFrog(SimulationState simulationState) : simulationState_(simulationState)
 {
-    std::vector<gmx::RVec> nextCoords;
-    nextCoords.resize(currentCoords.size());
-    for (size_t particleI = 0; particleI < currentCoords.size(); particleI++)
+    inverseMasses_.resize(simulationState_.topology().numParticles());
+    for (int i = 0; i < simulationState_.topology().numParticles(); i++)
+    {
+        int typeIndex     = simulationState_.topology().getParticleTypeIdOfAllParticles()[i];
+        inverseMasses_[i] = 1.0 / simulationState_.topology().getParticleTypes()[typeIndex].mass();
+    }
+}
+
+void LeapFrog::integrate(const real dt)
+{
+    std::vector<gmx::RVec>& x = simulationState_.coordinates();
+    std::vector<gmx::RVec>& v = simulationState_.velocities();
+    std::vector<gmx::RVec>& f = simulationState_.forces();
+    for (size_t i = 0; i < x.size(); i++)
     {
         for (int dim = 0; dim < DIM; dim++)
         {
-            real vel                   = forces[particleI][dim] * options.timestep;
-            real newCoord              = currentCoords[particleI][dim] + vel * options.timestep;
-            nextCoords[particleI][dim] = newCoord;
+            v[i][dim] += f[i][dim] * dt * inverseMasses_[i];
+            x[i][dim] += v[i][dim] * dt;
         }
     }
-    put_atoms_in_box(PbcType::Xyz, box, nextCoords);
-    currentCoords = nextCoords;
+    matrix box;
+    gmx::fillLegacyMatrix(simulationState_.box().matrix(), box);
+    put_atoms_in_box(PbcType::Xyz, box, x);
 }
 
 } // namespace nblib

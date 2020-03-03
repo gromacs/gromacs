@@ -41,8 +41,8 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#ifndef GROMACS_FORCECALCULATOR_H
-#define GROMACS_FORCECALCULATOR_H
+#ifndef GMX_NBLIB_FORCECALCULATOR_H
+#define GMX_NBLIB_FORCECALCULATOR_H
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/simulationstate.h"
@@ -50,7 +50,6 @@
 
 #include "nbkerneldef.h"
 #include "nbkerneloptions.h"
-
 
 namespace nblib
 {
@@ -60,11 +59,20 @@ class GmxForceCalculator;
 class ForceCalculator
 {
 public:
-    // TODO: Depend on simulationState
+    /*! \brief Constructor
+     *
+     * \todo: Depend on simulationState
+     */
     ForceCalculator(const SimulationState& system, const NBKernelOptions& options);
 
     //! Sets up and runs the kernel calls
     //! returns the forces as a vector
+
+    /*! \brief Sets up and runs the kernel calls
+     *
+     * \todo Refactor this function to return a handle to dispatchNonbondedKernel
+     *       that callers can manipulate directly.
+     */
     gmx::PaddedHostVector<gmx::RVec> compute();
 
 private:
@@ -82,4 +90,4 @@ private:
 
 } // namespace nblib
 
-#endif // GROMACS_FORCECALCULATOR_H
+#endif // GMX_NBLIB_FORCECALCULATOR_H

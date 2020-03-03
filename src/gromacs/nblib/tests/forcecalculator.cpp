@@ -71,6 +71,7 @@ class KernelSystemTester
 public:
     std::vector<gmx::RVec> coordinates;
     std::vector<gmx::RVec> velocities;
+    std::vector<gmx::RVec> forces;
 
     Box             box;
     TopologyBuilder topologyBuilder;
@@ -112,12 +113,17 @@ public:
             { 0.569, 1.215, 1.965 }, { 0.669, 1.225, 1.865 }, { 0.769, 1.235, 1.765 },
             { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
         };
+
+        forces = {
+            { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 },
+            { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 },
+        };
     }
 
     NBKernelSystem setupKernelSystem()
     {
         Topology topology       = topologyBuilder.buildTopology();
-        auto     simState       = SimulationState(coordinates, box, topology, velocities);
+        auto     simState       = SimulationState(coordinates, velocities, forces, box, topology);
         auto     nbKernelSystem = NBKernelSystem(simState);
         return nbKernelSystem;
     }

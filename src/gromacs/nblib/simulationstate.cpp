@@ -41,6 +41,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #include "gmxpre.h"
 
@@ -64,10 +65,12 @@ namespace nblib
 {
 
 SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coordinates,
+                            const std::vector<gmx::RVec>& velocities,
+                            const std::vector<gmx::RVec>& forces,
                             Box                           box,
-                            Topology                      topology,
-                            const std::vector<gmx::RVec>& velocities) :
-    box_(std::move(box)), topology_(std::move(topology))
+                            Topology                      topology) :
+    box_(std::move(box)),
+    topology_(std::move(topology))
 {
     if (!checkNumericValues(coordinates))
     {
@@ -78,6 +81,11 @@ SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coordinates,
     {
         GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
     }
+
+    velocities_ = velocities;
+
+    forces_ = forces;
+
     velocities_ = velocities;
 }
 
@@ -101,6 +109,12 @@ std::vector<gmx::RVec>& SimulationState::Impl::velocities()
     return velocities_;
 }
 
+std::vector<gmx::RVec>& SimulationState::Impl::forces()
+{
+    return forces_;
+}
+
+
 const Topology& SimulationState::topology() const
 {
     return simulationStatePtr_->topology();
@@ -121,5 +135,9 @@ std::vector<gmx::RVec>& SimulationState::velocities()
     return simulationStatePtr_->velocities();
 }
 
+std::vector<gmx::RVec>& SimulationState::forces()
+{
+    return simulationStatePtr_->forces();
+}
 
 } // namespace nblib

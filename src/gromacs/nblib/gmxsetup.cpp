@@ -33,6 +33,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
+ * \brief Translation layer to GROMACS data structures for force calculations.
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -234,7 +235,7 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
     auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
                                                     std::move(atomData), kernelSetup, nullptr, nullptr);
 
-    //! Needs to be called with the number of unique ParticleTypes
+    // Needs to be called with the number of unique ParticleTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
                         system_.topology().getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
 

@@ -34,57 +34,60 @@
  */
 /*! \internal \file
  * \brief
- * Implements nblib particle-types interactions
+ * This implements basic nblib utility tests
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
- * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GMX_NBLIB_INTERACTIONS_H
-#define GMX_NBLIB_INTERACTIONS_H
+#include "gmxpre.h"
 
-#include <map>
-#include <set>
+#include <gtest/gtest.h>
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/nblib/particletype.h"
+#include "gromacs/nblib/gmxsetup.h"
+#include "gromacs/nblib/simulationstate.h"
 
-#include "nbkerneldef.h"
+#include "testhelpers.h"
+#include "testsystems.h"
 
 namespace nblib
 {
-using ParticleTypeName = std::string;
-using NonBondedInteractionMap =
-        std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>>;
-
-namespace detail
+namespace test
+{
+namespace
 {
 
-real combineNonbondedParameters(real v, real w, CombinationRule combinationRule);
-
+TEST(NBlibTest, CanConstructGmxForceCalculator)
+{
+    ArgonSimulationStateBuilder      argonSystemBuilder;
+    SimulationState                  simState = argonSystemBuilder.setupSimulationState();
+    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
+    EXPECT_NO_THROW(GmxForceCalculator(simState, options));
 }
 
-
-class ParticleTypesInteractions
+TEST(NBlibTest, GmxForceCalculatorCanCompute)
 {
-public:
-    ParticleTypesInteractions() = default;
+    ArgonSimulationStateBuilder argonSystemBuilder;
+    SimulationState             simState       = argonSystemBuilder.setupSimulationState();
+    NBKernelOptions             options        = NBKernelOptions();
+    options.nbnxmSimd                          = BenchMarkKernels::SimdNo;
+    std::unique_ptr<NbvSetupUtil> nbvSetupUtil = std::make_unique<NbvSetupUtil>(simState, options);
+    std::unique_ptr<GmxForceCalculator> gmxForceCalculator = nbvSetupUtil->setupGmxForceCalculator();
+    EXPECT_NO_THROW(gmxForceCalculator->compute());
+}
 
-    void add(ParticleType particleType, C6 c6, C12 c12);
+TEST(NBlibTest, CanSetupStepWorkload)
+{
+    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
+    EXPECT_NO_THROW(setupStepWorkload(options));
+}
 
-    void add(ParticleType particleType1, ParticleType particleType2, C6 c6, C12 c12);
-
-    NonBondedInteractionMap generateTable(CombinationRule combinationRule);
-
-private:
-    std::unordered_map<ParticleTypeName, std::tuple<C6, C12>> singleParticleInteractionsMap_;
-    std::map<std::tuple<ParticleTypeName, ParticleTypeName>, std::tuple<C6, C12>> twoParticlesInteractionsMap_;
-
-    // Helper data structure to collect the unique ParticleTypes
-    std::set<ParticleTypeName> particleTypesSet_;
-};
-
+TEST(NBlibTest, GmxForceCalculatorCanSetupInteractionConst)
+{
+    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
+    EXPECT_NO_THROW(setupInteractionConst(options));
+}
+} // namespace
+} // namespace test
 } // namespace nblib
-#endif // GMX_NBLIB_INTERACTIONS_H

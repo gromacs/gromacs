@@ -52,6 +52,7 @@ set(exename "nblib-setup-test")
 gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
+    integrator.cpp
     particletype.cpp
     molecules.cpp
     box.cpp
@@ -73,6 +74,7 @@ gmx_add_gtest_executable(
     simstate.cpp
     nbkernelsystem.cpp
     nbnxnsetup.cpp
+    gmxcalculator.cpp
     # pseudo-library for code for mdrun
     #$<TARGET_OBJECTS:nblib_objlib>
     )

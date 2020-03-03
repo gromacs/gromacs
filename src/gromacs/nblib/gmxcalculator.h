@@ -35,6 +35,7 @@
 /*! \internal \file
  * \brief
  * Implements a force calculator based on GROMACS data structures.
+ *
  * Intended for internal use inside the ForceCalculator.
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
@@ -61,22 +62,19 @@ namespace nblib
 class SimulationState;
 struct NBKernelOptions;
 
+//! Set up StepWorkload data
+gmx::StepWorkload setupStepWorkload(std::shared_ptr<NBKernelOptions> options);
+
+//! Return an interaction constants struct with members set appropriately
+interaction_const_t setupInteractionConst(std::shared_ptr<NBKernelOptions> options);
+
 class GmxForceCalculator
 {
 public:
-    explicit GmxForceCalculator(SimulationState system, std::shared_ptr<NBKernelOptions> options);
+    explicit GmxForceCalculator(SimulationState simState, std::shared_ptr<NBKernelOptions> options);
 
     //! Compute forces and return
     gmx::PaddedHostVector<gmx::RVec> compute();
-
-    //! Set up StepWorkload data
-    void setupStepWorkload(std::shared_ptr<NBKernelOptions> options);
-
-    //! Return an interaction constants struct with members set appropriately
-    void setupInteractionConst(std::shared_ptr<NBKernelOptions> options);
-
-    //! Parameters for various interactions in the system
-    interaction_const_t interactionConst_;
 
     //! Non-Bonded Verlet object for force calculation
     std::unique_ptr<nonbonded_verlet_t> nbv_;
@@ -84,11 +82,14 @@ public:
     //! Only nbfp, shift_vec and ntypes are used
     t_forcerec forcerec_;
 
+    //! Contains array for computed forces
+    gmx::PaddedHostVector<gmx::RVec> verletForces_ = {};
+
+    //! Parameters for various interactions in the system
+    interaction_const_t interactionConst_;
+
     //! Tasks to perform in an MD Step
     gmx::StepWorkload stepWork_;
-
-    //! Contains array for computed forces
-    gmx::PaddedHostVector<gmx::RVec> verletForces_;
 
 private:
     //! Energies of different interaction types; currently only needed as an argument for dispatchNonbondedKernel
@@ -98,7 +99,7 @@ private:
     t_nrnb nrnb_ = { 0 };
 
     //! Legacy matrix for box
-    matrix box_ = { { 0 } };
+    matrix box_;
 };
 
 } // namespace nblib

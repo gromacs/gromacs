@@ -40,6 +40,7 @@
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 #ifndef GROMACS_INTEGRATOR_H
 #define GROMACS_INTEGRATOR_H
@@ -48,19 +49,39 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
-
-#include "nbkerneloptions.h"
-
-struct nbnxn_atomdata_output_t;
+#include "gromacs/nblib/simulationstate.h"
 
 namespace nblib
 {
 
-// todo Use HostVector or ArrayRef for coordinates
-void integrateCoordinates(gmx::PaddedHostVector<gmx::RVec> forces,
-                          const NBKernelOptions&           options,
-                          const matrix&                    box,
-                          std::vector<gmx::RVec>&          currentCoords);
+class SimulationState;
+
+class LeapFrog
+{
+public:
+    /*! \brief Constructor.
+     *
+     * \todo Change the argument to
+     *
+     * \param[in] simulationState  Simulation state data.
+     */
+    LeapFrog(SimulationState simulationState);
+
+    /*! \brief Integrate
+     *
+     * Integrates the equation of motion using Leap-Frog algorithm.
+     * Updates coordinates and velocities.
+     *
+     * \param[in] dt  Timestep.
+     */
+    void integrate(const real dt);
+
+private:
+    //! 1/mass for all atoms (GPU)
+    std::vector<real> inverseMasses_;
+    //! Local copy of simulation state
+    SimulationState simulationState_;
+};
 
 } // namespace nblib
 

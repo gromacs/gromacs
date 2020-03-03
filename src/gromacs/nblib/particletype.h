@@ -79,7 +79,7 @@ public:
      */
     ParticleType(ParticleTypeName name, Mass mass);
 
-    /*! Constructor with explicit type specification
+    /*! \brief Constructor with explicit type specification
      *
      * \param[in] name The unique name to reference the particle type.
      * \param[in] mass The mass of the particle of this type.
@@ -119,7 +119,7 @@ private:
     C12 c12_;
 };
 
-/*! Comparison operator
+/*! \brief Comparison operator
  *
  * \param[in] a First type.
  * \param[in] b Second type.
