@@ -103,7 +103,7 @@ private:
     void addExclusionsFromNames();
 };
 
-//! \brief Make a methanol molecule with parameters from gromos43A1
+//! \internal \brief Make a methanol molecule with parameters from gromos43A1
 class MethanolMoleculeBuilder
 {
 public:

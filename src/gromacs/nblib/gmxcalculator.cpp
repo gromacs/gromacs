@@ -78,7 +78,7 @@ interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions>
     }
     interactionConst.coulomb_modifier = eintmodPOTSHIFT;
     interactionConst.rcoulomb         = options->pairlistCutoff;
-    //! Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
+    // Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
     interactionConst.dispersion_shift.cpot = -1.0 / gmx::power6(interactionConst.rvdw);
     interactionConst.repulsion_shift.cpot  = -1.0 / gmx::power12(interactionConst.rvdw);
 
