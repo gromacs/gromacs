@@ -111,7 +111,7 @@ NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& option
     gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
     gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
 
-    unpackTopologyToGmx();
+    unpackTopologyToGmx(system_.topology());
 }
 
 Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
@@ -138,10 +138,9 @@ Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
     return kernelSetup;
 }
 
-void NbvSetupUtil::unpackTopologyToGmx()
+void NbvSetupUtil::unpackTopologyToGmx(const Topology& topology)
 
 {
-    const Topology&                  topology      = system_.topology();
     const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
 
     size_t numParticles = topology.numParticles();
@@ -205,23 +204,23 @@ void NbvSetupUtil::setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv)
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
-std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
+std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options)
 {
-    const auto pinPolicy  = (options_->useGpu ? gmx::PinningPolicy::PinnedIfSupported
+    const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
                                              : gmx::PinningPolicy::CannotBePinned);
-    const int  numThreads = options_->numThreads;
+    const int  numThreads = options.numThreads;
     // Note: the options and Nbnxm combination rule enums values should match
-    const int combinationRule = static_cast<int>(options_->ljCombinationRule);
+    const int combinationRule = static_cast<int>(options.ljCombinationRule);
 
-    auto messageWhenInvalid = checkKernelSetup(*options_);
+    auto messageWhenInvalid = checkKernelSetup(options);
     if (messageWhenInvalid)
     {
         gmx_fatal(FARGS, "Requested kernel is unavailable because %s.", messageWhenInvalid->c_str());
     }
 
-    Nbnxm::KernelSetup kernelSetup = getKernelSetup(*options_);
+    Nbnxm::KernelSetup kernelSetup = getKernelSetup(options);
 
-    PairlistParams pairlistParams(kernelSetup.kernelType, false, options_->pairlistCutoff, false);
+    PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
     Nbnxm::GridSet gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType,
                            false, numThreads, pinPolicy);
     auto           pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
@@ -237,12 +236,12 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
 
     // Needs to be called with the number of unique ParticleTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
-                        system_.topology().getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
+                        topology.getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
 
     setParticlesOnGrid(nbv);
 
     t_nrnb nrnb;
-    nbv->constructPairlist(gmx::InteractionLocality::Local, system_.topology().getGmxExclusions(), 0, &nrnb);
+    nbv->constructPairlist(gmx::InteractionLocality::Local, topology.getGmxExclusions(), 0, &nrnb);
 
     setAtomProperties(nbv);
 
@@ -253,7 +252,7 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
 {
     auto gmxForceCalculator_p = std::make_unique<GmxForceCalculator>(system_, options_);
 
-    gmxForceCalculator_p->nbv_ = setupNbnxmInstance();
+    gmxForceCalculator_p->nbv_ = setupNbnxmInstance(system_.topology(), *options_);
 
     // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
     // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;

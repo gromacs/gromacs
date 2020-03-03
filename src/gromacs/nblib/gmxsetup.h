@@ -80,7 +80,7 @@ public:
 
 private:
     //! Reads Topology data from the user-facing layer to translate to GMX data structures
-    void unpackTopologyToGmx();
+    void unpackTopologyToGmx(const Topology& topology);
 
     //! Returns the kernel setup
     Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions &options);
@@ -92,7 +92,7 @@ private:
     void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv);
 
     //! Sets up non-bonded verlet on the GmxForceCalculator
-    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
+    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options);
 
     SimulationState                  system_;
     std::shared_ptr<NBKernelOptions> options_;
