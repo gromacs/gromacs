@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,11 +66,13 @@ TopologyHolder::TopologyHolder(const gmx_mtop_t& globalTopology,
     }
     else
     {
+        t_graph* graph = nullptr;
         // Generate and initialize new topology
         // Note that most of the data needed for the constructor is used here -
         // this function should probably be simplified sooner or later.
-        mdAlgorithmsSetupAtomData(cr, inputrec, globalTopology, localTopology_.get(), fr, nullptr,
+        mdAlgorithmsSetupAtomData(cr, inputrec, globalTopology, localTopology_.get(), fr, &graph,
                                   mdAtoms, constr, vsite, nullptr);
+        GMX_RELEASE_ASSERT(graph == nullptr, "Graph is not implemented for the modular simulator.");
     }
 }
 

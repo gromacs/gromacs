@@ -85,14 +85,12 @@ public:
     static bool isInputCompatible(bool                             exitOnFailure,
                                   const t_inputrec*                inputrec,
                                   bool                             doRerun,
-                                  const gmx_vsite_t*               vsite,
+                                  const gmx_mtop_t&                globalTopology,
                                   const gmx_multisim_t*            ms,
                                   const ReplicaExchangeParameters& replExParams,
                                   const t_fcdata*                  fcd,
-                                  int                              nfile,
-                                  const t_filenm*                  fnm,
-                                  ObservablesHistory*              observablesHistory,
-                                  const gmx_membed_t*              membed);
+                                  bool                             doEssentialDynamics,
+                                  bool                             doMembed);
 
     // Only builder can construct
     friend class SimulatorBuilder;

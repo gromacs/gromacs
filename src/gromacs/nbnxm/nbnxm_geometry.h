@@ -90,7 +90,7 @@ static constexpr gmx::EnumerationArray<KernelType, int> JClusterSizePerKernelTyp
 #else
       0, 0,
 #endif
-      c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize }
+      c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize / 2 }
 };
 
 /*! \brief Returns whether the pair-list corresponding to nb_kernel_type is simple */

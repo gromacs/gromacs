@@ -1086,8 +1086,6 @@ Known limitations
 
 **Please note again the limitations outlined below!**
 
-- PME GPU offload is supported on NVIDIA hardware with CUDA and AMD hardware with OpenCL.
-
 - Only a PME order of 4 is supported on GPUs.
 
 - PME will run on a GPU only when exactly one rank has a
@@ -1328,6 +1326,9 @@ Limitations in the current OpenCL support of interest to |Gromacs| users:
 - On NVIDIA GPUs the OpenCL kernels achieve much lower performance
   than the equivalent CUDA kernels due to limitations of the NVIDIA OpenCL
   compiler.
+- On the NVIDIA Volta an Turing architectures the OpenCL code is known to produce
+  incorrect results with driver version up to 440.x (most likely due to compiler issues).
+  Runs typically fail on these architectures.
 
 Limitations of interest to |Gromacs| developers:
 

@@ -87,6 +87,11 @@ stages:
     - .gcc-before-script-template
     - .build-gcc-template
 
+.configure-gcc-cuda:
+    extends:
+      - .configure-gcc
+      - .cuda-template
+
 .configure-clang:
   extends:
     - .configure-extends-template
@@ -147,10 +152,10 @@ stages:
     - .build-docs-webpage-template
     - .documentation-before-script-template
 
-.build-cuda-gcc:
-  extends:
-    - .build-gcc
-    - .build-cuda-template
+.build-gcc-cuda:
+    extends:
+      - .build-gcc
+      - .cuda-template
 
 # Templates for test stage
 .test-gcc:
@@ -158,6 +163,11 @@ stages:
     - .test-extends-template
     - .gcc-before-script-template
     - .test-gcc-template
+
+.test-gcc-cuda:
+    extends:
+      - .test-gcc
+      - .cuda-template
 
 .test-clang:
   extends:
@@ -248,6 +258,17 @@ configure-gcc-8:
   except:
     variables:
       - $GROMACS_RELEASE
+
+configure-gcc-8-cuda-10.2:
+    extends:
+      - .configure-gcc-cuda
+      - .gcc-8-cuda-10.2-template
+    needs:
+      - job: simple-build
+        artifacts: false
+    except:
+      variables:
+        - $GROMACS_RELEASE
 
 configure-gcc-7-simd-sse41:
   extends:
@@ -443,6 +464,225 @@ build-gcc-7-double:
       - $GROMACS_RELEASE
 
 build-gcc-8:
+    extends:
+      - .build-gcc
+      - .gcc8-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: configure-gcc-8
+        artifacts: true
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+build-gcc-8-cuda-10.2:
+    extends:
+      - .build-gcc-cuda
+      - .gcc-8-cuda-10.2-template
+    needs:
+      - job: simple-build
+        artifacts: false
+      - job: configure-gcc-8-cuda-10.2
+        artifacts: true
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+build-gcc-7-simd-sse41:
+    extends:
+      - .build-gcc
+      - .gcc7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: configure-gcc-7-simd-sse41
+        artifacts: true
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+build-clang-7:
+    extends:
+      - .build-clang
+      - .clang7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: configure-clang-7
+        artifacts: true
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+build-clang-7-gmxapi:
+    extends:
+      - .build-clang
+      - .gmxapi-extra-installs
+      - .clang7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: configure-clang-7-gmxapi
+        artifacts: true
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+build-clang-8:
+    extends:
+      - .build-clang
+      - .clang8-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: configure-clang-8
+        artifacts: true
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+build-clang-6:
+    extends:
+      - .build-clang
+      - .clang6-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: configure-clang-6
+        artifacts: true
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+# Jobs running during test stage
+test-gcc-7:
+    extends:
+      - .test-gcc
+      - .gcc7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-gcc-7
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-gcc-7-gmxapi:
+    extends:
+      - .test-gcc
+      - .gmxapi-extra-installs
+      - .gcc7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-gcc-7-gmxapi
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-gcc-7-double:
+    extends:
+      - .test-gcc
+      - .gcc7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-gcc-7-double
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-gcc-8:
+    extends:
+      - .test-gcc
+      - .gcc8-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-gcc-8
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-gcc-8-cuda-10.2:
+    variables:
+      KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+      KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    extends:
+      - .test-gcc-cuda
+      - .gcc-8-cuda-10.2-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-gcc-8-cuda-10.2
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-gcc-7-simd-sse41:
+    extends:
+      - .test-gcc
+      - .gcc7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-gcc-7-simd-sse41
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-clang-7:
+    extends:
+      - .test-clang
+      - .clang7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-clang-7
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-clang-7-gmxapi:
+    extends:
+      - .test-clang
+      - .gmxapi-extra-installs
+      - .clang7-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-clang-7-gmxapi
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-clang-8:
+    extends:
+      - .test-clang
+      - .clang8-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-clang-8
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-clang-6:
+    extends:
+      - .test-clang
+      - .clang6-template       
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-clang-6
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+# Jobs running in source checking stage
+build-clang-tidy:
   extends:
     - .build-gcc
     - .gcc8-template

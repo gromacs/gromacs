@@ -1379,7 +1379,7 @@ static void checkForUnboundAtoms(const gmx_moltype_t* molt, gmx_bool bVerbose, w
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (((interaction_function[ftype].flags & IF_BOND) && ftype != F_CONNBONDS)
+        if (((interaction_function[ftype].flags & IF_BOND) && NRAL(ftype) == 2 && ftype != F_CONNBONDS)
             || (interaction_function[ftype].flags & IF_CONSTRAINT) || ftype == F_SETTLE)
         {
             const InteractionList& il   = molt->ilist[ftype];

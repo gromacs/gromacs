@@ -45,6 +45,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
 class energyhistory_t;
@@ -194,7 +195,9 @@ void write_checkpoint(const char*                   fn,
                       double                        t,
                       t_state*                      state,
                       ObservablesHistory*           observablesHistory,
-                      const gmx::MdModulesNotifier& notifier);
+                      const gmx::MdModulesNotifier& notifier,
+                      bool                          applyMpiBarrierBeforeRename,
+                      MPI_Comm                      mpiBarrierCommunicator);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.

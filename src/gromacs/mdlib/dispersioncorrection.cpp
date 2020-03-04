@@ -137,10 +137,10 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
 
     for (int q = 0; q < (inputrec.efep == efepNO ? 1 : 2); q++)
     {
-        double csix    = 0;
-        double ctwelve = 0;
-        int    npair   = 0;
-        int    nexcl   = 0;
+        double  csix    = 0;
+        double  ctwelve = 0;
+        int64_t npair   = 0;
+        int64_t nexcl   = 0;
         if (!EI_TPI(inputrec.eI))
         {
             numAtomsForDensity_ = mtop.natoms;
@@ -154,9 +154,9 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
             {
                 for (int tpj = tpi; tpj < ntp; tpj++)
                 {
-                    const int iCount = typecount[tpi];
-                    const int jCount = typecount[tpj];
-                    int       npair_ij;
+                    const int64_t iCount = typecount[tpi];
+                    const int64_t jCount = typecount[tpj];
+                    int64_t       npair_ij;
                     if (tpi != tpj)
                     {
                         npair_ij = iCount * jCount;
@@ -278,7 +278,7 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
         }
         if (debug)
         {
-            fprintf(debug, "Counted %d exclusions\n", nexcl);
+            fprintf(debug, "Counted %" PRId64 " exclusions\n", nexcl);
             fprintf(debug, "Average C6 parameter is: %10g\n", csix);
             fprintf(debug, "Average C12 parameter is: %10g\n", ctwelve);
         }

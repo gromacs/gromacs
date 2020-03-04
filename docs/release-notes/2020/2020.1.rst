@@ -1,10 +1,10 @@
 GROMACS 2020.1 release notes
 ----------------------------
 
-This version was released on TODO, 2020. These release notes
+This version was released on March 3rd, 2020. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2020 version, to fix known issues. It also incorporates all
-fixes made in version 2019.5 and earlier, which you can find described
+fixes made in version 2019.6 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!
@@ -46,6 +46,137 @@ in the MPI rank count even when the grid was specified by the user.
 
 :issue:`3336`
 
+Actually fix PME forces with FE without perturbed q/LJ
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+PME would incorrectly ignore the mesh forces on perturbed atoms when
+no charges or LJ atom types were actually perturbed. Note that this
+is a rather uncommon scenario.
+
+:issue:`2640`
+:issue:`3359`
+
+Avoid deadlock when checking for missing DD interactions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When missing bonded interactions after domain decomposition were detected,
+mdrun was deadlocking instead of exiting with a failure.
+
+:issue:`3373`
+
+Fix checkpoint restarts using Parrinello-Rahman and md-vv
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Checkpoints using Parrinello-Rahman and md-vv (only implemented in
+the new modular simulator approach) could not be read.
+
+:issue:`3377`
+
+Avoid overzealous program abort with orientation restraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It could happen that mdrun would abort on checking orientation restraints in multiple
+molecules even though no restraints where applied to them.
+
+:issue:`3375`
+
+Add fatal error for mdrun -multidir when simulations sharing state start at different step
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When (re)starting mdrun -multidir for simulations sharing state data
+(e.g., replica exchange, AWH with bias sharing or NMR ensemble averaging)
+having a different initial step only caused a note to be printed, which
+could lead to simulations getting out of sync. Now a fatal error is issued
+in this situation.
+
+:issue:`2440`
+:issue:`3990`
+
+Correct skewed box using modular simulator without DD
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using modular simulator without DD, it was not checked whether the box
+was getting overly skewed when using pressure control.
+
+:issue:`3383`
+
+Fix NMR restraints using modular simulator
+""""""""""""""""""""""""""""""""""""""""""
+
+Using NMR restraints (distance or orientation restraints) under modular simulator
+did not work as expected. All orientation restraint simulations would fail with a
+segmentation fault, as would distance restraint simulations using time averaging.
+All other distance restraint simulations would run correctly, but output to the
+energy trajectory would only occur if it coincided with general energy writing
+steps.
+
+:issue:`3388`
+
+Avoid integer overflow when using dispersion correction
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A change in the integer type storing the index meant that the value could overflow
+and turn negative, leading to wrong lookup and unphysical values.
+
+:issue:`3391`
+
+Fix too small pairlist buffer on Intel GPUs
+"""""""""""""""""""""""""""""""""""""""""""
+
+The pairlist buffer generated for Intel GPUs was slightly too small,
+because it assumed a 4x4 atom-cluster pair kernel instead of 4x2.
+
+:issue:`3407`
+
+Fix checkpoint files getting out of sync with simulations sharing data
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When simulations share data, e.g., replica exchange, AWH with bias sharing
+or NMR ensemble averaging, MPI barrier have now been added before renaming
+the checkpointing files to avoid that checkpoints files from the simulations
+can get out of sync. Now in very unlikely cases some checkpoint files might
+have temporary names, but all content will be in sync.
+
+:issue:`2440`
+
+Fix simulations using graph and modular simulations
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Simulations using modular simulator and a graph object would fail with a
+segmentation fault.
+
+:issue:`3389`
+
+Fix center of mass motion removal with frozen atoms
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When frozen atoms were part of center of mass motion removal groups,
+they would still contribute to the mass of those groups. This meant that
+the COM velocity correction was (slightly) too small. Now completely
+frozen atoms are removed from COM removal groups by grompp.
+When atoms are only frozen along one or two dimensions and part of
+a COM removal group, grompp now issues a warning.
+
+:issue:`2553`
+
+Fix temperature calculation when center of mass motion is removed for part of the system
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In the uncommon case where the center of mass motion is removed for part of the system
+but not the whole system, the number of degrees of freedom for the part without
+COMM removal would be incorrectly lowered by 3.
+
+:issue:`3406`
+
+Fix possible issue with picking undefined NB kernel types
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The CPU reference implementations for the NB kernels were missing some definitions for specific kernel
+types. This only affected installations that have SIMD explicitly turned off, something that is
+unlikely to happen in production environments.
+
+:issue:`2728`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -58,6 +189,18 @@ Add support for ICC NextGen
 Add support for Intel Compiler based on LLVM technology.
 To compile GROMACS with this compiler use ``CXX=icpc CXXFLAGS=-qnextgen cmake``.
 
+Document known issues with OpenCL on Volta and Turing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:issue:`3125`
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fix check for modified source files in release tarballs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+It could happen that modifications to the source tree were not picked
+up if they happened after the build directory had been generated.
+
+:issue:`3302`
 

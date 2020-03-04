@@ -3237,6 +3237,11 @@ electron-microscopy experiments. (See the `reference manual`_ for details)
       between reference density and simulated density as similarity measure.
       Negative density values are ignored.
 
+   .. mdp-value:: cross-correlation
+
+      Uses the Pearson correlation coefficient between reference density and
+      simulated density as similarity measure.
+
 .. mdp:: density-guided-simulation-atom-spreading-weight
 
    (unity) Determines the multiplication factor for the Gaussian kernel when
