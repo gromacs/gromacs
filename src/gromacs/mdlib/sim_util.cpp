@@ -1107,7 +1107,7 @@ void do_force(FILE*                               fplog,
 #if GMX_MPI
     // If coordinates are to be sent to PME task from GPU memory, perform that send here.
     // Otherwise the send will occur before the H2D coordinate transfer.
-    if (pmeSendCoordinatesFromGpu)
+    if (!thisRankHasDuty(cr, DUTY_PME) && pmeSendCoordinatesFromGpu)
     {
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
