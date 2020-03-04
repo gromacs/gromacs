@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
+ * Copyright (c) 2012,2013,2014,2015,2017 The GROMACS development team.
  * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -121,6 +121,10 @@ static p_nbk_func_noener nbnxn_kernel_noener_ref[coulktNR][vdwktNR_ref] = {
     { nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_ref,
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_F_ref,
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_F_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_F_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref },
+    { nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_F_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_F_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_F_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_F_ref,
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref }
 };
 
@@ -132,6 +136,10 @@ static p_nbk_func_ener nbnxn_kernel_ener_ref[coulktNR][vdwktNR_ref] = {
       nbnxn_kernel_ElecQSTab_VdwLJ_VF_ref, nbnxn_kernel_ElecQSTab_VdwLJFsw_VF_ref,
       nbnxn_kernel_ElecQSTab_VdwLJPsw_VF_ref, nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VF_ref,
       nbnxn_kernel_ElecQSTab_VdwLJEwCombLB_VF_ref },
+    { nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VF_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VF_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref },
     { nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_ref,
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VF_ref,
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VF_ref,
@@ -151,6 +159,10 @@ static p_nbk_func_ener nbnxn_kernel_energrp_ref[coulktNR][vdwktNR_ref] = {
       nbnxn_kernel_ElecQSTab_VdwLJ_VgrpF_ref, nbnxn_kernel_ElecQSTab_VdwLJFsw_VgrpF_ref,
       nbnxn_kernel_ElecQSTab_VdwLJPsw_VgrpF_ref, nbnxn_kernel_ElecQSTab_VdwLJEwCombGeom_VgrpF_ref,
       nbnxn_kernel_ElecQSTab_VdwLJEwCombLB_VgrpF_ref },
+    { nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VgrpF_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref,
+      nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref },
     { nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref,
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJ_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VgrpF_ref,
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref,

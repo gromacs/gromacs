@@ -15,7 +15,7 @@ include:
     - local: '/admin/ci-templates/.tags-template.yml'
     - local: '/admin/ci-templates/.test-script-template.yml'
     - local: '/admin/ci-templates/.build-docs-template.yml'
-    - local: '/admin/ci-templates/.cuda-gcc-build-template.yml'
+    - local: '/admin/ci-templates/.cuda-template.yml'
     - local: '/admin/ci-templates/.build-mpi-template.yml'
     - local: '/admin/ci-templates/.build-gmxapi-template.yml'
     - local: '/admin/ci-templates/.regressiontest-template.yml'

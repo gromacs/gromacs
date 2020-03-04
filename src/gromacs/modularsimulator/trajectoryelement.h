@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -159,7 +159,8 @@ private:
                       gmx_mtop_t*                           top_global,
                       const gmx_output_env_t*               oenv,
                       gmx_wallcycle*                        wcycle,
-                      StartingBehavior                      startingBehavior);
+                      StartingBehavior                      startingBehavior,
+                      bool                                  simulationsSharingState);
 
     //! The next energy writing step
     Step writeEnergyStep_;

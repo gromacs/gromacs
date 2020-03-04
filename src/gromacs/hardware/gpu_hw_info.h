@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
+ * Copyright (c) 2012,2013,2014,2015,2017 The GROMACS development team.
  * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -44,7 +44,10 @@ struct DeviceInformation;
  *
  * The egpuInsane value means that during the sanity checks an error
  * occurred that indicates malfunctioning of the device, driver, or
- * incompatible driver/runtime. */
+ * incompatible driver/runtime.
+ * eGpuUnavailable indicates that CUDA devices are busy or unavailable
+ * typically due to use of cudaComputeModeExclusive, cudaComputeModeProhibited modes.
+ */
 typedef enum
 {
     egpuCompatible = 0,
@@ -52,6 +55,7 @@ typedef enum
     egpuIncompatible,
     egpuIncompatibleClusterSize,
     egpuInsane,
+    egpuUnavailable,
     egpuNR
 } e_gpu_detect_res_t;
 

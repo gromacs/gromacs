@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
  * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -101,7 +101,6 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic);
  * \param[in]  tabfn              Table potential file for non-bonded interactions
  * \param[in]  tabpfn             Table potential file for pair interactions
  * \param[in]  tabbfnm            Table potential files for bonded interactions
- * \param[in]  pmeOnlyRankUsesGpu Whether there is a PME task on a GPU on a PME-only rank
  * \param[in]  print_force        Print forces for atoms with force >= print_force
  */
 void init_forcerec(FILE*                            fplog,
@@ -115,8 +114,18 @@ void init_forcerec(FILE*                            fplog,
                    const char*                      tabfn,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
-                   bool                             pmeOnlyRankUsesGpu,
                    real                             print_force);
+
+/*! \brief Check whether molecules are ever distributed over PBC boundaries
+ *
+ * Note: This covers only the non-DD case. For DD runs, domdec.h offers an
+ *       equivalent dd_bonded_molpbc(...) function.
+ *
+ * \param[in]  ir                 Inputrec structure
+ * \param[in]  mtop               Molecular topology
+ * \param[in]  mdlog              File for printing
+ */
+bool areMoleculesDistributedOverPbc(const t_inputrec& ir, const gmx_mtop_t& mtop, const gmx::MDLogger& mdlog);
 
 /*! \brief Divide exclusions over threads
  *

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -354,6 +354,25 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     auto integrator          = std::get<1>(params);
     auto temperatureCoupling = std::get<2>(params);
     auto pressureCoupling    = std::get<3>(params);
+
+    // Check for unimplemented functionality
+    // TODO: Update this as modular simulator gains functionality
+    const bool isModularSimulatorExplicitlyDisabled = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+    const bool isTCouplingCompatibleWithModularSimulator =
+            (temperatureCoupling == "no" || temperatureCoupling == "v-rescale");
+    if (integrator == "md-vv" && pressureCoupling == "parrinello-rahman"
+        && (isModularSimulatorExplicitlyDisabled || !isTCouplingCompatibleWithModularSimulator))
+    {
+        // Under md-vv, Parrinello-Rahman is only implemented for the modular simulator
+        return;
+    }
+    if (integrator == "md-vv" && temperatureCoupling == "nose-hoover"
+        && pressureCoupling == "berendsen")
+    {
+        // This combination is not implemented in either legacy or modular simulator
+        return;
+    }
+
     SCOPED_TRACE(
             formatString("Comparing normal and two-part run of simulation '%s' "
                          "with integrator '%s'",
@@ -411,41 +430,27 @@ INSTANTIATE_TEST_CASE_P(NormalIntegratorsWithFEP,
                                            ::testing::Values("no")));
 
 INSTANTIATE_TEST_CASE_P(
-        NormalNVT,
+        NVT,
         MdrunNoAppendContinuationIsExact,
         ::testing::Combine(::testing::Values("argon12"),
                            ::testing::Values("md", "md-vv"),
                            ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
                            ::testing::Values("no")));
 
-INSTANTIATE_TEST_CASE_P(LeapfrogNPH,
+INSTANTIATE_TEST_CASE_P(NPH,
                         MdrunNoAppendContinuationIsExact,
                         ::testing::Combine(::testing::Values("argon12"),
-                                           ::testing::Values("md"),
+                                           ::testing::Values("md", "md-vv"),
                                            ::testing::Values("no"),
                                            ::testing::Values("berendsen", "parrinello-rahman")));
 
 INSTANTIATE_TEST_CASE_P(
-        LeapfrogNPT,
+        NPT,
         MdrunNoAppendContinuationIsExact,
         ::testing::Combine(::testing::Values("argon12"),
-                           ::testing::Values("md"),
+                           ::testing::Values("md", "md-vv"),
                            ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
                            ::testing::Values("berendsen", "parrinello-rahman")));
-
-INSTANTIATE_TEST_CASE_P(VelocityVerletNPH,
-                        MdrunNoAppendContinuationIsExact,
-                        ::testing::Combine(::testing::Values("argon12"),
-                                           ::testing::Values("md-vv"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values("berendsen")));
-
-INSTANTIATE_TEST_CASE_P(VelocityVerletNPT,
-                        MdrunNoAppendContinuationIsExact,
-                        ::testing::Combine(::testing::Values("argon12"),
-                                           ::testing::Values("md-vv"),
-                                           ::testing::Values("v-rescale"),
-                                           ::testing::Values("berendsen")));
 
 INSTANTIATE_TEST_CASE_P(MTTK,
                         MdrunNoAppendContinuationIsExact,

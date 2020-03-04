@@ -2706,7 +2706,7 @@ int search_string(const char* s, int ng, char* gn[])
               s);
 }
 
-static bool do_numbering(int                        natoms,
+static void do_numbering(int                        natoms,
                          SimulationGroups*          groups,
                          gmx::ArrayRef<std::string> groupsFromMdpFile,
                          t_blocka*                  block,
@@ -2721,7 +2721,6 @@ static bool do_numbering(int                        natoms,
     AtomGroupIndices* grps = &(groups->groups[gtype]);
     int               j, gid, aj, ognr, ntot = 0;
     const char*       title;
-    bool              bRest;
     char              warn_buf[STRLEN];
 
     title = shortName(gtype);
@@ -2777,7 +2776,6 @@ static bool do_numbering(int                        natoms,
     }
 
     /* Now check whether we have done all atoms */
-    bRest = FALSE;
     if (ntot != natoms)
     {
         if (grptp == egrptpALL)
@@ -2795,7 +2793,6 @@ static bool do_numbering(int                        natoms,
             if (cbuf[j] == NOGID)
             {
                 cbuf[j] = grps->size();
-                bRest   = TRUE;
             }
         }
         if (grptp != egrptpPART)
@@ -2834,8 +2831,6 @@ static bool do_numbering(int                        natoms,
     }
 
     sfree(cbuf);
-
-    return (bRest && grptp == egrptpPART);
 }
 
 static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, char** gnames)
@@ -3038,17 +3033,19 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, char** gnames)
 
     if (ir->nstcomm != 0)
     {
-        int ndim_rm_vcm;
+        GMX_RELEASE_ASSERT(!groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval].empty(),
+                           "Expect at least one group when removing COM motion");
 
         /* We remove COM motion up to dim ndof_com() */
-        ndim_rm_vcm = ndof_com(ir);
+        const int ndim_rm_vcm = ndof_com(ir);
 
         /* Subtract ndim_rm_vcm (or less with frozen dimensions) from
          * the number of degrees of freedom in each vcm group when COM
          * translation is removed and 6 when rotation is removed as well.
+         * Note that we do not and should not include the rest group here.
          */
         for (gmx::index j = 0;
-             j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1; j++)
+             j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]); j++)
         {
             switch (ir->comm_mode)
             {
@@ -3236,6 +3233,88 @@ static void make_IMD_group(t_IMD* IMDgroup, char* IMDgname, t_blocka* grps, char
     }
 }
 
+/* Checks whether atoms are both part of a COM removal group and frozen.
+ * If a fully frozen atom is part of a COM removal group, it is removed
+ * from the COM removal group. A note is issued if such atoms are present.
+ * A warning is issued for atom with one or two dimensions frozen that
+ * are part of a COM removal group (mdrun would need to compute COM mass
+ * per dimension to handle this correctly).
+ * Also issues a warning when non-frozen atoms are not part of a COM
+ * removal group while COM removal is active.
+ */
+static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
+                                                    const int         numAtoms,
+                                                    const t_grpopts&  opts,
+                                                    warninp_t         wi)
+{
+    const int vcmRestGroup =
+            std::max(int(groups->groups[SimulationAtomGroupType::MassCenterVelocityRemoval].size()), 1);
+
+    int numFullyFrozenVcmAtoms     = 0;
+    int numPartiallyFrozenVcmAtoms = 0;
+    int numNonVcmAtoms             = 0;
+    for (int a = 0; a < numAtoms; a++)
+    {
+        const int freezeGroup   = getGroupType(*groups, SimulationAtomGroupType::Freeze, a);
+        int       numFrozenDims = 0;
+        for (int d = 0; d < DIM; d++)
+        {
+            numFrozenDims += opts.nFreeze[freezeGroup][d];
+        }
+
+        const int vcmGroup = getGroupType(*groups, SimulationAtomGroupType::MassCenterVelocityRemoval, a);
+        if (vcmGroup < vcmRestGroup)
+        {
+            if (numFrozenDims == DIM)
+            {
+                /* Do not remove COM motion for this fully frozen atom */
+                if (groups->groups[SimulationAtomGroupType::MassCenterVelocityRemoval].empty())
+                {
+                    groups->groups[SimulationAtomGroupType::MassCenterVelocityRemoval].resize(numAtoms, 0);
+                }
+                groups->groups[SimulationAtomGroupType::MassCenterVelocityRemoval][a] = vcmRestGroup;
+                numFullyFrozenVcmAtoms++;
+            }
+            else if (numFrozenDims > 0)
+            {
+                numPartiallyFrozenVcmAtoms++;
+            }
+        }
+        else if (numFrozenDims < DIM)
+        {
+            numNonVcmAtoms++;
+        }
+    }
+
+    if (numFullyFrozenVcmAtoms > 0)
+    {
+        std::string warningText = gmx::formatString(
+                "There are %d atoms that are fully frozen and part of COMM removal group(s), "
+                "removing these atoms from the COMM removal group(s)",
+                numFullyFrozenVcmAtoms);
+        warning_note(wi, warningText.c_str());
+    }
+    if (numPartiallyFrozenVcmAtoms > 0 && numPartiallyFrozenVcmAtoms < numAtoms)
+    {
+        std::string warningText = gmx::formatString(
+                "There are %d atoms that are frozen along less then %d dimensions and part of COMM "
+                "removal group(s), due to limitations in the code these still contribute to the "
+                "mass of the COM along frozen dimensions and therefore the COMM correction will be "
+                "too small.",
+                numPartiallyFrozenVcmAtoms, DIM);
+        warning(wi, warningText.c_str());
+    }
+    if (numNonVcmAtoms > 0)
+    {
+        std::string warningText = gmx::formatString(
+                "%d atoms are not part of any center of mass motion removal group.\n"
+                "This may lead to artifacts.\n"
+                "In most cases one should use one group for the whole system.",
+                numNonVcmAtoms);
+        warning(wi, warningText.c_str());
+    }
+}
+
 void do_index(const char*                   mdparin,
               const char*                   ndx,
               gmx_mtop_t*                   mtop,
@@ -3248,12 +3327,12 @@ void do_index(const char*                   mdparin,
     int       natoms;
     t_symtab* symtab;
     t_atoms   atoms_all;
-    char      warnbuf[STRLEN], **gnames;
+    char**    gnames;
     int       nr;
     real      tau_min;
     int       nstcmin;
     int       i, j, k, restnm;
-    bool      bExcl, bTable, bAnneal, bRest;
+    bool      bExcl, bTable, bAnneal;
     char      warn_buf[STRLEN];
 
     if (bVerbose)
@@ -3653,7 +3732,7 @@ void do_index(const char*                   mdparin,
             {
                 if (!gmx::equalCaseInsensitive(freezeDims[k], "N", 1))
                 {
-                    sprintf(warnbuf,
+                    sprintf(warn_buf,
                             "Please use Y(ES) or N(O) for freezedim only "
                             "(not %s)",
                             freezeDims[k].c_str());
@@ -3676,15 +3755,13 @@ void do_index(const char*                   mdparin,
     add_wall_energrps(groups, ir->nwall, symtab);
     ir->opts.ngener    = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     auto vcmGroupNames = gmx::splitString(is->vcm);
-    bRest              = do_numbering(natoms, groups, vcmGroupNames, defaultIndexGroups, gnames,
-                         SimulationAtomGroupType::MassCenterVelocityRemoval, restnm,
-                         vcmGroupNames.empty() ? egrptpALL_GENREST : egrptpPART, bVerbose, wi);
-    if (bRest)
+    do_numbering(natoms, groups, vcmGroupNames, defaultIndexGroups, gnames,
+                 SimulationAtomGroupType::MassCenterVelocityRemoval, restnm,
+                 vcmGroupNames.empty() ? egrptpALL_GENREST : egrptpPART, bVerbose, wi);
+
+    if (ir->comm_mode != ecmNO)
     {
-        warning(wi,
-                "Some atoms are not part of any center of mass motion removal group.\n"
-                "This may lead to artifacts.\n"
-                "In most cases one should use one group for the whole system.");
+        checkAndUpdateVcmFreezeGroupConsistency(groups, natoms, ir->opts, wi);
     }
 
     /* Now we have filled the freeze struct, so we can calculate NRDF */

@@ -67,6 +67,23 @@ namespace gmx
         ClassName& operator=(const ClassName&) = delete; \
         ClassName(const ClassName&)            = delete
 #endif
+#ifdef DOXYGEN
+/*! \brief
+ * Macro to declare a class non-copyable, non-movable, non-copy-assignable and
+ * non-move-assignable.
+ *
+ * For consistency, should appear last in the class declaration.
+ *
+ * \ingroup module_utility
+ */
+#    define GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(ClassName)
+#else
+#    define GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(ClassName)                                                            \
+        ClassName& operator=(const ClassName&) = delete;                                                            \
+        ClassName(const ClassName&)            = delete;                                                            \
+        ClassName& operator=(ClassName&&) = delete; /* NOLINT(misc-macro-parentheses,bugprone-macro-parentheses) */ \
+        ClassName(ClassName&&) = delete /* NOLINT(misc-macro-parentheses,bugprone-macro-parentheses) */
+#endif
 /*! \brief
  * Macro to declare a class non-assignable.
  *

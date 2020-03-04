@@ -40,3 +40,9 @@
 .clang8-gmxapi-template:
   image: gromacs/continuous-integration:ci-clang-8-gmxapi
 
+.gcc-8-cuda-10.2-template:
+  image: gromacs/continuous-integration:ci-gcc-8-cuda-10.2
+  variables:
+    CUDA_BASE_VERSION: "10.2"
+    COMPILER_MAJOR_VERSION: 8
+

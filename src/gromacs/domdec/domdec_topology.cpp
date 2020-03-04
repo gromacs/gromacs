@@ -178,7 +178,10 @@ static gmx_bool dd_check_ftype(int ftype, gmx_bool bBCheck, gmx_bool bConstr, gm
             || (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) || (bSettle && ftype == F_SETTLE));
 }
 
-/*! \brief Help print error output when interactions are missing */
+/*! \brief Help print error output when interactions are missing
+ *
+ * \note This function needs to be called on all ranks (contains a global summation)
+ */
 static std::string print_missing_interactions_mb(t_commrec*               cr,
                                                  const gmx_reverse_top_t* rt,
                                                  const char*              moltypename,
@@ -322,10 +325,10 @@ static void print_missing_interactions_atoms(const gmx::MDLogger& mdlog,
         int                  a_start = a_end;
         a_end                        = a_start + molb.nmol * moltype.atoms.nr;
 
-        GMX_LOG(mdlog.warning)
-                .appendText(print_missing_interactions_mb(cr, rt, *(moltype.name),
-                                                          &rt->ril_mt[molb.type], a_start, a_end,
-                                                          moltype.atoms.nr, molb.nmol, idef));
+        auto warning = print_missing_interactions_mb(cr, rt, *(moltype.name), &rt->ril_mt[molb.type],
+                                                     a_start, a_end, moltype.atoms.nr, molb.nmol, idef);
+
+        GMX_LOG(mdlog.warning).appendText(warning);
     }
 }
 

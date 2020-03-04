@@ -72,6 +72,25 @@ enum class EmulateGpuNonbonded : bool
     Yes
 };
 
+/*! \libinternal
+ *  \brief Structure that holds boolean flags corresponding to the development
+ *        features present enabled through environment variables.
+ *
+ */
+struct DevelopmentFeatureFlags
+{
+    //! True if the Buffer ops development feature is enabled
+    // TODO: when the trigger of the buffer ops offload is fully automated this should go away
+    bool enableGpuBufferOps = false;
+    //! If true, forces 'mdrun -update auto' default to 'gpu'
+    bool forceGpuUpdateDefault = false;
+    //! True if the GPU halo exchange development feature is enabled
+    bool enableGpuHaloExchange = false;
+    //! True if the PME PP direct communication GPU development feature is enabled
+    bool enableGpuPmePPComm = false;
+};
+
+
 class MDAtoms;
 
 /*! \brief Decide whether this thread-MPI simulation will run
@@ -249,7 +268,6 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
 
 /*! \brief Decide whether to use GPU for update.
  *
- * \param[in]  forceGpuUpdateDefault        If update should run on GPU by default.
  * \param[in]  isDomainDecomposition        Whether there more than one domain.
  * \param[in]  useUpdateGroups              If the constraints can be split across domains.
  * \param[in]  pmeRunMode                   PME running mode: CPU, GPU or mixed.
@@ -263,27 +281,28 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
  * \param[in]  useReplicaExchange           If this is a REMD simulation.
  * \param[in]  doRerun                      It this is a rerun.
+ * \param[in]  devFlags                     GPU development / experimental feature flags.
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether complete simulation can be run on GPU.
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool                 forceGpuUpdateDefault,
-                                    bool                 isDomainDecomposition,
-                                    bool                 useUpdateGroups,
-                                    PmeRunMode           pmeRunMode,
-                                    bool                 havePmeOnlyRank,
-                                    bool                 useGpuForNonbonded,
-                                    TaskTarget           updateTarget,
-                                    bool                 gpusWereDetected,
-                                    const t_inputrec&    inputrec,
-                                    const gmx_mtop_t&    mtop,
-                                    bool                 useEssentialDynamics,
-                                    bool                 doOrientationRestraints,
-                                    bool                 useReplicaExchange,
-                                    bool                 doRerun,
-                                    const gmx::MDLogger& mdlog);
+bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecomposition,
+                                    bool                           useUpdateGroups,
+                                    PmeRunMode                     pmeRunMode,
+                                    bool                           havePmeOnlyRank,
+                                    bool                           useGpuForNonbonded,
+                                    TaskTarget                     updateTarget,
+                                    bool                           gpusWereDetected,
+                                    const t_inputrec&              inputrec,
+                                    const gmx_mtop_t&              mtop,
+                                    bool                           useEssentialDynamics,
+                                    bool                           doOrientationRestraints,
+                                    bool                           useReplicaExchange,
+                                    bool                           doRerun,
+                                    const DevelopmentFeatureFlags& devFlags,
+                                    const gmx::MDLogger&           mdlog);
 
 
 } // namespace gmx

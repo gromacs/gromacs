@@ -1,9 +1,0 @@
-.build-cuda-template:
-  variables:
-    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
-    CUDA_BASE_VERSION: "10.1"
-    BUILD_DIR: build-cuda-$CUDA_BASE_VERSION
-    CMAKE_EXTRA_OPTIONS: -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda/ -DGMX_GPU=ON
-
-  image: nvidia/cuda:${CUDA_BASE_VERSION}-devel
-

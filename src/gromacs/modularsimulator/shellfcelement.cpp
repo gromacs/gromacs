@@ -52,6 +52,7 @@
 #include "gromacs/mdrun/shellfc.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 
@@ -147,8 +148,9 @@ void ShellFCElement::scheduleTask(Step step, Time time, const RegisterRunFunctio
              | (nextEnergyCalculationStep_ == step ? GMX_FORCE_ENERGY : 0)
              | (nextFreeEnergyCalculationStep_ == step ? GMX_FORCE_DHDL : 0));
 
+    const bool isNSStep = (step == nextNSStep_);
     (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-            [this, step, time, flags]() { run(step, time, flags); }));
+            [this, step, time, flags, isNSStep]() { run(step, time, isNSStep, flags); }));
     nSteps_++;
 }
 
@@ -157,11 +159,19 @@ void ShellFCElement::elementSetup()
     GMX_ASSERT(localTopology_, "Setup called before local topology was set.");
 }
 
-void ShellFCElement::run(Step step, Time time, unsigned int flags)
+void ShellFCElement::run(Step step, Time time, bool isNSStep, unsigned int flags)
 {
     // Disabled functionality
     gmx_multisim_t* ms    = nullptr;
     t_graph*        graph = nullptr;
+
+    if (!DOMAINDECOMP(cr_) && isNSStep && inputrecDynamicBox(inputrec_))
+    {
+        // TODO: Correcting the box is done in DomDecHelper (if using DD) or here (non-DD simulations).
+        //       Think about unifying this responsibility, could this be done in one place?
+        auto box = statePropagatorData_->box();
+        correct_box(fplog_, step, box, graph);
+    }
 
     auto       x      = statePropagatorData_->positionsView();
     auto       v      = statePropagatorData_->velocitiesView();
@@ -173,12 +183,12 @@ void ShellFCElement::run(Step step, Time time, unsigned int flags)
     // TODO: Make lambda const (needs some adjustments in lower force routines)
     ArrayRef<real> lambda =
             freeEnergyPerturbationElement_ ? freeEnergyPerturbationElement_->lambdaView() : lambda_;
-    relax_shell_flexcon(
-            fplog_, cr_, ms, isVerbose_, enforcedRotation_, step, inputrec_, imdSession_,
-            pull_work_, step == nextNSStep_, static_cast<int>(flags), localTopology_, constr_,
-            energyElement_->enerdata(), fcd_, statePropagatorData_->localNumAtoms(), x, v, box,
-            lambda, hist, forces, force_vir, mdAtoms_->mdatoms(), nrnb_, wcycle_, graph, shellfc_,
-            fr_, runScheduleWork_, time, energyElement_->muTot(), vsite_, ddBalanceRegionHandler_);
+    relax_shell_flexcon(fplog_, cr_, ms, isVerbose_, enforcedRotation_, step, inputrec_, imdSession_,
+                        pull_work_, isNSStep, static_cast<int>(flags), localTopology_, constr_,
+                        energyElement_->enerdata(), fcd_, statePropagatorData_->localNumAtoms(), x,
+                        v, box, lambda, hist, forces, force_vir, mdAtoms_->mdatoms(), nrnb_,
+                        wcycle_, graph, shellfc_, fr_, runScheduleWork_, time,
+                        energyElement_->muTot(), vsite_, ddBalanceRegionHandler_);
     energyElement_->addToForceVirial(force_vir, step);
 }
 

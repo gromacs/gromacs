@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
  * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -105,7 +105,7 @@ bool multisim_int_all_are_equal(const gmx_multisim_t* ms, int64_t value);
 void rerun_parallel_comm(t_commrec* cr, t_trxframe* fr, gmx_bool* bLastStep);
 
 //! \brief Allocate and initialize node-local state entries
-void set_state_entries(t_state* state, const t_inputrec* ir);
+void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimulator);
 
 /* Set the lambda values in the global state from a frame read with rerun */
 void setCurrentLambdasRerun(int64_t           step,
