@@ -60,6 +60,8 @@ Box::Box(real l)
     box_(XX, XX) = l;
     box_(YY, YY) = l;
     box_(ZZ, ZZ) = l;
+
+    gmx::fillLegacyMatrix(box_, legacyMatrix);
 }
 
 Box::Box(real x, real y, real z)
@@ -72,14 +74,16 @@ Box::Box(real x, real y, real z)
     box_(XX, XX) = x;
     box_(YY, YY) = y;
     box_(ZZ, ZZ) = z;
+
+    gmx::fillLegacyMatrix(box_, legacyMatrix);
 }
 
-Box::Matrix Box::matrix()
+Box::Matrix Box::getMatrix()
 {
     return box_;
 }
 
-const Box::Matrix& Box::matrix() const
+const Box::Matrix& Box::getMatrix() const
 {
     return box_;
 }

@@ -189,8 +189,7 @@ void NbvSetupUtil::setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv)
 
 void NbvSetupUtil::setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv)
 {
-    matrix box_;
-    gmx::fillLegacyMatrix(system_.box().matrix(), box_);
+    const matrix& box_ = system_.box().legacyMatrix;
 
     GMX_RELEASE_ASSERT(!TRICLINIC(box_), "Only rectangular unit-cells are supported here");
     const rvec lowerCorner = { 0, 0, 0 };
@@ -258,8 +257,7 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
     // gmx_cycles_t cycles = gmx_cycles_read();
 
-    matrix box_;
-    gmx::fillLegacyMatrix(system_.box().matrix(), box_);
+    const matrix& box_ = system_.box().legacyMatrix;
 
     gmxForceCalculator_p->forcerec_.nbfp = nonbondedParameters_;
     snew(gmxForceCalculator_p->forcerec_.shift_vec, SHIFTS);

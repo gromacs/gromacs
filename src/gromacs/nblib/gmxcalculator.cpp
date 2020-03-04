@@ -132,7 +132,7 @@ GmxForceCalculator::GmxForceCalculator(SimulationState                        si
     stepWork_(setupStepWorkload(options)),
     enerd_(gmx_enerdata_t(1, 0))
 {
-    gmx::fillLegacyMatrix(simState.box().matrix(), box_);
+    gmx::fillLegacyMatrix(simState.box().getMatrix(), box_);
 }
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()

@@ -54,15 +54,15 @@ namespace test
 
 bool operator==(const Box& a, const Box& b)
 {
-    if (a.matrix()(XX, XX) != b.matrix()(XX, XX))
+    if (a.getMatrix()(XX, XX) != b.getMatrix()(XX, XX))
     {
         return false;
     }
-    if (a.matrix()(YY, YY) != b.matrix()(YY, YY))
+    if (a.getMatrix()(YY, YY) != b.getMatrix()(YY, YY))
     {
         return false;
     }
-    if (a.matrix()(ZZ, ZZ) != b.matrix()(ZZ, ZZ))
+    if (a.getMatrix()(ZZ, ZZ) != b.getMatrix()(ZZ, ZZ))
     {
         return false;
     }

@@ -47,6 +47,7 @@
 #include <array>
 
 #include "gromacs/math/matrix.h"
+#include "gromacs/math/vectypes.h"
 
 namespace nblib
 {
@@ -60,9 +61,11 @@ public:
 
     Box(real x, real y, real z);
 
-    Matrix matrix();
+    Matrix getMatrix();
 
-    const Matrix& matrix() const;
+    const Matrix& getMatrix() const;
+
+    matrix legacyMatrix;
 
 private:
     Matrix box_;

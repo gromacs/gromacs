@@ -148,9 +148,6 @@ TEST(NBlibTest, CanIntegrateSystem)
     auto simState        = spcMethanolSystemBuilder.setupSimulationState();
     auto forceCalculator = ForceCalculator(simState, options);
 
-    matrix box;
-    gmx::fillLegacyMatrix(simState.box().matrix(), box);
-
     LeapFrog integrator(simState);
 
     for (int iter = 0; iter < options.numIterations; iter++)
