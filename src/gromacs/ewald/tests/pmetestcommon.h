@@ -46,8 +46,6 @@
 #include <map>
 #include <vector>
 
-#include <gtest/gtest.h>
-
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
 #include "gromacs/math/gmxcomplex.h"
@@ -55,12 +53,13 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/unique_cptr.h"
 
-#include "testhardwarecontexts.h"
-
 namespace gmx
 {
 namespace test
 {
+
+// Forward declaration
+enum class CodePath;
 
 // Convenience typedefs
 //! A safe pointer type for PME.
@@ -128,12 +127,14 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
                               real                     ewaldCoeff_lj = 1.0F);
 //! Simple PME initialization (no atom data)
 PmeSafePointer pmeInitEmpty(const t_inputrec*        inputRec,
-                            CodePath                 mode          = CodePath::CPU,
-                            const DeviceInformation* deviceInfo    = nullptr,
-                            const PmeGpuProgram*     pmeGpuProgram = nullptr,
-                            const Matrix3x3& box = { { 1.0F, 0.0F, 0.0F, 0.0F, 1.0F, 0.0F, 0.0F, 0.0F, 1.0F } },
-                            real             ewaldCoeff_q  = 0.0F,
-                            real             ewaldCoeff_lj = 0.0F);
+                            CodePath                 mode,
+                            const DeviceInformation* deviceInfo,
+                            const PmeGpuProgram*     pmeGpuProgram,
+                            const Matrix3x3&         box,
+                            real                     ewaldCoeff_q,
+                            real                     ewaldCoeff_lj);
+//! Simple PME initialization based on inputrec only
+PmeSafePointer pmeInitEmpty(const t_inputrec* inputRec);
 //! Make a GPU state-propagator manager
 std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t&     pme,
                                                                    const DeviceContext& deviceContext);
@@ -167,6 +168,7 @@ void pmeSetSplineData(const gmx_pme_t*             pme,
                       const SplineParamsDimVector& splineValues,
                       PmeSplineDataType            type,
                       int                          dimIndex);
+
 //! Setting gridline indices be used in spread/gather
 void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesVector& gridLineIndices);
 //! Setting real grid to be used in gather

@@ -99,14 +99,6 @@ enum class GridOrdering
 int pme_gpu_get_atom_data_block_size();
 
 /*! \libinternal \brief
- * Returns the number of atoms per chunk in the atom spline theta/dtheta data layout.
- *
- * \param[in] pmeGpu            The PME GPU structure.
- * \returns   Number of atoms in a single GPU atom spline data chunk.
- */
-int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
  * Synchronizes the current computation, waiting for the GPU kernels/transfers to finish.
  *
  * \param[in] pmeGpu            The PME GPU structure.
@@ -491,44 +483,6 @@ GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu*      GPU_FUNC_ARGUMENT(
  * \param[in] pmeGpu         The PME GPU structure.
  */
 void pme_gpu_finish_computation(const PmeGpu* pmeGpu);
-
-//! A binary enum for spline data layout transformation
-enum class PmeLayoutTransform
-{
-    GpuToHost,
-    HostToGpu
-};
-
-/*! \libinternal \brief
- * Rearranges the atom spline data between the GPU and host layouts.
- * Only used for test purposes so far, likely to be horribly slow.
- *
- * \param[in]  pmeGpu     The PME GPU structure.
- * \param[out] atc        The PME CPU atom data structure (with a single-threaded layout).
- * \param[in]  type       The spline data type (values or derivatives).
- * \param[in]  dimIndex   Dimension index.
- * \param[in]  transform  Layout transform type
- */
-GPU_FUNC_QUALIFIER void pme_gpu_transform_spline_atom_data(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
-                                                           const PmeAtomComm* GPU_FUNC_ARGUMENT(atc),
-                                                           PmeSplineDataType GPU_FUNC_ARGUMENT(type),
-                                                           int GPU_FUNC_ARGUMENT(dimIndex),
-                                                           PmeLayoutTransform GPU_FUNC_ARGUMENT(transform)) GPU_FUNC_TERM;
-
-/*! \libinternal \brief
- * Gets a unique index to an element in a spline parameter buffer (theta/dtheta),
- * which is laid out for GPU spread/gather kernels. The index is wrt the execution block,
- * in range(0, atomsPerBlock * order * DIM).
- * This is a wrapper, only used in unit tests.
- * \param[in] order            PME order
- * \param[in] splineIndex      Spline contribution index (from 0 to \p order - 1)
- * \param[in] dimIndex         Dimension index (from 0 to 2)
- * \param[in] atomIndex        Atom index wrt the block.
- * \param[in] atomsPerWarp     Number of atoms processed by a warp.
- *
- * \returns Index into theta or dtheta array using GPU layout.
- */
-int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIndex, int atomsPerWarp);
 
 /*! \libinternal \brief
  * Get the normal/padded grid dimensions of the real-space PME grid on GPU. Only used in tests.

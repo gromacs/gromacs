@@ -103,7 +103,7 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& /* deviceInfo */,
     deviceContext_(deviceContext)
 {
     // kernel parameters
-    warpSize              = warp_size;
+    warpSize_             = warp_size;
     spreadWorkGroupSize   = c_spreadMaxThreadsPerBlock;
     solveMaxWorkGroupSize = c_solveMaxThreadsPerBlock;
     gatherWorkGroupSize   = c_gatherMaxThreadsPerBlock;

@@ -48,7 +48,7 @@
 PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& /* deviceInfo */,
                                      const DeviceContext& deviceContext) :
     deviceContext_(deviceContext),
-    warpSize(0),
+    warpSize_(0),
     spreadWorkGroupSize(0),
     gatherWorkGroupSize(0),
     solveMaxWorkGroupSize(0)

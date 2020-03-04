@@ -113,18 +113,6 @@ int pme_gpu_get_atom_data_block_size()
     return c_pmeAtomDataBlockSize;
 }
 
-int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu)
-{
-    if (pmeGpu->settings.useOrderThreadsPerAtom)
-    {
-        return pmeGpu->programHandle_->impl_->warpSize / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom;
-    }
-    else
-    {
-        return pmeGpu->programHandle_->impl_->warpSize / c_pmeSpreadGatherThreadsPerAtom;
-    }
-}
-
 void pme_gpu_synchronize(const PmeGpu* pmeGpu)
 {
     pmeGpu->archSpecific->pmeStream_.synchronize();
@@ -528,49 +516,6 @@ void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu)
     pmeGpu->archSpecific->fftSetup.resize(0);
 }
 
-int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int atomIndex, int atomsPerWarp)
-{
-    if (order != c_pmeGpuOrder)
-    {
-        throw order;
-    }
-    constexpr int fixedOrder = c_pmeGpuOrder;
-    GMX_UNUSED_VALUE(fixedOrder);
-
-    const int atomWarpIndex = atomIndex % atomsPerWarp;
-    const int warpIndex     = atomIndex / atomsPerWarp;
-    int       indexBase, result;
-    switch (atomsPerWarp)
-    {
-        case 1:
-            indexBase = getSplineParamIndexBase<fixedOrder, 1>(warpIndex, atomWarpIndex);
-            result    = getSplineParamIndex<fixedOrder, 1>(indexBase, dimIndex, splineIndex);
-            break;
-
-        case 2:
-            indexBase = getSplineParamIndexBase<fixedOrder, 2>(warpIndex, atomWarpIndex);
-            result    = getSplineParamIndex<fixedOrder, 2>(indexBase, dimIndex, splineIndex);
-            break;
-
-        case 4:
-            indexBase = getSplineParamIndexBase<fixedOrder, 4>(warpIndex, atomWarpIndex);
-            result    = getSplineParamIndex<fixedOrder, 4>(indexBase, dimIndex, splineIndex);
-            break;
-
-        case 8:
-            indexBase = getSplineParamIndexBase<fixedOrder, 8>(warpIndex, atomWarpIndex);
-            result    = getSplineParamIndex<fixedOrder, 8>(indexBase, dimIndex, splineIndex);
-            break;
-
-        default:
-            GMX_THROW(gmx::NotImplementedError(
-                    gmx::formatString("Test function call not unrolled for atomsPerWarp = %d in "
-                                      "getSplineParamFullIndex",
-                                      atomsPerWarp)));
-    }
-    return result;
-}
-
 void pme_gpu_getEnergyAndVirial(const gmx_pme_t& pme, PmeOutput* output)
 {
     const PmeGpu* pmeGpu = pme.gpu;
@@ -803,67 +748,6 @@ static void pme_gpu_init(gmx_pme_t* pme, const DeviceInformation* deviceInfo, co
 
     auto* kernelParamsPtr               = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->constants.elFactor = ONE_4PI_EPS0 / pmeGpu->common->epsilon_r;
-}
-
-void pme_gpu_transform_spline_atom_data(const PmeGpu*      pmeGpu,
-                                        const PmeAtomComm* atc,
-                                        PmeSplineDataType  type,
-                                        int                dimIndex,
-                                        PmeLayoutTransform transform)
-{
-    // The GPU atom spline data is laid out in a different way currently than the CPU one.
-    // This function converts the data from GPU to CPU layout (in the host memory).
-    // It is only intended for testing purposes so far.
-    // Ideally we should use similar layouts on CPU and GPU if we care about mixed modes and their
-    // performance (e.g. spreading on GPU, gathering on CPU).
-    GMX_RELEASE_ASSERT(atc->nthread == 1, "Only the serial PME data layout is supported");
-    const uintmax_t threadIndex  = 0;
-    const auto      atomCount    = pme_gpu_get_kernel_params_base_ptr(pmeGpu)->atoms.nAtoms;
-    const auto      atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
-    const auto      pmeOrder     = pmeGpu->common->pme_order;
-    GMX_ASSERT(pmeOrder == c_pmeGpuOrder, "Only PME order 4 is implemented");
-
-    real*  cpuSplineBuffer;
-    float* h_splineBuffer;
-    switch (type)
-    {
-        case PmeSplineDataType::Values:
-            cpuSplineBuffer = atc->spline[threadIndex].theta.coefficients[dimIndex];
-            h_splineBuffer  = pmeGpu->staging.h_theta;
-            break;
-
-        case PmeSplineDataType::Derivatives:
-            cpuSplineBuffer = atc->spline[threadIndex].dtheta.coefficients[dimIndex];
-            h_splineBuffer  = pmeGpu->staging.h_dtheta;
-            break;
-
-        default: GMX_THROW(gmx::InternalError("Unknown spline data type"));
-    }
-
-    for (auto atomIndex = 0; atomIndex < atomCount; atomIndex++)
-    {
-        for (auto orderIndex = 0; orderIndex < pmeOrder; orderIndex++)
-        {
-            const auto gpuValueIndex =
-                    getSplineParamFullIndex(pmeOrder, orderIndex, dimIndex, atomIndex, atomsPerWarp);
-            const auto cpuValueIndex = atomIndex * pmeOrder + orderIndex;
-            GMX_ASSERT(cpuValueIndex < atomCount * pmeOrder,
-                       "Atom spline data index out of bounds (while transforming GPU data layout "
-                       "for host)");
-            switch (transform)
-            {
-                case PmeLayoutTransform::GpuToHost:
-                    cpuSplineBuffer[cpuValueIndex] = h_splineBuffer[gpuValueIndex];
-                    break;
-
-                case PmeLayoutTransform::HostToGpu:
-                    h_splineBuffer[gpuValueIndex] = cpuSplineBuffer[cpuValueIndex];
-                    break;
-
-                default: GMX_THROW(gmx::InternalError("Unknown layout transform"));
-            }
-        }
-    }
 }
 
 void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx::IVec* paddedGridSize)
@@ -1267,7 +1151,7 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
     {
         cellsPerBlock = (gridLineSize + blocksPerGridLine - 1) / blocksPerGridLine;
     }
-    const int warpSize  = pmeGpu->programHandle_->impl_->warpSize;
+    const int warpSize  = pmeGpu->programHandle_->warpSize();
     const int blockSize = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
 
     static_assert(GMX_GPU != GMX_GPU_CUDA || c_solveMaxWarpsPerBlock / 2 >= 4,

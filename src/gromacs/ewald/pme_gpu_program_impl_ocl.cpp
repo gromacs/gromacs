@@ -57,12 +57,12 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& deviceInfo, const 
     deviceContext_(deviceContext)
 {
     // kernel parameters
-    warpSize = gmx::ocl::getDeviceWarpSize(deviceContext_.context(), deviceInfo.oclDeviceId);
+    warpSize_ = gmx::ocl::getDeviceWarpSize(deviceContext_.context(), deviceInfo.oclDeviceId);
     // TODO: for Intel ideally we'd want to set these based on the compiler warp size
     // but given that we've done no tuning for Intel iGPU, this is as good as anything.
-    spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize, deviceInfo.maxWorkGroupSize);
-    solveMaxWorkGroupSize = std::min(c_solveMaxWarpsPerBlock * warpSize, deviceInfo.maxWorkGroupSize);
-    gatherWorkGroupSize = std::min(c_gatherMaxWarpsPerBlock * warpSize, deviceInfo.maxWorkGroupSize);
+    spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize_, deviceInfo.maxWorkGroupSize);
+    solveMaxWorkGroupSize = std::min(c_solveMaxWarpsPerBlock * warpSize_, deviceInfo.maxWorkGroupSize);
+    gatherWorkGroupSize = std::min(c_gatherMaxWarpsPerBlock * warpSize_, deviceInfo.maxWorkGroupSize);
 
     compileKernels(deviceInfo);
 }
@@ -137,7 +137,7 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
                 "-DDIM=%d -DXX=%d -DYY=%d -DZZ=%d "
                 // decomposition parameter placeholders
                 "-DwrapX=true -DwrapY=true ",
-                warpSize, c_pmeGpuOrder, c_pmeSpreadGatherThreadsPerAtom,
+                warpSize_, c_pmeGpuOrder, c_pmeSpreadGatherThreadsPerAtom,
                 static_cast<float>(c_pmeMaxUnitcellShift), static_cast<int>(c_skipNeutralAtoms),
                 c_virialAndEnergyCount, spreadWorkGroupSize, solveMaxWorkGroupSize,
                 gatherWorkGroupSize, DIM, XX, YY, ZZ);

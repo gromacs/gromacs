@@ -55,6 +55,7 @@
 #include "testutils/testasserts.h"
 
 #include "pmetestcommon.h"
+#include "testhardwarecontexts.h"
 
 namespace gmx
 {

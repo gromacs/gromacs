@@ -60,6 +60,11 @@ PmeGpuProgram::PmeGpuProgram(const DeviceInformation& deviceInfo, const DeviceCo
 
 PmeGpuProgram::~PmeGpuProgram() = default;
 
+int PmeGpuProgram::warpSize() const
+{
+    return impl_->warpSize();
+}
+
 PmeGpuProgramStorage buildPmeGpuProgram(const DeviceInformation& deviceInfo, const DeviceContext& deviceContext)
 {
     return std::make_unique<PmeGpuProgram>(deviceInfo, deviceContext);

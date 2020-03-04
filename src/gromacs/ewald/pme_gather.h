@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,9 +35,12 @@
 #ifndef GMX_EWALD_PME_GATHER_H
 #define GMX_EWALD_PME_GATHER_H
 
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "pme_internal.h"
+class PmeAtomComm;
+struct gmx_pme_t;
+struct splinedata_t;
 
 void gather_f_bsplines(const struct gmx_pme_t* pme,
                        const real*             grid,

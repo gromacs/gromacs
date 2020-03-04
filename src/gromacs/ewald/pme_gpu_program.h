@@ -35,9 +35,10 @@
 
 /*! \libinternal \file
  * \brief
- * Declares PmeGpuProgram, which wrap arounds PmeGpuProgramImpl
- * to store permanent PME GPU context-derived data,
- * such as (compiled) kernel handles.
+ * Declares PmeGpuProgram
+ * to store data derived from the GPU context or devices for
+ * PME, such as (compiled) kernel handles and the warp sizes
+ * they work with.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_ewald
@@ -54,13 +55,24 @@ class DeviceContext;
 struct PmeGpuProgramImpl;
 struct DeviceInformation;
 
+/*! \libinternal
+ * \brief Stores PME data derived from the GPU context or devices.
+ *
+ * This includes compiled kernel handles and the warp sizes they
+ * work with.
+ */
 class PmeGpuProgram
 {
 public:
+    //! Constructor
     explicit PmeGpuProgram(const DeviceInformation& deviceInfo, const DeviceContext& deviceContext);
     ~PmeGpuProgram();
 
-    // TODO: design getters for information inside, if needed for PME, and make this private?
+    //! Return the warp size for which the kernels were compiled
+    int warpSize() const;
+
+    // TODO: design more getters for information inside, if needed for PME, and make this private?
+    //! Private impl class
     std::unique_ptr<PmeGpuProgramImpl> impl_;
 };
 
