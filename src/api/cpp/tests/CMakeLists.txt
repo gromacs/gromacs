@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,15 +48,15 @@
 # Test public interface.
 #
 
-gmx_add_gtest_executable(
-    gmxapi-test
-    restraint.cpp
-    status.cpp
-    system.cpp
-    version.cpp
-    # pseudo-library for code for mdrun
-    $<TARGET_OBJECTS:mdrun_objlib>
-    )
+gmx_add_gtest_executable(gmxapi-test
+    CPP_SOURCE_FILES
+        restraint.cpp
+        status.cpp
+        system.cpp
+        version.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
+        )
 if(NOT GMX_USE_OPENCL)
     # GPU resources may not be properly reinitialized between simulations in
     # the same process.
@@ -80,15 +80,15 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 # Test public interface with MPI.
 #
 
-gmx_add_gtest_executable(
-    gmxapi-mpi-test MPI
-    restraint.cpp
-    status.cpp
-    system.cpp
-    version.cpp
-    # pseudo-library for code for mdrun
-    $<TARGET_OBJECTS:mdrun_objlib>
-    )
+gmx_add_gtest_executable(gmxapi-mpi-test MPI
+    CPP_SOURCE_FILES
+        restraint.cpp
+        status.cpp
+        system.cpp
+        version.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
+        )
 if(NOT GMX_USE_OPENCL)
     # GPU resources may not be properly reinitialized between simulations in
     # the same process.

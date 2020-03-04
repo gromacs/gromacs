@@ -57,8 +57,6 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
 #include "gromacs/mdlib/shake.h"
-#include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -90,16 +88,12 @@ public:
     std::vector<real> masses_;
     //! Inverse masses
     std::vector<real> invmass_;
-    //! Communication record
-    t_commrec cr_;
     //! Input record (info that usually in .mdp file)
     t_inputrec ir_;
     //! Local topology
     std::unique_ptr<InteractionDefinitions> idef_;
     //! MD atoms
     t_mdatoms md_;
-    //! Multisim data
-    gmx_multisim_t ms_;
     //! Computational time array (normally used to benchmark performance)
     t_nrnb nrnb_;
 

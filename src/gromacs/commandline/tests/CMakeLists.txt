@@ -53,12 +53,14 @@ if (UNIX)
 endif()
 
 gmx_add_unit_test(CommandLineUnitTests commandline-test
-                  cmdlinehelpmodule.cpp
-                  cmdlinehelpwriter.cpp
-                  cmdlinemodulemanager.cpp
-                  cmdlinemodulemanagertest.cpp
-                  cmdlineparser.cpp
-                  cmdlineprogramcontext.cpp
-                  filenm.cpp
-                  pargs.cpp)
+    CPP_SOURCE_FILES
+        cmdlinehelpmodule.cpp
+        cmdlinehelpwriter.cpp
+        cmdlinemodulemanager.cpp
+        cmdlinemodulemanagertest.cpp
+        cmdlineparser.cpp
+        cmdlineprogramcontext.cpp
+        filenm.cpp
+        pargs.cpp
+        )
 target_link_libraries(commandline-test PRIVATE onlinehelp-test-shared)

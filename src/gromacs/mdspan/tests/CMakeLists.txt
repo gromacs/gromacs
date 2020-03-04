@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,9 +33,10 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(MDSpanTests mdspan-test
-                  accessor_policy.cpp
-                  extents.cpp
-                  extensions.cpp
-                  layouts.cpp
-                  mdspan.cpp
-                 )
+    CPP_SOURCE_FILES
+        accessor_policy.cpp
+        extents.cpp
+        extensions.cpp
+        layouts.cpp
+        mdspan.cpp
+        )

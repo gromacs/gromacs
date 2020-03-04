@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,9 +33,11 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(SelectionUnitTests selection-test
-                  indexutil.cpp
-                  nbsearch.cpp
-                  poscalc.cpp
-                  selectioncollection.cpp
-                  selectionoption.cpp
-                  toputils.cpp)
+    CPP_SOURCE_FILES
+        indexutil.cpp
+        nbsearch.cpp
+        poscalc.cpp
+        selectioncollection.cpp
+        selectionoption.cpp
+        toputils.cpp
+        )

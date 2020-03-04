@@ -44,8 +44,6 @@
 
 #include "leapfrogtestrunners.h"
 
-#include "config.h"
-
 #include <assert.h>
 
 #include <cmath>
@@ -65,8 +63,6 @@ namespace gmx
 {
 namespace test
 {
-
-#if GMX_GPU == GMX_GPU_CUDA
 
 void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
 {
@@ -113,8 +109,6 @@ void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
     freeDeviceBuffer(&d_v);
     freeDeviceBuffer(&d_f);
 }
-
-#endif // GMX_GPU == GMX_GPU_CUDA
 
 } // namespace test
 } // namespace gmx

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,37 +33,41 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
-    editconf.cpp
-    genconf.cpp
-    genion.cpp
-    gpp_atomtype.cpp
-    gpp_bond_atomtype.cpp
-    insert_molecules.cpp
-    readir.cpp
-    solvate.cpp
-    topdirs.cpp
-    )
+    CPP_SOURCE_FILES
+        editconf.cpp
+        genconf.cpp
+        genion.cpp
+        gpp_atomtype.cpp
+        gpp_bond_atomtype.cpp
+        insert_molecules.cpp
+        readir.cpp
+        solvate.cpp
+        topdirs.cpp
+        )
 
 # Currently these can be slow to run in Jenkins, so they are in
 # several test binaries.
 
 set(exename pdb2gmx1-test)
 gmx_add_gtest_executable(${exename}
-   pdb2gmx.cpp
-)
+    CPP_SOURCE_FILES
+       pdb2gmx.cpp
+       )
 target_compile_definitions(${exename} PRIVATE OPLSAA=1 GROMOS=0 AMBER=0 CHARMM=0)
 gmx_register_gtest_test(Pdb2gmx1Test ${exename})
 
 set(exename pdb2gmx2-test)
 gmx_add_gtest_executable(${exename}
-    pdb2gmx.cpp
-    )
+    CPP_SOURCE_FILES
+        pdb2gmx.cpp
+        )
 target_compile_definitions(${exename} PRIVATE OPLSAA=0 GROMOS=1 AMBER=0 CHARMM=0)
 gmx_register_gtest_test(Pdb2gmx2Test ${exename})
 
 set(exename pdb2gmx3-test)
 gmx_add_gtest_executable(${exename}
-    pdb2gmx.cpp
-    )
+    CPP_SOURCE_FILES
+        pdb2gmx.cpp
+        )
 target_compile_definitions(${exename} PRIVATE OPLSAA=0 GROMOS=0 AMBER=1 CHARMM=1)
 gmx_register_gtest_test(Pdb2gmx3Test ${exename})

@@ -34,22 +34,26 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
-                  moduletest.cpp
-                  clustsize.cpp
-                  cmdlinerunner.cpp
-                  angle.cpp
-                  convert_trj.cpp
-                  distance.cpp
-                  extract_cluster.cpp
-                  freevolume.cpp
-                  pairdist.cpp
-                  rdf.cpp
-                  sasa.cpp
-                  select.cpp
-                  surfacearea.cpp
-                  topologyinformation.cpp
-                  trajectory.cpp
-                  unionfind.cpp)
+    CPP_SOURCE_FILES
+        # Infrastructure
+        moduletest.cpp
+        # Tests
+        angle.cpp
+        clustsize.cpp
+        cmdlinerunner.cpp
+        convert_trj.cpp
+        distance.cpp
+        extract_cluster.cpp
+        freevolume.cpp
+        pairdist.cpp
+        rdf.cpp
+        sasa.cpp
+        select.cpp
+        surfacearea.cpp
+        topologyinformation.cpp
+        trajectory.cpp
+        unionfind.cpp
+        )
 target_link_libraries(trajectoryanalysis-test PRIVATE analysisdata-test-shared)
 
 add_executable(test_selection ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)

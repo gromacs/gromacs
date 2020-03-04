@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,15 +32,14 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-#
 # Test private interface.
 #
 
-gmx_add_gtest_executable(
-    workflow-details-test
-    workflow.cpp
-    # pseudo-library for code for mdrun
-    $<TARGET_OBJECTS:mdrun_objlib>
+gmx_add_gtest_executable(workflow-details-test
+    CPP_SOURCE_FILES
+        workflow.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
 )
 
 target_link_libraries(workflow-details-test PRIVATE Gromacs::gmxapi gmxapi-detail mdrun_test_infrastructure)
@@ -54,11 +53,11 @@ set_tests_properties(GmxapiInternalInterfaceTests PROPERTIES
 # Test with MPI.
 #
 
-gmx_add_gtest_executable(
-    workflow-details-mpi-test MPI
-    workflow.cpp
-    # pseudo-library for code for mdrun
-    $<TARGET_OBJECTS:mdrun_objlib>
+gmx_add_gtest_executable(workflow-details-mpi-test MPI
+    CPP_SOURCE_FILES
+        workflow.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
 )
 
 target_link_libraries(workflow-details-mpi-test PRIVATE Gromacs::gmxapi gmxapi-detail mdrun_test_infrastructure)

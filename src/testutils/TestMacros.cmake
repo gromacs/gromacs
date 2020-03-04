@@ -34,6 +34,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 include(CMakeParseArguments)
+include(gmxClangCudaUtils)
 
 function (gmx_add_unit_test_library NAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
@@ -45,11 +46,41 @@ function (gmx_add_unit_test_library NAME)
     endif()
 endfunction ()
 
+# This function creates a GoogleTest test executable for a module.  It
+# hides all the complexity of how to treat different source files
+# under different configuration conditions. It should be extended
+# if we ever support another GPU compilation approach.
+#
+# It can be called with extra options and arguments:
+#   MPI
+#     To trigger the ctest runner to run this test with multiple ranks
+#   HARDWARE_DETECTION
+#     To trigger the test executable setup code to run hardware detection
+#   CPP_SOURCE_FILES          file1.cpp file2.cpp ...
+#     All the normal C++ .cpp source files
+#   GPU_CPP_SOURCE_FILES  file1.cpp file2.cpp ...
+#     All the C++ .cpp source files that are always needed, but must be
+#     compiled in the way that suits GMX_GPU.
+#   CUDA_CU_SOURCE_FILES      file1.cu  file2.cu  ...
+#     All the normal CUDA .cu source files
+#   CUDA_CPP_SOURCE_FILES     file1.cpp file2.cpp ...
+#     All the other .cpp source files to be compiled as CUDA
+#   OPENCL_CPP_SOURCE_FILES   file1.cpp file2.cpp ...
+#     All the other C++ .cpp source files needed only with OpenCL
+#   NON_GPU_CPP_SOURCE_FILES  file1.cpp file2.cpp ...
+#     All the other C++ .cpp source files needed only with neither OpenCL nor CUDA
 function (gmx_add_gtest_executable EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         set(_options MPI HARDWARE_DETECTION)
-        cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
-        set(_source_files ${ARG_UNPARSED_ARGUMENTS})
+        set(_multi_value_keywords
+            CPP_SOURCE_FILES
+            CUDA_CU_SOURCE_FILES
+            GPU_CPP_SOURCE_FILES
+            CUDA_CPP_SOURCE_FILES
+            OPENCL_CPP_SOURCE_FILES
+            NON_GPU_CPP_SOURCE_FILES
+            )
+        cmake_parse_arguments(ARG "${_options}" "" "${_multi_value_keywords}" ${ARGN})
 
         file(RELATIVE_PATH _input_files_path ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
         set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
@@ -73,8 +104,43 @@ function (gmx_add_gtest_executable EXENAME)
                  TEST_USES_HARDWARE_DETECTION=true)
         endif()
 
-        add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
-            ${_source_files} ${TESTUTILS_DIR}/unittest_main.cpp)
+        if (GMX_USE_CUDA AND NOT GMX_CLANG_CUDA)
+            # Work around FindCUDA that prevents using target_link_libraries()
+            # with keywords otherwise...
+            set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
+            cuda_add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
+                ${ARG_CPP_SOURCE_FILES}
+                ${ARG_CUDA_CU_SOURCE_FILES}
+                ${ARG_CUDA_CPP_SOURCE_FILES}
+                ${ARG_GPU_CPP_SOURCE_FILES}
+                ${TESTUTILS_DIR}/unittest_main.cpp)
+        else()
+            add_executable(${EXENAME} ${UNITTEST_TARGET_OPTIONS}
+                ${ARG_CPP_SOURCE_FILES}
+                ${TESTUTILS_DIR}/unittest_main.cpp)
+        endif()
+
+        if (GMX_USE_CUDA)
+            if (GMX_CLANG_CUDA)
+                target_sources(${EXENAME} PRIVATE
+                    ${ARG_CUDA_CU_SOURCE_FILES}
+                    ${ARG_CUDA_CPP_SOURCE_FILES}
+                    ${ARG_GPU_CPP_SOURCE_FILES})
+                set_source_files_properties(${ARG_CUDA_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+                gmx_compile_cuda_file_with_clang(${ARG_CUDA_CU_SOURCE_FILES})
+                if(ARG_CUDA_CPP_SOURCE_FILES OR ARG_CUDA_CU_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES)
+                    target_link_libraries(${EXENAME} PRIVATE ${GMX_EXTRA_LIBRARIES})
+                endif()
+            endif()
+        elseif (GMX_USE_OPENCL)
+            target_sources(${EXENAME} PRIVATE ${ARG_OPENCL_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES})
+            if(ARG_OPENCL_CPP_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES)
+                target_link_libraries(${EXENAME} PRIVATE ${OpenCL_LIBRARIES})
+            endif()
+        else()
+            target_sources(${EXENAME} PRIVATE ${ARG_NON_GPU_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES})
+        endif()
+
         gmx_target_compile_options(${EXENAME})
         target_compile_definitions(${EXENAME} PRIVATE HAVE_CONFIG_H ${EXTRA_COMPILE_DEFINITIONS})
         target_include_directories(${EXENAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)

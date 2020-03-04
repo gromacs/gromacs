@@ -33,17 +33,18 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(test_sources
-    confio.cpp
-    filemd5.cpp
-    mrcserializer.cpp
-    mrcdensitymap.cpp
-    mrcdensitymapheader.cpp
-    readinp.cpp
-    fileioxdrserializer.cpp
-    xvgio.cpp
-    )
 if (GMX_USE_TNG)
-    list(APPEND test_sources tngio.cpp)
+    set(tng_sources tngio.cpp)
 endif()
-gmx_add_unit_test(FileIOTests fileio-test ${test_sources})
+gmx_add_unit_test(FileIOTests fileio-test
+    CPP_SOURCE_FILES
+        confio.cpp
+        filemd5.cpp
+        mrcserializer.cpp
+        mrcdensitymap.cpp
+        mrcdensitymapheader.cpp
+        readinp.cpp
+        fileioxdrserializer.cpp
+        ${tng_sources}
+        xvgio.cpp
+    )

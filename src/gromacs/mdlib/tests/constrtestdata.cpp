@@ -95,14 +95,6 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
 
     invdt_ = 1.0 / timestep; // Inverse timestep
 
-    // Communication record
-    cr_.nnodes = 1;
-    cr_.dd     = nullptr;
-
-    // Multisim data
-    ms_.sim  = 0;
-    ms_.nsim = 1;
-
     // Input record - data that usually comes from configuration file (.mdp)
     ir_.efep    = 0;
     ir_.init_t  = initialTime;

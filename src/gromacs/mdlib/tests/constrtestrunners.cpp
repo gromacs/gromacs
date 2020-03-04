@@ -63,6 +63,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/lincs.h"
 #include "gromacs/mdlib/shake.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -114,6 +115,14 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
     int    warncount_lincs = 0;
     gmx_omp_nthreads_set(emntLINCS, 1);
 
+    // Communication record
+    t_commrec cr;
+    cr.nnodes = 1;
+    cr.dd     = nullptr;
+
+    // Multi-sim record
+    gmx_multisim_t ms;
+
     // Make blocka structure for faster LINCS setup
     std::vector<ListOfLists<int>> at2con_mt;
     at2con_mt.reserve(testData->mtop_.moltype.size());
@@ -126,11 +135,11 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
     // Initialize LINCS
     lincsd = init_lincs(nullptr, testData->mtop_, testData->nflexcon_, at2con_mt, false,
                         testData->ir_.nLincsIter, testData->ir_.nProjOrder);
-    set_lincs(*testData->idef_, testData->md_, EI_DYNAMICS(testData->ir_.eI), &testData->cr_, lincsd);
+    set_lincs(*testData->idef_, testData->md_, EI_DYNAMICS(testData->ir_.eI), &cr, lincsd);
 
     // Evaluate constraints
     bool success = constrain_lincs(
-            false, testData->ir_, 0, lincsd, testData->md_, &testData->cr_, &testData->ms_,
+            false, testData->ir_, 0, lincsd, testData->md_, &cr, &ms,
             testData->x_.arrayRefWithPadding(), testData->xPrime_.arrayRefWithPadding(),
             testData->xPrime2_.arrayRefWithPadding().unpaddedArrayRef(), pbc.box, &pbc,
             testData->md_.lambda, &testData->dHdLambda_, testData->invdt_,
