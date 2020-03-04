@@ -46,6 +46,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   keyvaluetreetransform.cpp
                   listoflists.cpp
                   logger.cpp
+                  mdmodulenotification-impl.cpp
                   mutex.cpp
                   path.cpp
                   physicalnodecommunicator.cpp
