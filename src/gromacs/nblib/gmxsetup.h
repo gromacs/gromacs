@@ -89,7 +89,7 @@ private:
     void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv);
 
     //! Sets Particle Types and Charges and VdW params
-    void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv);
+    void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t_mdatoms& mdatoms);
 
     //! Sets up non-bonded verlet on the GmxForceCalculator
     std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options);

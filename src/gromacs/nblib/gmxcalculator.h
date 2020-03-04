@@ -53,6 +53,7 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 
@@ -90,6 +91,9 @@ public:
 
     //! Tasks to perform in an MD Step
     gmx::StepWorkload stepWork_;
+
+    //! Stores atom property data
+    t_mdatoms mdatoms_;
 
 private:
     //! Energies of different interaction types; currently only needed as an argument for dispatchNonbondedKernel

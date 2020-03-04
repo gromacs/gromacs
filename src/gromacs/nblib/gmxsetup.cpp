@@ -178,13 +178,18 @@ void NbvSetupUtil::unpackTopologyToGmx(const Topology& topology)
     }
 }
 
-void NbvSetupUtil::setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv)
+static t_mdatoms setAtomData(SimulationState simulationState)
 {
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA = const_cast<int*>(system_.topology().getParticleTypeIdOfAllParticles().data());
-    mdatoms.chargeA = const_cast<real*>(system_.topology().getCharges().data());
-    nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);
+    mdatoms.typeA = const_cast<int*>(simulationState.topology().getParticleTypeIdOfAllParticles().data());
+    mdatoms.chargeA = const_cast<real*>(simulationState.topology().getCharges().data());
+    return mdatoms;
+}
+
+void NbvSetupUtil::setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t_mdatoms& mdatoms)
+{
+    nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);;
 }
 
 void NbvSetupUtil::setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv)
@@ -242,8 +247,6 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topol
     t_nrnb nrnb;
     nbv->constructPairlist(gmx::InteractionLocality::Local, topology.getGmxExclusions(), 0, &nrnb);
 
-    setAtomProperties(nbv);
-
     return nbv;
 }
 
@@ -252,6 +255,9 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     auto gmxForceCalculator_p = std::make_unique<GmxForceCalculator>(system_, options_);
 
     gmxForceCalculator_p->nbv_ = setupNbnxmInstance(system_.topology(), *options_);
+
+    gmxForceCalculator_p->mdatoms_ = setAtomData(system_);
+    setAtomProperties(gmxForceCalculator_p->nbv_, gmxForceCalculator_p->mdatoms_);
 
     // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
     // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
