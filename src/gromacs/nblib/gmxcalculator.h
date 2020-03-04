@@ -106,6 +106,9 @@ private:
     matrix box_;
 };
 
+//! Puts particles on a grid based on bounds specified by the box
+void setParticlesOnGrid(SimulationState simulationState, std::unique_ptr<nonbonded_verlet_t>& nbv, std::vector<int>& particleInfoAllVdw_);
+
 } // namespace nblib
 
 #endif // GROMACS_GMXCALCULATOR_H

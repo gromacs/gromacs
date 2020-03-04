@@ -85,9 +85,6 @@ private:
     //! Returns the kernel setup
     Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions &options);
 
-    //! Puts particles on a grid based on bounds specified by the box
-    void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv);
-
     //! Sets Particle Types and Charges and VdW params
     void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t_mdatoms& mdatoms);
 

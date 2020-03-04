@@ -47,9 +47,7 @@
 #include "gromacs/compat/optional.h"
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/matrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -192,21 +190,6 @@ void NbvSetupUtil::setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t
     nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);;
 }
 
-void NbvSetupUtil::setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv)
-{
-    const matrix& box_ = system_.box().legacyMatrix;
-
-    GMX_RELEASE_ASSERT(!TRICLINIC(box_), "Only rectangular unit-cells are supported here");
-    const rvec lowerCorner = { 0, 0, 0 };
-    const rvec upperCorner = { box_[XX][XX], box_[YY][YY], box_[ZZ][ZZ] };
-
-    const real particleDensity = system_.coordinates().size() / det(box_);
-
-    nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
-                      { 0, int(system_.coordinates().size()) }, particleDensity,
-                      particleInfoAllVdw_, system_.coordinates(), 0, nullptr);
-}
-
 //! Sets up and returns a Nbnxm object for the given options and system
 std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options)
 {
@@ -242,7 +225,7 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topol
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
                         topology.getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
 
-    setParticlesOnGrid(nbv);
+    setParticlesOnGrid(system_, nbv, particleInfoAllVdw_);
 
     t_nrnb nrnb;
     nbv->constructPairlist(gmx::InteractionLocality::Local, topology.getGmxExclusions(), 0, &nrnb);

@@ -50,6 +50,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/utility/range.h"
 
 #include "nbkerneloptions.h"
 
@@ -144,6 +145,21 @@ gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
     nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces_);
 
     return verletForces_;
+}
+
+void setParticlesOnGrid(SimulationState simulationState, std::unique_ptr<nonbonded_verlet_t>& nbv, std::vector<int>& particleInfoAllVdw)
+{
+    const matrix& box_ = simulationState.box().legacyMatrix;
+
+    GMX_RELEASE_ASSERT(!TRICLINIC(box_), "Only rectangular unit-cells are supported here");
+    const rvec lowerCorner = { 0, 0, 0 };
+    const rvec upperCorner = { box_[XX][XX], box_[YY][YY], box_[ZZ][ZZ] };
+
+    const real particleDensity = simulationState.coordinates().size() / det(box_);
+
+    nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
+                      { 0, int(simulationState.coordinates().size()) }, particleDensity,
+                      particleInfoAllVdw, simulationState.coordinates(), 0, nullptr);
 }
 
 } // namespace nblib
