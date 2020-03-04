@@ -2177,6 +2177,18 @@ static int do_cpt_files(XDR* xd, gmx_bool bRead, std::vector<gmx_file_position_t
     return 0;
 }
 
+static void mpiBarrierBeforeRename(const bool applyMpiBarrierBeforeRename, MPI_Comm mpiBarrierCommunicator)
+{
+    if (applyMpiBarrierBeforeRename)
+    {
+#if GMX_MPI
+        MPI_Barrier(mpiBarrierCommunicator);
+#else
+        GMX_RELEASE_ASSERT(false, "Should not request a barrier without MPI");
+        GMX_UNUSED_VALUE(mpiBarrierCommunicator);
+#endif
+    }
+}
 
 void write_checkpoint(const char*                   fn,
                       gmx_bool                      bNumberAndKeep,
@@ -2192,7 +2204,9 @@ void write_checkpoint(const char*                   fn,
                       double                        t,
                       t_state*                      state,
                       ObservablesHistory*           observablesHistory,
-                      const gmx::MdModulesNotifier& mdModulesNotifier)
+                      const gmx::MdModulesNotifier& mdModulesNotifier,
+                      bool                          applyMpiBarrierBeforeRename,
+                      MPI_Comm                      mpiBarrierCommunicator)
 {
     t_fileio* fp;
     char*     fntemp; /* the temporary checkpoint file name */
@@ -2419,6 +2433,8 @@ void write_checkpoint(const char*                   fn,
         if (gmx_fexist(fn))
         {
             /* Rename the previous checkpoint file */
+            mpiBarrierBeforeRename(applyMpiBarrierBeforeRename, mpiBarrierCommunicator);
+
             std::strcpy(buf, fn);
             buf[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
             std::strcat(buf, "_prev");
@@ -2440,6 +2456,10 @@ void write_checkpoint(const char*                   fn,
                 gmx_file_rename(fn, buf);
             }
         }
+
+        /* Rename the checkpoint file from the temporary to the final name */
+        mpiBarrierBeforeRename(applyMpiBarrierBeforeRename, mpiBarrierCommunicator);
+
         if (gmx_file_rename(fntemp, fn) != 0)
         {
             gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");

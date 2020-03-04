@@ -171,22 +171,6 @@
 namespace gmx
 {
 
-/*! \brief Structure that holds boolean flags corresponding to the development
- *        features present enabled through environment variables.
- *
- */
-struct DevelopmentFeatureFlags
-{
-    //! True if the Buffer ops development feature is enabled
-    // TODO: when the trigger of the buffer ops offload is fully automated this should go away
-    bool enableGpuBufferOps = false;
-    //! If true, forces 'mdrun -update auto' default to 'gpu'
-    bool forceGpuUpdateDefault = false;
-    //! True if the GPU halo exchange development feature is enabled
-    bool enableGpuHaloExchange = false;
-    //! True if the PME PP direct communication GPU development feature is enabled
-    bool enableGpuPmePPComm = false;
-};
 
 /*! \brief Manage any development feature flag variables encountered
  *
@@ -907,6 +891,11 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags =
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
+    const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
+            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed);
+    const bool useModularSimulator = inputIsCompatibleWithModularSimulator
+                                     && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
     // There is nothing unique about restraints at this point as far as the
@@ -953,7 +942,7 @@ int Mdrunner::mdrunner()
         }
 
         /* now make sure the state is initialized and propagated */
-        set_state_entries(globalState.get(), inputrec);
+        set_state_entries(globalState.get(), inputrec, useModularSimulator);
     }
 
     /* NM and TPI parallelize over force/energy calculations, not atoms,
@@ -1181,10 +1170,10 @@ int Mdrunner::mdrunner()
         const bool useUpdateGroups = cr->dd ? ddUsesUpdateGroups(*cr->dd) : false;
 
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(
-                devFlags.forceGpuUpdateDefault, useDomainDecomposition, useUpdateGroups, pmeRunMode,
-                domdecOptions.numPmeRanks > 0, useGpuForNonbonded, updateTarget, gpusWereDetected,
-                *inputrec, mtop, doEssentialDynamics, gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                replExParams.exchangeInterval > 0, doRerun, mdlog);
+                useDomainDecomposition, useUpdateGroups, pmeRunMode, domdecOptions.numPmeRanks > 0,
+                useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec, mtop,
+                doEssentialDynamics, gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
+                replExParams.exchangeInterval > 0, doRerun, devFlags, mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
@@ -1552,13 +1541,6 @@ int Mdrunner::mdrunner()
             dd_init_bondeds(fplog, cr->dd, mtop, vsite.get(), inputrec,
                             domdecOptions.checkBondedInteractions, fr->cginfo_mb);
         }
-
-        const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
-                false, inputrec, doRerun, vsite.get(), ms, replExParams, fcd,
-                static_cast<int>(filenames.size()), filenames.data(), &observablesHistory, membed);
-
-        const bool useModularSimulator = inputIsCompatibleWithModularSimulator
-                                         && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
         // TODO This is not the right place to manage the lifetime of
         // this data structure, but currently it's the easiest way to

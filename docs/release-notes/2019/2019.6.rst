@@ -1,7 +1,7 @@
 GROMACS 2019.6 release notes
 ----------------------------
 
-This version was released on TODO, 2020. These release notes
+This version was released on February 28th, 2020. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2019.5 version, to fix known issues. It also incorporates all
 fixes made in version 2018.8 and earlier, which you can find described
@@ -16,8 +16,39 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Actually fix PME forces with FE without perturbed q/LJ
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+PME would incorrectly ignore the mesh forces on perturbed atoms when
+no charges or LJ atom types were actually perturbed. Note that this
+is a rather uncommon scenario.
+
+:issue:`2640`
+:issue:`3359`
+
+Avoid overzealous program abort with orientation restraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It could happen that mdrun would abort on checking orientation
+restraints in multiple molecules even though no restraints where
+applied to them.
+
+:issue:`3375`
+
+Calculate Coulomb and LJ reciprocal terms in rerun
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Reruns would not calculate Coulomb and LJ reciprocal terms, leading
+to wrong potential energies. This bug only showed up if GROMACS was
+compiled without GPU support.
+
+:issue:`3400`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Added check for inconsistent input of distance restraint labels
+in gmx disre.
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -30,4 +61,10 @@ Compilation was failing with ``mcpcom: core dumped`` for the file :file:`pulluti
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Avoid cryptic GPU detection errors when devices are unavailable or out of memory
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`3178`
+:issue:`3399`
 

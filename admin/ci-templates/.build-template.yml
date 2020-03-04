@@ -167,6 +167,12 @@
       - $BUILD_DIR
       - $INSTALL_DIR/
 
+# Right now we need to use an ugly hack to move the original build directory
+# and the ccache files out of the build archive, as it is not possible to use
+# the custom build directory due to https://gitlab.com/gitlab-org/gitlab-runner/issues/4203
+# As soon as this is resolved we should use the separate build directories instead of
+# manually hacking things. TODO
+# Redmine #3361
 .archive-build-template:
   # Dockerfiles are from dockerhub, user eriklindahl
   image: gromacs/continuous-integration:ci-docs
@@ -193,6 +199,18 @@
     - if [ -s buildErrors.log ] ; then echo "Found warnings during build"; cat buildErrors.log; exit 1; fi
     - mv gromacs*tar.gz ..
     - cd ..
+    # ugly hack begins here
+    - mkdir tempdir
+    - SOURCETARBALL=`ls gromacs*tar.gz`
+    - mv $SOURCETARBALL tempdir
+    - cd tempdir
+    - tar -xf $SOURCETARBALL
+    - rm -rf gromacs-*/$BUILD_DIR
+    - tar -c --gzip -f $SOURCETARBALL gromacs-*/
+    - mv $SOURCETARBALL ..
+    - cd ..
+    - rm -rf tempdir
+    # Hack ends here
   artifacts:
     when: always
     expire_in: 1 week

@@ -1003,6 +1003,44 @@ void do_force(FILE*                               fplog,
 
     nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, nbv->nbat.get());
 
+#if GMX_MPI
+    const bool pmeSendCoordinatesFromGpu =
+            simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
+    const bool reinitGpuPmePpComms =
+            simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
+#endif
+
+    const auto localXReadyOnDevice = (stateGpu != nullptr)
+                                             ? stateGpu->getCoordinatesReadyOnDeviceEvent(
+                                                       AtomLocality::Local, simulationWork, stepWork)
+                                             : nullptr;
+
+#if GMX_MPI
+    // If coordinates are to be sent to PME task from CPU memory, perform that send here.
+    // Otherwise the send will occur after H2D coordinate transfer.
+    if (!thisRankHasDuty(cr, DUTY_PME) && !pmeSendCoordinatesFromGpu)
+    {
+        /* Send particle coordinates to the pme nodes.
+         * Since this is only implemented for domain decomposition
+         * and domain decomposition does not use the graph,
+         * we do not need to worry about shifting.
+         */
+        if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
+        {
+            GMX_RELEASE_ASSERT(false,
+                               "GPU update and separate PME ranks are only supported with GPU "
+                               "direct communication!");
+            // TODO: when this code-path becomes supported add:
+            // stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
+
+        gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()), lambda[efptCOUL],
+                                 lambda[efptVDW], (stepWork.computeVirial || stepWork.computeEnergy),
+                                 step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
+                                 pmeSendCoordinatesFromGpu, localXReadyOnDevice, wcycle);
+    }
+#endif /* GMX_MPI */
+
     // Coordinates on the device are needed if PME or BufferOps are offloaded.
     // The local coordinates can be copied right away.
     // NOTE: Consider moving this copy to right after they are updated and constrained,
@@ -1025,6 +1063,7 @@ void do_force(FILE*                               fplog,
         // 2. The buffers were reinitialized on search step
         if (!simulationWork.useGpuUpdate || stepWork.doNeighborSearch)
         {
+            GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
             stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         }
     }
@@ -1055,40 +1094,25 @@ void do_force(FILE*                               fplog,
         && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
             || haveHostPmePpComms || haveHostHaloExchangeComms))
     {
+        GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         haveCopiedXFromGpu = true;
     }
 
-    const auto localXReadyOnDevice = (stateGpu != nullptr)
-                                             ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                       AtomLocality::Local, simulationWork, stepWork)
-                                             : nullptr;
-
 #if GMX_MPI
-    if (!thisRankHasDuty(cr, DUTY_PME))
+    // If coordinates are to be sent to PME task from GPU memory, perform that send here.
+    // Otherwise the send will occur before the H2D coordinate transfer.
+    if (pmeSendCoordinatesFromGpu)
     {
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
          * and domain decomposition does not use the graph,
          * we do not need to worry about shifting.
          */
-        bool reinitGpuPmePpComms = simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
-        bool sendCoordinatesFromGpu =
-                simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
-
-        if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate && !sendCoordinatesFromGpu)
-        {
-            GMX_RELEASE_ASSERT(false,
-                               "GPU update and separate PME ranks are only supported with GPU "
-                               "direct communication!");
-            // TODO: when this code-path becomes supported add:
-            // stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
-        }
-
         gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()), lambda[efptCOUL],
                                  lambda[efptVDW], (stepWork.computeVirial || stepWork.computeEnergy),
                                  step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
-                                 sendCoordinatesFromGpu, localXReadyOnDevice, wcycle);
+                                 pmeSendCoordinatesFromGpu, localXReadyOnDevice, wcycle);
     }
 #endif /* GMX_MPI */
 

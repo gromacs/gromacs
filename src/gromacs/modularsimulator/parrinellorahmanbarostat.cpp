@@ -78,7 +78,6 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                   nstpcou
     offset_(offset),
     couplingTimeStep_(couplingTimeStep),
     initStep_(initStep),
-    isInitStep_(true),
     scalingTensor_(scalingTensor),
     propagatorCallback_(std::move(propagatorCallback)),
     statePropagatorData_(statePropagatorData),
@@ -133,7 +132,7 @@ void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
 {
     auto box = statePropagatorData_->constBox();
     parrinellorahman_pcoupl(fplog_, step, inputrec_, couplingTimeStep_, energyElement_->pressure(step),
-                            box, boxRel_, boxVelocity_, scalingTensor_.data(), mu_, isInitStep_);
+                            box, boxRel_, boxVelocity_, scalingTensor_.data(), mu_, false);
     // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
     msmul(scalingTensor_.data(), couplingTimeStep_, scalingTensor_.data());
 }
@@ -173,10 +172,22 @@ void ParrinelloRahmanBarostat::elementSetup()
     const bool scaleOnInitStep = do_per_step(initStep_ + nstpcouple_ + offset_, nstpcouple_);
     if (scaleOnInitStep)
     {
-        integrateBoxVelocityEquations(initStep_);
-        (*propagatorCallback_)(initStep_ + 1);
+        // If we need to scale on the first step, we need to set the scaling matrix using the current
+        // box velocity. If this is a fresh start, we will hence not move the box (this does currently
+        // never happen as the offset is set to -1 in all cases). If this is a restart, we will use
+        // the saved box velocity which we would have updated right before checkpointing.
+        // Setting bFirstStep = true in parrinellorahman_pcoupl (last argument) makes sure that only
+        // the scaling matrix is calculated, without updating the box velocities.
+        // The call to parrinellorahman_pcoupl is using nullptr for fplog (since we don't expect any
+        // output here) and for the pressure (since it might not be calculated yet, and we don't need it).
+        auto box = statePropagatorData_->constBox();
+        parrinellorahman_pcoupl(nullptr, initStep_, inputrec_, couplingTimeStep_, nullptr, box,
+                                boxRel_, boxVelocity_, scalingTensor_.data(), mu_, true);
+        // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
+        msmul(scalingTensor_.data(), couplingTimeStep_, scalingTensor_.data());
+
+        (*propagatorCallback_)(initStep_);
     }
-    isInitStep_ = false;
 }
 
 const rvec* ParrinelloRahmanBarostat::boxVelocities() const

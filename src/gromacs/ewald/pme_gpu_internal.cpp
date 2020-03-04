@@ -965,7 +965,6 @@ void pme_gpu_reinit(gmx_pme_t* pme, const DeviceInformation* deviceInfo, const P
      * update for mixed mode on grid switch. TODO: use shared recipbox field.
      */
     std::memset(pme->gpu->common->previousBox, 0, sizeof(pme->gpu->common->previousBox));
-    pme_gpu_select_best_performing_pme_spreadgather_kernels(pme->gpu);
 }
 
 void pme_gpu_destroy(PmeGpu* pmeGpu)
@@ -1013,6 +1012,7 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* charges)
         pme_gpu_realloc_spline_data(pmeGpu);
         pme_gpu_realloc_grid_indices(pmeGpu);
     }
+    pme_gpu_select_best_performing_pme_spreadgather_kernels(pmeGpu);
 }
 
 /*! \internal \brief

@@ -44,6 +44,7 @@
 #include "constraintelement.h"
 
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
@@ -130,9 +131,10 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
     ArrayRef<RVec>            min_proj;
     ArrayRefWithPadding<RVec> v;
 
-    // disabled functionality
-    real  lambda    = 0;
-    real* dvdlambda = nullptr;
+    const real lambdaBonded = freeEnergyPerturbationElement_
+                                      ? freeEnergyPerturbationElement_->constLambdaView()[efptBONDED]
+                                      : 0;
+    real dvdlambda = 0;
 
     switch (variable)
     {
@@ -150,7 +152,7 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
     }
 
     constr_->apply(writeLog, writeEnergy, step, 1, 1.0, x, xprime, min_proj, statePropagatorData_->box(),
-                   lambda, dvdlambda, v, calculateVirial ? &vir_con : nullptr, variable);
+                   lambdaBonded, &dvdlambda, v, calculateVirial ? &vir_con : nullptr, variable);
 
     if (calculateVirial)
     {
@@ -163,6 +165,16 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
         }
         energyElement_->addToConstraintVirial(vir_con, step);
     }
+
+    /* The factor of 2 correction is necessary because half of the constraint
+     * force is removed in the VV step. This factor is either exact or a very
+     * good approximation, statistically insignificant in any real free energy
+     * calculation. Any possible error is not a simulation propagation error,
+     * but a potential reporting error in the data that goes to dh/dlambda.
+     * Cf. redmine issue #1255
+     */
+    const real c_dvdlConstraintCorrectionFactor = EI_VV(inputrec_->eI) ? 2.0 : 1.0;
+    energyElement_->enerdata()->term[F_DVDL_CONSTR] += c_dvdlConstraintCorrectionFactor * dvdlambda;
 }
 
 template<ConstraintVariable variable>

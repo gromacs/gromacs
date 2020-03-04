@@ -1,7 +1,10 @@
-# This matrix is intended to permit Jenkins on-demand testing
-# of code hidden behind the GMX_USE_BUFFER_OPS feature flag
-# during development. When the feature flag is removed, the
-# normal test matrices will be adapted to cover this code path.
+# This matrix is intended to permit Jenkins:
+# - nigtly testing of the GPU direct communations experimental features in the 2020 release
+# - on-demand testing of the GPU direct communication code path
+# This is neceassary due to:
+# i) the limitations of the integration tests which only test the deafult code-path
+# ii) limitations of the regresssion tests which are not able to rerun update with a
+#     different offload mode unless the default is observed to be GPU.
 #
 # Comment line(s) preceding each configuration document the main
 # intent behind that configuration, so that we can correctly judge
