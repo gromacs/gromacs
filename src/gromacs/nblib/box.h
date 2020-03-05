@@ -56,16 +56,17 @@ class Box
 {
 public:
     using Matrix = gmx::Matrix3x3;
+    using LegacyMatrix = matrix;
 
     Box(real l);
 
     Box(real x, real y, real z);
 
-    Matrix getMatrix();
+    Matrix matrix();
 
-    const Matrix& getMatrix() const;
+    const Matrix& matrix() const;
 
-    matrix legacyMatrix;
+    LegacyMatrix legacyMatrix;
 
 private:
     Matrix box_;
