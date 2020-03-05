@@ -225,7 +225,7 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topol
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
                         topology.getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
 
-    setParticlesOnGrid(system_, nbv, particleInfoAllVdw_);
+    setParticlesOnGrid(nbv, particleInfoAllVdw_, system_.coordinates(), system_.box());
 
     t_nrnb nrnb;
     nbv->constructPairlist(gmx::InteractionLocality::Local, topology.getGmxExclusions(), 0, &nrnb);

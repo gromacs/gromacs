@@ -147,19 +147,22 @@ gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
     return verletForces_;
 }
 
-void setParticlesOnGrid(SimulationState simulationState, std::unique_ptr<nonbonded_verlet_t>& nbv, std::vector<int>& particleInfoAllVdw)
+void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv,
+                        std::vector<int>& particleInfoAllVdw,
+                        const std::vector<gmx::RVec>& coordinates,
+                        const Box& box)
 {
-    const matrix& box_ = simulationState.box().legacyMatrix;
+    const matrix& box_ = box.legacyMatrix;
 
     GMX_RELEASE_ASSERT(!TRICLINIC(box_), "Only rectangular unit-cells are supported here");
     const rvec lowerCorner = { 0, 0, 0 };
     const rvec upperCorner = { box_[XX][XX], box_[YY][YY], box_[ZZ][ZZ] };
 
-    const real particleDensity = simulationState.coordinates().size() / det(box_);
+    const real particleDensity = coordinates.size() / det(box_);
 
     nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
-                      { 0, int(simulationState.coordinates().size()) }, particleDensity,
-                      particleInfoAllVdw, simulationState.coordinates(), 0, nullptr);
+                      { 0, int(coordinates.size()) }, particleDensity,
+                      particleInfoAllVdw, coordinates, 0, nullptr);
 }
 
 } // namespace nblib
