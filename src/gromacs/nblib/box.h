@@ -55,7 +55,7 @@ namespace nblib
 class Box
 {
 public:
-    using Matrix = gmx::Matrix3x3;
+    using Matrix       = gmx::Matrix3x3;
     using LegacyMatrix = matrix;
 
     Box(real l);
