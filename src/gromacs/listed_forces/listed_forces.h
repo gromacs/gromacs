@@ -111,68 +111,32 @@ using BondedFunction = real (*)(int              nbonds,
 //! Getter for finding a callable CPU function to compute an \c ftype interaction.
 BondedFunction bondedFunction(int ftype);
 
-/*! \brief Calculates all listed force interactions.
- *
- * Note that pbc_full is used only for position restraints, and is
- * not initialized if there are none. */
-void calc_listed(const t_commrec*              cr,
-                 const gmx_multisim_t*         ms,
-                 struct gmx_wallcycle*         wcycle,
-                 const InteractionDefinitions& idef,
-                 const rvec                    x[],
-                 history_t*                    hist,
-                 gmx::ForceOutputs*            forceOutputs,
-                 const t_forcerec*             fr,
-                 const struct t_pbc*           pbc,
-                 const struct t_pbc*           pbc_full,
-                 const struct t_graph*         g,
-                 gmx_enerdata_t*               enerd,
-                 t_nrnb*                       nrnb,
-                 const real*                   lambda,
-                 const t_mdatoms*              md,
-                 struct t_fcdata*              fcd,
-                 int*                          ddgatindex,
-                 const gmx::StepWorkload&      stepWork);
-
-/*! \brief As calc_listed(), but only determines the potential energy
- * for the perturbed interactions.
- *
- * The shift forces in fr are not affected. */
-void calc_listed_lambda(const InteractionDefinitions& idef,
-                        const rvec                    x[],
-                        const t_forcerec*             fr,
-                        const struct t_pbc*           pbc,
-                        const struct t_graph*         g,
-                        gmx_grppairener_t*            grpp,
-                        real*                         epot,
-                        gmx::ArrayRef<real>           dvdl,
-                        t_nrnb*                       nrnb,
-                        const real*                   lambda,
-                        const t_mdatoms*              md,
-                        struct t_fcdata*              fcd,
-                        int*                          global_atom_index);
-
 /*! \brief Do all aspects of energy and force calculations for mdrun
- * on the set of listed interactions */
-void do_force_listed(struct gmx_wallcycle*         wcycle,
-                     const matrix                  box,
-                     const t_lambda*               fepvals,
-                     const t_commrec*              cr,
-                     const gmx_multisim_t*         ms,
-                     const InteractionDefinitions& idef,
-                     const rvec                    x[],
-                     history_t*                    hist,
-                     gmx::ForceOutputs*            forceOutputs,
-                     const t_forcerec*             fr,
-                     const struct t_pbc*           pbc,
-                     const struct t_graph*         graph,
-                     gmx_enerdata_t*               enerd,
-                     t_nrnb*                       nrnb,
-                     const real*                   lambda,
-                     const t_mdatoms*              md,
-                     struct t_fcdata*              fcd,
-                     int*                          global_atom_index,
-                     const gmx::StepWorkload&      stepWork);
+ * on the set of listed interactions
+ *
+ * xWholeMolecules only needs to contain whole molecules when orientation
+ * restraints need to be computed and can be empty otherwise.
+ */
+void do_force_listed(struct gmx_wallcycle*          wcycle,
+                     const matrix                   box,
+                     const t_lambda*                fepvals,
+                     const t_commrec*               cr,
+                     const gmx_multisim_t*          ms,
+                     const InteractionDefinitions&  idef,
+                     const rvec                     x[],
+                     gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
+                     history_t*                     hist,
+                     gmx::ForceOutputs*             forceOutputs,
+                     const t_forcerec*              fr,
+                     const struct t_pbc*            pbc,
+                     const struct t_graph*          graph,
+                     gmx_enerdata_t*                enerd,
+                     t_nrnb*                        nrnb,
+                     const real*                    lambda,
+                     const t_mdatoms*               md,
+                     struct t_fcdata*               fcd,
+                     int*                           global_atom_index,
+                     const gmx::StepWorkload&       stepWork);
 
 /*! \brief Returns true if there are position, distance or orientation restraints. */
 bool haveRestraints(const InteractionDefinitions& idef, const t_fcdata& fcd);

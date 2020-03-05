@@ -115,6 +115,11 @@ void do_force(FILE*                               log,
  */
 
 
+/* Compute listed forces, Ewald, PME corrections add when (when used).
+ *
+ * xWholeMolecules only needs to contain whole molecules when orientation
+ * restraints need to be computed and can be empty otherwise.
+ */
 void do_force_lowlevel(t_forcerec*                         fr,
                        const t_inputrec*                   ir,
                        const InteractionDefinitions&       idef,
@@ -124,6 +129,7 @@ void do_force_lowlevel(t_forcerec*                         fr,
                        gmx_wallcycle*                      wcycle,
                        const t_mdatoms*                    md,
                        gmx::ArrayRefWithPadding<gmx::RVec> coordinates,
+                       gmx::ArrayRef<const gmx::RVec>      xWholeMolecules,
                        history_t*                          hist,
                        gmx::ForceOutputs*                  forceOutputs,
                        gmx_enerdata_t*                     enerd,

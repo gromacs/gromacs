@@ -1405,6 +1405,12 @@ void do_force(FILE*                               fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
+    gmx::ArrayRef<const gmx::RVec> xWholeMolecules;
+    if (fr->wholeMoleculeTransform)
+    {
+        xWholeMolecules = fr->wholeMoleculeTransform->wholeMoleculeCoordinates(x.unpaddedArrayRef(), box);
+    }
+
     DipoleData dipoleData;
 
     if (simulationWork.computeMuTot)
@@ -1414,7 +1420,9 @@ void do_force(FILE*                               fplog,
         /* Calculate total (local) dipole moment in a temporary common array.
          * This makes it possible to sum them over nodes faster.
          */
-        calc_mu(start, mdatoms->homenr, x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB,
+        gmx::ArrayRef<const gmx::RVec> xRef =
+                (xWholeMolecules.empty() ? x.unpaddedArrayRef() : xWholeMolecules);
+        calc_mu(start, mdatoms->homenr, xRef, mdatoms->chargeA, mdatoms->chargeB,
                 mdatoms->nChargePerturbed, dipoleData.muStaging[0], dipoleData.muStaging[1]);
 
         reduceAndUpdateMuTot(&dipoleData, cr, (fr->efep != efepNO), lambda, muTotal, ddBalanceRegionHandler);
@@ -1531,9 +1539,9 @@ void do_force(FILE*                               fplog,
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
     }
     /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fr, inputrec, top->idef, cr, ms, nrnb, wcycle, mdatoms, x, hist, &forceOut,
-                      enerd, fcd, box, lambda.data(), graph, as_rvec_array(dipoleData.muStateAB),
-                      stepWork, ddBalanceRegionHandler);
+    do_force_lowlevel(fr, inputrec, top->idef, cr, ms, nrnb, wcycle, mdatoms, x, xWholeMolecules,
+                      hist, &forceOut, enerd, fcd, box, lambda.data(), graph,
+                      as_rvec_array(dipoleData.muStateAB), stepWork, ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
 

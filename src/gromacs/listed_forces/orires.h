@@ -59,6 +59,12 @@ struct t_fcdata;
 struct t_oriresdata;
 class t_state;
 
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+} // namespace gmx
+
 /*! \brief
  * Decides whether orientation restraints can work, and initializes
  * all the orientation restraint stuff in *od (and assumes *od is
@@ -80,15 +86,16 @@ void init_orires(FILE*                 fplog,
  *
  * Returns the weighted RMS deviation of the orientation restraints.
  */
-real calc_orires_dev(const gmx_multisim_t* ms,
-                     int                   nfa,
-                     const t_iatom         fa[],
-                     const t_iparams       ip[],
-                     const t_mdatoms*      md,
-                     const rvec            x[],
-                     const t_pbc*          pbc,
-                     t_fcdata*             fcd,
-                     history_t*            hist);
+real calc_orires_dev(const gmx_multisim_t*          ms,
+                     int                            nfa,
+                     const t_iatom                  fa[],
+                     const t_iparams                ip[],
+                     const t_mdatoms*               md,
+                     gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
+                     const rvec                     x[],
+                     const t_pbc*                   pbc,
+                     t_fcdata*                      fcd,
+                     history_t*                     hist);
 
 /*! \brief
  * Diagonalizes the order tensor(s) of the orienation restraints.

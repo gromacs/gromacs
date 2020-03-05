@@ -59,9 +59,13 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+
+using gmx::ArrayRef;
+using gmx::RVec;
 
 // TODO This implementation of ensemble orientation restraints is nasty because
 // a user can't just do multi-sim with single-sim orientation restraints.
@@ -382,6 +386,7 @@ real calc_orires_dev(const gmx_multisim_t* ms,
                      const t_iatom         forceatoms[],
                      const t_iparams       ip[],
                      const t_mdatoms*      md,
+                     ArrayRef<const RVec>  xWholeMolecules,
                      const rvec            x[],
                      const t_pbc*          pbc,
                      t_fcdata*             fcd,
@@ -445,7 +450,7 @@ real calc_orires_dev(const gmx_multisim_t* ms,
     {
         if (md->cORF[i] == 0)
         {
-            copy_rvec(x[i], xtmp[j]);
+            copy_rvec(xWholeMolecules[i], xtmp[j]);
             mref[j] = md->massT[i];
             for (int d = 0; d < DIM; d++)
             {

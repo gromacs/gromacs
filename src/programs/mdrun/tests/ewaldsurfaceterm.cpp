@@ -151,8 +151,8 @@ TEST_P(EwaldSurfaceTermTest, WithinTolerances)
         CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
         EnergyTermsToCompare energyTermsToCompare{
-            { { interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(1, 1e-4) },
-              { interaction_function[F_ETOT].longname, relativeToleranceAsFloatingPoint(1, 1e-4) } }
+            { { interaction_function[F_EPOT].longname, absoluteTolerance(1e-3) },
+              { interaction_function[F_ETOT].longname, absoluteTolerance(1e-3) } }
         };
         TestReferenceData refData;
         auto checker = refData.rootChecker().checkCompound("Simulation", simulationName);
@@ -178,9 +178,7 @@ TEST_P(EwaldSurfaceTermTest, WithinTolerances)
 
 //! Containers of systems to test.
 //! \{
-// Enable when the epsilon-surface bug is fixed
-//    std::vector<std::string> surfaceTerm = { "3DC", "epsilon-surface-constraint", "epsilon-surface" };
-std::vector<std::string> surfaceTerm = { "3DC", "epsilon-surface-constraint" };
+std::vector<std::string> surfaceTerm = { "3DC", "epsilon-surface-constraint", "epsilon-surface" };
 //! \}
 
 INSTANTIATE_TEST_CASE_P(EwaldSurfaceTerm, EwaldSurfaceTermTest, ::testing::ValuesIn(surfaceTerm));

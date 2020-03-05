@@ -108,6 +108,7 @@ void do_force_lowlevel(t_forcerec*                         fr,
                        gmx_wallcycle_t                     wcycle,
                        const t_mdatoms*                    md,
                        gmx::ArrayRefWithPadding<gmx::RVec> coordinates,
+                       gmx::ArrayRef<const gmx::RVec>      xWholeMolecules,
                        history_t*                          hist,
                        gmx::ForceOutputs*                  forceOutputs,
                        gmx_enerdata_t*                     enerd,
@@ -180,8 +181,8 @@ void do_force_lowlevel(t_forcerec*                         fr,
             set_pbc_dd(&pbc, fr->pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, TRUE, box);
         }
 
-        do_force_listed(wcycle, box, ir->fepvals, cr, ms, idef, x, hist, forceOutputs, fr, &pbc,
-                        graph, enerd, nrnb, lambda, md, fcd,
+        do_force_listed(wcycle, box, ir->fepvals, cr, ms, idef, x, xWholeMolecules, hist,
+                        forceOutputs, fr, &pbc, graph, enerd, nrnb, lambda, md, fcd,
                         DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr, stepWork);
     }
 

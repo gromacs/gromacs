@@ -474,11 +474,20 @@ bool haveCpuListedForces(const t_forcerec& fr, const InteractionDefinitions& ide
     return haveCpuBondeds(fr) || haveRestraints(idef, fcd);
 }
 
+namespace
+{
+
+/*! \brief Calculates all listed force interactions.
+ *
+ * Note that pbc_full is used only for position restraints, and is
+ * not initialized if there are none.
+ */
 void calc_listed(const t_commrec*              cr,
                  const gmx_multisim_t*         ms,
                  struct gmx_wallcycle*         wcycle,
                  const InteractionDefinitions& idef,
                  const rvec                    x[],
+                 ArrayRef<const gmx::RVec>     xWholeMolecules,
                  history_t*                    hist,
                  gmx::ForceOutputs*            forceOutputs,
                  const t_forcerec*             fr,
@@ -527,17 +536,10 @@ void calc_listed(const t_commrec*              cr,
         /* Do pre force calculation stuff which might require communication */
         if (fcd->orires.nr > 0)
         {
-            /* This assertion is to ensure we have whole molecules.
-             * Unfortunately we do not have an mdrun state variable that tells
-             * us if molecules in x are not broken over PBC, so we have to make
-             * do with checking graph!=nullptr, which should tell us if we made
-             * molecules whole before calling the current function.
-             */
-            GMX_RELEASE_ASSERT(fr->pbcType == PbcType::No || g != nullptr,
-                               "With orientation restraints molecules should be whole");
+            GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orienation restraints");
             enerd->term[F_ORIRESDEV] =
                     calc_orires_dev(ms, idef.il[F_ORIRES].size(), idef.il[F_ORIRES].iatoms.data(),
-                                    idef.iparams.data(), md, x, pbc_null, fcd, hist);
+                                    idef.iparams.data(), md, xWholeMolecules, x, pbc_null, fcd, hist);
         }
         if (fcd->disres.nres > 0)
         {
@@ -582,6 +584,11 @@ void calc_listed(const t_commrec*              cr,
     }
 }
 
+/*! \brief As calc_listed(), but only determines the potential energy
+ * for the perturbed interactions.
+ *
+ * The shift forces in fr are not affected.
+ */
 void calc_listed_lambda(const InteractionDefinitions& idef,
                         const rvec                    x[],
                         const t_forcerec*             fr,
@@ -646,25 +653,28 @@ void calc_listed_lambda(const InteractionDefinitions& idef,
     sfree(f);
 }
 
-void do_force_listed(struct gmx_wallcycle*         wcycle,
-                     const matrix                  box,
-                     const t_lambda*               fepvals,
-                     const t_commrec*              cr,
-                     const gmx_multisim_t*         ms,
-                     const InteractionDefinitions& idef,
-                     const rvec                    x[],
-                     history_t*                    hist,
-                     gmx::ForceOutputs*            forceOutputs,
-                     const t_forcerec*             fr,
-                     const struct t_pbc*           pbc,
-                     const struct t_graph*         graph,
-                     gmx_enerdata_t*               enerd,
-                     t_nrnb*                       nrnb,
-                     const real*                   lambda,
-                     const t_mdatoms*              md,
-                     t_fcdata*                     fcd,
-                     int*                          global_atom_index,
-                     const gmx::StepWorkload&      stepWork)
+} // namespace
+
+void do_force_listed(struct gmx_wallcycle*          wcycle,
+                     const matrix                   box,
+                     const t_lambda*                fepvals,
+                     const t_commrec*               cr,
+                     const gmx_multisim_t*          ms,
+                     const InteractionDefinitions&  idef,
+                     const rvec                     x[],
+                     gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
+                     history_t*                     hist,
+                     gmx::ForceOutputs*             forceOutputs,
+                     const t_forcerec*              fr,
+                     const struct t_pbc*            pbc,
+                     const struct t_graph*          graph,
+                     gmx_enerdata_t*                enerd,
+                     t_nrnb*                        nrnb,
+                     const real*                    lambda,
+                     const t_mdatoms*               md,
+                     t_fcdata*                      fcd,
+                     int*                           global_atom_index,
+                     const gmx::StepWorkload&       stepWork)
 {
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
 
@@ -678,8 +688,8 @@ void do_force_listed(struct gmx_wallcycle*         wcycle,
         /* Not enough flops to bother counting */
         set_pbc(&pbc_full, fr->pbcType, box);
     }
-    calc_listed(cr, ms, wcycle, idef, x, hist, forceOutputs, fr, pbc, &pbc_full, graph, enerd, nrnb,
-                lambda, md, fcd, global_atom_index, stepWork);
+    calc_listed(cr, ms, wcycle, idef, x, xWholeMolecules, hist, forceOutputs, fr, pbc, &pbc_full,
+                graph, enerd, nrnb, lambda, md, fcd, global_atom_index, stepWork);
 
     /* Check if we have to determine energy differences
      * at foreign lambda's.

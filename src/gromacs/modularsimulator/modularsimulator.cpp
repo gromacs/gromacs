@@ -934,10 +934,6 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             isInputCompatible
             && conditionalAssert(!doMembed,
                                  "Membrane embedding is not supported by the modular simulator.");
-    const bool useGraph = !areMoleculesDistributedOverPbc(*inputrec, globalTopology, MDLogger());
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!useGraph, "Graph is not supported by the modular simulator.");
     // TODO: Change this to the boolean passed when we merge the user interface change for the GPU update.
     isInputCompatible =
             isInputCompatible

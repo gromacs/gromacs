@@ -48,14 +48,14 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 
-void calc_mu(int                      start,
-             int                      homenr,
-             gmx::ArrayRef<gmx::RVec> x,
-             const real               q[],
-             const real               qB[],
-             int                      nChargePerturbed,
-             dvec                     mu,
-             dvec                     mu_B)
+void calc_mu(int                            start,
+             int                            homenr,
+             gmx::ArrayRef<const gmx::RVec> x,
+             const real                     q[],
+             const real                     qB[],
+             int                            nChargePerturbed,
+             dvec                           mu,
+             dvec                           mu_B)
 {
     int    end, m;
     double mu_x, mu_y, mu_z;

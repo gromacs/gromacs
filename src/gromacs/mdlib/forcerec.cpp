@@ -918,48 +918,6 @@ static void init_interaction_const(FILE*                 fp,
     *interaction_const = ic;
 }
 
-bool areMoleculesDistributedOverPbc(const t_inputrec& ir, const gmx_mtop_t& mtop, const gmx::MDLogger& mdlog)
-{
-    bool areMoleculesDistributedOverPbc = false;
-
-    if (ir.pbcType != PbcType::No)
-    {
-        /* Not making molecules whole is faster in most cases,
-         * but with orientation restraints or non-tinfoil boundary
-         * conditions we need whole molecules.
-         */
-        const bool useEwaldSurfaceCorrection = (EEL_PME_EWALD(ir.coulombtype) && ir.epsilon_surface != 0);
-        areMoleculesDistributedOverPbc =
-                (gmx_mtop_ftype_count(mtop, F_ORIRES) == 0 && !useEwaldSurfaceCorrection);
-
-        if (getenv("GMX_USE_GRAPH") != nullptr)
-        {
-            areMoleculesDistributedOverPbc = false;
-
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendText(
-                            "GMX_USE_GRAPH is set, using the graph for bonded "
-                            "interactions");
-
-            if (mtop.bIntermolecularInteractions)
-            {
-                GMX_LOG(mdlog.warning)
-                        .asParagraph()
-                        .appendText(
-                                "WARNING: Molecules linked by intermolecular interactions "
-                                "have to reside in the same periodic image, otherwise "
-                                "artifacts will occur!");
-            }
-        }
-
-        GMX_RELEASE_ASSERT(areMoleculesDistributedOverPbc || !mtop.bIntermolecularInteractions,
-                           "We need to use PBC within molecules with inter-molecular interactions");
-    }
-
-    return areMoleculesDistributedOverPbc;
-}
-
 void init_forcerec(FILE*                            fp,
                    const gmx::MDLogger&             mdlog,
                    t_forcerec*                      fr,
@@ -1087,25 +1045,30 @@ void init_forcerec(FILE*                            fp,
     {
         const bool useEwaldSurfaceCorrection =
                 (EEL_PME_EWALD(ir->coulombtype) && ir->epsilon_surface != 0);
+        const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
         if (!DOMAINDECOMP(cr))
         {
-            fr->bMolPBC = areMoleculesDistributedOverPbc(*ir, *mtop, mdlog);
-            // The assert below is equivalent to fcd->orires.nr != gmx_mtop_ftype_count(mtop, F_ORIRES)
-            GMX_RELEASE_ASSERT(!fr->bMolPBC || fcd->orires.nr == 0,
-                               "Molecules broken over PBC exist in a simulation including "
-                               "orientation restraints. "
-                               "This likely means that the global topology and the force constant "
-                               "data have gotten out of sync.");
+            fr->bMolPBC = true;
+
+            if (useEwaldSurfaceCorrection || haveOrientationRestraints)
+            {
+                fr->wholeMoleculeTransform =
+                        std::make_unique<gmx::WholeMoleculeTransform>(*mtop, ir->pbcType);
+            }
         }
         else
         {
             fr->bMolPBC = dd_bonded_molpbc(cr->dd, fr->pbcType);
 
-            if (useEwaldSurfaceCorrection && !dd_moleculesAreAlwaysWhole(*cr->dd))
+            /* With Ewald surface correction it is useful to support e.g. running water
+             * in parallel with update groups.
+             * With orientation restraints there is no sensible use case supported with DD.
+             */
+            if ((useEwaldSurfaceCorrection && !dd_moleculesAreAlwaysWhole(*cr->dd)) || haveOrientationRestraints)
             {
                 gmx_fatal(FARGS,
-                          "You requested dipole correction (epsilon_surface > 0), but molecules "
-                          "are broken "
+                          "You requested Ewald surface correction or orientation restraints, "
+                          "but molecules are broken "
                           "over periodic boundary conditions by the domain decomposition. "
                           "Run without domain decomposition instead.");
             }
@@ -1113,8 +1076,7 @@ void init_forcerec(FILE*                            fp,
 
         if (useEwaldSurfaceCorrection)
         {
-            GMX_RELEASE_ASSERT((!DOMAINDECOMP(cr) && !fr->bMolPBC)
-                                       || (DOMAINDECOMP(cr) && dd_moleculesAreAlwaysWhole(*cr->dd)),
+            GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr) || dd_moleculesAreAlwaysWhole(*cr->dd),
                                "Molecules can not be broken by PBC with epsilon_surface > 0");
         }
     }
