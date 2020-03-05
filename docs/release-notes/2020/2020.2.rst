@@ -35,3 +35,8 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed initial DLB state reporting
+"""""""""""""""""""""""""""""""""
+
+The initial DLB state was reported incorrectly in the log file when
+the either "on" or "auto" value was the chosen at mdrun startup.

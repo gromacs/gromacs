@@ -119,7 +119,7 @@ using gmx::DdRankOrder;
 using gmx::DlbOption;
 using gmx::DomdecOptions;
 
-static const char* edlbs_names[int(DlbState::nr)] = { "off", "auto", "locked", "on", "on" };
+static const char* edlbs_names[int(DlbState::nr)] = { "off", "off", "auto", "locked", "on", "on" };
 
 /* The size per atom group of the cggl_flag buffer in gmx_domdec_comm_t */
 #define DD_CGIBS 2
