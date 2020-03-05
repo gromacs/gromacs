@@ -219,25 +219,28 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
 
 /*! \brief Called by PME-only ranks to receive coefficients and coordinates
  *
- * \param[in] pme           PME data structure.
- * \param[in,out] pme_pp    PME-PP communication structure.
- * \param[out] natoms       Number of received atoms.
- * \param[out] box        System box, if received.
- * \param[out] maxshift_x        Maximum shift in X direction, if received.
- * \param[out] maxshift_y        Maximum shift in Y direction, if received.
- * \param[out] lambda_q         Free-energy lambda for electrostatics, if received.
- * \param[out] lambda_lj         Free-energy lambda for Lennard-Jones, if received.
- * \param[out] bEnerVir          Set to true if this is an energy/virial calculation step, otherwise
- * set to false. \param[out] step              MD integration step number. \param[out] grid_size PME
- * grid size, if received. \param[out] ewaldcoeff_q         Ewald cut-off parameter for
- * electrostatics, if received. \param[out] ewaldcoeff_lj         Ewald cut-off parameter for
- * Lennard-Jones, if received. \param[in] useGpuForPme      flag on whether PME is on GPU \param[in]
- * stateGpu          GPU state propagator object \param[in] runMode           PME run mode
+ * \param[in] pme                     PME data structure.
+ * \param[in,out] pme_pp              PME-PP communication structure.
+ * \param[out] natoms                 Number of received atoms.
+ * \param[out] box                    System box, if received.
+ * \param[out] maxshift_x             Maximum shift in X direction, if received.
+ * \param[out] maxshift_y             Maximum shift in Y direction, if received.
+ * \param[out] lambda_q               Free-energy lambda for electrostatics, if received.
+ * \param[out] lambda_lj              Free-energy lambda for Lennard-Jones, if received.
+ * \param[out] computeEnergyAndVirial Set to true if this is an energy/virial calculation
+ *                                    step, otherwise set to false.
+ * \param[out] step                   MD integration step number.
+ * \param[out] grid_size              PME grid size, if received.
+ * \param[out] ewaldcoeff_q           Ewald cut-off parameter for electrostatics, if received.
+ * \param[out] ewaldcoeff_lj          Ewald cut-off parameter for Lennard-Jones, if received.
+ * \param[in]  useGpuForPme           Flag on whether PME is on GPU.
+ * \param[in]  stateGpu               GPU state propagator object.
+ * \param[in]  runMode                PME run mode.
  *
- * \retval pmerecvqxX             All parameters were set, chargeA and chargeB can be NULL.
- * \retval pmerecvqxFINISH        No parameters were set.
- * \retval pmerecvqxSWITCHGRID    Only grid_size and *ewaldcoeff were set.
- * \retval pmerecvqxRESETCOUNTERS *step was set.
+ * \retval pmerecvqxX                 All parameters were set, chargeA and chargeB can be NULL.
+ * \retval pmerecvqxFINISH            No parameters were set.
+ * \retval pmerecvqxSWITCHGRID        Only grid_size and *ewaldcoeff were set.
+ * \retval pmerecvqxRESETCOUNTERS     *step was set.
  */
 static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       gmx_pme_pp*                  pme_pp,
@@ -247,7 +250,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       int*                         maxshift_y,
                                       real*                        lambda_q,
                                       real*                        lambda_lj,
-                                      gmx_bool*                    bEnerVir,
+                                      gmx_bool*                    computeEnergyAndVirial,
                                       int64_t*                     step,
                                       ivec*                        grid_size,
                                       real*                        ewaldcoeff_q,
@@ -438,10 +441,10 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             /* The box, FE flag and lambda are sent along with the coordinates
              *  */
             copy_mat(cnb.box, box);
-            *lambda_q  = cnb.lambda_q;
-            *lambda_lj = cnb.lambda_lj;
-            *bEnerVir  = ((cnb.flags & PP_PME_ENER_VIR) != 0U);
-            *step      = cnb.step;
+            *lambda_q               = cnb.lambda_q;
+            *lambda_lj              = cnb.lambda_lj;
+            *computeEnergyAndVirial = ((cnb.flags & PP_PME_ENER_VIR) != 0U);
+            *step                   = cnb.step;
 
             /* Receive the coordinates in place */
             nat = 0;
@@ -490,7 +493,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     GMX_UNUSED_VALUE(maxshift_y);
     GMX_UNUSED_VALUE(lambda_q);
     GMX_UNUSED_VALUE(lambda_lj);
-    GMX_UNUSED_VALUE(bEnerVir);
+    GMX_UNUSED_VALUE(computeEnergyAndVirial);
     GMX_UNUSED_VALUE(step);
     GMX_UNUSED_VALUE(grid_size);
     GMX_UNUSED_VALUE(ewaldcoeff_q);
@@ -602,17 +605,17 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
                 t_inputrec*               ir,
                 PmeRunMode                runMode)
 {
-    int      ret;
-    int      natoms = 0;
-    matrix   box;
-    real     lambda_q   = 0;
-    real     lambda_lj  = 0;
-    int      maxshift_x = 0, maxshift_y = 0;
-    real     dvdlambda_q, dvdlambda_lj;
-    float    cycles;
-    int      count;
-    gmx_bool bEnerVir = FALSE;
-    int64_t  step;
+    int     ret;
+    int     natoms = 0;
+    matrix  box;
+    real    lambda_q   = 0;
+    real    lambda_lj  = 0;
+    int     maxshift_x = 0, maxshift_y = 0;
+    real    dvdlambda_q, dvdlambda_lj;
+    float   cycles;
+    int     count;
+    bool    computeEnergyAndVirial = false;
+    int64_t step;
 
     /* This data will only use with PME tuning, i.e. switching PME grids */
     std::vector<gmx_pme_t*> pmedata;
@@ -655,8 +658,8 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
             /* Domain decomposition */
             ivec newGridSize;
             real ewaldcoeff_q = 0, ewaldcoeff_lj = 0;
-            ret = gmx_pme_recv_coeffs_coords(pme, pme_pp.get(), &natoms, box, &maxshift_x,
-                                             &maxshift_y, &lambda_q, &lambda_lj, &bEnerVir, &step,
+            ret = gmx_pme_recv_coeffs_coords(pme, pme_pp.get(), &natoms, box, &maxshift_x, &maxshift_y,
+                                             &lambda_q, &lambda_lj, &computeEnergyAndVirial, &step,
                                              &newGridSize, &ewaldcoeff_q, &ewaldcoeff_lj,
                                              useGpuForPme, stateGpu.get(), runMode);
 
@@ -695,8 +698,8 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
         gmx::StepWorkload stepWork;
-        stepWork.computeVirial = bEnerVir;
-        stepWork.computeEnergy = bEnerVir;
+        stepWork.computeVirial = computeEnergyAndVirial;
+        stepWork.computeEnergy = computeEnergyAndVirial;
         stepWork.computeForces = true;
         PmeOutput output;
         if (useGpuForPme)
@@ -717,7 +720,7 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
             pme_gpu_launch_spread(pme, xReadyOnDevice, wcycle);
             pme_gpu_launch_complex_transforms(pme, wcycle, stepWork);
             pme_gpu_launch_gather(pme, wcycle);
-            output = pme_gpu_wait_finish_task(pme, bEnerVir, wcycle);
+            output = pme_gpu_wait_finish_task(pme, computeEnergyAndVirial, wcycle);
             pme_gpu_reinit_computation(pme, wcycle);
         }
         else
