@@ -138,7 +138,7 @@ public:
     //! LINCS data.
     Lincs* lincsd = nullptr; // TODO this should become a unique_ptr
     //! SHAKE data.
-    shakedata* shaked = nullptr;
+    std::unique_ptr<shakedata> shaked;
     //! SETTLE data.
     settledata* settled = nullptr;
     //! The maximum number of warnings.
@@ -474,11 +474,10 @@ bool Constraints::Impl::apply(bool                      bLog,
 
     if (shaked != nullptr)
     {
-        bOK = constrain_shake(
-                log, shaked, md.invmass, *idef, ir, as_rvec_array(x.unpaddedArrayRef().data()),
-                as_rvec_array(xprime.unpaddedArrayRef().data()), as_rvec_array(min_proj.data()),
-                nrnb, lambda, dvdlambda, invdt, as_rvec_array(v.unpaddedArrayRef().data()),
-                vir != nullptr, vir_r_m_dr, maxwarn < INT_MAX, econq);
+        bOK = constrain_shake(log, shaked.get(), md.invmass, *idef, ir, x.unpaddedArrayRef(),
+                              xprime.unpaddedArrayRef(), min_proj, pbc_null, nrnb, lambda,
+                              dvdlambda, invdt, v.unpaddedArrayRef(), vir != nullptr, vir_r_m_dr,
+                              maxwarn < INT_MAX, econq);
 
         if (!bOK && maxwarn < INT_MAX)
         {
@@ -894,11 +893,11 @@ void Constraints::Impl::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
             {
                 // We are using the local topology, so there are only
                 // F_CONSTR constraints.
-                make_shake_sblock_dd(shaked, idef->il[F_CONSTR], cr->dd);
+                make_shake_sblock_dd(shaked.get(), idef->il[F_CONSTR]);
             }
             else
             {
-                make_shake_sblock_serial(shaked, &top->idef, md);
+                make_shake_sblock_serial(shaked.get(), &top->idef, md);
             }
         }
     }
@@ -1042,7 +1041,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
                 please_cite(log, "Barth95a");
             }
 
-            shaked = shake_init();
+            shaked = std::make_unique<shakedata>();
         }
     }
 

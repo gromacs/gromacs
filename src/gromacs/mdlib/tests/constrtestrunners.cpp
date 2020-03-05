@@ -89,16 +89,14 @@ namespace test
  */
 void applyShake(ConstraintsTestData* testData, t_pbc gmx_unused pbc)
 {
-    shakedata* shaked = shake_init();
-    make_shake_sblock_serial(shaked, testData->idef_.get(), testData->md_);
+    shakedata shaked;
+    make_shake_sblock_serial(&shaked, testData->idef_.get(), testData->md_);
     bool success = constrain_shake(
-            nullptr, shaked, testData->invmass_.data(), *testData->idef_, testData->ir_,
-            as_rvec_array(testData->x_.data()), as_rvec_array(testData->xPrime_.data()),
-            as_rvec_array(testData->xPrime2_.data()), &testData->nrnb_, testData->md_.lambda,
-            &testData->dHdLambda_, testData->invdt_, as_rvec_array(testData->v_.data()),
-            testData->computeVirial_, testData->virialScaled_, false, gmx::ConstraintVariable::Positions);
+            nullptr, &shaked, testData->invmass_.data(), *testData->idef_, testData->ir_, testData->x_,
+            testData->xPrime_, testData->xPrime2_, nullptr, &testData->nrnb_, testData->md_.lambda,
+            &testData->dHdLambda_, testData->invdt_, testData->v_, testData->computeVirial_,
+            testData->virialScaled_, false, gmx::ConstraintVariable::Positions);
     EXPECT_TRUE(success) << "Test failed with a false return value in SHAKE.";
-    done_shake(shaked);
 }
 
 /*! \brief

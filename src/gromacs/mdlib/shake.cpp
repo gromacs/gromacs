@@ -51,7 +51,6 @@
 
 #include <algorithm>
 
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
@@ -60,65 +59,13 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {
-
-struct shakedata
-{
-    rvec* rij;
-    real* half_of_reduced_mass;
-    real* distance_squared_tolerance;
-    real* constraint_distance_squared;
-    int   nalloc;
-    /* SOR stuff */
-    real delta;
-    real omega;
-    real gamma;
-    int  nblocks;       /* The number of SHAKE blocks         */
-    int* sblock;        /* The SHAKE blocks                   */
-    int  sblock_nalloc; /* The allocation size of sblock      */
-    /*! \brief Scaled Lagrange multiplier for each constraint.
-     *
-     * Value is -2 * eta from p. 336 of the paper, divided by the
-     * constraint distance. */
-    real* scaled_lagrange_multiplier;
-    int   lagr_nalloc; /* The allocation size of scaled_lagrange_multiplier */
-};
-
-shakedata* shake_init()
-{
-    shakedata* d;
-
-    snew(d, 1);
-
-    d->nalloc                      = 0;
-    d->rij                         = nullptr;
-    d->half_of_reduced_mass        = nullptr;
-    d->distance_squared_tolerance  = nullptr;
-    d->constraint_distance_squared = nullptr;
-
-    /* SOR initialization */
-    d->delta = 0.1;
-    d->omega = 1.0;
-    d->gamma = 1000000;
-
-    return d;
-}
-
-void done_shake(shakedata* d)
-{
-    sfree(d->rij);
-    sfree(d->half_of_reduced_mass);
-    sfree(d->distance_squared_tolerance);
-    sfree(d->constraint_distance_squared);
-    sfree(d->sblock);
-    sfree(d->scaled_lagrange_multiplier);
-    sfree(d);
-}
 
 typedef struct
 {
@@ -172,16 +119,12 @@ static void pr_sortblock(FILE* fp, const char* title, int nsb, t_sortblock sb[])
 //! Reallocates a vector.
 static void resizeLagrangianData(shakedata* shaked, int ncons)
 {
-    if (ncons > shaked->lagr_nalloc)
-    {
-        shaked->lagr_nalloc = over_alloc_dd(ncons);
-        srenew(shaked->scaled_lagrange_multiplier, shaked->lagr_nalloc);
-    }
+    shaked->scaled_lagrange_multiplier.resize(ncons);
 }
 
 void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, const t_mdatoms& md)
 {
-    int          i, j, m, ncons;
+    int          i, m, ncons;
     int          bstart, bnr;
     t_blocka     sblocks;
     t_sortblock* sb;
@@ -200,11 +143,10 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
        bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
        nblocks=blocks->multinr[idef->nodeid] - bstart;
      */
-    bstart          = 0;
-    shaked->nblocks = sblocks.nr;
+    bstart = 0;
     if (debug)
     {
-        fprintf(debug, "ncons: %d, bstart: %d, nblocks: %d\n", ncons, bstart, shaked->nblocks);
+        fprintf(debug, "ncons: %d, bstart: %d, nblocks: %d\n", ncons, bstart, sblocks.nr);
     }
 
     /* Calculate block number for each atom */
@@ -250,61 +192,37 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
         }
     }
 
-    j = 0;
-    snew(shaked->sblock, shaked->nblocks + 1);
+    shaked->sblock.clear();
     bnr = -2;
     for (i = 0; (i < ncons); i++)
     {
         if (sb[i].blocknr != bnr)
         {
-            bnr                 = sb[i].blocknr;
-            shaked->sblock[j++] = 3 * i;
+            bnr = sb[i].blocknr;
+            shaked->sblock.push_back(3 * i);
         }
     }
     /* Last block... */
-    shaked->sblock[j++] = 3 * ncons;
+    shaked->sblock.push_back(3 * ncons);
 
-    if (j != (shaked->nblocks + 1))
-    {
-        fprintf(stderr, "bstart: %d\n", bstart);
-        fprintf(stderr, "j: %d, nblocks: %d, ncons: %d\n", j, shaked->nblocks, ncons);
-        for (i = 0; (i < ncons); i++)
-        {
-            fprintf(stderr, "i: %5d  sb[i].blocknr: %5d\n", i, sb[i].blocknr);
-        }
-        for (j = 0; (j <= shaked->nblocks); j++)
-        {
-            fprintf(stderr, "sblock[%3d]=%5d\n", j, shaked->sblock[j]);
-        }
-        gmx_fatal(FARGS,
-                  "DEATH HORROR: "
-                  "sblocks does not match idef->il[F_CONSTR]");
-    }
     sfree(sb);
     sfree(inv_sblock);
     resizeLagrangianData(shaked, ncons);
 }
 
-// TODO: Check if this code is useful. It might never be called.
-void make_shake_sblock_dd(shakedata* shaked, const InteractionList& ilcon, const gmx_domdec_t* dd)
+void make_shake_sblock_dd(shakedata* shaked, const InteractionList& ilcon)
 {
     int ncons, c, cg;
 
-    if (dd->ncg_home + 1 > shaked->sblock_nalloc)
-    {
-        shaked->sblock_nalloc = over_alloc_dd(dd->ncg_home + 1);
-        srenew(shaked->sblock, shaked->sblock_nalloc);
-    }
-
     ncons            = ilcon.size() / 3;
     const int* iatom = ilcon.iatoms.data();
-    shaked->nblocks  = 0;
-    cg               = 0;
+    shaked->sblock.clear();
+    cg = 0;
     for (c = 0; c < ncons; c++)
     {
         if (c == 0 || iatom[1] >= cg + 1)
         {
-            shaked->sblock[shaked->nblocks++] = 3 * c;
+            shaked->sblock.push_back(3 * c);
             while (iatom[1] >= cg + 1)
             {
                 cg++;
@@ -312,7 +230,7 @@ void make_shake_sblock_dd(shakedata* shaked, const InteractionList& ilcon, const
         }
         iatom += 3;
     }
-    shaked->sblock[shaked->nblocks] = 3 * ncons;
+    shaked->sblock.push_back(3 * ncons);
     resizeLagrangianData(shaked, ncons);
 }
 
@@ -325,50 +243,53 @@ void make_shake_sblock_dd(shakedata* shaked, const InteractionList& ilcon, const
  * The algorithm here is based section five of Ryckaert, Ciccotti and
  * Berendsen, J Comp Phys, 23, 327, 1977.
  *
- * \param[in]    iatom                         Mini-topology of triples of constraint type (unused in this
- *                                             function) and indices of the two atoms involved
+ * \param[in]    iatom                         Mini-topology of triplets of constraint type (unused
+ *                                             in this function) and indices of two atoms involved
  * \param[in]    ncon                          Number of constraints
  * \param[out]   nnit                          Number of iterations performed
  * \param[in]    maxnit                        Maximum number of iterations permitted
  * \param[in]    constraint_distance_squared   The objective value for each constraint
- * \param[inout] positions                     The initial (and final) values of the positions of all atoms
+ * \param[inout] positions                     The initial (and final) values of the positions
+ *                                             of all atoms
+ * \param[in]    pbc                           PBC information
  * \param[in]    initial_displacements         The initial displacements of each constraint
  * \param[in]    half_of_reduced_mass          Half of the reduced mass for each constraint
  * \param[in]    omega                         SHAKE over-relaxation factor (set non-1.0 by
- *                                             using shake-sor=yes in the .mdp, but there is no documentation anywhere)
+ *                                             using shake-sor=yes in the .mdp,
+ *                                             but there is no documentation anywhere)
  * \param[in]    invmass                       Inverse mass of each atom
  * \param[in]    distance_squared_tolerance    Multiplicative tolerance on the difference in the
  *                                             square of the constrained distance (see code)
- * \param[out]   scaled_lagrange_multiplier    Scaled Lagrange multiplier for each constraint (-2 * eta from p. 336
- *                                             of the paper, divided by the constraint distance)
- * \param[out]   nerror                        Zero upon success, returns one more than the index of the
- *                                             problematic constraint if the input was malformed
+ * \param[out]   scaled_lagrange_multiplier    Scaled Lagrange multiplier for each constraint
+ *                                             (-2 * eta from p. 336 of the paper, divided by
+ *                                             the constraint distance)
+ * \param[out]   nerror                        Zero upon success, returns one more than the index of
+ *                                             the problematic constraint if the input was malformed
  *
  * \todo Make SHAKE use better data structures, in particular for iatom. */
-void cshake(const int  iatom[],
-            int        ncon,
-            int*       nnit,
-            int        maxnit,
-            const real constraint_distance_squared[],
-            real       positions[],
-            const real initial_displacements[],
-            const real half_of_reduced_mass[],
-            real       omega,
-            const real invmass[],
-            const real distance_squared_tolerance[],
-            real       scaled_lagrange_multiplier[],
-            int*       nerror)
+void cshake(const int            iatom[],
+            int                  ncon,
+            int*                 nnit,
+            int                  maxnit,
+            ArrayRef<const real> constraint_distance_squared,
+            ArrayRef<RVec>       positions,
+            const t_pbc*         pbc,
+            ArrayRef<const RVec> initial_displacements,
+            ArrayRef<const real> half_of_reduced_mass,
+            real                 omega,
+            const real           invmass[],
+            ArrayRef<const real> distance_squared_tolerance,
+            ArrayRef<real>       scaled_lagrange_multiplier,
+            int*                 nerror)
 {
     /* default should be increased! MRS 8/4/2009 */
     const real mytol = 1e-10;
 
-    int  ll, i, j, i3, j3, l3;
-    int  ix, iy, iz, jx, jy, jz;
+    int  ll, i, j, l3;
     real r_dot_r_prime;
     real constraint_distance_squared_ll;
-    real r_prime_squared;
     real scaled_lagrange_multiplier_ll;
-    real r_prime_x, r_prime_y, r_prime_z, diff, im, jm;
+    real diff, im, jm;
     real xh, yh, zh, rijx, rijy, rijz;
     int  nit, error, nconv;
     real iconvf;
@@ -383,26 +304,24 @@ void cshake(const int  iatom[],
         for (ll = 0; (ll < ncon) && (error == 0); ll++)
         {
             l3   = 3 * ll;
-            rijx = initial_displacements[l3 + XX];
-            rijy = initial_displacements[l3 + YY];
-            rijz = initial_displacements[l3 + ZZ];
+            rijx = initial_displacements[ll][XX];
+            rijy = initial_displacements[ll][YY];
+            rijz = initial_displacements[ll][ZZ];
             i    = iatom[l3 + 1];
             j    = iatom[l3 + 2];
-            i3   = 3 * i;
-            j3   = 3 * j;
-            ix   = i3 + XX;
-            iy   = i3 + YY;
-            iz   = i3 + ZZ;
-            jx   = j3 + XX;
-            jy   = j3 + YY;
-            jz   = j3 + ZZ;
 
             /* Compute r prime between atoms i and j, which is the
                displacement *before* this update stage */
-            r_prime_x       = positions[ix] - positions[jx];
-            r_prime_y       = positions[iy] - positions[jy];
-            r_prime_z       = positions[iz] - positions[jz];
-            r_prime_squared = (r_prime_x * r_prime_x + r_prime_y * r_prime_y + r_prime_z * r_prime_z);
+            rvec r_prime;
+            if (pbc)
+            {
+                pbc_dx(pbc, positions[i], positions[j], r_prime);
+            }
+            else
+            {
+                rvec_sub(positions[i], positions[j], r_prime);
+            }
+            const real r_prime_squared     = norm2(r_prime);
             constraint_distance_squared_ll = constraint_distance_squared[ll];
             diff                           = constraint_distance_squared_ll - r_prime_squared;
 
@@ -412,7 +331,7 @@ void cshake(const int  iatom[],
             if (iconvf > 1.0)
             {
                 nconv         = static_cast<int>(iconvf);
-                r_dot_r_prime = (rijx * r_prime_x + rijy * r_prime_y + rijz * r_prime_z);
+                r_dot_r_prime = (rijx * r_prime[XX] + rijy * r_prime[YY] + rijz * r_prime[ZZ]);
 
                 if (r_dot_r_prime < constraint_distance_squared_ll * mytol)
                 {
@@ -429,12 +348,12 @@ void cshake(const int  iatom[],
                     zh = rijz * scaled_lagrange_multiplier_ll;
                     im = invmass[i];
                     jm = invmass[j];
-                    positions[ix] += xh * im;
-                    positions[iy] += yh * im;
-                    positions[iz] += zh * im;
-                    positions[jx] -= xh * jm;
-                    positions[jy] -= yh * jm;
-                    positions[jz] -= zh * jm;
+                    positions[i][XX] += xh * im;
+                    positions[i][YY] += yh * im;
+                    positions[i][ZZ] += zh * im;
+                    positions[j][XX] -= xh * jm;
+                    positions[j][YY] -= yh * jm;
+                    positions[j][ZZ] -= zh * jm;
                 }
             }
         }
@@ -444,20 +363,20 @@ void cshake(const int  iatom[],
 }
 
 //! Implements RATTLE (ie. SHAKE for velocity verlet integrators)
-static void crattle(const int  iatom[],
-                    int        ncon,
-                    int*       nnit,
-                    int        maxnit,
-                    const real constraint_distance_squared[],
-                    real       vp[],
-                    const real rij[],
-                    const real m2[],
-                    real       omega,
-                    const real invmass[],
-                    const real distance_squared_tolerance[],
-                    real       scaled_lagrange_multiplier[],
-                    int*       nerror,
-                    real       invdt)
+static void crattle(const int            iatom[],
+                    int                  ncon,
+                    int*                 nnit,
+                    int                  maxnit,
+                    ArrayRef<const real> constraint_distance_squared,
+                    ArrayRef<RVec>       vp,
+                    ArrayRef<const RVec> rij,
+                    ArrayRef<const real> m2,
+                    real                 omega,
+                    const real           invmass[],
+                    ArrayRef<const real> distance_squared_tolerance,
+                    ArrayRef<real>       scaled_lagrange_multiplier,
+                    int*                 nerror,
+                    real                 invdt)
 {
     /*
      *     r.c. van schaik and w.f. van gunsteren
@@ -468,10 +387,9 @@ static void crattle(const int  iatom[],
      *     second part of rattle algorithm
      */
 
-    int  ll, i, j, i3, j3, l3;
-    int  ix, iy, iz, jx, jy, jz;
+    int  ll, i, j, l3;
     real constraint_distance_squared_ll;
-    real vpijd, vx, vy, vz, acor, fac, im, jm;
+    real vpijd, acor, fac, im, jm;
     real xh, yh, zh, rijx, rijy, rijz;
     int  nit, error, nconv;
     real iconvf;
@@ -486,24 +404,15 @@ static void crattle(const int  iatom[],
         for (ll = 0; (ll < ncon) && (error == 0); ll++)
         {
             l3   = 3 * ll;
-            rijx = rij[l3 + XX];
-            rijy = rij[l3 + YY];
-            rijz = rij[l3 + ZZ];
+            rijx = rij[ll][XX];
+            rijy = rij[ll][YY];
+            rijz = rij[ll][ZZ];
             i    = iatom[l3 + 1];
             j    = iatom[l3 + 2];
-            i3   = 3 * i;
-            j3   = 3 * j;
-            ix   = i3 + XX;
-            iy   = i3 + YY;
-            iz   = i3 + ZZ;
-            jx   = j3 + XX;
-            jy   = j3 + YY;
-            jz   = j3 + ZZ;
-            vx   = vp[ix] - vp[jx];
-            vy   = vp[iy] - vp[jy];
-            vz   = vp[iz] - vp[jz];
+            rvec v;
+            rvec_sub(vp[i], vp[j], v);
 
-            vpijd                          = vx * rijx + vy * rijy + vz * rijz;
+            vpijd                          = v[XX] * rijx + v[YY] * rijy + v[ZZ] * rijz;
             constraint_distance_squared_ll = constraint_distance_squared[ll];
 
             /* iconv is zero when the error is smaller than a bound */
@@ -522,12 +431,12 @@ static void crattle(const int  iatom[],
                 im = invmass[i];
                 jm = invmass[j];
 
-                vp[ix] += xh * im;
-                vp[iy] += yh * im;
-                vp[iz] += zh * im;
-                vp[jx] -= xh * jm;
-                vp[jy] -= yh * jm;
-                vp[jz] -= zh * jm;
+                vp[i][XX] += xh * im;
+                vp[i][YY] += yh * im;
+                vp[i][ZZ] += zh * im;
+                vp[j][XX] -= xh * jm;
+                vp[j][YY] -= yh * jm;
+                vp[j][ZZ] -= zh * jm;
             }
         }
     }
@@ -543,39 +452,35 @@ static int vec_shakef(FILE*                     fplog,
                       ArrayRef<const t_iparams> ip,
                       const int*                iatom,
                       real                      tol,
-                      const rvec                x[],
-                      rvec                      prime[],
+                      ArrayRef<const RVec>      x,
+                      ArrayRef<RVec>            prime,
+                      const t_pbc*              pbc,
                       real                      omega,
                       bool                      bFEP,
                       real                      lambda,
-                      real                      scaled_lagrange_multiplier[],
+                      ArrayRef<real>            scaled_lagrange_multiplier,
                       real                      invdt,
-                      rvec*                     v,
+                      ArrayRef<RVec>            v,
                       bool                      bCalcVir,
                       tensor                    vir_r_m_dr,
                       ConstraintVariable        econq)
 {
-    rvec* rij;
-    real *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
-    int   maxnit = 1000;
-    int   nit    = 0, ll, i, j, d, d2, type;
-    real  L1;
-    real  mm    = 0., tmp;
-    int   error = 0;
-    real  constraint_distance;
+    int  maxnit = 1000;
+    int  nit    = 0, ll, i, j, d, d2, type;
+    real L1;
+    real mm    = 0., tmp;
+    int  error = 0;
+    real constraint_distance;
 
-    if (ncon > shaked->nalloc)
-    {
-        shaked->nalloc = over_alloc_dd(ncon);
-        srenew(shaked->rij, shaked->nalloc);
-        srenew(shaked->half_of_reduced_mass, shaked->nalloc);
-        srenew(shaked->distance_squared_tolerance, shaked->nalloc);
-        srenew(shaked->constraint_distance_squared, shaked->nalloc);
-    }
-    rij                         = shaked->rij;
-    half_of_reduced_mass        = shaked->half_of_reduced_mass;
-    distance_squared_tolerance  = shaked->distance_squared_tolerance;
-    constraint_distance_squared = shaked->constraint_distance_squared;
+    shaked->rij.resize(ncon);
+    shaked->half_of_reduced_mass.resize(ncon);
+    shaked->distance_squared_tolerance.resize(ncon);
+    shaked->constraint_distance_squared.resize(ncon);
+
+    ArrayRef<RVec> rij                         = shaked->rij;
+    ArrayRef<real> half_of_reduced_mass        = shaked->half_of_reduced_mass;
+    ArrayRef<real> distance_squared_tolerance  = shaked->distance_squared_tolerance;
+    ArrayRef<real> constraint_distance_squared = shaked->constraint_distance_squared;
 
     L1            = 1.0 - lambda;
     const int* ia = iatom;
@@ -605,12 +510,12 @@ static int vec_shakef(FILE*                     fplog,
     switch (econq)
     {
         case ConstraintVariable::Positions:
-            cshake(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0],
+            cshake(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime, pbc, rij,
                    half_of_reduced_mass, omega, invmass, distance_squared_tolerance,
                    scaled_lagrange_multiplier, &error);
             break;
         case ConstraintVariable::Velocities:
-            crattle(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime[0], rij[0],
+            crattle(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime, rij,
                     half_of_reduced_mass, omega, invmass, distance_squared_tolerance,
                     scaled_lagrange_multiplier, &error, invdt);
             break;
@@ -652,7 +557,7 @@ static int vec_shakef(FILE*                     fplog,
         i    = ia[1];
         j    = ia[2];
 
-        if ((econq == ConstraintVariable::Positions) && v != nullptr)
+        if ((econq == ConstraintVariable::Positions) && !v.empty())
         {
             /* Correct the velocities */
             mm = scaled_lagrange_multiplier[ll] * invmass[i] * invdt;
@@ -702,9 +607,10 @@ static int vec_shakef(FILE*                     fplog,
 //! Check that constraints are satisfied.
 static void check_cons(FILE*                     log,
                        int                       nc,
-                       const rvec                x[],
-                       rvec                      prime[],
-                       rvec                      v[],
+                       ArrayRef<const RVec>      x,
+                       ArrayRef<const RVec>      prime,
+                       ArrayRef<const RVec>      v,
+                       const t_pbc*              pbc,
                        ArrayRef<const t_iparams> ip,
                        const int*                iatom,
                        const real                invmass[],
@@ -715,7 +621,7 @@ static void check_cons(FILE*                     log,
     real d, dp;
     rvec dx, dv;
 
-    GMX_ASSERT(v, "Input has to be non-null");
+    GMX_ASSERT(!v.empty(), "Input has to be non-null");
     fprintf(log, "    i     mi      j     mj      before       after   should be\n");
     const int* ia = iatom;
     for (i = 0; (i < nc); i++, ia += 3)
@@ -728,7 +634,14 @@ static void check_cons(FILE*                     log,
         switch (econq)
         {
             case ConstraintVariable::Positions:
-                rvec_sub(prime[ai], prime[aj], dx);
+                if (pbc)
+                {
+                    pbc_dx(pbc, prime[ai], prime[aj], dx);
+                }
+                else
+                {
+                    rvec_sub(prime[ai], prime[aj], dx);
+                }
                 dp = norm(dx);
                 fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n", ai + 1,
                         1.0 / invmass[ai], aj + 1, 1.0 / invmass[aj], d, dp, ip[ia[0]].constr.dA);
@@ -752,21 +665,22 @@ static bool bshakef(FILE*                         log,
                     const real                    invmass[],
                     const InteractionDefinitions& idef,
                     const t_inputrec&             ir,
-                    const rvec                    x_s[],
-                    rvec                          prime[],
+                    ArrayRef<const RVec>          x_s,
+                    ArrayRef<RVec>                prime,
+                    const t_pbc*                  pbc,
                     t_nrnb*                       nrnb,
                     real                          lambda,
                     real*                         dvdlambda,
                     real                          invdt,
-                    rvec*                         v,
+                    ArrayRef<RVec>                v,
                     bool                          bCalcVir,
                     tensor                        vir_r_m_dr,
                     bool                          bDumpOnError,
                     ConstraintVariable            econq)
 {
-    real *lam, dt_2, dvdl;
-    int   i, n0, ncon, blen, type, ll;
-    int   tnit = 0, trij = 0;
+    real dt_2, dvdl;
+    int  i, n0, ncon, blen, type, ll;
+    int  tnit = 0, trij = 0;
 
     ncon = idef.il[F_CONSTR].size() / 3;
 
@@ -778,14 +692,14 @@ static bool bshakef(FILE*                         log,
     // TODO Rewrite this block so that it is obvious that i, iatoms
     // and lam are all iteration variables. Is this easier if the
     // sblock data structure is organized differently?
-    const int* iatoms = &(idef.il[F_CONSTR].iatoms[shaked->sblock[0]]);
-    lam               = shaked->scaled_lagrange_multiplier;
-    for (i = 0; (i < shaked->nblocks);)
+    const int*     iatoms = &(idef.il[F_CONSTR].iatoms[shaked->sblock[0]]);
+    ArrayRef<real> lam    = shaked->scaled_lagrange_multiplier;
+    for (i = 0; (i < shaked->numShakeBlocks());)
     {
         blen = (shaked->sblock[i + 1] - shaked->sblock[i]);
         blen /= 3;
         n0 = vec_shakef(log, shaked, invmass, blen, idef.iparams, iatoms, ir.shake_tol, x_s, prime,
-                        shaked->omega, ir.efep != efepNO, lambda, lam, invdt, v, bCalcVir,
+                        pbc, shaked->omega, ir.efep != efepNO, lambda, lam, invdt, v, bCalcVir,
                         vir_r_m_dr, econq);
 
         if (n0 == 0)
@@ -793,7 +707,7 @@ static bool bshakef(FILE*                         log,
             if (bDumpOnError && log)
             {
                 {
-                    check_cons(log, blen, x_s, prime, v, idef.iparams, iatoms, invmass, econq);
+                    check_cons(log, blen, x_s, prime, v, pbc, idef.iparams, iatoms, invmass, econq);
                 }
             }
             return FALSE;
@@ -801,7 +715,7 @@ static bool bshakef(FILE*                         log,
         tnit += n0 * blen;
         trij += blen;
         iatoms += 3 * blen; /* Increment pointer! */
-        lam += blen;
+        lam = lam.subArray(blen, lam.ssize() - blen);
         i++;
     }
     /* only for position part? */
@@ -840,7 +754,7 @@ static bool bshakef(FILE*                         log,
     }
     inc_nrnb(nrnb, eNR_SHAKE, tnit);
     inc_nrnb(nrnb, eNR_SHAKE_RIJ, trij);
-    if (v)
+    if (!v.empty())
     {
         inc_nrnb(nrnb, eNR_CONSTR_V, trij * 2);
     }
@@ -857,20 +771,21 @@ bool constrain_shake(FILE*                         log,
                      const real                    invmass[],
                      const InteractionDefinitions& idef,
                      const t_inputrec&             ir,
-                     const rvec                    x_s[],
-                     rvec                          xprime[],
-                     rvec                          vprime[],
+                     ArrayRef<const RVec>          x_s,
+                     ArrayRef<RVec>                xprime,
+                     ArrayRef<RVec>                vprime,
+                     const t_pbc*                  pbc,
                      t_nrnb*                       nrnb,
                      real                          lambda,
                      real*                         dvdlambda,
                      real                          invdt,
-                     rvec*                         v,
+                     ArrayRef<RVec>                v,
                      bool                          bCalcVir,
                      tensor                        vir_r_m_dr,
                      bool                          bDumpOnError,
                      ConstraintVariable            econq)
 {
-    if (shaked->nblocks == 0)
+    if (shaked->numShakeBlocks() == 0)
     {
         return true;
     }
@@ -878,12 +793,12 @@ bool constrain_shake(FILE*                         log,
     switch (econq)
     {
         case (ConstraintVariable::Positions):
-            bOK = bshakef(log, shaked, invmass, idef, ir, x_s, xprime, nrnb, lambda, dvdlambda,
+            bOK = bshakef(log, shaked, invmass, idef, ir, x_s, xprime, pbc, nrnb, lambda, dvdlambda,
                           invdt, v, bCalcVir, vir_r_m_dr, bDumpOnError, econq);
             break;
         case (ConstraintVariable::Velocities):
-            bOK = bshakef(log, shaked, invmass, idef, ir, x_s, vprime, nrnb, lambda, dvdlambda,
-                          invdt, nullptr, bCalcVir, vir_r_m_dr, bDumpOnError, econq);
+            bOK = bshakef(log, shaked, invmass, idef, ir, x_s, vprime, pbc, nrnb, lambda, dvdlambda,
+                          invdt, {}, bCalcVir, vir_r_m_dr, bDumpOnError, econq);
             break;
         default:
             gmx_fatal(FARGS,
