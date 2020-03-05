@@ -148,9 +148,9 @@ gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
 }
 
 void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv,
-                        std::vector<int>& particleInfoAllVdw,
-                        const std::vector<gmx::RVec>& coordinates,
-                        const Box& box)
+                        std::vector<int>&                    particleInfoAllVdw,
+                        const std::vector<gmx::RVec>&        coordinates,
+                        const Box&                           box)
 {
     const matrix& box_ = box.legacyMatrix;
 
@@ -161,8 +161,8 @@ void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv,
     const real particleDensity = coordinates.size() / det(box_);
 
     nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
-                      { 0, int(coordinates.size()) }, particleDensity,
-                      particleInfoAllVdw, coordinates, 0, nullptr);
+                      { 0, int(coordinates.size()) }, particleDensity, particleInfoAllVdw,
+                      coordinates, 0, nullptr);
 }
 
 } // namespace nblib

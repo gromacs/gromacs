@@ -101,7 +101,7 @@ static gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions
 }
 
 NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& options) :
-        system_(std::move(system))
+    system_(std::move(system))
 {
     options_ = std::make_shared<NBKernelOptions>(options);
 
@@ -180,21 +180,24 @@ static t_mdatoms setAtomData(SimulationState simulationState)
 {
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA = const_cast<int*>(simulationState.topology().getParticleTypeIdOfAllParticles().data());
+    mdatoms.typeA =
+            const_cast<int*>(simulationState.topology().getParticleTypeIdOfAllParticles().data());
     mdatoms.chargeA = const_cast<real*>(simulationState.topology().getCharges().data());
     return mdatoms;
 }
 
 void NbvSetupUtil::setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t_mdatoms& mdatoms)
 {
-    nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);;
+    nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);
+    ;
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
-std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options)
+std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topology& topology,
+                                                                     const NBKernelOptions& options)
 {
     const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
-                                             : gmx::PinningPolicy::CannotBePinned);
+                                           : gmx::PinningPolicy::CannotBePinned);
     const int  numThreads = options.numThreads;
     // Note: the options and Nbnxm combination rule enums values should match
     const int combinationRule = static_cast<int>(options.ljCombinationRule);

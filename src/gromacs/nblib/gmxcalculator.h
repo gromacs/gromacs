@@ -108,9 +108,9 @@ private:
 
 //! Puts particles on a grid based on bounds specified by the box
 void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv,
-                        std::vector<int>& particleInfoAllVdw,
-                        const std::vector<gmx::RVec>& coordinates,
-                        const Box& box);
+                        std::vector<int>&                    particleInfoAllVdw,
+                        const std::vector<gmx::RVec>&        coordinates,
+                        const Box&                           box);
 
 } // namespace nblib
 
