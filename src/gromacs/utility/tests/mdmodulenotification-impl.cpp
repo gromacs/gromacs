@@ -61,7 +61,7 @@ struct EventB
 class EventACallee final
 {
 public:
-    void callback(EventA /*a*/) { notifiedEventA_ = true; };
+    void callback(EventA /*a*/) { notifiedEventA_ = true; }
 
     bool notifiedEventA() { return notifiedEventA_; }
 
@@ -72,7 +72,7 @@ private:
 class EventBCallee final
 {
 public:
-    void callback(EventB* /* bPointer */) { notifiedEventB_ = true; };
+    void callback(EventB* /* bPointer */) { notifiedEventB_ = true; }
 
     bool notifiedEventB() { return notifiedEventB_; }
 
@@ -83,9 +83,9 @@ private:
 class EventAandBCallee final
 {
 public:
-    void notify(EventB* /* bPointer */) { notifiedEventB_ = true; };
+    void notify(EventB* /* bPointer */) { notifiedEventB_ = true; }
 
-    void callback(EventA /* a */) { notifiedEventA_ = true; };
+    void callback(EventA /* a */) { notifiedEventA_ = true; }
 
     bool notifiedEventB() { return notifiedEventB_; }
     bool notifiedEventA() { return notifiedEventA_; }
