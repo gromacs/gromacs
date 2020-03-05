@@ -152,15 +152,15 @@ void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv,
                         const std::vector<gmx::RVec>&        coordinates,
                         const Box&                           box)
 {
-    const matrix& box_ = box.legacyMatrix;
+    const matrix& legacyBox = box.legacyMatrix;
 
-    GMX_RELEASE_ASSERT(!TRICLINIC(box_), "Only rectangular unit-cells are supported here");
+    GMX_RELEASE_ASSERT(!TRICLINIC(legacyBox), "Only rectangular unit-cells are supported here");
     const rvec lowerCorner = { 0, 0, 0 };
-    const rvec upperCorner = { box_[XX][XX], box_[YY][YY], box_[ZZ][ZZ] };
+    const rvec upperCorner = { legacyBox[XX][XX], legacyBox[YY][YY], legacyBox[ZZ][ZZ] };
 
-    const real particleDensity = coordinates.size() / det(box_);
+    const real particleDensity = coordinates.size() / det(legacyBox);
 
-    nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
+    nbnxn_put_on_grid(nbv.get(), legacyBox, 0, lowerCorner, upperCorner, nullptr,
                       { 0, int(coordinates.size()) }, particleDensity, particleInfoAllVdw,
                       coordinates, 0, nullptr);
 }
