@@ -1,7 +1,7 @@
 # Make an image that has the dependencies for building GROMACS with gcc.
 
 
-FROM gromacs/base
+FROM gromacs/base:master
 WORKDIR /tmp
 ARG TOOL_VERSION
 RUN \
