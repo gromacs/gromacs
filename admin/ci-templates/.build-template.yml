@@ -175,7 +175,7 @@
 # Redmine #3361
 .archive-build-template:
   # Dockerfiles are from dockerhub, user eriklindahl
-  image: gromacs/continuous-integration:ci-docs
+  image: gromacs/ci-docs:2020
   variables:
   variables:
     KUBERNETES_CPU_LIMIT: 4

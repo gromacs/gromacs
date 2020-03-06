@@ -33,7 +33,7 @@ RUN \
 # We also install it separatly because it pulls in some dependencies
 # that are needed for the documentation build.
 
-FROM gromacs/continuous-integration:ci-gcc-7
+FROM gromacs/ci-gcc-7:2020
 WORKDIR /tmp
 COPY --from=doxygen-builder /usr/local/bin/* /usr/local/bin/
 RUN \

@@ -1,47 +1,47 @@
 .gcc5-template:
-  image: gromacs/continuous-integration:ci-gcc-5
+  image: gromacs/ci-gcc-5:2020
 
 .gcc6-template:
-  image: gromacs/continuous-integration:ci-gcc-6
+  image: gromacs/ci-gcc-6:2020
 
 .gcc7-template:
-  image: gromacs/continuous-integration:ci-gcc-7
+  image: gromacs/ci-gcc-7:2020
 
 .gcc8-template:
-  image: gromacs/continuous-integration:ci-gcc-8
+  image: gromacs/ci-gcc-8:2020
 
 .clang6-template:
-  image: gromacs/continuous-integration:ci-clang-6
+  image: gromacs/ci-clang-6:2020
 
 .clang7-template:
-  image: gromacs/continuous-integration:ci-clang-7
+  image: gromacs/ci-clang-7:2020
 
 .clang8-template:
-  image: gromacs/continuous-integration:ci-clang-8
+  image: gromacs/ci-clang-8:2020
 
 .gcc5-gmxapi-template:
-  image: gromacs/continuous-integration:ci-gcc-5-gmxapi
+  image: gromacs/ci-gcc-5-gmxapi:2020
 
 .gcc6-gmxapi-template:
-  image: gromacs/continuous-integration:ci-gcc-6-gmxapi
+  image: gromacs/ci-gcc-6-gmxapi:2020
 
 .gcc7-gmxapi-template:
-  image: gromacs/continuous-integration:ci-gcc-7-gmxapi
+  image: gromacs/ci-gcc-7-gmxapi:2020
 
 .gcc8-gmxapi-template:
-  image: gromacs/continuous-integration:ci-gcc-8-gmxapi
+  image: gromacs/ci-gcc-8-gmxapi:2020
 
 .clang6-gmxapi-template:
-  image: gromacs/continuous-integration:ci-clang-6-gmxapi
+  image: gromacs/ci-clang-6-gmxapi:2020
 
 .clang7-gmxapi-template:
-  image: gromacs/continuous-integration:ci-clang-7-gmxapi
+  image: gromacs/ci-clang-7-gmxapi:2020
 
 .clang8-gmxapi-template:
-  image: gromacs/continuous-integration:ci-clang-8-gmxapi
+  image: gromacs/ci-clang-8-gmxapi:2020
 
 .gcc-8-cuda-10.2-template:
-  image: gromacs/continuous-integration:ci-gcc-8-cuda-10.2
+  image: gromacs/ci-gcc-8-cuda-10.2:2020
   variables:
     CUDA_BASE_VERSION: "10.2"
     COMPILER_MAJOR_VERSION: 8

@@ -1,7 +1,7 @@
 .configure-docs-template:
   # Built by admin/dockerfiles/ci-docs
   # TODO this should be organized more like the current documentation.py script
-  image: gromacs/continuous-integration:ci-docs
+  image: gromacs/ci-docs:2020
   stage: configure-build
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -64,7 +64,7 @@
 .build-docs-binary-template:
   # Built by admin/dockerfiles/ci-docs
   # TODO this should be organized more like the current documentation.py script
-  image: gromacs/continuous-integration:ci-docs
+  image: gromacs/ci-docs:2020
   script:
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j8
@@ -79,7 +79,7 @@
 .build-docs-webpage-template:
   # Built by admin/dockerfiles/ci-docs
   # TODO this should be organized more like the current documentation.py script
-  image: gromacs/continuous-integration:ci-docs
+  image: gromacs/ci-docs:2020
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -113,7 +113,7 @@
 .configure-docs-release-template:
   # Built by admin/dockerfiles/ci-docs
   # TODO this should be organized more like the current documentation.py script
-  image: gromacs/continuous-integration:ci-docs
+  image: gromacs/ci-docs:2020
   stage: release-configure
   variables:
     KUBERNETES_CPU_LIMIT: 1

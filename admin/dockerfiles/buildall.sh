@@ -7,7 +7,7 @@ export SLUG="ci-$MATRIX"
 
 docker login
 
-tags[0]=gromacs/base
+tags[0]=gromacs/base:2020
 docker pull ${tags[0]} || true
 docker build -t ${tags[0]} --cache-from ${tags[0]} base
 
@@ -15,7 +15,7 @@ tool=clang
 for tool_version in 6 7 8; do
   MATRIX="$tool-$tool_version"
   SLUG="ci-$MATRIX"
-  tag=gromacs/continuous-integration:$SLUG
+  tag=gromacs/$SLUG:2020
   tags[${#tags[@]}]=$tag
   docker build \
     -t $tag \
@@ -27,7 +27,7 @@ tool=gcc
 for tool_version in 5 6 7 8; do
   MATRIX="$tool-$tool_version"
   SLUG="ci-$MATRIX"
-  tag=gromacs/continuous-integration:$SLUG
+  tag=gromacs/$SLUG:2020
   tags[${#tags[@]}]=$tag
   docker build \
     -t $tag \
@@ -35,12 +35,12 @@ for tool_version in 5 6 7 8; do
     ci-$tool
 done
 
-tag=gromacs/continuous-integration:ci-docs-clang
+tag=gromacs/ci-docs-clang:2020
 tags[${#tags[@]}]=$tag
 docker build -t $tag \
              ci-docs-clang
 
-tag=gromacs/continuous-integration:ci-docs-gcc
+tag=gromacs/ci-docs-gcc:2020
 tags[${#tags[@]}]=$tag
 docker build -t $tag \
              ci-docs-gcc
