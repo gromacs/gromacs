@@ -124,7 +124,6 @@ foreach(VENDOR AMD NVIDIA INTEL)
         -Dorder=4
         -DthreadsPerAtom=16
         -Dc_pmeMaxUnitcellShift=2
-        -Dc_usePadding=true
         -Dc_skipNeutralAtoms=false
         -Dc_virialAndEnergyCount=7
         -Dc_spreadWorkGroupSize=${SPREAD_WG_SIZE}

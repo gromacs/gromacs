@@ -246,9 +246,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     const int localGridlineIndicesIndex = threadLocalId;
     const int globalGridlineIndicesIndex =
             (int)get_group_id(XX) * gridlineIndicesSize + localGridlineIndicesIndex;
-    const int globalCheckIndices =
-            pme_gpu_check_atom_data_index(globalGridlineIndicesIndex, kernelParams.atoms.nAtoms * DIM);
-    if ((localGridlineIndicesIndex < gridlineIndicesSize) & globalCheckIndices)
+    if (localGridlineIndicesIndex < gridlineIndicesSize)
     {
         sm_gridlineIndices[localGridlineIndicesIndex] = gm_gridlineIndices[globalGridlineIndicesIndex];
         assert(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
@@ -256,9 +254,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     /* Staging the spline parameters, DIM * order * atomsPerBlock threads */
     const int localSplineParamsIndex = threadLocalId;
     const int globalSplineParamsIndex = (int)get_group_id(XX) * splineParamsSize + localSplineParamsIndex;
-    const int globalCheckSplineParams = pme_gpu_check_atom_data_index(
-            globalSplineParamsIndex, kernelParams.atoms.nAtoms * DIM * order);
-    if ((localSplineParamsIndex < splineParamsSize) && globalCheckSplineParams)
+    if (localSplineParamsIndex < splineParamsSize)
     {
         sm_splineParams[localSplineParamsIndex].x = gm_theta[globalSplineParamsIndex];
         sm_splineParams[localSplineParamsIndex].y = gm_dtheta[globalSplineParamsIndex];
@@ -271,10 +267,9 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     float fy = 0.0F;
     float fz = 0.0F;
 
-    const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
     const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficients[atomIndexGlobal]);
 
-    if (chargeCheck & globalCheck)
+    if (chargeCheck)
     {
         const int nx  = kernelParams.grid.realGridSize[XX];
         const int ny  = kernelParams.grid.realGridSize[YY];
@@ -339,8 +334,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     /* Calculating the final forces with no component branching, atomsPerBlock threads */
     const int forceIndexLocal  = threadLocalId;
     const int forceIndexGlobal = atomIndexOffset + forceIndexLocal;
-    const int calcIndexCheck = pme_gpu_check_atom_data_index(forceIndexGlobal, kernelParams.atoms.nAtoms);
-    if ((forceIndexLocal < atomsPerBlock) & calcIndexCheck)
+    if (forceIndexLocal < atomsPerBlock)
     {
         const float3 atomForces     = vload3(forceIndexLocal, sm_forces);
         const float  negCoefficient = -gm_coefficients[forceIndexGlobal];
@@ -376,13 +370,8 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
         {
             const int outputIndexLocal  = i * iterThreads + threadLocalId;
             const int outputIndexGlobal = (int)get_group_id(XX) * blockForcesSize + outputIndexLocal;
-            const int globalOutputCheck =
-                    pme_gpu_check_atom_data_index(outputIndexGlobal, kernelParams.atoms.nAtoms * DIM);
-            if (globalOutputCheck)
-            {
-                const float outputForceComponent = sm_forces[outputIndexLocal];
-                gm_forces[outputIndexGlobal]     = outputForceComponent;
-            }
+            const float outputForceComponent = sm_forces[outputIndexLocal];
+            gm_forces[outputIndexGlobal]     = outputForceComponent;
         }
     }
 }

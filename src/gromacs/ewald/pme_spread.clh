@@ -73,14 +73,12 @@
 /*! \brief
  * General purpose function for loading atom-related data from global to shared memory.
  *
- * \param[in]  kernelParams      Input PME GPU data in constant memory.
  * \param[out] sm_destination    Local memory array for output.
  * \param[in]  gm_source         Global memory array for input.
  * \param[in] dataCountPerAtom   Number of data elements per single atom (e.g. DIM for an rvec coordinates array).
  *
  */
-inline void pme_gpu_stage_atom_data(const struct PmeOpenCLKernelParams kernelParams,
-                                    __local float* __restrict__ sm_destination,
+inline void pme_gpu_stage_atom_data(__local float* __restrict__ sm_destination,
                                     __global const float* __restrict__ gm_source,
                                     const int dataCountPerAtom)
 {
@@ -92,9 +90,7 @@ inline void pme_gpu_stage_atom_data(const struct PmeOpenCLKernelParams kernelPar
     const int localIndex      = threadLocalIndex;
     const int globalIndexBase = (int)get_group_id(XX) * atomsPerBlock * dataCountPerAtom;
     const int globalIndex     = globalIndexBase + localIndex;
-    const int globalCheck =
-            pme_gpu_check_atom_data_index(globalIndex, kernelParams.atoms.nAtoms * dataCountPerAtom);
-    if ((localIndex < atomsPerBlock * dataCountPerAtom) & globalCheck)
+    if (localIndex < atomsPerBlock * dataCountPerAtom)
     {
         assert(isfinite(float(gm_source[globalIndex])));
         sm_destination[localIndex] = gm_source[globalIndex];
@@ -147,8 +143,6 @@ gmx_opencl_inline void calculate_splines(const struct PmeOpenCLKernelParams kern
     /* Atom index w.r.t. block/shared memory */
     const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
 
-    /* Atom index w.r.t. global memory */
-    const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
     /* Spline contribution index in one dimension */
     const int orderIndex = threadWarpIndex / (atomsPerWarp * DIM);
     /* Dimension index */
@@ -179,9 +173,8 @@ gmx_opencl_inline void calculate_splines(const struct PmeOpenCLKernelParams kern
 #    define SPLINE_DATA(i) (*SPLINE_DATA_PTR(i))
 
     const int localCheck = (dimIndex < DIM) && (orderIndex < (PME_GPU_PARALLEL_SPLINE ? order : 1));
-    const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
 
-    if (localCheck && globalCheck)
+    if (localCheck)
     {
         /* Indices interpolation */
         if (orderIndex == 0)
@@ -350,12 +343,10 @@ gmx_opencl_inline void spread_charges(const struct PmeOpenCLKernelParams kernelP
     const int offy = 0;
     const int offz = 0;
 
-    const int atomIndexLocal  = get_local_id(ZZ);
-    const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
+    const int atomIndexLocal = get_local_id(ZZ);
 
-    const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
     const int chargeCheck = pme_gpu_check_atom_charge(sm_coefficients[atomIndexLocal]);
-    if (chargeCheck & globalCheck)
+    if (chargeCheck)
     {
         // Spline Y/Z coordinates
         const int ithy   = get_local_id(YY);
@@ -445,12 +436,12 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
     const int atomIndexOffset = (int)get_group_id(XX) * atomsPerBlock;
 
     /* Staging coefficients/charges for both spline and spread */
-    pme_gpu_stage_atom_data(kernelParams, sm_coefficients, gm_coefficients, 1);
+    pme_gpu_stage_atom_data(sm_coefficients, gm_coefficients, 1);
 
     if (computeSplines)
     {
         /* Staging coordinates */
-        pme_gpu_stage_atom_data(kernelParams, sm_coordinates, gm_coordinates, DIM);
+        pme_gpu_stage_atom_data(sm_coordinates, gm_coordinates, DIM);
 
         barrier(CLK_LOCAL_MEM_FENCE);
         calculate_splines(kernelParams, atomIndexOffset, sm_coordinates, sm_coefficients, sm_theta,
@@ -470,9 +461,9 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
          * as in after running the spline kernel)
          */
         /* Spline data - only thetas (dthetas will only be needed in gather) */
-        pme_gpu_stage_atom_data(kernelParams, sm_theta, gm_theta, DIM * order);
+        pme_gpu_stage_atom_data(sm_theta, gm_theta, DIM * order);
         /* Gridline indices - they're actually int and not float, but C99 is angry about overloads */
-        pme_gpu_stage_atom_data(kernelParams, (__local float*)sm_gridlineIndices,
+        pme_gpu_stage_atom_data((__local float*)sm_gridlineIndices,
                                 (__global const float*)gm_gridlineIndices, DIM);
 
         barrier(CLK_LOCAL_MEM_FENCE);

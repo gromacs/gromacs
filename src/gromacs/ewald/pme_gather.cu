@@ -287,9 +287,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         /* Read splines */
         const int localGridlineIndicesIndex = threadLocalId;
         const int globalGridlineIndicesIndex = blockIndex * gridlineIndicesSize + localGridlineIndicesIndex;
-        const int globalCheckIndices         = pme_gpu_check_atom_data_index(
-                globalGridlineIndicesIndex, kernelParams.atoms.nAtoms * DIM);
-        if ((localGridlineIndicesIndex < gridlineIndicesSize) & globalCheckIndices)
+        if (localGridlineIndicesIndex < gridlineIndicesSize)
         {
             sm_gridlineIndices[localGridlineIndicesIndex] = gm_gridlineIndices[globalGridlineIndicesIndex];
             assert(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
@@ -306,9 +304,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
                     threadLocalId
                     + i * threadLocalIdMax; /* i will always be zero for order*order threads per atom */
             int globalSplineParamsIndex = blockIndex * splineParamsSize + localSplineParamsIndex;
-            int globalCheckSplineParams = pme_gpu_check_atom_data_index(
-                    globalSplineParamsIndex, kernelParams.atoms.nAtoms * DIM * order);
-            if ((localSplineParamsIndex < splineParamsSize) && globalCheckSplineParams)
+            if (localSplineParamsIndex < splineParamsSize)
             {
                 sm_theta[localSplineParamsIndex]  = gm_theta[globalSplineParamsIndex];
                 sm_dtheta[localSplineParamsIndex] = gm_dtheta[globalSplineParamsIndex];
@@ -329,10 +325,10 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
             // Coordinates
             __shared__ float3 sm_coordinates[atomsPerBlock];
             /* Staging coefficients/charges */
-            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients, gm_coefficients);
+            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(sm_coefficients, gm_coefficients);
 
             /* Staging coordinates */
-            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(kernelParams, sm_coordinates, gm_coordinates);
+            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(sm_coordinates, gm_coordinates);
             __syncthreads();
             atomX      = sm_coordinates[atomIndexLocal];
             atomCharge = sm_coefficients[atomIndexLocal];
@@ -350,10 +346,9 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     float fy = 0.0f;
     float fz = 0.0f;
 
-    const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
     const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficients[atomIndexGlobal]);
 
-    if (chargeCheck & globalCheck)
+    if (chargeCheck)
     {
         const int nx  = kernelParams.grid.realGridSize[XX];
         const int ny  = kernelParams.grid.realGridSize[YY];
@@ -424,8 +419,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     /* Calculating the final forces with no component branching, atomsPerBlock threads */
     const int forceIndexLocal  = threadLocalId;
     const int forceIndexGlobal = atomIndexOffset + forceIndexLocal;
-    const int calcIndexCheck = pme_gpu_check_atom_data_index(forceIndexGlobal, kernelParams.atoms.nAtoms);
-    if ((forceIndexLocal < atomsPerBlock) & calcIndexCheck)
+    if (forceIndexLocal < atomsPerBlock)
     {
         const float3 atomForces     = sm_forces[forceIndexLocal];
         const float  negCoefficient = -gm_coefficients[forceIndexGlobal];
@@ -453,15 +447,10 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
 #pragma unroll
         for (int i = 0; i < numIter; i++)
         {
-            int       outputIndexLocal  = i * iterThreads + threadLocalId;
-            int       outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
-            const int globalOutputCheck =
-                    pme_gpu_check_atom_data_index(outputIndexGlobal, kernelParams.atoms.nAtoms * DIM);
-            if (globalOutputCheck)
-            {
-                const float outputForceComponent = ((float*)sm_forces)[outputIndexLocal];
-                gm_forces[outputIndexGlobal]     = outputForceComponent;
-            }
+            int         outputIndexLocal     = i * iterThreads + threadLocalId;
+            int         outputIndexGlobal    = blockIndex * blockForcesSize + outputIndexLocal;
+            const float outputForceComponent = ((float*)sm_forces)[outputIndexLocal];
+            gm_forces[outputIndexGlobal]     = outputForceComponent;
         }
     }
 }

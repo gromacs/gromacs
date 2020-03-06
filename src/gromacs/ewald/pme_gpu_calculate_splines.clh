@@ -41,7 +41,7 @@
  * Instead of templated parameters this file expects following defines during compilation:
  * - order - PME interpolation order;
  * - atomsPerWarp - number of atoms processed by a warp (fixed for spread and gather kernels to be the same);
- * - c_usePadding and c_skipNeutralAtoms - same as in pme_gpu_constants.h.
+ * - c_skipNeutralAtoms - same as in pme_gpu_constants.h.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_ewald
@@ -86,20 +86,6 @@ inline int getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex
     assert((dimIndex >= XX) && (dimIndex < DIM));
     assert((splineIndex >= 0) && (splineIndex < order));
     return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerWarp);
-}
-
-/*! \brief
- * A function for checking the global atom data indices against the atom data array sizes.
- *
- * \param[in] nAtomData            The atom data array element count.
- * \returns                        Non-0 if index is within bounds (or PME data padding is enabled), 0 otherwise.
- *
- * This is called from the spline_and_spread and gather PME kernels.
- * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding being true.
- */
-inline int pme_gpu_check_atom_data_index(const size_t atomDataIndex, const size_t nAtomData)
-{
-    return c_usePadding ? 1 : (atomDataIndex < nAtomData);
 }
 
 /*! \brief

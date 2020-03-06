@@ -645,9 +645,9 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
                 "Device context can not be nullptr when building GPU propagator data object.");
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.
-        stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                &deviceStream, *deviceContext, GpuApiCallBehavior::Async,
-                pme_gpu_get_padding_size(pme), wcycle);
+        stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(&deviceStream, *deviceContext,
+                                                                 GpuApiCallBehavior::Async,
+                                                                 pme_gpu_get_block_size(pme), wcycle);
     }
 
     clear_nrnb(mynrnb);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,18 +58,6 @@
 #endif
 
 /* General settings for PME GPU behaviour */
-
-/*! \brief
- * false: The atom data GPU buffers are sized precisely according to the number of atoms.
- *        (Except GPU spline data layout which is regardless intertwined for 2 atoms per warp).
- *        The atom index checks in the spread/gather code potentially hinder the performance.
- * true:  The atom data GPU buffers are padded with zeroes so that the possible number of atoms
- *        fitting in is divisible by c_pmeAtomDataAlignment.
- *        The atom index checks are not performed. There should be a performance win, but how big is it, remains to be seen.
- *        Additional cudaMemsetAsync calls are done occasionally (only charges/coordinates; spline data is always recalculated now).
- * \todo Estimate performance differences
- */
-constexpr bool c_usePadding = true;
 
 /*! \brief
  * false: Atoms with zero charges are processed by PME. Could introduce some overhead.
@@ -144,11 +132,11 @@ constexpr int c_pmeSpreadGatherMinWarpSize4ThPerAtom = c_pmeSpreadGatherThreadsP
  * Atom data alignment (in terms of number of atoms).
  * This is the least common multiple of number of atoms processed by
  * a single block/workgroup of the spread and gather kernels.
- * If the GPU atom data buffers are padded (c_usePadding == true),
- * Then the numbers of atoms which would fit in the padded GPU buffers have to be divisible by this.
- * There are debug asserts for this divisibility in pme_gpu_spread() and pme_gpu_gather().
+ * The GPU atom data buffers must be padded, which means that
+ * the numbers of atoms used for determining the size of the memory
+ * allocation must be divisible by this.
  */
-constexpr int c_pmeAtomDataAlignment = 64;
+constexpr int c_pmeAtomDataBlockSize = 64;
 
 /*
  * The execution widths for PME GPU kernels, used both on host and device for correct scheduling.

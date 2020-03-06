@@ -64,14 +64,12 @@
  * \tparam[in] useOrderThreads      Whether we should use order threads per atom (order*order used if false).
  *
  * \param[in]  kernelParams         Input PME CUDA data in constant memory.
- * \param[in]  atomIndexOffset      Starting atom index for the execution block w.r.t. global memory.
  * \param[in]  atomCharge           Atom charge/coefficient of atom processed by thread.
  * \param[in]  sm_gridlineIndices   Atom gridline indices in the shared memory.
  * \param[in]  sm_theta             Atom spline values in the shared memory.
  */
 template<const int order, const bool wrapX, const bool wrapY, const bool useOrderThreads>
 __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams kernelParams,
-                                               int                          atomIndexOffset,
                                                const float*                 atomCharge,
                                                const int* __restrict__ sm_gridlineIndices,
                                                const float* __restrict__ sm_theta)
@@ -91,12 +89,10 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams kern
 
     const int offx = 0, offy = 0, offz = 0; // unused for now
 
-    const int atomIndexLocal  = threadIdx.z;
-    const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
+    const int atomIndexLocal = threadIdx.z;
 
-    const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
     const int chargeCheck = pme_gpu_check_atom_charge(*atomCharge);
-    if (chargeCheck & globalCheck)
+    if (chargeCheck)
     {
         // Spline Z coordinates
         const int ithz = threadIdx.x;
@@ -217,8 +213,7 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     if (c_useAtomDataPrefetch)
     {
         __shared__ float sm_coefficients[atomsPerBlock];
-        pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients,
-                                                         kernelParams.atoms.d_coefficients);
+        pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(sm_coefficients, kernelParams.atoms.d_coefficients);
         __syncthreads();
         atomCharge = sm_coefficients[atomIndexLocal];
     }
@@ -236,7 +231,7 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
             __shared__ float3 sm_coordinates[atomsPerBlock];
 
             /* Staging coordinates */
-            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(kernelParams, sm_coordinates, gm_coordinates);
+            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(sm_coordinates, gm_coordinates);
             __syncthreads();
             atomX = sm_coordinates[atomIndexLocal];
         }
@@ -255,10 +250,9 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
          * as in after running the spline kernel)
          */
         /* Spline data - only thetas (dthetas will only be needed in gather) */
-        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(kernelParams, sm_theta,
-                                                                   kernelParams.atoms.d_theta);
+        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(sm_theta, kernelParams.atoms.d_theta);
         /* Gridline indices */
-        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(kernelParams, sm_gridlineIndices,
+        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(sm_gridlineIndices,
                                                          kernelParams.atoms.d_gridlineIndices);
 
         __syncthreads();
@@ -267,8 +261,8 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     /* Spreading */
     if (spreadCharges)
     {
-        spread_charges<order, wrapX, wrapY, useOrderThreads>(
-                kernelParams, atomIndexOffset, &atomCharge, sm_gridlineIndices, sm_theta);
+        spread_charges<order, wrapX, wrapY, useOrderThreads>(kernelParams, &atomCharge,
+                                                             sm_gridlineIndices, sm_theta);
     }
 }
 

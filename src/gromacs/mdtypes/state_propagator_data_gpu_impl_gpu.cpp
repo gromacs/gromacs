@@ -70,11 +70,11 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
                                    const DeviceStream*  nonLocalStream,
                                    const DeviceContext& deviceContext,
                                    GpuApiCallBehavior   transferKind,
-                                   int                  paddingSize,
+                                   int                  allocationBlockSizeDivisor,
                                    gmx_wallcycle*       wcycle) :
     deviceContext_(deviceContext),
     transferKind_(transferKind),
-    paddingSize_(paddingSize),
+    allocationBlockSizeDivisor_(allocationBlockSizeDivisor),
     wcycle_(wcycle)
 {
     static_assert(GMX_GPU != GMX_GPU_NONE,
@@ -135,11 +135,11 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
 StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
                                    const DeviceContext& deviceContext,
                                    GpuApiCallBehavior   transferKind,
-                                   int                  paddingSize,
+                                   int                  allocationBlockSizeDivisor,
                                    gmx_wallcycle*       wcycle) :
     deviceContext_(deviceContext),
     transferKind_(transferKind),
-    paddingSize_(paddingSize),
+    allocationBlockSizeDivisor_(allocationBlockSizeDivisor),
     wcycle_(wcycle)
 {
     static_assert(GMX_GPU != GMX_GPU_NONE,
@@ -178,9 +178,10 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     numAtomsAll_   = numAtomsAll;
 
     int numAtomsPadded;
-    if (paddingSize_ > 0)
+    if (allocationBlockSizeDivisor_ > 0)
     {
-        numAtomsPadded = ((numAtomsAll_ + paddingSize_ - 1) / paddingSize_) * paddingSize_;
+        numAtomsPadded = ((numAtomsAll_ + allocationBlockSizeDivisor_ - 1) / allocationBlockSizeDivisor_)
+                         * allocationBlockSizeDivisor_;
     }
     else
     {
@@ -550,18 +551,18 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStream*  pmeStream,
                                                const DeviceStream*  nonLocalStream,
                                                const DeviceContext& deviceContext,
                                                GpuApiCallBehavior   transferKind,
-                                               int                  paddingSize,
+                                               int                  allocationBlockSizeDivisor,
                                                gmx_wallcycle*       wcycle) :
-    impl_(new Impl(pmeStream, localStream, nonLocalStream, deviceContext, transferKind, paddingSize, wcycle))
+    impl_(new Impl(pmeStream, localStream, nonLocalStream, deviceContext, transferKind, allocationBlockSizeDivisor, wcycle))
 {
 }
 
 StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStream*  pmeStream,
                                                const DeviceContext& deviceContext,
                                                GpuApiCallBehavior   transferKind,
-                                               int                  paddingSize,
+                                               int                  allocationBlockSizeDivisor,
                                                gmx_wallcycle*       wcycle) :
-    impl_(new Impl(pmeStream, deviceContext, transferKind, paddingSize, wcycle))
+    impl_(new Impl(pmeStream, deviceContext, transferKind, allocationBlockSizeDivisor, wcycle))
 {
 }
 

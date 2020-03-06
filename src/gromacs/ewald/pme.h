@@ -285,11 +285,14 @@ inline bool pme_gpu_task_enabled(const gmx_pme_t* pme)
     return (pme != nullptr) && (pme_run_mode(pme) != PmeRunMode::CPU);
 }
 
-/*! \brief Returns the size of the padding needed by GPU version of PME in the coordinates array.
+/*! \brief Returns the block size requirement
+ *
+ * The GPU version of PME requires that the coordinates array have a
+ * size divisible by the returned number.
  *
  * \param[in]  pme  The PME data structure.
  */
-GPU_FUNC_QUALIFIER int pme_gpu_get_padding_size(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
+GPU_FUNC_QUALIFIER int pme_gpu_get_block_size(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme))
         GPU_FUNC_TERM_WITH_RETURN(0);
 
 // The following functions are all the PME GPU entry points,

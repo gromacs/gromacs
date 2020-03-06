@@ -108,17 +108,9 @@ static PmeGpuKernelParamsBase* pme_gpu_get_kernel_params_base_ptr(const PmeGpu* 
     return kernelParamsPtr;
 }
 
-int pme_gpu_get_atom_data_alignment(const PmeGpu* /*unused*/)
+int pme_gpu_get_atom_data_block_size()
 {
-    // TODO: this can be simplified, as c_pmeAtomDataAlignment is now constant
-    if (c_usePadding)
-    {
-        return c_pmeAtomDataAlignment;
-    }
-    else
-    {
-        return 0;
-    }
+    return c_pmeAtomDataBlockSize;
 }
 
 int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu)
@@ -244,15 +236,13 @@ void pme_gpu_realloc_and_copy_input_coefficients(PmeGpu* pmeGpu, const float* h_
     copyToDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coefficients,
                        const_cast<float*>(h_coefficients), 0, pmeGpu->kernelParams->atoms.nAtoms,
                        pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
-    if (c_usePadding)
+
+    const size_t paddingIndex = pmeGpu->kernelParams->atoms.nAtoms;
+    const size_t paddingCount = pmeGpu->nAtomsAlloc - paddingIndex;
+    if (paddingCount > 0)
     {
-        const size_t paddingIndex = pmeGpu->kernelParams->atoms.nAtoms;
-        const size_t paddingCount = pmeGpu->nAtomsAlloc - paddingIndex;
-        if (paddingCount > 0)
-        {
-            clearDeviceBufferAsync(&pmeGpu->kernelParams->atoms.d_coefficients, paddingIndex,
-                                   paddingCount, pmeGpu->archSpecific->pmeStream_);
-        }
+        clearDeviceBufferAsync(&pmeGpu->kernelParams->atoms.d_coefficients, paddingIndex,
+                               paddingCount, pmeGpu->archSpecific->pmeStream_);
     }
 }
 
@@ -263,10 +253,8 @@ void pme_gpu_free_coefficients(const PmeGpu* pmeGpu)
 
 void pme_gpu_realloc_spline_data(PmeGpu* pmeGpu)
 {
-    const int    order        = pmeGpu->common->pme_order;
-    const int    alignment    = pme_gpu_get_atoms_per_warp(pmeGpu);
-    const size_t nAtomsPadded = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
-    const int    newSplineDataSize = DIM * order * nAtomsPadded;
+    const int order             = pmeGpu->common->pme_order;
+    const int newSplineDataSize = DIM * order * pmeGpu->nAtomsAlloc;
     GMX_ASSERT(newSplineDataSize > 0, "Bad number of atoms in PME GPU");
     /* Two arrays of the same size */
     const bool shouldRealloc        = (newSplineDataSize > pmeGpu->archSpecific->splineDataSize);
@@ -436,9 +424,7 @@ void pme_gpu_copy_output_spread_grid(const PmeGpu* pmeGpu, float* h_grid)
 
 void pme_gpu_copy_output_spread_atom_data(const PmeGpu* pmeGpu)
 {
-    const int    alignment       = pme_gpu_get_atoms_per_warp(pmeGpu);
-    const size_t nAtomsPadded    = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
-    const size_t splinesCount    = DIM * nAtomsPadded * pmeGpu->common->pme_order;
+    const size_t splinesCount    = DIM * pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order;
     auto*        kernelParamsPtr = pmeGpu->kernelParams.get();
     copyFromDeviceBuffer(pmeGpu->staging.h_dtheta, &kernelParamsPtr->atoms.d_dtheta, 0, splinesCount,
                          pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
@@ -451,22 +437,19 @@ void pme_gpu_copy_output_spread_atom_data(const PmeGpu* pmeGpu)
 
 void pme_gpu_copy_input_gather_atom_data(const PmeGpu* pmeGpu)
 {
-    const int    alignment       = pme_gpu_get_atoms_per_warp(pmeGpu);
-    const size_t nAtomsPadded    = ((pmeGpu->nAtomsAlloc + alignment - 1) / alignment) * alignment;
-    const size_t splinesCount    = DIM * nAtomsPadded * pmeGpu->common->pme_order;
+    const size_t splinesCount    = DIM * pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order;
     auto*        kernelParamsPtr = pmeGpu->kernelParams.get();
-    if (c_usePadding)
-    {
-        // TODO: could clear only the padding and not the whole thing, but this is a test-exclusive code anyway
-        clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_gridlineIndices, 0,
-                               pmeGpu->nAtomsAlloc * DIM, pmeGpu->archSpecific->pmeStream_);
-        clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_dtheta, 0,
-                               pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order * DIM,
-                               pmeGpu->archSpecific->pmeStream_);
-        clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_theta, 0,
-                               pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order * DIM,
-                               pmeGpu->archSpecific->pmeStream_);
-    }
+
+    // TODO: could clear only the padding and not the whole thing, but this is a test-exclusive code anyway
+    clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_gridlineIndices, 0, pmeGpu->nAtomsAlloc * DIM,
+                           pmeGpu->archSpecific->pmeStream_);
+    clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_dtheta, 0,
+                           pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order * DIM,
+                           pmeGpu->archSpecific->pmeStream_);
+    clearDeviceBufferAsync(&kernelParamsPtr->atoms.d_theta, 0,
+                           pmeGpu->nAtomsAlloc * pmeGpu->common->pme_order * DIM,
+                           pmeGpu->archSpecific->pmeStream_);
+
     copyToDeviceBuffer(&kernelParamsPtr->atoms.d_dtheta, pmeGpu->staging.h_dtheta, 0, splinesCount,
                        pmeGpu->archSpecific->pmeStream_, pmeGpu->settings.transferKind, nullptr);
     copyToDeviceBuffer(&kernelParamsPtr->atoms.d_theta, pmeGpu->staging.h_theta, 0, splinesCount,
@@ -954,12 +937,10 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* charges)
 {
     auto* kernelParamsPtr         = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->atoms.nAtoms = nAtoms;
-    const int alignment           = pme_gpu_get_atom_data_alignment(pmeGpu);
-    pmeGpu->nAtomsPadded          = ((nAtoms + alignment - 1) / alignment) * alignment;
-    const int  nAtomsAlloc        = c_usePadding ? pmeGpu->nAtomsPadded : nAtoms;
-    const bool haveToRealloc =
-            (pmeGpu->nAtomsAlloc < nAtomsAlloc); /* This check might be redundant, but is logical */
-    pmeGpu->nAtomsAlloc = nAtomsAlloc;
+    const int  block_size         = pme_gpu_get_atom_data_block_size();
+    const int  nAtomsNewPadded    = ((nAtoms + block_size - 1) / block_size) * block_size;
+    const bool haveToRealloc      = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
+    pmeGpu->nAtomsAlloc           = nAtomsNewPadded;
 
 #if GMX_DOUBLE
     GMX_RELEASE_ASSERT(false, "Only single precision supported");
@@ -1159,7 +1140,7 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     // TODO: test varying block sizes on modern arch-s as well
     // TODO: also consider using cudaFuncSetCacheConfig() for preferring shared memory on older architectures
     //(for spline data mostly)
-    GMX_ASSERT(!c_usePadding || !(c_pmeAtomDataAlignment % atomsPerBlock),
+    GMX_ASSERT(!(c_pmeAtomDataBlockSize % atomsPerBlock),
                "inconsistent atom data padding vs. spreading block size");
 
     // Ensure that coordinates are ready on the device before launching spread;
@@ -1173,7 +1154,7 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
         xReadyOnDevice->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
     }
 
-    const int blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
+    const int blockCount = pmeGpu->nAtomsAlloc / atomsPerBlock;
     auto      dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
 
     KernelLaunchConfig config;
@@ -1407,10 +1388,10 @@ void pme_gpu_gather(PmeGpu* pmeGpu, const float* h_grid)
     const int atomsPerBlock = useOrderThreadsPerAtom ? blockSize / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom
                                                      : blockSize / c_pmeSpreadGatherThreadsPerAtom;
 
-    GMX_ASSERT(!c_usePadding || !(c_pmeAtomDataAlignment % atomsPerBlock),
+    GMX_ASSERT(!(c_pmeAtomDataBlockSize % atomsPerBlock),
                "inconsistent atom data padding vs. gathering block size");
 
-    const int blockCount = pmeGpu->nAtomsPadded / atomsPerBlock;
+    const int blockCount = pmeGpu->nAtomsAlloc / atomsPerBlock;
     auto      dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
 
     const int order = pmeGpu->common->pme_order;

@@ -96,21 +96,6 @@ int __device__ __forceinline__ getSplineParamIndex(int paramIndexBase, int dimIn
 }
 
 /*! \internal \brief
- * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
- *
- * \param[in] atomDataIndex        The atom data index.
- * \param[in] nAtomData            The atom data array element count.
- * \returns                        Non-0 if index is within bounds (or PME data padding is enabled), 0 otherwise.
- *
- * This is called from the spline_and_spread and gather PME kernels.
- * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding enabled.
- */
-int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
-{
-    return c_usePadding ? 1 : (atomDataIndex < nAtomData);
-}
-
-/*! \internal \brief
  * An inline CUDA function for skipping the zero-charge atoms.
  *
  * \returns                        Non-0 if atom should be processed, 0 otherwise.
@@ -155,28 +140,23 @@ __device__ inline void assertIsFinite(T arg)
  * General purpose function for loading atom-related data from global to shared memory.
  *
  * \tparam[in] T                 Data type (float/int/...)
- * \tparam[in] atomsPerBlock     Number of atoms processed by a block - should be accounted for in the size of the shared memory array.
- * \tparam[in] dataCountPerAtom  Number of data elements per single atom (e.g. DIM for an rvec coordinates array).
- * \param[in]  kernelParams      Input PME CUDA data in constant memory.
+ * \tparam[in] atomsPerBlock     Number of atoms processed by a block - should be
+ *                               accounted for in the size of the shared memory array.
+ * \tparam[in] dataCountPerAtom  Number of data elements per single atom (e.g. DIM for
+ *                               an rvec coordinates array).
  * \param[out] sm_destination    Shared memory array for output.
  * \param[in]  gm_source         Global memory array for input.
  */
 template<typename T, const int atomsPerBlock, const int dataCountPerAtom>
-__device__ __forceinline__ void pme_gpu_stage_atom_data(const PmeGpuCudaKernelParams kernelParams,
-                                                        T* __restrict__ sm_destination,
+__device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ sm_destination,
                                                         const T* __restrict__ gm_source)
 {
-    static_assert(c_usePadding,
-                  "With padding disabled, index checking should be fixed to account for spline "
-                  "theta/dtheta pr-warp alignment");
     const int blockIndex       = blockIdx.y * gridDim.x + blockIdx.x;
     const int threadLocalIndex = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x) + threadIdx.x;
     const int localIndex       = threadLocalIndex;
     const int globalIndexBase = blockIndex * atomsPerBlock * dataCountPerAtom;
     const int globalIndex     = globalIndexBase + localIndex;
-    const int globalCheck =
-            pme_gpu_check_atom_data_index(globalIndex, kernelParams.atoms.nAtoms * dataCountPerAtom);
-    if ((localIndex < atomsPerBlock * dataCountPerAtom) & globalCheck)
+    if (localIndex < atomsPerBlock * dataCountPerAtom)
     {
         assertIsFinite(gm_source[globalIndex]);
         sm_destination[localIndex] = gm_source[globalIndex];
@@ -230,8 +210,6 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams k
     /* Atom index w.r.t. block/shared memory */
     const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
 
-    /* Atom index w.r.t. global memory */
-    const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
     /* Spline contribution index in one dimension */
     const int threadLocalIdXY = (threadIdx.y * blockDim.x) + threadIdx.x;
     const int orderIndex      = threadLocalIdXY / DIM;
@@ -244,10 +222,9 @@ __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams k
     float splineData[order];
 
     const int localCheck = (dimIndex < DIM) && (orderIndex < 1);
-    const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
 
     /* we have 4 threads per atom, but can only use 3 here for the dimensions */
-    if (localCheck && globalCheck)
+    if (localCheck)
     {
         /* Indices interpolation */
 

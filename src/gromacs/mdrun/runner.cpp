@@ -1595,7 +1595,6 @@ int Mdrunner::mdrunner()
                     fr->nbv->gpu_nbv != nullptr
                             ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::NonLocal)
                             : nullptr;
-            const int          paddingSize = pme_gpu_get_padding_size(fr->pmedata);
             GpuApiCallBehavior transferKind = (inputrec->eI == eiMD && !doRerun && !useModularSimulator)
                                                       ? GpuApiCallBehavior::Async
                                                       : GpuApiCallBehavior::Sync;
@@ -1604,7 +1603,7 @@ int Mdrunner::mdrunner()
                     "Device context can not be nullptr when building GPU propagator data object.");
             stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
                     pmeStream, localStream, nonLocalStream, *deviceContext, transferKind,
-                    paddingSize, wcycle);
+                    pme_gpu_get_block_size(fr->pmedata), wcycle);
             fr->stateGpu = stateGpu.get();
         }
 

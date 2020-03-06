@@ -127,7 +127,6 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
                 // forwarding from pme_grid.h, used for spline computation table sizes only
                 "-Dc_pmeMaxUnitcellShift=%f "
                 // forwarding PME behavior constants from pme_gpu_constants.h
-                "-Dc_usePadding=%d "
                 "-Dc_skipNeutralAtoms=%d "
                 "-Dc_virialAndEnergyCount=%d "
                 // forwarding kernel work sizes
@@ -139,9 +138,9 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
                 // decomposition parameter placeholders
                 "-DwrapX=true -DwrapY=true ",
                 warpSize, c_pmeGpuOrder, c_pmeSpreadGatherThreadsPerAtom,
-                static_cast<float>(c_pmeMaxUnitcellShift), static_cast<int>(c_usePadding),
-                static_cast<int>(c_skipNeutralAtoms), c_virialAndEnergyCount, spreadWorkGroupSize,
-                solveMaxWorkGroupSize, gatherWorkGroupSize, DIM, XX, YY, ZZ);
+                static_cast<float>(c_pmeMaxUnitcellShift), static_cast<int>(c_skipNeutralAtoms),
+                c_virialAndEnergyCount, spreadWorkGroupSize, solveMaxWorkGroupSize,
+                gatherWorkGroupSize, DIM, XX, YY, ZZ);
         try
         {
             /* TODO when we have a proper MPI-aware logging module,

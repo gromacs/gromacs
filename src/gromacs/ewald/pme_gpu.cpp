@@ -99,7 +99,7 @@ void pme_gpu_get_timings(const gmx_pme_t* pme, gmx_wallclock_gpu_pme_t* timings)
     }
 }
 
-int pme_gpu_get_padding_size(const gmx_pme_t* pme)
+int pme_gpu_get_block_size(const gmx_pme_t* pme)
 {
 
     if (!pme || !pme_gpu_active(pme))
@@ -108,7 +108,7 @@ int pme_gpu_get_padding_size(const gmx_pme_t* pme)
     }
     else
     {
-        return pme_gpu_get_atom_data_alignment(pme->gpu);
+        return pme_gpu_get_atom_data_block_size();
     }
 }
 

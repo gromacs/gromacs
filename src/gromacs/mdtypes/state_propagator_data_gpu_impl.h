@@ -104,7 +104,7 @@ public:
      *  \param[in] nonLocalStream  Device NBNXM non-local stream, nullptr allowed.
      *  \param[in] deviceContext   Device context, nullptr allowed.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
-     *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
      */
     Impl(const DeviceStream*  pmeStream,
@@ -112,7 +112,7 @@ public:
          const DeviceStream*  nonLocalStream,
          const DeviceContext& deviceContext,
          GpuApiCallBehavior   transferKind,
-         int                  paddingSize,
+         int                  allocationBlockSizeDivisor,
          gmx_wallcycle*       wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
@@ -128,13 +128,13 @@ public:
      *  \param[in] pmeStream       Device PME stream, nullptr is not allowed.
      *  \param[in] deviceContext   Device context, nullptr allowed for non-OpenCL builds.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
-     *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
      */
     Impl(const DeviceStream*  pmeStream,
          const DeviceContext& deviceContext,
          GpuApiCallBehavior   transferKind,
-         int                  paddingSize,
+         int                  allocationBlockSizeDivisor,
          gmx_wallcycle*       wcycle);
 
     ~Impl();
@@ -382,8 +382,8 @@ private:
     const DeviceContext& deviceContext_;
     //! Default GPU calls behavior
     GpuApiCallBehavior transferKind_ = GpuApiCallBehavior::Async;
-    //! Padding size for the coordinates buffer
-    int paddingSize_ = 0;
+    //! Required minimum divisor of the allocation size of the coordinates buffer
+    int allocationBlockSizeDivisor_ = 0;
 
     //! Number of local atoms
     int numAtomsLocal_ = -1;

@@ -88,13 +88,15 @@ enum class GridOrdering
 };
 
 /*! \libinternal \brief
- * Returns the number of atoms per chunk in the atom charges/coordinates data layout.
- * Depends on CUDA-specific block sizes, needed for the atom data padding.
+ * Returns the size of the block size requirement
  *
- * \param[in] pmeGpu            The PME GPU structure.
- * \returns   Number of atoms in a single GPU atom data chunk.
+ * The GPU version of PME requires that the coordinates array have a
+ * size divisible by the returned number.
+ *
+ * \returns Number of atoms in a single GPU atom data chunk, which
+ * determines a minimum divisior of the size of the memory allocated.
  */
-int pme_gpu_get_atom_data_alignment(const PmeGpu* pmeGpu);
+int pme_gpu_get_atom_data_block_size();
 
 /*! \libinternal \brief
  * Returns the number of atoms per chunk in the atom spline theta/dtheta data layout.

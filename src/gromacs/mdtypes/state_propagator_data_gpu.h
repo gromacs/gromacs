@@ -105,7 +105,7 @@ public:
      *  \param[in] nonLocalStream  Device NBNXM non-local stream, nullptr allowed.
      *  \param[in] deviceContext   Device context, nullptr allowed.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
-     *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] allocationBlockSizeDivisor  Deterines padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
      */
     StatePropagatorDataGpu(const DeviceStream*  pmeStream,
@@ -113,7 +113,7 @@ public:
                            const DeviceStream*  nonLocalStream,
                            const DeviceContext& deviceContext,
                            GpuApiCallBehavior   transferKind,
-                           int                  paddingSize,
+                           int                  allocationBlockSizeDivisor,
                            gmx_wallcycle*       wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
@@ -129,13 +129,13 @@ public:
      *  \param[in] pmeStream       Device PME stream, nullptr is not allowed.
      *  \param[in] deviceContext   Device context, nullptr allowed for non-OpenCL builds.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
-     *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] allocationBlockSizeDivisor Determines padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
      */
     StatePropagatorDataGpu(const DeviceStream*  pmeStream,
                            const DeviceContext& deviceContext,
                            GpuApiCallBehavior   transferKind,
-                           int                  paddingSize,
+                           int                  allocationBlockSizeDivisor,
                            gmx_wallcycle*       wcycle);
 
     //! Move constructor
