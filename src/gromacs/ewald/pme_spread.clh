@@ -54,7 +54,7 @@
 #include "gromacs/gpu_utils/vectype_ops.clh"
 
 #include "pme_gpu_types.h"
-#include "pme_gpu_utils.clh"
+#include "pme_gpu_calculate_splines.clh"
 
 /*
  * This define affects the spline calculation behaviour in the kernel.

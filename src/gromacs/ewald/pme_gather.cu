@@ -47,8 +47,7 @@
 #include "gromacs/gpu_utils/typecasts.cuh"
 
 #include "pme.cuh"
-#include "pme_calculate_splines.cuh"
-#include "pme_gpu_utils.h"
+#include "pme_gpu_calculate_splines.cuh"
 #include "pme_grid.h"
 
 /*! \brief

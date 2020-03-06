@@ -50,7 +50,7 @@
  */
 
 #include "pme_gpu_types.h"
-#include "pme_gpu_utils.clh"
+#include "pme_gpu_calculate_splines.clh"
 
 #ifndef COMPILE_GATHER_HELPERS_ONCE
 #    define COMPILE_GATHER_HELPERS_ONCE

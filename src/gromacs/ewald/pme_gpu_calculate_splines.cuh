@@ -46,8 +46,83 @@
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 
 #include "pme.cuh"
-#include "pme_gpu_utils.h"
 #include "pme_grid.h"
+
+/*! \internal \brief
+ * Gets a base of the unique index to an element in a spline parameter buffer (theta/dtheta),
+ * which is laid out for GPU spread/gather kernels. The base only corresponds to the atom index within the execution block.
+ * Feed the result into getSplineParamIndex() to get a full index.
+ * TODO: it's likely that both parameters can be just replaced with a single atom index, as they are derived from it.
+ * Do that, verifying that the generated code is not bloated, and/or revise the spline indexing scheme.
+ * Removing warp dependency would also be nice (and would probably coincide with removing c_pmeSpreadGatherAtomsPerWarp).
+ *
+ * \tparam order               PME order
+ * \tparam atomsPerWarp        Number of atoms processed by a warp
+ * \param[in] warpIndex        Warp index wrt the block.
+ * \param[in] atomWarpIndex    Atom index wrt the warp (from 0 to atomsPerWarp - 1).
+ *
+ * \returns Index into theta or dtheta array using GPU layout.
+ */
+template<int order, int atomsPerWarp>
+int __device__ __forceinline__ getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
+{
+    assert((atomWarpIndex >= 0) && (atomWarpIndex < atomsPerWarp));
+    const int dimIndex    = 0;
+    const int splineIndex = 0;
+    // The zeroes are here to preserve the full index formula for reference
+    return (((splineIndex + order * warpIndex) * DIM + dimIndex) * atomsPerWarp + atomWarpIndex);
+}
+
+/*! \internal \brief
+ * Gets a unique index to an element in a spline parameter buffer (theta/dtheta),
+ * which is laid out for GPU spread/gather kernels. The index is wrt to the execution block,
+ * in range(0, atomsPerBlock * order * DIM).
+ * This function consumes result of getSplineParamIndexBase() and adjusts it for \p dimIndex and \p splineIndex.
+ *
+ * \tparam order               PME order
+ * \tparam atomsPerWarp        Number of atoms processed by a warp
+ * \param[in] paramIndexBase   Must be result of getSplineParamIndexBase().
+ * \param[in] dimIndex         Dimension index (from 0 to 2)
+ * \param[in] splineIndex      Spline contribution index (from 0 to \p order - 1)
+ *
+ * \returns Index into theta or dtheta array using GPU layout.
+ */
+template<int order, int atomsPerWarp>
+int __device__ __forceinline__ getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex)
+{
+    assert((dimIndex >= XX) && (dimIndex < DIM));
+    assert((splineIndex >= 0) && (splineIndex < order));
+    return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerWarp);
+}
+
+/*! \internal \brief
+ * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
+ *
+ * \param[in] atomDataIndex        The atom data index.
+ * \param[in] nAtomData            The atom data array element count.
+ * \returns                        Non-0 if index is within bounds (or PME data padding is enabled), 0 otherwise.
+ *
+ * This is called from the spline_and_spread and gather PME kernels.
+ * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding enabled.
+ */
+int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
+{
+    return c_usePadding ? 1 : (atomDataIndex < nAtomData);
+}
+
+/*! \internal \brief
+ * An inline CUDA function for skipping the zero-charge atoms.
+ *
+ * \returns                        Non-0 if atom should be processed, 0 otherwise.
+ * \param[in] coefficient          The atom charge.
+ *
+ * This is called from the spline_and_spread and gather PME kernels.
+ */
+int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
+{
+    assert(isfinite(coefficient));
+    return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
+}
 
 //! Controls if the atom and charge data is prefeched into shared memory or loaded per thread from global
 static const bool c_useAtomDataPrefetch = true;
