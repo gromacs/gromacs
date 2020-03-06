@@ -13,3 +13,7 @@ Where Python is required,
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+CMake
+"""""
+
+Updated required CMake version to 3.13.
