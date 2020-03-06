@@ -7,16 +7,18 @@ export SLUG="ci-$MATRIX"
 
 docker login
 
-docker pull gromacs/base || true
-docker build -t gromacs/base --cache-from gromacs/base base
-docker push gromacs/base
+tags[0]=gromacs/base
+docker pull ${tags[0]} || true
+docker build -t ${tags[0]} --cache-from ${tags[0]} base
 
 tool=clang
 for tool_version in 6 7 8; do
   MATRIX="$tool-$tool_version"
   SLUG="ci-$MATRIX"
+  tag=gromacs/continuous-integration:$SLUG
+  tags[${#tags[@]}]=$tag
   docker build \
-    -t gromacs/continuous-integration:$SLUG \
+    -t $tag \
     --build-arg TOOL_VERSION=$tool_version \
     ci-$tool
 done
@@ -25,16 +27,24 @@ tool=gcc
 for tool_version in 5 6 7 8; do
   MATRIX="$tool-$tool_version"
   SLUG="ci-$MATRIX"
+  tag=gromacs/continuous-integration:$SLUG
+  tags[${#tags[@]}]=$tag
   docker build \
-    -t gromacs/continuous-integration:$SLUG \
+    -t $tag \
     --build-arg TOOL_VERSION=$tool_version \
     ci-$tool
 done
 
-docker build -t gromacs/continuous-integration:ci-docs-clang \
+tag=gromacs/continuous-integration:ci-docs-clang
+tags[${#tags[@]}]=$tag
+docker build -t $tag \
              ci-docs-clang
 
-docker build -t gromacs/continuous-integration:ci-docs-gcc \
+tag=gromacs/continuous-integration:ci-docs-gcc
+tags[${#tags[@]}]=$tag
+docker build -t $tag \
              ci-docs-gcc
 
-docker push gromacs/continuous-integration
+for tag in ${tags[@]}; do
+  docker push $tag
+done
