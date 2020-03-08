@@ -147,7 +147,7 @@ __device__ inline void assertIsFinite(T arg)
  * \param[out] sm_destination    Shared memory array for output.
  * \param[in]  gm_source         Global memory array for input.
  */
-template<typename T, const int atomsPerBlock, const int dataCountPerAtom>
+template<typename T, int atomsPerBlock, int dataCountPerAtom>
 __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ sm_destination,
                                                         const T* __restrict__ gm_source)
 {
@@ -183,7 +183,7 @@ __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ sm_desti
  * \param[out] sm_gridlineIndices   Atom gridline indices in the shared memory.
  */
 
-template<const int order, const int atomsPerBlock, const int atomsPerWarp, const bool writeSmDtheta, const bool writeGlobal>
+template<int order, int atomsPerBlock, int atomsPerWarp, bool writeSmDtheta, bool writeGlobal>
 __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams kernelParams,
                                                   const int                    atomIndexOffset,
                                                   const float3                 atomX,

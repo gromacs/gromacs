@@ -69,14 +69,20 @@ __device__ __forceinline__ float read_grid_size(const float* realGridSizeFP, con
  *
  * \tparam[in] order              The PME order (must be 4).
  * \tparam[in] atomDataSize       The number of partial force contributions for each atom (currently
- * order^2 == 16) \tparam[in] blockSize          The CUDA block size \param[out] sm_forces Shared
- * memory array with the output forces (number of elements is number of atoms per block) \param[in]
- * atomIndexLocal     Local atom index \param[in]  splineIndex        Spline index \param[in]
- * lineIndex          Line index (same as threadLocalId) \param[in]  realGridSizeFP     Local grid
- * size constant \param[in]  fx                 Input force partial component X \param[in]  fy Input
- * force partial component Y \param[in]  fz                 Input force partial component Z
+ *                                order^2 == 16)
+ * \tparam[in] blockSize          The CUDA block size
+ *
+ * \param[out] sm_forces          Shared memory array with the output forces (number of elements
+ *                                is number of atoms per block)
+ * \param[in]  atomIndexLocal     Local atom index
+ * \param[in]  splineIndex        Spline index
+ * \param[in]  lineIndex          Line index (same as threadLocalId)
+ * \param[in]  realGridSizeFP     Local grid size constant
+ * \param[in]  fx                 Input force partial component X
+ * \param[in]  fy                 Input force partial component Y
+ * \param[in]  fz                 Input force partial component Z
  */
-template<const int order, const int atomDataSize, const int blockSize>
+template<int order, int atomDataSize, int blockSize>
 __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_forces,
                                                    const int    atomIndexLocal,
                                                    const int    splineIndex,
@@ -215,11 +221,11 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
  * \tparam[in] wrapX                Tells if the grid is wrapped in the X dimension.
  * \tparam[in] wrapY                Tells if the grid is wrapped in the Y dimension.
  * \tparam[in] readGlobal           Tells if we should read spline values from global memory
- * \tparam[in] useOrderThreads      Tells if we should use order threads per atom
- *                                   (order*order used if false)
+ * \tparam[in] threadsPerAtom       How many threads work on each atom
+ *
  * \param[in]  kernelParams         All the PME GPU data.
  */
-template<const int order, const bool wrapX, const bool wrapY, const bool readGlobal, const bool useOrderThreads>
+template<int order, bool wrapX, bool wrapY, bool readGlobal, ThreadsPerAtom threadsPerAtom>
 __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams)
 {
@@ -236,17 +242,14 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     float3 atomX;
     float  atomCharge;
 
-    /* Some sizes */
-    const int atomsPerBlock =
-            useOrderThreads ? (c_gatherMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom)
-                            : (c_gatherMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom);
     const int blockIndex = blockIdx.y * gridDim.x + blockIdx.x;
 
     /* Number of data components and threads for a single atom */
-    const int atomDataSize = useOrderThreads ? c_pmeSpreadGatherThreadsPerAtom4ThPerAtom
-                                             : c_pmeSpreadGatherThreadsPerAtom;
-    const int atomsPerWarp = useOrderThreads ? c_pmeSpreadGatherAtomsPerWarp4ThPerAtom
-                                             : c_pmeSpreadGatherAtomsPerWarp;
+    const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
+    const int atomDataSize        = threadsPerAtomValue;
+    const int atomsPerBlock       = c_gatherMaxThreadsPerBlock / atomDataSize;
+    // Number of atoms processed by a single warp in spread and gather
+    const int atomsPerWarp = warp_size / atomDataSize;
 
     const int blockSize = atomsPerBlock * atomDataSize;
     assert(blockSize == blockDim.x * blockDim.y * blockDim.z);
@@ -296,7 +299,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
            with order*order threads per atom, it is only required for each thread to load one data value */
 
         const int iMin = 0;
-        const int iMax = useOrderThreads ? 3 : 1;
+        const int iMax = (threadsPerAtom == ThreadsPerAtom::Order) ? 3 : 1;
 
         for (int i = iMin; i < iMax; i++)
         {
@@ -372,8 +375,8 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         }
         int constOffset, iy;
 
-        const int ithyMin = useOrderThreads ? 0 : threadIdx.y;
-        const int ithyMax = useOrderThreads ? order : threadIdx.y + 1;
+        const int ithyMin = (threadsPerAtom == ThreadsPerAtom::Order) ? 0 : threadIdx.y;
+        const int ithyMax = (threadsPerAtom == ThreadsPerAtom::Order) ? order : threadIdx.y + 1;
         for (int ithy = ithyMin; ithy < ithyMax; ithy++)
         {
             const int splineIndexY = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
@@ -456,7 +459,9 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
 }
 
 //! Kernel instantiations
-template __global__ void pme_gather_kernel<4, true, true, true, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, true, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, false, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_gather_kernel<4, true, true, false, false>(const PmeGpuCudaKernelParams);
+// clang-format off
+template __global__ void pme_gather_kernel<4, true, true, true,  ThreadsPerAtom::Order>       (const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, true,  ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, false, ThreadsPerAtom::Order>       (const PmeGpuCudaKernelParams);
+template __global__ void pme_gather_kernel<4, true, true, false, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
+// clang-format on

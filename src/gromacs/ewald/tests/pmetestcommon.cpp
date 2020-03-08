@@ -530,14 +530,10 @@ static int getSplineParamFullIndex(int order, int splineIndex, int dimIndex, int
 /*!\brief Return the number of atoms per warp */
 static int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu)
 {
-    if (pmeGpu->settings.useOrderThreadsPerAtom)
-    {
-        return pmeGpu->programHandle_->warpSize() / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom;
-    }
-    else
-    {
-        return pmeGpu->programHandle_->warpSize() / c_pmeSpreadGatherThreadsPerAtom;
-    }
+    const int order = pmeGpu->common->pme_order;
+    const int threadsPerAtom =
+            (pmeGpu->settings.threadsPerAtom == ThreadsPerAtom::Order ? order : order * order);
+    return pmeGpu->programHandle_->warpSize() / threadsPerAtom;
 }
 
 /*! \brief Rearranges the atom spline data between the GPU and host layouts.

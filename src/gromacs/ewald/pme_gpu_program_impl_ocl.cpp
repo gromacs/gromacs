@@ -90,20 +90,24 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
  * On Intel the exec width/warp is decided at compile-time and can be
  * smaller than the minimum order^2 required in spread/gather ATM which
  * we need to check for.
+ *
+ * Due to the one thread per atom and order=4 implementation
+ * constraints, order^2 threads should execute without synchronization
+ * needed.
  */
 static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, const DeviceInformation& deviceInfo)
 {
     if (deviceInfo.deviceVendor == DeviceVendor::Intel)
     {
-        size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo.oclDeviceId);
-
-        if (kernelWarpSize < c_pmeSpreadGatherMinWarpSize)
+        int       kernelWarpSize    = gmx::ocl::getKernelWarpSize(kernel, deviceInfo.oclDeviceId);
+        const int minKernelWarpSize = c_pmeGpuOrder * c_pmeGpuOrder;
+        if (kernelWarpSize < minKernelWarpSize)
         {
             const std::string errorString = gmx::formatString(
                     "PME OpenCL kernels require >=%d execution width, but the %s kernel "
-                    "has been compiled for the device %s to a %zu width and therefore it can not "
+                    "has been compiled for the device %s to a %d width and therefore it can not "
                     "execute correctly.",
-                    c_pmeSpreadGatherMinWarpSize, kernelName, deviceInfo.device_name, kernelWarpSize);
+                    minKernelWarpSize, kernelName, deviceInfo.device_name, kernelWarpSize);
             GMX_THROW(gmx::InternalError(errorString));
         }
     }
@@ -137,7 +141,7 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
                 "-DDIM=%d -DXX=%d -DYY=%d -DZZ=%d "
                 // decomposition parameter placeholders
                 "-DwrapX=true -DwrapY=true ",
-                warpSize_, c_pmeGpuOrder, c_pmeSpreadGatherThreadsPerAtom,
+                warpSize_, c_pmeGpuOrder, c_pmeGpuOrder * c_pmeGpuOrder,
                 static_cast<float>(c_pmeMaxUnitcellShift), static_cast<int>(c_skipNeutralAtoms),
                 c_virialAndEnergyCount, spreadWorkGroupSize, solveMaxWorkGroupSize,
                 gatherWorkGroupSize, DIM, XX, YY, ZZ);
