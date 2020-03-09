@@ -153,9 +153,9 @@ stages:
     - .documentation-before-script-template
 
 .build-gcc-cuda:
-    extends:
-      - .build-gcc
-      - .cuda-template
+  extends:
+    - .build-gcc
+    - .cuda-template
 
 # Templates for test stage
 .test-gcc:
@@ -464,17 +464,17 @@ build-gcc-7-double:
       - $GROMACS_RELEASE
 
 build-gcc-8:
-    extends:
-      - .build-gcc
-      - .gcc8-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: configure-gcc-8
-        artifacts: true
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .build-gcc
+    - .gcc8-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-gcc-8
+      artifacts: true
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 build-gcc-8-cuda-10.2:
     extends:
@@ -490,120 +490,120 @@ build-gcc-8-cuda-10.2:
         - $GROMACS_RELEASE
 
 build-gcc-7-simd-sse41:
-    extends:
-      - .build-gcc
-      - .gcc7-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: configure-gcc-7-simd-sse41
-        artifacts: true
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .build-gcc
+    - .gcc7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-gcc-7-simd-sse41
+      artifacts: true
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 build-clang-7:
-    extends:
-      - .build-clang
-      - .clang7-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: configure-clang-7
-        artifacts: true
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .build-clang
+    - .clang7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-clang-7
+      artifacts: true
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 build-clang-7-gmxapi:
-    extends:
-      - .build-clang
-      - .gmxapi-extra-installs
-      - .clang7-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: configure-clang-7-gmxapi
-        artifacts: true
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .build-clang
+    - .gmxapi-extra-installs
+    - .clang7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-clang-7-gmxapi
+      artifacts: true
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 build-clang-8:
-    extends:
-      - .build-clang
-      - .clang8-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: configure-clang-8
-        artifacts: true
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .build-clang
+    - .clang8-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-clang-8
+      artifacts: true
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 build-clang-6:
-    extends:
-      - .build-clang
-      - .clang6-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: configure-clang-6
-        artifacts: true
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .build-clang
+    - .clang6-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-clang-6
+      artifacts: true
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 # Jobs running during test stage
 test-gcc-7:
-    extends:
-      - .test-gcc
-      - .gcc7-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: build-gcc-7
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .test-gcc
+    - .gcc7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: build-gcc-7
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 test-gcc-7-gmxapi:
-    extends:
-      - .test-gcc
-      - .gmxapi-extra-installs
-      - .gcc7-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: build-gcc-7-gmxapi
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .test-gcc
+    - .gmxapi-extra-installs
+    - .gcc7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: build-gcc-7-gmxapi
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 test-gcc-7-double:
-    extends:
-      - .test-gcc
-      - .gcc7-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: build-gcc-7-double
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .test-gcc
+    - .gcc7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: build-gcc-7-double
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 test-gcc-8:
-    extends:
-      - .test-gcc
-      - .gcc8-template
-    needs:
-      - job: simple-build
-        artifacts: false 
-      - job: build-gcc-8
-    except:
-      variables:
-        - $GROMACS_RELEASE
+  extends:
+    - .test-gcc
+    - .gcc8-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: build-gcc-8
+  except:
+    variables:
+      - $GROMACS_RELEASE
 
 test-gcc-8-cuda-10.2:
     variables:
@@ -614,7 +614,7 @@ test-gcc-8-cuda-10.2:
       - .gcc-8-cuda-10.2-template
     needs:
       - job: simple-build
-        artifacts: false 
+        artifacts: false
       - job: build-gcc-8-cuda-10.2
     except:
       variables:
