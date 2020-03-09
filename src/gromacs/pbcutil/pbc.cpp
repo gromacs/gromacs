@@ -1562,15 +1562,13 @@ void put_atoms_in_compact_unitcell(PbcType pbcType, int ecenter, const matrix bo
 static void
 low_do_pbc_mtop(FILE* fplog, PbcType pbcType, const matrix box, const gmx_mtop_t* mtop, rvec x[], gmx_bool bFirst)
 {
-    t_graph* graph;
-    int      as, mol;
+    int as, mol;
 
     if (bFirst && fplog)
     {
         fprintf(fplog, "Removing pbc first time\n");
     }
 
-    snew(graph, 1);
     as = 0;
     for (const gmx_molblock_t& molb : mtop->molblock)
     {
@@ -1582,11 +1580,11 @@ low_do_pbc_mtop(FILE* fplog, PbcType pbcType, const matrix box, const gmx_mtop_t
         }
         else
         {
-            mk_graph_moltype(moltype, graph);
+            t_graph graph = mk_graph_moltype(moltype);
 
             for (mol = 0; mol < molb.nmol; mol++)
             {
-                mk_mshift(fplog, graph, pbcType, box, x + as);
+                mk_mshift(fplog, &graph, pbcType, box, x + as);
 
                 shift_self(graph, box, x + as);
                 /* The molecule is whole now.
@@ -1596,10 +1594,8 @@ low_do_pbc_mtop(FILE* fplog, PbcType pbcType, const matrix box, const gmx_mtop_t
 
                 as += moltype.atoms.nr;
             }
-            done_graph(graph);
         }
     }
-    sfree(graph);
 }
 
 void do_pbc_first_mtop(FILE* fplog, PbcType pbcType, const matrix box, const gmx_mtop_t* mtop, rvec x[])

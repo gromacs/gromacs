@@ -172,8 +172,7 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
     {
         for (i = 0; i < gpbc->ngraph; i++)
         {
-            done_graph(gpbc->graph[i].gr);
-            sfree(gpbc->graph[i].gr);
+            delete gpbc->graph[i].gr;
         }
         if (gpbc->graph != nullptr)
         {

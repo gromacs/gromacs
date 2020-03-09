@@ -1630,16 +1630,16 @@ void finish_update(const t_inputrec*       inputrec, /* input record and box stu
             }
         }
 
-        if (graph && (graph->nnodes > 0))
+        if (graph && graph->numNodes() > 0)
         {
             unshift_x(graph, state->box, state->x.rvec_array(), upd->xp()->rvec_array());
             if (TRICLINIC(state->box))
             {
-                inc_nrnb(nrnb, eNR_SHIFTX, 2 * graph->nnodes);
+                inc_nrnb(nrnb, eNR_SHIFTX, 2 * graph->numNodes());
             }
             else
             {
-                inc_nrnb(nrnb, eNR_SHIFTX, graph->nnodes);
+                inc_nrnb(nrnb, eNR_SHIFTX, graph->numNodes());
             }
         }
         else

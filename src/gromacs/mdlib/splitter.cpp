@@ -68,18 +68,18 @@ static bool sid_comp(const t_sid& sa, const t_sid& sb)
     }
 }
 
-static int mk_grey(egCol egc[], t_graph* g, int* AtomI, int maxsid, t_sid sid[])
+static int mk_grey(gmx::ArrayRef<egCol> egc, const t_graph* g, int* AtomI, int maxsid, t_sid sid[])
 {
-    int j, ng, ai, aj, g0;
+    int ng, ai, g0;
 
     ng = 0;
     ai = *AtomI;
 
     g0 = g->at_start;
     /* Loop over all the bonds */
-    for (j = 0; (j < g->nedge[ai]); j++)
+    for (int aj : g->edges[ai])
     {
-        aj = g->edge[ai][j] - g0;
+        aj -= g0;
         /* If there is a white one, make it gray and set pbc */
         if (egc[aj] == egcolWhite)
         {
@@ -108,16 +108,16 @@ static int mk_grey(egCol egc[], t_graph* g, int* AtomI, int maxsid, t_sid sid[])
     return ng;
 }
 
-static int first_colour(int fC, egCol Col, t_graph* g, const egCol egc[])
+static int first_colour(const int fC, const egCol Col, const t_graph* g, gmx::ArrayRef<const egCol> egc)
 /* Return the first node with colour Col starting at fC.
  * return -1 if none found.
  */
 {
     int i;
 
-    for (i = fC; (i < g->nnodes); i++)
+    for (i = fC; i < int(g->edges.size()); i++)
     {
-        if ((g->nedge[i] > 0) && (egc[i] == Col))
+        if (!g->edges[i].empty() && egc[i] == Col)
         {
             return i;
         }
@@ -128,11 +128,10 @@ static int first_colour(int fC, egCol Col, t_graph* g, const egCol egc[])
 
 static int mk_sblocks(FILE* fp, t_graph* g, int maxsid, t_sid sid[])
 {
-    int    ng, nnodes;
-    int    nW, nG, nB;    /* Number of Grey, Black, White	*/
-    int    fW, fG;        /* First of each category	*/
-    egCol* egc = nullptr; /* The colour of each node	*/
-    int    g0, nblock;
+    int ng;
+    int nW, nG, nB; /* Number of Grey, Black, White	*/
+    int fW, fG;     /* First of each category	*/
+    int g0, nblock;
 
     if (!g->nbound)
     {
@@ -141,8 +140,7 @@ static int mk_sblocks(FILE* fp, t_graph* g, int maxsid, t_sid sid[])
 
     nblock = 0;
 
-    nnodes = g->nnodes;
-    snew(egc, nnodes);
+    std::vector<egCol> egc(g->edges.size(), egcolWhite);
 
     g0 = g->at_start;
     nW = g->nbound;
@@ -207,7 +205,6 @@ static int mk_sblocks(FILE* fp, t_graph* g, int maxsid, t_sid sid[])
             nW -= ng;
         }
     }
-    sfree(egc);
 
     if (debug)
     {
@@ -402,7 +399,6 @@ void gen_sblocks(FILE* fp, int at_start, int at_end, const InteractionDefinition
     sfree(sid);
     /* Due to unknown reason this free generates a problem sometimes */
     done_graph(g);
-    sfree(g);
     if (debug)
     {
         fprintf(debug, "Done gen_sblocks\n");

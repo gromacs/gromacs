@@ -158,11 +158,11 @@ void do_force_lowlevel(t_forcerec*                         fr,
         shift_self(graph, box, x);
         if (TRICLINIC(box))
         {
-            inc_nrnb(nrnb, eNR_SHIFTX, 2 * graph->nnodes);
+            inc_nrnb(nrnb, eNR_SHIFTX, 2 * graph->numNodes());
         }
         else
         {
-            inc_nrnb(nrnb, eNR_SHIFTX, graph->nnodes);
+            inc_nrnb(nrnb, eNR_SHIFTX, graph->numNodes());
         }
     }
 

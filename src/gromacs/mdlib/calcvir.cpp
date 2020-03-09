@@ -211,7 +211,7 @@ void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir, cons
 {
     int start, end;
 
-    if (g && (g->nnodes > 0))
+    if (g && g->numNodes() > 0)
     {
         /* Calculate virial for bonded forces only when they belong to
          * this node.

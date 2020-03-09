@@ -1977,7 +1977,6 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
 {
     gmx_bool          bExclRequired;
     int               at_offset;
-    t_graph           graph;
     rvec*             xs;
     bonded_distance_t bd_2b = { 0, -1, -1, -1 };
     bonded_distance_t bd_mb = { 0, -1, -1, -1 };
@@ -1996,9 +1995,10 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
         }
         else
         {
+            t_graph graph;
             if (ir->pbcType != PbcType::No)
             {
-                mk_graph_moltype(molt, &graph);
+                graph = mk_graph_moltype(molt);
             }
 
             snew(xs, molt.atoms.nr);
@@ -2021,10 +2021,6 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
                 at_offset += molt.atoms.nr;
             }
             sfree(xs);
-            if (ir->pbcType != PbcType::No)
-            {
-                done_graph(&graph);
-            }
         }
     }
 

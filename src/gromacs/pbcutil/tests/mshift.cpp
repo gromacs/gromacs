@@ -124,10 +124,7 @@ TEST(MShift, shiftsAndUnshifts)
     const std::vector<RVec> x       = coordinates();
     GMX_RELEASE_ASSERT(int(x.size()) == molType.atoms.nr, "coordinates should match moltype");
 
-    t_graph graph;
-    // Note: temporary hack, graph will soon use C++ memory management
-    memset(&graph, 0, sizeof(graph));
-    mk_graph_moltype(molType, &graph);
+    t_graph graph = mk_graph_moltype(molType);
     mk_mshift(nullptr, &graph, PbcType::Xyz, c_box, as_rvec_array(x.data()));
 
     std::vector<RVec> xShifted(molType.atoms.nr);
@@ -137,8 +134,6 @@ TEST(MShift, shiftsAndUnshifts)
     std::vector<RVec> xUnshifted(molType.atoms.nr);
     unshift_x(&graph, c_box, as_rvec_array(xUnshifted.data()), as_rvec_array(xShifted.data()));
     EXPECT_THAT(x, Pointwise(RVecEq(defaultFloatTolerance()), xUnshifted));
-
-    done_graph(&graph);
 }
 
 //! Tests where (un)shifting works in place
@@ -148,10 +143,7 @@ TEST(MShift, shiftsAndUnshiftsSelf)
     std::vector<RVec>   x       = coordinates();
     GMX_RELEASE_ASSERT(int(x.size()) == molType.atoms.nr, "coordinates should match moltype");
 
-    t_graph graph;
-    // Note: temporary hack, graph will soon use C++ memory management
-    memset(&graph, 0, sizeof(graph));
-    mk_graph_moltype(molType, &graph);
+    t_graph graph = mk_graph_moltype(molType);
     mk_mshift(nullptr, &graph, PbcType::Xyz, c_box, as_rvec_array(x.data()));
 
     shift_self(&graph, c_box, as_rvec_array(x.data()));
@@ -159,8 +151,6 @@ TEST(MShift, shiftsAndUnshiftsSelf)
 
     unshift_self(&graph, c_box, as_rvec_array(x.data()));
     EXPECT_THAT(coordinates(), Pointwise(RVecEq(defaultFloatTolerance()), x));
-
-    done_graph(&graph);
 }
 
 } // namespace
