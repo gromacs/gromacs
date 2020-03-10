@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2014,2015,2016,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2014,2015,2016,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,7 +36,9 @@ gmx_add_unit_test_library(onlinehelp-test-shared
                           mock_helptopic.cpp)
 
 gmx_add_unit_test(OnlineHelpUnitTests onlinehelp-test
-                  helpformat.cpp
-                  helpmanager.cpp
-                  helpwritercontext.cpp)
+    CPP_SOURCE_FILES
+        helpformat.cpp
+        helpmanager.cpp
+        helpwritercontext.cpp
+        )
 target_link_libraries(onlinehelp-test PRIVATE onlinehelp-test-shared)

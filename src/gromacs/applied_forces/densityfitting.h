@@ -58,7 +58,7 @@ struct DensityFittingModuleInfo
      * Fitting an all-atom structure into an experimental cryo-EM density map is a
      * typical application.
      */
-    static std::unique_ptr<IMDModule> create(MdModulesNotifier* notifier);
+    static std::unique_ptr<IMDModule> create();
     //! The name of the module
     static const std::string name_;
 };

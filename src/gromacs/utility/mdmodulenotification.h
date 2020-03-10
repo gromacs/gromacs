@@ -34,166 +34,26 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::MdModuleNotification.
+ * Declares gmx::MdModulesNotifier.
  *
  * \author Christian Blau <blau@kth.se>
  * \inlibraryapi
  * \ingroup module_utility
  */
 
-#ifndef GMX_MDRUNUTILITY_MDMODULENOTIFICATION_H
-#define GMX_MDRUNUTILITY_MDMODULENOTIFICATION_H
+#ifndef GMX_UTILITY_MDMODULENOTIFICATION_H
+#define GMX_UTILITY_MDMODULENOTIFICATION_H
 
-#include <functional>
 #include <string>
 #include <vector>
+
+#include "gromacs/utility/mdmodulenotification-impl.h"
 
 struct t_commrec;
 enum class PbcType : int;
 
 namespace gmx
 {
-
-/*! \libinternal \brief
- * Subscribe and trigger notification functions.
- *
- * Extends MdModuleNotificationBase with new notification function and routine
- * to subscribe new listeners.
- *
- * To create a class of this type that provides callbacks, e.g., for events
- * EventA, and EventB use registerMdModuleNotification<EventA, EventB>::type.
- *
- * \tparam CallParameter of the function to be notified
- * \tparam MdModuleNotificationBase class to be extended with a notification
- *                                  with CallParameter
- *
-   \msc
-   wordwraparcs=true,
-   hscale="2";
-
-   runner [label="runner:\nMdrunner"],
-   CallParameter [label = "eventA:\nCallParameter"],
-   MOD [label = "mdModules_:\nMdModules"],
-   ModuleA [label="moduleA"],
-   ModuleB [label="moduleB"],
-   MdModuleNotification [label="notifier_:\nMdModuleNotification"];
-
-   MOD box MdModuleNotification [label = "mdModules_ owns notifier_ and moduleA/B"];
-   MOD =>> ModuleA [label="instantiates(notifier_)"];
-   ModuleA =>> MdModuleNotification [label="subscribe(otherfunc)"];
-   ModuleA =>> MOD;
-   MOD =>> ModuleB [label="instantiates(notifier_)"];
-   ModuleB =>> MdModuleNotification [label="subscribe(func)"];
-   ModuleB =>> MOD;
-   runner =>> CallParameter [label="instantiate"];
-   CallParameter =>> runner ;
-   runner =>> MOD [label="notify(eventA)"];
-   MOD =>> MdModuleNotification [label="notify(eventA)"];
-   MdModuleNotification =>> ModuleA [label="notify(eventA)"];
-   ModuleA -> ModuleA [label="func(eventA)"];
-   MdModuleNotification =>> ModuleB [label="notify(eventA)"];
-   ModuleB -> ModuleB [label="otherfunc(eventA)"];
-
-   \endmsc
- *
- * \note All added subscribers are required to out-live the MdModuleNotification
- *
- */
-template<class CallParameter, class MdModuleNotificationBase>
-class MdModuleNotification : public MdModuleNotificationBase
-{
-public:
-    //! Make base class notification trigger available to this class
-    using MdModuleNotificationBase::notify;
-    //! Make base class subscription available to this class
-    using MdModuleNotificationBase::subscribe;
-
-    /*! \brief Trigger the subscribed notifications.
-     * \param[in] callParameter of the function to be called back
-     */
-    void notify(CallParameter callParameter) const
-    {
-        for (auto& callBack : callBackFunctions_)
-        {
-            callBack(callParameter);
-        }
-    }
-
-    /*! \brief
-     * Add callback function to be called when notification is triggered.
-     *
-     * Notifications are distinguished by their call signature.
-     *
-     * \param[in] callBackFunction to be called from this class
-     */
-    void subscribe(std::function<void(CallParameter)> callBackFunction)
-    {
-        callBackFunctions_.emplace_back(callBackFunction);
-    }
-
-private:
-    std::vector<std::function<void(CallParameter)>> callBackFunctions_;
-};
-
-/*! \internal
- * \brief Aide to avoid nested MdModuleNotification definition.
- *
- * Instead of
- * MdModuleNotification<CallParameterA, MdModuleNotification<CallParameterB, etc ... >>
- * this allows to write
- * registerMdModuleNotification<CallParameterA, CallParameterB, ...>::type
- *
- * \tparam CallParameter all the event types to be registered
- */
-template<class... CallParameter>
-struct registerMdModuleNotification;
-
-/*! \internal \brief Template specialization to end parameter unpacking recursion.
- */
-template<>
-struct registerMdModuleNotification<>
-{
-    /*! \internal
-     * \brief Do nothing but be base class of MdModuleNotification.
-     *
-     * Required so that using MdModuleNotificationBase::notify and
-     * MdModuleNotificationBase::subscribe are valid in derived class.
-     */
-    class NoCallParameter
-    {
-    public:
-        //! Do nothing but provide MdModuleNotification::notify to derived class
-        void notify() {}
-        //! Do nothing but provide MdModuleNotification::subscribe to derived class
-        void subscribe() {}
-    };
-    /*! \brief Defines a type if no notifications are managed.
-     *
-     * This ensures that code works with MdModuleCallParameterManagement that
-     * does not manage any notifications.
-     */
-    using type = NoCallParameter;
-};
-
-/*! \libinternal
- * \brief Template specialization to assemble MdModuleNotification.
- *
- * Assembly of MdModuleNotification is performed by recursively taking off the
- * front of the CallParameter parameter pack and constructing the nested type
- * definition of MdModuleNotification base classes.
- *
- * \tparam CurrentCallParameter front of the template parameter pack
- * \tparam CallParameter rest of the event types
- */
-template<class CurrentCallParameter, class... CallParameter>
-struct registerMdModuleNotification<CurrentCallParameter, CallParameter...>
-{
-    // private:
-    //! The next type with rest of the arguments with the front parameter removed.
-    using next_type = typename registerMdModuleNotification<CallParameter...>::type;
-    //! The type of the MdModuleNotification
-    using type = MdModuleNotification<CurrentCallParameter, next_type>;
-};
 
 class KeyValueTreeObject;
 class KeyValueTreeObjectBuilder;
@@ -203,8 +63,13 @@ struct MdModulesCheckpointReadingDataOnMaster;
 struct MdModulesCheckpointReadingBroadcast;
 struct MdModulesWriteCheckpointData;
 
+/*! \libinternal \brief Check if module outputs energy to a specific field.
+ *
+ * Ensures that energy is output for this module.
+ */
 struct MdModulesEnergyOutputToDensityFittingRequestChecker
 {
+    //! Trigger output to density fitting energy field
     bool energyOutputToDensityFitting_ = false;
 };
 
@@ -243,6 +108,8 @@ private:
     std::vector<std::string> errorMessages_;
 };
 
+/*! \libinternal \brief Provides the simulation time step in ps.
+ */
 struct SimulationTimeStep
 {
     //! Time step (ps)
@@ -259,6 +126,35 @@ struct SimulationTimeStep
  *  When pre-processing the simulation data
  *  When reading and writing check-pointing data
  *  When setting up simulation after reading in the tpr file
+ *
+   \msc
+   wordwraparcs=true,
+   hscale="2";
+
+   runner [label="runner:\nMdrunner"],
+   CallParameter [label = "eventA:\nCallParameter"],
+   MOD [label = "mdModules_:\nMdModules"],
+   ModuleA [label="moduleA"],
+   ModuleB [label="moduleB"],
+   MdModuleNotification [label="notifier_:\nMdModuleNotification"];
+
+   MOD box MdModuleNotification [label = "mdModules_ owns notifier_ and moduleA/B"];
+   MOD =>> ModuleA [label="instantiates(notifier_)"];
+   ModuleA =>> MdModuleNotification [label="subscribe(otherfunc)"];
+   ModuleA =>> MOD;
+   MOD =>> ModuleB [label="instantiates(notifier_)"];
+   ModuleB =>> MdModuleNotification [label="subscribe(func)"];
+   ModuleB =>> MOD;
+   runner =>> CallParameter [label="instantiate"];
+   CallParameter =>> runner ;
+   runner =>> MOD [label="notify(eventA)"];
+   MOD =>> MdModuleNotification [label="notify(eventA)"];
+   MdModuleNotification =>> ModuleA [label="notify(eventA)"];
+   ModuleA -> ModuleA [label="func(eventA)"];
+   MdModuleNotification =>> ModuleB [label="notify(eventA)"];
+   ModuleB -> ModuleB [label="otherfunc(eventA)"];
+
+   \endmsc
  *
  * The template arguments to the members of this struct directly reflect
  * the callback function signature. Arguments passed as pointers are always

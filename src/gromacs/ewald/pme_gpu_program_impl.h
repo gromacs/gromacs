@@ -44,6 +44,7 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -77,7 +78,7 @@ struct PmeGpuProgramImpl
      * TODO: Later we want to be able to own the context at a higher level and not here,
      * but this class would still need the non-owning context handle to build the kernels.
      */
-    DeviceContext context;
+    DeviceContext deviceContext_;
 
     //! Conveniently all the PME kernels use the same single argument type
 #if GMX_GPU == GMX_GPU_CUDA
@@ -146,13 +147,13 @@ struct PmeGpuProgramImpl
 
     PmeGpuProgramImpl() = delete;
     //! Constructor for the given device
-    explicit PmeGpuProgramImpl(const DeviceInformation* deviceInfo);
+    explicit PmeGpuProgramImpl(const DeviceInformation& deviceInfo);
     ~PmeGpuProgramImpl();
     GMX_DISALLOW_COPY_AND_ASSIGN(PmeGpuProgramImpl);
 
 private:
     // Compiles kernels, if supported. Called by the constructor.
-    void compileKernels(const DeviceInformation* deviceInfo);
+    void compileKernels(const DeviceInformation& deviceInfo);
 };
 
 #endif

@@ -40,7 +40,7 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
-struct t_idef;
+class InteractionDefinitions;
 
 /* Returns if there are perturbed bonded interactions */
 gmx_bool gmx_mtop_bondeds_free_energy(const struct gmx_mtop_t* mtop);
@@ -48,6 +48,6 @@ gmx_bool gmx_mtop_bondeds_free_energy(const struct gmx_mtop_t* mtop);
 /* Sort all the bonded ilists in idef to have the perturbed ones at the end
  * and set nr_nr_nonperturbed in ilist.
  */
-void gmx_sort_ilist_fe(struct t_idef* idef, const real* qA, const real* qB);
+void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real* qB);
 
 #endif

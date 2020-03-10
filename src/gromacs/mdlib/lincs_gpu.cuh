@@ -44,12 +44,14 @@
 #ifndef GMX_MDLIB_LINCS_GPU_CUH
 #define GMX_MDLIB_LINCS_GPU_CUH
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/utility/classhelpers.h"
+
+class InteractionDefinitions;
 
 namespace gmx
 {
@@ -102,9 +104,10 @@ public:
      *
      * \param[in] numIterations    Number of iteration for the correction of the projection.
      * \param[in] expansionOrder   Order of the matrix inversion algorithm.
+     * \param[in] deviceContext    Device context (dummy in CUDA).
      * \param[in] commandStream    Device command stream.
      */
-    LincsGpu(int numIterations, int expansionOrder, CommandStream commandStream);
+    LincsGpu(int numIterations, int expansionOrder, const DeviceContext& deviceContext, CommandStream commandStream);
     /*! \brief Destructor.*/
     ~LincsGpu();
 
@@ -155,7 +158,7 @@ public:
      * \param[in] idef  Local topology data to get information on constraints from.
      * \param[in] md    Atoms data to get atom masses from.
      */
-    void set(const t_idef& idef, const t_mdatoms& md);
+    void set(const InteractionDefinitions& idef, const t_mdatoms& md);
 
     /*! \brief
      * Returns whether the maximum number of coupled constraints is supported
@@ -166,6 +169,8 @@ public:
     static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
 
 private:
+    //! Dummy GPU context object
+    const DeviceContext& deviceContext_;
     //! GPU stream
     CommandStream commandStream_;
 

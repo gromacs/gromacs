@@ -53,7 +53,7 @@ class GpuEventSynchronizer;
 
 struct gmx_mtop_t;
 enum class PbcType : int;
-struct t_idef;
+class InteractionDefinitions;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
@@ -133,12 +133,12 @@ public:
      * \param[in]      md                  Atoms data.
      * \param[in]      numTempScaleValues  Number of temperature scaling groups. Zero for no temperature scaling.
      */
-    void set(DeviceBuffer<RVec> d_x,
-             DeviceBuffer<RVec> d_v,
-             DeviceBuffer<RVec> d_f,
-             const t_idef&      idef,
-             const t_mdatoms&   md,
-             int                numTempScaleValues);
+    void set(DeviceBuffer<RVec>            d_x,
+             DeviceBuffer<RVec>            d_v,
+             DeviceBuffer<RVec>            d_f,
+             const InteractionDefinitions& idef,
+             const t_mdatoms&              md,
+             int                           numTempScaleValues);
 
     /*! \brief
      * Update PBC data.

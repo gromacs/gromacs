@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019-2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,18 +103,15 @@ public:
      * @return  Unique pointer to a Simulator object
      */
     template<typename... Args>
-    std::unique_ptr<ISimulator> build(bool inputIsCompatibleWithModularSimulator, Args&&... args);
+    std::unique_ptr<ISimulator> build(bool useModularSimulator, Args&&... args);
 };
 
 
 //! Build a Simulator object
 template<typename... Args>
-std::unique_ptr<ISimulator> SimulatorBuilder::build(bool inputIsCompatibleWithModularSimulator, Args&&... args)
+std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator, Args&&... args)
 {
-    // GMX_DISABLE_MODULAR_SIMULATOR allows to disable modular simulator for all uses
-    const auto disableModularSimulator = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
-
-    if (!disableModularSimulator && inputIsCompatibleWithModularSimulator)
+    if (useModularSimulator)
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
         return std::unique_ptr<ModularSimulator>(new ModularSimulator(std::forward<Args>(args)...));

@@ -292,13 +292,6 @@ void dd_make_local_top(struct gmx_domdec_t*       dd,
 /*! \brief Sort ltop->ilist when we are doing free energy. */
 void dd_sort_local_top(gmx_domdec_t* dd, const t_mdatoms* mdatoms, gmx_localtop_t* ltop);
 
-/*! \brief Initialize local topology
- *
- * \param[in] top_global Reference to global topology.
- * \param[in,out] top Pointer to new local topology
- */
-void dd_init_local_top(const gmx_mtop_t& top_global, gmx_localtop_t* top);
-
 /*! \brief Construct local state */
 void dd_init_local_state(struct gmx_domdec_t* dd, const t_state* state_global, t_state* local_state);
 

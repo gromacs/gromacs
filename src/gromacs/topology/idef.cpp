@@ -41,6 +41,7 @@
 
 #include <cstdio>
 
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -331,7 +332,7 @@ static void printIlist(FILE*             fp,
     indent = pr_title(fp, indent, title);
     pr_indent(fp, indent);
     fprintf(fp, "nr: %d\n", ilist.size());
-    if (ilist.size() > 0)
+    if (!ilist.empty())
     {
         pr_indent(fp, indent);
         fprintf(fp, "iatoms:\n");
@@ -412,15 +413,28 @@ void init_idef(t_idef* idef)
     idef->iparams_fbposres = nullptr;
     for (int f = 0; f < F_NRE; ++f)
     {
-        idef->il[f].iatoms                   = nullptr;
-        idef->il[f].nalloc                   = 0;
-        idef->il[f].nr                       = 0;
-        idef->numNonperturbedInteractions[f] = 0;
+        idef->il[f].iatoms = nullptr;
+        idef->il[f].nalloc = 0;
+        idef->il[f].nr     = 0;
     }
-    idef->cmap_grid               = nullptr;
-    idef->iparams_posres_nalloc   = 0;
-    idef->iparams_fbposres_nalloc = 0;
-    idef->ilsort                  = ilsortUNKNOWN;
+}
+
+InteractionDefinitions::InteractionDefinitions(const gmx_ffparams_t& ffparams) :
+    iparams(ffparams.iparams),
+    functype(ffparams.functype),
+    cmap_grid(ffparams.cmap_grid)
+{
+}
+
+void InteractionDefinitions::clear()
+{
+    /* Clear the counts */
+    for (auto& ilist : il)
+    {
+        ilist.clear();
+    }
+    iparams_posres.clear();
+    iparams_fbposres.clear();
 }
 
 void done_idef(t_idef* idef)
@@ -434,18 +448,5 @@ void done_idef(t_idef* idef)
         sfree(idef->il[f].iatoms);
     }
 
-    delete idef->cmap_grid;
     init_idef(idef);
-}
-
-void copy_ilist(const t_ilist* src, t_ilist* dst)
-{
-    dst->nr     = src->nr;
-    dst->nalloc = src->nr;
-
-    snew(dst->iatoms, dst->nalloc);
-    for (int i = 0; i < dst->nr; ++i)
-    {
-        dst->iatoms[i] = src->iatoms[i];
-    }
 }

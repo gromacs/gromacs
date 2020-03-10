@@ -149,7 +149,6 @@ void gmx::LegacySimulator::do_mimic()
     unsigned int                force_flags;
     tensor                      force_vir, shake_vir, total_vir, pres;
     rvec                        mu_tot;
-    gmx_localtop_t              top;
     PaddedHostVector<gmx::RVec> f{};
     gmx_global_stat_t           gstat;
     t_graph*                    graph = nullptr;
@@ -252,10 +251,10 @@ void gmx::LegacySimulator::do_mimic()
     std::unique_ptr<t_state> stateInstance;
     t_state*                 state;
 
+    gmx_localtop_t top(top_global->ffparams);
+
     if (DOMAINDECOMP(cr))
     {
-        dd_init_local_top(*top_global, &top);
-
         stateInstance = std::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);

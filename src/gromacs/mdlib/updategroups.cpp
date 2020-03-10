@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ static bool hasFlexibleConstraints(const gmx_moltype_t& moltype, gmx::ArrayRef<c
         {
             for (size_t i = 0; i < ilist.iatoms.size(); i += ilistStride(ilist))
             {
-                if (isConstraintFlexible(iparams.data(), ilist.iatoms[i]))
+                if (isConstraintFlexible(iparams, ilist.iatoms[i]))
                 {
                     return true;
                 }
@@ -352,13 +352,10 @@ static RangePartitioning makeUpdateGroups(const gmx_moltype_t& moltype, gmx::Arr
     }
 
     /* Combine all constraint ilists into a single one */
-    InteractionList constraintsCombined = jointConstraintList(moltype);
-    t_ilist         ilistsCombined[F_NRE];
-    ilistsCombined[F_CONSTR].nr     = constraintsCombined.iatoms.size();
-    ilistsCombined[F_CONSTR].iatoms = constraintsCombined.iatoms.data();
-    ilistsCombined[F_CONSTRNC].nr   = 0;
+    std::array<InteractionList, F_NRE> ilistsCombined;
+    ilistsCombined[F_CONSTR] = jointConstraintList(moltype);
     /* We "include" flexible constraints, but none are present (checked above) */
-    const ListOfLists<int> at2con = make_at2con(moltype.atoms.nr, ilistsCombined, iparams.data(),
+    const ListOfLists<int> at2con = make_at2con(moltype.atoms.nr, ilistsCombined, iparams,
                                                 FlexibleConstraintTreatment::Include);
 
     bool satisfiesCriteria = true;
@@ -366,7 +363,7 @@ static RangePartitioning makeUpdateGroups(const gmx_moltype_t& moltype, gmx::Arr
     int firstAtom = 0;
     while (satisfiesCriteria && firstAtom < moltype.atoms.nr)
     {
-        int numAtomsInGroup = detectGroup(firstAtom, moltype, at2con, constraintsCombined);
+        int numAtomsInGroup = detectGroup(firstAtom, moltype, at2con, ilistsCombined[F_CONSTR]);
 
         if (numAtomsInGroup == 0)
         {
@@ -622,7 +619,7 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
                 maxAtom           = a;
             }
         }
-        GMX_ASSERT(maxAtom >= 0 || settles.size() > 0,
+        GMX_ASSERT(maxAtom >= 0 || !settles.empty(),
                    "We should have at least two atoms in the group with constraints");
         if (maxAtom < 0)
         {

@@ -242,7 +242,7 @@ void settle_free(settledata* settled)
     sfree(settled);
 }
 
-void settle_set_constraints(settledata* settled, const t_ilist* il_settle, const t_mdatoms& mdatoms)
+void settle_set_constraints(settledata* settled, const InteractionList& il_settle, const t_mdatoms& mdatoms)
 {
 #if GMX_SIMD_HAVE_REAL
     const int pack_size = GMX_SIMD_REAL_WIDTH;
@@ -251,12 +251,12 @@ void settle_set_constraints(settledata* settled, const t_ilist* il_settle, const
 #endif
 
     const int nral1   = 1 + NRAL(F_SETTLE);
-    int       nsettle = il_settle->nr / nral1;
+    int       nsettle = il_settle.size() / nral1;
     settled->nsettle  = nsettle;
 
     if (nsettle > 0)
     {
-        const t_iatom* iatoms = il_settle->iatoms;
+        ArrayRef<const int> iatoms = il_settle.iatoms;
 
         /* Here we initialize the normal SETTLE parameters */
         if (settled->massw.mO < 0)

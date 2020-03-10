@@ -1102,7 +1102,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
      */
     int ftype_connbond = 0;
     int ind_connbond   = 0;
-    if (molt->ilist[F_CONNBONDS].size() != 0)
+    if (!molt->ilist[F_CONNBONDS].empty())
     {
         GMX_LOG(logger.info)
                 .asParagraph()

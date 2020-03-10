@@ -48,6 +48,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_ffparams_t;
+
 typedef union t_iparams {
     /* Some parameters have A and B values for free energy calculations.
      * The B values are not used for regular simulations of course.
@@ -222,6 +224,43 @@ struct InteractionList
     /* Returns the total number of elements in iatoms */
     int size() const { return static_cast<int>(iatoms.size()); }
 
+    /* Returns whether the list is empty */
+    bool empty() const { return iatoms.empty(); }
+
+    /* Adds one interaction to the list */
+    template<std::size_t numAtoms>
+    void push_back(const int parameterType, const std::array<int, numAtoms>& atoms)
+    {
+        const std::size_t oldSize = iatoms.size();
+        iatoms.resize(iatoms.size() + 1 + numAtoms);
+        iatoms[oldSize] = parameterType;
+        for (std::size_t i = 0; i < numAtoms; i++)
+        {
+            iatoms[oldSize + 1 + i] = atoms[i];
+        }
+    }
+
+    /* Adds one interaction to the list */
+    void push_back(const int parameterType, const int numAtoms, const int* atoms)
+    {
+        const std::size_t oldSize = iatoms.size();
+        iatoms.resize(iatoms.size() + 1 + numAtoms);
+        iatoms[oldSize] = parameterType;
+        for (int i = 0; i < numAtoms; i++)
+        {
+            iatoms[oldSize + 1 + i] = atoms[i];
+        }
+    }
+
+    /* Appends \p ilist at the back of the list */
+    void append(const InteractionList& ilist)
+    {
+        iatoms.insert(iatoms.end(), ilist.iatoms.begin(), ilist.iatoms.end());
+    }
+
+    /* Clears the list */
+    void clear() { iatoms.clear(); }
+
     /* List of interactions, see explanation further down */
     std::vector<int> iatoms;
 };
@@ -230,31 +269,23 @@ struct InteractionList
  *
  * TODO: Consider only including entries in use instead of all F_NRE
  */
-typedef std::array<InteractionList, F_NRE> InteractionLists;
+using InteractionLists = std::array<InteractionList, F_NRE>;
 
-/* Deprecated list of listed interactions.
- *
- * The nonperturbed/perturbed interactions are now separated (sorted) in the
- * ilist, such that the first 0..(nr_nonperturbed-1) ones are exactly that, and
- * the remaining ones from nr_nonperturbed..(nr-1) are perturbed bonded
- * interactions.
- */
+/* Deprecated list of listed interactions */
 struct t_ilist
 {
     /* Returns the total number of elements in iatoms */
     int size() const { return nr; }
+
+    /* Returns whether the list is empty */
+    bool empty() const { return nr == 0; }
 
     int      nr;
     t_iatom* iatoms;
     int      nalloc;
 };
 
-/* TODO: Replace t_ilist in gmx_localtop_t by InteractionList.
- *       The nr_nonperturbed functionality needs to be ported.
- *       Remove t_topology.
- *       Remove t_ilist and remove templating on list type
- *       in mshift.cpp, constr.cpp, vsite.cpp and domdec_topology.cpp.
- */
+/* TODO: Remove t_ilist and remove templating on list type in mshift.cpp */
 
 /*
  * The structs InteractionList and t_ilist defines a list of atoms with their interactions.
@@ -295,7 +326,7 @@ static inline std::vector<InteractionListHandle> extractILists(const Interaction
     std::vector<InteractionListHandle> handles;
     for (size_t ftype = 0; ftype < ilists.size(); ftype++)
     {
-        if ((interaction_function[ftype].flags & flags) && ilists[ftype].size() > 0)
+        if ((interaction_function[ftype].flags & flags) && !ilists[ftype].empty())
         {
             handles.push_back({ static_cast<int>(ftype), ilists[ftype].iatoms });
         }
@@ -333,22 +364,54 @@ enum
     ilsortFE_SORTED
 };
 
-typedef struct t_idef
+/* Struct with list of interaction parameters and lists of interactions
+ *
+ * TODO: Convert to a proper class with private data members so we can
+ * ensure that the free-energy sorting and sorting setting is consistent.
+ */
+class InteractionDefinitions
+{
+public:
+    /* Constructor
+     *
+     * \param[in] ffparams  The interaction parameters, the lifetime of the created object should not exceed the lifetime of the passed parameters
+     */
+    InteractionDefinitions(const gmx_ffparams_t& ffparams);
+
+    // Clears data not read in from ffparams
+    void clear();
+
+    // The interaction parameters
+    const std::vector<t_iparams>& iparams;
+    // The function type per type
+    const std::vector<int>& functype;
+    // Position restraint interaction parameters
+    std::vector<t_iparams> iparams_posres;
+    // Flat-bottomed position restraint parameters
+    std::vector<t_iparams> iparams_fbposres;
+    // The list of interactions for each type. Note that some, such as LJ and COUL will have 0 entries.
+    std::array<InteractionList, F_NRE> il;
+    /* The number of non-perturbed interactions at the start of each entry in il */
+    std::array<int, F_NRE> numNonperturbedInteractions;
+    // The sorting state of interaction in il
+    int ilsort = ilsortUNKNOWN;
+    // The dihedral correction maps
+    gmx_cmap_t cmap_grid;
+};
+
+/* Deprecated interation definitions, used in t_topology */
+struct t_idef
 {
     int         ntypes;
     int         atnr;
     t_functype* functype;
     t_iparams*  iparams;
     real        fudgeQQ;
-    gmx_cmap_t* cmap_grid;
     t_iparams * iparams_posres, *iparams_fbposres;
-    int         iparams_posres_nalloc, iparams_fbposres_nalloc;
 
     t_ilist il[F_NRE];
-    /* The number of non-perturbed interactions at the start of each entry in il */
-    int numNonperturbedInteractions[F_NRE];
-    int ilsort;
-} t_idef;
+    int     ilsort;
+};
 
 /*
  * The struct t_idef defines all the interactions for the complete
@@ -414,7 +477,5 @@ void init_idef(t_idef* idef);
  * \param[in] idef Pointer to idef struct to clean up.
  */
 void done_idef(t_idef* idef);
-
-void copy_ilist(const t_ilist* src, t_ilist* dst);
 
 #endif

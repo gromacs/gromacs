@@ -176,11 +176,9 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
     return bPert;
 }
 
-void gmx_sort_ilist_fe(t_idef* idef, const real* qA, const real* qB)
+void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real* qB)
 {
     int      ftype, nral, i, ic, ib, a;
-    t_ilist* ilist;
-    t_iatom* iatoms;
     t_iatom* iabuf;
     int      iabuf_nalloc;
 
@@ -192,22 +190,20 @@ void gmx_sort_ilist_fe(t_idef* idef, const real* qA, const real* qB)
     iabuf_nalloc = 0;
     iabuf        = nullptr;
 
-    const t_iparams* iparams = idef->iparams;
-
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
         if (interaction_function[ftype].flags & IF_BOND)
         {
-            ilist  = &idef->il[ftype];
-            iatoms = ilist->iatoms;
-            nral   = NRAL(ftype);
-            ic     = 0;
-            ib     = 0;
-            i      = 0;
-            while (i < ilist->nr)
+            InteractionList* ilist  = &idef->il[ftype];
+            int*             iatoms = ilist->iatoms.data();
+            nral                    = NRAL(ftype);
+            ic                      = 0;
+            ib                      = 0;
+            i                       = 0;
+            while (i < ilist->size())
             {
                 /* Check if this interaction is perturbed */
-                if (ip_q_pert(ftype, iatoms + i, iparams, qA, qB))
+                if (ip_q_pert(ftype, iatoms + i, idef->iparams.data(), qA, qB))
                 {
                     /* Copy to the perturbed buffer */
                     if (ib + 1 + nral > iabuf_nalloc)
@@ -229,7 +225,7 @@ void gmx_sort_ilist_fe(t_idef* idef, const real* qA, const real* qB)
                     }
                 }
             }
-            /* Now we now the number of non-perturbed interactions */
+            /* Now we know the number of non-perturbed interactions */
             idef->numNonperturbedInteractions[ftype] = ic;
 
             /* Copy the buffer with perturbed interactions to the ilist */
@@ -242,7 +238,7 @@ void gmx_sort_ilist_fe(t_idef* idef, const real* qA, const real* qB)
             {
                 const int numNonperturbed = idef->numNonperturbedInteractions[ftype];
                 fprintf(debug, "%s non-pert %d pert %d\n", interaction_function[ftype].longname,
-                        numNonperturbed, ilist->nr - numNonperturbed);
+                        numNonperturbed, ilist->size() - numNonperturbed);
             }
         }
     }

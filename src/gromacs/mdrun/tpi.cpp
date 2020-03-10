@@ -165,7 +165,7 @@ void LegacySimulator::do_tpi()
 {
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) == 1, "TPI does not support OpenMP");
 
-    gmx_localtop_t              top;
+    gmx_localtop_t              top(top_global->ffparams);
     PaddedHostVector<gmx::RVec> f{};
     real                        lambda, t, temp, beta, drmax, epot;
     double                      embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
@@ -194,6 +194,17 @@ void LegacySimulator::do_tpi()
     auto                        mdatoms     = mdAtoms->mdatoms();
 
     GMX_UNUSED_VALUE(outputProvider);
+
+    if (EVDW_PME(inputrec->vdwtype))
+    {
+        gmx_fatal(FARGS, "Test particle insertion not implemented with LJ-PME");
+    }
+    if (haveEwaldSurfaceContribution(*inputrec))
+    {
+        gmx_fatal(FARGS,
+                  "TPI with PME currently only works in a 3D geometry with tin-foil "
+                  "boundary conditions");
+    }
 
     GMX_LOG(mdlog.info)
             .asParagraph()

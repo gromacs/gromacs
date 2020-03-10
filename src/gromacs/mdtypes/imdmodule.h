@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@ namespace gmx
 class ForceProviders;
 class IMDOutputProvider;
 class IMdpOptionProvider;
+struct MdModulesNotifier;
 
 /*! \libinternal \brief
  * Extension module for \Gromacs simulations.
@@ -73,6 +74,10 @@ public:
     virtual IMDOutputProvider* outputProvider() = 0;
     //! Initializes force providers from this module.
     virtual void initForceProviders(ForceProviders* forceProviders) = 0;
+    //! Subscribe to simulation setup notifications
+    virtual void subscribeToSimulationSetupNotifications(MdModulesNotifier* notifier) = 0;
+    //! Subscribe to pre processing notifications
+    virtual void subscribeToPreProcessingNotifications(MdModulesNotifier* notifier) = 0;
 };
 
 } // namespace gmx

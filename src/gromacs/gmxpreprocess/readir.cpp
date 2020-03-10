@@ -2139,14 +2139,7 @@ void get_ir(const char*     mdparin,
     ir->bDoAwh = (get_eeenum(&inp, "awh", yesno_names, wi) != 0);
     if (ir->bDoAwh)
     {
-        if (ir->bPull)
-        {
-            ir->awhParams = gmx::readAndCheckAwhParams(&inp, ir, wi);
-        }
-        else
-        {
-            gmx_fatal(FARGS, "AWH biasing is only compatible with COM pulling turned on");
-        }
+        ir->awhParams = gmx::readAwhParams(&inp, wi);
     }
 
     /* Enforced rotation */
@@ -2660,6 +2653,11 @@ void get_ir(const char*     mdparin,
         {
             warning_error(wi, "Ion count threshold must be at least 1.\n");
         }
+    }
+
+    if (ir->bDoAwh)
+    {
+        gmx::checkAwhParams(ir->awhParams, ir, wi);
     }
 
     sfree(dumstr[0]);

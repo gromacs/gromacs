@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,13 +37,13 @@
  * Tests MdModuleNotification
  *
  * \author Christian Blau <blau@kth.se>
- * \ingroup module_mdrun_integration_tests
+ * \ingroup module_utility
  */
 #include "gmxpre.h"
 
-#include <gmock/gmock.h>
+#include "gromacs/utility/mdmodulenotification-impl.h"
 
-#include "gromacs/utility/mdmodulenotification.h"
+#include <gmock/gmock.h>
 
 namespace gmx
 {
@@ -61,7 +61,7 @@ struct EventB
 class EventACallee final
 {
 public:
-    void callback(EventA /*a*/) { notifiedEventA_ = true; };
+    void callback(EventA /*a*/) { notifiedEventA_ = true; }
 
     bool notifiedEventA() { return notifiedEventA_; }
 
@@ -72,7 +72,7 @@ private:
 class EventBCallee final
 {
 public:
-    void callback(EventB* /* bPointer */) { notifiedEventB_ = true; };
+    void callback(EventB* /* bPointer */) { notifiedEventB_ = true; }
 
     bool notifiedEventB() { return notifiedEventB_; }
 
@@ -83,9 +83,9 @@ private:
 class EventAandBCallee final
 {
 public:
-    void notify(EventB* /* bPointer */) { notifiedEventB_ = true; };
+    void notify(EventB* /* bPointer */) { notifiedEventB_ = true; }
 
-    void callback(EventA /* a */) { notifiedEventA_ = true; };
+    void callback(EventA /* a */) { notifiedEventA_ = true; }
 
     bool notifiedEventB() { return notifiedEventB_; }
     bool notifiedEventA() { return notifiedEventA_; }

@@ -347,7 +347,7 @@ static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[], t_blocka* 
     return nsid;
 }
 
-void gen_sblocks(FILE* fp, int at_start, int at_end, const t_idef* idef, t_blocka* sblock, gmx_bool bSettle)
+void gen_sblocks(FILE* fp, int at_start, int at_end, const InteractionDefinitions& idef, t_blocka* sblock, gmx_bool bSettle)
 {
     t_graph* g;
     int      i, i0;

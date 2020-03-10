@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@
 struct gmx_enerdata_t;
 struct gmx_wallcycle;
 struct t_forcerec;
-struct t_idef;
+class InteractionDefinitions;
 struct t_lambda;
 struct t_nrnb;
 struct t_pbc;
@@ -67,34 +67,34 @@ class ForceWithVirial;
 }
 
 /*! \brief Helper function that wraps calls to posres */
-void posres_wrapper(t_nrnb*               nrnb,
-                    const t_idef*         idef,
-                    const struct t_pbc*   pbc,
-                    const rvec*           x,
-                    gmx_enerdata_t*       enerd,
-                    const real*           lambda,
-                    const t_forcerec*     fr,
-                    gmx::ForceWithVirial* forceWithVirial);
+void posres_wrapper(t_nrnb*                       nrnb,
+                    const InteractionDefinitions& idef,
+                    const struct t_pbc*           pbc,
+                    const rvec*                   x,
+                    gmx_enerdata_t*               enerd,
+                    const real*                   lambda,
+                    const t_forcerec*             fr,
+                    gmx::ForceWithVirial*         forceWithVirial);
 
 /*! \brief Helper function that wraps calls to posres for free-energy
     pertubation */
-void posres_wrapper_lambda(struct gmx_wallcycle* wcycle,
-                           const t_lambda*       fepvals,
-                           const t_idef*         idef,
-                           const struct t_pbc*   pbc,
-                           const rvec            x[],
-                           gmx_enerdata_t*       enerd,
-                           const real*           lambda,
-                           const t_forcerec*     fr);
+void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
+                           const t_lambda*               fepvals,
+                           const InteractionDefinitions& idef,
+                           const struct t_pbc*           pbc,
+                           const rvec                    x[],
+                           gmx_enerdata_t*               enerd,
+                           const real*                   lambda,
+                           const t_forcerec*             fr);
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb*               nrnb,
-                      const t_idef*         idef,
-                      const struct t_pbc*   pbc,
-                      const rvec*           x,
-                      gmx_enerdata_t*       enerd,
-                      const t_forcerec*     fr,
-                      gmx::ForceWithVirial* forceWithVirial);
+void fbposres_wrapper(t_nrnb*                       nrnb,
+                      const InteractionDefinitions& idef,
+                      const struct t_pbc*           pbc,
+                      const rvec*                   x,
+                      gmx_enerdata_t*               enerd,
+                      const t_forcerec*             fr,
+                      gmx::ForceWithVirial*         forceWithVirial);
 
 #endif

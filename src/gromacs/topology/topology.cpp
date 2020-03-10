@@ -131,20 +131,7 @@ void done_top_mtop(t_topology* top, gmx_mtop_t* mtop)
     }
 }
 
-gmx_localtop_t::gmx_localtop_t()
-{
-    init_idef(&idef);
-    init_atomtypes(&atomtypes);
-}
-
-gmx_localtop_t::~gmx_localtop_t()
-{
-    if (!useInDomainDecomp_)
-    {
-        done_idef(&idef);
-        done_atomtypes(&atomtypes);
-    }
-}
+gmx_localtop_t::gmx_localtop_t(const gmx_ffparams_t& ffparams) : idef(ffparams) {}
 
 bool gmx_mtop_has_masses(const gmx_mtop_t* mtop)
 {

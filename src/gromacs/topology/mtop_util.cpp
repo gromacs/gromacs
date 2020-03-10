@@ -667,6 +667,29 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop)
  * The cat routines below are old code from src/kernel/topcat.c
  */
 
+static void ilistcat(int ftype, InteractionList* dest, const InteractionList& src, int copies, int dnum, int snum)
+{
+    int nral, c, i, a;
+
+    nral = NRAL(ftype);
+
+    size_t destIndex = dest->iatoms.size();
+    dest->iatoms.resize(dest->iatoms.size() + copies * src.size());
+
+    for (c = 0; c < copies; c++)
+    {
+        for (i = 0; i < src.size();)
+        {
+            dest->iatoms[destIndex++] = src.iatoms[i++];
+            for (a = 0; a < nral; a++)
+            {
+                dest->iatoms[destIndex++] = dnum + src.iatoms[i++];
+            }
+        }
+        dnum += snum;
+    }
+}
+
 static void ilistcat(int ftype, t_ilist* dest, const InteractionList& src, int copies, int dnum, int snum)
 {
     int nral, c, i, a;
@@ -690,21 +713,40 @@ static void ilistcat(int ftype, t_ilist* dest, const InteractionList& src, int c
     }
 }
 
-static void set_posres_params(t_idef* idef, const gmx_molblock_t* molb, int i0, int a_offset)
+static const t_iparams& getIparams(const InteractionDefinitions& idef, const int index)
 {
-    t_ilist*   il;
+    return idef.iparams[index];
+}
+
+static const t_iparams& getIparams(const t_idef& idef, const int index)
+{
+    return idef.iparams[index];
+}
+
+static void resizeIParams(std::vector<t_iparams>* iparams, const int newSize)
+{
+    iparams->resize(newSize);
+}
+
+static void resizeIParams(t_iparams** iparams, const int newSize)
+{
+    srenew(*iparams, newSize);
+}
+
+template<typename IdefType>
+static void set_posres_params(IdefType* idef, const gmx_molblock_t* molb, int i0, int a_offset)
+{
     int        i1, i, a_molb;
     t_iparams* ip;
 
-    il                          = &idef->il[F_POSRES];
-    i1                          = il->nr / 2;
-    idef->iparams_posres_nalloc = i1;
-    srenew(idef->iparams_posres, idef->iparams_posres_nalloc);
+    auto* il = &idef->il[F_POSRES];
+    i1       = il->size() / 2;
+    resizeIParams(&idef->iparams_posres, i1);
     for (i = i0; i < i1; i++)
     {
         ip = &idef->iparams_posres[i];
         /* Copy the force constants */
-        *ip    = idef->iparams[il->iatoms[i * 2]];
+        *ip    = getIparams(*idef, il->iatoms[i * 2]);
         a_molb = il->iatoms[i * 2 + 1] - a_offset;
         if (molb->posres_xA.empty())
         {
@@ -730,21 +772,20 @@ static void set_posres_params(t_idef* idef, const gmx_molblock_t* molb, int i0, 
     }
 }
 
-static void set_fbposres_params(t_idef* idef, const gmx_molblock_t* molb, int i0, int a_offset)
+template<typename IdefType>
+static void set_fbposres_params(IdefType* idef, const gmx_molblock_t* molb, int i0, int a_offset)
 {
-    t_ilist*   il;
     int        i1, i, a_molb;
     t_iparams* ip;
 
-    il                            = &idef->il[F_FBPOSRES];
-    i1                            = il->nr / 2;
-    idef->iparams_fbposres_nalloc = i1;
-    srenew(idef->iparams_fbposres, idef->iparams_fbposres_nalloc);
+    auto* il = &idef->il[F_FBPOSRES];
+    i1       = il->size() / 2;
+    resizeIParams(&idef->iparams_fbposres, i1);
     for (i = i0; i < i1; i++)
     {
         ip = &idef->iparams_fbposres[i];
         /* Copy the force constants */
-        *ip    = idef->iparams[il->iatoms[i * 2]];
+        *ip    = getIparams(*idef, il->iatoms[i * 2]);
         a_molb = il->iatoms[i * 2 + 1] - a_offset;
         if (molb->posres_xA.empty())
         {
@@ -761,18 +802,15 @@ static void set_fbposres_params(t_idef* idef, const gmx_molblock_t* molb, int i0
     }
 }
 
-/*! \brief Copy idef structure from mtop.
+/*! \brief Copy parameters to idef structure from mtop.
  *
- * Makes a deep copy of an idef data structure from a gmx_mtop_t.
+ * Makes a deep copy of the force field parameters data structure from a gmx_mtop_t.
  * Used to initialize legacy topology types.
  *
  * \param[in] mtop Reference to input mtop.
  * \param[in] idef Pointer to idef to populate.
- * \param[in] mergeConstr Decide if constraints will be merged.
- * \param[in] freeEnergyInteractionsAtEnd Decide if free energy stuff should
- *              be added at the end.
  */
-static void copyIdefFromMtop(const gmx_mtop_t& mtop, t_idef* idef, bool freeEnergyInteractionsAtEnd, bool mergeConstr)
+static void copyFFParametersFromMtop(const gmx_mtop_t& mtop, t_idef* idef)
 {
     const gmx_ffparams_t* ffp = &mtop.ffparams;
 
@@ -801,22 +839,24 @@ static void copyIdefFromMtop(const gmx_mtop_t& mtop, t_idef* idef, bool freeEner
     {
         idef->iparams = nullptr;
     }
-    idef->iparams_posres          = nullptr;
-    idef->iparams_posres_nalloc   = 0;
-    idef->iparams_fbposres        = nullptr;
-    idef->iparams_fbposres_nalloc = 0;
-    idef->fudgeQQ                 = ffp->fudgeQQ;
-    idef->cmap_grid               = new gmx_cmap_t;
-    *idef->cmap_grid              = ffp->cmap_grid;
-    idef->ilsort                  = ilsortUNKNOWN;
+    idef->iparams_posres   = nullptr;
+    idef->iparams_fbposres = nullptr;
+    idef->fudgeQQ          = ffp->fudgeQQ;
+    idef->ilsort           = ilsortUNKNOWN;
+}
 
-    for (int ftype = 0; ftype < F_NRE; ftype++)
-    {
-        idef->il[ftype].nr     = 0;
-        idef->il[ftype].nalloc = 0;
-        idef->il[ftype].iatoms = nullptr;
-    }
-
+/*! \brief Copy idef structure from mtop.
+ *
+ * Makes a deep copy of an idef data structure from a gmx_mtop_t.
+ * Used to initialize legacy topology types.
+ *
+ * \param[in] mtop Reference to input mtop.
+ * \param[in] idef Pointer to idef to populate.
+ * \param[in] mergeConstr Decide if constraints will be merged.
+ */
+template<typename IdefType>
+static void copyIListsFromMtop(const gmx_mtop_t& mtop, IdefType* idef, bool mergeConstr)
+{
     int natoms = 0;
     for (const gmx_molblock_t& molb : mtop.molblock)
     {
@@ -825,11 +865,11 @@ static void copyIdefFromMtop(const gmx_mtop_t& mtop, t_idef* idef, bool freeEner
         int srcnr  = molt.atoms.nr;
         int destnr = natoms;
 
-        int nposre_old   = idef->il[F_POSRES].nr;
-        int nfbposre_old = idef->il[F_FBPOSRES].nr;
+        int nposre_old   = idef->il[F_POSRES].size();
+        int nfbposre_old = idef->il[F_FBPOSRES].size();
         for (int ftype = 0; ftype < F_NRE; ftype++)
         {
-            if (mergeConstr && ftype == F_CONSTR && molt.ilist[F_CONSTRNC].size() > 0)
+            if (mergeConstr && ftype == F_CONSTR && !molt.ilist[F_CONSTRNC].empty())
             {
                 /* Merge all constrains into one ilist.
                  * This simplifies the constraint code.
@@ -847,13 +887,13 @@ static void copyIdefFromMtop(const gmx_mtop_t& mtop, t_idef* idef, bool freeEner
                 ilistcat(ftype, &idef->il[ftype], molt.ilist[ftype], molb.nmol, destnr, srcnr);
             }
         }
-        if (idef->il[F_POSRES].nr > nposre_old)
+        if (idef->il[F_POSRES].size() > nposre_old)
         {
             /* Executing this line line stops gmxdump -sys working
              * correctly. I'm not aware there's an elegant fix. */
             set_posres_params(idef, &molb, nposre_old / 2, natoms);
         }
-        if (idef->il[F_FBPOSRES].nr > nfbposre_old)
+        if (idef->il[F_FBPOSRES].size() > nfbposre_old)
         {
             set_fbposres_params(idef, &molb, nfbposre_old / 2, natoms);
         }
@@ -869,23 +909,8 @@ static void copyIdefFromMtop(const gmx_mtop_t& mtop, t_idef* idef, bool freeEner
         }
     }
 
-    if (freeEnergyInteractionsAtEnd && gmx_mtop_bondeds_free_energy(&mtop))
-    {
-        std::vector<real> qA(mtop.natoms);
-        std::vector<real> qB(mtop.natoms);
-        for (const AtomProxy atomP : AtomRange(mtop))
-        {
-            const t_atom& local = atomP.atom();
-            int           index = atomP.globalAtomNumber();
-            qA[index]           = local.q;
-            qB[index]           = local.qB;
-        }
-        gmx_sort_ilist_fe(idef, qA.data(), qB.data());
-    }
-    else
-    {
-        idef->ilsort = ilsortNO_FE;
-    }
+    // We have not (yet) sorted free-energy interactions to the end of the ilists
+    idef->ilsort = ilsortNO_FE;
 }
 
 /*! \brief Copy atomtypes from mtop
@@ -996,13 +1021,30 @@ static void addMimicExclusions(gmx::ListOfLists<int>* excls, const gmx::ArrayRef
     gmx::mergeExclusions(excls, qmexcl2);
 }
 
+static void sortFreeEnergyInteractionsAtEnd(const gmx_mtop_t& mtop, InteractionDefinitions* idef)
+{
+    std::vector<real> qA(mtop.natoms);
+    std::vector<real> qB(mtop.natoms);
+    for (const AtomProxy atomP : AtomRange(mtop))
+    {
+        const t_atom& local = atomP.atom();
+        int           index = atomP.globalAtomNumber();
+        qA[index]           = local.q;
+        qB[index]           = local.qB;
+    }
+    gmx_sort_ilist_fe(idef, qA.data(), qB.data());
+}
+
 static void gen_local_top(const gmx_mtop_t& mtop,
                           bool              freeEnergyInteractionsAtEnd,
                           bool              bMergeConstr,
                           gmx_localtop_t*   top)
 {
-    copyAtomtypesFromMtop(mtop, &top->atomtypes);
-    copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
+    copyIListsFromMtop(mtop, &top->idef, bMergeConstr);
+    if (freeEnergyInteractionsAtEnd)
+    {
+        sortFreeEnergyInteractionsAtEnd(mtop, &top->idef);
+    }
     top->excls = globalExclusionLists(mtop);
     if (!mtop.intermolecularExclusionGroup.empty())
     {
@@ -1070,13 +1112,17 @@ static t_block gmx_mtop_molecules_t_block(const gmx_mtop_t& mtop)
     return mols;
 }
 
-static void gen_t_topology(const gmx_mtop_t& mtop,
-                           bool              freeEnergyInteractionsAtEnd,
-                           bool              bMergeConstr,
-                           t_topology*       top)
+static void gen_t_topology(const gmx_mtop_t& mtop, bool bMergeConstr, t_topology* top)
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
-    copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
+    for (int ftype = 0; ftype < F_NRE; ftype++)
+    {
+        top->idef.il[ftype].nr     = 0;
+        top->idef.il[ftype].nalloc = 0;
+        top->idef.il[ftype].iatoms = nullptr;
+    }
+    copyFFParametersFromMtop(mtop, &top->idef);
+    copyIListsFromMtop(mtop, &top->idef, bMergeConstr);
 
     top->name                        = mtop.name;
     top->atoms                       = gmx_mtop_global_atoms(&mtop);
@@ -1089,7 +1135,7 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t* mtop, bool freeMTop)
 {
     t_topology top;
 
-    gen_t_topology(*mtop, false, false, &top);
+    gen_t_topology(*mtop, false, &top);
 
     if (freeMTop)
     {

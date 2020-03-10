@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,18 +45,11 @@
  * \ingroup module_ewald
  */
 
-#include "config.h"
-
 #include <cassert>
 
-#include "pme_gpu_constants.h"
+#include "gromacs/math/vectypes.h"
 
-//! A macro for inline GPU functions.
-#if GMX_GPU == GMX_GPU_CUDA
-#    define INLINE_EVERYWHERE __host__ __device__ __forceinline__
-#else
-#    define INLINE_EVERYWHERE inline
-#endif
+struct PmeGpu;
 
 /*! \internal \brief
  * Gets a base of the unique index to an element in a spline parameter buffer (theta/dtheta),
@@ -74,7 +67,7 @@
  * \returns Index into theta or dtheta array using GPU layout.
  */
 template<int order, int atomsPerWarp>
-int INLINE_EVERYWHERE getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
+int inline getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
 {
     assert((atomWarpIndex >= 0) && (atomWarpIndex < atomsPerWarp));
     const int dimIndex    = 0;
@@ -98,45 +91,11 @@ int INLINE_EVERYWHERE getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
  * \returns Index into theta or dtheta array using GPU layout.
  */
 template<int order, int atomsPerWarp>
-int INLINE_EVERYWHERE getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex)
+int inline getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex)
 {
     assert((dimIndex >= XX) && (dimIndex < DIM));
     assert((splineIndex >= 0) && (splineIndex < order));
     return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerWarp);
 }
-
-#if GMX_GPU == GMX_GPU_CUDA
-// CUDA device code helpers below
-
-/*! \internal \brief
- * An inline CUDA function for checking the global atom data indices against the atom data array sizes.
- *
- * \param[in] atomDataIndex        The atom data index.
- * \param[in] nAtomData            The atom data array element count.
- * \returns                        Non-0 if index is within bounds (or PME data padding is enabled), 0 otherwise.
- *
- * This is called from the spline_and_spread and gather PME kernels.
- * The goal is to isolate the global range checks, and allow avoiding them with c_usePadding enabled.
- */
-int __device__ __forceinline__ pme_gpu_check_atom_data_index(const int atomDataIndex, const int nAtomData)
-{
-    return c_usePadding ? 1 : (atomDataIndex < nAtomData);
-}
-
-/*! \internal \brief
- * An inline CUDA function for skipping the zero-charge atoms.
- *
- * \returns                        Non-0 if atom should be processed, 0 otherwise.
- * \param[in] coefficient          The atom charge.
- *
- * This is called from the spline_and_spread and gather PME kernels.
- */
-int __device__ __forceinline__ pme_gpu_check_atom_charge(const float coefficient)
-{
-    assert(isfinite(coefficient));
-    return c_skipNeutralAtoms ? (coefficient != 0.0f) : 1;
-}
-
-#endif
 
 #endif

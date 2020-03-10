@@ -86,9 +86,12 @@ void applySettleGpu(SettleTestData*  testData,
     // TODO: Here we should check that at least 1 suitable GPU is available
     GMX_RELEASE_ASSERT(canPerformGpuDetection(), "Can't detect CUDA-capable GPUs.");
 
-    auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, nullptr);
+    DeviceInformation   deviceInfo;
+    const DeviceContext deviceContext(deviceInfo);
 
-    settleGpu->set(testData->idef_, testData->mdatoms_);
+    auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, deviceContext, nullptr);
+
+    settleGpu->set(*testData->idef_, testData->mdatoms_);
     PbcAiuc pbcAiuc;
     setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 
@@ -100,9 +103,9 @@ void applySettleGpu(SettleTestData*  testData,
     float3* h_xp = (float3*)(as_rvec_array(testData->xPrime_.data()));
     float3* h_v  = (float3*)(as_rvec_array(testData->v_.data()));
 
-    allocateDeviceBuffer(&d_x, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v, numAtoms, nullptr);
+    allocateDeviceBuffer(&d_x, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_xp, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_v, numAtoms, deviceContext);
 
     copyToDeviceBuffer(&d_x, (float3*)h_x, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&d_xp, (float3*)h_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);

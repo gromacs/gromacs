@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ public:
     {
         KeyValueTreeObject mdpOptionsTree = mdpValueBuilder_.build();
 
-        densityFittingModule_ = DensityFittingModuleInfo::create(&notifier_);
+        densityFittingModule_ = DensityFittingModuleInfo::create();
 
         // set up options
         Options densityFittingModuleOptions;
@@ -117,7 +117,6 @@ public:
 
 protected:
     KeyValueTreeBuilder        mdpValueBuilder_;
-    MdModulesNotifier          notifier_;
     ForceProviders             densityFittingForces_;
     std::unique_ptr<IMDModule> densityFittingModule_;
 };

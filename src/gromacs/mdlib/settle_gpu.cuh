@@ -45,6 +45,7 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
@@ -52,8 +53,9 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
+
+class InteractionDefinitions;
 
 namespace gmx
 {
@@ -199,9 +201,10 @@ public:
      * \param[in] mtop           Topology of the system to gen the masses for O and H atoms and
      *                           target O-H and H-H distances. These values are also checked for
      *                           consistency.
+     * \param[in] deviceContext  Device context (dummy in CUDA).
      * \param[in] commandStream  Device stream to use.
      */
-    SettleGpu(const gmx_mtop_t& mtop, CommandStream commandStream);
+    SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, CommandStream commandStream);
 
     ~SettleGpu();
 
@@ -246,9 +249,11 @@ public:
      * \param[in] idef    System topology
      * \param[in] md      Atoms data. Can be used to update masses if needed (not used now).
      */
-    void set(const t_idef& idef, const t_mdatoms& md);
+    void set(const InteractionDefinitions& idef, const t_mdatoms& md);
 
 private:
+    //! Dummy GPU context object
+    const DeviceContext& deviceContext_;
     //! GPU stream
     CommandStream commandStream_;
 

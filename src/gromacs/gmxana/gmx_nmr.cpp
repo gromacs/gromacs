@@ -200,20 +200,16 @@ static void get_orires_parms(const char* topnm, t_inputrec* ir, int* nor, int* n
 
 static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, gmx_localtop_t* top)
 {
-    t_functype* functype;
-    t_iparams*  ip;
-    int         i, j, k, type, ftype, natom;
-    t_ilist*    disres;
-    t_iatom*    iatom;
-    real*       b;
-    int *       ind, *pair;
-    int         nb, label1;
+    int   i, j, k, type, ftype, natom;
+    real* b;
+    int * ind, *pair;
+    int   nb, label1;
 
-    functype = top->idef.functype;
-    ip       = top->idef.iparams;
+    gmx::ArrayRef<const t_functype> functype = top->idef.functype;
+    gmx::ArrayRef<const t_iparams>  iparams  = top->idef.iparams;
 
     /* Count how many distance restraint there are... */
-    nb = top->idef.il[F_DISRES].nr;
+    nb = top->idef.il[F_DISRES].size();
     if (nb == 0)
     {
         gmx_fatal(FARGS, "No distance restraints in topology!\n");
@@ -226,14 +222,14 @@ static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, gm
 
     /* Fill the bound array */
     nb = 0;
-    for (i = 0; (i < top->idef.ntypes); i++)
+    for (gmx::index i = 0; i < functype.ssize(); i++)
     {
         ftype = functype[i];
         if (ftype == F_DISRES)
         {
 
-            label1  = ip[i].disres.label;
-            b[nb]   = ip[i].disres.up1;
+            label1  = iparams[i].disres.label;
+            b[nb]   = iparams[i].disres.up1;
             ind[nb] = label1;
             nb++;
         }
@@ -241,18 +237,18 @@ static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, gm
     *bounds = b;
 
     /* Fill the index array */
-    label1 = -1;
-    disres = &(top->idef.il[F_DISRES]);
-    iatom  = disres->iatoms;
-    for (i = j = k = 0; (i < disres->nr);)
+    label1                          = -1;
+    const InteractionList&   disres = top->idef.il[F_DISRES];
+    gmx::ArrayRef<const int> iatom  = disres.iatoms;
+    for (i = j = k = 0; (i < disres.size());)
     {
         type  = iatom[i];
-        ftype = top->idef.functype[type];
+        ftype = functype[type];
         natom = interaction_function[ftype].nratoms + 1;
-        if (label1 != top->idef.iparams[type].disres.label)
+        if (label1 != iparams[type].disres.label)
         {
             pair[j] = k;
-            label1  = top->idef.iparams[type].disres.label;
+            label1  = iparams[type].disres.label;
             j++;
         }
         k++;
@@ -411,13 +407,12 @@ int gmx_nmr(int argc, char* argv[])
 
     FILE /* *out     = NULL,*/ *out_disre = nullptr, *fp_pairs = nullptr, *fort = nullptr,
                                *fodt = nullptr, *foten = nullptr;
-    ener_file_t    fp;
-    int            timecheck = 0;
-    gmx_localtop_t top;
-    gmx_enxnm_t*   enm = nullptr;
-    t_enxframe     fr;
-    int            nre, teller, teller_disre;
-    int            nor = 0, nex = 0, norfr = 0, enx_i = 0;
+    ener_file_t  fp;
+    int          timecheck = 0;
+    gmx_enxnm_t* enm       = nullptr;
+    t_enxframe   fr;
+    int          nre, teller, teller_disre;
+    int          nor = 0, nex = 0, norfr = 0, enx_i = 0;
     real *bounds = nullptr, *violaver = nullptr, *oobs = nullptr, *orient = nullptr, *odrms = nullptr;
     int *       index = nullptr, *pair = nullptr, norsel = 0, *orsel = nullptr, *or_label = nullptr;
     int         nbounds = 0, npairs;
@@ -480,7 +475,8 @@ int gmx_nmr(int argc, char* argv[])
     t_inputrec  irInstance;
     t_inputrec* ir = &irInstance;
     init_enxframe(&fr);
-    gmx::TopologyInformation topInfo;
+    gmx::TopologyInformation        topInfo;
+    std::unique_ptr<gmx_localtop_t> top;
     if (!bDisRe)
     {
         if (bORIRE || bOTEN)
@@ -618,9 +614,10 @@ int gmx_nmr(int argc, char* argv[])
     {
         {
             topInfo.fillFromInputFile(ftp2fn(efTPR, NFILE, fnm));
-            gmx_mtop_generate_local_top(*topInfo.mtop(), &top, ir->efep != efepNO);
+            top = std::make_unique<gmx_localtop_t>(topInfo.mtop()->ffparams);
+            gmx_mtop_generate_local_top(*topInfo.mtop(), top.get(), ir->efep != efepNO);
         }
-        nbounds = get_bounds(&bounds, &index, &pair, &npairs, &top);
+        nbounds = get_bounds(&bounds, &index, &pair, &npairs, top.get());
         snew(violaver, npairs);
         out_disre = xvgropen(opt2fn("-o", NFILE, fnm), "Sum of Violations", "Time (ps)", "nm", oenv);
         xvgr_legend(out_disre, 2, drleg, oenv);
@@ -661,23 +658,21 @@ int gmx_nmr(int argc, char* argv[])
             blk_disre = find_block_id_enxframe(&fr, enxDISRE, nullptr);
             if (bDisRe && bDRAll && !leg && blk_disre)
             {
-                t_iatom*   fa;
-                t_iparams* ip;
-
-                fa = top.idef.il[F_DISRES].iatoms;
-                ip = top.idef.iparams;
+                const InteractionList&   ilist = top->idef.il[F_DISRES];
+                gmx::ArrayRef<const int> fa    = ilist.iatoms;
+                const t_iparams*         ip    = top->idef.iparams.data();
                 if (blk_disre->nsub != 2 || (blk_disre->sub[0].nr != blk_disre->sub[1].nr))
                 {
                     gmx_incons("Number of disre sub-blocks not equal to 2");
                 }
 
                 ndisre = blk_disre->sub[0].nr;
-                if (ndisre != top.idef.il[F_DISRES].nr / 3)
+                if (ndisre != ilist.size() / 3)
                 {
                     gmx_fatal(FARGS,
                               "Number of disre pairs in the energy file (%d) does not match the "
                               "number in the run input file (%d)\n",
-                              ndisre, top.idef.il[F_DISRES].nr / 3);
+                              ndisre, ilist.size() / 3);
                 }
                 snew(pairleg, ndisre);
                 int molb = 0;

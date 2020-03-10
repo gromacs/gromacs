@@ -60,14 +60,21 @@ namespace gmx
 {
 struct AwhParams;
 
-/*! \brief Allocate, initialize and check the AWH parameters with values from the input file.
+/*! \brief Allocate and initialize the AWH parameters with values from the input file.
  *
  * \param[in,out] inp          Input file entries.
- * \param[in]     inputrec     Input parameter struct.
  * \param[in,out] wi           Struct for bookeeping warnings.
  * \returns AWH parameters.
  */
-AwhParams* readAndCheckAwhParams(std::vector<t_inpfile>* inp, const t_inputrec* inputrec, warninp_t wi);
+AwhParams* readAwhParams(std::vector<t_inpfile>* inp, warninp_t wi);
+
+/*! \brief Check the AWH parameters.
+ *
+ * \param[in,out] awhParams    The AWH parameters.
+ * \param[in]     inputrec     Input parameter struct.
+ * \param[in,out] wi           Struct for bookeeping warnings.
+ */
+void checkAwhParams(const AwhParams* awhParams, const t_inputrec* inputrec, warninp_t wi);
 
 
 /*! \brief

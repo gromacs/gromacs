@@ -59,13 +59,13 @@ namespace test
 void convertRVecToFloat3OnHost(std::vector<gmx::RVec>& /* rVecOutput */,
                                const std::vector<gmx::RVec>& /* rVecInput */)
 {
-    FAIL() << "Can't test float3 and RVec compatibility without CUDA.");
+    FAIL() << "Can't test float3 and RVec compatibility without CUDA.";
 }
 
 void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>& /* rVecOutput */,
                                  const std::vector<gmx::RVec>& /* rVecInput*/)
 {
-    FAIL() << "Can't test float3 and RVec compatibility without CUDA.");
+    FAIL() << "Can't test float3 and RVec compatibility without CUDA.";
 }
 
 } // namespace test

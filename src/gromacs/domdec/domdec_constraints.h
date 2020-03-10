@@ -46,6 +46,8 @@
 #ifndef GMX_DOMDEC_DOMDEC_CONSTRAINTS_H
 #define GMX_DOMDEC_DOMDEC_CONSTRAINTS_H
 
+#include "gromacs/utility/arrayref.h"
+
 namespace gmx
 {
 class Constraints;
@@ -53,19 +55,19 @@ class Constraints;
 
 struct gmx_domdec_t;
 struct gmx_mtop_t;
-struct t_ilist;
+struct InteractionList;
 
 /*! \brief Clears the local indices for the constraint communication setup */
 void dd_clear_local_constraint_indices(gmx_domdec_t* dd);
 
 /*! \brief Sets up communication and atom indices for all local+connected constraints */
-int dd_make_local_constraints(struct gmx_domdec_t*     dd,
-                              int                      at_start,
-                              const struct gmx_mtop_t* mtop,
-                              const int*               cginfo,
-                              gmx::Constraints*        constr,
-                              int                      nrec,
-                              struct t_ilist*          il_local);
+int dd_make_local_constraints(struct gmx_domdec_t*           dd,
+                              int                            at_start,
+                              const struct gmx_mtop_t*       mtop,
+                              const int*                     cginfo,
+                              gmx::Constraints*              constr,
+                              int                            nrec,
+                              gmx::ArrayRef<InteractionList> il_local);
 
 /*! \brief Initializes the data structures for constraint communication */
 void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t* mtop);

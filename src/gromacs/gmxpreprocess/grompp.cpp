@@ -1446,7 +1446,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
                                    gmx::ArrayRef<const t_iparams> iparams,
                                    real                           massFactorThreshold)
 {
-    if (molt.ilist[F_CONSTR].size() == 0 && molt.ilist[F_CONSTRNC].size() == 0)
+    if (molt.ilist[F_CONSTR].empty() && molt.ilist[F_CONSTRNC].empty())
     {
         return false;
     }
@@ -1855,6 +1855,11 @@ int gmx_grompp(int argc, char* argv[])
         get_ir(mdparin, opt2fn("-po", NFILE, fnm), &mdModules, ir, opts, WriteMdpHeader::yes, wi);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+
+    // Now that the MdModules have their options assigned from get_ir, subscribe
+    // to eventual notifications during pre-processing their data
+    mdModules.subscribeToPreProcessingNotifications();
+
 
     if (bVerbose)
     {

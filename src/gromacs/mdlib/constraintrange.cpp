@@ -163,7 +163,7 @@ static real constr_r_max_moltype(const gmx_moltype_t*           molt,
 
     real r0, r1, r2maxA, r2maxB, rmax, lam0, lam1;
 
-    if (molt->ilist[F_CONSTR].size() == 0 && molt->ilist[F_CONSTRNC].size() == 0)
+    if (molt->ilist[F_CONSTR].empty() && molt->ilist[F_CONSTRNC].empty())
     {
         return 0;
     }

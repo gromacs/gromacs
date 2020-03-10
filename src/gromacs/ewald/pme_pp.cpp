@@ -289,7 +289,7 @@ void gmx_pme_send_coordinates(t_forcerec*           fr,
                               const rvec*           x,
                               real                  lambda_q,
                               real                  lambda_lj,
-                              gmx_bool              bEnerVir,
+                              bool                  computeEnergyAndVirial,
                               int64_t               step,
                               bool                  useGpuPmePpComms,
                               bool                  receiveCoordinateAddressFromPme,
@@ -300,7 +300,7 @@ void gmx_pme_send_coordinates(t_forcerec*           fr,
     wallcycle_start(wcycle, ewcPP_PMESENDX);
 
     unsigned int flags = PP_PME_COORD;
-    if (bEnerVir)
+    if (computeEnergyAndVirial)
     {
         flags |= PP_PME_ENER_VIR;
     }

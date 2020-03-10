@@ -401,41 +401,42 @@ real posres(int                   nbonds,
 
 } // namespace
 
-void posres_wrapper(t_nrnb*               nrnb,
-                    const t_idef*         idef,
-                    const struct t_pbc*   pbc,
-                    const rvec*           x,
-                    gmx_enerdata_t*       enerd,
-                    const real*           lambda,
-                    const t_forcerec*     fr,
-                    gmx::ForceWithVirial* forceWithVirial)
+void posres_wrapper(t_nrnb*                       nrnb,
+                    const InteractionDefinitions& idef,
+                    const struct t_pbc*           pbc,
+                    const rvec*                   x,
+                    gmx_enerdata_t*               enerd,
+                    const real*                   lambda,
+                    const t_forcerec*             fr,
+                    gmx::ForceWithVirial*         forceWithVirial)
 {
     real v, dvdl;
 
     dvdl = 0;
-    v    = posres<true>(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms, idef->iparams_posres, x,
-                     forceWithVirial, fr->pbcType == PbcType::No ? nullptr : pbc, lambda[efptRESTRAINT],
-                     &dvdl, fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
+    v    = posres<true>(idef.il[F_POSRES].size(), idef.il[F_POSRES].iatoms.data(),
+                     idef.iparams_posres.data(), x, forceWithVirial,
+                     fr->pbcType == PbcType::No ? nullptr : pbc, lambda[efptRESTRAINT], &dvdl,
+                     fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
     enerd->term[F_POSRES] += v;
     /* If just the force constant changes, the FEP term is linear,
      * but if k changes, it is not.
      */
     enerd->dvdl_nonlin[efptRESTRAINT] += dvdl;
-    inc_nrnb(nrnb, eNR_POSRES, gmx::exactDiv(idef->il[F_POSRES].nr, 2));
+    inc_nrnb(nrnb, eNR_POSRES, gmx::exactDiv(idef.il[F_POSRES].size(), 2));
 }
 
-void posres_wrapper_lambda(struct gmx_wallcycle* wcycle,
-                           const t_lambda*       fepvals,
-                           const t_idef*         idef,
-                           const struct t_pbc*   pbc,
-                           const rvec            x[],
-                           gmx_enerdata_t*       enerd,
-                           const real*           lambda,
-                           const t_forcerec*     fr)
+void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
+                           const t_lambda*               fepvals,
+                           const InteractionDefinitions& idef,
+                           const struct t_pbc*           pbc,
+                           const rvec                    x[],
+                           gmx_enerdata_t*               enerd,
+                           const real*                   lambda,
+                           const t_forcerec*             fr)
 {
     real v;
 
-    if (0 == idef->il[F_POSRES].nr)
+    if (idef.il[F_POSRES].empty())
     {
         return;
     }
@@ -447,8 +448,9 @@ void posres_wrapper_lambda(struct gmx_wallcycle* wcycle,
 
         const real lambda_dum =
                 (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
-        v = posres<false>(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms, idef->iparams_posres, x,
-                          nullptr, fr->pbcType == PbcType::No ? nullptr : pbc, lambda_dum, &dvdl,
+        v = posres<false>(idef.il[F_POSRES].size(), idef.il[F_POSRES].iatoms.data(),
+                          idef.iparams_posres.data(), x, nullptr,
+                          fr->pbcType == PbcType::No ? nullptr : pbc, lambda_dum, &dvdl,
                           fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
         enerd->enerpart_lambda[i] += v;
         enerd->dhdlLambda[i] += dvdl;
@@ -458,19 +460,19 @@ void posres_wrapper_lambda(struct gmx_wallcycle* wcycle,
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb*               nrnb,
-                      const t_idef*         idef,
-                      const struct t_pbc*   pbc,
-                      const rvec*           x,
-                      gmx_enerdata_t*       enerd,
-                      const t_forcerec*     fr,
-                      gmx::ForceWithVirial* forceWithVirial)
+void fbposres_wrapper(t_nrnb*                       nrnb,
+                      const InteractionDefinitions& idef,
+                      const struct t_pbc*           pbc,
+                      const rvec*                   x,
+                      gmx_enerdata_t*               enerd,
+                      const t_forcerec*             fr,
+                      gmx::ForceWithVirial*         forceWithVirial)
 {
     real v;
 
-    v = fbposres(idef->il[F_FBPOSRES].nr, idef->il[F_FBPOSRES].iatoms, idef->iparams_fbposres, x,
-                 forceWithVirial, fr->pbcType == PbcType::No ? nullptr : pbc, fr->rc_scaling,
-                 fr->pbcType, fr->posres_com);
+    v = fbposres(idef.il[F_FBPOSRES].size(), idef.il[F_FBPOSRES].iatoms.data(),
+                 idef.iparams_fbposres.data(), x, forceWithVirial,
+                 fr->pbcType == PbcType::No ? nullptr : pbc, fr->rc_scaling, fr->pbcType, fr->posres_com);
     enerd->term[F_FBPOSRES] += v;
-    inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef->il[F_FBPOSRES].nr, 2));
+    inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef.il[F_FBPOSRES].size(), 2));
 }

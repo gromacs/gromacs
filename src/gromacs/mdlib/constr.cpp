@@ -112,7 +112,7 @@ public:
          int                   numConstraints,
          int                   numSettles);
     ~Impl();
-    void setConstraints(const gmx_localtop_t& top, const t_mdatoms& md);
+    void setConstraints(gmx_localtop_t* top, const t_mdatoms& md);
     bool apply(bool                      bLog,
                bool                      bEner,
                int64_t                   step,
@@ -138,7 +138,7 @@ public:
     //! LINCS data.
     Lincs* lincsd = nullptr; // TODO this should become a unique_ptr
     //! SHAKE data.
-    shakedata* shaked = nullptr;
+    std::unique_ptr<shakedata> shaked;
     //! SETTLE data.
     settledata* settled = nullptr;
     //! The maximum number of warnings.
@@ -158,7 +158,7 @@ public:
     //! Pointer to the global topology - only used for printing warnings.
     const gmx_mtop_t& mtop;
     //! Parameters for the interactions in this domain.
-    const t_idef* idef = nullptr;
+    const InteractionDefinitions* idef = nullptr;
     //! Data about atoms in this domain.
     const t_mdatoms& md;
     //! Whether we need to do pbc for handling bonds.
@@ -407,8 +407,8 @@ bool Constraints::Impl::apply(bool                      bLog,
     {
         clear_mat(vir_r_m_dr);
     }
-    const t_ilist* settle = &idef->il[F_SETTLE];
-    nsettle               = settle->nr / (1 + NRAL(F_SETTLE));
+    const InteractionList& settle = idef->il[F_SETTLE];
+    nsettle                       = settle.size() / (1 + NRAL(F_SETTLE));
 
     if (nsettle > 0)
     {
@@ -474,11 +474,10 @@ bool Constraints::Impl::apply(bool                      bLog,
 
     if (shaked != nullptr)
     {
-        bOK = constrain_shake(
-                log, shaked, md.invmass, *idef, ir, as_rvec_array(x.unpaddedArrayRef().data()),
-                as_rvec_array(xprime.unpaddedArrayRef().data()), as_rvec_array(min_proj.data()),
-                nrnb, lambda, dvdlambda, invdt, as_rvec_array(v.unpaddedArrayRef().data()),
-                vir != nullptr, vir_r_m_dr, maxwarn < INT_MAX, econq);
+        bOK = constrain_shake(log, shaked.get(), md.invmass, *idef, ir, x.unpaddedArrayRef(),
+                              xprime.unpaddedArrayRef(), min_proj, pbc_null, nrnb, lambda,
+                              dvdlambda, invdt, v.unpaddedArrayRef(), vir != nullptr, vir_r_m_dr,
+                              maxwarn < INT_MAX, econq);
 
         if (!bOK && maxwarn < INT_MAX)
         {
@@ -555,7 +554,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                         if (start_th >= 0 && end_th - start_th > 0)
                         {
                             settle_proj(settled, econq, end_th - start_th,
-                                        settle->iatoms + start_th * (1 + NRAL(F_SETTLE)), pbc_null,
+                                        settle.iatoms.data() + start_th * (1 + NRAL(F_SETTLE)), pbc_null,
                                         x.unpaddedArrayRef(), xprime.unpaddedArrayRef(), min_proj,
                                         calcvir_atom_end, th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th]);
                         }
@@ -759,21 +758,20 @@ FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegra
  *
  * \returns a block struct with all constraints for each atom
  */
-template<typename T>
-static ListOfLists<int> makeAtomsToConstraintsList(int                         numAtoms,
-                                                   const T*                    ilists,
-                                                   const t_iparams*            iparams,
+static ListOfLists<int> makeAtomsToConstraintsList(int                             numAtoms,
+                                                   ArrayRef<const InteractionList> ilists,
+                                                   ArrayRef<const t_iparams>       iparams,
                                                    FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
-    GMX_ASSERT(flexibleConstraintTreatment == FlexibleConstraintTreatment::Include || iparams != nullptr,
+    GMX_ASSERT(flexibleConstraintTreatment == FlexibleConstraintTreatment::Include || !iparams.empty(),
                "With flexible constraint detection we need valid iparams");
 
     std::vector<int> count(numAtoms);
 
     for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
     {
-        const T&  ilist  = ilists[ftype];
-        const int stride = 1 + NRAL(ftype);
+        const InteractionList& ilist  = ilists[ftype];
+        const int              stride = 1 + NRAL(ftype);
         for (int i = 0; i < ilist.size(); i += stride)
         {
             if (flexibleConstraintTreatment == FlexibleConstraintTreatment::Include
@@ -802,8 +800,8 @@ static ListOfLists<int> makeAtomsToConstraintsList(int                         n
     int numConstraints = 0;
     for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
     {
-        const T&  ilist  = ilists[ftype];
-        const int stride = 1 + NRAL(ftype);
+        const InteractionList& ilist  = ilists[ftype];
+        const int              stride = 1 + NRAL(ftype);
         for (int i = 0; i < ilist.size(); i += stride)
         {
             if (flexibleConstraintTreatment == FlexibleConstraintTreatment::Include
@@ -822,10 +820,10 @@ static ListOfLists<int> makeAtomsToConstraintsList(int                         n
     return ListOfLists<int>(std::move(listRanges), std::move(elements));
 }
 
-ListOfLists<int> make_at2con(int                         numAtoms,
-                             const t_ilist*              ilist,
-                             const t_iparams*            iparams,
-                             FlexibleConstraintTreatment flexibleConstraintTreatment)
+ListOfLists<int> make_at2con(int                             numAtoms,
+                             ArrayRef<const InteractionList> ilist,
+                             ArrayRef<const t_iparams>       iparams,
+                             FlexibleConstraintTreatment     flexibleConstraintTreatment)
 {
     return makeAtomsToConstraintsList(numAtoms, ilist, iparams, flexibleConstraintTreatment);
 }
@@ -834,13 +832,12 @@ ListOfLists<int> make_at2con(const gmx_moltype_t&           moltype,
                              gmx::ArrayRef<const t_iparams> iparams,
                              FlexibleConstraintTreatment    flexibleConstraintTreatment)
 {
-    return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist.data(), iparams.data(),
+    return makeAtomsToConstraintsList(moltype.atoms.nr, makeConstArrayRef(moltype.ilist), iparams,
                                       flexibleConstraintTreatment);
 }
 
 //! Return the number of flexible constraints in the \c ilist and \c iparams.
-template<typename T>
-static int countFlexibleConstraintsTemplate(const T* ilist, const t_iparams* iparams)
+int countFlexibleConstraints(ArrayRef<const InteractionList> ilist, ArrayRef<const t_iparams> iparams)
 {
     int nflexcon = 0;
     for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
@@ -857,11 +854,6 @@ static int countFlexibleConstraintsTemplate(const T* ilist, const t_iparams* ipa
     }
 
     return nflexcon;
-}
-
-int countFlexibleConstraints(const t_ilist* ilist, const t_iparams* iparams)
-{
-    return countFlexibleConstraintsTemplate(ilist, iparams);
 }
 
 //! Returns the index of the settle to which each atom belongs.
@@ -882,9 +874,9 @@ static std::vector<int> make_at2settle(int natoms, const InteractionList& ilist)
     return at2s;
 }
 
-void Constraints::Impl::setConstraints(const gmx_localtop_t& top, const t_mdatoms& md)
+void Constraints::Impl::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
 {
-    idef = &top.idef;
+    idef = &top->idef;
 
     if (ncon_tot > 0)
     {
@@ -893,7 +885,7 @@ void Constraints::Impl::setConstraints(const gmx_localtop_t& top, const t_mdatom
          */
         if (ir.eConstrAlg == econtLINCS)
         {
-            set_lincs(top.idef, md, EI_DYNAMICS(ir.eI), cr, lincsd);
+            set_lincs(*idef, md, EI_DYNAMICS(ir.eI), cr, lincsd);
         }
         if (ir.eConstrAlg == econtSHAKE)
         {
@@ -901,18 +893,18 @@ void Constraints::Impl::setConstraints(const gmx_localtop_t& top, const t_mdatom
             {
                 // We are using the local topology, so there are only
                 // F_CONSTR constraints.
-                make_shake_sblock_dd(shaked, &idef->il[F_CONSTR], cr->dd);
+                make_shake_sblock_dd(shaked.get(), idef->il[F_CONSTR]);
             }
             else
             {
-                make_shake_sblock_serial(shaked, idef, md);
+                make_shake_sblock_serial(shaked.get(), &top->idef, md);
             }
         }
     }
 
     if (settled)
     {
-        settle_set_constraints(settled, &idef->il[F_SETTLE], md);
+        settle_set_constraints(settled, idef->il[F_SETTLE], md);
     }
 
     /* Make a selection of the local atoms for essential dynamics */
@@ -922,7 +914,7 @@ void Constraints::Impl::setConstraints(const gmx_localtop_t& top, const t_mdatom
     }
 }
 
-void Constraints::setConstraints(const gmx_localtop_t& top, const t_mdatoms& md)
+void Constraints::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
 {
     impl_->setConstraints(top, md);
 }
@@ -995,8 +987,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
 
         for (const gmx_molblock_t& molblock : mtop.molblock)
         {
-            int count = countFlexibleConstraintsTemplate(mtop.moltype[molblock.type].ilist.data(),
-                                                         mtop.ffparams.iparams.data());
+            int count = countFlexibleConstraints(mtop.moltype[molblock.type].ilist, mtop.ffparams.iparams);
             nflexcon += molblock.nmol * count;
         }
 
@@ -1050,7 +1041,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
                 please_cite(log, "Barth95a");
             }
 
-            shaked = shake_init();
+            shaked = std::make_unique<shakedata>();
         }
     }
 

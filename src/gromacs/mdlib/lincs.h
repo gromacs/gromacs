@@ -53,8 +53,8 @@
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
+class InteractionDefinitions;
 struct t_commrec;
-struct t_idef;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
@@ -90,7 +90,11 @@ Lincs* init_lincs(FILE*                            fplog,
 void done_lincs(Lincs* li);
 
 /*! \brief Initialize lincs stuff */
-void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_commrec* cr, Lincs* li);
+void set_lincs(const InteractionDefinitions& idef,
+               const t_mdatoms&              md,
+               bool                          bDynamics,
+               const t_commrec*              cr,
+               Lincs*                        li);
 
 /*! \brief Applies LINCS constraints.
  *

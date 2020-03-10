@@ -175,9 +175,9 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
                              : commandStream_ = nullptr;
 
 
-    integrator_ = std::make_unique<LeapFrogGpu>(commandStream_);
-    lincsGpu_   = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, commandStream_);
-    settleGpu_  = std::make_unique<SettleGpu>(mtop, commandStream_);
+    integrator_ = std::make_unique<LeapFrogGpu>(deviceContext_, commandStream_);
+    lincsGpu_ = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, deviceContext_, commandStream_);
+    settleGpu_ = std::make_unique<SettleGpu>(mtop, deviceContext_, commandStream_);
 
     coordinateScalingKernelLaunchConfig_.blockSize[0]     = c_threadsPerBlock;
     coordinateScalingKernelLaunchConfig_.blockSize[1]     = 1;
@@ -188,12 +188,12 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
 
 UpdateConstrainGpu::Impl::~Impl() {}
 
-void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>       d_x,
-                                   DeviceBuffer<RVec>       d_v,
-                                   const DeviceBuffer<RVec> d_f,
-                                   const t_idef&            idef,
-                                   const t_mdatoms&         md,
-                                   const int                numTempScaleValues)
+void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
+                                   DeviceBuffer<RVec>            d_v,
+                                   const DeviceBuffer<RVec>      d_f,
+                                   const InteractionDefinitions& idef,
+                                   const t_mdatoms&              md,
+                                   const int                     numTempScaleValues)
 {
     GMX_ASSERT(d_x != nullptr, "Coordinates device buffer should not be null.");
     GMX_ASSERT(d_v != nullptr, "Velocities device buffer should not be null.");
@@ -205,10 +205,10 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>       d_x,
 
     numAtoms_ = md.nr;
 
-    reallocateDeviceBuffer(&d_xp_, numAtoms_, &numXp_, &numXpAlloc_, nullptr);
+    reallocateDeviceBuffer(&d_xp_, numAtoms_, &numXp_, &numXpAlloc_, deviceContext_);
 
     reallocateDeviceBuffer(&d_inverseMasses_, numAtoms_, &numInverseMasses_,
-                           &numInverseMassesAlloc_, nullptr);
+                           &numInverseMassesAlloc_, deviceContext_);
 
     // Integrator should also update something, but it does not even have a method yet
     integrator_->set(md, numTempScaleValues, md.cTC);
@@ -259,12 +259,12 @@ void UpdateConstrainGpu::scaleCoordinates(const matrix scalingMatrix)
     impl_->scaleCoordinates(scalingMatrix);
 }
 
-void UpdateConstrainGpu::set(DeviceBuffer<RVec>       d_x,
-                             DeviceBuffer<RVec>       d_v,
-                             const DeviceBuffer<RVec> d_f,
-                             const t_idef&            idef,
-                             const t_mdatoms&         md,
-                             const int                numTempScaleValues)
+void UpdateConstrainGpu::set(DeviceBuffer<RVec>            d_x,
+                             DeviceBuffer<RVec>            d_v,
+                             const DeviceBuffer<RVec>      d_f,
+                             const InteractionDefinitions& idef,
+                             const t_mdatoms&              md,
+                             const int                     numTempScaleValues)
 {
     impl_->set(d_x, d_v, d_f, idef, md, numTempScaleValues);
 }

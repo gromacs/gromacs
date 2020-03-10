@@ -891,10 +891,8 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags =
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
-    const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
+    const bool useModularSimulator = checkUseModularSimulator(
             false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed);
-    const bool useModularSimulator = inputIsCompatibleWithModularSimulator
-                                     && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
@@ -910,6 +908,8 @@ int Mdrunner::mdrunner()
 
     // TODO: Error handling
     mdModules_->assignOptionsToModules(*inputrec->params, nullptr);
+    // now that the MdModules know their options, they know which callbacks to sign up to
+    mdModules_->subscribeToSimulationSetupNotifications();
     const auto& mdModulesNotifier = mdModules_->notifier().simulationSetupNotifications_;
 
     if (inputrec->internalParameters != nullptr)
@@ -1566,8 +1566,8 @@ int Mdrunner::mdrunner()
                     fr->nbv->gpu_nbv != nullptr
                             ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::NonLocal)
                             : nullptr;
-            const void*        deviceContext = pme_gpu_get_device_context(fr->pmedata);
-            const int          paddingSize   = pme_gpu_get_padding_size(fr->pmedata);
+            const DeviceContext& deviceContext = *pme_gpu_get_device_context(fr->pmedata);
+            const int            paddingSize   = pme_gpu_get_padding_size(fr->pmedata);
             GpuApiCallBehavior transferKind = (inputrec->eI == eiMD && !doRerun && !useModularSimulator)
                                                       ? GpuApiCallBehavior::Async
                                                       : GpuApiCallBehavior::Sync;
@@ -1582,9 +1582,8 @@ int Mdrunner::mdrunner()
 
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(
-                inputIsCompatibleWithModularSimulator, fplog, cr, ms, mdlog,
-                static_cast<int>(filenames.size()), filenames.data(), oenv, mdrunOptions,
-                startingBehavior, vsite.get(), constr.get(),
+                useModularSimulator, fplog, cr, ms, mdlog, static_cast<int>(filenames.size()),
+                filenames.data(), oenv, mdrunOptions, startingBehavior, vsite.get(), constr.get(),
                 enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr, deform.get(),
                 mdModules_->outputProvider(), mdModules_->notifier(), inputrec, imdSession.get(),
                 pull_work, swap, &mtop, fcd, globalState.get(), &observablesHistory, mdAtoms.get(),

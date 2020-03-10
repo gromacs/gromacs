@@ -148,14 +148,14 @@ using gmx::SimulationSignaller;
  * \param[in]     forceRec        Force record, used for constructing vsites
  * \param[in,out] graph           The molecular graph, used for constructing vsites when != nullptr
  */
-static void prepareRerunState(const t_trxframe&  rerunFrame,
-                              t_state*           globalState,
-                              bool               constructVsites,
-                              const gmx_vsite_t* vsite,
-                              const t_idef&      idef,
-                              double             timeStep,
-                              const t_forcerec&  forceRec,
-                              t_graph*           graph)
+static void prepareRerunState(const t_trxframe&             rerunFrame,
+                              t_state*                      globalState,
+                              bool                          constructVsites,
+                              const gmx_vsite_t*            vsite,
+                              const InteractionDefinitions& idef,
+                              double                        timeStep,
+                              const t_forcerec&             forceRec,
+                              t_graph*                      graph)
 {
     auto x      = makeArrayRef(globalState->x);
     auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerunFrame.x), globalState->natoms);
@@ -202,7 +202,7 @@ void gmx::LegacySimulator::do_rerun()
     t_trxstatus*                status = nullptr;
     rvec                        mu_tot;
     t_trxframe                  rerun_fr;
-    gmx_localtop_t              top;
+    gmx_localtop_t              top(top_global->ffparams);
     PaddedHostVector<gmx::RVec> f{};
     gmx_global_stat_t           gstat;
     t_graph*                    graph = nullptr;
@@ -328,8 +328,6 @@ void gmx::LegacySimulator::do_rerun()
 
     if (DOMAINDECOMP(cr))
     {
-        dd_init_local_top(*top_global, &top);
-
         stateInstance = std::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);

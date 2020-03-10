@@ -58,13 +58,9 @@ TopologyHolder::TopologyHolder(const gmx_mtop_t& globalTopology,
                                Constraints*      constr,
                                gmx_vsite_t*      vsite) :
     globalTopology_(globalTopology),
-    localTopology_(std::make_unique<gmx_localtop_t>())
+    localTopology_(std::make_unique<gmx_localtop_t>(globalTopology.ffparams))
 {
-    if (DOMAINDECOMP(cr))
-    {
-        dd_init_local_top(globalTopology, localTopology_.get());
-    }
-    else
+    if (!DOMAINDECOMP(cr))
     {
         t_graph* graph = nullptr;
         // Generate and initialize new topology

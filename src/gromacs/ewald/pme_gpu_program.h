@@ -55,7 +55,7 @@ struct DeviceInformation;
 class PmeGpuProgram
 {
 public:
-    explicit PmeGpuProgram(const DeviceInformation* deviceInfo);
+    explicit PmeGpuProgram(const DeviceInformation& deviceInfo);
     ~PmeGpuProgram();
 
     // TODO: design getters for information inside, if needed for PME, and make this private?

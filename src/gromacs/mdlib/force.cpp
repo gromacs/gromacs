@@ -102,7 +102,7 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t* ewc_t)
 
 void do_force_lowlevel(t_forcerec*                         fr,
                        const t_inputrec*                   ir,
-                       const t_idef*                       idef,
+                       const InteractionDefinitions&       idef,
                        const t_commrec*                    cr,
                        const gmx_multisim_t*               ms,
                        t_nrnb*                             nrnb,
@@ -178,7 +178,7 @@ void do_force_lowlevel(t_forcerec*                         fr,
 
         /* Check whether we need to take into account PBC in listed interactions. */
         const auto needPbcForListedForces =
-                fr->bMolPBC && stepWork.computeListedForces && haveCpuListedForces(*fr, *idef, *fcd);
+                fr->bMolPBC && stepWork.computeListedForces && haveCpuListedForces(*fr, idef, *fcd);
         if (needPbcForListedForces)
         {
             /* Since all atoms are in the rectangular or triclinic unit-cell,
@@ -218,13 +218,6 @@ void do_force_lowlevel(t_forcerec*                         fr,
             if (haveEwaldSurfaceTerm)
             {
                 wallcycle_sub_start(wcycle, ewcsEWALD_CORRECTION);
-
-                if (fr->n_tpi > 0)
-                {
-                    gmx_fatal(FARGS,
-                              "TPI with PME currently only works in a 3D geometry with tin-foil "
-                              "boundary conditions");
-                }
 
                 int nthreads = fr->nthread_ewc;
 #pragma omp parallel for num_threads(nthreads) schedule(static)
@@ -271,22 +264,6 @@ void do_force_lowlevel(t_forcerec*                         fr,
                 assert(fr->n_tpi >= 0);
                 if (fr->n_tpi == 0 || stepWork.stateChanged)
                 {
-                    int pme_flags = GMX_PME_SPREAD | GMX_PME_SOLVE;
-
-                    if (stepWork.computeForces)
-                    {
-                        pme_flags |= GMX_PME_CALC_F;
-                    }
-                    if (stepWork.computeVirial)
-                    {
-                        pme_flags |= GMX_PME_CALC_ENER_VIR;
-                    }
-                    if (fr->n_tpi > 0)
-                    {
-                        /* We don't calculate f, but we do want the potential */
-                        pme_flags |= GMX_PME_CALC_POT;
-                    }
-
                     /* With domain decomposition we close the CPU side load
                      * balancing region here, because PME does global
                      * communication that acts as a global barrier.
@@ -304,7 +281,7 @@ void do_force_lowlevel(t_forcerec*                         fr,
                             DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0, nrnb, wcycle,
                             ewaldOutput.vir_q, ewaldOutput.vir_lj, &Vlr_q, &Vlr_lj,
                             lambda[efptCOUL], lambda[efptVDW], &ewaldOutput.dvdl[efptCOUL],
-                            &ewaldOutput.dvdl[efptVDW], pme_flags);
+                            &ewaldOutput.dvdl[efptVDW], stepWork);
                     wallcycle_stop(wcycle, ewcPMEMESH);
                     if (status != 0)
                     {
@@ -321,11 +298,6 @@ void do_force_lowlevel(t_forcerec*                         fr,
                 }
                 if (fr->n_tpi > 0)
                 {
-                    if (EVDW_PME(ir->vdwtype))
-                    {
-
-                        gmx_fatal(FARGS, "Test particle insertion not implemented with LJ-PME");
-                    }
                     /* Determine the PME grid energy of the test molecule
                      * with the PME grid potential of the other charges.
                      */

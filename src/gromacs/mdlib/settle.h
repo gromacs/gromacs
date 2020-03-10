@@ -46,8 +46,8 @@
 
 #include "gromacs/topology/idef.h"
 
-struct gmx_cmap_t;
 struct gmx_mtop_t;
+struct InteractionList;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_pbc;
@@ -71,7 +71,7 @@ settledata* settle_init(const gmx_mtop_t& mtop);
 void settle_free(settledata* settled);
 
 /*! \brief Set up the indices for the settle constraints */
-void settle_set_constraints(settledata* settled, const t_ilist* il_settle, const t_mdatoms& mdatoms);
+void settle_set_constraints(settledata* settled, const InteractionList& il_settle, const t_mdatoms& mdatoms);
 
 /*! \brief Constrain coordinates using SETTLE.
  * Can be called on any number of threads.
@@ -95,7 +95,7 @@ void csettle(settledata*                     settled,     /* The SETTLE structur
 void settle_proj(settledata*          settled,
                  ConstraintVariable   econq,
                  int                  nsettle,
-                 const t_iatom        iatoms[],
+                 const int            iatoms[],
                  const t_pbc*         pbc, /* PBC data pointer, can be NULL  */
                  ArrayRef<const RVec> x,
                  ArrayRef<RVec>       der,

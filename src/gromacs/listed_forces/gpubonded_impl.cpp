@@ -168,7 +168,7 @@ GpuBonded::GpuBonded(const gmx_ffparams_t& /* ffparams */, void* /*streamPtr */,
 GpuBonded::~GpuBonded() = default;
 
 void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nbnxnAtomOrder */,
-                                                       const t_idef& /* idef */,
+                                                       const InteractionDefinitions& /* idef */,
                                                        void* /* xqDevice */,
                                                        DeviceBuffer<RVec> /* forceDevice */,
                                                        DeviceBuffer<RVec> /* fshiftDevice */)

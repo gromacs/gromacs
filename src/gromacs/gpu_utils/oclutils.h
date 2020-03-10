@@ -44,6 +44,7 @@
 
 #include <string>
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/utility/exceptions.h"
@@ -63,8 +64,10 @@ enum class GpuApiCallBehavior;
  */
 struct gmx_device_runtime_data_t
 {
-    cl_context context; /**< OpenCL context */
-    cl_program program; /**< OpenCL program */
+    //! OpenCL context
+    DeviceContext deviceContext;
+    //! OpenCL program
+    cl_program program;
 };
 
 /*! \brief Launches synchronous or asynchronous device to host memory copy.

@@ -166,7 +166,7 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     // TODO: Special constructor for PME-only rank / PME-tests is used here. There should be a mechanism to
     //       restrict one from using other constructor here.
     return std::make_unique<StatePropagatorDataGpu>(
-            pme_gpu_get_device_stream(&pme), pme_gpu_get_device_context(&pme),
+            pme_gpu_get_device_stream(&pme), *pme_gpu_get_device_context(&pme),
             GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme), nullptr);
 }
 
@@ -425,7 +425,8 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
         case CodePath::GPU:
         {
             // Variable initialization needs a non-switch scope
-            PmeOutput output = pme_gpu_getOutput(*pme, GMX_PME_CALC_F);
+            const bool computeEnergyAndVirial = false;
+            PmeOutput  output                 = pme_gpu_getOutput(*pme, computeEnergyAndVirial);
             GMX_ASSERT(forces.size() == output.forces_.size(),
                        "Size of force buffers did not match");
             pme_gpu_gather(pme->gpu, reinterpret_cast<float*>(fftgrid));

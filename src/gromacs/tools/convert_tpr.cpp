@@ -184,50 +184,40 @@ static void reduce_atom(int gnx, const int index[], t_atom atom[], char*** atomn
 
 static void reduce_ilist(gmx::ArrayRef<const int> invindex,
                          const std::vector<bool>& bKeep,
-                         t_ilist*                 il,
+                         InteractionList*         il,
                          int                      nratoms,
                          const char*              name)
 {
-    t_iatom* ia;
-    int      i, j, newnr;
-    gmx_bool bB;
-
-    if (il->nr)
+    if (!il->empty())
     {
-        snew(ia, il->nr);
-        newnr = 0;
-        for (i = 0; (i < il->nr); i += nratoms + 1)
+        std::vector<int> newAtoms(nratoms);
+        InteractionList  ilReduced;
+        for (int i = 0; i < il->size(); i += nratoms + 1)
         {
-            bB = TRUE;
-            for (j = 1; (j <= nratoms); j++)
+            bool bB = true;
+            for (int j = 0; j < nratoms; j++)
             {
-                bB = bB && bKeep[il->iatoms[i + j]];
+                bB = bB && bKeep[il->iatoms[i + 1 + j]];
             }
             if (bB)
             {
-                ia[newnr++] = il->iatoms[i];
-                for (j = 1; (j <= nratoms); j++)
+                for (int j = 0; j < nratoms; j++)
                 {
-                    ia[newnr++] = invindex[il->iatoms[i + j]];
+                    newAtoms[j] = invindex[il->iatoms[i + 1 + j]];
                 }
+                ilReduced.push_back(il->iatoms[i], nratoms, newAtoms.data());
             }
         }
-        fprintf(stderr, "Reduced ilist %8s from %6d to %6d entries\n", name, il->nr / (nratoms + 1),
-                newnr / (nratoms + 1));
+        fprintf(stderr, "Reduced ilist %8s from %6d to %6d entries\n", name,
+                il->size() / (nratoms + 1), ilReduced.size() / (nratoms + 1));
 
-        il->nr = newnr;
-        for (i = 0; (i < newnr); i++)
-        {
-            il->iatoms[i] = ia[i];
-        }
-
-        sfree(ia);
+        *il = std::move(ilReduced);
     }
 }
 
 static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], rvec v[])
 {
-    gmx_localtop_t top;
+    gmx_localtop_t top(mtop->ffparams);
     gmx_mtop_generate_local_top(*mtop, &top, false);
     t_atoms atoms = gmx_mtop_global_atoms(mtop);
 
@@ -252,12 +242,7 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], 
     mtop->moltype[0].excls = reduce_listoflists(invindex, bKeep, top.excls, "excls");
     for (int i = 0; i < F_NRE; i++)
     {
-        InteractionList& ilist = mtop->moltype[0].ilist[i];
-        ilist.iatoms.resize(top.idef.il[i].nr);
-        for (int j = 0; j < top.idef.il[i].nr; j++)
-        {
-            ilist.iatoms[j] = top.idef.il[i].iatoms[j];
-        }
+        mtop->moltype[0].ilist[i] = std::move(top.idef.il[i]);
     }
 
     mtop->molblock.resize(1);

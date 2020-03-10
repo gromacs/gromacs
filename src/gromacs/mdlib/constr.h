@@ -134,7 +134,7 @@ public:
      *
      * \todo Make this a callback that is called automatically
      * once a new domain has been made. */
-    void setConstraints(const gmx_localtop_t& top, const t_mdatoms& md);
+    void setConstraints(gmx_localtop_t* top, const t_mdatoms& md);
 
     /*! \brief Applies constraints to coordinates.
      *
@@ -215,10 +215,8 @@ private:
 [[noreturn]] void too_many_constraint_warnings(int eConstrAlg, int warncount);
 
 /*! \brief Returns whether constraint with parameter \p iparamsIndex is a flexible constraint */
-static inline bool isConstraintFlexible(const t_iparams* iparams, int iparamsIndex)
+static inline bool isConstraintFlexible(ArrayRef<const t_iparams> iparams, int iparamsIndex)
 {
-    GMX_ASSERT(iparams != nullptr, "Need a valid iparams array");
-
     return (iparams[iparamsIndex].constr.dA == 0 && iparams[iparamsIndex].constr.dB == 0);
 };
 
@@ -271,13 +269,13 @@ ListOfLists<int> make_at2con(const gmx_moltype_t&           moltype,
  *
  * \returns a ListOfLists object with all constraints for each atom
  */
-ListOfLists<int> make_at2con(int                         numAtoms,
-                             const t_ilist*              ilist,
-                             const t_iparams*            iparams,
-                             FlexibleConstraintTreatment flexibleConstraintTreatment);
+ListOfLists<int> make_at2con(int                             numAtoms,
+                             ArrayRef<const InteractionList> ilist,
+                             ArrayRef<const t_iparams>       iparams,
+                             FlexibleConstraintTreatment     flexibleConstraintTreatment);
 
 //! Return the number of flexible constraints in the \c ilist and \c iparams.
-int countFlexibleConstraints(const t_ilist* ilist, const t_iparams* iparams);
+int countFlexibleConstraints(ArrayRef<const InteractionList> ilist, ArrayRef<const t_iparams> iparams);
 
 /*! \brief Returns the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints

@@ -45,6 +45,7 @@
  *  \inlibraryapi
  */
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h" //only for GpuApiCallBehavior
 #include "gromacs/gpu_utils/gputraits.cuh"
@@ -60,7 +61,7 @@
  * \param[in]     deviceContext        The buffer's dummy device  context - not managed explicitly in CUDA RT.
  */
 template<typename ValueType>
-void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, DeviceContext /* deviceContext */)
+void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, const DeviceContext& /* deviceContext */)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     cudaError_t stat = cudaMalloc((void**)buffer, numValues * sizeof(ValueType));

@@ -105,7 +105,7 @@ const gmx_localtop_t* TopologyInformation::expandedTopology() const
     // Do lazy initialization
     if (expandedTopology_ == nullptr && hasTopology())
     {
-        expandedTopology_ = std::make_unique<gmx_localtop_t>();
+        expandedTopology_ = std::make_unique<gmx_localtop_t>(mtop_->ffparams);
         gmx_mtop_generate_local_top(*mtop_, expandedTopology_.get(), false);
     }
 
@@ -189,7 +189,7 @@ gmx_rmpbc_t gmx_rmpbc_init(const gmx::TopologyInformation& topInfo)
 {
     GMX_RELEASE_ASSERT(topInfo.hasTopology(), "Cannot remove PBC without a topology");
 
-    return gmx_rmpbc_init(&topInfo.expandedTopology()->idef, topInfo.pbcType(), topInfo.mtop()->natoms);
+    return gmx_rmpbc_init(topInfo.expandedTopology()->idef, topInfo.pbcType(), topInfo.mtop()->natoms);
 }
 
 } // namespace gmx

@@ -110,15 +110,18 @@ static __global__ void convertRVecToFloat3OnDevice_kernel(DeviceBuffer<float3> g
 
 void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>& h_rVecOutput, const std::vector<gmx::RVec>& h_rVecInput)
 {
+    DeviceInformation   deviceInfo;
+    const DeviceContext deviceContext(deviceInfo);
+
     const int numElements = h_rVecInput.size();
 
     DeviceBuffer<RVec> d_rVecInput;
-    allocateDeviceBuffer(&d_rVecInput, numElements, nullptr);
+    allocateDeviceBuffer(&d_rVecInput, numElements, deviceContext);
     copyToDeviceBuffer(&d_rVecInput, h_rVecInput.data(), 0, numElements, nullptr,
                        GpuApiCallBehavior::Sync, nullptr);
 
     DeviceBuffer<float3> d_float3Output;
-    allocateDeviceBuffer(&d_float3Output, numElements * DIM, nullptr);
+    allocateDeviceBuffer(&d_float3Output, numElements * DIM, deviceContext);
 
     std::vector<float3> h_float3Output(numElements);
 

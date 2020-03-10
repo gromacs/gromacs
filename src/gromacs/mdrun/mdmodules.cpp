@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ class MDModules::Impl : public IMDOutputProvider
 {
 public:
     Impl() :
-        densityFitting_(DensityFittingModuleInfo::create(&notifier_)),
+        densityFitting_(DensityFittingModuleInfo::create()),
         field_(createElectricFieldModule()),
         imd_(createInteractiveMolecularDynamicsModule()),
         swapCoordinates_(createSwapCoordinatesModule())
@@ -172,6 +172,16 @@ ForceProviders* MDModules::initForceProviders()
         module->initForceProviders(impl_->forceProviders_.get());
     }
     return impl_->forceProviders_.get();
+}
+
+void MDModules::subscribeToPreProcessingNotifications()
+{
+    impl_->densityFitting_->subscribeToPreProcessingNotifications(&impl_->notifier_);
+}
+
+void MDModules::subscribeToSimulationSetupNotifications()
+{
+    impl_->densityFitting_->subscribeToSimulationSetupNotifications(&impl_->notifier_);
 }
 
 void MDModules::add(std::shared_ptr<gmx::IMDModule> module)

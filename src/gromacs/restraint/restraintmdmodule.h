@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@ namespace gmx
 
 // Forward declaration to allow opaque pointer to library internal class.
 class RestraintMDModuleImpl;
+struct MdModulesNotifier;
 
 /*! \libinternal \ingroup module_restraint
  * \brief MDModule wrapper for Restraint implementations.
@@ -114,6 +115,11 @@ public:
      * \param forceProviders manager in the force record.
      */
     void initForceProviders(ForceProviders* forceProviders) override;
+
+    //! Subscribe to simulation setup notifications
+    void subscribeToSimulationSetupNotifications(MdModulesNotifier* notifier) override;
+    //! Subscribe to pre processing notifications
+    void subscribeToPreProcessingNotifications(MdModulesNotifier* notifier) override;
 
 private:
     /*!

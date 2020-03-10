@@ -47,6 +47,7 @@
 #define GMX_DOMDEC_GPUHALOEXCHANGE_IMPL_H
 
 #include "gromacs/domdec/gpuhaloexchange.h"
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -175,6 +176,8 @@ private:
     GpuEventSynchronizer* haloDataTransferLaunched_ = nullptr;
     //! MPI communicator used for simulation
     MPI_Comm mpi_comm_mysim_;
+    //! Dummy GPU context object
+    const DeviceContext deviceContext_;
     //! CUDA stream for local non-bonded calculations
     cudaStream_t localStream_ = nullptr;
     //! CUDA stream for non-local non-bonded calculations

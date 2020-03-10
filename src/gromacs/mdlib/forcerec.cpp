@@ -920,33 +920,15 @@ static void init_interaction_const(FILE*                 fp,
 
 bool areMoleculesDistributedOverPbc(const t_inputrec& ir, const gmx_mtop_t& mtop, const gmx::MDLogger& mdlog)
 {
-    bool       areMoleculesDistributedOverPbc = false;
-    const bool useEwaldSurfaceCorrection = (EEL_PME_EWALD(ir.coulombtype) && ir.epsilon_surface != 0);
+    bool areMoleculesDistributedOverPbc = false;
 
-    const bool bSHAKE =
-            (ir.eConstrAlg == econtSHAKE
-             && (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0 || gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0));
-
-    /* The group cut-off scheme and SHAKE assume charge groups
-     * are whole, but not using molpbc is faster in most cases.
-     * With intermolecular interactions we need PBC for calculating
-     * distances between atoms in different molecules.
-     */
-    if (bSHAKE && !mtop.bIntermolecularInteractions)
-    {
-        areMoleculesDistributedOverPbc = ir.bPeriodicMols;
-
-        if (areMoleculesDistributedOverPbc)
-        {
-            gmx_fatal(FARGS, "SHAKE is not supported with periodic molecules");
-        }
-    }
-    else
+    if (ir.pbcType != PbcType::No)
     {
         /* Not making molecules whole is faster in most cases,
          * but with orientation restraints or non-tinfoil boundary
          * conditions we need whole molecules.
          */
+        const bool useEwaldSurfaceCorrection = (EEL_PME_EWALD(ir.coulombtype) && ir.epsilon_surface != 0);
         areMoleculesDistributedOverPbc =
                 (gmx_mtop_ftype_count(mtop, F_ORIRES) == 0 && !useEwaldSurfaceCorrection);
 
@@ -973,15 +955,6 @@ bool areMoleculesDistributedOverPbc(const t_inputrec& ir, const gmx_mtop_t& mtop
 
         GMX_RELEASE_ASSERT(areMoleculesDistributedOverPbc || !mtop.bIntermolecularInteractions,
                            "We need to use PBC within molecules with inter-molecular interactions");
-
-        if (bSHAKE && areMoleculesDistributedOverPbc)
-        {
-            gmx_fatal(FARGS,
-                      "SHAKE is not properly supported with intermolecular interactions. "
-                      "For short simulations where linked molecules remain in the same "
-                      "periodic image, the environment variable GMX_USE_GRAPH can be used "
-                      "to override this check.\n");
-        }
     }
 
     return areMoleculesDistributedOverPbc;

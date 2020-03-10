@@ -48,7 +48,7 @@
 #include <cstdio>
 
 struct bonded_threading_t;
-struct t_idef;
+class InteractionDefinitions;
 
 /*! \brief Divide the listed interactions over the threads and GPU
  *
@@ -57,7 +57,10 @@ struct t_idef;
  * This should be called each time the bonded setup changes;
  * i.e. at start-up without domain decomposition and at DD.
  */
-void setup_bonded_threading(bonded_threading_t* bt, int numAtoms, bool useGpuForBondes, const t_idef& idef);
+void setup_bonded_threading(bonded_threading_t*           bt,
+                            int                           numAtoms,
+                            bool                          useGpuForBondes,
+                            const InteractionDefinitions& idef);
 
 //! Destructor.
 void tear_down_bonded_threading(bonded_threading_t* bt);

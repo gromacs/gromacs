@@ -44,6 +44,7 @@
 #ifndef GMX_MDLIB_LEAPFROG_GPU_CUH
 #define GMX_MDLIB_LEAPFROG_GPU_CUH
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/group.h"
@@ -62,9 +63,10 @@ class LeapFrogGpu
 public:
     /*! \brief Constructor.
      *
+     * \param[in] deviceContext  Device context (dummy in CUDA).
      * \param[in] commandStream  Device command stream to use.
      */
-    LeapFrogGpu(CommandStream commandStream);
+    LeapFrogGpu(const DeviceContext& deviceContext, CommandStream commandStream);
     ~LeapFrogGpu();
 
     /*! \brief Integrate
@@ -110,6 +112,8 @@ public:
     class Impl;
 
 private:
+    //! Dummy GPU context object
+    const DeviceContext& deviceContext_;
     //! GPU stream
     CommandStream commandStream_;
     //! GPU kernel launch config

@@ -91,7 +91,7 @@ void UpdateConstrainGpu::scaleCoordinates(const matrix /* scalingMatrix */)
 void UpdateConstrainGpu::set(DeviceBuffer<RVec> /* d_x */,
                              DeviceBuffer<RVec> /* d_v */,
                              const DeviceBuffer<RVec> /* d_f */,
-                             const t_idef& /* idef */,
+                             const InteractionDefinitions& /* idef */,
                              const t_mdatoms& /* md */,
                              const int /* numTempScaleValues */)
 {

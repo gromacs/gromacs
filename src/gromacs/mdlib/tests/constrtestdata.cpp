@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,14 +95,6 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
 
     invdt_ = 1.0 / timestep; // Inverse timestep
 
-    // Communication record
-    cr_.nnodes = 1;
-    cr_.dd     = nullptr;
-
-    // Multisim data
-    ms_.sim  = 0;
-    ms_.nsim = 1;
-
     // Input record - data that usually comes from configuration file (.mdp)
     ir_.efep    = 0;
     ir_.init_t  = initialTime;
@@ -145,31 +137,25 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
         dHdLambdaRef_ = 0;
     }
 
-    // Constraints and their parameters (local topology)
-    for (int i = 0; i < F_NRE; i++)
-    {
-        idef_.il[i].nr = 0;
-    }
-    idef_.il[F_CONSTR].nr = constraints.size();
-
-    snew(idef_.il[F_CONSTR].iatoms, constraints.size());
     int maxType = 0;
-    for (index i = 0; i < ssize(constraints); i++)
+    for (index i = 0; i < ssize(constraints); i += 3)
     {
-        if (i % 3 == 0)
+        if (maxType < constraints.at(i))
         {
-            if (maxType < constraints.at(i))
-            {
-                maxType = constraints.at(i);
-            }
+            maxType = constraints.at(i);
         }
-        idef_.il[F_CONSTR].iatoms[i] = constraints.at(i);
     }
-    snew(idef_.iparams, maxType + 1);
+    auto& iparams = mtop_.ffparams.iparams;
+    iparams.resize(maxType + 1);
     for (index i = 0; i < ssize(constraints) / 3; i++)
     {
-        idef_.iparams[constraints.at(3 * i)].constr.dA = constraintsR0.at(constraints.at(3 * i));
-        idef_.iparams[constraints.at(3 * i)].constr.dB = constraintsR0.at(constraints.at(3 * i));
+        iparams[constraints.at(3 * i)].constr.dA = constraintsR0.at(constraints.at(3 * i));
+        iparams[constraints.at(3 * i)].constr.dB = constraintsR0.at(constraints.at(3 * i));
+    }
+    idef_ = std::make_unique<InteractionDefinitions>(mtop_.ffparams);
+    for (index i = 0; i < ssize(constraints); i++)
+    {
+        idef_->il[F_CONSTR].iatoms.push_back(constraints.at(i));
     }
 
     // Constraints and their parameters (global topology)
@@ -190,12 +176,7 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
     molBlock.nmol = 1;
     mtop_.molblock.push_back(molBlock);
 
-    mtop_.natoms = numAtoms;
-    mtop_.ffparams.iparams.resize(maxType + 1);
-    for (int i = 0; i <= maxType; i++)
-    {
-        mtop_.ffparams.iparams.at(i) = idef_.iparams[i];
-    }
+    mtop_.natoms                      = numAtoms;
     mtop_.bIntermolecularInteractions = false;
 
     // Coordinates and velocities
@@ -249,15 +230,6 @@ void ConstraintsTestData::reset()
         }
     }
     dHdLambda_ = 0;
-}
-
-/*! \brief
- * Cleaning up the memory.
- */
-ConstraintsTestData::~ConstraintsTestData()
-{
-    sfree(idef_.il[F_CONSTR].iatoms);
-    sfree(idef_.iparams);
 }
 
 } // namespace test

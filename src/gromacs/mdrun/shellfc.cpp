@@ -943,7 +943,7 @@ void relax_shell_flexcon(FILE*                         fplog,
     ArrayRef<t_shell> shells       = shfc->shells;
     const int         nflexcon     = shfc->nflexcon;
 
-    const t_idef* idef = &top->idef;
+    const InteractionDefinitions& idef = top->idef;
 
     if (DOMAINDECOMP(cr))
     {
@@ -1102,7 +1102,7 @@ void relax_shell_flexcon(FILE*                         fplog,
         if (vsite)
         {
             construct_vsites(vsite, as_rvec_array(pos[Min].data()), inputrec->delta_t,
-                             as_rvec_array(v.data()), idef->iparams, idef->il, fr->pbcType,
+                             as_rvec_array(v.data()), idef.iparams, idef.il, fr->pbcType,
                              fr->bMolPBC, cr, box);
         }
 

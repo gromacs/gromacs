@@ -175,7 +175,6 @@ void gmx::LegacySimulator::do_md()
     rvec                        mu_tot;
     matrix                      pressureCouplingMu, M;
     gmx_repl_ex_t               repl_ex = nullptr;
-    gmx_localtop_t              top;
     PaddedHostVector<gmx::RVec> f{};
     gmx_global_stat_t           gstat;
     t_graph*                    graph = nullptr;
@@ -316,14 +315,14 @@ void gmx::LegacySimulator::do_md()
     t_state*                 state;
 
 
+    gmx_localtop_t top(top_global->ffparams);
+
     auto mdatoms = mdAtoms->mdatoms();
 
     std::unique_ptr<UpdateConstrainGpu> integrator;
 
     if (DOMAINDECOMP(cr))
     {
-        dd_init_local_top(*top_global, &top);
-
         stateInstance = std::make_unique<t_state>();
         state         = stateInstance.get();
         dd_init_local_state(cr->dd, state_global, state);

@@ -34,12 +34,11 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 set(exename gmxana-test)
-
-gmx_add_gtest_executable(
-    ${exename}
-    entropy.cpp
-    gmx_traj.cpp
-    gmx_mindist.cpp
-    gmx_msd.cpp
-    )
+gmx_add_gtest_executable(${exename}
+    CPP_SOURCE_FILES
+        entropy.cpp
+        gmx_traj.cpp
+        gmx_mindist.cpp
+        gmx_msd.cpp
+        )
 gmx_register_gtest_test(GmxAnaTest ${exename} INTEGRATION_TEST)

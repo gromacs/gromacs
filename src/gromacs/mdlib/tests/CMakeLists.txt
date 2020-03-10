@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2016,2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,26 +33,25 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(MdlibUnitTest mdlib-test
-                  calc_verletbuf.cpp
-                  constr.cpp
-                  constrtestdata.cpp
-                  constrtestrunners.cpp
-                  ebin.cpp
-                  energyoutput.cpp
-                  leapfrog.cpp
-                  leapfrogtestdata.cpp
-                  leapfrogtestrunners.cpp
-                  settle.cpp
-                  settletestdata.cpp
-                  settletestrunners.cpp
-                  shake.cpp
-                  simulationsignal.cpp
-                  updategroups.cpp
-                  updategroupscog.cpp)
-
-# TODO: Make CUDA source to compile inside the testing framework
-if(GMX_USE_CUDA)
-    gmx_add_libgromacs_sources(constrtestrunners.cu
-                               leapfrogtestrunners.cu
-                               settletestrunners.cu)
-endif()
+    CPP_SOURCE_FILES
+        calc_verletbuf.cpp
+        constr.cpp
+        constrtestdata.cpp
+        constrtestrunners.cpp
+        ebin.cpp
+        energyoutput.cpp
+        leapfrog.cpp
+        leapfrogtestdata.cpp
+        leapfrogtestrunners.cpp
+        settle.cpp
+        settletestdata.cpp
+        settletestrunners.cpp
+        shake.cpp
+        simulationsignal.cpp
+        updategroups.cpp
+        updategroupscog.cpp
+    CUDA_CU_SOURCE_FILES
+        constrtestrunners.cu
+        leapfrogtestrunners.cu
+        settletestrunners.cu
+        )

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1256,7 +1256,7 @@ static real chanceOfUpdateGroupCrossingCell(const gmx_moltype_t&          moltyp
             for (const int atom : block)
             {
                 const auto& ilist = moltype.ilist[F_SETTLE];
-                GMX_RELEASE_ASSERT(ilist.size() > 0,
+                GMX_RELEASE_ASSERT(!ilist.empty(),
                                    "There should be at least one settle in this moltype");
                 for (int i = 0; i < ilist.size(); i += 1 + NRAL(F_SETTLE))
                 {

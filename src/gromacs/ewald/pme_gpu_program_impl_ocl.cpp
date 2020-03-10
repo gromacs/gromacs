@@ -53,33 +53,16 @@
 #include "pme_gpu_types_host.h"
 #include "pme_grid.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation* deviceInfo)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& deviceInfo) :
+    deviceContext_(deviceInfo)
 {
-    // Context creation (which should happen outside of this class: #2522)
-    cl_platform_id        platformId = deviceInfo->oclPlatformId;
-    cl_device_id          deviceId   = deviceInfo->oclDeviceId;
-    cl_context_properties contextProperties[3];
-    contextProperties[0] = CL_CONTEXT_PLATFORM;
-    contextProperties[1] = reinterpret_cast<cl_context_properties>(platformId);
-    contextProperties[2] = 0; /* Terminates the list of properties */
-
-    cl_int clError;
-    context = clCreateContext(contextProperties, 1, &deviceId, nullptr, nullptr, &clError);
-    if (clError != CL_SUCCESS)
-    {
-        const std::string errorString = gmx::formatString(
-                "Failed to create context for PME on GPU #%s:\n OpenCL error %d: %s",
-                deviceInfo->device_name, clError, ocl_get_error_string(clError).c_str());
-        GMX_THROW(gmx::InternalError(errorString));
-    }
-
     // kernel parameters
-    warpSize = gmx::ocl::getDeviceWarpSize(context, deviceId);
+    warpSize = gmx::ocl::getDeviceWarpSize(deviceContext_.context(), deviceInfo.oclDeviceId);
     // TODO: for Intel ideally we'd want to set these based on the compiler warp size
     // but given that we've done no tuning for Intel iGPU, this is as good as anything.
-    spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize, deviceInfo->maxWorkGroupSize);
-    solveMaxWorkGroupSize = std::min(c_solveMaxWarpsPerBlock * warpSize, deviceInfo->maxWorkGroupSize);
-    gatherWorkGroupSize = std::min(c_gatherMaxWarpsPerBlock * warpSize, deviceInfo->maxWorkGroupSize);
+    spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize, deviceInfo.maxWorkGroupSize);
+    solveMaxWorkGroupSize = std::min(c_solveMaxWarpsPerBlock * warpSize, deviceInfo.maxWorkGroupSize);
+    gatherWorkGroupSize = std::min(c_gatherMaxWarpsPerBlock * warpSize, deviceInfo.maxWorkGroupSize);
 
     compileKernels(deviceInfo);
 }
@@ -96,7 +79,6 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     stat |= clReleaseKernel(solveXYZEnergyKernel);
     stat |= clReleaseKernel(solveYZXKernel);
     stat |= clReleaseKernel(solveYZXEnergyKernel);
-    stat |= clReleaseContext(context);
     GMX_ASSERT(stat == CL_SUCCESS,
                gmx::formatString("Failed to release PME OpenCL resources %d: %s", stat,
                                  ocl_get_error_string(stat).c_str())
@@ -109,11 +91,11 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
  * smaller than the minimum order^2 required in spread/gather ATM which
  * we need to check for.
  */
-static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, const DeviceInformation* deviceInfo)
+static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, const DeviceInformation& deviceInfo)
 {
-    if (deviceInfo->deviceVendor == DeviceVendor::Intel)
+    if (deviceInfo.deviceVendor == DeviceVendor::Intel)
     {
-        size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo->oclDeviceId);
+        size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo.oclDeviceId);
 
         if (kernelWarpSize < c_pmeSpreadGatherMinWarpSize)
         {
@@ -121,13 +103,13 @@ static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, cons
                     "PME OpenCL kernels require >=%d execution width, but the %s kernel "
                     "has been compiled for the device %s to a %zu width and therefore it can not "
                     "execute correctly.",
-                    c_pmeSpreadGatherMinWarpSize, kernelName, deviceInfo->device_name, kernelWarpSize);
+                    c_pmeSpreadGatherMinWarpSize, kernelName, deviceInfo.device_name, kernelWarpSize);
             GMX_THROW(gmx::InternalError(errorString));
         }
     }
 }
 
-void PmeGpuProgramImpl::compileKernels(const DeviceInformation* deviceInfo)
+void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
 {
     // We might consider storing program as a member variable if it's needed later
     cl_program program = nullptr;
@@ -165,13 +147,13 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation* deviceInfo)
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
             program = gmx::ocl::compileProgram(stderr, "gromacs/ewald", "pme_program.cl",
-                                               commonDefines, context, deviceInfo->oclDeviceId,
-                                               deviceInfo->deviceVendor);
+                                               commonDefines, deviceContext_.context(),
+                                               deviceInfo.oclDeviceId, deviceInfo.deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {
             e.prependContext(gmx::formatString("Failed to compile PME kernels for GPU #%s\n",
-                                               deviceInfo->device_name));
+                                               deviceInfo.device_name));
             throw;
         }
     }
@@ -187,7 +169,7 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation* deviceInfo)
     {
         const std::string errorString = gmx::formatString(
                 "Failed to create kernels for PME on GPU #%s:\n OpenCL error %d: %s",
-                deviceInfo->device_name, clError, ocl_get_error_string(clError).c_str());
+                deviceInfo.device_name, clError, ocl_get_error_string(clError).c_str());
         GMX_THROW(gmx::InternalError(errorString));
     }
     kernels.resize(actualKernelCount);
@@ -201,7 +183,7 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation* deviceInfo)
         {
             const std::string errorString = gmx::formatString(
                     "Failed to parse kernels for PME on GPU #%s:\n OpenCL error %d: %s",
-                    deviceInfo->device_name, clError, ocl_get_error_string(clError).c_str());
+                    deviceInfo.device_name, clError, ocl_get_error_string(clError).c_str());
             GMX_THROW(gmx::InternalError(errorString));
         }
 

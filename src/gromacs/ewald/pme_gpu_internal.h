@@ -371,7 +371,7 @@ void pme_gpu_3dfft(const PmeGpu* pmeGpu, enum gmx_fft_direction direction, int g
  * \param[in]     pmeGpu                  The PME GPU structure.
  * \param[in,out] h_grid                  The host-side input and output Fourier grid buffer (used only with testing or host-side FFT)
  * \param[in]     gridOrdering            Specifies the dimenion ordering of the complex grid. TODO: store this information?
- * \param[in]     computeEnergyAndVirial  Tells if the energy and virial computation should also be performed.
+ * \param[in]     computeEnergyAndVirial  Tells if the energy and virial computation should be performed.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
                                       t_complex*    GPU_FUNC_ARGUMENT(h_grid),
@@ -412,7 +412,7 @@ GPU_FUNC_QUALIFIER void* pme_gpu_get_stream(const PmeGpu* GPU_FUNC_ARGUMENT(pmeG
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  Pointer to context object.
  */
-GPU_FUNC_QUALIFIER void* pme_gpu_get_context(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
+GPU_FUNC_QUALIFIER const DeviceContext* pme_gpu_get_context(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
         GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Return pointer to the sync object triggered after the PME force calculation completion
@@ -476,13 +476,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_getEnergyAndVirial(const gmx_pme_t& GPU_FUNC_ARG
 /*! \libinternal \brief
  * Returns the GPU outputs (forces, energy and virial)
  *
- * \param[in] pme                The PME structure.
- * \param[in] flags              The combination of flags that affected this PME computation.
- *                               The flags are the GMX_PME_ flags from pme.h.
- * \returns                      The output object.
+ * \param[in] pme                     The PME structure.
+ * \param[in] computeEnergyAndVirial  Whether the energy and virial are being computed
+ * \returns                           The output object.
  */
 GPU_FUNC_QUALIFIER PmeOutput pme_gpu_getOutput(const gmx_pme_t& GPU_FUNC_ARGUMENT(pme),
-                                               int              GPU_FUNC_ARGUMENT(flags))
+                                               bool GPU_FUNC_ARGUMENT(computeEnergyAndVirial))
         GPU_FUNC_TERM_WITH_RETURN(PmeOutput{});
 
 /*! \libinternal \brief
@@ -601,14 +600,13 @@ void pme_gpu_reinit_computation(const PmeGpu* pmeGpu);
  * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
  * (if they were to be computed).
  *
- * \param[in]  pme            The PME data structure.
- * \param[in]  flags          The combination of flags to affect this PME computation.
- *                            The flags are the GMX_PME_ flags from pme.h.
- * \param[out] wcycle         The wallclock counter.
- * \return     The output forces, energy and virial
+ * \param[in]  pme                     The PME data structure.
+ * \param[in]  computeEnergyAndVirial  Tells if the energy and virial computation should be performed.
+ * \param[out] wcycle                  The wallclock counter.
+ * \return                             The output forces, energy and virial
  */
-GPU_FUNC_QUALIFIER PmeOutput pme_gpu_wait_finish_task(gmx_pme_t*     GPU_FUNC_ARGUMENT(pme),
-                                                      int            GPU_FUNC_ARGUMENT(flags),
+GPU_FUNC_QUALIFIER PmeOutput pme_gpu_wait_finish_task(gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
+                                                      bool GPU_FUNC_ARGUMENT(computeEnergyAndVirial),
                                                       gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle))
         GPU_FUNC_TERM_WITH_RETURN(PmeOutput{});
 
