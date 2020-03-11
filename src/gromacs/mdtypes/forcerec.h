@@ -63,6 +63,7 @@ class GpuBonded;
 class ForceProviders;
 class StatePropagatorDataGpu;
 class PmePpCommGpu;
+class WholeMoleculeTransform;
 } // namespace gmx
 
 /* macros for the cginfo data in forcerec
@@ -197,6 +198,8 @@ struct t_forcerec
     std::vector<int> cginfo;
 
     rvec* shift_vec = nullptr;
+
+    std::unique_ptr<gmx::WholeMoleculeTransform> wholeMoleculeTransform;
 
     int      cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
     gmx_bool bNonbonded    = FALSE; /* true if nonbonded calculations are *not* turned off */

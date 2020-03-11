@@ -71,6 +71,7 @@
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/wall.h"
+#include "gromacs/mdlib/wholemoleculetransform.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"

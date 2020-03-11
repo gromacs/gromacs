@@ -81,6 +81,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdlib/wholemoleculetransform.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -1139,6 +1140,10 @@ void do_force(FILE*                               fplog,
         {
             /* Calculate intramolecular shift vectors to make molecules whole */
             mk_mshift(fplog, graph, fr->pbcType, box, as_rvec_array(x.unpaddedArrayRef().data()));
+        }
+        if (fr->wholeMoleculeTransform && stepWork.stateChanged)
+        {
+            fr->wholeMoleculeTransform->updateForAtomPbcJumps(x.unpaddedArrayRef(), box);
         }
 
         // TODO
