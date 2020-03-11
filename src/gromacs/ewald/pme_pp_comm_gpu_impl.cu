@@ -57,9 +57,9 @@ namespace gmx
 {
 
 PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext) :
+    deviceContext_(deviceContext),
     comm_(comm),
-    pmeRank_(pmeRank),
-    deviceContext_(deviceContext)
+    pmeRank_(pmeRank)
 {
     GMX_RELEASE_ASSERT(
             GMX_THREAD_MPI,
@@ -77,8 +77,7 @@ void PmePpCommGpu::Impl::reinit(int size)
     MPI_Recv(&remotePmeFBuffer_, sizeof(void**), MPI_BYTE, pmeRank_, 0, comm_, MPI_STATUS_IGNORE);
 
     // Reallocate buffer used for staging PME force on GPU
-    reallocateDeviceBuffer(&d_pmeForces_, size, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_,
-                           DeviceContext());
+    reallocateDeviceBuffer(&d_pmeForces_, size, &d_pmeForcesSize_, &d_pmeForcesSizeAlloc_, deviceContext_);
 #else
     GMX_UNUSED_VALUE(size);
 #endif

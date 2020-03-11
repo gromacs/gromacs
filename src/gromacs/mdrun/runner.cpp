@@ -1141,7 +1141,7 @@ int Mdrunner::mdrunner()
             EEL_PME(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
 
     // Get the device handles for the modules, nullptr when no task is assigned.
-    // TODO: There should be only one DeviceInformation.
+    // TODO: There should be only one DeviceInformation per rank.
     DeviceInformation* nonbondedDeviceInfo = gpuTaskAssignments.initNonbondedDevice(cr);
     DeviceInformation* pmeDeviceInfo       = gpuTaskAssignments.initPmeDevice();
 
