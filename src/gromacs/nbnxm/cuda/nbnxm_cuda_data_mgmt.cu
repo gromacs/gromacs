@@ -413,8 +413,7 @@ static void cuda_init_const(NbnxmGpu*                       nb,
     nbnxn_cuda_clear_e_fshift(nb);
 }
 
-NbnxmGpu* gpu_init(const DeviceInformation* deviceInfo,
-                   const DeviceContext& /* deviceContext */,
+NbnxmGpu* gpu_init(const DeviceContext&       deviceContext,
                    const interaction_const_t* ic,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
@@ -422,7 +421,8 @@ NbnxmGpu* gpu_init(const DeviceInformation* deviceInfo,
 {
     cudaError_t stat;
 
-    auto nb = new NbnxmGpu;
+    auto nb            = new NbnxmGpu();
+    nb->deviceContext_ = &deviceContext;
     snew(nb->atdat, 1);
     snew(nb->nbparam, 1);
     snew(nb->plist[InteractionLocality::Local], 1);
@@ -443,11 +443,8 @@ NbnxmGpu* gpu_init(const DeviceInformation* deviceInfo,
 
     init_plist(nb->plist[InteractionLocality::Local]);
 
-    /* set device info, just point it to the right GPU among the detected ones */
-    nb->deviceInfo = deviceInfo;
-
     /* local/non-local GPU streams */
-    nb->deviceStreams[InteractionLocality::Local].init(*nb->deviceInfo, DeviceContext(),
+    nb->deviceStreams[InteractionLocality::Local].init(*nb->deviceContext_,
                                                        DeviceStreamPriority::Normal, nb->bDoTime);
     if (nb->bUseTwoStreams)
     {
@@ -458,7 +455,7 @@ NbnxmGpu* gpu_init(const DeviceInformation* deviceInfo,
          * case will be a single value.
          */
         nb->deviceStreams[InteractionLocality::NonLocal].init(
-                *nb->deviceInfo, DeviceContext(), DeviceStreamPriority::High, nb->bDoTime);
+                *nb->deviceContext_, DeviceStreamPriority::High, nb->bDoTime);
     }
 
     /* init events for sychronization (timing disabled for performance reasons!) */
@@ -532,21 +529,23 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
         iTimers.didPairlistH2D = true;
     }
 
+    const DeviceContext& deviceContext = *nb->deviceContext_;
+
     reallocateDeviceBuffer(&d_plist->sci, h_plist->sci.size(), &d_plist->nsci, &d_plist->sci_nalloc,
-                           DeviceContext());
+                           deviceContext);
     copyToDeviceBuffer(&d_plist->sci, h_plist->sci.data(), 0, h_plist->sci.size(), deviceStream,
                        GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     reallocateDeviceBuffer(&d_plist->cj4, h_plist->cj4.size(), &d_plist->ncj4, &d_plist->cj4_nalloc,
-                           DeviceContext());
+                           deviceContext);
     copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4.data(), 0, h_plist->cj4.size(), deviceStream,
                        GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     reallocateDeviceBuffer(&d_plist->imask, h_plist->cj4.size() * c_nbnxnGpuClusterpairSplit,
-                           &d_plist->nimask, &d_plist->imask_nalloc, DeviceContext());
+                           &d_plist->nimask, &d_plist->imask_nalloc, deviceContext);
 
     reallocateDeviceBuffer(&d_plist->excl, h_plist->excl.size(), &d_plist->nexcl,
-                           &d_plist->excl_nalloc, DeviceContext());
+                           &d_plist->excl_nalloc, deviceContext);
     copyToDeviceBuffer(&d_plist->excl, h_plist->excl.data(), 0, h_plist->excl.size(), deviceStream,
                        GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
@@ -798,7 +797,8 @@ void gpu_reset_timings(nonbonded_verlet_t* nbv)
 
 int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
-    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceInfo->prop.multiProcessorCount : 0;
+    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().prop.multiProcessorCount
+                         : 0;
 }
 
 gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
@@ -843,9 +843,9 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
     const int           maxNumColumns = gridSet.numColumnsMax();
 
     reallocateDeviceBuffer(&gpu_nbv->cxy_na, maxNumColumns * gridSet.grids().size(),
-                           &gpu_nbv->ncxy_na, &gpu_nbv->ncxy_na_alloc, DeviceContext());
+                           &gpu_nbv->ncxy_na, &gpu_nbv->ncxy_na_alloc, *gpu_nbv->deviceContext_);
     reallocateDeviceBuffer(&gpu_nbv->cxy_ind, maxNumColumns * gridSet.grids().size(),
-                           &gpu_nbv->ncxy_ind, &gpu_nbv->ncxy_ind_alloc, DeviceContext());
+                           &gpu_nbv->ncxy_ind, &gpu_nbv->ncxy_ind_alloc, *gpu_nbv->deviceContext_);
 
     for (unsigned int g = 0; g < gridSet.grids().size(); g++)
     {
@@ -859,7 +859,7 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
         const int* cxy_ind         = grid.cxy_ind().data();
 
         reallocateDeviceBuffer(&gpu_nbv->atomIndices, atomIndicesSize, &gpu_nbv->atomIndicesSize,
-                               &gpu_nbv->atomIndicesSize_alloc, DeviceContext());
+                               &gpu_nbv->atomIndicesSize_alloc, *gpu_nbv->deviceContext_);
 
         if (atomIndicesSize > 0)
         {
@@ -937,7 +937,7 @@ void nbnxn_gpu_init_add_nbat_f_to_f(const int*                  cell,
     if (natoms_total > 0)
     {
         reallocateDeviceBuffer(&gpu_nbv->cell, natoms_total, &gpu_nbv->ncell, &gpu_nbv->ncell_alloc,
-                               DeviceContext());
+                               *gpu_nbv->deviceContext_);
         copyToDeviceBuffer(&gpu_nbv->cell, cell, 0, natoms_total, deviceStream,
                            GpuApiCallBehavior::Async, nullptr);
     }

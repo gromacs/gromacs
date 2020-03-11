@@ -532,19 +532,20 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if (nb->deviceInfo->prop.major == 3 && nb->deviceInfo->prop.minor == 7)
+    if (nb->deviceContext_->deviceInfo().prop.major == 3 && nb->deviceContext_->deviceInfo().prop.minor == 7)
     {
         num_threads_z = 2;
     }
-    int nblock = calc_nb_kernel_nblock(plist->nsci, nb->deviceInfo);
+    int nblock = calc_nb_kernel_nblock(plist->nsci, &nb->deviceContext_->deviceInfo());
 
 
     KernelLaunchConfig config;
-    config.blockSize[0]     = c_clSize;
-    config.blockSize[1]     = c_clSize;
-    config.blockSize[2]     = num_threads_z;
-    config.gridSize[0]      = nblock;
-    config.sharedMemorySize = calc_shmem_required_nonbonded(num_threads_z, nb->deviceInfo, nbp);
+    config.blockSize[0] = c_clSize;
+    config.blockSize[1] = c_clSize;
+    config.blockSize[2] = num_threads_z;
+    config.gridSize[0]  = nblock;
+    config.sharedMemorySize =
+            calc_shmem_required_nonbonded(num_threads_z, &nb->deviceContext_->deviceInfo(), nbp);
 
     if (debug)
     {
@@ -558,9 +559,10 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     }
 
     auto*      timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
-    const auto kernel      = select_nbnxn_kernel(
-            nbp->eeltype, nbp->vdwtype, stepWork.computeEnergy,
-            (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune), nb->deviceInfo);
+    const auto kernel =
+            select_nbnxn_kernel(nbp->eeltype, nbp->vdwtype, stepWork.computeEnergy,
+                                (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune),
+                                &nb->deviceContext_->deviceInfo());
     const auto kernelArgs =
             prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &stepWork.computeVirial);
     launchGpuKernel(kernel, config, deviceStream, timingEvent, "k_calc_nb", kernelArgs);
@@ -660,8 +662,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    int                num_threads_z = c_cudaPruneKernelJ4Concurrency;
-    int                nblock        = calc_nb_kernel_nblock(numSciInPart, nb->deviceInfo);
+    int num_threads_z = c_cudaPruneKernelJ4Concurrency;
+    int nblock        = calc_nb_kernel_nblock(numSciInPart, &nb->deviceContext_->deviceInfo());
     KernelLaunchConfig config;
     config.blockSize[0]     = c_clSize;
     config.blockSize[1]     = c_clSize;

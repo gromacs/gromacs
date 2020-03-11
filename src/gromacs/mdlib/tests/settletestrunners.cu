@@ -88,7 +88,7 @@ void applySettleGpu(SettleTestData*  testData,
 
     DeviceInformation   deviceInfo;
     const DeviceContext deviceContext(deviceInfo);
-    const DeviceStream deviceStream(deviceInfo, deviceContext, DeviceStreamPriority::Normal, false);
+    const DeviceStream  deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
 
     auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, deviceContext, deviceStream);
 

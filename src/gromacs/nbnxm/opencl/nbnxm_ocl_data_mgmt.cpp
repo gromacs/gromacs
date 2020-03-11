@@ -409,7 +409,7 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interacti
     nbp->eeltype = nbnxn_gpu_pick_ewald_kernel_type(*ic);
 
     GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
-    init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, nb->dev_rundata->deviceContext_);
+    init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, *nb->deviceContext_);
 }
 
 /*! \brief Initializes the pair list data structure.
@@ -472,7 +472,7 @@ static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
     if (CL_SUCCESS != cl_error)
     {
         gmx_fatal(FARGS, "Failed to create kernel '%s' for GPU #%s: OpenCL error %d", kernel_name,
-                  nb->deviceInfo->device_name, cl_error);
+                  nb->deviceContext_->deviceInfo().device_name, cl_error);
     }
 
     return kernel;
@@ -555,8 +555,7 @@ static void nbnxn_ocl_init_const(cl_atomdata_t*                  atomData,
 
 
 //! This function is documented in the header file
-NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
-                   const DeviceContext&       deviceContext,
+NbnxmGpu* gpu_init(const DeviceContext&       deviceContext,
                    const interaction_const_t* ic,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
@@ -564,7 +563,8 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
 {
     GMX_ASSERT(ic, "Need a valid interaction constants object");
 
-    auto nb = new NbnxmGpu;
+    auto nb            = new NbnxmGpu();
+    nb->deviceContext_ = &deviceContext;
     snew(nb->atdat, 1);
     snew(nb->nbparam, 1);
     snew(nb->plist[InteractionLocality::Local], 1);
@@ -578,9 +578,7 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
     nb->timers = new cl_timers_t();
     snew(nb->timings, 1);
 
-    /* set device info, just point it to the right GPU among the detected ones */
-    nb->deviceInfo  = deviceInfo;
-    nb->dev_rundata = new gmx_device_runtime_data_t(deviceContext);
+    nb->dev_rundata = new gmx_device_runtime_data_t();
 
     /* init nbst */
     pmalloc(reinterpret_cast<void**>(&nb->nbst.e_lj), sizeof(*nb->nbst.e_lj));
@@ -593,7 +591,7 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
     nb->bDoTime = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
 
     /* local/non-local GPU streams */
-    nb->deviceStreams[InteractionLocality::Local].init(*nb->deviceInfo, nb->dev_rundata->deviceContext_,
+    nb->deviceStreams[InteractionLocality::Local].init(*nb->deviceContext_,
                                                        DeviceStreamPriority::Normal, nb->bDoTime);
 
     if (nb->bUseTwoStreams)
@@ -601,7 +599,7 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
         init_plist(nb->plist[InteractionLocality::NonLocal]);
 
         nb->deviceStreams[InteractionLocality::NonLocal].init(
-                *nb->deviceInfo, nb->dev_rundata->deviceContext_, DeviceStreamPriority::High, nb->bDoTime);
+                *nb->deviceContext_, DeviceStreamPriority::High, nb->bDoTime);
     }
 
     if (nb->bDoTime)
@@ -609,15 +607,14 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
         init_timings(nb->timings);
     }
 
-    nbnxn_ocl_init_const(nb->atdat, nb->nbparam, ic, listParams, nbat->params(),
-                         nb->dev_rundata->deviceContext_);
+    nbnxn_ocl_init_const(nb->atdat, nb->nbparam, ic, listParams, nbat->params(), *nb->deviceContext_);
 
     /* Enable LJ param manual prefetch for AMD or Intel or if we request through env. var.
      * TODO: decide about NVIDIA
      */
     nb->bPrefetchLjParam = (getenv("GMX_OCL_DISABLE_I_PREFETCH") == nullptr)
-                           && ((nb->deviceInfo->deviceVendor == DeviceVendor::Amd)
-                               || (nb->deviceInfo->deviceVendor == DeviceVendor::Intel)
+                           && ((nb->deviceContext_->deviceInfo().deviceVendor == DeviceVendor::Amd)
+                               || (nb->deviceContext_->deviceInfo().deviceVendor == DeviceVendor::Intel)
                                || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != nullptr));
 
     /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
@@ -710,7 +707,7 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
     }
 
     // TODO most of this function is same in CUDA and OpenCL, move into the header
-    const DeviceContext& deviceContext = nb->dev_rundata->deviceContext_;
+    const DeviceContext& deviceContext = *nb->deviceContext_;
 
     reallocateDeviceBuffer(&d_plist->sci, h_plist->sci.size(), &d_plist->nsci, &d_plist->sci_nalloc,
                            deviceContext);
@@ -789,21 +786,19 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
             freeDeviceBuffer(&d_atdat->atom_types);
         }
 
-        d_atdat->f = clCreateBuffer(nb->dev_rundata->deviceContext_.context(),
-                                    CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
+        d_atdat->f = clCreateBuffer(nb->deviceContext_->context(), CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
                                     nalloc * DIM * sizeof(nbat->out[0].f[0]), nullptr, &cl_error);
         GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                            ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
-        d_atdat->xq = clCreateBuffer(nb->dev_rundata->deviceContext_.context(),
-                                     CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
+        d_atdat->xq = clCreateBuffer(nb->deviceContext_->context(), CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
                                      nalloc * sizeof(cl_float4), nullptr, &cl_error);
         GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                            ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
         if (useLjCombRule(nb->nbparam->vdwtype))
         {
-            d_atdat->lj_comb = clCreateBuffer(nb->dev_rundata->deviceContext_.context(),
+            d_atdat->lj_comb = clCreateBuffer(nb->deviceContext_->context(),
                                               CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
                                               nalloc * sizeof(cl_float2), nullptr, &cl_error);
             GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
@@ -811,7 +806,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         }
         else
         {
-            d_atdat->atom_types = clCreateBuffer(nb->dev_rundata->deviceContext_.context(),
+            d_atdat->atom_types = clCreateBuffer(nb->deviceContext_->context(),
                                                  CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
                                                  nalloc * sizeof(int), nullptr, &cl_error);
             GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
@@ -1010,7 +1005,7 @@ void gpu_reset_timings(nonbonded_verlet_t* nbv)
 //! This function is documented in the header file
 int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
-    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceInfo->compute_units : 0;
+    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().compute_units : 0;
 }
 
 //! This function is documented in the header file

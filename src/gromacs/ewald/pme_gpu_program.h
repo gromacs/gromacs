@@ -64,8 +64,12 @@ struct DeviceInformation;
 class PmeGpuProgram
 {
 public:
-    //! Constructor
-    explicit PmeGpuProgram(const DeviceInformation& deviceInfo, const DeviceContext& deviceContext);
+    /*! \brief Construct a PME GPU program.
+     *
+     * \param[in] deviceContext  GPU context.
+     */
+    explicit PmeGpuProgram(const DeviceContext& deviceContext);
+    //! Destructor
     ~PmeGpuProgram();
 
     //! Return the warp size for which the kernels were compiled
@@ -83,7 +87,6 @@ using PmeGpuProgramStorage = std::unique_ptr<PmeGpuProgram>;
 /*! \brief
  * Factory function used to build persistent PME GPU program for the device at once.
  */
-PmeGpuProgramStorage buildPmeGpuProgram(const DeviceInformation& /*deviceInfo*/,
-                                        const DeviceContext& /* deviceContext */);
+PmeGpuProgramStorage buildPmeGpuProgram(const DeviceContext& /* deviceContext */);
 
 #endif

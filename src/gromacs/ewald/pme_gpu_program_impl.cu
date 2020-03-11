@@ -104,8 +104,7 @@ extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, true,  Thre
 extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, false, ThreadsPerAtom::OrderSquared>(const PmeGpuCudaKernelParams);
 // clang-format on
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& /* deviceInfo */,
-                                     const DeviceContext& deviceContext) :
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
     deviceContext_(deviceContext)
 {
     // kernel parameters

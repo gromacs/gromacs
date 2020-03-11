@@ -111,7 +111,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
 #    if (GMX_GPU == GMX_GPU_CUDA)
         // In CUDA we only need priority to create stream.
         // (note that this will be moved from here in the follow-up patch)
-        updateStreamOwn_.init(DeviceInformation(), DeviceContext(), DeviceStreamPriority::Normal, false);
+        updateStreamOwn_.init(deviceContext, DeviceStreamPriority::Normal, false);
         updateStream_ = &updateStreamOwn_;
 #    endif
     }

@@ -1450,12 +1450,9 @@ int Mdrunner::mdrunner()
     if (thisRankHasPmeGpuTask)
     {
         GMX_RELEASE_ASSERT(
-                deviceInfo != nullptr,
-                "Device information can not be nullptr when building PME GPU program object.");
-        GMX_RELEASE_ASSERT(
                 deviceContext != nullptr,
                 "Device context can not be nullptr when building PME GPU program object.");
-        pmeGpuProgram = buildPmeGpuProgram(*deviceInfo, *deviceContext);
+        pmeGpuProgram = buildPmeGpuProgram(*deviceContext);
     }
 
     /* Initiate PME if necessary,

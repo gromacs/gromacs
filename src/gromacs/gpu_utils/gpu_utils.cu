@@ -220,7 +220,7 @@ static int do_sanity_checks(int dev_id, const cudaDeviceProp& dev_prop)
         const auto          dummyArguments = prepareGpuKernelArguments(k_dummy_test, config);
         DeviceInformation   deviceInfo;
         const DeviceContext deviceContext(deviceInfo);
-        const DeviceStream deviceStream(deviceInfo, deviceContext, DeviceStreamPriority::Normal, false);
+        const DeviceStream  deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
         launchGpuKernel(k_dummy_test, config, deviceStream, nullptr, "Dummy kernel", dummyArguments);
     }
     catch (gmx::GromacsException& ex)

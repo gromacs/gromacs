@@ -68,7 +68,7 @@ void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
 {
     DeviceInformation   deviceInfo;
     const DeviceContext deviceContext(deviceInfo);
-    const DeviceStream deviceStream(deviceInfo, deviceContext, DeviceStreamPriority::Normal, false);
+    const DeviceStream  deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
 
     int numAtoms = testData->numAtoms_;
 

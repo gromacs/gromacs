@@ -67,7 +67,7 @@ PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank, const DeviceContext& device
 
     // In CUDA we only need priority to create stream.
     // (note that this will be moved from here in the follow-up patch)
-    pmePpCommStream_.init(DeviceInformation(), DeviceContext(), DeviceStreamPriority::Normal, false);
+    pmePpCommStream_.init(deviceContext, DeviceStreamPriority::Normal, false);
 }
 
 PmePpCommGpu::Impl::~Impl() = default;

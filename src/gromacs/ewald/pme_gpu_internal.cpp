@@ -505,7 +505,7 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
      * - default high priority with CUDA
      * - no priorities implemented yet with OpenCL; see #2532
      */
-    pmeGpu->archSpecific->pmeStream_.init(*pmeGpu->deviceInfo, pmeGpu->archSpecific->deviceContext_,
+    pmeGpu->archSpecific->pmeStream_.init(pmeGpu->archSpecific->deviceContext_,
                                           DeviceStreamPriority::High, pmeGpu->archSpecific->useTiming);
 }
 

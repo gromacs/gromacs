@@ -82,7 +82,7 @@ struct TestHardwareContext
     //! Device information pointer
     const DeviceInformation* deviceInfo_;
     //! Local copy of the device context pointer
-    DeviceContext deviceContext_;
+    std::unique_ptr<DeviceContext> deviceContext_;
     //! Persistent compiled GPU kernels for PME.
     PmeGpuProgramStorage program_;
 
@@ -92,7 +92,13 @@ public:
     //! Returns a human-readable context description line
     std::string getDescription() const { return description_; }
     //! Getter for the DeviceContext
-    const DeviceContext& deviceContext() const { return deviceContext_; }
+    const DeviceContext& deviceContext() const
+    {
+        GMX_RELEASE_ASSERT(deviceContext_ != nullptr,
+                           "Trying to get device context before it was initialized or in builds "
+                           "without GPU support.");
+        return *deviceContext_;
+    }
     //! Returns the device info pointer
     const DeviceInformation* getDeviceInfo() const { return deviceInfo_; }
     //! Returns the persistent PME GPU kernels
@@ -104,19 +110,19 @@ public:
     {
         GMX_RELEASE_ASSERT(codePath == CodePath::CPU,
                            "A GPU code path should provide DeviceInformation to the "
-                           "TestHerdwareContext constructor.");
+                           "TestHardwareContext constructor.");
     }
     //! Constructs the context for GPU builds
     TestHardwareContext(CodePath codePath, const char* description, const DeviceInformation& deviceInfo) :
         codePath_(codePath),
         description_(description),
-        deviceInfo_(&deviceInfo),
-        deviceContext_(deviceInfo),
-        program_(buildPmeGpuProgram(deviceInfo, deviceContext_))
+        deviceInfo_(&deviceInfo)
     {
         GMX_RELEASE_ASSERT(codePath == CodePath::GPU,
-                           "TestHerdwareContext tries to construct DeviceContext and PmeGpuProgram "
+                           "TestHardwareContext tries to construct DeviceContext and PmeGpuProgram "
                            "in CPU build.");
+        deviceContext_ = std::make_unique<DeviceContext>(deviceInfo);
+        program_       = buildPmeGpuProgram(*deviceContext_);
     }
     ~TestHardwareContext();
 };

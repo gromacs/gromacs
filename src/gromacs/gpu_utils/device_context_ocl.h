@@ -57,8 +57,6 @@ struct DeviceInformation;
 class DeviceContext
 {
 public:
-    //! Default constructor.
-    DeviceContext() {}
     /*! \brief Constructor that creates the \c cl_context
      *
      * \param[in] deviceInfo Platform-specific device information.
@@ -69,14 +67,18 @@ public:
     //! Destructor
     ~DeviceContext();
 
+    //! Get the associated device information
+    const DeviceInformation& deviceInfo() const { return deviceInfo_; }
     //! Getter
     cl_context context() const;
 
-    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);
-
 private:
+    //! A reference to the device information used upon context creation
+    const DeviceInformation& deviceInfo_;
     //! OpenCL context object
     cl_context context_ = nullptr;
+
+    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);
 };
 
 #endif // GMX_GPU_UTILS_DEVICE_CONTEXT_OCL_H

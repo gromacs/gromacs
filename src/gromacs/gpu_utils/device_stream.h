@@ -78,29 +78,21 @@ public:
 
     /*! \brief Initialize
      *
-     * \param[in] deviceInfo     Platform-specific device information (only used in OpenCL).
      * \param[in] deviceContext  Device context (not used in CUDA).
      * \param[in] priority       Stream priority: high or normal.
      * \param[in] useTiming      If the timing should be enabled (not used in CUDA).
      */
-    void init(const DeviceInformation& deviceInfo,
-              const DeviceContext&     deviceContext,
-              DeviceStreamPriority     priority,
-              const bool               useTiming);
+    void init(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming);
 
     /*! \brief Construct and init.
      *
-     * \param[in] deviceInfo     Platform-specific device information (only used in OpenCL).
      * \param[in] deviceContext  Device context (only used in OpenCL).
      * \param[in] priority       Stream priority: high or normal (only used in CUDA).
      * \param[in] useTiming      If the timing should be enabled (only used in OpenCL).
      */
-    DeviceStream(const DeviceInformation& deviceInfo,
-                 const DeviceContext&     deviceContext,
-                 DeviceStreamPriority     priority,
-                 const bool               useTiming)
+    DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming)
     {
-        init(deviceInfo, deviceContext, priority, useTiming);
+        init(deviceContext, priority, useTiming);
     }
 
     //! Synchronize the steam

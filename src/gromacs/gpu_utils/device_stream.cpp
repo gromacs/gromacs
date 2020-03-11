@@ -46,8 +46,7 @@
 
 DeviceStream::DeviceStream() = default;
 
-void DeviceStream::init(const DeviceInformation& /* deviceInfo */,
-                        const DeviceContext& /* deviceContext */,
+void DeviceStream::init(const DeviceContext& /* deviceContext */,
                         DeviceStreamPriority /* priority */,
                         const bool /* useTiming */)
 {

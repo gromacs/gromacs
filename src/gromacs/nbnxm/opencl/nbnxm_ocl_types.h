@@ -319,8 +319,11 @@ typedef struct Nbnxm::gpu_timers_t cl_timers_t;
  */
 struct NbnxmGpu
 {
-    //! OpenCL device information
-    const DeviceInformation* deviceInfo = nullptr;
+    /* \brief OpenCL device context
+     *
+     * \todo Make it constant reference, once NbnxmGpu is a proper class.
+     */
+    const DeviceContext* deviceContext_;
     //! OpenCL runtime data (context, kernels)
     struct gmx_device_runtime_data_t* dev_rundata = nullptr;
 

@@ -451,8 +451,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
                 "Device context can not be nullptr when to use GPU for non-bonded forces.");
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        gpu_nbv = gpu_init(deviceInfo, *deviceContext, fr->ic, pairlistParams, nbat.get(),
-                           haveMultipleDomains);
+        gpu_nbv = gpu_init(*deviceContext, fr->ic, pairlistParams, nbat.get(), haveMultipleDomains);
 
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }

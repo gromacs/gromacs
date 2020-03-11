@@ -202,13 +202,13 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
                the log output here should be written there */
             program = gmx::ocl::compileProgram(
                     stderr, "gromacs/nbnxm/opencl", "nbnxm_ocl_kernels.cl", extraDefines,
-                    nb->dev_rundata->deviceContext_.context(), nb->deviceInfo->oclDeviceId,
-                    nb->deviceInfo->deviceVendor);
+                    nb->deviceContext_->context(), nb->deviceContext_->deviceInfo().oclDeviceId,
+                    nb->deviceContext_->deviceInfo().deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {
             e.prependContext(gmx::formatString("Failed to compile NBNXN kernels for GPU #%s\n",
-                                               nb->deviceInfo->device_name));
+                                               nb->deviceContext_->deviceInfo().device_name));
             throw;
         }
     }

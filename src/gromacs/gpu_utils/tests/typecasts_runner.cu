@@ -112,7 +112,7 @@ void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>& h_rVecOutput, const std
 {
     DeviceInformation   deviceInfo;
     const DeviceContext deviceContext(deviceInfo);
-    const DeviceStream deviceStream(deviceInfo, deviceContext, DeviceStreamPriority::Normal, false);
+    const DeviceStream  deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
 
     const int numElements = h_rVecInput.size();
 

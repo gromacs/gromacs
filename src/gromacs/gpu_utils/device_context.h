@@ -61,12 +61,17 @@ struct DeviceInformation;
 class DeviceContext
 {
 public:
-    //! Default constructor.
-    DeviceContext() {}
     //! Constructor.
-    DeviceContext(const DeviceInformation& /* deviceInfo */) {}
+    DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(deviceInfo) {}
     //! Destructor
     ~DeviceContext() = default;
+
+    //! Get the associated device information
+    const DeviceInformation& deviceInfo() const { return deviceInfo_; }
+
+private:
+    //! A reference to the device information used upon context creation
+    const DeviceInformation& deviceInfo_;
 
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);
 };

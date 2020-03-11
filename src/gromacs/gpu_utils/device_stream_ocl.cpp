@@ -54,11 +54,9 @@ DeviceStream::DeviceStream()
     stream_ = nullptr;
 }
 
-void DeviceStream::init(const DeviceInformation& deviceInfo,
-                        const DeviceContext&     deviceContext,
-                        DeviceStreamPriority /* priority */,
-                        const bool useTiming)
+void DeviceStream::init(const DeviceContext& deviceContext, DeviceStreamPriority /* priority */, const bool useTiming)
 {
+    const DeviceInformation&    deviceInfo      = deviceContext.deviceInfo();
     cl_command_queue_properties queueProperties = useTiming ? CL_QUEUE_PROFILING_ENABLE : 0;
     cl_device_id                deviceId        = deviceInfo.oclDeviceId;
     cl_int                      clError;

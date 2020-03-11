@@ -65,11 +65,6 @@ enum class GpuApiCallBehavior;
  */
 struct gmx_device_runtime_data_t
 {
-    //! Constructor
-    gmx_device_runtime_data_t(const DeviceContext& deviceContext) : deviceContext_(deviceContext) {}
-
-    //! OpenCL context
-    const DeviceContext& deviceContext_;
     //! OpenCL program
     cl_program program;
 };

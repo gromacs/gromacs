@@ -72,7 +72,7 @@ void applyLincsGpu(ConstraintsTestData* testData, t_pbc pbc)
 {
     DeviceInformation   deviceInfo;
     const DeviceContext deviceContext(deviceInfo);
-    const DeviceStream deviceStream(deviceInfo, deviceContext, DeviceStreamPriority::Normal, false);
+    const DeviceStream  deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
 
     auto lincsGpu = std::make_unique<LincsGpu>(testData->ir_.nLincsIter, testData->ir_.nProjOrder,
                                                deviceContext, deviceStream);

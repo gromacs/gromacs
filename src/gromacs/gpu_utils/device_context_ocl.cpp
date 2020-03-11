@@ -60,7 +60,7 @@
 #define CL_CONTEXT_DIAGNOSTICS_LEVEL_NEUTRAL_INTEL 0x4
 /**@}*/
 
-DeviceContext::DeviceContext(const DeviceInformation& deviceInfo)
+DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(deviceInfo)
 {
     cl_platform_id                     platformId = deviceInfo.oclPlatformId;
     cl_device_id                       deviceId   = deviceInfo.oclDeviceId;
