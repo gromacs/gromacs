@@ -1,0 +1,28 @@
+; Simple dipoles
+
+[ defaults ]
+; nbfunc comb-rule
+  1      1
+
+[ atomtypes ]
+; name  at.num       mass    charge   ptype     sigma      epsilon
+  C     6            12.01   0.0      A         0.3        1.0
+
+[ molecule_type ]
+Dipole   1
+
+[ atoms ]
+;   nr   type  resnr residue  atom   cgnr     charge
+     1      C      1     DIP     C      1     -1
+     2      C      1     DIP     C      2     1
+
+[ bonds ]
+1  2  1  0.28 10000
+
+[ system ]
+; Name
+Dipoles
+
+[ molecules ]
+; Compound        #mols
+Dipole            2

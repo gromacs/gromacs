@@ -55,6 +55,7 @@ gmx_add_gtest_executable(${exename}
         compressed_x_output.cpp
         densityfittingmodule.cpp
         exactcontinuation.cpp
+        ewaldsurfaceterm.cpp
         grompp.cpp
         helpwriting.cpp
         initialconstraints.cpp
