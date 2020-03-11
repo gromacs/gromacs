@@ -78,6 +78,12 @@ public:
     //! Compute forces and return
     gmx::PaddedHostVector<gmx::RVec> compute();
 
+    //! Puts particles on a grid based on bounds specified by the box
+    void setParticlesOnGrid(std::vector<int>&                    particleInfoAllVdw,
+                            const std::vector<gmx::RVec>&        coordinates,
+                            const Box&                           box);
+
+
     //! Non-Bonded Verlet object for force calculation
     std::unique_ptr<nonbonded_verlet_t> nbv_;
 
@@ -109,12 +115,6 @@ private:
 
     friend NbvSetupUtil;
 };
-
-//! Puts particles on a grid based on bounds specified by the box
-void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv,
-                        std::vector<int>&                    particleInfoAllVdw,
-                        const std::vector<gmx::RVec>&        coordinates,
-                        const Box&                           box);
 
 } // namespace nblib
 

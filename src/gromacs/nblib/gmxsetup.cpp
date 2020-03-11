@@ -228,11 +228,6 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topol
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
                         topology.getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
 
-    setParticlesOnGrid(nbv, particleInfoAllVdw_, system_.coordinates(), system_.box());
-
-    t_nrnb nrnb;
-    nbv->constructPairlist(gmx::InteractionLocality::Local, topology.getGmxExclusions(), 0, &nrnb);
-
     return nbv;
 }
 
@@ -241,6 +236,11 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     auto gmxForceCalculator_p = std::make_unique<GmxForceCalculator>(system_, options_);
 
     gmxForceCalculator_p->nbv_ = setupNbnxmInstance(system_.topology(), *options_);
+
+    gmxForceCalculator_p->setParticlesOnGrid(particleInfoAllVdw_, system_.coordinates(), system_.box());
+
+    t_nrnb nrnb;
+    gmxForceCalculator_p->nbv_->constructPairlist(gmx::InteractionLocality::Local, system_.topology().getGmxExclusions(), 0, &nrnb);
 
     gmxForceCalculator_p->mdatoms_ = setAtomData(system_);
     setAtomProperties(gmxForceCalculator_p->nbv_, gmxForceCalculator_p->mdatoms_);

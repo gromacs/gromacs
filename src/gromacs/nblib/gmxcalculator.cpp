@@ -147,10 +147,9 @@ gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
     return verletForces_;
 }
 
-void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv,
-                        std::vector<int>&                    particleInfoAllVdw,
-                        const std::vector<gmx::RVec>&        coordinates,
-                        const Box&                           box)
+void GmxForceCalculator::setParticlesOnGrid(std::vector<int>&                    particleInfoAllVdw,
+                                            const std::vector<gmx::RVec>&        coordinates,
+                                            const Box&                           box)
 {
     const matrix& legacyBox = box.legacyMatrix;
 
@@ -160,7 +159,7 @@ void setParticlesOnGrid(std::unique_ptr<nonbonded_verlet_t>& nbv,
 
     const real particleDensity = coordinates.size() / det(legacyBox);
 
-    nbnxn_put_on_grid(nbv.get(), legacyBox, 0, lowerCorner, upperCorner, nullptr,
+    nbnxn_put_on_grid(nbv_.get(), legacyBox, 0, lowerCorner, upperCorner, nullptr,
                       { 0, int(coordinates.size()) }, particleDensity, particleInfoAllVdw,
                       coordinates, 0, nullptr);
 }
