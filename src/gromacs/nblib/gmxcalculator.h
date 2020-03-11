@@ -60,6 +60,7 @@
 namespace nblib
 {
 class Box;
+class NbvSetupUtil;
 class SimulationState;
 struct NBKernelOptions;
 
@@ -80,6 +81,8 @@ public:
     //! Non-Bonded Verlet object for force calculation
     std::unique_ptr<nonbonded_verlet_t> nbv_;
 
+private:
+
     //! Only nbfp, shift_vec and ntypes are used
     t_forcerec forcerec_;
 
@@ -95,7 +98,6 @@ public:
     //! Stores atom property data
     t_mdatoms mdatoms_;
 
-private:
     //! Energies of different interaction types; currently only needed as an argument for dispatchNonbondedKernel
     gmx_enerdata_t enerd_;
 
@@ -104,6 +106,8 @@ private:
 
     //! Legacy matrix for box
     matrix box_;
+
+    friend NbvSetupUtil;
 };
 
 //! Puts particles on a grid based on bounds specified by the box
