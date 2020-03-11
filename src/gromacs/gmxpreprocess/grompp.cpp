@@ -1789,7 +1789,7 @@ int gmx_grompp(int argc, char* argv[])
                        { efEDR, "-e", nullptr, ffOPTRD },
                        /* This group is needed by the VMD viewer as the start configuration for IMD sessions: */
                        { efGRO, "-imd", "imdgroup", ffOPTWR },
-                       { efTRN, "-ref", "rotref", ffOPTRW } };
+                       { efTRN, "-ref", "rotref", ffOPTRW | ffALLOW_MISSING } };
 #define NFILE asize(fnm)
 
     /* Command line options */
