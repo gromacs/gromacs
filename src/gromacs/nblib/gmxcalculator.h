@@ -83,11 +83,9 @@ public:
                             const std::vector<gmx::RVec>&        coordinates,
                             const Box&                           box);
 
-
+private:
     //! Non-Bonded Verlet object for force calculation
     std::unique_ptr<nonbonded_verlet_t> nbv_;
-
-private:
 
     //! Only nbfp, shift_vec and ntypes are used
     t_forcerec forcerec_;
