@@ -66,10 +66,15 @@ public:
 
     const Matrix& matrix() const;
 
-    LegacyMatrix legacyMatrix;
+    const LegacyMatrix& getLegacyMatrix() const
+    {
+        return legacyMatrix_;
+    }
 
 private:
     Matrix box_;
+
+    LegacyMatrix legacyMatrix_;
 };
 
 } // namespace nblib

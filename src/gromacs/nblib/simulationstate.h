@@ -81,7 +81,7 @@ public:
     const Topology& topology() const;
 
     //! Returns the box
-    const Box& box();
+    Box box();
 
     //! Returns a vector of particle coordinates
     std::vector<gmx::RVec>& coordinates();

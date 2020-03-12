@@ -120,7 +120,7 @@ const Topology& SimulationState::topology() const
     return simulationStatePtr_->topology();
 }
 
-const Box& SimulationState::box()
+Box SimulationState::box()
 {
     return simulationStatePtr_->box();
 }
