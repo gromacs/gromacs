@@ -176,13 +176,13 @@ void NbvSetupUtil::unpackTopologyToGmx(const Topology& topology)
     }
 }
 
-static t_mdatoms setAtomData(SimulationState simulationState)
+static t_mdatoms setAtomData(const Topology& topology)
 {
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
     mdatoms.typeA =
-            const_cast<int*>(simulationState.topology().getParticleTypeIdOfAllParticles().data());
-    mdatoms.chargeA = const_cast<real*>(simulationState.topology().getCharges().data());
+            const_cast<int*>(topology.getParticleTypeIdOfAllParticles().data());
+    mdatoms.chargeA = const_cast<real*>(topology.getCharges().data());
     return mdatoms;
 }
 
@@ -242,7 +242,7 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     t_nrnb nrnb;
     gmxForceCalculator_p->nbv_->constructPairlist(gmx::InteractionLocality::Local, system_.topology().getGmxExclusions(), 0, &nrnb);
 
-    gmxForceCalculator_p->mdatoms_ = setAtomData(system_);
+    gmxForceCalculator_p->mdatoms_ = setAtomData(system_.topology());
     setAtomProperties(gmxForceCalculator_p->nbv_, gmxForceCalculator_p->mdatoms_);
 
     // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
