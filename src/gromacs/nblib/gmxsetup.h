@@ -96,7 +96,17 @@ private:
 
     //! Particle info where all particles are marked to have Van der Waals interactions
     std::vector<int> particleInfoAllVdw_;
+
+    //! Force-calculator built from GROMACS internal data structures
+    GmxForceCalculator gmxForceCalculator_;
 };
+
+//! Set up StepWorkload data
+gmx::StepWorkload setupStepWorkload(std::shared_ptr<NBKernelOptions> options);
+
+//! Return an interaction constants struct with members set appropriately
+interaction_const_t setupInteractionConst(std::shared_ptr<NBKernelOptions> options);
+
 
 } // namespace nblib
 #endif // GROMACS_GMXSETUP_H

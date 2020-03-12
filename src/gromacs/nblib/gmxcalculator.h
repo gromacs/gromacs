@@ -64,16 +64,12 @@ class NbvSetupUtil;
 class SimulationState;
 struct NBKernelOptions;
 
-//! Set up StepWorkload data
-gmx::StepWorkload setupStepWorkload(std::shared_ptr<NBKernelOptions> options);
-
-//! Return an interaction constants struct with members set appropriately
-interaction_const_t setupInteractionConst(std::shared_ptr<NBKernelOptions> options);
-
 class GmxForceCalculator
 {
 public:
-    explicit GmxForceCalculator(SimulationState simState, std::shared_ptr<NBKernelOptions> options);
+    GmxForceCalculator()
+            : enerd_(gmx_enerdata_t(1, 0))
+    {}
 
     //! Compute forces and return
     gmx::PaddedHostVector<gmx::RVec> compute();
@@ -84,6 +80,8 @@ public:
                             const Box&                    box);
 
 private:
+    friend class NbvSetupUtil;
+
     //! Non-Bonded Verlet object for force calculation
     std::unique_ptr<nonbonded_verlet_t> nbv_;
 
@@ -110,8 +108,6 @@ private:
 
     //! Legacy matrix for box
     matrix box_;
-
-    friend NbvSetupUtil;
 };
 
 } // namespace nblib

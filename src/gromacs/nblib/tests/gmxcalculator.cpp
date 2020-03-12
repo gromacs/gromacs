@@ -57,15 +57,6 @@ namespace test
 {
 namespace
 {
-
-TEST(NBlibTest, CanConstructGmxForceCalculator)
-{
-    ArgonSimulationStateBuilder      argonSystemBuilder;
-    SimulationState                  simState = argonSystemBuilder.setupSimulationState();
-    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
-    EXPECT_NO_THROW(GmxForceCalculator(simState, options));
-}
-
 TEST(NBlibTest, GmxForceCalculatorCanCompute)
 {
     ArgonSimulationStateBuilder argonSystemBuilder;
