@@ -61,7 +61,7 @@ Box::Box(real l)
     box_(YY, YY) = l;
     box_(ZZ, ZZ) = l;
 
-    gmx::fillLegacyMatrix(box_, legacyMatrix_);
+    gmx::fillLegacyMatrix(box_, oldMatrix_);
 }
 
 Box::Box(real x, real y, real z)
@@ -75,7 +75,7 @@ Box::Box(real x, real y, real z)
     box_(YY, YY) = y;
     box_(ZZ, ZZ) = z;
 
-    gmx::fillLegacyMatrix(box_, legacyMatrix_);
+    gmx::fillLegacyMatrix(box_, oldMatrix_);
 }
 
 Box::Matrix Box::matrix()

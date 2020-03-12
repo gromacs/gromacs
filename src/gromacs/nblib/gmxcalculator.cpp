@@ -151,7 +151,7 @@ void GmxForceCalculator::setParticlesOnGrid(std::vector<int>&                   
                                             const std::vector<gmx::RVec>&        coordinates,
                                             const Box&                           box)
 {
-    const matrix& legacyBox = box.getLegacyMatrix();
+    const matrix& legacyBox = box.legacyMatrix();
 
     GMX_RELEASE_ASSERT(!TRICLINIC(legacyBox), "Only rectangular unit-cells are supported here");
     const rvec lowerCorner = { 0, 0, 0 };

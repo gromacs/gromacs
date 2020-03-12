@@ -74,7 +74,7 @@ void LeapFrog::integrate(const real dt)
             x[i][dim] += v[i][dim] * dt;
         }
     }
-    put_atoms_in_box(PbcType::Xyz, simulationState_.box().getLegacyMatrix(), x);
+    put_atoms_in_box(PbcType::Xyz, simulationState_.box().legacyMatrix(), x);
 }
 
 } // namespace nblib

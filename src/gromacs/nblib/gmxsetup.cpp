@@ -249,7 +249,7 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
     // gmx_cycles_t cycles = gmx_cycles_read();
 
-    const matrix& box_ = system_.box().getLegacyMatrix();
+    const matrix& box_ = system_.box().legacyMatrix();
 
     gmxForceCalculator_p->forcerec_.nbfp = nonbondedParameters_;
     snew(gmxForceCalculator_p->forcerec_.shift_vec, SHIFTS);
