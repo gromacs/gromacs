@@ -249,13 +249,13 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
     // gmx_cycles_t cycles = gmx_cycles_read();
 
-    const matrix& box_ = system_.box().legacyMatrix();
+    const matrix& box = system_.box().legacyMatrix();
 
     gmxForceCalculator_p->forcerec_.nbfp = nonbondedParameters_;
     snew(gmxForceCalculator_p->forcerec_.shift_vec, SHIFTS);
-    calc_shifts(box_, gmxForceCalculator_p->forcerec_.shift_vec);
+    calc_shifts(box, gmxForceCalculator_p->forcerec_.shift_vec);
 
-    put_atoms_in_box(PbcType::Xyz, box_, system_.coordinates());
+    put_atoms_in_box(PbcType::Xyz, box, system_.coordinates());
 
     gmxForceCalculator_p->verletForces_ =
             gmx::PaddedHostVector<gmx::RVec>(system_.topology().numParticles(), gmx::RVec(0, 0, 0));
