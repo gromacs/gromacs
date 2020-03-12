@@ -72,12 +72,6 @@ public:
     //! Sets up and returns a GmxForceCalculator
     std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator();
 
-    //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters_;
-
-    //! Particle info where all particles are marked to have Van der Waals interactions
-    std::vector<int> particleInfoAllVdw_;
-
 private:
     //! Reads Topology data from the user-facing layer to translate to GMX data structures
     void unpackTopologyToGmx(const Topology& topology);
@@ -93,6 +87,12 @@ private:
 
     SimulationState                  system_;
     std::shared_ptr<NBKernelOptions> options_;
+
+    //! Storage for parameters for short range interactions.
+    std::vector<real> nonbondedParameters_;
+
+    //! Particle info where all particles are marked to have Van der Waals interactions
+    std::vector<int> particleInfoAllVdw_;
 };
 
 } // namespace nblib
