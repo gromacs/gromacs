@@ -191,7 +191,6 @@ static t_mdatoms setAtomData(const Topology& topology)
 void NbvSetupUtil::setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t_mdatoms& mdatoms)
 {
     nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);
-    ;
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
@@ -231,42 +230,6 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance(const Topol
                         topology.getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
 
     return nbv;
-}
-
-std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
-{
-    auto gmxForceCalculator_p = std::make_unique<GmxForceCalculator>();
-
-    gmxForceCalculator_p->interactionConst_ = setupInteractionConst(options_);
-    gmxForceCalculator_p->stepWork_         = setupStepWorkload(options_);
-
-    gmxForceCalculator_p->nbv_ = setupNbnxmInstance(system_.topology(), *options_);
-
-    gmxForceCalculator_p->setParticlesOnGrid(particleInfoAllVdw_, system_.coordinates(), system_.box());
-
-    t_nrnb nrnb;
-    gmxForceCalculator_p->nbv_->constructPairlist(gmx::InteractionLocality::Local,
-                                                  system_.topology().getGmxExclusions(), 0, &nrnb);
-
-    gmxForceCalculator_p->mdatoms_ = setAtomData(system_.topology());
-    setAtomProperties(gmxForceCalculator_p->nbv_, gmxForceCalculator_p->mdatoms_);
-
-    // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
-    // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
-    // gmx_cycles_t cycles = gmx_cycles_read();
-
-    const matrix& box = system_.box().legacyMatrix();
-
-    gmxForceCalculator_p->forcerec_.nbfp = nonbondedParameters_;
-    snew(gmxForceCalculator_p->forcerec_.shift_vec, SHIFTS);
-    calc_shifts(box, gmxForceCalculator_p->forcerec_.shift_vec);
-
-    put_atoms_in_box(PbcType::Xyz, box, system_.coordinates());
-
-    gmxForceCalculator_p->verletForces_ =
-            gmx::PaddedHostVector<gmx::RVec>(system_.topology().numParticles(), gmx::RVec(0, 0, 0));
-
-    return gmxForceCalculator_p;
 }
 
 static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
@@ -337,6 +300,42 @@ interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions>
         init_interaction_const_tables(nullptr, &interactionConst);
     }
     return interactionConst;
+}
+
+std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
+{
+    auto gmxForceCalculator_p = std::make_unique<GmxForceCalculator>();
+
+    gmxForceCalculator_p->interactionConst_ = setupInteractionConst(options_);
+    gmxForceCalculator_p->stepWork_         = setupStepWorkload(options_);
+
+    gmxForceCalculator_p->nbv_ = setupNbnxmInstance(system_.topology(), *options_);
+
+    gmxForceCalculator_p->setParticlesOnGrid(particleInfoAllVdw_, system_.coordinates(), system_.box());
+
+    t_nrnb nrnb;
+    gmxForceCalculator_p->nbv_->constructPairlist(gmx::InteractionLocality::Local,
+                                                  system_.topology().getGmxExclusions(), 0, &nrnb);
+
+    gmxForceCalculator_p->mdatoms_ = setAtomData(system_.topology());
+    setAtomProperties(gmxForceCalculator_p->nbv_, gmxForceCalculator_p->mdatoms_);
+
+    // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
+    // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
+    // gmx_cycles_t cycles = gmx_cycles_read();
+
+    const matrix& box = system_.box().legacyMatrix();
+
+    gmxForceCalculator_p->forcerec_.nbfp = nonbondedParameters_;
+    snew(gmxForceCalculator_p->forcerec_.shift_vec, SHIFTS);
+    calc_shifts(box, gmxForceCalculator_p->forcerec_.shift_vec);
+
+    put_atoms_in_box(PbcType::Xyz, box, system_.coordinates());
+
+    gmxForceCalculator_p->verletForces_ =
+            gmx::PaddedHostVector<gmx::RVec>(system_.topology().numParticles(), gmx::RVec(0, 0, 0));
+
+    return gmxForceCalculator_p;
 }
 
 } // namespace nblib
