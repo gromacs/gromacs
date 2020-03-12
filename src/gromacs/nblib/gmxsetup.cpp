@@ -109,7 +109,8 @@ NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& option
     gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
     gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
 
-    unpackTopologyToGmx(system_.topology());
+    setNonBondedParameters(system_.topology());
+    setParticleInfoAllVdv(system_.topology().numParticles());
 }
 
 Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
@@ -136,12 +137,20 @@ Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
     return kernelSetup;
 }
 
-void NbvSetupUtil::unpackTopologyToGmx(const Topology& topology)
+void NbvSetupUtil::setParticleInfoAllVdv(const size_t numParticles)
 
 {
-    const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
+    particleInfoAllVdw_.resize(numParticles);
+    for (size_t particleI = 0; particleI < numParticles; particleI++)
+    {
+        SET_CGINFO_HAS_VDW(particleInfoAllVdw_[particleI]);
+        SET_CGINFO_HAS_Q(particleInfoAllVdw_[particleI]);
+    }
+}
 
-    size_t numParticles = topology.numParticles();
+void NbvSetupUtil::setNonBondedParameters(const Topology& topology)
+{
+    const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
 
     //! Todo: Refactor nbnxm to take this (nonbondedParameters_) directly
     //!
@@ -166,13 +175,6 @@ void NbvSetupUtil::unpackTopologyToGmx(const Topology& topology)
             nonbondedParameters_.push_back(c6_combo);
             nonbondedParameters_.push_back(c12_combo);
         }
-    }
-
-    particleInfoAllVdw_.resize(numParticles);
-    for (size_t particleI = 0; particleI < numParticles; particleI++)
-    {
-        SET_CGINFO_HAS_VDW(particleInfoAllVdw_[particleI]);
-        SET_CGINFO_HAS_Q(particleInfoAllVdw_[particleI]);
     }
 }
 

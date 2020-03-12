@@ -73,8 +73,11 @@ public:
     std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator();
 
 private:
-    //! Reads Topology data from the user-facing layer to translate to GMX data structures
-    void unpackTopologyToGmx(const Topology& topology);
+    //! Sets non-bonded parameters to be used to build GMX data structures
+    void setNonBondedParameters(const Topology& topology);
+
+    //! Marks particles to have Van der Waals interactions
+    void setParticleInfoAllVdv(size_t numParticles);
 
     //! Returns the kernel setup
     Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions &options);
