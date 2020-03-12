@@ -68,13 +68,13 @@ public:
 
     const LegacyMatrix& legacyMatrix() const
     {
-        return oldMatrix_;
+        return legacyMatrix_;
     }
 
 private:
     Matrix box_;
 
-    LegacyMatrix oldMatrix_;
+    LegacyMatrix legacyMatrix_;
 };
 
 } // namespace nblib
