@@ -1,0 +1,125 @@
+# Repository cleanliness. Source tidiness, linting, and policy compliance.
+
+build-clang-tidy:
+  extends:
+    - .build-clang
+    - .clang7-template
+  stage: source-check
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-clang-tidy
+      artifacts: true
+  variables:
+    BUILD_DIR: build-clang-tidy
+    COMPILER_MAJOR_VERSION: 7
+    EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+run-clang-format:
+  extends:
+    - .binary-build-template
+    - .no-cache-template
+    - .variables-template
+    - .tags-template
+    - .clang-before-script-template
+    - .build-clang-template
+    - .clang7-template
+  stage: source-check
+  when: always
+  needs:
+    - job: simple-build
+      artifacts: false
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    COMPILER_MAJOR_VERSION: 7
+    EXTRA_INSTALLS: clang-format-$COMPILER_MAJOR_VERSION
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  script:
+    - export CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION
+    - admin/clang-format.sh check --rev=HEAD^ --warnings=clang-format.log
+    - grep -iq "needs formatting" clang-format.log | tee formatting.txt || true
+    - if [ -s formatting.txt ] ; then echo "clang-format.sh found issues"; exit 1; fi
+  artifacts:
+    when: on_failure
+    paths:
+      - clang-format.log
+      - formatting.txt
+
+run-copyright-check:
+  extends:
+    - .binary-build-template
+    - .no-cache-template
+    - .variables-template
+    - .tags-template
+    - .clang-before-script-template
+    - .build-clang-template
+    - .clang7-template
+  stage: source-check
+  when: always
+  needs:
+    - job: simple-build
+      artifacts: false
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  script:
+    - admin/copyright.sh check --rev=HEAD^ --warnings=copyright.log
+    - grep -iq "copyright year" copyright.log | tee years.log || true
+    - grep -iq "copyright header" copyright.log | tee headers.log || true
+    - if [[ -s years.log || -s headers.log ]] ; then
+      echo "Copyright information needs updating" ;
+      exit 1 ;
+      fi
+  artifacts:
+    when: on_failure
+    paths:
+      - copyright.log
+      - years.log
+      - headers.log
+
+run-check-source:
+  extends:
+    - .no-cache-template
+    - .variables-template
+    - .tags-template
+    - .build-docs-binary-template
+    - .documentation-before-script-template
+  stage: source-check
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: build-docs
+      artifacts: true
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    BUILD_DIR: build-docs
+    COMPILER_MAJOR_VERSION: 7
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  script:
+    - cd $BUILD_DIR
+    - cmake --build . --target check-source
+    - grep -qi "error" docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee doxygenError.txt || true
+    - grep -qi "warning" docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee -a doxygenError.txt || true
+    - if [ -s doxygenError.txt ] ; then echo "Found errors while running doxygen"; exit 1; fi
+  artifacts:
+    name: docs-artifacts-$CI_COMMIT_REF_SLUG
+    when: always
+    expire_in: 1 week
+    paths:
+      - $BUILD_DIR/docs/doxygen/doxygen-xml.log
+      - $BUILD_DIR/docs/doxygen/check-source.log

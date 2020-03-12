@@ -1,0 +1,238 @@
+# Build documentation and web page.
+
+.configure-docs:
+  extends:
+    - .configure-extends-template
+    - .configure-docs-template
+    - .documentation-before-script-template
+
+.configure-docs-release:
+  extends:
+    - .configure-extends-template
+    - .configure-docs-release-template
+    - .documentation-before-script-template
+
+.build-docs-binary:
+  extends:
+    - .build-extends-template
+    - .build-cache-template
+    - .build-docs-binary-template
+    - .documentation-before-script-template
+
+.build-docs-webpage:
+  extends:
+    - .binary-build-template
+    - .variables-template
+    - .tags-template
+    - .no-cache-template
+    - .build-docs-webpage-template
+    - .documentation-before-script-template
+
+configure-docs:
+  extends:
+    - .configure-docs
+  needs:
+    - job: simple-build
+      artifacts: false
+  variables:
+    BUILD_DIR: build-docs
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+configure-docs-gmxapi:
+  extends:
+    - .configure-docs
+    - .configure-gmxapi-template
+  needs:
+    - job: simple-build
+      artifacts: false
+  variables:
+    BUILD_DIR: build-docs-gmxapi
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+build-docs:
+  extends:
+    - .build-docs-binary
+  stage: documentation
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-docs
+      artifacts: true
+  variables:
+    BUILD_DIR: build-docs
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+build-docs-gmxapi:
+  extends:
+    - .build-docs-binary
+    - .gmxapi-extra-installs
+  stage: documentation
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-docs-gmxapi
+      artifacts: true
+  variables:
+    BUILD_DIR: build-docs-gmxapi
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+
+# The manual build is built separately so that errors in converting
+# Sphinx to LaTeX and compiling can always be found in the
+# all-output.txt file, while avoiding many thousands of lines of spam
+# from pdflatex for normal builds. This does reduce the available
+# parallel utilization, and so increases the build time.
+#
+# TODO why are the doxygen and sphinx log files disappearing
+# TODO use a feature from gitlab runner instead of using pipefail to get timings for the job
+webpage:
+  extends:
+    - .build-docs-webpage
+  stage: post-test
+  needs:
+    - job: build-docs
+      artifacts: true
+    - job: run-check-source
+      artifacts: false
+  variables:
+    BUILD_DIR: build-docs
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+webpage-gmxapi:
+  extends:
+    - .build-docs-webpage
+    - .gmxapi-extra-installs
+  stage: post-test
+  needs:
+    - job: build-docs-gmxapi
+      artifacts: true
+    - job: run-check-source
+      artifacts: false
+  variables:
+    BUILD_DIR: build-docs-gmxapi
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+webpage-nightly:
+  extends:
+    - .build-docs-webpage
+    - .configure-gmxapi-template
+  stage: nightly-deploy
+  only:
+    - triggers
+    - schedules
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: linkchecker
+      artifacts: false
+    - job: webpage-gmxapi
+      artifacts: true
+  variables:
+    BUILD_DIR: build-docs-gmxapi
+  script:
+    - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
+  artifacts:
+    when: always
+    paths:
+      - webpage.tar.gz
+
+webpage-configure-release:
+  extends:
+    - .configure-docs-release
+    - .configure-gmxapi-template
+    - .no-cache-template
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
+  variables:
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
+
+
+webpage-binary-release:
+  extends:
+    - .build-docs-binary
+    - .gmxapi-extra-installs
+  stage: release-build
+  needs:
+    - job: webpage-configure-release
+      artifacts: true
+  variables:
+    BUILD_DIR: release-doc-builds
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+
+webpage-build-release:
+  extends:
+    - .build-docs-webpage
+    - .configure-gmxapi-template
+  dependencies:
+    - webpage-binary-release
+    - webpage-configure-release
+  stage: release-prepare-deploy
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  variables:
+    BUILD_DIR: release-doc-builds
+
+webpage-archive-release:
+  extends:
+    - .build-docs-webpage
+    - .configure-gmxapi-template
+  stage: release-deploy
+  only:
+    refs:
+      - web
+      - triggers
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - webpage-build-release
+    - package-archive-release
+    - package-regressiontests-release
+  variables:
+    BUILD_DIR: release-doc-builds
+  script:
+    - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
+  artifacts:
+    when: always
+    paths:
+      - webpage.tar.gz
+      - gromacs-*tar.gz
+      - regressiontests-*tar.gz
+
