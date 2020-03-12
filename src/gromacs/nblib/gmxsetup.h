@@ -97,9 +97,6 @@ private:
 
     //! Particle info where all particles are marked to have Van der Waals interactions
     std::vector<int> particleInfoAllVdw_;
-
-    //! Force-calculator built from GROMACS internal data structures
-    GmxForceCalculator gmxForceCalculator_;
 };
 
 //! Set up StepWorkload data
