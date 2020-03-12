@@ -67,9 +67,7 @@ struct NBKernelOptions;
 class GmxForceCalculator
 {
 public:
-    GmxForceCalculator()
-            : enerd_(gmx_enerdata_t(1, 0))
-    {}
+    GmxForceCalculator() : enerd_(gmx_enerdata_t(1, 0)) {}
 
     //! Compute forces and return
     gmx::PaddedHostVector<gmx::RVec> compute();

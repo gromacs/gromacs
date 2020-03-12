@@ -80,13 +80,14 @@ private:
     void setParticleInfoAllVdv(size_t numParticles);
 
     //! Returns the kernel setup
-    Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions &options);
+    Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options);
 
     //! Sets Particle Types and Charges and VdW params
     void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t_mdatoms& mdatoms);
 
     //! Sets up non-bonded verlet on the GmxForceCalculator
-    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options);
+    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const Topology&        topology,
+                                                           const NBKernelOptions& options);
 
     SimulationState                  system_;
     std::shared_ptr<NBKernelOptions> options_;

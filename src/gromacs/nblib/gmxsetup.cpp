@@ -183,8 +183,7 @@ static t_mdatoms setAtomData(const Topology& topology)
 {
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA =
-            const_cast<int*>(topology.getParticleTypeIdOfAllParticles().data());
+    mdatoms.typeA   = const_cast<int*>(topology.getParticleTypeIdOfAllParticles().data());
     mdatoms.chargeA = const_cast<real*>(topology.getCharges().data());
     return mdatoms;
 }
@@ -246,7 +245,8 @@ std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
     gmxForceCalculator_p->setParticlesOnGrid(particleInfoAllVdw_, system_.coordinates(), system_.box());
 
     t_nrnb nrnb;
-    gmxForceCalculator_p->nbv_->constructPairlist(gmx::InteractionLocality::Local, system_.topology().getGmxExclusions(), 0, &nrnb);
+    gmxForceCalculator_p->nbv_->constructPairlist(gmx::InteractionLocality::Local,
+                                                  system_.topology().getGmxExclusions(), 0, &nrnb);
 
     gmxForceCalculator_p->mdatoms_ = setAtomData(system_.topology());
     setAtomProperties(gmxForceCalculator_p->nbv_, gmxForceCalculator_p->mdatoms_);
