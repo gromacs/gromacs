@@ -239,7 +239,7 @@ void NbvSetupUtil::setupStepWorkload(const NBKernelOptions& options)
     gmxForceCalculator_->stepWork_ = stepWork;
 }
 
-static interaction_const_t makeInteractionConst(const NBKernelOptions& options)
+void NbvSetupUtil::setupInteractionConst(const NBKernelOptions& options)
 {
     interaction_const_t interactionConst;
     interactionConst.vdwtype      = evdwCUT;
@@ -287,12 +287,8 @@ static interaction_const_t makeInteractionConst(const NBKernelOptions& options)
         interactionConst.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
         init_interaction_const_tables(nullptr, &interactionConst);
     }
-    return interactionConst;
-}
 
-void NbvSetupUtil::setupInteractionConst(const NBKernelOptions& options)
-{
-    gmxForceCalculator_->interactionConst_ = makeInteractionConst(options);
+    gmxForceCalculator_->interactionConst_ = std::move(interactionConst);
 }
 
 void NbvSetupUtil::setupForceRec(const matrix& box)
