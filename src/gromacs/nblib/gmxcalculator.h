@@ -78,7 +78,7 @@ public:
                             const Box&                    box);
 
 private:
-    friend class GmxSetupDirector;
+    friend class NbvSetupUtil;
 
     //! Non-Bonded Verlet object for force calculation
     std::unique_ptr<nonbonded_verlet_t> nbv_;

@@ -73,7 +73,7 @@ public:
     void setExecutionContext(const NBKernelOptions& options);
 
     //! Sets non-bonded parameters to be used to build GMX data structures
-    void setNonBondedParameters(const Topology& topology);
+    void setNonBondedParameters(const std::vector<ParticleType>& particleTypes);
 
     //! Marks particles to have Van der Waals interactions
     void setParticleInfoAllVdv(size_t numParticles);
@@ -82,39 +82,52 @@ public:
     Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options);
 
     //! Set up StepWorkload data
-    static gmx::StepWorkload setupStepWorkload(const NBKernelOptions& options);
+    void setupStepWorkload(const NBKernelOptions& options);
 
     //! Return an interaction constants struct with members set appropriately
-    interaction_const_t setupInteractionConst(const NBKernelOptions& options);
+    void setupInteractionConst(const NBKernelOptions& options);
 
     //! Sets Particle Types and Charges and VdW params
-    void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t_mdatoms& mdatoms);
+    void setAtomProperties(const Topology& topology);
 
     //! Sets up non-bonded verlet on the GmxForceCalculator
-    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const Topology&        topology,
-                                                           const NBKernelOptions& options);
+    void setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options);
+
+    //! Puts particles on a grid based on bounds specified by the box
+    void setParticlesOnGrid(const std::vector<gmx::RVec>& coordinates,
+                            const Box&                    box);
+
+    //! Constructs pair lists
+    void constructPairList(const gmx::ListOfLists<int>& exclusions);
 
     //! Sets up t_forcerec object on the GmxForceCalculator
-    void setupForceRec(t_forcerec& forcerec, const matrix& box);
+    void setupForceRec(const matrix& box);
 
-    const std::vector<int>& particleInfoAllVdv() const
+    //! Sets initial forces to zero
+    void setForcesToZero(size_t numParticles);
+
+    std::unique_ptr<GmxForceCalculator> getGmxForceCalculator()
     {
-        return const_cast<std::vector<int>&>(particleInfoAllVdw_);
+        return std::move(gmxForceCalculator_);
     }
 
 private:
+
     //! Storage for parameters for short range interactions.
     std::vector<real> nonbondedParameters_;
 
     //! Particle info where all particles are marked to have Van der Waals interactions
     std::vector<int> particleInfoAllVdw_;
+
+    //! GROMACS force calculator to compute forces
+    std::unique_ptr<GmxForceCalculator> gmxForceCalculator_;
 };
 
 class GmxSetupDirector
 {
 public:
     //! Sets up and returns a GmxForceCalculator
-    std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator(const SimulationState& system,
+    static std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator(const SimulationState& system,
                                                                 const NBKernelOptions& options);
 };
 
