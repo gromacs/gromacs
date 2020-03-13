@@ -23,7 +23,6 @@ run-clang-format:
     - .binary-build-template
     - .no-cache-template
     - .variables-template
-    - .tags-template
     - .clang-before-script-template
     - .build-clang-template
     - .clang7-template
@@ -57,7 +56,6 @@ run-copyright-check:
     - .binary-build-template
     - .no-cache-template
     - .variables-template
-    - .tags-template
     - .clang-before-script-template
     - .build-clang-template
     - .clang7-template
@@ -92,7 +90,6 @@ run-check-source:
   extends:
     - .no-cache-template
     - .variables-template
-    - .tags-template
     - .build-docs-binary-template
     - .documentation-before-script-template
   stage: source-check

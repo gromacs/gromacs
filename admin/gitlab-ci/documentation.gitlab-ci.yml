@@ -23,7 +23,6 @@
   extends:
     - .binary-build-template
     - .variables-template
-    - .tags-template
     - .no-cache-template
     - .build-docs-webpage-template
     - .documentation-before-script-template

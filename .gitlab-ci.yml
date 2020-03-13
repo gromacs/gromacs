@@ -36,6 +36,10 @@ stages:
   # Deploy stage for release builds
   - release-deploy
 
+default:
+  tags:
+    - k8s-scilifelab
+
 include:
   - local: '/admin/ci-templates/.image-templates.yml'
   - local: '/admin/ci-templates/.build-cache-template.yml'
@@ -50,7 +54,6 @@ include:
   - local: '/admin/ci-templates/.clang-test-template.yml'
   - local: '/admin/ci-templates/.clang-before-script.yml'
   - local: '/admin/ci-templates/.documentation-before-script.yml'
-  - local: '/admin/ci-templates/.tags-template.yml'
   - local: '/admin/ci-templates/.test-script-template.yml'
   - local: '/admin/ci-templates/.build-docs-template.yml'
   - local: '/admin/ci-templates/.cuda-template.yml'
