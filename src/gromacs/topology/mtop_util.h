@@ -217,25 +217,6 @@ gmx_mtop_ilistloop_t gmx_mtop_ilistloop_init(const gmx_mtop_t& mtop);
  */
 const InteractionLists* gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop, int* nmol);
 
-/* Abstract type for ilist loop over all ilists of all molecules */
-typedef struct gmx_mtop_ilistloop_all* gmx_mtop_ilistloop_all_t;
-
-/* Initialize an ilist loop over all molecule types in the system.
- * Only use this when you really need to loop over all molecules,
- * i.e. when you use groups which might differ per molecule,
- * otherwise use gmx_mtop_ilistloop.
- */
-gmx_mtop_ilistloop_all_t gmx_mtop_ilistloop_all_init(const gmx_mtop_t* mtop);
-
-/* Loop to the next molecule,
- * When not at the end:
- *   returns a valid pointer to the next array ilist_mol[F_NRE],
- *   writes the atom offset which should be added to iatoms in atnr_offset.
- * When at the end, destroys iloop and returns nullptr.
- */
-const InteractionLists* gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop, int* atnr_offset);
-
-
 /* Returns the total number of interactions in the system of type ftype */
 int gmx_mtop_ftype_count(const gmx_mtop_t* mtop, int ftype);
 

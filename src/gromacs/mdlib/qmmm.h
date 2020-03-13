@@ -149,21 +149,4 @@ real calculate_QMMM(const t_commrec* cr, gmx::ForceWithShiftForces* forceWithShi
  * called by system().
  */
 
-/*! \brief
- * Return vector of atom indices for atoms in the QMMM region.
- *
- * \param[in] mtop Topology to use for populating array.
- * \param[in] ir   Inputrec used in simulation.
- * \returns Vector of atoms.
- */
-std::vector<int> qmmmAtomIndices(const t_inputrec& ir, const gmx_mtop_t& mtop);
-
-/*! \brief
- * Remove charges from QMMM atoms.
- *
- * \param[in] mtop Topology used for removing atoms.
- * \param[in] qmmmAtoms ArrayRef to vector conatining qmmm atom indices.
- */
-void removeQmmmAtomCharges(gmx_mtop_t* mtop, gmx::ArrayRef<const int> qmmmAtoms);
-
 #endif

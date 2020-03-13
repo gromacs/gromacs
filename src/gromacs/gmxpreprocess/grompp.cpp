@@ -2227,20 +2227,9 @@ int gmx_grompp(int argc, char* argv[])
         pr_symtab(debug, 0, "After close", &sys.symtab);
     }
 
-    /* make exclusions between QM atoms and remove charges if needed */
-    if (ir->bQMMM)
-    {
-        generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_ORIGINAL, logger);
-        if (ir->QMMMscheme != eQMMMschemeoniom)
-        {
-            std::vector<int> qmmmAtoms = qmmmAtomIndices(*ir, sys);
-            removeQmmmAtomCharges(&sys, qmmmAtoms);
-        }
-    }
-
     if (ir->eI == eiMimic)
     {
-        generate_qmexcl(&sys, ir, wi, GmxQmmmMode::GMX_QMMM_MIMIC, logger);
+        generate_qmexcl(&sys, ir, logger);
     }
 
     if (ftp2bSet(efTRN, NFILE, fnm))

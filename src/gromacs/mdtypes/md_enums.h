@@ -891,7 +891,6 @@ extern const char* gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR + 1];
 //! \brief QM/MM mode
 enum struct GmxQmmmMode
 {
-    GMX_QMMM_ORIGINAL,
     GMX_QMMM_MIMIC
 };
 #endif /* GMX_MDTYPES_MD_ENUMS_H */

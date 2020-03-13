@@ -406,68 +406,6 @@ typedef struct gmx_mtop_ilistloop_all
     int               a_offset;
 } t_gmx_mtop_ilist_all;
 
-gmx_mtop_ilistloop_all_t gmx_mtop_ilistloop_all_init(const gmx_mtop_t* mtop)
-{
-    struct gmx_mtop_ilistloop_all* iloop;
-
-    snew(iloop, 1);
-
-    iloop->mtop     = mtop;
-    iloop->mblock   = 0;
-    iloop->mol      = -1;
-    iloop->a_offset = 0;
-
-    return iloop;
-}
-
-static void gmx_mtop_ilistloop_all_destroy(gmx_mtop_ilistloop_all_t iloop)
-{
-    sfree(iloop);
-}
-
-const InteractionLists* gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop, int* atnr_offset)
-{
-
-    if (iloop == nullptr)
-    {
-        gmx_incons(
-                "gmx_mtop_ilistloop_all_next called without calling gmx_mtop_ilistloop_all_init");
-    }
-
-    if (iloop->mol >= 0)
-    {
-        iloop->a_offset += iloop->mtop->moleculeBlockIndices[iloop->mblock].numAtomsPerMolecule;
-    }
-
-    iloop->mol++;
-
-    /* Inter-molecular interactions, if present, are indexed with
-     * iloop->mblock == iloop->mtop->nmolblock, thus we should separately
-     * check for this value in this conditional.
-     */
-    if (iloop->mblock == iloop->mtop->molblock.size()
-        || iloop->mol >= iloop->mtop->molblock[iloop->mblock].nmol)
-    {
-        iloop->mblock++;
-        iloop->mol = 0;
-        if (iloop->mblock >= iloop->mtop->molblock.size())
-        {
-            if (iloop->mblock == iloop->mtop->molblock.size() && iloop->mtop->bIntermolecularInteractions)
-            {
-                *atnr_offset = 0;
-                return iloop->mtop->intermolecular_ilist.get();
-            }
-
-            gmx_mtop_ilistloop_all_destroy(iloop);
-            return nullptr;
-        }
-    }
-
-    *atnr_offset = iloop->a_offset;
-
-    return &iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
-}
-
 int gmx_mtop_ftype_count(const gmx_mtop_t* mtop, int ftype)
 {
     gmx_mtop_ilistloop_t iloop;

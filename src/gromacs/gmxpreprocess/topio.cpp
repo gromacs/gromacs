@@ -1013,23 +1013,20 @@ char** do_top(bool                                  bVerbose,
 }
 
 /*! \brief
- * Generate exclusion lists for QM/MM.
+ * Exclude molecular interactions for QM atoms handled by MiMic.
  *
- * This routine updates the exclusion lists for QM atoms in order to include all other QM
- * atoms of this molecule. Moreover, this routine replaces bonds between QM atoms with
- * CONNBOND and, when MiMiC is not used, removes bonded interactions between QM and link atoms.
- * Finally, in case if MiMiC QM/MM is used - charges of QM atoms are set to 0
+ * Update the exclusion lists to include all QM atoms of this molecule,
+ * replace bonds between QM atoms with CONNBOND and
+ * set charges of QM atoms to 0.
  *
  * \param[in,out] molt molecule type with QM atoms
  * \param[in] grpnr group informatio
  * \param[in,out] ir input record
- * \param[in,out] qmmmMode QM/MM mode switch: original/MiMiC
  * \param[in] logger Handle to logging interface.
  */
 static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
                                     const unsigned char* grpnr,
                                     t_inputrec*          ir,
-                                    GmxQmmmMode          qmmmMode,
                                     const gmx::MDLogger& logger)
 {
     /* This routine expects molt->ilist to be of size F_NRE and ordered. */
@@ -1038,9 +1035,9 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
      * these interactions should be handled by the QM subroutines and
      * not by the gromacs routines
      */
-    int   qm_max = 0, qm_nr = 0, link_nr = 0, link_max = 0;
+    int   qm_max = 0, qm_nr = 0, link_nr = 0;
     int * qm_arr = nullptr, *link_arr = nullptr;
-    bool *bQMMM, *blink;
+    bool* bQMMM;
 
     /* First we search and select the QM atoms in an qm_arr array that
      * we use to create the exclusions.
@@ -1167,14 +1164,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
 
                 /* MiMiC treats link atoms as quantum atoms - therefore
                  * we do not need do additional exclusions here */
-                if (qmmmMode == GmxQmmmMode::GMX_QMMM_MIMIC)
-                {
-                    bexcl = numQmAtoms == nratoms;
-                }
-                else
-                {
-                    bexcl = (numQmAtoms >= nratoms - 1);
-                }
+                bexcl = numQmAtoms == nratoms;
 
                 if (bexcl && ftype == F_SETTLE)
                 {
@@ -1207,51 +1197,6 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
      * linkatoms interaction with the QMatoms and would be counted
      * twice.  */
 
-    if (qmmmMode != GmxQmmmMode::GMX_QMMM_MIMIC)
-    {
-        for (int i = 0; i < F_NRE; i++)
-        {
-            if (IS_CHEMBOND(i))
-            {
-                int j = 0;
-                while (j < molt->ilist[i].size())
-                {
-                    int a1 = molt->ilist[i].iatoms[j + 1];
-                    int a2 = molt->ilist[i].iatoms[j + 2];
-                    if ((bQMMM[a1] && !bQMMM[a2]) || (!bQMMM[a1] && bQMMM[a2]))
-                    {
-                        if (link_nr >= link_max)
-                        {
-                            link_max += 10;
-                            srenew(link_arr, link_max);
-                        }
-                        if (bQMMM[a1])
-                        {
-                            link_arr[link_nr++] = a2;
-                        }
-                        else
-                        {
-                            link_arr[link_nr++] = a1;
-                        }
-                    }
-                    j += 3;
-                }
-            }
-        }
-    }
-    snew(blink, molt->atoms.nr);
-    for (int i = 0; i < molt->atoms.nr; i++)
-    {
-        blink[i] = FALSE;
-    }
-
-    if (qmmmMode != GmxQmmmMode::GMX_QMMM_MIMIC)
-    {
-        for (int i = 0; i < link_nr; i++)
-        {
-            blink[link_arr[i]] = TRUE;
-        }
-    }
     /* creating the exclusion block for the QM atoms. Each QM atom has
      * as excluded elements all the other QMatoms (and itself).
      */
@@ -1276,14 +1221,6 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
             }
             j += (qm_nr + link_nr);
         }
-        if (blink[i])
-        {
-            for (int k = 0; k < qm_nr; k++)
-            {
-                qmexcl.a[k + j] = qm_arr[k];
-            }
-            j += qm_nr;
-        }
     }
     qmexcl.index[qmexcl.nr] = j;
 
@@ -1305,10 +1242,9 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
         int j       = 0;
         while (j < molt->ilist[i].size())
         {
-            int  a1 = molt->ilist[i].iatoms[j + 1];
-            int  a2 = molt->ilist[i].iatoms[j + 2];
-            bool bexcl =
-                    ((bQMMM[a1] && bQMMM[a2]) || (blink[a1] && bQMMM[a2]) || (bQMMM[a1] && blink[a2]));
+            int  a1    = molt->ilist[i].iatoms[j + 1];
+            int  a2    = molt->ilist[i].iatoms[j + 2];
+            bool bexcl = (bQMMM[a1] && bQMMM[a2]);
             if (bexcl)
             {
                 /* since the interaction involves QM atoms, these should be
@@ -1331,10 +1267,9 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
     free(qm_arr);
     free(bQMMM);
     free(link_arr);
-    free(blink);
 } /* generate_qmexcl */
 
-void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, warninp* wi, GmxQmmmMode qmmmMode, const gmx::MDLogger& logger)
+void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, const gmx::MDLogger& logger)
 {
     /* This routine expects molt->molt[m].ilist to be of size F_NRE and ordered.
      */
@@ -1411,7 +1346,7 @@ void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, warninp* wi, GmxQmmmMode q
                     /* Set the molecule type for the QMMM molblock */
                     molb->type = sys->moltype.size() - 1;
                 }
-                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, qmmmMode, logger);
+                generate_qmexcl_moltype(&sys->moltype[molb->type], grpnr, ir, logger);
             }
             if (grpnr)
             {
@@ -1419,25 +1354,5 @@ void generate_qmexcl(gmx_mtop_t* sys, t_inputrec* ir, warninp* wi, GmxQmmmMode q
             }
             index_offset += nat_mol;
         }
-    }
-    if (qmmmMode == GmxQmmmMode::GMX_QMMM_ORIGINAL && nr_mol_with_qm_atoms > 1)
-    {
-        /* generate a warning is there are QM atoms in different
-         * topologies. In this case it is not possible at this stage to
-         * mutualy exclude the non-bonded interactions via the
-         * exclusions (AFAIK). Instead, the user is advised to use the
-         * energy group exclusions in the mdp file
-         */
-        warning_note(wi,
-                     "\nThe QM subsystem is divided over multiple topologies. "
-                     "The mutual non-bonded interactions cannot be excluded. "
-                     "There are two ways to achieve this:\n\n"
-                     "1) merge the topologies, such that the atoms of the QM "
-                     "subsystem are all present in one single topology file. "
-                     "In this case this warning will dissappear\n\n"
-                     "2) exclude the non-bonded interactions explicitly via the "
-                     "energygrp-excl option in the mdp file. if this is the case "
-                     "this warning may be ignored"
-                     "\n\n");
     }
 }
