@@ -67,7 +67,7 @@ namespace nblib
 class NbvSetupUtil
 {
 public:
-    NbvSetupUtil() = default;
+    NbvSetupUtil() : gmxForceCalculator_(std::make_unique<GmxForceCalculator>()) {}
 
     //! Sets hardware params from the execution context
     void setExecutionContext(const NBKernelOptions& options);
