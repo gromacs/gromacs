@@ -1,5 +1,21 @@
 # Repository cleanliness. Source tidiness, linting, and policy compliance.
 
+configure-clang-tidy:
+  extends:
+    - .configure-clang
+    - .clang7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+  variables:
+    BUILD_DIR: build-clang-tidy
+    COMPILER_MAJOR_VERSION: 7
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
+    EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
 build-clang-tidy:
   extends:
     - .build-clang
@@ -120,3 +136,31 @@ run-check-source:
     paths:
       - $BUILD_DIR/docs/doxygen/doxygen-xml.log
       - $BUILD_DIR/docs/doxygen/check-source.log
+
+linkchecker:
+  extends:
+    - .build-docs-webpage
+  stage: nightly-build
+  dependencies:
+    - webpage-gmxapi
+  only:
+    - schedules
+    - triggers
+    - merge_requests
+    - external_pull_requests
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    BUILD_DIR: build-docs-gmxapi
+  script:
+    - cd $BUILD_DIR
+    - linkchecker docs/html/index.html -f ../docs/linkcheckerrc -Fxml --ignore-url html-full
+      --ignore-url html-user --ignore-url html-lib --ignore-url .tar.gz --ignore-url _sources
+      -o xml
+  artifacts:
+    reports:
+      junit: $BUILD_DIR/linkchecker-out.xml

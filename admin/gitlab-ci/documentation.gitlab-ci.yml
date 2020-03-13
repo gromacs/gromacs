@@ -12,21 +12,6 @@
     - .configure-docs-release-template
     - .documentation-before-script-template
 
-.build-docs-binary:
-  extends:
-    - .build-extends-template
-    - .build-cache-template
-    - .build-docs-binary-template
-    - .documentation-before-script-template
-
-.build-docs-webpage:
-  extends:
-    - .binary-build-template
-    - .variables:default
-    - .no-cache-template
-    - .build-docs-webpage-template
-    - .documentation-before-script-template
-
 configure-docs:
   extends:
     - .configure-docs
@@ -53,6 +38,21 @@ configure-docs-gmxapi:
   except:
     variables:
       - $GROMACS_RELEASE
+
+.build-docs-binary:
+  extends:
+    - .build-extends-template
+    - .build-cache-template
+    - .build-docs-binary-template
+    - .documentation-before-script-template
+
+.build-docs-webpage:
+  extends:
+    - .binary-build-template
+    - .variables:default
+    - .no-cache-template
+    - .build-docs-webpage-template
+    - .documentation-before-script-template
 
 build-docs:
   extends:
@@ -207,31 +207,3 @@ webpage-build-release:
       - $GROMACS_RELEASE
   variables:
     BUILD_DIR: release-doc-builds
-
-webpage-archive-release:
-  extends:
-    - .build-docs-webpage
-    - .configure-gmxapi-template
-  stage: release-deploy
-  only:
-    refs:
-      - web
-      - triggers
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
-  dependencies:
-    - webpage-build-release
-    - package-archive-release
-    - package-regressiontests-release
-  variables:
-    BUILD_DIR: release-doc-builds
-  script:
-    - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
-  artifacts:
-    when: always
-    paths:
-      - webpage.tar.gz
-      - gromacs-*tar.gz
-      - regressiontests-*tar.gz
-

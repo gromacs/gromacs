@@ -58,7 +58,6 @@ include:
   - local: '/admin/ci-templates/.cuda-template.yml'
   - local: '/admin/ci-templates/.build-gmxapi-template.yml'
   - local: '/admin/ci-templates/.regressiontest-template.yml'
-  - local: '/admin/ci-templates/.release-template.yml'
   # Build and test in a variety of environments and configurations.
   # To do: expand matrix here to improve transparency and reduce file sizes.
   # E.g. '/admin/gitlab-ci/matrix/clang-8.gitlab-ci.yml
@@ -68,4 +67,4 @@ include:
   # Web page and manual.
   - local: '/admin/gitlab-ci/documentation.gitlab-ci.yml'
   # Prepare release archives.
-  - local: '/admin/gitlab-ci/release.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/archive.gitlab-ci.yml'

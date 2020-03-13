@@ -1,0 +1,218 @@
+# Packages, exported artifacts, and release engineering processes.
+
+.release-version-template:
+  # Docker image uploaded to dockerhub by user eriklindahl
+  # TODO: Get DockerFile for admin/dockerfiles
+  image: biophysics/gcc-gromacs
+  stage: configure-build
+
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+
+  only:
+    refs:
+      - merge_requests
+      - schedules
+      - web
+    variables:
+      - $GROMACS_RELEASE
+  script:
+    - cmake -P cmake/gmxVersionInfo.cmake &> version.json
+
+  artifacts:
+    paths:
+      - version.json
+
+prepare-release-version:
+  extends:
+    - .regressiontests-extends-template
+    - .release-version-template
+
+# Special job to package regressiontest files and have them available for testing
+# Runs during pre-build
+
+.regressiontests-extends-template:
+  extends:
+    - .no-cache-template
+    - .variables:default
+
+prepare-regressiontests:
+  extends:
+    - .regressiontests-extends-template
+    - .regressiontests-template
+
+configure-archive-nightly:
+  stage: nightly-configure
+  only:
+    - triggers
+    - schedules
+  needs:
+    - job: simple-build
+      artifacts: false
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  extends:
+    - .configure-docs
+  variables:
+    BUILD_DIR: build-package
+    CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
+    CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
+
+configure-archive-release:
+  only:
+    refs:
+      - web
+      - triggers
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+  extends:
+    - .configure-docs
+  variables:
+    BUILD_DIR: build-package
+    CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
+    CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
+
+.build-archive:
+  extends:
+    - .build-extends-template
+    - .documentation-before-script-template
+    - .build-docs-binary-template
+    - .archive-build-template
+
+build-archive-nightly:
+  extends:
+    - .build-archive
+  stage: nightly-build
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-archive-nightly
+      artifacts: true
+  only:
+    - triggers
+    - schedules
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  variables:
+    BUILD_DIR: build-package
+
+package-regressiontests-release:
+  extends:
+    - .regressiontests-extends-template
+    - .regressiontests-release-template
+  needs:
+    - job: prepare-release-version
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+
+package-archive-release:
+  extends:
+    - .build-archive
+  stage: release-package
+  needs:
+    - job: configure-archive-release
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+  variables:
+    BUILD_DIR: build-package
+
+.release-verify-template:
+  image: biophysics/gcc-gromacs
+  stage: release-verify
+
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+
+  only:
+    refs:
+      - merge_requests
+      - schedules
+      - web
+    variables:
+      - $GROMACS_RELEASE
+  script:
+    - VERSION=`cat version.json |
+      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - if [[ $GROMACS_RELEASE != "true" ]] ; then
+      VERSION=$VERSION-dev ;
+      fi
+    - REGTEST_COMPARE=`cat version.json |
+      python3 -c "import json,sys; print(json.load(sys.stdin)['regressiontest-md5sum'])"`
+    - SOURCENAME=gromacs-$VERSION
+    - SOURCETARBALL=$SOURCENAME.tar.gz
+    - SOURCE_MD5SUM=`md5sum $SOURCETARBALL | awk '{print $1}'`
+    - REGTESTNAME=regressiontests-$VERSION
+    - REGTESTTARBALL=$REGTESTNAME.tar.gz
+    - REGTEST_MD5SUM=`md5sum $REGTESTTARBALL | awk '{print $1}'`
+    - echo "$SOURCETARBALL md5sum = $SOURCE_MD5SUM"
+    - echo "$REGTESTTARBALL md5sum = $REGTEST_MD5SUM"
+    - echo "$REGTESTTARBALL reference md5sum = $REGTEST_COMPARE"
+    - if [[ $REGTEST_COMPARE != $REGTEST_MD5SUM && $GROMACS_RELEASE == "true" ]] ; then
+      echo "Mismatch in regressiontest md5sums";
+      exit 1;
+      fi
+
+release-verify:
+  extends:
+    - .regressiontests-extends-template
+    - .release-verify-template
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
+
+webpage-archive-release:
+  extends:
+    - .build-docs-webpage
+    - .configure-gmxapi-template
+  stage: release-deploy
+  only:
+    refs:
+      - web
+      - triggers
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - webpage-build-release
+    - package-archive-release
+    - package-regressiontests-release
+  variables:
+    BUILD_DIR: release-doc-builds
+  script:
+    - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
+  artifacts:
+    when: always
+    paths:
+      - webpage.tar.gz
+      - gromacs-*tar.gz
+      - regressiontests-*tar.gz
+

@@ -1,3 +1,20 @@
+# Initial build that always needs to pass before follow-up stages run
+simple-build:
+  extends:
+    - .simple-build-template
+    - .build-cache-template
+    - .variables:default
+    - .gcc-before-script-template
+    - .build-gcc-template
+    - .gcc7-template
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    BUILD_DIR: simple-build
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+# Jobs running in first pre-build stage
 
 .configure-extends-template:
   extends:
@@ -10,25 +27,6 @@
     - .configure-build-release-template
     - .no-cache-template
     - .variables:default
-
-.build-extends-template:
-  extends:
-    - .binary-build-template
-    - .build-cache-template
-    - .variables:default
-
-.test-extends-template:
-  extends:
-    - .test-base-template
-    - .pull-cache-template
-    - .test-script-template
-    - .variables:default
-
-.regressiontests-extends-template:
-  extends:
-    - .no-cache-template
-    - .variables:default
-
 
 # Templates for configuration stage
 .configure-gcc:
@@ -48,90 +46,6 @@
     - .configure-gcc
     - .cuda-template
 
-.configure-clang:
-  extends:
-    - .configure-extends-template
-    - .clang-before-script-template
-    - .build-clang-template
-
-.configure-clang-release:
-  extends:
-    - .configure-release-extends-template
-    - .clang-before-script-template
-    - .build-clang-template
-
-# Templates for build stage
-.build-archive:
-  extends:
-    - .build-extends-template
-    - .documentation-before-script-template
-    - .build-docs-binary-template
-    - .archive-build-template
-
-.build-gcc:
-  extends:
-    - .build-extends-template
-    - .gcc-before-script-template
-    - .build-gcc-template
-
-.build-clang:
-  extends:
-    - .build-extends-template
-    - .clang-before-script-template
-    - .build-clang-template
-
-.build-gcc-cuda:
-  extends:
-    - .build-gcc
-    - .cuda-template
-
-# Templates for test stage
-.test-gcc:
-  extends:
-    - .test-extends-template
-    - .gcc-before-script-template
-    - .test-gcc-template
-
-.test-gcc-cuda:
-  extends:
-    - .test-gcc
-    - .cuda-template
-
-.test-clang:
-  extends:
-    - .test-extends-template
-    - .clang-before-script-template
-    - .test-clang-template
-
-# Special job to package regressiontest files and have them available for testing
-# Runs during pre-build
-prepare-regressiontests:
-  extends:
-    - .regressiontests-extends-template
-    - .regressiontests-template
-
-prepare-release-version:
-  extends:
-    - .regressiontests-extends-template
-    - .release-version-template
-
-# Initial build that always needs to pass before follow-up stages run
-simple-build:
-  extends:
-    - .simple-build-template
-    - .build-cache-template
-    - .variables:default
-    - .gcc-before-script-template
-    - .build-gcc-template
-    - .gcc7-template
-  variables:
-    COMPILER_MAJOR_VERSION: 7
-    BUILD_DIR: simple-build
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-# Jobs running in first pre-build stage
 configure-gcc-7:
   extends:
     - .configure-gcc
@@ -145,16 +59,36 @@ configure-gcc-7:
     variables:
       - $GROMACS_RELEASE
 
-configure-gcc-7-gmxapi:
+configure-gcc-7-release:
+  extends:
+    - .configure-gcc-release
+    - .no-cache-template
+    - .gcc7-template
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    RELEASE_BUILD_DIR: release-builds-gcc
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
+
+configure-gcc-7-simd-sse41:
   extends:
     - .configure-gcc
-    - .configure-gmxapi-template
     - .gcc7-template
   needs:
     - job: simple-build
       artifacts: false
   variables:
     COMPILER_MAJOR_VERSION: 7
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
   except:
     variables:
       - $GROMACS_RELEASE
@@ -173,6 +107,62 @@ configure-gcc-7-double:
     variables:
       - $GROMACS_RELEASE
 
+configure-gcc-7-double-release:
+  extends:
+    - .configure-gcc-release
+    - .no-cache-template
+    - .gcc7-template
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
+    RELEASE_BUILD_DIR: release-builds-gcc
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
+
+configure-gcc-7-gmxapi:
+  extends:
+    - .configure-gcc
+    - .configure-gmxapi-template
+    - .gcc7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+configure-gcc-7-gmxapi-release:
+  extends:
+    - .configure-gcc-release
+    - .configure-gmxapi-template
+    - .no-cache-template
+    - .gcc7-template
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    RELEASE_BUILD_DIR: release-builds-gcc
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
+
 configure-gcc-8:
   extends:
     - .configure-gcc
@@ -186,6 +176,26 @@ configure-gcc-8:
     variables:
       - $GROMACS_RELEASE
 
+configure-gcc-8-release:
+  extends:
+    - .configure-gcc-release
+    - .no-cache-template
+    - .gcc8-template
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    RELEASE_BUILD_DIR: release-builds-gcc
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
+
 configure-gcc-8-cuda-10.2:
   extends:
     - .configure-gcc-cuda
@@ -197,59 +207,17 @@ configure-gcc-8-cuda-10.2:
     variables:
       - $GROMACS_RELEASE
 
-configure-gcc-7-simd-sse41:
+.configure-clang:
   extends:
-    - .configure-gcc
-    - .gcc7-template
-  needs:
-    - job: simple-build
-      artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 7
-    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-  except:
-    variables:
-      - $GROMACS_RELEASE
+    - .configure-extends-template
+    - .clang-before-script-template
+    - .build-clang-template
 
-configure-clang-7:
+.configure-clang-release:
   extends:
-    - .configure-clang
-    - .clang7-template
-  needs:
-    - job: simple-build
-      artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 7
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-configure-clang-7-gmxapi:
-  extends:
-    - .configure-clang
-    - .configure-gmxapi-template
-    - .clang7-template
-  needs:
-    - job: simple-build
-      artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 7
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-configure-clang-8:
-  extends:
-    - .configure-clang
-    - .clang8-template
-  needs:
-    - job: simple-build
-      artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 8
-  except:
-    variables:
-      - $GROMACS_RELEASE
+    - .configure-release-extends-template
+    - .clang-before-script-template
+    - .build-clang-template
 
 # For version of clang before 7, we need to always provide the full version
 # Use something like this instead in the download script:
@@ -268,7 +236,7 @@ configure-clang-6:
     variables:
       - $GROMACS_RELEASE
 
-configure-clang-tidy:
+configure-clang-7:
   extends:
     - .configure-clang
     - .clang7-template
@@ -276,52 +244,118 @@ configure-clang-tidy:
     - job: simple-build
       artifacts: false
   variables:
-    BUILD_DIR: build-clang-tidy
     COMPILER_MAJOR_VERSION: 7
-    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
-    EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
   except:
     variables:
       - $GROMACS_RELEASE
 
-# Only running in scheduled pipelines that are not release builds
-configure-archive-nightly:
-  stage: nightly-configure
-  only:
-    - triggers
-    - schedules
-  needs:
-    - job: simple-build
-      artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
+configure-clang-7-release:
   extends:
-    - .configure-docs
+    - .configure-clang-release
+    - .no-cache-template
+    - .clang7-template
   variables:
-    BUILD_DIR: build-package
-    CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
-    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
-    CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
-
-configure-archive-release:
+    COMPILER_MAJOR_VERSION: 7
+    RELEASE_BUILD_DIR: release-builds-clang
   only:
     refs:
       - web
-      - triggers
       - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
+
+configure-clang-7-gmxapi:
+  extends:
+    - .configure-clang
+    - .configure-gmxapi-template
+    - .clang7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+  except:
     variables:
       - $GROMACS_RELEASE
 
+configure-clang-7-gmxapi-release:
   extends:
-    - .configure-docs
+    - .configure-clang-release
+    - .configure-gmxapi-template
+    - .no-cache-template
+    - .clang7-template
   variables:
-    BUILD_DIR: build-package
-    CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
-    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
-    CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
+    COMPILER_MAJOR_VERSION: 7
+    RELEASE_BUILD_DIR: release-builds-clang
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
+
+configure-clang-8:
+  extends:
+    - .configure-clang
+    - .clang8-template
+  needs:
+    - job: simple-build
+      artifacts: false
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+configure-clang-8-release:
+  extends:
+    - .configure-clang-release
+    - .no-cache-template
+    - .clang8-template
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    RELEASE_BUILD_DIR: release-builds-clang
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+  dependencies:
+    - package-archive-release
+    - package-regressiontests-release
+    - prepare-release-version
 
 # Jobs running during build stage
+
+.build-extends-template:
+  extends:
+    - .binary-build-template
+    - .build-cache-template
+    - .variables:default
+
+.build-gcc:
+  extends:
+    - .build-extends-template
+    - .gcc-before-script-template
+    - .build-gcc-template
+
+.build-gcc-cuda:
+  extends:
+    - .build-gcc
+    - .cuda-template
+
 build-gcc-7:
   extends:
     - .build-gcc
@@ -335,16 +369,32 @@ build-gcc-7:
     variables:
       - $GROMACS_RELEASE
 
-
-build-gcc-7-gmxapi:
+build-gcc-7-release:
   extends:
     - .build-gcc
-    - .gmxapi-extra-installs
+    - .gcc7-template
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: configure-gcc-7-release
+      artifacts: true
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+
+build-gcc-7-simd-sse41:
+  extends:
+    - .build-gcc
     - .gcc7-template
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-gcc-7-gmxapi
+    - job: configure-gcc-7-simd-sse41
       artifacts: true
   except:
     variables:
@@ -363,6 +413,57 @@ build-gcc-7-double:
     variables:
       - $GROMACS_RELEASE
 
+build-gcc-7-gmxapi:
+  extends:
+    - .build-gcc
+    - .gmxapi-extra-installs
+    - .gcc7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: configure-gcc-7-gmxapi
+      artifacts: true
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+build-gcc-7-double-release:
+  extends:
+    - .build-gcc
+    - .gcc7-template
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: configure-gcc-7-double-release
+      artifacts: true
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+
+build-gcc-7-gmxapi-release:
+  extends:
+    - .build-gcc
+    - .gmxapi-extra-installs
+    - .gcc7-template
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: configure-gcc-7-gmxapi-release
+      artifacts: true
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+
 build-gcc-8:
   extends:
     - .build-gcc
@@ -373,6 +474,24 @@ build-gcc-8:
     - job: configure-gcc-8
       artifacts: true
   except:
+    variables:
+      - $GROMACS_RELEASE
+
+build-gcc-8-release:
+  extends:
+    - .build-gcc
+    - .gcc8-template
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: configure-gcc-8-release
+      artifacts: true
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
     variables:
       - $GROMACS_RELEASE
 
@@ -389,14 +508,20 @@ build-gcc-8-cuda-10.2:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-7-simd-sse41:
+.build-clang:
   extends:
-    - .build-gcc
-    - .gcc7-template
+    - .build-extends-template
+    - .clang-before-script-template
+    - .build-clang-template
+
+build-clang-6:
+  extends:
+    - .build-clang
+    - .clang6-template
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-gcc-7-simd-sse41
+    - job: configure-clang-6
       artifacts: true
   except:
     variables:
@@ -415,6 +540,24 @@ build-clang-7:
     variables:
       - $GROMACS_RELEASE
 
+build-clang-7-release:
+  extends:
+    - .build-clang
+    - .clang7-template
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-clang
+  needs:
+    - job: configure-clang-7-release
+      artifacts: true
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
+    variables:
+      - $GROMACS_RELEASE
+
 build-clang-7-gmxapi:
   extends:
     - .build-clang
@@ -426,6 +569,25 @@ build-clang-7-gmxapi:
     - job: configure-clang-7-gmxapi
       artifacts: true
   except:
+    variables:
+      - $GROMACS_RELEASE
+
+build-clang-7-gmxapi-release:
+  extends:
+    - .build-clang
+    - .gmxapi-extra-installs
+    - .clang7-template
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-clang
+  needs:
+    - job: configure-clang-7-gmxapi-release
+      artifacts: true
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
     variables:
       - $GROMACS_RELEASE
 
@@ -442,20 +604,46 @@ build-clang-8:
     variables:
       - $GROMACS_RELEASE
 
-build-clang-6:
+build-clang-8-release:
   extends:
     - .build-clang
-    - .clang6-template
+    - .clang8-template
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-clang
   needs:
-    - job: simple-build
-      artifacts: false
-    - job: configure-clang-6
+    - job: configure-clang-8-release
       artifacts: true
-  except:
+  only:
+    refs:
+      - web
+      - schedules
+      - triggers
     variables:
       - $GROMACS_RELEASE
 
+
 # Jobs running during test stage
+
+.test-extends-template:
+  extends:
+    - .test-base-template
+    - .pull-cache-template
+    - .test-script-template
+    - .variables:default
+
+# Templates for test stage
+.test-gcc:
+  extends:
+    - .test-extends-template
+    - .gcc-before-script-template
+    - .test-gcc-template
+
+.test-gcc-cuda:
+  extends:
+    - .test-gcc
+    - .cuda-template
+
 test-gcc-7:
   extends:
     - .test-gcc
@@ -468,15 +656,34 @@ test-gcc-7:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-7-gmxapi:
+test-gcc-7-release:
   extends:
     - .test-gcc
-    - .gmxapi-extra-installs
+    - .gcc7-template
+  stage: release-tests
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: configure-gcc-7-release
+      artifacts: true
+    - job: build-gcc-7-release
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+
+test-gcc-7-simd-sse41:
+  extends:
+    - .test-gcc
     - .gcc7-template
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-gcc-7-gmxapi
+    - job: build-gcc-7-simd-sse41
   except:
     variables:
       - $GROMACS_RELEASE
@@ -493,6 +700,60 @@ test-gcc-7-double:
     variables:
       - $GROMACS_RELEASE
 
+test-gcc-7-double-release:
+  extends:
+    - .test-gcc
+    - .gcc7-template
+  stage: release-tests
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: configure-gcc-7-double-release
+      artifacts: true
+    - job: build-gcc-7-double-release
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+
+test-gcc-7-gmxapi:
+  extends:
+    - .test-gcc
+    - .gmxapi-extra-installs
+    - .gcc7-template
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: build-gcc-7-gmxapi
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+test-gcc-7-gmxapi-release:
+  extends:
+    - .test-gcc
+    - .gmxapi-extra-installs
+    - .gcc7-template
+  stage: release-tests
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: configure-gcc-7-gmxapi-release
+      artifacts: true
+    - job: build-gcc-7-gmxapi-release
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+
 test-gcc-8:
   extends:
     - .test-gcc
@@ -502,6 +763,26 @@ test-gcc-8:
       artifacts: false
     - job: build-gcc-8
   except:
+    variables:
+      - $GROMACS_RELEASE
+
+test-gcc-8-release:
+  extends:
+    - .test-gcc
+    - .gcc8-template
+  stage: release-tests
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: configure-gcc-8-release
+      artifacts: true
+    - job: build-gcc-8-release
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
     variables:
       - $GROMACS_RELEASE
 
@@ -520,14 +801,20 @@ test-gcc-8-cuda-10.2:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-7-simd-sse41:
+.test-clang:
   extends:
-    - .test-gcc
-    - .gcc7-template
+    - .test-extends-template
+    - .clang-before-script-template
+    - .test-clang-template
+
+test-clang-6:
+  extends:
+    - .test-clang
+    - .clang6-template
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-gcc-7-simd-sse41
+    - job: build-clang-6
   except:
     variables:
       - $GROMACS_RELEASE
@@ -544,6 +831,26 @@ test-clang-7:
     variables:
       - $GROMACS_RELEASE
 
+test-clang-7-release:
+  extends:
+    - .test-clang
+    - .clang7-template
+  stage: release-tests
+  variables:
+    BUILD_DIR: release-builds-clang
+  needs:
+    - job: configure-clang-7-release
+      artifacts: true
+    - job: build-clang-7-release
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+
 test-clang-7-gmxapi:
   extends:
     - .test-clang
@@ -554,6 +861,27 @@ test-clang-7-gmxapi:
       artifacts: false
     - job: build-clang-7-gmxapi
   except:
+    variables:
+      - $GROMACS_RELEASE
+
+test-clang-7-gmxapi-release:
+  extends:
+    - .test-clang
+    - .gmxapi-extra-installs
+    - .clang7-template
+  stage: release-tests
+  variables:
+    BUILD_DIR: release-builds-clang
+  needs:
+    - job: configure-clang-7-gmxapi-release
+      artifacts: true
+    - job: build-clang-7-gmxapi-release
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
     variables:
       - $GROMACS_RELEASE
 
@@ -569,14 +897,22 @@ test-clang-8:
     variables:
       - $GROMACS_RELEASE
 
-test-clang-6:
+test-clang-8-release:
   extends:
     - .test-clang
-    - .clang6-template
+    - .clang8-template
+  stage: release-tests
+  variables:
+    BUILD_DIR: release-builds-clang
   needs:
-    - job: simple-build
-      artifacts: false
-    - job: build-clang-6
-  except:
+    - job: configure-clang-8-release
+      artifacts: true
+    - job: build-clang-8-release
+      artifacts: true
+  only:
+    refs:
+      - triggers
+      - web
+      - schedules
     variables:
       - $GROMACS_RELEASE
