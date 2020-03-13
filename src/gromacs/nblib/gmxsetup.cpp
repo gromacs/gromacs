@@ -174,15 +174,15 @@ void NbvSetupUtil::setNonBondedParameters(const std::vector<ParticleType>& parti
 void NbvSetupUtil::setAtomProperties(const Topology& topology)
 {
     // We only use (read) the atom type and charge from mdatoms
-    gmxForceCalculator_->mdatoms_.typeA   = const_cast<int*>(topology.getParticleTypeIdOfAllParticles().data());
+    gmxForceCalculator_->mdatoms_.typeA =
+            const_cast<int*>(topology.getParticleTypeIdOfAllParticles().data());
     gmxForceCalculator_->mdatoms_.chargeA = const_cast<real*>(topology.getCharges().data());
 
     gmxForceCalculator_->nbv_->setAtomProperties(gmxForceCalculator_->mdatoms_, particleInfoAllVdw_);
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
-void NbvSetupUtil::setupNbnxmInstance(const Topology& topology,
-                                                                     const NBKernelOptions& options)
+void NbvSetupUtil::setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options)
 {
     const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
                                            : gmx::PinningPolicy::CannotBePinned);
@@ -298,16 +298,15 @@ void NbvSetupUtil::setupForceRec(const matrix& box)
     calc_shifts(box, gmxForceCalculator_->forcerec_.shift_vec);
 }
 
-void NbvSetupUtil::setParticlesOnGrid(const std::vector<gmx::RVec> &coordinates, const Box &box)
+void NbvSetupUtil::setParticlesOnGrid(const std::vector<gmx::RVec>& coordinates, const Box& box)
 {
     gmxForceCalculator_->setParticlesOnGrid(particleInfoAllVdw_, coordinates, box);
 }
 
-void NbvSetupUtil::constructPairList(const gmx::ListOfLists<int> &exclusions)
+void NbvSetupUtil::constructPairList(const gmx::ListOfLists<int>& exclusions)
 {
     t_nrnb nrnb;
-    gmxForceCalculator_->nbv_->constructPairlist(gmx::InteractionLocality::Local,
-                                                  exclusions, 0, &nrnb);
+    gmxForceCalculator_->nbv_->constructPairlist(gmx::InteractionLocality::Local, exclusions, 0, &nrnb);
 }
 
 void NbvSetupUtil::setForcesToZero(size_t numParticles)
@@ -317,7 +316,7 @@ void NbvSetupUtil::setForcesToZero(size_t numParticles)
 }
 
 std::unique_ptr<GmxForceCalculator> GmxSetupDirector::setupGmxForceCalculator(const SimulationState& system,
-                                                                  const NBKernelOptions& options)
+                                                                              const NBKernelOptions& options)
 {
     NbvSetupUtil nbvSetupUtil;
     nbvSetupUtil.setExecutionContext(options);
