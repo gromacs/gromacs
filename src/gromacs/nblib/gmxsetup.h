@@ -94,8 +94,7 @@ public:
     void setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options);
 
     //! Puts particles on a grid based on bounds specified by the box
-    void setParticlesOnGrid(const std::vector<gmx::RVec>& coordinates,
-                            const Box&                    box);
+    void setParticlesOnGrid(const std::vector<gmx::RVec>& coordinates, const Box& box);
 
     //! Constructs pair lists
     void constructPairList(const gmx::ListOfLists<int>& exclusions);
@@ -112,7 +111,6 @@ public:
     }
 
 private:
-
     //! Storage for parameters for short range interactions.
     std::vector<real> nonbondedParameters_;
 
@@ -128,7 +126,7 @@ class GmxSetupDirector
 public:
     //! Sets up and returns a GmxForceCalculator
     static std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator(const SimulationState& system,
-                                                                const NBKernelOptions& options);
+                                                                       const NBKernelOptions& options);
 };
 
 } // namespace nblib
