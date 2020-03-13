@@ -4,8 +4,6 @@
 .. Another useful one-liner to find undocumentedvariables:
 ..  ( export INPUT_FILE=docs/user-guide/environment-variables.rst; GIT_PAGER="cat ";   for ss in `for s in $(git grep getenv |  sed 's/.*getenv("\(.*\)".*/\1/' | sort -u  | grep '^[A-Z]'); do [ $(grep $s $INPUT_FILE -c) -eq 0 ] && echo $s; done `; do git grep $ss ; done )
 
-.. todo:: still undocumented GMX_QM_GAUSSIAN_NCPUS
-
 Environment Variables
 =====================
 
@@ -499,29 +497,10 @@ compilation of OpenCL kernels, but they are also used in device selection.
 
 Analysis and Core Functions
 ---------------------------
-``GMX_QM_ACCURACY``
-        accuracy in Gaussian L510 (MC-SCF) component program.
-
-``GMX_QM_ORCA_BASENAME``
-        prefix of :ref:`tpr` files, used in Orca calculations
-        for input and output file names.
-
-``GMX_QM_CPMCSCF``
-        when set to a nonzero value, Gaussian QM calculations will
-        iteratively solve the CP-MCSCF equations.
-
-``GMX_QM_MODIFIED_LINKS_DIR``
-        location of modified links in Gaussian.
 
 ``DSSP``
         used by :ref:`gmx do_dssp` to point to the ``dssp``
         executable (not just its path).
-
-``GMX_QM_GAUSS_DIR``
-        directory where Gaussian is installed.
-
-``GMX_QM_GAUSS_EXE``
-        name of the Gaussian executable.
 
 ``GMX_DIPOLE_SPACING``
         spacing used by :ref:`gmx dipoles`.
@@ -545,24 +524,12 @@ Analysis and Core Functions
         the time unit used in output files, can be
         anything in fs, ps, ns, us, ms, s, m or h.
 
-``GMX_QM_GAUSSIAN_MEMORY``
-        memory used for Gaussian QM calculation.
-
 ``MULTIPROT``
         name of the ``multiprot`` executable, used by the
         contributed program ``do_multiprot``.
 
 ``NCPUS``
         number of CPUs to be used for Gaussian QM calculation
-
-``GMX_ORCA_PATH``
-        directory where Orca is installed.
-
-``GMX_QM_SA_STEP``
-        simulated annealing step size for Gaussian QM calculation.
-
-``GMX_QM_GROUND_STATE``
-        defines state for Gaussian surface hopping calculation.
 
 ``GMX_TOTAL``
         name of the ``total`` executable used by the contributed

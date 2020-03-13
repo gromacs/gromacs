@@ -252,13 +252,6 @@ struct t_forcerec
      */
     int n_tpi = 0;
 
-    /* QMMM stuff */
-    gmx_bool          bQMMM = FALSE;
-    struct t_QMMMrec* qr    = nullptr;
-
-    /* QM-MM neighborlists */
-    struct t_nblist* QMMMlist = nullptr;
-
     /* Limit for printing large forces, negative is don't print */
     real print_force = 0;
 

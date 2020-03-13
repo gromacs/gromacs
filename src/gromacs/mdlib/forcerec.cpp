@@ -69,7 +69,6 @@
 #include "gromacs/mdlib/forcerec_threading.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/md_support.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -1327,30 +1326,10 @@ void init_forcerec(FILE*                            fp,
     }
 
     // QM/MM initialization if requested
-    fr->bQMMM = ir->bQMMM;
-    if (fr->bQMMM)
+    if (ir->bQMMM)
     {
-        // Initialize QM/MM if supported
-        if (GMX_QMMM)
-        {
-            GMX_LOG(mdlog.info)
-                    .asParagraph()
-                    .appendText(
-                            "Large parts of the QM/MM support is deprecated, and may be removed in "
-                            "a future "
-                            "version. Please get in touch with the developers if you find the "
-                            "support useful, "
-                            "as help is needed if the functionality is to continue to be "
-                            "available.");
-            fr->qr = mk_QMMMrec();
-            init_QMMMrec(cr, mtop, ir, fr);
-        }
-        else
-        {
-            gmx_incons(
-                    "QM/MM was requested, but is only available when GROMACS "
-                    "is configured with QM/MM support");
-        }
+
+        gmx_incons("QM/MM was requested, but is no longer available in GROMACS");
     }
 
     /* Set all the static charge group info */

@@ -55,7 +55,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/forcerec_threading.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdlib/wall.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -124,12 +123,6 @@ void do_force_lowlevel(t_forcerec*                         fr,
     rvec* x = as_rvec_array(coordinates.paddedArrayRef().data());
 
     auto& forceWithVirial = forceOutputs->forceWithVirial();
-
-    /* do QMMM first if requested */
-    if (fr->bQMMM)
-    {
-        enerd->term[F_EQM] = calculate_QMMM(cr, &forceOutputs->forceWithShiftForces(), fr->qr);
-    }
 
     /* Call the short range functions all in one go. */
 

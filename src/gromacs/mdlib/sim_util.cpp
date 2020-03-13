@@ -79,7 +79,6 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -1518,12 +1517,6 @@ void do_force(FILE*                               fplog,
             nbnxn_atomdata_add_nbat_fshift_to_fshift(*nbv->nbat,
                                                      forceOut.forceWithShiftForces().shiftForces());
         }
-    }
-
-    /* update QMMMrec, if necessary */
-    if (fr->bQMMM)
-    {
-        update_QMMMrec(cr, fr, as_rvec_array(x.unpaddedArrayRef().data()), mdatoms, box);
     }
 
     // TODO Force flags should include haveFreeEnergyWork for this domain
