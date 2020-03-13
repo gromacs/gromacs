@@ -67,12 +67,11 @@ namespace nblib
 class NbvSetupUtil
 {
 public:
-    NbvSetupUtil(SimulationState system, const NBKernelOptions& options);
+    NbvSetupUtil() = default;
 
-    //! Sets up and returns a GmxForceCalculator
-    std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator();
+    //! Sets hardware params from the execution context
+    void setExecutionContext(const NBKernelOptions& options);
 
-private:
     //! Sets non-bonded parameters to be used to build GMX data structures
     void setNonBondedParameters(const Topology& topology);
 
@@ -82,6 +81,12 @@ private:
     //! Returns the kernel setup
     Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options);
 
+    //! Set up StepWorkload data
+    static gmx::StepWorkload setupStepWorkload(const NBKernelOptions& options);
+
+    //! Return an interaction constants struct with members set appropriately
+    interaction_const_t setupInteractionConst(const NBKernelOptions& options);
+
     //! Sets Particle Types and Charges and VdW params
     void setAtomProperties(std::unique_ptr<nonbonded_verlet_t>& nbv, t_mdatoms& mdatoms);
 
@@ -89,9 +94,15 @@ private:
     std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const Topology&        topology,
                                                            const NBKernelOptions& options);
 
-    SimulationState                  system_;
-    std::shared_ptr<NBKernelOptions> options_;
+    //! Sets up t_forcerec object on the GmxForceCalculator
+    void setupForceRec(t_forcerec& forcerec, const matrix& box);
 
+    const std::vector<int>& particleInfoAllVdv() const
+    {
+        return const_cast<std::vector<int> &>(particleInfoAllVdw_);
+    }
+
+private:
     //! Storage for parameters for short range interactions.
     std::vector<real> nonbondedParameters_;
 
@@ -99,12 +110,13 @@ private:
     std::vector<int> particleInfoAllVdw_;
 };
 
-//! Set up StepWorkload data
-gmx::StepWorkload setupStepWorkload(std::shared_ptr<NBKernelOptions> options);
+class GmxSetupDirector
+{
+public:
 
-//! Return an interaction constants struct with members set appropriately
-interaction_const_t setupInteractionConst(std::shared_ptr<NBKernelOptions> options);
-
+    //! Sets up and returns a GmxForceCalculator
+    std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator(const SimulationState& system, const NBKernelOptions& options);
+};
 
 } // namespace nblib
 #endif // GROMACS_GMXSETUP_H

@@ -101,17 +101,11 @@ static gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions
     return {};
 }
 
-NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& options) :
-    system_(std::move(system))
+void NbvSetupUtil::setExecutionContext(const NBKernelOptions& options)
 {
-    options_ = std::make_shared<NBKernelOptions>(options);
-
     //! Todo: find a more general way to initialize hardware
     gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
     gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
-
-    setNonBondedParameters(system_.topology());
-    setParticleInfoAllVdv(system_.topology().numParticles());
 }
 
 Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
@@ -237,13 +231,13 @@ static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
     return calc_ewaldcoeff_q(pairlistCutoff, ewald_rtol);
 }
 
-gmx::StepWorkload setupStepWorkload(const std::shared_ptr<NBKernelOptions> options)
+gmx::StepWorkload NbvSetupUtil::setupStepWorkload(const NBKernelOptions& options)
 {
     gmx::StepWorkload stepWork;
     stepWork.computeForces          = true;
     stepWork.computeNonbondedForces = true;
 
-    if (options->computeVirialAndEnergy)
+    if (options.computeVirialAndEnergy)
     {
         stepWork.computeVirial = true;
         stepWork.computeEnergy = true;
@@ -251,14 +245,14 @@ gmx::StepWorkload setupStepWorkload(const std::shared_ptr<NBKernelOptions> optio
     return stepWork;
 }
 
-interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions> options)
+interaction_const_t NbvSetupUtil::setupInteractionConst(const NBKernelOptions& options)
 {
     interaction_const_t interactionConst;
     interactionConst.vdwtype      = evdwCUT;
     interactionConst.vdw_modifier = eintmodPOTSHIFT;
-    interactionConst.rvdw         = options->pairlistCutoff;
+    interactionConst.rvdw         = options.pairlistCutoff;
 
-    switch (options->coulombType)
+    switch (options.coulombType)
     {
         case BenchMarkCoulomb::Pme: interactionConst.eeltype = eelPME; break;
         case BenchMarkCoulomb::Cutoff: interactionConst.eeltype = eelCUT; break;
@@ -267,7 +261,7 @@ interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions>
             GMX_THROW(gmx::InvalidInputError("Unsupported electrostatic interaction"));
     }
     interactionConst.coulomb_modifier = eintmodPOTSHIFT;
-    interactionConst.rcoulomb         = options->pairlistCutoff;
+    interactionConst.rcoulomb         = options.pairlistCutoff;
     // Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
     interactionConst.dispersion_shift.cpot = -1.0 / gmx::power6(interactionConst.rvdw);
     interactionConst.repulsion_shift.cpot  = -1.0 / gmx::power12(interactionConst.rvdw);
@@ -294,7 +288,7 @@ interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions>
     if (EEL_PME_EWALD(interactionConst.eeltype))
     {
         // Ewald coefficients, we ignore the potential shift
-        interactionConst.ewaldcoeff_q = ewaldCoeff(1e-5, options->pairlistCutoff);
+        interactionConst.ewaldcoeff_q = ewaldCoeff(1e-5, options.pairlistCutoff);
         GMX_RELEASE_ASSERT(interactionConst.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");
         interactionConst.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
         init_interaction_const_tables(nullptr, &interactionConst);
@@ -302,38 +296,48 @@ interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions>
     return interactionConst;
 }
 
-std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
+void NbvSetupUtil::setupForceRec(t_forcerec& forcerec, const matrix& box)
 {
+    forcerec.nbfp = nonbondedParameters_;
+    snew(forcerec.shift_vec, SHIFTS);
+    calc_shifts(box, forcerec.shift_vec);
+}
+
+std::unique_ptr<GmxForceCalculator>
+GmxSetupDirector::setupGmxForceCalculator(const SimulationState &system, const NBKernelOptions &options)
+{
+    NbvSetupUtil nbvSetupUtil;
+    nbvSetupUtil.setExecutionContext(options);
+    nbvSetupUtil.setNonBondedParameters(system.topology());
+    nbvSetupUtil.setParticleInfoAllVdv(system.topology().numParticles());
+
     auto gmxForceCalculator_p = std::make_unique<GmxForceCalculator>();
 
-    gmxForceCalculator_p->interactionConst_ = setupInteractionConst(options_);
-    gmxForceCalculator_p->stepWork_         = setupStepWorkload(options_);
+    gmxForceCalculator_p->interactionConst_ = nbvSetupUtil.setupInteractionConst(options);
+    gmxForceCalculator_p->stepWork_         = nbvSetupUtil.setupStepWorkload(options);
 
-    gmxForceCalculator_p->nbv_ = setupNbnxmInstance(system_.topology(), *options_);
+    gmxForceCalculator_p->nbv_ = nbvSetupUtil.setupNbnxmInstance(system.topology(), options);
 
-    gmxForceCalculator_p->setParticlesOnGrid(particleInfoAllVdw_, system_.coordinates(), system_.box());
+    auto particleInfoAllVdv = nbvSetupUtil.particleInfoAllVdv();
+    gmxForceCalculator_p->setParticlesOnGrid(particleInfoAllVdv, system.coordinates(), system.box());
 
     t_nrnb nrnb;
     gmxForceCalculator_p->nbv_->constructPairlist(gmx::InteractionLocality::Local,
-                                                  system_.topology().getGmxExclusions(), 0, &nrnb);
+                                                  system.topology().getGmxExclusions(), 0, &nrnb);
 
-    gmxForceCalculator_p->mdatoms_ = setAtomData(system_.topology());
-    setAtomProperties(gmxForceCalculator_p->nbv_, gmxForceCalculator_p->mdatoms_);
+    gmxForceCalculator_p->mdatoms_ = setAtomData(system.topology());
+    nbvSetupUtil.setAtomProperties(gmxForceCalculator_p->nbv_, gmxForceCalculator_p->mdatoms_);
 
     // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
     // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
     // gmx_cycles_t cycles = gmx_cycles_read();
 
-    const matrix& box = system_.box().legacyMatrix();
+    const matrix& box = system.box().legacyMatrix();
 
-    gmxForceCalculator_p->forcerec_.nbfp = nonbondedParameters_;
-    snew(gmxForceCalculator_p->forcerec_.shift_vec, SHIFTS);
-    calc_shifts(box, gmxForceCalculator_p->forcerec_.shift_vec);
-
-    put_atoms_in_box(PbcType::Xyz, box, system_.coordinates());
+    nbvSetupUtil.setupForceRec(gmxForceCalculator_p->forcerec_, box);
 
     gmxForceCalculator_p->verletForces_ =
-            gmx::PaddedHostVector<gmx::RVec>(system_.topology().numParticles(), gmx::RVec(0, 0, 0));
+            gmx::PaddedHostVector<gmx::RVec>(system.topology().numParticles(), gmx::RVec(0, 0, 0));
 
     return gmxForceCalculator_p;
 }
