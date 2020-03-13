@@ -89,3 +89,15 @@ parser.add_argument('--cuda', type=str, nargs='?', const='10.2', default=None,
 parser.add_argument('--mpi', type=str, nargs='?', const='openmpi', default=None,
                     choices=['openmpi', 'impi'],
                     help='Enable MPI (default disabled) and optionally select distribution (default: openmpi)')
+
+parser.add_argument('--tsan', type=str, nargs='?', const='llvm', default=None,
+                    choices=['llvm'],
+                    help='Build special compiler versions with TSAN OpenMP support')
+
+parser.add_argument('--opencl', type=str, nargs='?', const='nvidia', default=None,
+                    choices=['nvidia', 'intel', 'amd'],
+                    help='Provide environment for OpenCL builds')
+
+parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None,
+                    choices=['master', 'develop'],
+                    help='Add external clFFT libraries to the build image')
