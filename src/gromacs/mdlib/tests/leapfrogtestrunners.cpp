@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,7 @@ void integrateLeapFrogSimple(LeapFrogTestData* testData, int numSteps)
                       testData->velocityScalingMatrix_, testData->update_.get(), etrtNONE, nullptr,
                       nullptr);
         finish_update(&testData->inputRecord_, &testData->mdAtoms_, &testData->state_, nullptr,
-                      nullptr, nullptr, testData->update_.get(), nullptr);
+                      testData->update_.get(), nullptr);
     }
     auto xp = makeArrayRef(*testData->update_->xp()).subArray(0, testData->numAtoms_);
     for (int i = 0; i < testData->numAtoms_; i++)

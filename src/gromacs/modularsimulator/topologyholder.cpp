@@ -62,13 +62,11 @@ TopologyHolder::TopologyHolder(const gmx_mtop_t& globalTopology,
 {
     if (!DOMAINDECOMP(cr))
     {
-        t_graph* graph = nullptr;
         // Generate and initialize new topology
         // Note that most of the data needed for the constructor is used here -
         // this function should probably be simplified sooner or later.
-        mdAlgorithmsSetupAtomData(cr, inputrec, globalTopology, localTopology_.get(), fr, &graph,
-                                  mdAtoms, constr, vsite, nullptr);
-        GMX_RELEASE_ASSERT(graph == nullptr, "Graph is not implemented for the modular simulator.");
+        mdAlgorithmsSetupAtomData(cr, inputrec, globalTopology, localTopology_.get(), fr, mdAtoms,
+                                  constr, vsite, nullptr);
     }
 }
 

@@ -65,7 +65,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
@@ -153,7 +152,6 @@ static void check_viol(FILE*                          log,
                        rvec                           x[],
                        rvec4                          f[],
                        t_pbc*                         pbc,
-                       t_graph*                       g,
                        t_dr_result                    dr[],
                        int                            clust_id,
                        int                            isize,
@@ -234,7 +232,7 @@ static void check_viol(FILE*                          log,
         dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[label];
 
         snew(fshift, SHIFTS);
-        ta_disres(n, &forceatoms[i], forceparams.data(), x, f, fshift, pbc, g, lam, &dvdl, nullptr,
+        ta_disres(n, &forceatoms[i], forceparams.data(), x, f, fshift, pbc, lam, &dvdl, nullptr,
                   fcd, nullptr);
         sfree(fshift);
         viol = fcd->disres.sumviol;
@@ -701,7 +699,6 @@ int gmx_disre(int argc, char* argv[])
 
     FILE *       out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;
     t_fcdata     fcd;
-    t_graph*     g;
     int          i, j, kkk;
     t_trxstatus* status;
     real         t;
@@ -774,18 +771,10 @@ int gmx_disre(int argc, char* argv[])
     gmx_localtop_t top(topInfo.mtop()->ffparams);
     gmx_mtop_generate_local_top(*topInfo.mtop(), &top, ir->efep != efepNO);
 
-    g        = nullptr;
     pbc_null = nullptr;
     if (ir->pbcType != PbcType::No)
     {
-        if (ir->bPeriodicMols)
-        {
-            pbc_null = &pbc;
-        }
-        else
-        {
-            g = mk_graph(fplog, top.idef, 0, ntopatoms, FALSE, FALSE);
-        }
+        pbc_null = &pbc;
     }
 
     if (ftp2bSet(efNDX, NFILE, fnm))
@@ -867,12 +856,12 @@ int gmx_disre(int argc, char* argv[])
             }
             my_clust = clust->inv_clust[j];
             range_check(my_clust, 0, clust->clust->nr);
-            check_viol(fplog, top.idef.il[F_DISRES], top.idef.iparams, x, f, pbc_null, g, dr_clust,
+            check_viol(fplog, top.idef.il[F_DISRES], top.idef.iparams, x, f, pbc_null, dr_clust,
                        my_clust, isize, index, vvindex, &fcd);
         }
         else
         {
-            check_viol(fplog, top.idef.il[F_DISRES], top.idef.iparams, x, f, pbc_null, g, &dr, 0,
+            check_viol(fplog, top.idef.il[F_DISRES], top.idef.iparams, x, f, pbc_null, &dr, 0,
                        isize, index, vvindex, &fcd);
         }
         if (bPDB)

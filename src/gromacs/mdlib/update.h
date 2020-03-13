@@ -197,8 +197,6 @@ void update_sd_second_half(int64_t step,
 void finish_update(const t_inputrec*       inputrec,
                    const t_mdatoms*        md,
                    t_state*                state,
-                   const t_graph*          graph,
-                   t_nrnb*                 nrnb,
                    gmx_wallcycle_t         wcycle,
                    gmx::Update*            upd,
                    const gmx::Constraints* constr);

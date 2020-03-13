@@ -52,7 +52,6 @@
 
 struct gmx_grppairener_t;
 struct t_forcerec;
-struct t_graph;
 struct t_pbc;
 
 namespace gmx
@@ -73,7 +72,6 @@ void do_pairs(int                      ftype,
               rvec4                    f[],
               rvec                     fshift[],
               const struct t_pbc*      pbc,
-              const struct t_graph*    g,
               const real*              lambda,
               real*                    dvdl,
               const t_mdatoms*         md,

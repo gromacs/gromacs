@@ -64,7 +64,6 @@ struct gmx_edsam;
 struct gmx_enfrot;
 struct gmx_multisim_t;
 class history_t;
-struct t_graph;
 
 namespace gmx
 {
@@ -162,15 +161,14 @@ void ShellFCElement::elementSetup()
 void ShellFCElement::run(Step step, Time time, bool isNSStep, unsigned int flags)
 {
     // Disabled functionality
-    gmx_multisim_t* ms    = nullptr;
-    t_graph*        graph = nullptr;
+    gmx_multisim_t* ms = nullptr;
 
     if (!DOMAINDECOMP(cr_) && isNSStep && inputrecDynamicBox(inputrec_))
     {
         // TODO: Correcting the box is done in DomDecHelper (if using DD) or here (non-DD simulations).
         //       Think about unifying this responsibility, could this be done in one place?
         auto box = statePropagatorData_->box();
-        correct_box(fplog_, step, box, graph);
+        correct_box(fplog_, step, box);
     }
 
     auto       x      = statePropagatorData_->positionsView();
@@ -187,8 +185,8 @@ void ShellFCElement::run(Step step, Time time, bool isNSStep, unsigned int flags
                         pull_work_, isNSStep, static_cast<int>(flags), localTopology_, constr_,
                         energyElement_->enerdata(), fcd_, statePropagatorData_->localNumAtoms(), x,
                         v, box, lambda, hist, forces, force_vir, mdAtoms_->mdatoms(), nrnb_,
-                        wcycle_, graph, shellfc_, fr_, runScheduleWork_, time,
-                        energyElement_->muTot(), vsite_, ddBalanceRegionHandler_);
+                        wcycle_, shellfc_, fr_, runScheduleWork_, time, energyElement_->muTot(),
+                        vsite_, ddBalanceRegionHandler_);
     energyElement_->addToForceVirial(force_vir, step);
 }
 

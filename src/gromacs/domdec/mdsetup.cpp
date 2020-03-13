@@ -48,7 +48,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -65,7 +64,6 @@ void mdAlgorithmsSetupAtomData(const t_commrec*  cr,
                                const gmx_mtop_t& top_global,
                                gmx_localtop_t*   top,
                                t_forcerec*       fr,
-                               t_graph**         graph,
                                gmx::MDAtoms*     mdAtoms,
                                gmx::Constraints* constr,
                                gmx_vsite_t*      vsite,
@@ -113,17 +111,6 @@ void mdAlgorithmsSetupAtomData(const t_commrec*  cr,
         {
             set_vsite_top(vsite, top, mdatoms);
         }
-    }
-
-    if (!usingDomDec && ir->pbcType != PbcType::No && !fr->bMolPBC)
-    {
-        GMX_ASSERT(graph != nullptr, "We use a graph with PBC (no periodic mols) and without DD");
-
-        *graph = mk_graph(nullptr, top->idef, 0, top_global.natoms, FALSE, FALSE);
-    }
-    else if (graph != nullptr)
-    {
-        *graph = nullptr;
     }
 
     /* Note that with DD only flexible constraints, not shells, are supported

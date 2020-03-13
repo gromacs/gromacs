@@ -132,8 +132,6 @@ enum
     ecenterDEF = ecenterTRIC
 };
 
-struct t_graph;
-
 /*! \brief Returns the number of dimensions that use pbc
  *
  * \param[in] pbcType The periodic boundary condition type
@@ -190,16 +188,14 @@ PbcType guessPbcType(const matrix box);
 
 /*! \brief Corrects the box if necessary
  *
- * Checks for un-allowed box angles and corrects the box
- * and the integer shift vectors in the graph (if \p graph!=NULL) if necessary.
+ * Checks for un-allowed box angles and corrects the box.
  *
  * \param[in] fplog File for debug output
  * \param[in] step  The MD step number
  * \param[in] box   The simulation cell
- * \param[in] graph Information about molecular connectivity
  * \return TRUE when the box was corrected.
  */
-gmx_bool correct_box(FILE* fplog, int step, tensor box, struct t_graph* graph);
+gmx_bool correct_box(FILE* fplog, int step, tensor box);
 
 /*! \brief Initiate the periodic boundary condition algorithms.
  *

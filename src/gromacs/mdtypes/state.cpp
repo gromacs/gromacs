@@ -260,7 +260,7 @@ t_state::t_state() :
 void set_box_rel(const t_inputrec* ir, t_state* state)
 {
     /* Make sure the box obeys the restrictions before we fix the ratios */
-    correct_box(nullptr, 0, state->box, nullptr);
+    correct_box(nullptr, 0, state->box);
 
     clear_mat(state->box_rel);
 

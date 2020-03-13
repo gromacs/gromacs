@@ -58,7 +58,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -423,7 +422,6 @@ real ta_disres(int             nfa,
                rvec4           f[],
                rvec            fshift[],
                const t_pbc*    pbc,
-               const t_graph*  g,
                real gmx_unused lambda,
                real gmx_unused* dvdlambda,
                const t_mdatoms gmx_unused* md,
@@ -440,7 +438,6 @@ real ta_disres(int             nfa,
     real          tav_viol_Rtav7, instant_viol_Rtav7;
     real          up1, up2, low;
     gmx_bool      bConservative, bMixed, bViolation;
-    ivec          dt;
     t_disresdata* dd;
     int           dr_weighting;
     gmx_bool      dr_bMixed;
@@ -618,12 +615,6 @@ real ta_disres(int             nfa,
             }
 
             fk_scal = f_scal * weight_rt_1;
-
-            if (g)
-            {
-                ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
-                ki = IVEC2IS(dt);
-            }
 
             for (int m = 0; m < DIM; m++)
             {

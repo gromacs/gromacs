@@ -70,7 +70,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
@@ -1576,8 +1575,6 @@ void update_sd_second_half(int64_t step,
 void finish_update(const t_inputrec*       inputrec, /* input record and box stuff	*/
                    const t_mdatoms*        md,
                    t_state*                state,
-                   const t_graph*          graph,
-                   t_nrnb*                 nrnb,
                    gmx_wallcycle_t         wcycle,
                    Update*                 upd,
                    const gmx::Constraints* constr)
@@ -1599,7 +1596,9 @@ void finish_update(const t_inputrec*       inputrec, /* input record and box stu
              * the frozen dimensions. To freeze such degrees of freedom
              * we copy them back here to later copy them forward. It would
              * be more elegant and slightly more efficient to copies zero
-             * times instead of twice, but the graph case below prevents this.
+             * times instead of twice.
+             *
+             * TODO: Now the graph is removed, remove this double copy.
              */
             const ivec* nFreeze                     = inputrec->opts.nFreeze;
             bool        partialFreezeAndConstraints = false;
@@ -1630,19 +1629,7 @@ void finish_update(const t_inputrec*       inputrec, /* input record and box stu
             }
         }
 
-        if (graph && graph->numNodes() > 0)
-        {
-            unshift_x(graph, state->box, state->x.rvec_array(), upd->xp()->rvec_array());
-            if (TRICLINIC(state->box))
-            {
-                inc_nrnb(nrnb, eNR_SHIFTX, 2 * graph->numNodes());
-            }
-            else
-            {
-                inc_nrnb(nrnb, eNR_SHIFTX, graph->numNodes());
-            }
-        }
-        else
+        // TODO: Get rid of this copy
         {
             auto xp = makeConstArrayRef(*upd->xp()).subArray(0, homenr);
             auto x  = makeArrayRef(state->x).subArray(0, homenr);

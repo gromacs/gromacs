@@ -59,7 +59,6 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_simd.h"
 #include "gromacs/simd/simd.h"
@@ -356,25 +355,23 @@ static real free_energy_evaluate_single(real        r2,
 
 /*! \brief Calculate pair interactions, supports all types and conditions. */
 template<BondedKernelFlavor flavor>
-static real do_pairs_general(int                   ftype,
-                             int                   nbonds,
-                             const t_iatom         iatoms[],
-                             const t_iparams       iparams[],
-                             const rvec            x[],
-                             rvec4                 f[],
-                             rvec                  fshift[],
-                             const struct t_pbc*   pbc,
-                             const struct t_graph* g,
-                             const real*           lambda,
-                             real*                 dvdl,
-                             const t_mdatoms*      md,
-                             const t_forcerec*     fr,
-                             gmx_grppairener_t*    grppener,
-                             int*                  global_atom_index)
+static real do_pairs_general(int                 ftype,
+                             int                 nbonds,
+                             const t_iatom       iatoms[],
+                             const t_iparams     iparams[],
+                             const rvec          x[],
+                             rvec4               f[],
+                             rvec                fshift[],
+                             const struct t_pbc* pbc,
+                             const real*         lambda,
+                             real*               dvdl,
+                             const t_mdatoms*    md,
+                             const t_forcerec*   fr,
+                             gmx_grppairener_t*  grppener,
+                             int*                global_atom_index)
 {
     real            qq, c6, c12;
     rvec            dx;
-    ivec            dt;
     int             i, itype, ai, aj, gid;
     int             fshift_index;
     real            r2;
@@ -546,12 +543,6 @@ static real do_pairs_general(int                   ftype,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                /* Correct the shift forces using the graph */
-                ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
-                fshift_index = IVEC2IS(dt);
-            }
             if (fshift_index != CENTRAL)
             {
                 rvec_inc(fshift[fshift_index], dx);
@@ -678,7 +669,6 @@ void do_pairs(int                      ftype,
               rvec4                    f[],
               rvec                     fshift[],
               const struct t_pbc*      pbc,
-              const struct t_graph*    g,
               const real*              lambda,
               real*                    dvdl,
               const t_mdatoms*         md,
@@ -732,13 +722,13 @@ void do_pairs(int                      ftype,
     else if (stepWork.computeVirial)
     {
         do_pairs_general<BondedKernelFlavor::ForcesAndVirialAndEnergy>(
-                ftype, nbonds, iatoms, iparams, x, f, fshift, pbc, g, lambda, dvdl, md, fr,
-                grppener, global_atom_index);
+                ftype, nbonds, iatoms, iparams, x, f, fshift, pbc, lambda, dvdl, md, fr, grppener,
+                global_atom_index);
     }
     else
     {
         do_pairs_general<BondedKernelFlavor::ForcesAndEnergy>(ftype, nbonds, iatoms, iparams, x, f,
-                                                              fshift, pbc, g, lambda, dvdl, md, fr,
+                                                              fshift, pbc, lambda, dvdl, md, fr,
                                                               grppener, global_atom_index);
     }
 }

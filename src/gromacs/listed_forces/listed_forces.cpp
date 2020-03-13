@@ -310,7 +310,6 @@ real calc_one_bond(int                           thread,
                    rvec                          fshift[],
                    const t_forcerec*             fr,
                    const t_pbc*                  pbc,
-                   const t_graph*                g,
                    gmx_grppairener_t*            grpp,
                    t_nrnb*                       nrnb,
                    const real*                   lambda,
@@ -358,12 +357,12 @@ real calc_one_bond(int                           thread,
                wallcycle needs to be extended to support calling from
                multiple threads. */
             v = cmap_dihs(nbn, iatoms.data() + nb0, iparams.data(), &idef.cmap_grid, x, f, fshift,
-                          pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd, global_atom_index);
+                          pbc, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd, global_atom_index);
         }
         else
         {
             v = calculateSimpleBond(ftype, nbn, iatoms.data() + nb0, iparams.data(), x, f, fshift,
-                                    pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd,
+                                    pbc, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd,
                                     global_atom_index, flavor);
         }
     }
@@ -372,8 +371,8 @@ real calc_one_bond(int                           thread,
         /* TODO The execution time for pairs might be nice to account
            to its own subtimer, but first wallcycle needs to be
            extended to support calling from multiple threads. */
-        do_pairs(ftype, nbn, iatoms.data() + nb0, iparams.data(), x, f, fshift, pbc, g, lambda,
-                 dvdl, md, fr, havePerturbedInteractions, stepWork, grpp, global_atom_index);
+        do_pairs(ftype, nbn, iatoms.data() + nb0, iparams.data(), x, f, fshift, pbc, lambda, dvdl,
+                 md, fr, havePerturbedInteractions, stepWork, grpp, global_atom_index);
     }
 
     if (thread == 0)
@@ -392,7 +391,6 @@ static void calcBondedForces(const InteractionDefinitions& idef,
                              const rvec                    x[],
                              const t_forcerec*             fr,
                              const t_pbc*                  pbc_null,
-                             const t_graph*                g,
                              rvec*                         fshiftMasterBuffer,
                              gmx_enerdata_t*               enerd,
                              t_nrnb*                       nrnb,
@@ -446,10 +444,9 @@ static void calcBondedForces(const InteractionDefinitions& idef,
                 if (!ilist.empty() && ftype_is_bonded_potential(ftype))
                 {
                     ArrayRef<const int> iatoms = gmx::makeConstArrayRef(ilist.iatoms);
-                    v                          = calc_one_bond(
-                            thread, ftype, idef, iatoms, idef.numNonperturbedInteractions[ftype],
-                            fr->bondedThreading->workDivision, x, ft, fshift, fr, pbc_null, g, grpp,
-                            nrnb, lambda, dvdlt, md, fcd, stepWork, global_atom_index);
+                    v = calc_one_bond(thread, ftype, idef, iatoms, idef.numNonperturbedInteractions[ftype],
+                                      fr->bondedThreading->workDivision, x, ft, fshift, fr, pbc_null,
+                                      grpp, nrnb, lambda, dvdlt, md, fcd, stepWork, global_atom_index);
                     epot[ftype] += v;
                 }
             }
@@ -493,7 +490,6 @@ void calc_listed(const t_commrec*              cr,
                  const t_forcerec*             fr,
                  const struct t_pbc*           pbc,
                  const struct t_pbc*           pbc_full,
-                 const struct t_graph*         g,
                  gmx_enerdata_t*               enerd,
                  t_nrnb*                       nrnb,
                  const real*                   lambda,
@@ -558,9 +554,8 @@ void calc_listed(const t_commrec*              cr,
         /* The dummy array is to have a place to store the dhdl at other values
            of lambda, which will be thrown away in the end */
         real dvdl[efptNR] = { 0 };
-        calcBondedForces(idef, x, fr, pbc_null, g,
-                         as_rvec_array(forceWithShiftForces.shiftForces().data()), enerd, nrnb,
-                         lambda, dvdl, md, fcd, stepWork, global_atom_index);
+        calcBondedForces(idef, x, fr, pbc_null, as_rvec_array(forceWithShiftForces.shiftForces().data()),
+                         enerd, nrnb, lambda, dvdl, md, fcd, stepWork, global_atom_index);
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
@@ -593,7 +588,6 @@ void calc_listed_lambda(const InteractionDefinitions& idef,
                         const rvec                    x[],
                         const t_forcerec*             fr,
                         const struct t_pbc*           pbc,
-                        const struct t_graph*         g,
                         gmx_grppairener_t*            grpp,
                         real*                         epot,
                         gmx::ArrayRef<real>           dvdl,
@@ -642,7 +636,7 @@ void calc_listed_lambda(const InteractionDefinitions& idef,
                 gmx::StepWorkload tempFlags;
                 tempFlags.computeEnergy = true;
                 v = calc_one_bond(0, ftype, idef, iatomsPerturbed, iatomsPerturbed.ssize(),
-                                  workDivision, x, f, fshift, fr, pbc_null, g, grpp, nrnb, lambda,
+                                  workDivision, x, f, fshift, fr, pbc_null, grpp, nrnb, lambda,
                                   dvdl.data(), md, fcd, tempFlags, global_atom_index);
                 epot[ftype] += v;
             }
@@ -667,7 +661,6 @@ void do_force_listed(struct gmx_wallcycle*          wcycle,
                      gmx::ForceOutputs*             forceOutputs,
                      const t_forcerec*              fr,
                      const struct t_pbc*            pbc,
-                     const struct t_graph*          graph,
                      gmx_enerdata_t*                enerd,
                      t_nrnb*                        nrnb,
                      const real*                    lambda,
@@ -689,7 +682,7 @@ void do_force_listed(struct gmx_wallcycle*          wcycle,
         set_pbc(&pbc_full, fr->pbcType, box);
     }
     calc_listed(cr, ms, wcycle, idef, x, xWholeMolecules, hist, forceOutputs, fr, pbc, &pbc_full,
-                graph, enerd, nrnb, lambda, md, fcd, global_atom_index, stepWork);
+                enerd, nrnb, lambda, md, fcd, global_atom_index, stepWork);
 
     /* Check if we have to determine energy differences
      * at foreign lambda's.
@@ -715,8 +708,8 @@ void do_force_listed(struct gmx_wallcycle*          wcycle,
                 {
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i - 1]);
                 }
-                calc_listed_lambda(idef, x, fr, pbc, graph, &(enerd->foreign_grpp),
-                                   enerd->foreign_term, dvdl, nrnb, lam_i, md, fcd, global_atom_index);
+                calc_listed_lambda(idef, x, fr, pbc, &(enerd->foreign_grpp), enerd->foreign_term,
+                                   dvdl, nrnb, lam_i, md, fcd, global_atom_index);
                 sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
                 for (int j = 0; j < efptNR; j++)

@@ -295,9 +295,9 @@ static int correct_box_elem(FILE* fplog, int step, tensor box, int v, int d)
     return shift;
 }
 
-gmx_bool correct_box(FILE* fplog, int step, tensor box, t_graph* graph)
+gmx_bool correct_box(FILE* fplog, int step, tensor box)
 {
-    int      zy, zx, yx, i;
+    int      zy, zx, yx;
     gmx_bool bCorrected;
 
     zy = correct_box_elem(fplog, step, box, ZZ, YY);
@@ -305,17 +305,6 @@ gmx_bool correct_box(FILE* fplog, int step, tensor box, t_graph* graph)
     yx = correct_box_elem(fplog, step, box, YY, XX);
 
     bCorrected = ((zy != 0) || (zx != 0) || (yx != 0));
-
-    if (bCorrected && graph)
-    {
-        /* correct the graph */
-        for (i = graph->at_start; i < graph->at_end; i++)
-        {
-            graph->ishift[i][YY] -= graph->ishift[i][ZZ] * zy;
-            graph->ishift[i][XX] -= graph->ishift[i][ZZ] * zx;
-            graph->ishift[i][XX] -= graph->ishift[i][YY] * yx;
-        }
-    }
 
     return bCorrected;
 }

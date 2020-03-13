@@ -113,7 +113,6 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mimic/utilities.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/swap/swapcoords.h"
@@ -146,7 +145,6 @@ using gmx::SimulationSignaller;
  * \param[in]     idef            Topology parameters, used for constructing vsites
  * \param[in]     timeStep        Time step, used for constructing vsites
  * \param[in]     forceRec        Force record, used for constructing vsites
- * \param[in,out] graph           The molecular graph, used for constructing vsites when != nullptr
  */
 static void prepareRerunState(const t_trxframe&             rerunFrame,
                               t_state*                      globalState,
@@ -154,8 +152,7 @@ static void prepareRerunState(const t_trxframe&             rerunFrame,
                               const gmx_vsite_t*            vsite,
                               const InteractionDefinitions& idef,
                               double                        timeStep,
-                              const t_forcerec&             forceRec,
-                              t_graph*                      graph)
+                              const t_forcerec&             forceRec)
 {
     auto x      = makeArrayRef(globalState->x);
     auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerunFrame.x), globalState->natoms);
@@ -166,21 +163,9 @@ static void prepareRerunState(const t_trxframe&             rerunFrame,
     {
         GMX_ASSERT(vsite, "Need valid vsite for constructing vsites");
 
-        if (graph)
-        {
-            /* Following is necessary because the graph may get out of sync
-             * with the coordinates if we only have every N'th coordinate set
-             */
-            mk_mshift(nullptr, graph, forceRec.pbcType, globalState->box, globalState->x.rvec_array());
-            shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
-        }
         construct_vsites(vsite, globalState->x.rvec_array(), timeStep, globalState->v.rvec_array(),
                          idef.iparams, idef.il, forceRec.pbcType, forceRec.bMolPBC, nullptr,
                          globalState->box);
-        if (graph)
-        {
-            unshift_self(graph, globalState->box, globalState->x.rvec_array());
-        }
     }
 }
 
@@ -205,7 +190,6 @@ void gmx::LegacySimulator::do_rerun()
     gmx_localtop_t              top(top_global->ffparams);
     PaddedHostVector<gmx::RVec> f{};
     gmx_global_stat_t           gstat;
-    t_graph*                    graph = nullptr;
     gmx_shellfc_t*              shellfc;
 
     double cycles;
@@ -348,7 +332,7 @@ void gmx::LegacySimulator::do_rerun()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr, &graph, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr, mdAtoms, constr, vsite, shellfc);
     }
 
     auto mdatoms = mdAtoms->mdatoms();
@@ -513,8 +497,7 @@ void gmx::LegacySimulator::do_rerun()
                           "decomposition, "
                           "use a single rank");
             }
-            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top.idef, ir->delta_t,
-                              *fr, graph);
+            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, top.idef, ir->delta_t, *fr);
         }
 
         isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
@@ -550,8 +533,8 @@ void gmx::LegacySimulator::do_rerun()
                                 imdSession, pull_work, bNS, force_flags, &top, constr, enerd, fcd,
                                 state->natoms, state->x.arrayRefWithPadding(),
                                 state->v.arrayRefWithPadding(), state->box, state->lambda, &state->hist,
-                                f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, graph,
-                                shellfc, fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
+                                f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, shellfc,
+                                fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
         }
         else
         {
@@ -564,8 +547,8 @@ void gmx::LegacySimulator::do_rerun()
             gmx_edsam* ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation, imdSession, pull_work, step, nrnb,
                      wcycle, &top, state->box, state->x.arrayRefWithPadding(), &state->hist,
-                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd, state->lambda, graph,
-                     fr, runScheduleWork, vsite, mu_tot, t, ed, GMX_FORCE_NS | force_flags,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd, state->lambda, fr,
+                     runScheduleWork, vsite, mu_tot, t, ed, GMX_FORCE_NS | force_flags,
                      ddBalanceRegionHandler);
         }
 
@@ -584,27 +567,12 @@ void gmx::LegacySimulator::do_rerun()
 
         stopHandler->setSignal();
 
-        if (graph)
-        {
-            /* Need to unshift here */
-            unshift_self(graph, state->box, as_rvec_array(state->x.data()));
-        }
-
         if (vsite != nullptr)
         {
             wallcycle_start(wcycle, ewcVSITECONSTR);
-            if (graph != nullptr)
-            {
-                shift_self(graph, state->box, as_rvec_array(state->x.data()));
-            }
             construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t,
                              as_rvec_array(state->v.data()), top.idef.iparams, top.idef.il,
                              fr->pbcType, fr->bMolPBC, cr, state->box);
-
-            if (graph != nullptr)
-            {
-                unshift_self(graph, state->box, as_rvec_array(state->x.data()));
-            }
             wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
 

@@ -123,7 +123,6 @@
 #include "gromacs/modularsimulator/energyelement.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
@@ -177,7 +176,6 @@ void gmx::LegacySimulator::do_md()
     gmx_repl_ex_t               repl_ex = nullptr;
     PaddedHostVector<gmx::RVec> f{};
     gmx_global_stat_t           gstat;
-    t_graph*                    graph = nullptr;
     gmx_shellfc_t*              shellfc;
     gmx_bool                    bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     gmx_bool                    bTemp, bPres, bTrotter;
@@ -342,7 +340,7 @@ void gmx::LegacySimulator::do_md()
         state = state_global;
 
         /* Generate and initialize new topology */
-        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr, &graph, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr, mdAtoms, constr, vsite, shellfc);
 
         upd.setNumAtoms(state->natoms);
     }
@@ -388,7 +386,6 @@ void gmx::LegacySimulator::do_md()
                         || (!haveFreeEnergyType(*ir, efptBONDED) && !haveFreeEnergyType(*ir, efptMASS)),
                 "Free energy perturbation of masses and constraints are not supported with the GPU "
                 "update.");
-        GMX_RELEASE_ASSERT(graph == nullptr, "The graph is not supported with GPU update.");
 
         if (constr != nullptr && constr->numConstraintsTotal() > 0)
         {
@@ -839,7 +836,7 @@ void gmx::LegacySimulator::do_md()
             /* Correct the new box if it is too skewed */
             if (inputrecDynamicBox(ir))
             {
-                if (correct_box(fplog, step, state->box, graph))
+                if (correct_box(fplog, step, state->box))
                 {
                     bMasterState = TRUE;
                     // If update is offloaded, it should be informed about the box size change
@@ -955,8 +952,8 @@ void gmx::LegacySimulator::do_md()
                                 imdSession, pull_work, bNS, force_flags, &top, constr, enerd, fcd,
                                 state->natoms, state->x.arrayRefWithPadding(),
                                 state->v.arrayRefWithPadding(), state->box, state->lambda, &state->hist,
-                                f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, graph,
-                                shellfc, fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
+                                f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, shellfc,
+                                fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
         }
         else
         {
@@ -980,8 +977,8 @@ void gmx::LegacySimulator::do_md()
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation, imdSession, pull_work, step,
                      nrnb, wcycle, &top, state->box, state->x.arrayRefWithPadding(), &state->hist,
-                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd, state->lambda, graph,
-                     fr, runScheduleWork, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd, state->lambda, fr,
+                     runScheduleWork, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags, ddBalanceRegionHandler);
         }
 
@@ -1340,7 +1337,7 @@ void gmx::LegacySimulator::do_md()
 
             update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state, cr, nrnb, wcycle, &upd,
                                   constr, do_log, do_ene);
-            finish_update(ir, mdatoms, state, graph, nrnb, wcycle, &upd, constr);
+            finish_update(ir, mdatoms, state, wcycle, &upd, constr);
         }
 
         if (ir->bPull && ir->pull->bSetPbcRefToPrevStepCOM)
@@ -1371,7 +1368,7 @@ void gmx::LegacySimulator::do_md()
              * to numerical errors, or are they important
              * physically? I'm thinking they are just errors, but not completely sure.
              * For now, will call without actually constraining, constr=NULL*/
-            finish_update(ir, mdatoms, state, graph, nrnb, wcycle, &upd, nullptr);
+            finish_update(ir, mdatoms, state, wcycle, &upd, nullptr);
         }
         if (EI_VV(ir->eI))
         {
@@ -1399,17 +1396,8 @@ void gmx::LegacySimulator::do_md()
         if (vsite != nullptr)
         {
             wallcycle_start(wcycle, ewcVSITECONSTR);
-            if (graph != nullptr)
-            {
-                shift_self(graph, state->box, state->x.rvec_array());
-            }
             construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, state->v.rvec_array(),
                              top.idef.iparams, top.idef.il, fr->pbcType, fr->bMolPBC, cr, state->box);
-
-            if (graph != nullptr)
-            {
-                unshift_self(graph, state->box, state->x.rvec_array());
-            }
             wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
 

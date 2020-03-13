@@ -97,7 +97,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
@@ -371,7 +370,6 @@ static void init_em(FILE*                fplog,
                     gmx_localtop_t*      top,
                     t_nrnb*              nrnb,
                     t_forcerec*          fr,
-                    t_graph**            graph,
                     gmx::MDAtoms*        mdAtoms,
                     gmx_global_stat_t*   gstat,
                     gmx_vsite_t*         vsite,
@@ -423,8 +421,6 @@ static void init_em(FILE*                fplog,
                             imdSession, pull_work, &ems->s, &ems->f, mdAtoms, top, fr, vsite,
                             constr, nrnb, nullptr, FALSE);
         dd_store_state(cr->dd, &ems->s);
-
-        *graph = nullptr;
     }
     else
     {
@@ -434,7 +430,7 @@ static void init_em(FILE*                fplog,
         state_change_natoms(&ems->s, ems->s.natoms);
         ems->f.resizeWithPadding(ems->s.natoms);
 
-        mdAlgorithmsSetupAtomData(cr, ir, *top_global, top, fr, graph, mdAtoms, constr, vsite,
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, top, fr, mdAtoms, constr, vsite,
                                   shellfc ? *shellfc : nullptr);
 
         if (vsite)
@@ -794,8 +790,6 @@ public:
     gmx::Constraints* constr;
     //! Handles strange things.
     t_fcdata* fcd;
-    //! Molecular graph for SHAKE.
-    t_graph* graph;
     //! Per-atom data for this domain.
     gmx::MDAtoms* mdAtoms;
     //! Handles how to calculate the forces.
@@ -851,7 +845,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     do_force(fplog, cr, ms, inputrec, nullptr, nullptr, imdSession, pull_work, count, nrnb, wcycle,
              top, ems->s.box, ems->s.x.arrayRefWithPadding(), &ems->s.hist,
              ems->f.arrayRefWithPadding(), force_vir, mdAtoms->mdatoms(), enerd, fcd, ems->s.lambda,
-             graph, fr, runScheduleWork, vsite, mu_tot, t, nullptr,
+             fr, runScheduleWork, vsite, mu_tot, t, nullptr,
              GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY
                      | (bNS ? GMX_FORCE_NS : 0),
              DDBalanceRegionHandler(cr));
@@ -1041,7 +1035,6 @@ void LegacySimulator::do_cg()
 
     gmx_localtop_t    top(top_global->ffparams);
     gmx_global_stat_t gstat;
-    t_graph*          graph;
     double            tmp, minstep;
     real              stepsize;
     real              a, b, c, beta = 0.0;
@@ -1089,7 +1082,7 @@ void LegacySimulator::do_cg()
 
     /* Init em and store the local state in s_min */
     init_em(fplog, mdlog, CG, cr, inputrec, imdSession, pull_work, state_global, top_global, s_min,
-            &top, nrnb, fr, &graph, mdAtoms, &gstat, vsite, constr, nullptr);
+            &top, nrnb, fr, mdAtoms, &gstat, vsite, constr, nullptr);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
                                    mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
@@ -1113,9 +1106,9 @@ void LegacySimulator::do_cg()
     }
 
     EnergyEvaluator energyEvaluator{
-        fplog,      mdlog,     cr,      ms,     top_global,      &top,  inputrec,
-        imdSession, pull_work, nrnb,    wcycle, gstat,           vsite, constr,
-        fcd,        graph,     mdAtoms, fr,     runScheduleWork, enerd
+        fplog, mdlog,  cr,    ms,    top_global, &top, inputrec, imdSession, pull_work,
+        nrnb,  wcycle, gstat, vsite, constr,     fcd,  mdAtoms,  fr,         runScheduleWork,
+        enerd
     };
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
     /* do_force always puts the charge groups in the box and shifts again
@@ -1640,7 +1633,6 @@ void LegacySimulator::do_lbfgs()
     em_state_t         ems;
     gmx_localtop_t     top(top_global->ffparams);
     gmx_global_stat_t  gstat;
-    t_graph*           graph;
     int                ncorr, nmaxcorr, point, cp, neval, nminstep;
     double             stepsize, step_taken, gpa, gpb, gpc, tmp, minstep;
     real *             rho, *alpha, *p, *s, **dx, **dg;
@@ -1703,7 +1695,7 @@ void LegacySimulator::do_lbfgs()
 
     /* Init em */
     init_em(fplog, mdlog, LBFGS, cr, inputrec, imdSession, pull_work, state_global, top_global,
-            &ems, &top, nrnb, fr, &graph, mdAtoms, &gstat, vsite, constr, nullptr);
+            &ems, &top, nrnb, fr, mdAtoms, &gstat, vsite, constr, nullptr);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
                                    mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
@@ -1767,9 +1759,9 @@ void LegacySimulator::do_lbfgs()
      */
     neval++;
     EnergyEvaluator energyEvaluator{
-        fplog,      mdlog,     cr,      ms,     top_global,      &top,  inputrec,
-        imdSession, pull_work, nrnb,    wcycle, gstat,           vsite, constr,
-        fcd,        graph,     mdAtoms, fr,     runScheduleWork, enerd
+        fplog, mdlog,  cr,    ms,    top_global, &top, inputrec, imdSession, pull_work,
+        nrnb,  wcycle, gstat, vsite, constr,     fcd,  mdAtoms,  fr,         runScheduleWork,
+        enerd
     };
     energyEvaluator.run(&ems, mu_tot, vir, pres, -1, TRUE);
 
@@ -2358,7 +2350,6 @@ void LegacySimulator::do_steep()
     const char*       SD = "Steepest Descents";
     gmx_localtop_t    top(top_global->ffparams);
     gmx_global_stat_t gstat;
-    t_graph*          graph;
     real              stepsize;
     real              ustep;
     gmx_bool          bDone, bAbort, do_x, do_f;
@@ -2384,7 +2375,7 @@ void LegacySimulator::do_steep()
 
     /* Init em and store the local state in s_try */
     init_em(fplog, mdlog, SD, cr, inputrec, imdSession, pull_work, state_global, top_global, s_try,
-            &top, nrnb, fr, &graph, mdAtoms, &gstat, vsite, constr, nullptr);
+            &top, nrnb, fr, mdAtoms, &gstat, vsite, constr, nullptr);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
                                    mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
@@ -2414,9 +2405,9 @@ void LegacySimulator::do_steep()
         sp_header(fplog, SD, inputrec->em_tol, nsteps);
     }
     EnergyEvaluator energyEvaluator{
-        fplog,      mdlog,     cr,      ms,     top_global,      &top,  inputrec,
-        imdSession, pull_work, nrnb,    wcycle, gstat,           vsite, constr,
-        fcd,        graph,     mdAtoms, fr,     runScheduleWork, enerd
+        fplog, mdlog,  cr,    ms,    top_global, &top, inputrec, imdSession, pull_work,
+        nrnb,  wcycle, gstat, vsite, constr,     fcd,  mdAtoms,  fr,         runScheduleWork,
+        enerd
     };
 
     /**** HERE STARTS THE LOOP ****
@@ -2593,7 +2584,6 @@ void LegacySimulator::do_nm()
     int                 nnodes;
     gmx_localtop_t      top(top_global->ffparams);
     gmx_global_stat_t   gstat;
-    t_graph*            graph;
     tensor              vir, pres;
     rvec                mu_tot = { 0 };
     rvec*               dfdx;
@@ -2630,7 +2620,7 @@ void LegacySimulator::do_nm()
 
     /* Init em and store the local state in state_minimum */
     init_em(fplog, mdlog, NM, cr, inputrec, imdSession, pull_work, state_global, top_global,
-            &state_work, &top, nrnb, fr, &graph, mdAtoms, &gstat, vsite, constr, &shellfc);
+            &state_work, &top, nrnb, fr, mdAtoms, &gstat, vsite, constr, &shellfc);
     const bool  simulationsShareState = false;
     gmx_mdoutf* outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
                                    mdModulesNotifier, inputrec, top_global, nullptr, wcycle,
@@ -2708,9 +2698,9 @@ void LegacySimulator::do_nm()
     /* Make evaluate_energy do a single node force calculation */
     cr->nnodes = 1;
     EnergyEvaluator energyEvaluator{
-        fplog,      mdlog,     cr,      ms,     top_global,      &top,  inputrec,
-        imdSession, pull_work, nrnb,    wcycle, gstat,           vsite, constr,
-        fcd,        graph,     mdAtoms, fr,     runScheduleWork, enerd
+        fplog, mdlog,  cr,    ms,    top_global, &top, inputrec, imdSession, pull_work,
+        nrnb,  wcycle, gstat, vsite, constr,     fcd,  mdAtoms,  fr,         runScheduleWork,
+        enerd
     };
     energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE);
     cr->nnodes = nnodes;
@@ -2769,14 +2759,13 @@ void LegacySimulator::do_nm()
                 if (shellfc)
                 {
                     /* Now is the time to relax the shells */
-                    relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, nullptr, step, inputrec,
-                                        imdSession, pull_work, bNS, force_flags, &top, constr, enerd,
-                                        fcd, state_work.s.natoms, state_work.s.x.arrayRefWithPadding(),
-                                        state_work.s.v.arrayRefWithPadding(), state_work.s.box,
-                                        state_work.s.lambda, &state_work.s.hist,
-                                        state_work.f.arrayRefWithPadding(), vir, mdatoms, nrnb,
-                                        wcycle, graph, shellfc, fr, runScheduleWork, t, mu_tot,
-                                        vsite, DDBalanceRegionHandler(nullptr));
+                    relax_shell_flexcon(
+                            fplog, cr, ms, mdrunOptions.verbose, nullptr, step, inputrec, imdSession,
+                            pull_work, bNS, force_flags, &top, constr, enerd, fcd, state_work.s.natoms,
+                            state_work.s.x.arrayRefWithPadding(), state_work.s.v.arrayRefWithPadding(),
+                            state_work.s.box, state_work.s.lambda, &state_work.s.hist,
+                            state_work.f.arrayRefWithPadding(), vir, mdatoms, nrnb, wcycle, shellfc,
+                            fr, runScheduleWork, t, mu_tot, vsite, DDBalanceRegionHandler(nullptr));
                     bNS = false;
                     step++;
                 }

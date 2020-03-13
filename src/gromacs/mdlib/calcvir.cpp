@@ -48,7 +48,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -143,98 +142,7 @@ void calc_vir(int nxf, const rvec x[], const rvec f[], tensor vir, bool bScrewPB
     }
 }
 
-
-static void
-lo_fcv(int i0, int i1, const real x[], const real f[], tensor vir, const int is[], const real box[], gmx_bool bTriclinic)
+void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir, const matrix box)
 {
-    int  i, i3, tx, ty, tz;
-    real xx, yy, zz;
-    real dvxx = 0, dvxy = 0, dvxz = 0, dvyx = 0, dvyy = 0, dvyz = 0, dvzx = 0, dvzy = 0, dvzz = 0;
-
-    if (bTriclinic)
-    {
-        for (i = i0; (i < i1); i++)
-        {
-            i3 = DIM * i;
-            tx = is[i3 + XX];
-            ty = is[i3 + YY];
-            tz = is[i3 + ZZ];
-
-            xx = x[i3 + XX] - tx * box[XXXX] - ty * box[YYXX] - tz * box[ZZXX];
-            dvxx += xx * f[i3 + XX];
-            dvxy += xx * f[i3 + YY];
-            dvxz += xx * f[i3 + ZZ];
-
-            yy = x[i3 + YY] - ty * box[YYYY] - tz * box[ZZYY];
-            dvyx += yy * f[i3 + XX];
-            dvyy += yy * f[i3 + YY];
-            dvyz += yy * f[i3 + ZZ];
-
-            zz = x[i3 + ZZ] - tz * box[ZZZZ];
-            dvzx += zz * f[i3 + XX];
-            dvzy += zz * f[i3 + YY];
-            dvzz += zz * f[i3 + ZZ];
-        }
-    }
-    else
-    {
-        for (i = i0; (i < i1); i++)
-        {
-            i3 = DIM * i;
-            tx = is[i3 + XX];
-            ty = is[i3 + YY];
-            tz = is[i3 + ZZ];
-
-            xx = x[i3 + XX] - tx * box[XXXX];
-            dvxx += xx * f[i3 + XX];
-            dvxy += xx * f[i3 + YY];
-            dvxz += xx * f[i3 + ZZ];
-
-            yy = x[i3 + YY] - ty * box[YYYY];
-            dvyx += yy * f[i3 + XX];
-            dvyy += yy * f[i3 + YY];
-            dvyz += yy * f[i3 + ZZ];
-
-            zz = x[i3 + ZZ] - tz * box[ZZZZ];
-            dvzx += zz * f[i3 + XX];
-            dvzy += zz * f[i3 + YY];
-            dvzz += zz * f[i3 + ZZ];
-        }
-    }
-
-    upd_vir(vir[XX], dvxx, dvxy, dvxz);
-    upd_vir(vir[YY], dvyx, dvyy, dvyz);
-    upd_vir(vir[ZZ], dvzx, dvzy, dvzz);
-}
-
-void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir, const t_graph* g, const matrix box)
-{
-    int start, end;
-
-    if (g && g->numNodes() > 0)
-    {
-        /* Calculate virial for bonded forces only when they belong to
-         * this node.
-         */
-        start = std::max(i0, g->at_start);
-        end   = std::min(i1, g->at_end);
-        lo_fcv(start, end, x[0], f[0], vir, g->ishift[0], box[0], TRICLINIC(box));
-
-        /* If not all atoms are bonded, calculate their virial contribution
-         * anyway, without shifting back their coordinates.
-         * Note the nifty pointer arithmetic...
-         */
-        if (start > i0)
-        {
-            calc_vir(start - i0, x + i0, f + i0, vir, FALSE, box);
-        }
-        if (end < i1)
-        {
-            calc_vir(i1 - end, x + end, f + end, vir, FALSE, box);
-        }
-    }
-    else
-    {
-        calc_vir(i1 - i0, x + i0, f + i0, vir, FALSE, box);
-    }
+    calc_vir(i1 - i0, x + i0, f + i0, vir, FALSE, box);
 }

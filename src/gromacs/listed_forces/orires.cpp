@@ -54,7 +54,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
@@ -653,7 +652,6 @@ real orires(int             nfa,
             rvec4           f[],
             rvec            fshift[],
             const t_pbc*    pbc,
-            const t_graph*  g,
             real gmx_unused lambda,
             real gmx_unused* dvdlambda,
             const t_mdatoms gmx_unused* md,
@@ -661,7 +659,6 @@ real orires(int             nfa,
             int gmx_unused* global_atom_index)
 {
     int                 ex, power, ki = CENTRAL;
-    ivec                dt;
     real                r2, invr, invr2, fc, smooth_fc, dev, devins, pfac;
     rvec                r, Sr, fij;
     real                vtot;
@@ -736,12 +733,6 @@ real orires(int             nfa,
             for (int i = 0; i < DIM; i++)
             {
                 fij[i] = -pfac * dev * (4 * Sr[i] - 2 * (2 + power) * invr2 * iprod(Sr, r) * r[i]);
-            }
-
-            if (g)
-            {
-                ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
-                ki = IVEC2IS(dt);
             }
 
             for (int i = 0; i < DIM; i++)

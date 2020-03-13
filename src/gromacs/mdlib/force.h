@@ -57,7 +57,6 @@ struct pull_t;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
-struct t_graph;
 struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
@@ -95,7 +94,6 @@ void do_force(FILE*                               log,
               gmx_enerdata_t*                     enerd,
               t_fcdata*                           fcd,
               gmx::ArrayRef<real>                 lambda,
-              t_graph*                            graph,
               t_forcerec*                         fr,
               gmx::MdrunScheduleWorkload*         runScheduleWork,
               const gmx_vsite_t*                  vsite,
@@ -120,26 +118,25 @@ void do_force(FILE*                               log,
  * xWholeMolecules only needs to contain whole molecules when orientation
  * restraints need to be computed and can be empty otherwise.
  */
-void do_force_lowlevel(t_forcerec*                         fr,
-                       const t_inputrec*                   ir,
-                       const InteractionDefinitions&       idef,
-                       const t_commrec*                    cr,
-                       const gmx_multisim_t*               ms,
-                       t_nrnb*                             nrnb,
-                       gmx_wallcycle*                      wcycle,
-                       const t_mdatoms*                    md,
-                       gmx::ArrayRefWithPadding<gmx::RVec> coordinates,
-                       gmx::ArrayRef<const gmx::RVec>      xWholeMolecules,
-                       history_t*                          hist,
-                       gmx::ForceOutputs*                  forceOutputs,
-                       gmx_enerdata_t*                     enerd,
-                       t_fcdata*                           fcd,
-                       const matrix                        box,
-                       const real*                         lambda,
-                       const t_graph*                      graph,
-                       const rvec*                         mu_tot,
-                       const gmx::StepWorkload&            stepWork,
-                       const DDBalanceRegionHandler&       ddBalanceRegionHandler);
+void do_force_lowlevel(t_forcerec*                               fr,
+                       const t_inputrec*                         ir,
+                       const InteractionDefinitions&             idef,
+                       const t_commrec*                          cr,
+                       const gmx_multisim_t*                     ms,
+                       t_nrnb*                                   nrnb,
+                       gmx_wallcycle*                            wcycle,
+                       const t_mdatoms*                          md,
+                       gmx::ArrayRefWithPadding<const gmx::RVec> coordinates,
+                       gmx::ArrayRef<const gmx::RVec>            xWholeMolecules,
+                       history_t*                                hist,
+                       gmx::ForceOutputs*                        forceOutputs,
+                       gmx_enerdata_t*                           enerd,
+                       t_fcdata*                                 fcd,
+                       const matrix                              box,
+                       const real*                               lambda,
+                       const rvec*                               mu_tot,
+                       const gmx::StepWorkload&                  stepWork,
+                       const DDBalanceRegionHandler&             ddBalanceRegionHandler);
 /* Call all the force routines */
 
 #endif

@@ -54,7 +54,6 @@ class history_t;
 struct pull_t;
 struct t_forcerec;
 struct t_fcdata;
-struct t_graph;
 struct t_inputrec;
 class t_state;
 
@@ -105,7 +104,6 @@ void relax_shell_flexcon(FILE*                               log,
                          const t_mdatoms*                    md,
                          t_nrnb*                             nrnb,
                          gmx_wallcycle_t                     wcycle,
-                         t_graph*                            graph,
                          gmx_shellfc_t*                      shfc,
                          t_forcerec*                         fr,
                          gmx::MdrunScheduleWorkload*         runScheduleWork,

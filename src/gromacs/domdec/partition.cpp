@@ -3155,7 +3155,7 @@ void dd_partition_system(FILE*                        fplog,
                         comm->atomRanges.end(DDAtomRanges::Type::Constraints), nat_f_novirsum);
 
     /* Update atom data for mdatoms and several algorithms */
-    mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr, nullptr, mdAtoms, constr, vsite, nullptr);
+    mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr, mdAtoms, constr, vsite, nullptr);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))

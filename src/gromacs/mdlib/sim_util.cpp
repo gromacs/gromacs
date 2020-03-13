@@ -97,7 +97,6 @@
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/pulling/pull_rotation.h"
@@ -150,7 +149,6 @@ static void calc_virial(int                              start,
                         const rvec                       x[],
                         const gmx::ForceWithShiftForces& forceWithShiftForces,
                         tensor                           vir_part,
-                        const t_graph*                   graph,
                         const matrix                     box,
                         t_nrnb*                          nrnb,
                         const t_forcerec*                fr,
@@ -165,7 +163,7 @@ static void calc_virial(int                              start,
      * Total virial is computed in global_stat, called from do_md
      */
     const rvec* f = as_rvec_array(forceWithShiftForces.force().data());
-    f_calc_vir(start, start + homenr, x, f, vir_part, graph, box);
+    f_calc_vir(start, start + homenr, x, f, vir_part, box);
     inc_nrnb(nrnb, eNR_VIRIAL, homenr);
 
     if (debug)
@@ -288,7 +286,6 @@ static void post_process_forces(const t_commrec*      cr,
                                 ForceOutputs*         forceOutputs,
                                 tensor                vir_force,
                                 const t_mdatoms*      mdatoms,
-                                const t_graph*        graph,
                                 const t_forcerec*     fr,
                                 const gmx_vsite_t*    vsite,
                                 const StepWorkload&   stepWork)
@@ -308,7 +305,7 @@ static void post_process_forces(const t_commrec*      cr,
              */
             matrix virial = { { 0 } };
             spread_vsite_f(vsite, x, fDirectVir, nullptr, stepWork.computeVirial, virial, nrnb,
-                           top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
+                           top->idef, fr->pbcType, fr->bMolPBC, box, cr, wcycle);
             forceWithVirial.addVirialContribution(virial);
         }
 
@@ -954,7 +951,6 @@ void do_force(FILE*                               fplog,
               gmx_enerdata_t*                     enerd,
               t_fcdata*                           fcd,
               gmx::ArrayRef<real>                 lambda,
-              t_graph*                            graph,
               t_forcerec*                         fr,
               gmx::MdrunScheduleWorkload*         runScheduleWork,
               const gmx_vsite_t*                  vsite,
@@ -1007,10 +1003,6 @@ void do_force(FILE*                               fplog,
                                  gmx_omp_nthreads_get(emntDefault));
             inc_nrnb(nrnb, eNR_SHIFTX, mdatoms->homenr);
         }
-        else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
-        {
-            unshift_self(graph, box, as_rvec_array(x.unpaddedArrayRef().data()));
-        }
     }
 
     nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, nbv->nbat.get());
@@ -1032,11 +1024,7 @@ void do_force(FILE*                               fplog,
     // Otherwise the send will occur after H2D coordinate transfer.
     if (!thisRankHasDuty(cr, DUTY_PME) && !pmeSendCoordinatesFromGpu)
     {
-        /* Send particle coordinates to the pme nodes.
-         * Since this is only implemented for domain decomposition
-         * and domain decomposition does not use the graph,
-         * we do not need to worry about shifting.
-         */
+        /* Send particle coordinates to the pme nodes */
         if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
         {
             GMX_RELEASE_ASSERT(false,
@@ -1116,11 +1104,7 @@ void do_force(FILE*                               fplog,
     // Otherwise the send will occur before the H2D coordinate transfer.
     if (pmeSendCoordinatesFromGpu)
     {
-        /* Send particle coordinates to the pme nodes.
-         * Since this is only implemented for domain decomposition
-         * and domain decomposition does not use the graph,
-         * we do not need to worry about shifting.
-         */
+        /* Send particle coordinates to the pme nodes */
         gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()), lambda[efptCOUL],
                                  lambda[efptVDW], (stepWork.computeVirial || stepWork.computeEnergy),
                                  step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
@@ -1136,11 +1120,6 @@ void do_force(FILE*                               fplog,
     /* do gridding for pair search */
     if (stepWork.doNeighborSearch)
     {
-        if (graph && stepWork.stateChanged)
-        {
-            /* Calculate intramolecular shift vectors to make molecules whole */
-            mk_mshift(fplog, graph, fr->pbcType, box, as_rvec_array(x.unpaddedArrayRef().data()));
-        }
         if (fr->wholeMoleculeTransform && stepWork.stateChanged)
         {
             fr->wholeMoleculeTransform->updateForAtomPbcJumps(x.unpaddedArrayRef(), box);
@@ -1540,7 +1519,7 @@ void do_force(FILE*                               fplog,
     }
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, top->idef, cr, ms, nrnb, wcycle, mdatoms, x, xWholeMolecules,
-                      hist, &forceOut, enerd, fcd, box, lambda.data(), graph,
+                      hist, &forceOut, enerd, fcd, box, lambda.data(),
                       as_rvec_array(dipoleData.muStateAB), stepWork, ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
@@ -1816,15 +1795,14 @@ void do_force(FILE*                               fplog,
         {
             rvec* fshift = as_rvec_array(forceOut.forceWithShiftForces().shiftForces().data());
             spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE,
-                           nullptr, nrnb, top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
+                           nullptr, nrnb, top->idef, fr->pbcType, fr->bMolPBC, box, cr, wcycle);
         }
 
         if (stepWork.computeVirial)
         {
             /* Calculation of the virial must be done after vsites! */
             calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()),
-                        forceOut.forceWithShiftForces(), vir_force, graph, box, nrnb, fr,
-                        inputrec->pbcType);
+                        forceOut.forceWithShiftForces(), vir_force, box, nrnb, fr, inputrec->pbcType);
         }
     }
 
@@ -1842,7 +1820,7 @@ void do_force(FILE*                               fplog,
     if (stepWork.computeForces)
     {
         post_process_forces(cr, step, nrnb, wcycle, top, box, as_rvec_array(x.unpaddedArrayRef().data()),
-                            &forceOut, vir_force, mdatoms, graph, fr, vsite, stepWork);
+                            &forceOut, vir_force, mdatoms, fr, vsite, stepWork);
     }
 
     if (stepWork.computeEnergy)

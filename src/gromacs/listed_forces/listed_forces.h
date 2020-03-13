@@ -79,7 +79,6 @@ class InteractionDefinitions;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
-struct t_graph;
 struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
@@ -101,7 +100,6 @@ using BondedFunction = real (*)(int              nbonds,
                                 rvec4            f[],
                                 rvec             fshift[],
                                 const t_pbc*     pbc,
-                                const t_graph*   g,
                                 real             lambda,
                                 real*            dvdlambda,
                                 const t_mdatoms* md,
@@ -129,7 +127,6 @@ void do_force_listed(struct gmx_wallcycle*          wcycle,
                      gmx::ForceOutputs*             forceOutputs,
                      const t_forcerec*              fr,
                      const struct t_pbc*            pbc,
-                     const struct t_graph*          graph,
                      gmx_enerdata_t*                enerd,
                      t_nrnb*                        nrnb,
                      const real*                    lambda,

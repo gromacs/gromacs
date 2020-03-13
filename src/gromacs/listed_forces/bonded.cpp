@@ -65,7 +65,6 @@
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_simd.h"
 #include "gromacs/simd/simd.h"
@@ -93,7 +92,6 @@ using BondedFunction = real (*)(int              nbonds,
                                 rvec4            f[],
                                 rvec             fshift[],
                                 const t_pbc*     pbc,
-                                const t_graph*   g,
                                 real             lambda,
                                 real*            dvdlambda,
                                 const t_mdatoms* md,
@@ -205,26 +203,17 @@ namespace
 
 /*! \brief Spreads and accumulates the bonded forces to the two atoms and adds the virial contribution when needed
  *
- * When \p g==nullptr, \p shiftIndex is used as the periodic shift.
- * When \p g!=nullptr, the graph is used to compute the periodic shift.
+ * \p shiftIndex is used as the periodic shift.
  */
 template<BondedKernelFlavor flavor>
-inline void spreadBondForces(const real     bondForce,
-                             const rvec     dx,
-                             const int      ai,
-                             const int      aj,
-                             rvec4*         f,
-                             int            shiftIndex,
-                             const t_graph* g,
-                             rvec*          fshift)
+inline void spreadBondForces(const real bondForce,
+                             const rvec dx,
+                             const int  ai,
+                             const int  aj,
+                             rvec4*     f,
+                             int        shiftIndex,
+                             rvec*      fshift)
 {
-    if (computeVirial(flavor) && g)
-    {
-        ivec dt;
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
-        shiftIndex = IVEC2IS(dt);
-    }
-
     for (int m = 0; m < DIM; m++) /*  15          */
     {
         const real fij = bondForce * dx[m];
@@ -257,7 +246,6 @@ real morse_bonds(int             nbonds,
                  rvec4           f[],
                  rvec            fshift[],
                  const t_pbc*    pbc,
-                 const t_graph*  g,
                  real            lambda,
                  real*           dvdlambda,
                  const t_mdatoms gmx_unused* md,
@@ -312,8 +300,8 @@ real morse_bonds(int             nbonds,
         *dvdlambda += (cbB - cbA) * omtemp * omtemp
                       - (2 - 2 * omtemp) * omtemp * cb * ((b0B - b0A) * be - (beB - beA) * (dr - b0)); /* 15 */
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /*  83 TOTAL    */
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /*  83 TOTAL    */
     return vtot;
 }
 
@@ -326,7 +314,6 @@ real cubic_bonds(int             nbonds,
                  rvec4           f[],
                  rvec            fshift[],
                  const t_pbc*    pbc,
-                 const t_graph*  g,
                  real gmx_unused lambda,
                  real gmx_unused* dvdlambda,
                  const t_mdatoms gmx_unused* md,
@@ -369,8 +356,8 @@ real cubic_bonds(int             nbonds,
 
         vtot += vbond; /* 21 */
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /*  54 TOTAL    */
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /*  54 TOTAL    */
     return vtot;
 }
 
@@ -382,7 +369,6 @@ real FENE_bonds(int             nbonds,
                 rvec4           f[],
                 rvec            fshift[],
                 const t_pbc*    pbc,
-                const t_graph*  g,
                 real gmx_unused lambda,
                 real gmx_unused* dvdlambda,
                 const t_mdatoms gmx_unused* md,
@@ -429,8 +415,8 @@ real FENE_bonds(int             nbonds,
 
         vtot += vbond; /* 35 */
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /*  58 TOTAL    */
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /*  58 TOTAL    */
     return vtot;
 }
 
@@ -468,7 +454,6 @@ real bonds(int             nbonds,
            rvec4           f[],
            rvec            fshift[],
            const t_pbc*    pbc,
-           const t_graph*  g,
            real            lambda,
            real*           dvdlambda,
            const t_mdatoms gmx_unused* md,
@@ -503,8 +488,8 @@ real bonds(int             nbonds,
         vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /* 59 TOTAL	*/
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /* 59 TOTAL	*/
     return vtot;
 }
 
@@ -516,7 +501,6 @@ real restraint_bonds(int             nbonds,
                      rvec4           f[],
                      rvec            fshift[],
                      const t_pbc*    pbc,
-                     const t_graph*  g,
                      real            lambda,
                      real*           dvdlambda,
                      const t_mdatoms gmx_unused* md,
@@ -591,8 +575,8 @@ real restraint_bonds(int             nbonds,
         vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /* 59 TOTAL	*/
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /* 59 TOTAL	*/
 
     return vtot;
 }
@@ -605,7 +589,6 @@ real polarize(int              nbonds,
               rvec4            f[],
               rvec             fshift[],
               const t_pbc*     pbc,
-              const t_graph*   g,
               real             lambda,
               real*            dvdlambda,
               const t_mdatoms* md,
@@ -638,8 +621,8 @@ real polarize(int              nbonds,
         vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /* 59 TOTAL	*/
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /* 59 TOTAL	*/
     return vtot;
 }
 
@@ -651,7 +634,6 @@ real anharm_polarize(int              nbonds,
                      rvec4            f[],
                      rvec             fshift[],
                      const t_pbc*     pbc,
-                     const t_graph*   g,
                      real             lambda,
                      real*            dvdlambda,
                      const t_mdatoms* md,
@@ -693,8 +675,8 @@ real anharm_polarize(int              nbonds,
         fbond *= gmx::invsqrt(dr2); /*   6		*/
         vtot += vbond;              /* 1*/
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /* 72 TOTAL	*/
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /* 72 TOTAL	*/
     return vtot;
 }
 
@@ -706,7 +688,6 @@ real water_pol(int             nbonds,
                rvec4           f[],
                rvec gmx_unused fshift[],
                const t_pbc gmx_unused* pbc,
-               const t_graph gmx_unused* g,
                real gmx_unused lambda,
                real gmx_unused* dvdlambda,
                const t_mdatoms gmx_unused* md,
@@ -718,7 +699,6 @@ real water_pol(int             nbonds,
      * three spatial dimensions in the molecular frame.
      */
     int  i, m, aO, aH1, aH2, aD, aS, type, type0, ki;
-    ivec dt;
     rvec dOH1, dOH2, dHH, dOD, dDS, nW, kk, dx, kdx, proj;
     real vtot, fij, r_HH, r_OD, r_nW, tx, ty, tz, qS;
 
@@ -790,12 +770,6 @@ real water_pol(int             nbonds,
             kdx[ZZ] = kk[ZZ] * dx[ZZ];
             vtot += iprod(dx, kdx);
 
-            if (computeVirial(flavor) && g)
-            {
-                ivec_sub(SHIFT_IVEC(g, aS), SHIFT_IVEC(g, aD), dt);
-                ki = IVEC2IS(dt);
-            }
-
             for (m = 0; (m < DIM); m++)
             {
                 /* This is a tensor operation but written out for speed */
@@ -858,7 +832,6 @@ real thole_pol(int             nbonds,
                rvec4           f[],
                rvec            fshift[],
                const t_pbc*    pbc,
-               const t_graph gmx_unused* g,
                real gmx_unused lambda,
                real gmx_unused* dvdlambda,
                const t_mdatoms* md,
@@ -910,7 +883,6 @@ angles(int             nbonds,
        rvec4           f[],
        rvec            fshift[],
        const t_pbc*    pbc,
-       const t_graph*  g,
        real            lambda,
        real*           dvdlambda,
        const t_mdatoms gmx_unused* md,
@@ -920,7 +892,6 @@ angles(int             nbonds,
     int  i, ai, aj, ak, t1, t2, type;
     rvec r_ij, r_kj;
     real cos_theta, cos_theta2, theta, dVdt, va, vtot;
-    ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
     for (i = 0; i < nbonds;)
@@ -970,15 +941,6 @@ angles(int             nbonds,
             }
             if (computeVirial(flavor))
             {
-                if (g != nullptr)
-                {
-                    copy_ivec(SHIFT_IVEC(g, aj), jt);
-
-                    ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                    ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                    t1 = IVEC2IS(dt_ij);
-                    t2 = IVEC2IS(dt_kj);
-                }
                 rvec_inc(fshift[t1], f_i);
                 rvec_inc(fshift[CENTRAL], f_j);
                 rvec_inc(fshift[t2], f_k);
@@ -1008,7 +970,6 @@ angles(int             nbonds,
        rvec4           f[],
        rvec gmx_unused fshift[],
        const t_pbc*    pbc,
-       const t_graph gmx_unused* g,
        real gmx_unused lambda,
        real gmx_unused* dvdlambda,
        const t_mdatoms gmx_unused* md,
@@ -1156,7 +1117,6 @@ real linear_angles(int             nbonds,
                    rvec4           f[],
                    rvec            fshift[],
                    const t_pbc*    pbc,
-                   const t_graph*  g,
                    real            lambda,
                    real*           dvdlambda,
                    const t_mdatoms gmx_unused* md,
@@ -1166,7 +1126,6 @@ real linear_angles(int             nbonds,
     int  i, m, ai, aj, ak, t1, t2, type;
     rvec f_i, f_j, f_k;
     real L1, kA, kB, aA, aB, dr, dr2, va, vtot, a, b, klin;
-    ivec jt, dt_ij, dt_kj;
     rvec r_ij, r_kj, r_ik, dx;
 
     L1   = 1 - lambda;
@@ -1211,15 +1170,6 @@ real linear_angles(int             nbonds,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
-
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
-            }
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k);
@@ -1237,7 +1187,6 @@ urey_bradley(int             nbonds,
              rvec4           f[],
              rvec            fshift[],
              const t_pbc*    pbc,
-             const t_graph*  g,
              real            lambda,
              real*           dvdlambda,
              const t_mdatoms gmx_unused* md,
@@ -1249,7 +1198,6 @@ urey_bradley(int             nbonds,
     real cos_theta, cos_theta2, theta;
     real dVdt, va, vtot, dr, dr2, vbond, fbond, fik;
     real kthA, th0A, kUBA, r13A, kthB, th0B, kUBB, r13B;
-    ivec jt, dt_ij, dt_kj, dt_ik;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds);)
@@ -1306,15 +1254,6 @@ urey_bradley(int             nbonds,
             }
             if (computeVirial(flavor))
             {
-                if (g)
-                {
-                    copy_ivec(SHIFT_IVEC(g, aj), jt);
-
-                    ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                    ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                    t1 = IVEC2IS(dt_ij);
-                    t2 = IVEC2IS(dt_kj);
-                }
                 rvec_inc(fshift[t1], f_i);
                 rvec_inc(fshift[CENTRAL], f_j);
                 rvec_inc(fshift[t2], f_k);
@@ -1329,11 +1268,6 @@ urey_bradley(int             nbonds,
         vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 
-        if (computeVirial(flavor) && g)
-        {
-            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, ak), dt_ik);
-            ki = IVEC2IS(dt_ik);
-        }
         for (m = 0; (m < DIM); m++) /*  15		*/
         {
             fik = fbond * r_ik[m];
@@ -1363,7 +1297,6 @@ urey_bradley(int             nbonds,
              rvec4           f[],
              rvec gmx_unused fshift[],
              const t_pbc*    pbc,
-             const t_graph gmx_unused* g,
              real gmx_unused lambda,
              real gmx_unused* dvdlambda,
              const t_mdatoms gmx_unused* md,
@@ -1506,7 +1439,6 @@ real quartic_angles(int             nbonds,
                     rvec4           f[],
                     rvec            fshift[],
                     const t_pbc*    pbc,
-                    const t_graph*  g,
                     real gmx_unused lambda,
                     real gmx_unused* dvdlambda,
                     const t_mdatoms gmx_unused* md,
@@ -1516,7 +1448,6 @@ real quartic_angles(int             nbonds,
     int  i, j, ai, aj, ak, t1, t2, type;
     rvec r_ij, r_kj;
     real cos_theta, cos_theta2, theta, dt, dVdt, va, dtp, c, vtot;
-    ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds);)
@@ -1574,15 +1505,6 @@ real quartic_angles(int             nbonds,
 
             if (computeVirial(flavor))
             {
-                if (g)
-                {
-                    copy_ivec(SHIFT_IVEC(g, aj), jt);
-
-                    ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                    ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                    t1 = IVEC2IS(dt_ij);
-                    t2 = IVEC2IS(dt_kj);
-                }
                 rvec_inc(fshift[t1], f_i);
                 rvec_inc(fshift[CENTRAL], f_j);
                 rvec_inc(fshift[t2], f_k);
@@ -1714,31 +1636,29 @@ inline void dih_angle_simd(const rvec* x,
 } // namespace
 
 template<BondedKernelFlavor flavor>
-void do_dih_fup(int            i,
-                int            j,
-                int            k,
-                int            l,
-                real           ddphi,
-                rvec           r_ij,
-                rvec           r_kj,
-                rvec           r_kl,
-                rvec           m,
-                rvec           n,
-                rvec4          f[],
-                rvec           fshift[],
-                const t_pbc*   pbc,
-                const t_graph* g,
-                const rvec     x[],
-                int            t1,
-                int            t2,
-                int            t3)
+void do_dih_fup(int          i,
+                int          j,
+                int          k,
+                int          l,
+                real         ddphi,
+                rvec         r_ij,
+                rvec         r_kj,
+                rvec         r_kl,
+                rvec         m,
+                rvec         n,
+                rvec4        f[],
+                rvec         fshift[],
+                const t_pbc* pbc,
+                const rvec   x[],
+                int          t1,
+                int          t2,
+                int          t3)
 {
     /* 143 FLOPS */
     rvec f_i, f_j, f_k, f_l;
     rvec uvec, vvec, svec, dx_jl;
     real iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
     real a, b, p, q, toler;
-    ivec jt, dt_ij, dt_kj, dt_lj;
 
     iprm  = iprod(m, m);       /*  5    */
     iprn  = iprod(n, n);       /*  5	*/
@@ -1769,17 +1689,7 @@ void do_dih_fup(int            i,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, j), jt);
-                ivec_sub(SHIFT_IVEC(g, i), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, k), jt, dt_kj);
-                ivec_sub(SHIFT_IVEC(g, l), jt, dt_lj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
-                t3 = IVEC2IS(dt_lj);
-            }
-            else if (pbc)
+            if (pbc)
             {
                 t3 = pbc_rvec_sub(pbc, x[l], x[j], dx_jl);
             }
@@ -1894,7 +1804,6 @@ pdihs(int             nbonds,
       rvec4           f[],
       rvec            fshift[],
       const t_pbc*    pbc,
-      const t_graph*  g,
       real            lambda,
       real*           dvdlambda,
       const t_mdatoms gmx_unused* md,
@@ -1931,9 +1840,9 @@ pdihs(int             nbonds,
         } while (i < nbonds && forceatoms[i + 1] == ai && forceatoms[i + 2] == aj
                  && forceatoms[i + 3] == ak && forceatoms[i + 4] == al);
 
-        do_dih_fup<flavor>(ai, aj, ak, al, ddphi_tot, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, g, x,
-                           t1, t2, t3); /* 112		*/
-    }                                   /* 223 TOTAL  */
+        do_dih_fup<flavor>(ai, aj, ak, al, ddphi_tot, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, x, t1,
+                           t2, t3); /* 112		*/
+    }                               /* 223 TOTAL  */
 
     return vtot;
 }
@@ -1950,7 +1859,6 @@ pdihs(int             nbonds,
       rvec4           f[],
       rvec gmx_unused fshift[],
       const t_pbc*    pbc,
-      const t_graph gmx_unused* g,
       real gmx_unused lambda,
       real gmx_unused* dvdlambda,
       const t_mdatoms gmx_unused* md,
@@ -2065,7 +1973,6 @@ rbdihs(int             nbonds,
        rvec4           f[],
        rvec gmx_unused fshift[],
        const t_pbc*    pbc,
-       const t_graph gmx_unused* g,
        real gmx_unused lambda,
        real gmx_unused* dvdlambda,
        const t_mdatoms gmx_unused* md,
@@ -2192,7 +2099,6 @@ real idihs(int             nbonds,
            rvec4           f[],
            rvec            fshift[],
            const t_pbc*    pbc,
-           const t_graph*  g,
            real            lambda,
            real*           dvdlambda,
            const t_mdatoms gmx_unused* md,
@@ -2245,7 +2151,7 @@ real idihs(int             nbonds,
 
         dvdl_term += 0.5 * (kB - kA) * dp2 - kk * dphi0 * dp;
 
-        do_dih_fup<flavor>(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, g, x, t1,
+        do_dih_fup<flavor>(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, x, t1,
                            t2, t3); /* 112		*/
         /* 218 TOTAL	*/
     }
@@ -2263,7 +2169,6 @@ real low_angres(int             nbonds,
                 rvec4           f[],
                 rvec            fshift[],
                 const t_pbc*    pbc,
-                const t_graph*  g,
                 real            lambda,
                 real*           dvdlambda,
                 gmx_bool        bZAxis)
@@ -2274,7 +2179,6 @@ real low_angres(int             nbonds,
     rvec r_ij, r_kl, f_i, f_k = { 0, 0, 0 };
     real st, sth, nrij2, nrkl2, c, cij, ckl;
 
-    ivec dt;
     t2 = 0; /* avoid warning with gcc-3.3. It is never used uninitialized */
 
     vtot = 0.0;
@@ -2334,20 +2238,10 @@ real low_angres(int             nbonds,
 
             if (computeVirial(flavor))
             {
-                if (g)
-                {
-                    ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), dt);
-                    t1 = IVEC2IS(dt);
-                }
                 rvec_inc(fshift[t1], f_i);
                 rvec_dec(fshift[CENTRAL], f_i);
                 if (!bZAxis)
                 {
-                    if (g)
-                    {
-                        ivec_sub(SHIFT_IVEC(g, ak), SHIFT_IVEC(g, al), dt);
-                        t2 = IVEC2IS(dt);
-                    }
                     rvec_inc(fshift[t2], f_k);
                     rvec_dec(fshift[CENTRAL], f_k);
                 }
@@ -2366,15 +2260,13 @@ real angres(int             nbonds,
             rvec4           f[],
             rvec            fshift[],
             const t_pbc*    pbc,
-            const t_graph*  g,
             real            lambda,
             real*           dvdlambda,
             const t_mdatoms gmx_unused* md,
             t_fcdata gmx_unused* fcd,
             int gmx_unused* global_atom_index)
 {
-    return low_angres<flavor>(nbonds, forceatoms, forceparams, x, f, fshift, pbc, g, lambda,
-                              dvdlambda, FALSE);
+    return low_angres<flavor>(nbonds, forceatoms, forceparams, x, f, fshift, pbc, lambda, dvdlambda, FALSE);
 }
 
 template<BondedKernelFlavor flavor>
@@ -2385,15 +2277,13 @@ real angresz(int             nbonds,
              rvec4           f[],
              rvec            fshift[],
              const t_pbc*    pbc,
-             const t_graph*  g,
              real            lambda,
              real*           dvdlambda,
              const t_mdatoms gmx_unused* md,
              t_fcdata gmx_unused* fcd,
              int gmx_unused* global_atom_index)
 {
-    return low_angres<flavor>(nbonds, forceatoms, forceparams, x, f, fshift, pbc, g, lambda,
-                              dvdlambda, TRUE);
+    return low_angres<flavor>(nbonds, forceatoms, forceparams, x, f, fshift, pbc, lambda, dvdlambda, TRUE);
 }
 
 template<BondedKernelFlavor flavor>
@@ -2404,7 +2294,6 @@ real dihres(int             nbonds,
             rvec4           f[],
             rvec            fshift[],
             const t_pbc*    pbc,
-            const t_graph*  g,
             real            lambda,
             real*           dvdlambda,
             const t_mdatoms gmx_unused* md,
@@ -2483,8 +2372,8 @@ real dihres(int             nbonds,
             {
                 *dvdlambda += kfac * ddp * ((dphiB - dphiA) - (phi0B - phi0A));
             }
-            do_dih_fup<flavor>(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, g, x,
-                               t1, t2, t3); /* 112		*/
+            do_dih_fup<flavor>(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, x, t1,
+                               t2, t3); /* 112		*/
         }
     }
     return vtot;
@@ -2498,7 +2387,6 @@ real unimplemented(int gmx_unused nbonds,
                    rvec4 gmx_unused f[],
                    rvec gmx_unused fshift[],
                    const t_pbc gmx_unused* pbc,
-                   const t_graph gmx_unused* g,
                    real gmx_unused lambda,
                    real gmx_unused* dvdlambda,
                    const t_mdatoms gmx_unused* md,
@@ -2516,7 +2404,6 @@ real restrangles(int             nbonds,
                  rvec4           f[],
                  rvec            fshift[],
                  const t_pbc*    pbc,
-                 const t_graph*  g,
                  real gmx_unused lambda,
                  real gmx_unused* dvdlambda,
                  const t_mdatoms gmx_unused* md,
@@ -2526,7 +2413,6 @@ real restrangles(int             nbonds,
     int    i, d, ai, aj, ak, type, m;
     int    t1, t2;
     real   v, vtot;
-    ivec   jt, dt_ij, dt_kj;
     rvec   f_i, f_j, f_k;
     double prefactor, ratio_ante, ratio_post;
     rvec   delta_ante, delta_post, vec_temp;
@@ -2551,7 +2437,7 @@ real restrangles(int             nbonds,
            real restrangles(int nbonds,
             const t_iatom forceatoms[],const t_iparams forceparams[],
             const rvec x[],rvec4 f[],rvec fshift[],
-            const t_pbc *pbc,const t_graph *g,
+            const t_pbc *pbc,
             real gmx_unused lambda,real gmx_unused *dvdlambda,
             const t_mdatoms gmx_unused *md,t_fcdata gmx_unused *fcd,
             int gmx_unused *global_atom_index)
@@ -2560,7 +2446,6 @@ real restrangles(int             nbonds,
            int t1, t2;
            rvec r_ij,r_kj;
            real v, vtot;
-           ivec jt,dt_ij,dt_kj;
            rvec f_i, f_j, f_k;
            real prefactor, ratio_ante, ratio_post;
            rvec delta_ante, delta_post, vec_temp;
@@ -2604,15 +2489,6 @@ real restrangles(int             nbonds,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
-            }
-
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k);
@@ -2630,7 +2506,6 @@ real restrdihs(int             nbonds,
                rvec4           f[],
                rvec            fshift[],
                const t_pbc*    pbc,
-               const t_graph*  g,
                real gmx_unused lambda,
                real gmx_unused* dvlambda,
                const t_mdatoms gmx_unused* md,
@@ -2640,7 +2515,6 @@ real restrdihs(int             nbonds,
     int  i, d, type, ai, aj, ak, al;
     rvec f_i, f_j, f_k, f_l;
     rvec dx_jl;
-    ivec jt, dt_ij, dt_kj, dt_lj;
     int  t1, t2, t3;
     real v, vtot;
     rvec delta_ante, delta_crnt, delta_post, vec_temp;
@@ -2712,17 +2586,7 @@ real restrdihs(int             nbonds,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                ivec_sub(SHIFT_IVEC(g, al), jt, dt_lj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
-                t3 = IVEC2IS(dt_lj);
-            }
-            else if (pbc)
+            if (pbc)
             {
                 t3 = pbc_rvec_sub(pbc, x[al], x[aj], dx_jl);
             }
@@ -2750,7 +2614,6 @@ real cbtdihs(int             nbonds,
              rvec4           f[],
              rvec            fshift[],
              const t_pbc*    pbc,
-             const t_graph*  g,
              real gmx_unused lambda,
              real gmx_unused* dvdlambda,
              const t_mdatoms gmx_unused* md,
@@ -2762,7 +2625,6 @@ real cbtdihs(int             nbonds,
     real v, vtot;
     rvec vec_temp;
     rvec f_i, f_j, f_k, f_l;
-    ivec jt, dt_ij, dt_kj, dt_lj;
     rvec dx_jl;
     rvec delta_ante, delta_crnt, delta_post;
     rvec f_phi_ai, f_phi_aj, f_phi_ak, f_phi_al;
@@ -2826,17 +2688,7 @@ real cbtdihs(int             nbonds,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                ivec_sub(SHIFT_IVEC(g, al), jt, dt_lj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
-                t3 = IVEC2IS(dt_lj);
-            }
-            else if (pbc)
+            if (pbc)
             {
                 t3 = pbc_rvec_sub(pbc, x[al], x[aj], dx_jl);
             }
@@ -2864,7 +2716,6 @@ rbdihs(int             nbonds,
        rvec4           f[],
        rvec            fshift[],
        const t_pbc*    pbc,
-       const t_graph*  g,
        real            lambda,
        real*           dvdlambda,
        const t_mdatoms gmx_unused* md,
@@ -2956,8 +2807,8 @@ rbdihs(int             nbonds,
 
         ddphi = -ddphi * sin_phi; /*  11		*/
 
-        do_dih_fup<flavor>(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, g, x, t1,
-                           t2, t3); /* 112		*/
+        do_dih_fup<flavor>(ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, x, t1, t2,
+                           t3); /* 112		*/
         vtot += v;
     }
     *dvdlambda += dvdl_term;
@@ -3008,15 +2859,14 @@ int cmap_setup_grid_index(int ip, int grid_spacing, int* ipm1, int* ipp1, int* i
 
 } // namespace
 
-real cmap_dihs(int                   nbonds,
-               const t_iatom         forceatoms[],
-               const t_iparams       forceparams[],
-               const gmx_cmap_t*     cmap_grid,
-               const rvec            x[],
-               rvec4                 f[],
-               rvec                  fshift[],
-               const struct t_pbc*   pbc,
-               const struct t_graph* g,
+real cmap_dihs(int                 nbonds,
+               const t_iatom       forceatoms[],
+               const t_iparams     forceparams[],
+               const gmx_cmap_t*   cmap_grid,
+               const rvec          x[],
+               rvec4               f[],
+               rvec                fshift[],
+               const struct t_pbc* pbc,
                real gmx_unused lambda,
                real gmx_unused* dvdlambda,
                const t_mdatoms gmx_unused* md,
@@ -3050,8 +2900,6 @@ real cmap_dihs(int                   nbonds,
     rvec a1, b1, a2, b2;
     rvec f1, g1, h1, f2, g2, h2;
     rvec dtf1, dtg1, dth1, dtf2, dtg2, dth2;
-    ivec jt1, dt1_ij, dt1_kj, dt1_lj;
-    ivec jt2, dt2_ij, dt2_kj, dt2_lj;
 
     int loop_index[4][4] = { { 0, 4, 8, 12 }, { 1, 5, 9, 13 }, { 2, 6, 10, 14 }, { 3, 7, 11, 15 } };
 
@@ -3356,25 +3204,7 @@ real cmap_dihs(int                   nbonds,
         /* Shift forces */
         if (fshift != nullptr)
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, a1j), jt1);
-                ivec_sub(SHIFT_IVEC(g, a1i), jt1, dt1_ij);
-                ivec_sub(SHIFT_IVEC(g, a1k), jt1, dt1_kj);
-                ivec_sub(SHIFT_IVEC(g, a1l), jt1, dt1_lj);
-                t11 = IVEC2IS(dt1_ij);
-                t21 = IVEC2IS(dt1_kj);
-                t31 = IVEC2IS(dt1_lj);
-
-                copy_ivec(SHIFT_IVEC(g, a2j), jt2);
-                ivec_sub(SHIFT_IVEC(g, a2i), jt2, dt2_ij);
-                ivec_sub(SHIFT_IVEC(g, a2k), jt2, dt2_kj);
-                ivec_sub(SHIFT_IVEC(g, a2l), jt2, dt2_lj);
-                t12 = IVEC2IS(dt2_ij);
-                t22 = IVEC2IS(dt2_kj);
-                t32 = IVEC2IS(dt2_lj);
-            }
-            else if (pbc)
+            if (pbc)
             {
                 t31 = pbc_rvec_sub(pbc, x[a1l], x[a1j], h1);
                 t32 = pbc_rvec_sub(pbc, x[a2l], x[a2j], h2);
@@ -3441,7 +3271,6 @@ real g96bonds(int             nbonds,
               rvec4           f[],
               rvec            fshift[],
               const t_pbc*    pbc,
-              const t_graph*  g,
               real            lambda,
               real*           dvdlambda,
               const t_mdatoms gmx_unused* md,
@@ -3468,8 +3297,8 @@ real g96bonds(int             nbonds,
 
         vtot += 0.5 * vbond; /* 1*/
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /* 44 TOTAL	*/
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /* 44 TOTAL	*/
     return vtot;
 }
 
@@ -3494,7 +3323,6 @@ real g96angles(int             nbonds,
                rvec4           f[],
                rvec            fshift[],
                const t_pbc*    pbc,
-               const t_graph*  g,
                real            lambda,
                real*           dvdlambda,
                const t_mdatoms gmx_unused* md,
@@ -3506,7 +3334,6 @@ real g96angles(int             nbonds,
     real cos_theta, dVdt, va, vtot;
     real rij_1, rij_2, rkj_1, rkj_2, rijrkj_1;
     rvec f_i, f_j, f_k;
-    ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds);)
@@ -3541,15 +3368,6 @@ real g96angles(int             nbonds,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
-
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
-            }
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k); /* 9 */
@@ -3567,7 +3385,6 @@ real cross_bond_bond(int             nbonds,
                      rvec4           f[],
                      rvec            fshift[],
                      const t_pbc*    pbc,
-                     const t_graph*  g,
                      real gmx_unused lambda,
                      real gmx_unused* dvdlambda,
                      const t_mdatoms gmx_unused* md,
@@ -3581,7 +3398,6 @@ real cross_bond_bond(int             nbonds,
     rvec r_ij, r_kj;
     real vtot, vrr, s1, s2, r1, r2, r1e, r2e, krr;
     rvec f_i, f_j, f_k;
-    ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds);)
@@ -3624,15 +3440,6 @@ real cross_bond_bond(int             nbonds,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
-
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
-            }
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k); /* 9 */
@@ -3650,7 +3457,6 @@ real cross_bond_angle(int             nbonds,
                       rvec4           f[],
                       rvec            fshift[],
                       const t_pbc*    pbc,
-                      const t_graph*  g,
                       real gmx_unused lambda,
                       real gmx_unused* dvdlambda,
                       const t_mdatoms gmx_unused* md,
@@ -3664,7 +3470,6 @@ real cross_bond_angle(int             nbonds,
     rvec r_ij, r_kj, r_ik;
     real vtot, vrt, s1, s2, s3, r1, r2, r3, r1e, r2e, r3e, krt, k1, k2, k3;
     rvec f_i, f_j, f_k;
-    ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds);)
@@ -3717,15 +3522,6 @@ real cross_bond_angle(int             nbonds,
 
         if (computeVirial(flavor))
         {
-            if (g)
-            {
-                copy_ivec(SHIFT_IVEC(g, aj), jt);
-
-                ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                t1 = IVEC2IS(dt_ij);
-                t2 = IVEC2IS(dt_kj);
-            }
             rvec_inc(fshift[t1], f_i);
             rvec_inc(fshift[CENTRAL], f_j);
             rvec_inc(fshift[t2], f_k); /* 9 */
@@ -3792,7 +3588,6 @@ real tab_bonds(int             nbonds,
                rvec4           f[],
                rvec            fshift[],
                const t_pbc*    pbc,
-               const t_graph*  g,
                real            lambda,
                real*           dvdlambda,
                const t_mdatoms gmx_unused* md,
@@ -3828,8 +3623,8 @@ real tab_bonds(int             nbonds,
         vtot += vbond;              /* 1*/
         fbond *= gmx::invsqrt(dr2); /*   6		*/
 
-        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, g, fshift); /* 15 */
-    }                                                                  /* 62 TOTAL	*/
+        spreadBondForces<flavor>(fbond, dx, ai, aj, f, ki, fshift); /* 15 */
+    }                                                               /* 62 TOTAL	*/
     return vtot;
 }
 
@@ -3841,7 +3636,6 @@ real tab_angles(int             nbonds,
                 rvec4           f[],
                 rvec            fshift[],
                 const t_pbc*    pbc,
-                const t_graph*  g,
                 real            lambda,
                 real*           dvdlambda,
                 const t_mdatoms gmx_unused* md,
@@ -3851,7 +3645,6 @@ real tab_angles(int             nbonds,
     int  i, ai, aj, ak, t1, t2, type, table;
     rvec r_ij, r_kj;
     real cos_theta, cos_theta2, theta, dVdt, va, vtot;
-    ivec jt, dt_ij, dt_kj;
 
     vtot = 0.0;
     for (i = 0; (i < nbonds);)
@@ -3899,15 +3692,6 @@ real tab_angles(int             nbonds,
 
             if (computeVirial(flavor))
             {
-                if (g)
-                {
-                    copy_ivec(SHIFT_IVEC(g, aj), jt);
-
-                    ivec_sub(SHIFT_IVEC(g, ai), jt, dt_ij);
-                    ivec_sub(SHIFT_IVEC(g, ak), jt, dt_kj);
-                    t1 = IVEC2IS(dt_ij);
-                    t2 = IVEC2IS(dt_kj);
-                }
                 rvec_inc(fshift[t1], f_i);
                 rvec_inc(fshift[CENTRAL], f_j);
                 rvec_inc(fshift[t2], f_k);
@@ -3925,7 +3709,6 @@ real tab_dihs(int             nbonds,
               rvec4           f[],
               rvec            fshift[],
               const t_pbc*    pbc,
-              const t_graph*  g,
               real            lambda,
               real*           dvdlambda,
               const t_mdatoms gmx_unused* md,
@@ -3955,7 +3738,7 @@ real tab_dihs(int             nbonds,
                                  forceparams[type].tab.kB, phi + M_PI, lambda, &vpd, &ddphi);
 
         vtot += vpd;
-        do_dih_fup<flavor>(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, g, x, t1,
+        do_dih_fup<flavor>(ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, f, fshift, pbc, x, t1,
                            t2, t3); /* 112	*/
 
     } /* 227 TOTAL  */
@@ -4080,25 +3863,24 @@ const gmx::EnumerationArray<BondedKernelFlavor, std::array<BondedInteractions, F
 
 } // namespace
 
-real calculateSimpleBond(const int            ftype,
-                         const int            numForceatoms,
-                         const t_iatom        forceatoms[],
-                         const t_iparams      forceparams[],
-                         const rvec           x[],
-                         rvec4                f[],
-                         rvec                 fshift[],
-                         const struct t_pbc*  pbc,
-                         const struct t_graph gmx_unused* g,
-                         const real                       lambda,
-                         real*                            dvdlambda,
-                         const t_mdatoms*                 md,
-                         t_fcdata*                        fcd,
+real calculateSimpleBond(const int           ftype,
+                         const int           numForceatoms,
+                         const t_iatom       forceatoms[],
+                         const t_iparams     forceparams[],
+                         const rvec          x[],
+                         rvec4               f[],
+                         rvec                fshift[],
+                         const struct t_pbc* pbc,
+                         const real          lambda,
+                         real*               dvdlambda,
+                         const t_mdatoms*    md,
+                         t_fcdata*           fcd,
                          int gmx_unused*          global_atom_index,
                          const BondedKernelFlavor bondedKernelFlavor)
 {
     const BondedInteractions& bonded = c_bondedInteractionFunctionsPerFlavor[bondedKernelFlavor][ftype];
 
-    real v = bonded.function(numForceatoms, forceatoms, forceparams, x, f, fshift, pbc, g, lambda,
+    real v = bonded.function(numForceatoms, forceatoms, forceparams, x, f, fshift, pbc, lambda,
                              dvdlambda, md, fcd, global_atom_index);
 
     return v;

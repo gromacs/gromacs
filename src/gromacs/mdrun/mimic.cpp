@@ -116,7 +116,6 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mimic/communicator.h"
 #include "gromacs/mimic/utilities.h"
-#include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
@@ -151,7 +150,6 @@ void gmx::LegacySimulator::do_mimic()
     rvec                        mu_tot;
     PaddedHostVector<gmx::RVec> f{};
     gmx_global_stat_t           gstat;
-    t_graph*                    graph = nullptr;
     gmx_shellfc_t*              shellfc;
 
     double cycles;
@@ -276,7 +274,7 @@ void gmx::LegacySimulator::do_mimic()
         /* Copy the pointer to the global state */
         state = state_global;
 
-        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr, &graph, mdAtoms, constr, vsite, shellfc);
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, &top, fr, mdAtoms, constr, vsite, shellfc);
     }
 
     auto mdatoms = mdAtoms->mdatoms();
@@ -421,8 +419,8 @@ void gmx::LegacySimulator::do_mimic()
                                 imdSession, pull_work, bNS, force_flags, &top, constr, enerd, fcd,
                                 state->natoms, state->x.arrayRefWithPadding(),
                                 state->v.arrayRefWithPadding(), state->box, state->lambda, &state->hist,
-                                f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, graph,
-                                shellfc, fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
+                                f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, shellfc,
+                                fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
         }
         else
         {
@@ -435,8 +433,8 @@ void gmx::LegacySimulator::do_mimic()
             gmx_edsam* ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation, imdSession, pull_work, step, nrnb,
                      wcycle, &top, state->box, state->x.arrayRefWithPadding(), &state->hist,
-                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd, state->lambda, graph,
-                     fr, runScheduleWork, vsite, mu_tot, t, ed, GMX_FORCE_NS | force_flags,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd, state->lambda, fr,
+                     runScheduleWork, vsite, mu_tot, t, ed, GMX_FORCE_NS | force_flags,
                      ddBalanceRegionHandler);
         }
 
@@ -455,27 +453,12 @@ void gmx::LegacySimulator::do_mimic()
 
         stopHandler->setSignal();
 
-        if (graph)
-        {
-            /* Need to unshift here */
-            unshift_self(graph, state->box, as_rvec_array(state->x.data()));
-        }
-
         if (vsite != nullptr)
         {
             wallcycle_start(wcycle, ewcVSITECONSTR);
-            if (graph != nullptr)
-            {
-                shift_self(graph, state->box, as_rvec_array(state->x.data()));
-            }
             construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t,
                              as_rvec_array(state->v.data()), top.idef.iparams, top.idef.il,
                              fr->pbcType, fr->bMolPBC, cr, state->box);
-
-            if (graph != nullptr)
-            {
-                unshift_self(graph, state->box, as_rvec_array(state->x.data()));
-            }
             wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
 

@@ -50,7 +50,6 @@
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct t_commrec;
-struct t_graph;
 struct InteractionList;
 struct t_mdatoms;
 struct t_nrnb;
@@ -131,7 +130,6 @@ void spread_vsite_f(const gmx_vsite_t*            vsite,
                     const InteractionDefinitions& idef,
                     PbcType                       pbcType,
                     gmx_bool                      bMolPBC,
-                    const t_graph*                g,
                     const matrix                  box,
                     const t_commrec*              cr,
                     gmx_wallcycle*                wcycle);

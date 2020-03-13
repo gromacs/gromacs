@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,13 +37,12 @@
 
 #include "gromacs/math/vectypes.h"
 
-struct t_graph;
 struct t_pbc;
 
 void calc_vir(int nxf, const rvec x[], const rvec f[], tensor vir, bool bScrewPBC, const matrix box);
 /* Calculate virial for nxf atoms, and add it to vir */
 
-void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir, const t_graph* g, const rvec shift_vec[]);
+void f_calc_vir(int i0, int i1, const rvec x[], const rvec f[], tensor vir, const rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
 #endif

@@ -59,7 +59,6 @@ struct gmx_edsam;
 struct gmx_enfrot;
 struct gmx_multisim_t;
 class history_t;
-struct t_graph;
 
 namespace gmx
 {
@@ -129,17 +128,16 @@ void ForceElement::elementSetup()
 void ForceElement::run(Step step, Time time, unsigned int flags)
 {
     // Disabled functionality
-    Awh*            awh   = nullptr;
-    gmx_edsam*      ed    = nullptr;
-    gmx_multisim_t* ms    = nullptr;
-    t_graph*        graph = nullptr;
+    Awh*            awh = nullptr;
+    gmx_edsam*      ed  = nullptr;
+    gmx_multisim_t* ms  = nullptr;
 
     if (!DOMAINDECOMP(cr_) && (flags & GMX_FORCE_NS) && inputrecDynamicBox(inputrec_))
     {
         // TODO: Correcting the box is done in DomDecHelper (if using DD) or here (non-DD simulations).
         //       Think about unifying this responsibility, could this be done in one place?
         auto box = statePropagatorData_->box();
-        correct_box(fplog_, step, box, graph);
+        correct_box(fplog_, step, box);
     }
 
     /* The coordinates (x) are shifted (to get whole molecules)
@@ -159,7 +157,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
 
     do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation_, imdSession_, pull_work_, step,
              nrnb_, wcycle_, localTopology_, box, x, hist, forces, force_vir, mdAtoms_->mdatoms(),
-             energyElement_->enerdata(), fcd_, lambda, graph, fr_, runScheduleWork_, vsite_,
+             energyElement_->enerdata(), fcd_, lambda, fr_, runScheduleWork_, vsite_,
              energyElement_->muTot(), time, ed, static_cast<int>(flags), ddBalanceRegionHandler_);
     energyElement_->addToForceVirial(force_vir, step);
 }
