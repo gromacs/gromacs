@@ -60,11 +60,12 @@ namespace
 TEST(NBlibTest, GmxForceCalculatorCanCompute)
 {
     ArgonSimulationStateBuilder argonSystemBuilder;
-    SimulationState             simState       = argonSystemBuilder.setupSimulationState();
-    NBKernelOptions             options        = NBKernelOptions();
-    options.nbnxmSimd                          = BenchMarkKernels::SimdNo;
-    GmxSetupDirector gmxSetupDirector;
-    std::unique_ptr<GmxForceCalculator> gmxForceCalculator = gmxSetupDirector.setupGmxForceCalculator(simState, options);
+    SimulationState             simState = argonSystemBuilder.setupSimulationState();
+    NBKernelOptions             options  = NBKernelOptions();
+    options.nbnxmSimd                    = BenchMarkKernels::SimdNo;
+    GmxSetupDirector                    gmxSetupDirector;
+    std::unique_ptr<GmxForceCalculator> gmxForceCalculator =
+            gmxSetupDirector.setupGmxForceCalculator(simState, options);
     EXPECT_NO_THROW(gmxForceCalculator->compute());
 }
 

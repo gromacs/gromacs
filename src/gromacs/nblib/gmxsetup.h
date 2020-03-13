@@ -99,7 +99,7 @@ public:
 
     const std::vector<int>& particleInfoAllVdv() const
     {
-        return const_cast<std::vector<int> &>(particleInfoAllVdw_);
+        return const_cast<std::vector<int>&>(particleInfoAllVdw_);
     }
 
 private:
@@ -113,9 +113,9 @@ private:
 class GmxSetupDirector
 {
 public:
-
     //! Sets up and returns a GmxForceCalculator
-    std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator(const SimulationState& system, const NBKernelOptions& options);
+    std::unique_ptr<GmxForceCalculator> setupGmxForceCalculator(const SimulationState& system,
+                                                                const NBKernelOptions& options);
 };
 
 } // namespace nblib

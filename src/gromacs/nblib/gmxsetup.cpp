@@ -303,8 +303,8 @@ void NbvSetupUtil::setupForceRec(t_forcerec& forcerec, const matrix& box)
     calc_shifts(box, forcerec.shift_vec);
 }
 
-std::unique_ptr<GmxForceCalculator>
-GmxSetupDirector::setupGmxForceCalculator(const SimulationState &system, const NBKernelOptions &options)
+std::unique_ptr<GmxForceCalculator> GmxSetupDirector::setupGmxForceCalculator(const SimulationState& system,
+                                                                              const NBKernelOptions& options)
 {
     NbvSetupUtil nbvSetupUtil;
     nbvSetupUtil.setExecutionContext(options);
