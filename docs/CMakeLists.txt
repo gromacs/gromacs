@@ -492,22 +492,27 @@ if (SPHINX_FOUND)
         # in this context?
     endif ()
 
-    gmx_configure_version_file(conf.cmakein.py ${SPHINX_CONFIG_FILE}
-                               EXTRA_VARS
-                               SPHINX_EXTENSION_PATH RELENG_PATH
-                               IMAGE_CONVERT_STRING
-                               EXPECTED_DOXYGEN_VERSION
-                               EXPECTED_SPHINX_VERSION
-                               CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
-                               REQUIRED_OPENCL_MIN_VERSION
-                               REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
-                               SOURCE_MD5SUM REGRESSIONTEST_MD5SUM_STRING
-                               GMX_TNG_MINIMUM_REQUIRED_VERSION
-                               GMX_LMFIT_REQUIRED_VERSION
-                               GMX_MANUAL_DOI_STRING
-                               GMX_SOURCE_DOI_STRING
-                               GMXAPI_PYTHON_STAGING_DIR
-                               COMMENT "Configuring Sphinx configuration file")
+    gmx_configure_version_file(
+        conf.cmakein.py ${SPHINX_CONFIG_FILE}
+        EXTRA_VARS
+            SPHINX_EXTENSION_PATH
+            RELENG_PATH
+            IMAGE_CONVERT_STRING
+            EXPECTED_DOXYGEN_VERSION
+            EXPECTED_SPHINX_VERSION
+            CMAKE_MINIMUM_REQUIRED_VERSION
+            REQUIRED_CUDA_VERSION
+            REQUIRED_OPENCL_MIN_VERSION
+            REQUIRED_CUDA_COMPUTE_CAPABILITY
+            REGRESSIONTEST_VERSION
+            SOURCE_MD5SUM
+            REGRESSIONTEST_MD5SUM_STRING
+            GMX_TNG_MINIMUM_REQUIRED_VERSION
+            GMX_LMFIT_REQUIRED_VERSION
+            GMX_MANUAL_DOI_STRING
+            GMX_SOURCE_DOI_STRING
+            GMXAPI_PYTHON_STAGING_DIR
+        COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
     if (EXISTS ${RELENG_PATH}/docs/FileList.cmake)
