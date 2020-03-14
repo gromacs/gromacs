@@ -128,8 +128,6 @@ typedef struct t_mdatoms
     unsigned short* cU2;
     //! Group index for orientation restraints
     unsigned short* cORF;
-    //! QMMM atoms
-    gmx_bool* bQM;
     //! Number of atoms on this processor. TODO is this still used?
     int homenr;
     //! The lambda value used to create the contents of the struct

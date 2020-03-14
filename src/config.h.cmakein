@@ -182,18 +182,6 @@
 /* Use if we cannot rename checkpoints */
 #cmakedefine01 GMX_NO_RENAME
 
-/* Use (modified) Gamess-UK for QM-MM calculations */
-#cmakedefine01 GMX_QMMM_GAMESS
-
-/* Use (modified) Gaussian0x for QM-MM calculations */
-#cmakedefine01 GMX_QMMM_GAUSSIAN
-
-/* Use (modified) Mopac 7 for QM-MM calculations */
-#cmakedefine01 GMX_QMMM_MOPAC
-
-/* Use ORCA for QM-MM calculations */
-#cmakedefine01 GMX_QMMM_ORCA
-
 /* Use sub-counters */
 #cmakedefine01 GMX_CYCLE_SUBCOUNTERS
 

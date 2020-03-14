@@ -54,7 +54,6 @@ struct MoleculeInformation;
 struct InteractionsOfType;
 struct t_symtab;
 struct warninp;
-enum struct GmxQmmmMode;
 typedef warninp* warninp_t;
 
 namespace gmx

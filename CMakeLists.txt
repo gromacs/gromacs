@@ -259,12 +259,6 @@ gmx_dependent_option(
 mark_as_advanced(GMX_BUILD_OWN_FFTW)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
 
-gmx_option_multichoice(
-    GMX_QMMM_PROGRAM
-    "QM package for QM/MM"
-    None
-    none gaussian mopac gamess orca)
-
 gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
 
@@ -691,22 +685,6 @@ endif()
 # for SIMD math operations.
 include(gmxManageSimd)
 gmx_manage_simd()
-
-# Process QM/MM Settings
-if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
-    set(GMX_QMMM_GAUSSIAN 1)
-elseif(${GMX_QMMM_PROGRAM} STREQUAL "MOPAC")
-    set(GMX_QMMM_MOPAC 1)
-elseif(${GMX_QMMM_PROGRAM} STREQUAL "GAMESS")
-    set(GMX_QMMM_GAMESS 1)
-elseif(${GMX_QMMM_PROGRAM} STREQUAL "ORCA")
-    set(GMX_QMMM_ORCA 1)
-elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
-    # nothing to do
-else()
-    gmx_invalid_option_value(GMX_QMMM_PROGRAM)
-endif()
-
 
 ##################################################
 # Process FFT library settings

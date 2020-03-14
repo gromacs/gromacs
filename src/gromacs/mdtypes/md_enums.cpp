@@ -176,17 +176,6 @@ const char* eSwapTypes_names[eSwapTypesNR + 1] = { "no", "X", "Y", "Z", nullptr 
 
 const char* eSwapFixedGrp_names[eSwapFixedGrpNR + 1] = { "Split0", "Split1", "Solvent", nullptr };
 
-
-const char* eQMmethod_names[eQMmethodNR + 1] = { "AM1",      "PM3",    "RHF",  "UHF",
-                                                 "DFT",      "B3LYP",  "MP2",  "CASSCF",
-                                                 "B3LYPLAN", "DIRECT", nullptr };
-
-const char* eQMbasis_names[eQMbasisNR + 1] = { "STO3G",   "STO-3G", "3-21G", "3-21G*",
-                                               "3-21+G*", "6-21G",  "6-31G", "6-31G*",
-                                               "6-31+G*", "6-311G", nullptr };
-
-const char* eQMMMscheme_names[eQMMMschemeNR + 1] = { "normal", "ONIOM", nullptr };
-
 const char* gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR + 1] = {
     "Particle-Particle", "Water3-Particle", "Water3-Water3", "Water4-Particle",
     "Water4-Water4",     "CG-CG",           nullptr

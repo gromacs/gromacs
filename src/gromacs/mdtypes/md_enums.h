@@ -771,58 +771,6 @@ enum
 //! String for swap group splitting
 extern const char* eSwapFixedGrp_names[eSwapFixedGrpNR + 1];
 
-//! QMMM methods.
-enum
-{
-    eQMmethodAM1,
-    eQMmethodPM3,
-    eQMmethodRHF,
-    eQMmethodUHF,
-    eQMmethodDFT,
-    eQMmethodB3LYP,
-    eQMmethodMP2,
-    eQMmethodCASSCF,
-    eQMmethodB3LYPLAN,
-    eQMmethodDIRECT,
-    eQMmethodNR
-};
-//! String corresponding to QMMM methods
-extern const char* eQMmethod_names[eQMmethodNR + 1];
-//! Macro to pick QMMM method name
-#define EQMMETHOD(e) enum_name(e, eQMmethodNR, eQMmethod_names)
-
-//! QMMM basis function for QM part
-enum
-{
-    eQMbasisSTO3G,
-    eQMbasisSTO3G2,
-    eQMbasis321G,
-    eQMbasis321Gp,
-    eQMbasis321dGp,
-    eQMbasis621G,
-    eQMbasis631G,
-    eQMbasis631Gp,
-    eQMbasis631dGp,
-    eQMbasis6311G,
-    eQMbasisNR
-};
-//! Name for QMMM basis function
-extern const char* eQMbasis_names[eQMbasisNR + 1];
-//! Macro to pick right basis function string
-#define EQMBASIS(e) enum_name(e, eQMbasisNR, eQMbasis_names)
-
-//! QMMM scheme
-enum
-{
-    eQMMMschemenormal,
-    eQMMMschemeoniom,
-    eQMMMschemeNR
-};
-//! QMMMM scheme names
-extern const char* eQMMMscheme_names[eQMMMschemeNR + 1];
-//! Macro to pick QMMMM scheme name
-#define EQMMMSCHEME(e) enum_name(e, eQMMMschemeNR, eQMMMscheme_names)
-
 /*! \brief Neighborlist geometry type.
  *
  * Kernels will compute interactions between two particles,
@@ -887,10 +835,4 @@ enum gmx_nblist_interaction_type
 //! String corresponding to interactions in neighborlist code
 extern const char* gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR + 1];
 
-
-//! \brief QM/MM mode
-enum struct GmxQmmmMode
-{
-    GMX_QMMM_MIMIC
-};
 #endif /* GMX_MDTYPES_MD_ENUMS_H */

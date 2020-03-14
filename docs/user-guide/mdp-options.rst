@@ -2983,101 +2983,15 @@ Electric fields
 Mixed quantum/classical molecular dynamics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. mdp:: QMMM-grps
+
+   groups to be descibed at the QM level for MiMiC QM/MM
+
 .. MDP:: QMMM
 
    .. mdp-value:: no
 
-      No QM/MM.
-
-   .. mdp-value:: yes
-
-      Do a QM/MM simulation. Several groups can be described at
-      different QM levels separately. These are specified in the
-      :mdp:`QMMM-grps` field separated by spaces. The level of *ab
-      initio* theory at which the groups are described is specified by
-      :mdp:`QMmethod` and :mdp:`QMbasis` Fields. Describing the
-      groups at different levels of theory is only possible with the
-      ONIOM QM/MM scheme, specified by :mdp:`QMMMscheme`.
-
-.. mdp:: QMMM-grps
-
-   groups to be descibed at the QM level (works also in case of MiMiC QM/MM)
-
-.. mdp:: QMMMscheme
-
-   .. mdp-value:: normal
-
-      normal QM/MM. There can only be one :mdp:`QMMM-grps` that is
-      modelled at the :mdp:`QMmethod` and :mdp:`QMbasis` level of
-      *ab initio* theory. The rest of the system is described at the
-      MM level. The QM and MM subsystems interact as follows: MM point
-      charges are included in the QM one-electron hamiltonian and all
-      Lennard-Jones interactions are described at the MM level.
-
-   .. mdp-value:: ONIOM
-
-      The interaction between the subsystem is described using the
-      ONIOM method by Morokuma and co-workers. There can be more than
-      one :mdp:`QMMM-grps` each modeled at a different level of QM
-      theory (:mdp:`QMmethod` and :mdp:`QMbasis`).
-
-.. mdp:: QMmethod
-
-   (RHF)
-   Method used to compute the energy and gradients on the QM
-   atoms. Available methods are AM1, PM3, RHF, UHF, DFT, B3LYP, MP2,
-   CASSCF, and MMVB. For CASSCF, the number of electrons and orbitals
-   included in the active space is specified by :mdp:`CASelectrons`
-   and :mdp:`CASorbitals`.
-
-.. mdp:: QMbasis
-
-   (STO-3G)
-   Basis set used to expand the electronic wavefuntion. Only Gaussian
-   basis sets are currently available, *i.e.* ``STO-3G, 3-21G, 3-21G*,
-   3-21+G*, 6-21G, 6-31G, 6-31G*, 6-31+G*,`` and ``6-311G``.
-
-.. mdp:: QMcharge
-
-   (0) [integer]
-   The total charge in ``e`` of the :mdp:`QMMM-grps`. In case there are
-   more than one :mdp:`QMMM-grps`, the total charge of each ONIOM
-   layer needs to be specified separately.
-
-.. mdp:: QMmult
-
-   (1) [integer]
-   The multiplicity of the :mdp:`QMMM-grps`. In case there are more
-   than one :mdp:`QMMM-grps`, the multiplicity of each ONIOM layer
-   needs to be specified separately.
-
-.. mdp:: CASorbitals
-
-   (0) [integer]
-   The number of orbitals to be included in the active space when
-   doing a CASSCF computation.
-
-.. mdp:: CASelectrons
-
-   (0) [integer]
-   The number of electrons to be included in the active space when
-   doing a CASSCF computation.
-
-.. MDP:: SH
-
-   .. mdp-value:: no
-
-      No surface hopping. The system is always in the electronic
-      ground-state.
-
-   .. mdp-value:: yes
-
-      Do a QM/MM MD simulation on the excited state-potential energy
-      surface and enforce a *diabatic* hop to the ground-state when
-      the system hits the conical intersection hyperline in the course
-      the simulation. This option only works in combination with the
-      CASSCF method.
-
+      QM/MM is no longer supported via these .mdp options. For MiMic, use no here.
 
 Computational Electrophysiology
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

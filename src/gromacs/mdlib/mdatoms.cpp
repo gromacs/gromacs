@@ -93,7 +93,6 @@ MDAtoms::~MDAtoms()
     sfree(mdatoms_->bPerturbed);
     sfree(mdatoms_->cU1);
     sfree(mdatoms_->cU2);
-    sfree(mdatoms_->bQM);
 }
 
 void MDAtoms::resize(int newSize)
@@ -299,11 +298,6 @@ void atoms2md(const gmx_mtop_t* mtop, const t_inputrec* ir, int nindex, const in
         if (!mtop->groups.groupNumbers[SimulationAtomGroupType::User2].empty())
         {
             srenew(md->cU2, md->nalloc);
-        }
-
-        if (ir->bQMMM)
-        {
-            srenew(md->bQM, md->nalloc);
         }
     }
 
