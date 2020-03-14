@@ -51,7 +51,31 @@ import datetime
 import os
 import sys
 
-exec(open('conf-vars.py').read())
+# The following definitions are completed via CMake machinery.
+gmx_sphinx_extension_path = '@SPHINX_EXTENSION_PATH@'
+gmxapi_staging_path = '@GMXAPI_PYTHON_STAGING_DIR@'
+releng_path = '@RELENG_PATH@'
+gmx_version_string = '@GMX_VERSION_STRING@'
+gmx_version_string_full = '@GMX_VERSION_STRING_FULL@'
+regressiontest_version = '@REGRESSIONTEST_VERSION@'
+gmx_min_sphinx = '@EXPECTED_SPHINX_VERSION@'
+gmx_image_convert = '@IMAGE_CONVERT_STRING@'
+variables = [
+    ('EXPECTED_DOXYGEN_VERSION', '@EXPECTED_DOXYGEN_VERSION@'),
+    ('EXPECTED_SPHINX_VERSION', '@EXPECTED_SPHINX_VERSION@'),
+    ('CMAKE_MINIMUM_REQUIRED_VERSION', '@CMAKE_MINIMUM_REQUIRED_VERSION@'),
+    ('REQUIRED_CUDA_VERSION', '@REQUIRED_CUDA_VERSION@'),
+    ('REQUIRED_CUDA_COMPUTE_CAPABILITY', '@REQUIRED_CUDA_COMPUTE_CAPABILITY@'),
+    ('REQUIRED_OPENCL_MIN_VERSION', '@REQUIRED_OPENCL_MIN_VERSION@'),
+    ('SOURCE_MD5SUM', '@SOURCE_MD5SUM@'),
+    ('REGRESSIONTEST_MD5SUM', '@REGRESSIONTEST_MD5SUM_STRING@'),
+    ('GMX_TNG_MINIMUM_REQUIRED_VERSION', '@GMX_TNG_MINIMUM_REQUIRED_VERSION@'),
+    ('GMX_LMFIT_REQUIRED_VERSION', '@GMX_LMFIT_REQUIRED_VERSION@'),
+    ('GMX_MANUAL_DOI_STRING', '@GMX_MANUAL_DOI_STRING@'),
+    ('GMX_SOURCE_DOI_STRING', '@GMX_SOURCE_DOI_STRING@')
+]
+# End of build-time substitutions.
+
 sys.path.append(gmx_sphinx_extension_path)
 if releng_path and os.path.isdir(releng_path):
     sys.path.append(releng_path)
