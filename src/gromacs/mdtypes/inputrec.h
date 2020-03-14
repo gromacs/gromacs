@@ -99,26 +99,6 @@ struct t_grpopts
     /* QMMM stuff */
     //! Number of QM groups
     int ngQM;
-    //! Level of theory in the QM calculation
-    int* QMmethod;
-    //! Basisset in the QM calculation
-    int* QMbasis;
-    //! Total charge in the QM region
-    int* QMcharge;
-    //! Spin multiplicicty in the QM region
-    int* QMmult;
-    //! Surface hopping (diabatic hop only)
-    gmx_bool* bSH;
-    //! Number of orbiatls in the active space
-    int* CASorbitals;
-    //! Number of electrons in the active space
-    int* CASelectrons;
-    //! At which gap (A.U.) the SA is switched on
-    real* SAon;
-    //! At which gap (A.U.) the SA is switched off
-    real* SAoff;
-    //! In how many steps SA goes from 1-1 to 0.5-0.5
-    int* SAsteps;
 };
 
 struct t_simtemp
@@ -572,12 +552,6 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     t_grpopts opts;
     //! QM/MM calculation
     gmx_bool bQMMM;
-    //! Constraints on QM bonds
-    int QMconstraints;
-    //! Scheme: ONIOM or normal
-    int QMMMscheme;
-    //! Factor for scaling the MM charges in QM calc.
-    real scalefactor;
 
     /* Fields for removed features go here (better caching) */
     //! Whether AdResS is enabled - always false if a valid .tpr was read

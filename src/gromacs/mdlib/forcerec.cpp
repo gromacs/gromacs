@@ -1328,7 +1328,6 @@ void init_forcerec(FILE*                            fp,
     // QM/MM initialization if requested
     if (ir->bQMMM)
     {
-
         gmx_incons("QM/MM was requested, but is no longer available in GROMACS");
     }
 

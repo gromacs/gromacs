@@ -483,20 +483,6 @@ void atoms2md(const gmx_mtop_t* mtop, const t_inputrec* ir, int nindex, const in
             {
                 md->cU2[i] = groups.groupNumbers[SimulationAtomGroupType::User2][ag];
             }
-
-            if (ir->bQMMM)
-            {
-                if (groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].empty()
-                    || groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics][ag]
-                               < groups.groups[SimulationAtomGroupType::QuantumMechanics].size() - 1)
-                {
-                    md->bQM[i] = TRUE;
-                }
-                else
-                {
-                    md->bQM[i] = FALSE;
-                }
-            }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }

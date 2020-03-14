@@ -297,16 +297,6 @@ void done_inputrec(t_inputrec* ir)
     sfree(ir->opts.tau_t);
     sfree(ir->opts.acc);
     sfree(ir->opts.nFreeze);
-    sfree(ir->opts.QMmethod);
-    sfree(ir->opts.QMbasis);
-    sfree(ir->opts.QMcharge);
-    sfree(ir->opts.QMmult);
-    sfree(ir->opts.bSH);
-    sfree(ir->opts.CASorbitals);
-    sfree(ir->opts.CASelectrons);
-    sfree(ir->opts.SAon);
-    sfree(ir->opts.SAoff);
-    sfree(ir->opts.SAsteps);
     sfree(ir->opts.egp_flags);
     done_lambdas(ir->fepvals);
     sfree(ir->fepvals);
@@ -319,26 +309,6 @@ void done_inputrec(t_inputrec* ir)
         sfree(ir->pull);
     }
     delete ir->params;
-}
-
-static void pr_qm_opts(FILE* fp, int indent, const char* title, const t_grpopts* opts)
-{
-    fprintf(fp, "%s:\n", title);
-
-    pr_int(fp, indent, "ngQM", opts->ngQM);
-    if (opts->ngQM > 0)
-    {
-        pr_ivec(fp, indent, "QMmethod", opts->QMmethod, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "QMbasis", opts->QMbasis, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "QMcharge", opts->QMcharge, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "QMmult", opts->QMmult, opts->ngQM, FALSE);
-        pr_bvec(fp, indent, "SH", opts->bSH, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "CASorbitals", opts->CASorbitals, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "CASelectrons", opts->CASelectrons, opts->ngQM, FALSE);
-        pr_rvec(fp, indent, "SAon", opts->SAon, opts->ngQM, FALSE);
-        pr_rvec(fp, indent, "SAoff", opts->SAoff, opts->ngQM, FALSE);
-        pr_ivec(fp, indent, "SAsteps", opts->SAsteps, opts->ngQM, FALSE);
-    }
 }
 
 static void pr_grp_opts(FILE* out, int indent, const char* title, const t_grpopts* opts, gmx_bool bMDPformat)
@@ -925,10 +895,8 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
 
         /* QMMM */
         PS("QMMM", EBOOL(ir->bQMMM));
-        PI("QMconstraints", ir->QMconstraints);
-        PI("QMMMscheme", ir->QMMMscheme);
-        PR("MMChargeScaleFactor", ir->scalefactor);
-        pr_qm_opts(fp, indent, "qm-opts", &(ir->opts));
+        fprintf(fp, "%s:\n", "qm-opts");
+        pr_int(fp, indent, "ngQM", ir->opts.ngQM);
 
         /* CONSTRAINT OPTIONS */
         PS("constraint-algorithm", ECONSTRTYPE(ir->eConstrAlg));
