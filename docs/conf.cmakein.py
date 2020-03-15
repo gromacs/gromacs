@@ -52,6 +52,7 @@ import os
 import sys
 
 # The following definitions are completed via CMake machinery.
+gmx_containers_path = '@GMX_ADMIN_DIR@/containers'
 gmx_sphinx_extension_path = '@SPHINX_EXTENSION_PATH@'
 gmxapi_staging_path = '@GMXAPI_PYTHON_STAGING_DIR@'
 releng_path = '@RELENG_PATH@'
@@ -76,6 +77,7 @@ variables = [
 ]
 # End of build-time substitutions.
 
+sys.path.append(gmx_containers_path)
 sys.path.append(gmx_sphinx_extension_path)
 if releng_path and os.path.isdir(releng_path):
     sys.path.append(releng_path)
@@ -108,6 +110,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
     'gmxsphinx'
 ]
 extlinks = {'issue': ('https://redmine.gromacs.org/issues/%s',

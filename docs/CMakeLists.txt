@@ -331,6 +331,7 @@ if (SPHINX_FOUND)
         dev-manual/build-system.rst
         dev-manual/change-management.rst
         dev-manual/commitstyle.rst
+        dev-manual/containers.rst
         dev-manual/documentation-generation.rst
         dev-manual/contribute.rst
         dev-manual/doxygen.rst
@@ -498,6 +499,7 @@ if (SPHINX_FOUND)
             CMAKE_MINIMUM_REQUIRED_VERSION
             EXPECTED_DOXYGEN_VERSION
             EXPECTED_SPHINX_VERSION
+            GMX_ADMIN_DIR
             GMX_LMFIT_REQUIRED_VERSION
             GMX_MANUAL_DOI_STRING
             GMX_TNG_MINIMUM_REQUIRED_VERSION

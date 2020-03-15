@@ -11,3 +11,5 @@ performed by a Jenkins installation. With the resolution of :issue:`3272`,
 
     jenkins
     gitlab
+    containers
+

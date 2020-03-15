@@ -784,6 +784,8 @@ else()
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
     message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
 endif()
+# Allow `admin` directory to be easily conveyed to nested CMake commands.
+set(GMX_ADMIN_DIR ${CMAKE_SOURCE_DIR}/admin)
 
 ########################################################################
 # Specify install locations
