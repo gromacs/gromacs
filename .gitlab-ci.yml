@@ -44,7 +44,6 @@ include:
   # Mix-in helper job definitions of general utility.
   - local: '/admin/gitlab-ci/global.gitlab-ci.yml'
   # Various composable job definitions.
-  - local: '/admin/ci-templates/.build-template.yml'
   - local: '/admin/ci-templates/.gcc-before-script.yml'
   - local: '/admin/ci-templates/.gcc-build-template.yml'
   - local: '/admin/ci-templates/.clang-build-template.yml'
