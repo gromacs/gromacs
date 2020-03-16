@@ -171,18 +171,18 @@ void NbvSetupUtil::setNonBondedParameters(const std::vector<ParticleType>& parti
     }
 }
 
-void NbvSetupUtil::setAtomProperties(const Topology& topology)
+void NbvSetupUtil::setAtomProperties(const std::vector<int>& particleTypeIdOfAllParticles, const std::vector<real>& charges)
 {
     // We only use (read) the atom type and charge from mdatoms
     gmxForceCalculator_->mdatoms_.typeA =
-            const_cast<int*>(topology.getParticleTypeIdOfAllParticles().data());
-    gmxForceCalculator_->mdatoms_.chargeA = const_cast<real*>(topology.getCharges().data());
+            const_cast<int*>(particleTypeIdOfAllParticles.data());
+    gmxForceCalculator_->mdatoms_.chargeA = const_cast<real*>(charges.data());
 
     gmxForceCalculator_->nbv_->setAtomProperties(gmxForceCalculator_->mdatoms_, particleInfoAllVdw_);
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
-void NbvSetupUtil::setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options)
+void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKernelOptions& options)
 {
     const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
                                            : gmx::PinningPolicy::CannotBePinned);
@@ -214,7 +214,7 @@ void NbvSetupUtil::setupNbnxmInstance(const Topology& topology, const NBKernelOp
 
     // Needs to be called with the number of unique ParticleTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
-                        topology.getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
+                        numParticleTypes, nonbondedParameters_, 1, numThreads);
 
     gmxForceCalculator_->nbv_ = std::move(nbv);
 }
@@ -325,10 +325,10 @@ std::unique_ptr<GmxForceCalculator> GmxSetupDirector::setupGmxForceCalculator(co
 
     nbvSetupUtil.setupInteractionConst(options);
     nbvSetupUtil.setupStepWorkload(options);
-    nbvSetupUtil.setupNbnxmInstance(system.topology(), options);
+    nbvSetupUtil.setupNbnxmInstance(system.topology().getParticleTypes().size(), options);
     nbvSetupUtil.setParticlesOnGrid(system.coordinates(), system.box());
     nbvSetupUtil.constructPairList(system.topology().getGmxExclusions());
-    nbvSetupUtil.setAtomProperties(system.topology());
+    nbvSetupUtil.setAtomProperties(system.topology().getParticleTypeIdOfAllParticles(), system.topology().getCharges());
 
     const matrix& box = system.box().legacyMatrix();
     nbvSetupUtil.setupForceRec(box);

@@ -88,10 +88,10 @@ public:
     void setupInteractionConst(const NBKernelOptions& options);
 
     //! Sets Particle Types and Charges and VdW params
-    void setAtomProperties(const Topology& topology);
+    void setAtomProperties(const std::vector<int>& particleTypeIdOfAllParticles, const std::vector<real>& charges);
 
     //! Sets up non-bonded verlet on the GmxForceCalculator
-    void setupNbnxmInstance(const Topology& topology, const NBKernelOptions& options);
+    void setupNbnxmInstance(const size_t numParticleTypes, const NBKernelOptions& options);
 
     //! Puts particles on a grid based on bounds specified by the box
     void setParticlesOnGrid(const std::vector<gmx::RVec>& coordinates, const Box& box);
