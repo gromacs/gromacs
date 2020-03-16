@@ -44,7 +44,7 @@
 class InteractionDefinitions;
 struct t_blocka;
 
-void gen_sblocks(FILE* fp, int at_start, int at_end, const InteractionDefinitions& idef, t_blocka* sblock, gmx_bool bSettle);
+void gen_sblocks(FILE* fp, int at_end, const InteractionDefinitions& idef, t_blocka* sblock, gmx_bool bSettle);
 /* Generate shake blocks from the constraint list. Set bSettle to yes for shake
  * blocks including settles. You normally do not want this.
  */

@@ -72,37 +72,26 @@ using gmx::IVec;
 class EdgesGenerator
 {
 public:
-    EdgesGenerator(const int startAtom, const int endAtom) :
-        startAtom_(startAtom),
-        edges_(endAtom - startAtom)
-    {
-    }
+    EdgesGenerator(const int endAtom) : edges_(endAtom) {}
 
     // Adds an edge, bi-directional
     void addEdge(int a0, int a1);
-
-    // Returns the first atom edges are generated for
-    int startAtom() const { return startAtom_; }
 
     // Returns the edges
     const std::vector<std::vector<int>>& edges() const { return edges_; }
 
 private:
-    // The first atom edges are generated for
-    int startAtom_;
     // The edges stored as list (for each atom starting at \p startAtom_) of lists of atoms
     std::vector<std::vector<int>> edges_;
 };
 
 void EdgesGenerator::addEdge(const int a0, const int a1)
 {
-    const int   inda0 = a0 - startAtom_;
-    const int   inda1 = a1 - startAtom_;
-    const auto& edges = edges_[inda0];
+    const auto& edges = edges_[a0];
     if (std::find(edges.begin(), edges.end(), a1) == edges.end())
     {
-        edges_[inda0].push_back(a1);
-        edges_[inda1].push_back(a0);
+        edges_[a0].push_back(a1);
+        edges_[a1].push_back(a0);
     }
 }
 
@@ -112,8 +101,7 @@ void EdgesGenerator::addEdge(const int a0, const int a1)
  * edges are only added when atoms have a different part index.
  */
 template<typename T>
-static bool
-mk_igraph(EdgesGenerator* edgesG, int ftype, const T& il, int at_start, int at_end, ArrayRef<const int> part)
+static bool mk_igraph(EdgesGenerator* edgesG, int ftype, const T& il, int at_end, ArrayRef<const int> part)
 {
     int  i, j, np;
     int  end;
@@ -126,7 +114,7 @@ mk_igraph(EdgesGenerator* edgesG, int ftype, const T& il, int at_start, int at_e
     {
         np = interaction_function[ftype].nratoms;
 
-        if (np > 1 && il.iatoms[i + 1] >= at_start && il.iatoms[i + 1] < at_end)
+        if (np > 1 && il.iatoms[i + 1] < at_end)
         {
             if (il.iatoms[i + np] >= at_end)
             {
@@ -190,17 +178,18 @@ void p_graph(FILE* log, const char* title, const t_graph* g)
     GCHECK(g);
     fprintf(log, "graph:  %s\n", title);
     fprintf(log, "nnodes: %d\n", g->numNodes());
-    fprintf(log, "nbound: %d\n", g->nbound);
-    fprintf(log, "start:  %d\n", g->at_start);
-    fprintf(log, "end:    %d\n", g->at_end);
+    fprintf(log, "nbound: %d\n", g->numConnectedAtoms);
+    fprintf(log, "start:  %d\n", g->edgeAtomBegin);
+    fprintf(log, "end:    %d\n", g->edgeAtomEnd);
     fprintf(log, " atom shiftx shifty shiftz C nedg    e1    e2 etc.\n");
     for (i = 0; i < int(g->edges.size()); i++)
     {
         if (!g->edges[i].empty())
         {
-            fprintf(log, "%5d%7d%7d%7d %1s%5zu", g->at_start + i + 1, g->ishift[g->at_start + i][XX],
-                    g->ishift[g->at_start + i][YY], g->ishift[g->at_start + i][ZZ],
-                    (!g->egc.empty()) ? cc[g->egc[i]] : " ", g->edges[i].size());
+            fprintf(log, "%5d%7d%7d%7d %1s%5zu", g->edgeAtomBegin + i + 1,
+                    g->ishift[g->edgeAtomBegin + i][XX], g->ishift[g->edgeAtomBegin + i][YY],
+                    g->ishift[g->edgeAtomBegin + i][ZZ],
+                    (!g->edgeColor.empty()) ? cc[g->edgeColor[i]] : " ", g->edges[i].size());
             for (const int edge : g->edges[i])
             {
                 fprintf(log, " %5d", edge + 1);
@@ -214,13 +203,15 @@ void p_graph(FILE* log, const char* title, const t_graph* g)
 /* Converts the vector of vector of edges to ListOfLists
  * and removes leading and trailing uncoupled atoms
  */
-static gmx::ListOfLists<int>
-convertGraph(FILE* fplog, const EdgesGenerator& edgesG, int* firstConnectedAtom, int* numBoundNodes)
+static gmx::ListOfLists<int> convertGraph(FILE*                 fplog,
+                                          const EdgesGenerator& edgesG,
+                                          int*                  firstConnectedAtom,
+                                          int*                  numConnectedAtoms)
 {
     gmx::ListOfLists<int> edgesLists;
 
-    int firstConnectedEntry    = edgesG.edges().size();
-    *numBoundNodes             = 0;
+    *firstConnectedAtom        = edgesG.edges().size();
+    *numConnectedAtoms         = 0;
     int numEmptyEntriesSkipped = 0;
     int max_nedge              = 0;
     for (const auto& edges : edgesG.edges())
@@ -234,7 +225,7 @@ convertGraph(FILE* fplog, const EdgesGenerator& edgesG, int* firstConnectedAtom,
             if (edgesLists.empty())
             {
                 /* We ignore empty entries before the first connected entry */
-                firstConnectedEntry = numEmptyEntriesSkipped;
+                *firstConnectedAtom = numEmptyEntriesSkipped;
             }
             else
             {
@@ -248,13 +239,11 @@ convertGraph(FILE* fplog, const EdgesGenerator& edgesG, int* firstConnectedAtom,
 
             edgesLists.pushBack(edges);
 
-            (*numBoundNodes)++;
+            (*numConnectedAtoms)++;
 
             max_nedge = std::max(max_nedge, int(gmx::ssize(edges)));
         }
     }
-
-    *firstConnectedAtom = edgesG.startAtom() + firstConnectedEntry;
 
     if (fplog)
     {
@@ -267,63 +256,59 @@ convertGraph(FILE* fplog, const EdgesGenerator& edgesG, int* firstConnectedAtom,
 
 static gmx_bool determine_graph_parts(const EdgesGenerator& edgesG, ArrayRef<int> partNr)
 {
-    int      nchanged;
-    int      at_i;
-    gmx_bool bMultiPart;
-
     /* Initialize the part array with all entries different */
-    const int startAtom = edgesG.startAtom();
-    const int endAtom   = edgesG.startAtom() + edgesG.edges().size();
-    for (at_i = startAtom; at_i < endAtom; at_i++)
+    const int endAtom = edgesG.edges().size();
+    for (int at_i = 0; at_i < endAtom; at_i++)
     {
         partNr[at_i] = at_i;
     }
 
     /* Loop over the graph until the part array is fixed */
+    bool haveMultipleParts = false;
+    int  numAtomsChanged   = 0;
     do
     {
-        bMultiPart = FALSE;
-        nchanged   = 0;
-        for (gmx::index i = 0; i < gmx::ssize(edgesG.edges()); i++)
+        haveMultipleParts = false;
+        numAtomsChanged   = 0;
+        for (gmx::index at_i = 0; at_i < gmx::ssize(edgesG.edges()); at_i++)
         {
-            at_i = startAtom + i;
-            for (const int at_i2 : edgesG.edges()[i])
+            for (const int at_i2 : edgesG.edges()[at_i])
             {
                 /* Set part for both nodes to the minimum */
                 if (partNr[at_i2] > partNr[at_i])
                 {
                     partNr[at_i2] = partNr[at_i];
-                    nchanged++;
+                    numAtomsChanged++;
                 }
                 else if (partNr[at_i2] < partNr[at_i])
                 {
                     partNr[at_i] = partNr[at_i2];
-                    nchanged++;
+                    numAtomsChanged++;
                 }
             }
-            if (partNr[at_i] != partNr[edgesG.startAtom()])
+            if (partNr[at_i] != partNr[0])
             {
-                bMultiPart = TRUE;
+                haveMultipleParts = true;
             }
         }
         if (debug)
         {
-            fprintf(debug, "graph partNr[] nchanged=%d, bMultiPart=%s\n", nchanged,
-                    gmx::boolToString(bMultiPart));
+            fprintf(debug, "graph partNr[] numAtomsChanged=%d, bMultiPart=%s\n", numAtomsChanged,
+                    gmx::boolToString(haveMultipleParts));
         }
-    } while (nchanged > 0);
+    } while (numAtomsChanged > 0);
 
-    return bMultiPart;
+    return haveMultipleParts;
 }
 
 template<typename T>
-static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_start, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
+static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
 {
-    EdgesGenerator edgesG(at_start, at_end);
+    EdgesGenerator edgesG(at_end);
 
     t_graph::BondedParts parts = t_graph::BondedParts::Single;
 
-    if (at_end > at_start)
+    if (at_end > 0)
     {
         if (!bShakeOnly)
         {
@@ -334,7 +319,7 @@ static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_start, int at_
             {
                 if (interaction_function[i].flags & IF_CHEMBOND)
                 {
-                    mk_igraph(&edgesG, i, ilist[i], at_start, at_end, {});
+                    mk_igraph(&edgesG, i, ilist[i], at_end, {});
                 }
             }
 
@@ -355,7 +340,7 @@ static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_start, int at_
                 {
                     if (!(interaction_function[i].flags & IF_CHEMBOND))
                     {
-                        bool addedEdgeForType = mk_igraph(&edgesG, i, ilist[i], at_start, at_end, partNr);
+                        bool addedEdgeForType = mk_igraph(&edgesG, i, ilist[i], at_end, partNr);
                         addedEdge             = (addedEdge || addedEdgeForType);
                     }
                 }
@@ -373,35 +358,34 @@ static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_start, int at_
         else
         {
             /* This is a special thing used in splitter.c to generate shake-blocks */
-            mk_igraph(&edgesG, F_CONSTR, ilist[F_CONSTR], at_start, at_end, {});
+            mk_igraph(&edgesG, F_CONSTR, ilist[F_CONSTR], at_end, {});
             if (bSettle)
             {
-                mk_igraph(&edgesG, F_SETTLE, ilist[F_SETTLE], at_start, at_end, {});
+                mk_igraph(&edgesG, F_SETTLE, ilist[F_SETTLE], at_end, {});
             }
         }
     }
 
     t_graph graph;
-    /* The naming is somewhat confusing, but we need g->at0 and g->at1
+    /* The naming is somewhat confusing, but we need g->shiftAtomEnd
      * for shifthing coordinates to a new array (not in place) when
      * some atoms are not connected by the graph, which runs from
-     * g->at_start (>= g->at0) to g->at_end (<= g->at1).
+     * g->edgeAtomBegin (>= 0) to g->edgeAtomEnd (<= g->shiftAtomEnd).
      */
-    graph.at0      = at_start;
-    graph.at1      = at_end;
-    graph.at_start = at_start;
-    graph.at_end   = at_end;
-    graph.parts    = parts;
-    if (at_end > at_start)
+    graph.shiftAtomEnd  = at_end;
+    graph.edgeAtomBegin = 0;
+    graph.edgeAtomEnd   = at_end;
+    graph.parts         = parts;
+    if (at_end > 0)
     {
         /* Convert the vector of vector of edges to ListOfLists */
-        graph.edges = convertGraph(fplog, edgesG, &graph.at_start, &graph.nbound);
+        graph.edges = convertGraph(fplog, edgesG, &graph.edgeAtomBegin, &graph.numConnectedAtoms);
 
-        graph.at_end = graph.at_start + graph.edges.ssize();
+        graph.edgeAtomEnd = graph.edgeAtomBegin + graph.edges.ssize();
     }
 
-    graph.egc.resize(graph.edges.size());
-    graph.ishift.resize(graph.at1);
+    graph.edgeColor.resize(graph.edges.size());
+    graph.ishift.resize(graph.shiftAtomEnd);
 
     if (gmx_debug_at)
     {
@@ -413,28 +397,28 @@ static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_start, int at_
 
 t_graph mk_graph_moltype(const gmx_moltype_t& moltype)
 {
-    return mk_graph_ilist(nullptr, moltype.ilist.data(), 0, moltype.atoms.nr, FALSE, FALSE);
+    return mk_graph_ilist(nullptr, moltype.ilist.data(), moltype.atoms.nr, FALSE, FALSE);
 }
 
 t_graph mk_graph(const InteractionDefinitions& idef, const int numAtoms)
 {
-    return mk_graph_ilist(nullptr, idef.il.data(), 0, numAtoms, false, false);
+    return mk_graph_ilist(nullptr, idef.il.data(), numAtoms, false, false);
 }
 
-t_graph* mk_graph(FILE* fplog, const InteractionDefinitions& idef, int at_start, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
+t_graph* mk_graph(FILE* fplog, const InteractionDefinitions& idef, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
 {
     t_graph* g = new (t_graph);
 
-    *g = mk_graph_ilist(fplog, idef.il.data(), at_start, at_end, bShakeOnly, bSettle);
+    *g = mk_graph_ilist(fplog, idef.il.data(), at_end, bShakeOnly, bSettle);
 
     return g;
 }
 
-t_graph* mk_graph(FILE* fplog, const t_idef* idef, int at_start, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
+t_graph* mk_graph(FILE* fplog, const t_idef* idef, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
 {
     t_graph* g = new (t_graph);
 
-    *g = mk_graph_ilist(fplog, idef->il, at_start, at_end, bShakeOnly, bSettle);
+    *g = mk_graph_ilist(fplog, idef->il, at_end, bShakeOnly, bSettle);
 
     return g;
 }
@@ -577,8 +561,13 @@ static void mk_1shift_screw(const matrix box, const rvec hbox, const rvec xi, co
     }
 }
 
-static int
-mk_grey(ArrayRef<egCol> egc, t_graph* g, int* AtomI, int npbcdim, const matrix box, const rvec x[], int* nerror)
+static int mk_grey(ArrayRef<egCol> edgeColor,
+                   t_graph*        g,
+                   int*            AtomI,
+                   int             npbcdim,
+                   const matrix    box,
+                   const rvec      x[],
+                   int*            nerror)
 {
     int      m, ng, ai, g0;
     rvec     dx, hbox;
@@ -592,7 +581,7 @@ mk_grey(ArrayRef<egCol> egc, t_graph* g, int* AtomI, int npbcdim, const matrix b
     }
     bTriclinic = TRICLINIC(box);
 
-    g0 = g->at_start;
+    g0 = g->edgeAtomBegin;
     ng = 0;
     ai = g0 + *AtomI;
 
@@ -600,7 +589,7 @@ mk_grey(ArrayRef<egCol> egc, t_graph* g, int* AtomI, int npbcdim, const matrix b
     for (const int aj : g->edges[ai - g0])
     {
         /* If there is a white one, make it grey and set pbc */
-        if (g->bScrewPBC)
+        if (g->useScrewPbc)
         {
             mk_1shift_screw(box, hbox, x[ai], x[aj], g->ishift[ai], is_aj);
         }
@@ -613,13 +602,13 @@ mk_grey(ArrayRef<egCol> egc, t_graph* g, int* AtomI, int npbcdim, const matrix b
             mk_1shift(npbcdim, hbox, x[ai], x[aj], g->ishift[ai], is_aj);
         }
 
-        if (egc[aj - g0] == egcolWhite)
+        if (edgeColor[aj - g0] == egcolWhite)
         {
             if (aj - g0 < *AtomI)
             {
                 *AtomI = aj - g0;
             }
-            egc[aj - g0] = egcolGrey;
+            edgeColor[aj - g0] = egcolGrey;
 
             copy_ivec(is_aj, g->ishift[aj]);
 
@@ -645,16 +634,14 @@ mk_grey(ArrayRef<egCol> egc, t_graph* g, int* AtomI, int npbcdim, const matrix b
     return ng;
 }
 
-static gmx::index first_colour(const int fC, const egCol Col, const t_graph* g, ArrayRef<const egCol> egc)
-/* Return the first node with colour Col starting at fC.
+/* Return the first node/atom with colour Col starting at fC.
  * return -1 if none found.
  */
+static gmx::index first_colour(const int fC, const egCol Col, const t_graph* g, ArrayRef<const egCol> edgeColor)
 {
-    gmx::index i;
-
-    for (i = fC; i < ssize(g->edges); i++)
+    for (gmx::index i = fC; i < gmx::ssize(g->edges); i++)
     {
-        if (!g->edges[i].empty() && egc[i] == Col)
+        if (!g->edges[i].empty() && edgeColor[i] == Col)
         {
             return i;
         }
@@ -677,7 +664,7 @@ static real maxEdgeLength(const t_graph& g, PbcType pbcType, const matrix box, c
         for (const int nodeJ : g.edges[node])
         {
             rvec dx;
-            pbc_dx(&pbc, x[g.at0 + node], x[g.at0 + nodeJ], dx);
+            pbc_dx(&pbc, x[node], x[nodeJ], dx);
             maxEdgeLength2 = std::max(maxEdgeLength2, norm2(dx));
         }
     }
@@ -694,7 +681,7 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
     int        fW, fG;     /* First of each category	*/
     int        nerror = 0;
 
-    g->bScrewPBC = (pbcType == PbcType::Screw);
+    g->useScrewPbc = (pbcType == PbcType::Screw);
 
     if (pbcType == PbcType::XY)
     {
@@ -710,19 +697,19 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
      * at all. If we return without doing this for a system without bonds
      * (i.e. only settles) all water molecules are moved to the opposite octant
      */
-    for (i = g->at0; (i < g->at1); i++)
+    for (i = 0; i < g->shiftAtomEnd; i++)
     {
         g->ishift[i][XX] = g->ishift[i][YY] = g->ishift[i][ZZ] = 0;
     }
 
-    if (!g->nbound)
+    if (!g->numConnectedAtoms)
     {
         return;
     }
 
-    std::fill(g->egc.begin(), g->egc.end(), egcolWhite);
+    std::fill(g->edgeColor.begin(), g->edgeColor.end(), egcolWhite);
 
-    nW = g->nbound;
+    nW = g->numConnectedAtoms;
     nG = 0;
     nB = 0;
 
@@ -740,13 +727,13 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
          * number than before, because no nodes are made white
          * in the loop
          */
-        if ((fW = first_colour(fW, egcolWhite, g, g->egc)) == -1)
+        if ((fW = first_colour(fW, egcolWhite, g, g->edgeColor)) == -1)
         {
             gmx_fatal(FARGS, "No WHITE nodes found while nW=%d\n", nW);
         }
 
         /* Make the first white node grey */
-        g->egc[fW] = egcolGrey;
+        g->edgeColor[fW] = egcolGrey;
         nG++;
         nW--;
 
@@ -757,20 +744,20 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
 #endif
         while (nG > 0)
         {
-            if ((fG = first_colour(fG, egcolGrey, g, g->egc)) == -1)
+            if ((fG = first_colour(fG, egcolGrey, g, g->edgeColor)) == -1)
             {
                 gmx_fatal(FARGS, "No GREY nodes found while nG=%d\n", nG);
             }
 
             /* Make the first grey node black */
-            g->egc[fG] = egcolBlack;
+            g->edgeColor[fG] = egcolBlack;
             nB++;
             nG--;
 
             /* Make all the neighbours of this black node grey
              * and set their periodicity
              */
-            ng = mk_grey(g->egc, g, &fG, npbcdim, box, x, &nerror);
+            ng = mk_grey(g->edgeColor, g, &fG, npbcdim, box, x, &nerror);
             /* ng is the number of white nodes made grey */
             nG += ng;
             nW -= ng;
@@ -801,7 +788,7 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
                     "There are inconsistent shifts over periodic boundaries in a molecule type "
                     "consisting of %d atoms. The longest distance involved in such interactions is "
                     "%.3f nm which is %s half the box length.",
-                    g->at1 - g->at0, maxDistance, maxDistance >= 0.5 * minBoxSize ? "above" : "close to");
+                    g->shiftAtomEnd, maxDistance, maxDistance >= 0.5 * minBoxSize ? "above" : "close to");
 
             switch (g->parts)
             {
@@ -855,16 +842,16 @@ void shift_x(const t_graph* g, const matrix box, const rvec x[], rvec x_s[])
     int j, tx, ty, tz;
 
     GCHECK(g);
-    const int            g0 = g->at_start;
-    const int            g1 = g->at_end;
+    const int            g0 = g->edgeAtomBegin;
+    const int            g1 = g->edgeAtomEnd;
     ArrayRef<const IVec> is = g->ishift;
 
-    for (j = g->at0; j < g0; j++)
+    for (j = 0; j < g0; j++)
     {
         copy_rvec(x[j], x_s[j]);
     }
 
-    if (g->bScrewPBC)
+    if (g->useScrewPbc)
     {
         for (j = g0; (j < g1); j++)
         {
@@ -913,7 +900,7 @@ void shift_x(const t_graph* g, const matrix box, const rvec x[], rvec x_s[])
         }
     }
 
-    for (j = g1; j < g->at1; j++)
+    for (j = g1; j < g->shiftAtomEnd; j++)
     {
         copy_rvec(x[j], x_s[j]);
     }
@@ -923,10 +910,10 @@ void shift_self(const t_graph& g, const matrix box, rvec x[])
 {
     int j, tx, ty, tz;
 
-    GMX_RELEASE_ASSERT(!g.bScrewPBC, "screw pbc not implemented for shift_self");
+    GMX_RELEASE_ASSERT(!g.useScrewPbc, "screw pbc not implemented for shift_self");
 
-    const int            g0 = g.at_start;
-    const int            g1 = g.at_end;
+    const int            g0 = g.edgeAtomBegin;
+    const int            g1 = g.edgeAtomEnd;
     ArrayRef<const IVec> is = g.ishift;
 
 #ifdef DEBUG
@@ -969,16 +956,16 @@ void unshift_x(const t_graph* g, const matrix box, rvec x[], const rvec x_s[])
 {
     int j, tx, ty, tz;
 
-    if (g->bScrewPBC)
+    if (g->useScrewPbc)
     {
         gmx_incons("screw pbc not implemented (yet) for unshift_x");
     }
 
-    const int            g0 = g->at_start;
-    const int            g1 = g->at_end;
+    const int            g0 = g->edgeAtomBegin;
+    const int            g1 = g->edgeAtomEnd;
     ArrayRef<const IVec> is = g->ishift;
 
-    for (j = g->at0; j < g0; j++)
+    for (j = 0; j < g0; j++)
     {
         copy_rvec(x_s[j], x[j]);
     }
@@ -1010,7 +997,7 @@ void unshift_x(const t_graph* g, const matrix box, rvec x[], const rvec x_s[])
         }
     }
 
-    for (j = g1; j < g->at1; j++)
+    for (j = g1; j < g->shiftAtomEnd; j++)
     {
         copy_rvec(x_s[j], x[j]);
     }
@@ -1020,13 +1007,13 @@ void unshift_self(const t_graph* g, const matrix box, rvec x[])
 {
     int j, tx, ty, tz;
 
-    if (g->bScrewPBC)
+    if (g->useScrewPbc)
     {
         gmx_incons("screw pbc not implemented for unshift_self");
     }
 
-    const int            g0 = g->at_start;
-    const int            g1 = g->at_end;
+    const int            g0 = g->edgeAtomBegin;
+    const int            g1 = g->edgeAtomEnd;
     ArrayRef<const IVec> is = g->ishift;
 
     if (TRICLINIC(box))

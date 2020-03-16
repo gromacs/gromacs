@@ -66,7 +66,7 @@ typedef enum
  */
 struct t_graph
 {
-    /* Described the connectivity between, potentially, multiple parts of
+    /* Describes the connectivity between, potentially, multiple parts of
      * the ilist that are internally chemically bonded together.
      */
     enum class BondedParts
@@ -76,19 +76,27 @@ struct t_graph
         MultipleConnected /* There are multiple parts, e.g. monomers, that are partially or fully connected between each other by interactions other than chemical bonds */
     };
 
-    /* Returns the number of nodes stored in the graph (can be less at at1-at0) */
+    // Returns the number of nodes stored in the graph (can be less than shiftAtomEnd)
     int numNodes() const { return edges.size(); }
 
-    int                    at0      = 0; /* The first atom the graph was constructed for */
-    int                    at1      = 0; /* The last+1 atom the graph was constructed for  */
-    int                    nbound   = 0; /* The number of nodes with edges               */
-    int                    at_start = 0; /* The first connected atom in this graph       */
-    int                    at_end   = 0; /* The last+1 connected atom in this graph      */
-    gmx::ListOfLists<int>  edges; /* The graph: list of atoms connected to each atom, indexing is offset by -at_start */
-    bool                   bScrewPBC = false; /* Screw boundary conditions                    */
-    std::vector<gmx::IVec> ishift;            /* Shift for each particle                      */
-    std::vector<egCol>     egc;               /* color of each node */
-    BondedParts parts = BondedParts::Single;  /* How chemically bonded parts are connected    */
+    // Shift atoms up to shiftAtomEnd
+    int shiftAtomEnd = 0;
+    // The number of atoms that are connected to other atoms in the graph
+    int numConnectedAtoms = 0;
+    // The first connected atom in the graph
+    int edgeAtomBegin = 0;
+    // The last connected atom in the graph
+    int edgeAtomEnd = 0;
+    //  The graph: list of atoms connected to each atom, indexing is offset by -edgeAtomBegin
+    gmx::ListOfLists<int> edges;
+    // Whether we are using screw PBC
+    bool useScrewPbc = false;
+    // Shift for each particle, updated after putting atoms in the box
+    std::vector<gmx::IVec> ishift;
+    // Work buffer for coloring nodes
+    std::vector<egCol> edgeColor;
+    // Tells how connected this graph is
+    BondedParts parts = BondedParts::Single;
 };
 
 #define SHIFT_IVEC(g, i) ((g)->ishift[i])
@@ -101,23 +109,22 @@ t_graph mk_graph(const InteractionDefinitions& idef, int numAtoms);
 
 t_graph* mk_graph(FILE*                         fplog,
                   const InteractionDefinitions& idef,
-                  int                           at_start,
-                  int                           at_end,
+                  int                           shiftAtomEnd,
                   gmx_bool                      bShakeOnly,
                   gmx_bool                      bSettle);
 /* Build a graph from an idef description. The graph can be used
  * to generate mol-shift indices.
- * at_start and at_end should coincide will molecule boundaries,
- * for the whole system this is simply 0 and natoms.
+ * Shifts atoms up to shiftAtomEnd, which should coincide with a molecule boundary,
+ * for the whole system this is simply natoms.
  * If bShakeOnly, only the connections in the shake list are used.
  * If bSettle && bShakeOnly the settles are used too.
  */
 
-t_graph* mk_graph(FILE* fplog, const struct t_idef* idef, int at_start, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle);
+t_graph* mk_graph(FILE* fplog, const struct t_idef* idef, int shiftAtomEnd, gmx_bool bShakeOnly, gmx_bool bSettle);
 /* Build a graph from an idef description. The graph can be used
  * to generate mol-shift indices.
- * at_start and at_end should coincide will molecule boundaries,
- * for the whole system this is simply 0 and natoms.
+ * Shifts atoms up to shiftAtomEnd, which should coincide with a molecule boundary,
+ * for the whole system this is simply natoms.
  * If bShakeOnly, only the connections in the shake list are used.
  * If bSettle && bShakeOnly the settles are used too.
  */

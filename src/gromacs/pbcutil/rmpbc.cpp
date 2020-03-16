@@ -108,11 +108,11 @@ static t_graph* gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, PbcType pbcType, int natom
         gr->natoms = natoms;
         if (gpbc->interactionDefinitions)
         {
-            gr->gr = mk_graph(nullptr, *gpbc->interactionDefinitions, 0, natoms, FALSE, FALSE);
+            gr->gr = mk_graph(nullptr, *gpbc->interactionDefinitions, natoms, FALSE, FALSE);
         }
         else
         {
-            gr->gr = mk_graph(nullptr, gpbc->idef, 0, natoms, FALSE, FALSE);
+            gr->gr = mk_graph(nullptr, gpbc->idef, natoms, FALSE, FALSE);
         }
     }
 

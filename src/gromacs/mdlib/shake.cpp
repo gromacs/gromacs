@@ -137,7 +137,7 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
 
     init_blocka(&sblocks);
     sfree(sblocks.index); // To solve memory leak
-    gen_sblocks(nullptr, 0, md.homenr, *idef, &sblocks, FALSE);
+    gen_sblocks(nullptr, md.homenr, *idef, &sblocks, FALSE);
 
     /*
        bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
