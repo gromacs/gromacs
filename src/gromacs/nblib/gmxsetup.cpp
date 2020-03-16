@@ -171,11 +171,11 @@ void NbvSetupUtil::setNonBondedParameters(const std::vector<ParticleType>& parti
     }
 }
 
-void NbvSetupUtil::setAtomProperties(const std::vector<int>& particleTypeIdOfAllParticles, const std::vector<real>& charges)
+void NbvSetupUtil::setAtomProperties(const std::vector<int>&  particleTypeIdOfAllParticles,
+                                     const std::vector<real>& charges)
 {
     // We only use (read) the atom type and charge from mdatoms
-    gmxForceCalculator_->mdatoms_.typeA =
-            const_cast<int*>(particleTypeIdOfAllParticles.data());
+    gmxForceCalculator_->mdatoms_.typeA   = const_cast<int*>(particleTypeIdOfAllParticles.data());
     gmxForceCalculator_->mdatoms_.chargeA = const_cast<real*>(charges.data());
 
     gmxForceCalculator_->nbv_->setAtomProperties(gmxForceCalculator_->mdatoms_, particleInfoAllVdw_);
@@ -328,7 +328,8 @@ std::unique_ptr<GmxForceCalculator> GmxSetupDirector::setupGmxForceCalculator(co
     nbvSetupUtil.setupNbnxmInstance(system.topology().getParticleTypes().size(), options);
     nbvSetupUtil.setParticlesOnGrid(system.coordinates(), system.box());
     nbvSetupUtil.constructPairList(system.topology().getGmxExclusions());
-    nbvSetupUtil.setAtomProperties(system.topology().getParticleTypeIdOfAllParticles(), system.topology().getCharges());
+    nbvSetupUtil.setAtomProperties(system.topology().getParticleTypeIdOfAllParticles(),
+                                   system.topology().getCharges());
 
     const matrix& box = system.box().legacyMatrix();
     nbvSetupUtil.setupForceRec(box);

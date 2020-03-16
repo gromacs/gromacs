@@ -88,7 +88,8 @@ public:
     void setupInteractionConst(const NBKernelOptions& options);
 
     //! Sets Particle Types and Charges and VdW params
-    void setAtomProperties(const std::vector<int>& particleTypeIdOfAllParticles, const std::vector<real>& charges);
+    void setAtomProperties(const std::vector<int>&  particleTypeIdOfAllParticles,
+                           const std::vector<real>& charges);
 
     //! Sets up non-bonded verlet on the GmxForceCalculator
     void setupNbnxmInstance(const size_t numParticleTypes, const NBKernelOptions& options);
