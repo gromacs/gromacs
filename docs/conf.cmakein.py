@@ -419,6 +419,11 @@ texinfo_documents = [
 # Make it possible to use numbered labels for figures and tables
 numfig = True
 
+# -- Options for autodoc extension ----------------------------------------
+
+# http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autodoc-mock-imports
+autodoc_mock_imports = ['hpccm', 'hpccm.config']
+
 # -- Options for intersphinx extension ------------------------------------
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
