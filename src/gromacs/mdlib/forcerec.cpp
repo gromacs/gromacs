@@ -1151,6 +1151,14 @@ void init_forcerec(FILE*                            fp,
                                "orientation restraints. "
                                "This likely means that the global topology and the force constant "
                                "data have gotten out of sync.");
+            if (useEwaldSurfaceCorrection)
+            {
+                gmx_fatal(FARGS,
+                          "In GROMACS 2020, Ewald dipole correction is disabled when not "
+                          "using domain decomposition. With domain decomposition, it only works "
+                          "when each molecule consists of a single update group (e.g. water). "
+                          "This will be fixed in GROMACS 2021.");
+            }
         }
         else
         {

@@ -16,6 +16,16 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Ewald dipole correction incorrect without domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Ewald dipole correction (epsilon-surface != 0) is now disabled when not
+using domain decomposition. With domain decomposition, it only works
+when each molecule consists of a single update group (e.g. water).
+This will be fixed in release-2021.
+
+:issue:`3441`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
