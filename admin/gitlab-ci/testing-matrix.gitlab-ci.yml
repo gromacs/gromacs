@@ -662,7 +662,11 @@ build-clang-8-release:
     - .test-script-template
     - .variables:default
 
-# Templates for test stage
+.test-gcc-template:
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    BUILD_DIR: build-gcc
+
 .test-gcc:
   extends:
     - .test-extends-template
@@ -830,6 +834,11 @@ test-gcc-8-cuda-10.2:
   except:
     variables:
       - $GROMACS_RELEASE
+
+.test-clang-template:
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    BUILD_DIR: build-clang
 
 .test-clang:
   extends:

@@ -1,4 +1,0 @@
-.test-gcc-template:
-   variables:
-     COMPILER_MAJOR_VERSION: 7
-     BUILD_DIR: build-gcc
