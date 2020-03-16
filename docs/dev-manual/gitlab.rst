@@ -20,3 +20,41 @@ Images are (re)built manually from DockerFiles in :file:`admin/dockerfiles`.
 This documentation is incomplete, pending resolution of :issue:`3275`.
 
 ..  todo:: Expand this documentation to resolve :issue:`3275`
+
+Pipeline execution
+------------------
+
+.. todo:: Discuss the distinct characteristics of |Gromacs| CI pipelines to relevant to job configuration.
+
+.. todo:: Comment on the number of pipelines that can be or which are likely to be running at the same time.
+
+Variables
+~~~~~~~~~
+
+The GitLab CI framework, GitLab Runner, plugins, and our own scripts set and
+use several variables (usually as a key under a *variables* parameter in
+the YAML configuration).
+
+Some default values are specified for all jobs in :file:`.gitlab-ci.yml`.
+Many of the mix-in / template jobs in :file:`admin/gitlab-ci/global.gitlab-ci.yml`
+provide additional or overriding definitions.
+Other variables may be set when making final job definitions.
+
+Variables may control the behvior of GitLab-CI (those beginning with ``CI_``),
+GitLab Runner and supporting infrastructure, or may be used by job definitions,
+or passed along to the environment of executed commands.
+
+*variables* keys beginning with ``KUBERNETES_`` relate to the GitLab Runner
+`Kubernets executor <https://docs.gitlab.com/runner/executors/kubernetes.html#the-kubernetes-executor>`__
+
+Other important variable keys are as follows.
+
+.. glossary::
+     CACHE_FALLBACK_KEY
+        *TODO: consumer?*
+
+     BUILD_DIR
+        *TODO: consumer? impact? conventions/heuristics?*
+
+     INSTALL_DIR
+        *TODO: consumer? impact? conventions/heuristics?*
