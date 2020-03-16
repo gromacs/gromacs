@@ -177,7 +177,6 @@
   # Dockerfiles are from dockerhub, user eriklindahl
   image: gromacs/ci-docs-clang:master
   variables:
-  variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_LIMIT: 4Gi
