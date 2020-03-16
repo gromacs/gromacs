@@ -43,13 +43,6 @@ default:
 include:
   # Mix-in helper job definitions of general utility.
   - local: '/admin/gitlab-ci/global.gitlab-ci.yml'
-  # Various composable job definitions.
-  - local: '/admin/ci-templates/.gcc-before-script.yml'
-  - local: '/admin/ci-templates/.gcc-build-template.yml'
-  - local: '/admin/ci-templates/.clang-build-template.yml'
-  - local: '/admin/ci-templates/.clang-before-script.yml'
-  - local: '/admin/ci-templates/.cuda-template.yml'
-  - local: '/admin/ci-templates/.build-gmxapi-template.yml'
   # Build and test in a variety of environments and configurations.
   # To do: expand matrix here to improve transparency and reduce file sizes.
   # E.g. '/admin/gitlab-ci/matrix/clang-8.gitlab-ci.yml
