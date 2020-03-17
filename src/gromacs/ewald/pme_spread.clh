@@ -321,13 +321,12 @@ gmx_opencl_inline void calculate_splines(const struct PmeOpenCLKernelParams kern
  * Second stage of the whole kernel.
  *
  * \param[in]  kernelParams         Input PME GPU data in constant memory.
- * \param[in]  atomIndexOffset      Starting atom index for the execution block w.r.t. global
- * memory. \param[in]  sm_coefficients      Atom coefficents/charges in the shared memory. \param[in]
- * sm_gridlineIndices   Atom gridline indices in the shared memory. \param[in]  sm_theta Atom spline
- * values in the shared memory. \param[out] gm_grid              Global 3D grid for spreading.
+ * \param[in]  sm_coefficients      Atom coefficents/charges in the shared memory.
+ * \param[in]  sm_gridlineIndices   Atom gridline indices in the shared memory.
+ * \param[in]  sm_theta             Atom spline values in the shared memory.
+ * \param[out] gm_grid              Global 3D grid for spreading.
  */
 gmx_opencl_inline void spread_charges(const struct PmeOpenCLKernelParams kernelParams,
-                                      int                                atomIndexOffset,
                                       __local const float* __restrict__ sm_coefficients,
                                       __local const int* __restrict__ sm_gridlineIndices,
                                       __local const float* __restrict__ sm_theta,
@@ -471,6 +470,6 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
     /* Spreading */
     if (spreadCharges)
     {
-        spread_charges(kernelParams, atomIndexOffset, sm_coefficients, sm_gridlineIndices, sm_theta, gm_grid);
+        spread_charges(kernelParams, sm_coefficients, sm_gridlineIndices, sm_theta, gm_grid);
     }
 }
