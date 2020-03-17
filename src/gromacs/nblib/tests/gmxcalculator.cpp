@@ -57,36 +57,28 @@ namespace test
 {
 namespace
 {
-
-TEST(NBlibTest, CanConstructGmxForceCalculator)
-{
-    ArgonSimulationStateBuilder      argonSystemBuilder;
-    SimulationState                  simState = argonSystemBuilder.setupSimulationState();
-    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
-    EXPECT_NO_THROW(GmxForceCalculator(simState, options));
-}
-
 TEST(NBlibTest, GmxForceCalculatorCanCompute)
 {
     ArgonSimulationStateBuilder argonSystemBuilder;
-    SimulationState             simState       = argonSystemBuilder.setupSimulationState();
-    NBKernelOptions             options        = NBKernelOptions();
-    options.nbnxmSimd                          = BenchMarkKernels::SimdNo;
-    std::unique_ptr<NbvSetupUtil> nbvSetupUtil = std::make_unique<NbvSetupUtil>(simState, options);
-    std::unique_ptr<GmxForceCalculator> gmxForceCalculator = nbvSetupUtil->setupGmxForceCalculator();
+    SimulationState             simState = argonSystemBuilder.setupSimulationState();
+    NBKernelOptions             options  = NBKernelOptions();
+    options.nbnxmSimd                    = BenchMarkKernels::SimdNo;
+    GmxSetupDirector                    gmxSetupDirector;
+    std::unique_ptr<GmxForceCalculator> gmxForceCalculator =
+            gmxSetupDirector.setupGmxForceCalculator(simState, options);
     EXPECT_NO_THROW(gmxForceCalculator->compute());
 }
 
 TEST(NBlibTest, CanSetupStepWorkload)
 {
-    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
-    EXPECT_NO_THROW(setupStepWorkload(options));
+    NBKernelOptions options;
+    EXPECT_NO_THROW(NbvSetupUtil{}.setupStepWorkload(options));
 }
 
 TEST(NBlibTest, GmxForceCalculatorCanSetupInteractionConst)
 {
-    std::shared_ptr<NBKernelOptions> options = std::make_shared<NBKernelOptions>(NBKernelOptions());
-    EXPECT_NO_THROW(setupInteractionConst(options));
+    NBKernelOptions options;
+    EXPECT_NO_THROW(NbvSetupUtil{}.setupInteractionConst(options));
 }
 } // namespace
 } // namespace test

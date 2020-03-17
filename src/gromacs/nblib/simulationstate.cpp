@@ -69,8 +69,7 @@ SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coordinates,
                             const std::vector<gmx::RVec>& forces,
                             Box                           box,
                             Topology                      topology) :
-    box_(std::move(box)),
-    topology_(std::move(topology))
+    box_(std::move(box)), topology_(std::move(topology))
 {
     if (!checkNumericValues(coordinates))
     {
@@ -87,6 +86,9 @@ SimulationState::Impl::Impl(const std::vector<gmx::RVec>& coordinates,
     forces_ = forces;
 
     velocities_ = velocities;
+
+    // Ensure that the coordinates are in a box following PBC
+    put_atoms_in_box(PbcType::Xyz, box.legacyMatrix(), coordinates_);
 }
 
 const Topology& SimulationState::Impl::topology() const
@@ -114,18 +116,22 @@ std::vector<gmx::RVec>& SimulationState::Impl::forces()
     return forces_;
 }
 
-
 const Topology& SimulationState::topology() const
 {
     return simulationStatePtr_->topology();
 }
 
-const Box& SimulationState::box()
+const Box SimulationState::box() const
 {
     return simulationStatePtr_->box();
 }
 
 std::vector<gmx::RVec>& SimulationState::coordinates()
+{
+    return simulationStatePtr_->coordinates();
+}
+
+const std::vector<gmx::RVec>& SimulationState::coordinates() const
 {
     return simulationStatePtr_->coordinates();
 }

@@ -53,12 +53,7 @@ namespace nblib
 
 ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOptions& options)
 {
-    nbvSetupUtil_ = std::make_unique<NbvSetupUtil>(system, options);
-
-    gmxForceCalculator_ = nbvSetupUtil_->setupGmxForceCalculator();
-
-    //    //! size: numParticles
-    //    masses_ = expandQuantity(system.topology(), &ParticleType::mass);
+    gmxForceCalculator_ = GmxSetupDirector{}.setupGmxForceCalculator(system, options);
 }
 
 gmx::PaddedHostVector<gmx::RVec> ForceCalculator::compute()

@@ -47,10 +47,9 @@
 #include "gromacs/compat/optional.h"
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/matrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/rf_util.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/nblib/particletype.h"
@@ -102,10 +101,14 @@ static gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions
     return {};
 }
 
+void NbvSetupUtil::setExecutionContext(const NBKernelOptions& options)
+{
+    // Todo: find a more general way to initialize hardware
+    gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
+    gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
+}
 
-/*! \brief Returns the kernel setup
- */
-static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
+Nbnxm::KernelSetup NbvSetupUtil::getKernelSetup(const NBKernelOptions& options)
 {
     auto messageWhenInvalid = checkKernelSetup(options);
     GMX_RELEASE_ASSERT(!messageWhenInvalid, "Need valid options");
@@ -129,30 +132,24 @@ static Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
     return kernelSetup;
 }
 
-NbvSetupUtil::NbvSetupUtil(SimulationState system, const NBKernelOptions& options) :
-    system_(std::move(system))
+void NbvSetupUtil::setParticleInfoAllVdv(const size_t numParticles)
+
 {
-    options_ = std::make_shared<NBKernelOptions>(options);
-
-    //! Todo: find a more general way to initialize hardware
-    gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
-    gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
-
-    unpackTopologyToGmx();
+    particleInfoAllVdw_.resize(numParticles);
+    for (size_t particleI = 0; particleI < numParticles; particleI++)
+    {
+        SET_CGINFO_HAS_VDW(particleInfoAllVdw_[particleI]);
+        SET_CGINFO_HAS_Q(particleInfoAllVdw_[particleI]);
+    }
 }
 
-void NbvSetupUtil::unpackTopologyToGmx()
-
+void NbvSetupUtil::setNonBondedParameters(const std::vector<ParticleType>& particleTypes)
 {
-    const Topology&                  topology      = system_.topology();
-    const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
-
-    size_t numParticles = topology.numParticles();
-
-    //! Todo: Refactor nbnxm to take this (nonbondedParameters_) directly
-    //!
-    //! initial self-handling of combination rules
-    //! size: 2*(numParticleTypes^2)
+    /* Todo: Refactor nbnxm to take nonbondedParameters_ directly
+     *
+     * initial self-handling of combination rules
+     * size: 2*(numParticleTypes^2)
+     */
     nonbondedParameters_.reserve(2 * particleTypes.size() * particleTypes.size());
 
     constexpr real c6factor  = 6.0;
@@ -173,33 +170,36 @@ void NbvSetupUtil::unpackTopologyToGmx()
             nonbondedParameters_.push_back(c12_combo);
         }
     }
+}
 
-    particleInfoAllVdw_.resize(numParticles);
-    for (size_t particleI = 0; particleI < numParticles; particleI++)
-    {
-        SET_CGINFO_HAS_VDW(particleInfoAllVdw_[particleI]);
-        SET_CGINFO_HAS_Q(particleInfoAllVdw_[particleI]);
-    }
+void NbvSetupUtil::setAtomProperties(const std::vector<int>&  particleTypeIdOfAllParticles,
+                                     const std::vector<real>& charges)
+{
+    // We only use (read) the atom type and charge from mdatoms
+    gmxForceCalculator_->mdatoms_.typeA   = const_cast<int*>(particleTypeIdOfAllParticles.data());
+    gmxForceCalculator_->mdatoms_.chargeA = const_cast<real*>(charges.data());
+
+    gmxForceCalculator_->nbv_->setAtomProperties(gmxForceCalculator_->mdatoms_, particleInfoAllVdw_);
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
-std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
+void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKernelOptions& options)
 {
-    const auto pinPolicy  = (options_->useGpu ? gmx::PinningPolicy::PinnedIfSupported
-                                             : gmx::PinningPolicy::CannotBePinned);
-    const int  numThreads = options_->numThreads;
+    const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
+                                           : gmx::PinningPolicy::CannotBePinned);
+    const int  numThreads = options.numThreads;
     // Note: the options and Nbnxm combination rule enums values should match
-    const int combinationRule = static_cast<int>(options_->ljCombinationRule);
+    const int combinationRule = static_cast<int>(options.ljCombinationRule);
 
-    auto messageWhenInvalid = checkKernelSetup(*options_);
+    auto messageWhenInvalid = checkKernelSetup(options);
     if (messageWhenInvalid)
     {
         gmx_fatal(FARGS, "Requested kernel is unavailable because %s.", messageWhenInvalid->c_str());
     }
 
-    Nbnxm::KernelSetup kernelSetup = getKernelSetup(*options_);
+    Nbnxm::KernelSetup kernelSetup = getKernelSetup(options);
 
-    PairlistParams pairlistParams(kernelSetup.kernelType, false, options_->pairlistCutoff, false);
+    PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
     Nbnxm::GridSet gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType,
                            false, numThreads, pinPolicy);
     auto           pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
@@ -215,56 +215,128 @@ std::unique_ptr<nonbonded_verlet_t> NbvSetupUtil::setupNbnxmInstance()
 
     // Needs to be called with the number of unique ParticleTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
-                        system_.topology().getParticleTypes().size(), nonbondedParameters_, 1, numThreads);
+                        numParticleTypes, nonbondedParameters_, 1, numThreads);
 
-    matrix box_;
-    gmx::fillLegacyMatrix(system_.box().matrix(), box_);
-
-    GMX_RELEASE_ASSERT(!TRICLINIC(box_), "Only rectangular unit-cells are supported here");
-    const rvec lowerCorner = { 0, 0, 0 };
-    const rvec upperCorner = { box_[XX][XX], box_[YY][YY], box_[ZZ][ZZ] };
-
-    const real particleDensity = system_.coordinates().size() / det(box_);
-
-    nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
-                      { 0, int(system_.coordinates().size()) }, particleDensity,
-                      particleInfoAllVdw_, system_.coordinates(), 0, nullptr);
-
-    t_nrnb nrnb;
-    nbv->constructPairlist(gmx::InteractionLocality::Local, system_.topology().getGmxExclusions(), 0, &nrnb);
-
-    t_mdatoms mdatoms;
-    // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA   = const_cast<int*>(system_.topology().getParticleTypeIdOfAllParticles().data());
-    mdatoms.chargeA = const_cast<real*>(system_.topology().getCharges().data());
-    nbv->setAtomProperties(mdatoms, particleInfoAllVdw_);
-
-    return nbv;
+    gmxForceCalculator_->nbv_ = std::move(nbv);
 }
 
-std::unique_ptr<GmxForceCalculator> NbvSetupUtil::setupGmxForceCalculator()
+static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
 {
-    auto gmxForceCalculator_p = std::make_unique<GmxForceCalculator>(system_, options_);
+    return calc_ewaldcoeff_q(pairlistCutoff, ewald_rtol);
+}
 
-    gmxForceCalculator_p->nbv_ = setupNbnxmInstance();
+void NbvSetupUtil::setupStepWorkload(const NBKernelOptions& options)
+{
+    gmx::StepWorkload stepWork;
+    stepWork.computeForces          = true;
+    stepWork.computeNonbondedForces = true;
 
-    // const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
-    // const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
-    // gmx_cycles_t cycles = gmx_cycles_read();
+    if (options.computeVirialAndEnergy)
+    {
+        stepWork.computeVirial = true;
+        stepWork.computeEnergy = true;
+    }
 
-    matrix box_;
-    gmx::fillLegacyMatrix(system_.box().matrix(), box_);
+    gmxForceCalculator_->stepWork_ = stepWork;
+}
 
-    gmxForceCalculator_p->forcerec_.nbfp = nonbondedParameters_;
-    snew(gmxForceCalculator_p->forcerec_.shift_vec, SHIFTS);
-    calc_shifts(box_, gmxForceCalculator_p->forcerec_.shift_vec);
+void NbvSetupUtil::setupInteractionConst(const NBKernelOptions& options)
+{
+    interaction_const_t interactionConst;
+    interactionConst.vdwtype      = evdwCUT;
+    interactionConst.vdw_modifier = eintmodPOTSHIFT;
+    interactionConst.rvdw         = options.pairlistCutoff;
 
-    put_atoms_in_box(PbcType::Xyz, box_, system_.coordinates());
+    switch (options.coulombType)
+    {
+        case BenchMarkCoulomb::Pme: interactionConst.eeltype = eelPME; break;
+        case BenchMarkCoulomb::Cutoff: interactionConst.eeltype = eelCUT; break;
+        case BenchMarkCoulomb::ReactionField: interactionConst.eeltype = eelRF; break;
+        case BenchMarkCoulomb::Count:
+            GMX_THROW(gmx::InvalidInputError("Unsupported electrostatic interaction"));
+    }
+    interactionConst.coulomb_modifier = eintmodPOTSHIFT;
+    interactionConst.rcoulomb         = options.pairlistCutoff;
+    // Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
+    interactionConst.dispersion_shift.cpot = -1.0 / gmx::power6(interactionConst.rvdw);
+    interactionConst.repulsion_shift.cpot  = -1.0 / gmx::power12(interactionConst.rvdw);
 
-    gmxForceCalculator_p->verletForces_ =
-            gmx::PaddedHostVector<gmx::RVec>(system_.topology().numParticles(), gmx::RVec(0, 0, 0));
+    // These are the initialized values but we leave them here so that later
+    // these can become options.
+    interactionConst.epsilon_r  = 1.0;
+    interactionConst.epsilon_rf = 1.0;
 
-    return gmxForceCalculator_p;
+    /* Set the Coulomb energy conversion factor */
+    if (interactionConst.epsilon_r != 0)
+    {
+        interactionConst.epsfac = ONE_4PI_EPS0 / interactionConst.epsilon_r;
+    }
+    else
+    {
+        /* eps = 0 is infinite dieletric: no Coulomb interactions */
+        interactionConst.epsfac = 0;
+    }
+
+    calc_rffac(nullptr, interactionConst.epsilon_r, interactionConst.epsilon_rf,
+               interactionConst.rcoulomb, &interactionConst.k_rf, &interactionConst.c_rf);
+
+    if (EEL_PME_EWALD(interactionConst.eeltype))
+    {
+        // Ewald coefficients, we ignore the potential shift
+        interactionConst.ewaldcoeff_q = ewaldCoeff(1e-5, options.pairlistCutoff);
+        GMX_RELEASE_ASSERT(interactionConst.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");
+        interactionConst.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
+        init_interaction_const_tables(nullptr, &interactionConst);
+    }
+
+    gmxForceCalculator_->interactionConst_ = std::move(interactionConst);
+}
+
+void NbvSetupUtil::setupForceRec(const matrix& box)
+{
+    gmxForceCalculator_->forcerec_.nbfp = nonbondedParameters_;
+    snew(gmxForceCalculator_->forcerec_.shift_vec, SHIFTS);
+    calc_shifts(box, gmxForceCalculator_->forcerec_.shift_vec);
+}
+
+void NbvSetupUtil::setParticlesOnGrid(const std::vector<gmx::RVec>& coordinates, const Box& box)
+{
+    gmxForceCalculator_->setParticlesOnGrid(particleInfoAllVdw_, coordinates, box);
+}
+
+void NbvSetupUtil::constructPairList(const gmx::ListOfLists<int>& exclusions)
+{
+    t_nrnb nrnb;
+    gmxForceCalculator_->nbv_->constructPairlist(gmx::InteractionLocality::Local, exclusions, 0, &nrnb);
+}
+
+void NbvSetupUtil::setForcesToZero(size_t numParticles)
+{
+    gmxForceCalculator_->verletForces_ =
+            gmx::PaddedHostVector<gmx::RVec>(numParticles, gmx::RVec(0, 0, 0));
+}
+
+std::unique_ptr<GmxForceCalculator> GmxSetupDirector::setupGmxForceCalculator(const SimulationState& system,
+                                                                              const NBKernelOptions& options)
+{
+    NbvSetupUtil nbvSetupUtil;
+    nbvSetupUtil.setExecutionContext(options);
+    nbvSetupUtil.setNonBondedParameters(system.topology().getParticleTypes());
+    nbvSetupUtil.setParticleInfoAllVdv(system.topology().numParticles());
+
+    nbvSetupUtil.setupInteractionConst(options);
+    nbvSetupUtil.setupStepWorkload(options);
+    nbvSetupUtil.setupNbnxmInstance(system.topology().getParticleTypes().size(), options);
+    nbvSetupUtil.setParticlesOnGrid(system.coordinates(), system.box());
+    nbvSetupUtil.constructPairList(system.topology().getGmxExclusions());
+    nbvSetupUtil.setAtomProperties(system.topology().getParticleTypeIdOfAllParticles(),
+                                   system.topology().getCharges());
+
+    const matrix& box = system.box().legacyMatrix();
+    nbvSetupUtil.setupForceRec(box);
+    nbvSetupUtil.setForcesToZero(system.topology().numParticles());
+
+    return nbvSetupUtil.getGmxForceCalculator();
 }
 
 } // namespace nblib

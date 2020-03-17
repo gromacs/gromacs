@@ -48,17 +48,22 @@
 
 #include "testutils/testasserts.h"
 
+#include "testhelpers.h"
+#include "testsystems.h"
+
 namespace nblib
 {
 
 namespace test
 {
-/*
-TEST(NBlibTest, NbfpSetCorrectly)
-{
 
+TEST(NBlibTest, CanConstructNbvSetupUtil)
+{
+    ArgonSimulationStateBuilder argonSimulationStateBuilder;
+    SimulationState             system = argonSimulationStateBuilder.setupSimulationState();
+    EXPECT_NO_THROW(NbvSetupUtil());
 }
-*/
+
 } // namespace test
 
 } // namespace nblib

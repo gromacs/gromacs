@@ -53,28 +53,32 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 
 namespace nblib
 {
-
+class Box;
+class NbvSetupUtil;
 class SimulationState;
 struct NBKernelOptions;
-
-//! Set up StepWorkload data
-gmx::StepWorkload setupStepWorkload(std::shared_ptr<NBKernelOptions> options);
-
-//! Return an interaction constants struct with members set appropriately
-interaction_const_t setupInteractionConst(std::shared_ptr<NBKernelOptions> options);
 
 class GmxForceCalculator
 {
 public:
-    explicit GmxForceCalculator(SimulationState simState, std::shared_ptr<NBKernelOptions> options);
+    GmxForceCalculator() : enerd_(gmx_enerdata_t(1, 0)) {}
 
     //! Compute forces and return
     gmx::PaddedHostVector<gmx::RVec> compute();
+
+    //! Puts particles on a grid based on bounds specified by the box
+    void setParticlesOnGrid(std::vector<int>&             particleInfoAllVdw,
+                            const std::vector<gmx::RVec>& coordinates,
+                            const Box&                    box);
+
+private:
+    friend class NbvSetupUtil;
 
     //! Non-Bonded Verlet object for force calculation
     std::unique_ptr<nonbonded_verlet_t> nbv_;
@@ -91,7 +95,9 @@ public:
     //! Tasks to perform in an MD Step
     gmx::StepWorkload stepWork_;
 
-private:
+    //! Stores atom property data
+    t_mdatoms mdatoms_;
+
     //! Energies of different interaction types; currently only needed as an argument for dispatchNonbondedKernel
     gmx_enerdata_t enerd_;
 

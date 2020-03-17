@@ -50,90 +50,10 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nbnxm/nbnxm.h"
-
-#include "nbkerneloptions.h"
+#include "gromacs/utility/range.h"
 
 namespace nblib
 {
-
-static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
-{
-    return calc_ewaldcoeff_q(pairlistCutoff, ewald_rtol);
-}
-
-interaction_const_t setupInteractionConst(const std::shared_ptr<NBKernelOptions> options)
-{
-    interaction_const_t interactionConst;
-    interactionConst.vdwtype      = evdwCUT;
-    interactionConst.vdw_modifier = eintmodPOTSHIFT;
-    interactionConst.rvdw         = options->pairlistCutoff;
-
-    switch (options->coulombType)
-    {
-        case BenchMarkCoulomb::Pme: interactionConst.eeltype = eelPME; break;
-        case BenchMarkCoulomb::Cutoff: interactionConst.eeltype = eelCUT; break;
-        case BenchMarkCoulomb::ReactionField: interactionConst.eeltype = eelRF; break;
-        case BenchMarkCoulomb::Count:
-            GMX_THROW(gmx::InvalidInputError("Unsupported electrostatic interaction"));
-    }
-    interactionConst.coulomb_modifier = eintmodPOTSHIFT;
-    interactionConst.rcoulomb         = options->pairlistCutoff;
-    // Note: values correspond to ic.coulomb_modifier = eintmodPOTSHIFT
-    interactionConst.dispersion_shift.cpot = -1.0 / gmx::power6(interactionConst.rvdw);
-    interactionConst.repulsion_shift.cpot  = -1.0 / gmx::power12(interactionConst.rvdw);
-
-    // These are the initialized values but we leave them here so that later
-    // these can become options.
-    interactionConst.epsilon_r  = 1.0;
-    interactionConst.epsilon_rf = 1.0;
-
-    /* Set the Coulomb energy conversion factor */
-    if (interactionConst.epsilon_r != 0)
-    {
-        interactionConst.epsfac = ONE_4PI_EPS0 / interactionConst.epsilon_r;
-    }
-    else
-    {
-        /* eps = 0 is infinite dieletric: no Coulomb interactions */
-        interactionConst.epsfac = 0;
-    }
-
-    calc_rffac(nullptr, interactionConst.epsilon_r, interactionConst.epsilon_rf,
-               interactionConst.rcoulomb, &interactionConst.k_rf, &interactionConst.c_rf);
-
-    if (EEL_PME_EWALD(interactionConst.eeltype))
-    {
-        // Ewald coefficients, we ignore the potential shift
-        interactionConst.ewaldcoeff_q = ewaldCoeff(1e-5, options->pairlistCutoff);
-        GMX_RELEASE_ASSERT(interactionConst.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");
-        interactionConst.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
-        init_interaction_const_tables(nullptr, &interactionConst);
-    }
-    return interactionConst;
-}
-
-gmx::StepWorkload setupStepWorkload(const std::shared_ptr<NBKernelOptions> options)
-{
-    gmx::StepWorkload stepWork;
-    stepWork.computeForces          = true;
-    stepWork.computeNonbondedForces = true;
-
-    if (options->computeVirialAndEnergy)
-    {
-        stepWork.computeVirial = true;
-        stepWork.computeEnergy = true;
-    }
-    return stepWork;
-}
-
-GmxForceCalculator::GmxForceCalculator(SimulationState                        simState,
-                                       const std::shared_ptr<NBKernelOptions> options) :
-    interactionConst_(setupInteractionConst(options)),
-    stepWork_(setupStepWorkload(options)),
-    enerd_(gmx_enerdata_t(1, 0))
-{
-    gmx::fillLegacyMatrix(simState.box().matrix(), box_);
-}
 
 gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
 {
@@ -144,6 +64,23 @@ gmx::PaddedHostVector<gmx::RVec> GmxForceCalculator::compute()
     nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, verletForces_);
 
     return verletForces_;
+}
+
+void GmxForceCalculator::setParticlesOnGrid(std::vector<int>&             particleInfoAllVdw,
+                                            const std::vector<gmx::RVec>& coordinates,
+                                            const Box&                    box)
+{
+    const matrix& legacyBox = box.legacyMatrix();
+
+    GMX_RELEASE_ASSERT(!TRICLINIC(legacyBox), "Only rectangular unit-cells are supported here");
+    const rvec lowerCorner = { 0, 0, 0 };
+    const rvec upperCorner = { legacyBox[XX][XX], legacyBox[YY][YY], legacyBox[ZZ][ZZ] };
+
+    const real particleDensity = coordinates.size() / det(legacyBox);
+
+    nbnxn_put_on_grid(nbv_.get(), legacyBox, 0, lowerCorner, upperCorner, nullptr,
+                      { 0, int(coordinates.size()) }, particleDensity, particleInfoAllVdw,
+                      coordinates, 0, nullptr);
 }
 
 } // namespace nblib

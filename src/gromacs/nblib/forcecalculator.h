@@ -53,7 +53,7 @@
 
 namespace nblib
 {
-struct NbvSetupUtil;
+class NbvSetupUtil;
 class GmxForceCalculator;
 
 class ForceCalculator
@@ -81,8 +81,6 @@ private:
     //                        const gmx::index      &numPairs,
     //                        gmx_cycles_t           cycles);
 
-    //! Struct to handle translation from NBLIB inputs to setup GMX data structures
-    std::unique_ptr<NbvSetupUtil> nbvSetupUtil_;
     //! GROMACS force calculator to compute forces
     std::unique_ptr<GmxForceCalculator> gmxForceCalculator_;
 
