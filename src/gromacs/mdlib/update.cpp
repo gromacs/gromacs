@@ -1579,73 +1579,52 @@ void finish_update(const t_inputrec*       inputrec, /* input record and box stu
                    Update*                 upd,
                    const gmx::Constraints* constr)
 {
-    int homenr = md->homenr;
+    /* NOTE: Currently we always integrate to a temporary buffer and
+     * then copy the results back here.
+     */
 
-    /* We must always unshift after updating coordinates; if we did not shake
-       x was shifted in do_force */
+    wallcycle_start_nocount(wcycle, ewcUPDATE);
 
-    /* NOTE Currently we always integrate to a temporary buffer and
-     * then copy the results back. */
+    const int homenr = md->homenr;
+    auto      xp     = makeConstArrayRef(*upd->xp()).subArray(0, homenr);
+    auto      x      = makeArrayRef(state->x).subArray(0, homenr);
+
+    if (md->havePartiallyFrozenAtoms && constr != nullptr)
     {
-        wallcycle_start_nocount(wcycle, ewcUPDATE);
+        /* We have atoms that are frozen along some, but not all dimensions,
+         * then constraints will have moved them also along the frozen dimensions.
+         * To freeze such degrees of freedom we do not copy them back here.
+         */
+        const ivec* nFreeze = inputrec->opts.nFreeze;
 
-        if (md->cFREEZE != nullptr && constr != nullptr)
+        for (int i = 0; i < homenr; i++)
         {
-            /* If we have atoms that are frozen along some, but not all
-             * dimensions, then any constraints will have moved them also along
-             * the frozen dimensions. To freeze such degrees of freedom
-             * we copy them back here to later copy them forward. It would
-             * be more elegant and slightly more efficient to copies zero
-             * times instead of twice.
-             *
-             * TODO: Now the graph is removed, remove this double copy.
-             */
-            const ivec* nFreeze                     = inputrec->opts.nFreeze;
-            bool        partialFreezeAndConstraints = false;
-            for (int g = 0; g < inputrec->opts.ngfrz; g++)
-            {
-                int numFreezeDim = nFreeze[g][XX] + nFreeze[g][YY] + nFreeze[g][ZZ];
-                if (numFreezeDim > 0 && numFreezeDim < 3)
-                {
-                    partialFreezeAndConstraints = true;
-                }
-            }
-            if (partialFreezeAndConstraints)
-            {
-                auto xp = makeArrayRef(*upd->xp()).subArray(0, homenr);
-                auto x  = makeConstArrayRef(state->x).subArray(0, homenr);
-                for (int i = 0; i < homenr; i++)
-                {
-                    int g = md->cFREEZE[i];
+            const int g = md->cFREEZE[i];
 
-                    for (int d = 0; d < DIM; d++)
-                    {
-                        if (nFreeze[g][d])
-                        {
-                            xp[i][d] = x[i][d];
-                        }
-                    }
+            for (int d = 0; d < DIM; d++)
+            {
+                if (nFreeze[g][d] == 0)
+                {
+                    x[i][d] = xp[i][d];
                 }
             }
         }
-
-        // TODO: Get rid of this copy
-        {
-            auto xp = makeConstArrayRef(*upd->xp()).subArray(0, homenr);
-            auto x  = makeArrayRef(state->x).subArray(0, homenr);
-
-
-            int gmx_unused nth = gmx_omp_nthreads_get(emntUpdate);
-#pragma omp parallel for num_threads(nth) schedule(static)
-            for (int i = 0; i < homenr; i++)
-            {
-                // Trivial statement, does not throw
-                x[i] = xp[i];
-            }
-        }
-        wallcycle_stop(wcycle, ewcUPDATE);
     }
-    /* ############# END the update of velocities and positions ######### */
+    else
+    {
+        /* We have no frozen atoms or fully frozen atoms which have not
+         * been moved by the update, so we can simply copy all coordinates.
+         */
+        int gmx_unused nth = gmx_omp_nthreads_get(emntUpdate);
+#pragma omp parallel for num_threads(nth) schedule(static)
+        for (int i = 0; i < homenr; i++)
+        {
+            // Trivial statement, does not throw
+            x[i] = xp[i];
+        }
+    }
+
+    wallcycle_stop(wcycle, ewcUPDATE);
 }
 
 void update_pcouple_after_coordinates(FILE*             fplog,
