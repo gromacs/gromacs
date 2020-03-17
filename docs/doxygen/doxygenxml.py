@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -400,15 +400,15 @@ class Member(Entity):
         """Add a compound that contains this member."""
         self._parents.add(compound)
         if isinstance(compound, Class):
-            assert self._class is None
+            assert self._class is None, 'Class \"{0}\" was already added. Maybe you have two entities with the same name.'.format(self._class)
             self._class = compound
         elif isinstance(compound, Namespace):
-            assert self._namespace is None
+            assert self._namespace is None, 'Namespace \"{0}\" was already added. Maybe you have two entities with the same name.'.format(self._namespace)
             self._namespace = compound
         elif isinstance(compound, File):
             self._files.add(compound)
         elif isinstance(compound, Group):
-            assert self._group is None
+            assert self._group is None, 'Group \"{0}\" was already added.'.format(self._group)
             self._group = compound
         else:
             assert False
