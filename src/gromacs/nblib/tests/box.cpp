@@ -83,7 +83,7 @@ TEST(NBlibTest, CubicBoxWorks)
 {
     real        length = 3;
     Box::Matrix ref    = { { length, 0, 0, 0, length, 0, 0, 0, length } };
-    Box::Matrix probe  = Box(length).matrix();
+    Box::Matrix probe  = Box(length).gmxMatrix();
 
     for (int i = 0; i < DIM; ++i)
         for (int j = 0; j < DIM; ++j)

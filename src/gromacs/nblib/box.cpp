@@ -78,12 +78,12 @@ Box::Box(real x, real y, real z)
     gmx::fillLegacyMatrix(box_, legacyMatrix_);
 }
 
-Box::Matrix Box::matrix()
+Box::Matrix Box::gmxMatrix()
 {
     return box_;
 }
 
-const Box::Matrix& Box::matrix() const
+const Box::Matrix& Box::gmxMatrix() const
 {
     return box_;
 }
