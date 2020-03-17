@@ -50,11 +50,8 @@ or passed along to the environment of executed commands.
 Other important variable keys are as follows.
 
 .. glossary::
-     CACHE_FALLBACK_KEY
-        *TODO: consumer?*
+    CMAKE_MPI_OPTIONS
+        Provide CMake command line arguments to define GROMACS MPI build options.
 
-     BUILD_DIR
-        *TODO: consumer? impact? conventions/heuristics?*
-
-     INSTALL_DIR
-        *TODO: consumer? impact? conventions/heuristics?*
+.. todo:: Define common variables.
+    ``BUILD_DIR``, ``INSTALL_DIR``, ``CACHE_FALLBACK_KEY``, ...
