@@ -103,7 +103,7 @@ static gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions
 
 void NbvSetupUtil::setExecutionContext(const NBKernelOptions& options)
 {
-    //! Todo: find a more general way to initialize hardware
+    // Todo: find a more general way to initialize hardware
     gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
     gmx_omp_nthreads_set(emntNonbonded, options.numThreads);
 }
@@ -145,10 +145,11 @@ void NbvSetupUtil::setParticleInfoAllVdv(const size_t numParticles)
 
 void NbvSetupUtil::setNonBondedParameters(const std::vector<ParticleType>& particleTypes)
 {
-    //! Todo: Refactor nbnxm to take this (nonbondedParameters_) directly
-    //!
-    //! initial self-handling of combination rules
-    //! size: 2*(numParticleTypes^2)
+    /* Todo: Refactor nbnxm to take nonbondedParameters_ directly
+     *
+     * initial self-handling of combination rules
+     * size: 2*(numParticleTypes^2)
+     */
     nonbondedParameters_.reserve(2 * particleTypes.size() * particleTypes.size());
 
     constexpr real c6factor  = 6.0;
