@@ -62,9 +62,9 @@ public:
 
     Box(real x, real y, real z);
 
-    Matrix matrix();
+    Matrix gmxMatrix();
 
-    const Matrix& matrix() const;
+    const Matrix& gmxMatrix() const;
 
     const LegacyMatrix& legacyMatrix() const
     {
