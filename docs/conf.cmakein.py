@@ -110,7 +110,14 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
-    'sphinx.ext.viewcode',
+    # The viewcode extension requires extra configuration or consideration to
+    # avoid collecting sources for external packages (through intersphninx) or
+    # generating broken links for compiled extension modules that do not have
+    # inspectable 'code' member data.
+    # Ref: https://www.sphinx-doc.org/en/master/usage/extensions/viewcode.html
+    # Please run linkchecker and inspect the generated
+    # docs/html/_modules/index.html page before committing a change that enables
+    # 'sphinx.ext.viewcode',
     'gmxsphinx'
 ]
 extlinks = {'issue': ('https://redmine.gromacs.org/issues/%s',
