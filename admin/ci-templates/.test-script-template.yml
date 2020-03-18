@@ -1,4 +1,11 @@
 .test-script-template:
+   only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
+
    script:
      - cd $BUILD_DIR
      - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
@@ -10,29 +17,18 @@
          exit 1;
        fi
      - cd ..
+     - tar xzf gmx-regressiontests.tar.gz
+     - source $INSTALL_DIR/bin/GMXRC
+     - cd regressiontests
+     - echo "perl gmxtest.pl -nt $REGRESSIONTEST_TOTAL_RANK_NUMBER -ntomp $REGRESSIONTEST_OMP_RANK_NUMBER -npme $REGRESSIONTEST_PME_RANK_NUMBER $REGRESSIONTEST_DOUBLE $REGRESSIONTEST_MPI_RUN_COMMAND"
+     - perl gmxtest.pl -nt $REGRESSIONTEST_TOTAL_RANK_NUMBER -ntomp $REGRESSIONTEST_OMP_RANK_NUMBER
+       -npme $REGRESSIONTEST_PME_RANK_NUMBER $REGRESSIONTEST_DOUBLE $REGRESSIONTEST_MPI_RUN_COMMAND -xml all
    artifacts:
      reports:
        junit: $BUILD_DIR/JUnitTestResults.xml
      paths:
          - $BUILD_DIR/Testing
          - $BUILD_DIR/tests
+         - regressiontests
      when: always
      expire_in: 1 week
-
-.test-regressiontests-template:
-    variables:
-      - TOTAL_RANK_NUMBER: 2
-      - MPI_RANK_NUMBER: 2
-      - PME_RANK_NUMBER: 0
-      - MPI_RUN_COMMAND: ""
-      - DOUBLE: ""
-    only:
-      - refs
-      - schedules
-      - merge_requests
-    script:
-      - tar xzf gmx-regressiontests.tar.gz
-      - source $INSTALL_DIR/bin/GMXRC
-      - cd regressiontests
-      - perl gmxtest.pl -np $TOTAL_RANK_NUMBER -nt $MPI_RANK_NUMBER -npme $PME_RANK_NUMBER
-        $DOUBLE $MPI_RUN_COMMAND

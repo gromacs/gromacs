@@ -3,6 +3,12 @@
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:2020
   stage: configure-build
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -65,6 +71,12 @@
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:2020
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   script:
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j8
@@ -80,6 +92,12 @@
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:2020
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2

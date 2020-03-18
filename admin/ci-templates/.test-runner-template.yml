@@ -1,6 +1,11 @@
 .test-base-template:
    variables:
-       BUILD_DIR: build
+     BUILD_DIR: build
+     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
+     REGRESSIONTEST_OMP_RANK_NUMBER: 2
+     REGRESSIONTEST_PME_RANK_NUMBER: 1
+     REGRESSIONTEST_MPI_RUN_COMMAND: ""
+     REGRESSIONTEST_DOUBLE: ""
    image: biophysics/gcc-gromacs
    stage: test
    retry:

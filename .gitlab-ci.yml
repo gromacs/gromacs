@@ -30,7 +30,7 @@ include:
         - .variables-template
         - .tags-template
 
-.regressiontests-extends-template:
+.regressiontests-prepare-extends-template:
     extends:
         - .no-cache-template
         - .variables-template
@@ -45,7 +45,7 @@ stages:
   - configure-build
   # Build GROMACS in multiple configurations
   - build
-  # Test each configuration, perhaps in multiple ways
+  # Unit test each configuration, perhaps in multiple ways
   - test
   # Generate documentation files
   - documentation
@@ -179,12 +179,12 @@ stages:
 # Runs during pre-build
 prepare-regressiontests:
     extends:
-      - .regressiontests-extends-template
+      - .regressiontests-prepare-extends-template
       - .regressiontests-template
 
 prepare-release-version:
     extends:
-      - .regressiontests-extends-template
+      - .regressiontests-prepare-extends-template
       - .release-version-template
 
 # Initial build that always needs to pass before follow-up stages run
@@ -388,6 +388,7 @@ configure-docs-gmxapi:
 configure-archive-nightly:
     stage: nightly-configure
     only:
+      - web
       - triggers
       - schedules
     needs:
@@ -564,6 +565,7 @@ test-gcc-7:
       - job: simple-build
         artifacts: false 
       - job: build-gcc-7
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -577,6 +579,7 @@ test-gcc-7-gmxapi:
       - job: simple-build
         artifacts: false 
       - job: build-gcc-7-gmxapi
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -585,10 +588,13 @@ test-gcc-7-double:
     extends:
       - .test-gcc
       - .gcc7-template
+    variables:
+      REGRESSIONTEST_DOUBLE: "-double"
     needs:
       - job: simple-build
         artifacts: false 
       - job: build-gcc-7-double
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -601,6 +607,7 @@ test-gcc-8:
       - job: simple-build
         artifacts: false 
       - job: build-gcc-8
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -612,10 +619,15 @@ test-gcc-8-cuda-10.2:
     extends:
       - .test-gcc-cuda
       - .gcc-8-cuda-10.2-template
+    variables:
+      REGRESSIONTEST_PME_RANK_NUMBER: 0
+      REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+      REGRESSIONTEST_OMP_RANK_NUMBER: 1
     needs:
       - job: simple-build
         artifacts: false 
       - job: build-gcc-8-cuda-10.2
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -628,6 +640,7 @@ test-gcc-7-simd-sse41:
       - job: simple-build
         artifacts: false 
       - job: build-gcc-7-simd-sse41
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -640,6 +653,7 @@ test-clang-7:
       - job: simple-build
         artifacts: false 
       - job: build-clang-7
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -653,6 +667,7 @@ test-clang-7-gmxapi:
       - job: simple-build
         artifacts: false 
       - job: build-clang-7-gmxapi
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -665,6 +680,7 @@ test-clang-8:
       - job: simple-build
         artifacts: false 
       - job: build-clang-8
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -672,11 +688,14 @@ test-clang-8:
 test-clang-6:
     extends:
       - .test-clang
-      - .clang6-template       
+      - .clang6-template
+    variables:
+      REGRESSIONTEST_OMP_RANK_NUMBER: 0
     needs:
       - job: simple-build
         artifacts: false 
       - job: build-clang-6
+      - job: prepare-regressiontests
     except:
       variables:
         - $GROMACS_RELEASE
@@ -890,10 +909,10 @@ linkchecker:
   dependencies:
     - webpage-gmxapi
   only:
+    - web
     - schedules
     - triggers
     - merge_requests
-    - external_pull_requests
   except:
     variables:
       - $GROMACS_RELEASE
@@ -921,6 +940,7 @@ build-archive-nightly:
       - job: configure-archive-nightly
         artifacts: true
     only:
+      - web
       - triggers
       - schedules
     except:
@@ -935,6 +955,7 @@ webpage-nightly:
       - .configure-gmxapi-template
     stage: nightly-deploy
     only:
+      - web
       - triggers
       - schedules
     except:
@@ -958,7 +979,7 @@ webpage-nightly:
 
 package-regressiontests-release:
     extends:
-      - .regressiontests-extends-template
+      - .regressiontests-prepare-extends-template
       - .regressiontests-release-template
     needs:
       - job: prepare-release-version
@@ -992,7 +1013,7 @@ package-archive-release:
 
 release-verify:
     extends:
-      - .regressiontests-extends-template
+      - .regressiontests-prepare-extends-template
       - .release-verify-template
 
     only:

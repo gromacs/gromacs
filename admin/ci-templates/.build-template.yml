@@ -2,7 +2,12 @@
   # Dockerfiles are from dockerhub, user eriklindahl
   # image in admin/dockerimages/ci-docs-py27
   stage: configure-build
-  image: biophysics/gcc-gromacs
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -56,7 +61,6 @@
   # Dockerfiles are from dockerhub, user eriklindahl
   # image in admin/dockerimages/ci-docs-py27
   stage: release-configure
-  image: biophysics/gcc-gromacs
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -148,9 +152,12 @@
   # Dockerfiles are from dockerhub, user eriklindahl
   # image in admin/dockerimages/ci-docs-py27
   stage: build
-  image: biophysics/gcc-gromacs
-  variables:
-
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   script:
     - cd $BUILD_DIR
     - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
@@ -176,7 +183,12 @@
 .archive-build-template:
   # Dockerfiles are from dockerhub, user eriklindahl
   image: gromacs/ci-docs-clang:2020
-  variables:
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -222,7 +234,6 @@
 .simple-build-template:
   # Docker images are from dockerhub, user eriklindahl
   stage: pre-build
-  image: biophysics/gcc-gromacs
   variables:
     KUBERNETES_CPU_LIMIT: 8
     KUBERNETES_CPU_REQUEST: 4
@@ -235,6 +246,12 @@
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
 
   script:
     - echo $CMAKE_COMPILER_SCRIPT
