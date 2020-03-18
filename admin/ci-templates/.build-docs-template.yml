@@ -1,7 +1,7 @@
 .configure-docs-template:
-  # Built by admin/dockerfiles/ci-docs
+  # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs:2020
+  image: gromacs/ci-docs-clang:2020
   stage: configure-build
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -62,9 +62,9 @@
       - $BUILD_DIR
 
 .build-docs-binary-template:
-  # Built by admin/dockerfiles/ci-docs
+  # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs:2020
+  image: gromacs/ci-docs-clang:2020
   script:
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j8
@@ -77,9 +77,9 @@
       - $BUILD_DIR
 
 .build-docs-webpage-template:
-  # Built by admin/dockerfiles/ci-docs
+  # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs:2020
+  image: gromacs/ci-docs-clang:2020
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -111,9 +111,9 @@
       - $BUILD_DIR/docs/sphinx-html.log
 
 .configure-docs-release-template:
-  # Built by admin/dockerfiles/ci-docs
+  # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs:2020
+  image: gromacs/ci-docs-clang:2020
   stage: release-configure
   variables:
     KUBERNETES_CPU_LIMIT: 1
