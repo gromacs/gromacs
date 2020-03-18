@@ -12,6 +12,7 @@
     CACHE_FALLBACK_KEY: "$CI_JOB_NAME-$CI_JOB_STAGE-master"
     BUILD_DIR: build
     INSTALL_DIR: install
+    EXTRA_INSTALLS: ""
 
 # Behavioral templates
 
@@ -43,41 +44,12 @@
     CMAKE_EXTRA_OPTIONS: -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda/
     CMAKE_GPU_OPTIONS: -DGMX_GPU=ON
 
-.gcc5-template:
-  image: gromacs/ci-gcc-5:master
-
-.gcc5-gmxapi-template:
-  image: gromacs/ci-gcc-5-gmxapi:master
-
-.gcc6-template:
-  image: gromacs/ci-gcc-6:master
-
-.gcc6-gmxapi-template:
-  image: gromacs/ci-gcc-6-gmxapi:master
-
-.gcc7-template:
-  image: gromacs/ci-gcc-7:master
-
-.gcc7-gmxapi-template:
-  image: gromacs/ci-gcc-7-gmxapi:master
-
-.gcc8-template:
-  image: gromacs/ci-gcc-8:master
-
-.gcc-8-cuda-10.2-template:
-  image: gromacs/ci-gcc-8-cuda-10.2:master
+# Base definition, not to be used directly.
+# Use version-specific `.use-gccX` definitions when defining jobs.
+.use-gcc:base:
   variables:
-    CUDA_BASE_VERSION: "10.2"
-    COMPILER_MAJOR_VERSION: 8
-
-.gcc8-gmxapi-template:
-  image: gromacs/ci-gcc-8-gmxapi:master
-
-.gcc-before-script-template:
-  variables:
-    COMPILER_MAJOR_VERSION: 7
-    EXTRA_INSTALLS: ""
-
+    BUILD_DIR: build-gcc
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=gcc-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=g++-$COMPILER_MAJOR_VERSION
   before_script:
     - echo $EXTRA_INSTALLS
     - time apt-get -qq update
@@ -87,11 +59,25 @@
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
 
-.build-gcc-template:
+.use-gcc7:
+  image: gromacs/ci-gcc-7:master
   variables:
     COMPILER_MAJOR_VERSION: 7
-    BUILD_DIR: build-gcc
-    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=gcc-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=g++-$COMPILER_MAJOR_VERSION
+  extends:
+    - .use-gcc:base
+
+.use-gcc8:
+  image: gromacs/ci-gcc-8:master
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+  extends:
+    - .use-gcc:base
+
+.use-gcc8:cuda-10.2:
+  image: gromacs/ci-gcc-8-cuda-10.2:master
+  variables:
+    CUDA_BASE_VERSION: "10.2"
+    COMPILER_MAJOR_VERSION: 8
 
 .clang6-template:
   image: gromacs/ci-clang-6:master

@@ -130,8 +130,25 @@ or passed along to the environment of executed commands.
 Other important variable keys are as follows.
 
 .. glossary::
+    COMPILER_MAJOR_VERSION
+        Integer version number provided by toolchain mix-in for convenience and
+        internal use.
+
+    CMAKE_COMPILER_SCRIPT
+        CMake command line options for a tool chain. A definition is provided by
+        the mix-in toolchain definitions (e.g. ``.use-gcc8``) to be appended to
+        :command:`cmake` calls in a job's *script*.
+
     CMAKE_MPI_OPTIONS
         Provide CMake command line arguments to define GROMACS MPI build options.
+
+    EXTRA_INSTALLS
+        List additional OS package requirements. Used in *before_script* for some
+        mix-in job definitions to install additional software dependencies. If
+        using such a job with *extends*, override this variable key with a
+        space-delimited list of packages (default: ``""``). Consider proposing a
+        patch to the base Docker images to include the dependency to reduce
+        pipeline execution time.
 
 .. todo:: Define common variables.
     ``BUILD_DIR``, ``INSTALL_DIR``, ``CACHE_FALLBACK_KEY``, ...

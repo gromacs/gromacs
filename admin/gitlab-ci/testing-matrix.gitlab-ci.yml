@@ -77,11 +77,8 @@ simple-build:
     - .simple-build-template
     - .use-ccache
     - .variables:default
-    - .gcc-before-script-template
-    - .build-gcc-template
-    - .gcc7-template
+    - .use-gcc7
   variables:
-    COMPILER_MAJOR_VERSION: 7
     BUILD_DIR: simple-build
   except:
     variables:
@@ -250,14 +247,10 @@ simple-build:
 .configure-gcc:
   extends:
     - .configure-extends-template
-    - .gcc-before-script-template
-    - .build-gcc-template
 
 .configure-gcc-release:
   extends:
     - .configure-release-extends-template
-    - .gcc-before-script-template
-    - .build-gcc-template
 
 .configure-gcc-cuda:
   extends:
@@ -267,12 +260,10 @@ simple-build:
 configure-gcc-7:
   extends:
     - .configure-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 7
   except:
     variables:
       - $GROMACS_RELEASE
@@ -280,10 +271,9 @@ configure-gcc-7:
 configure-gcc-7-release:
   extends:
     - .configure-gcc-release
-    - .gcc7-template
+    - .use-gcc7
   cache: {}
   variables:
-    COMPILER_MAJOR_VERSION: 7
     RELEASE_BUILD_DIR: release-builds-gcc
   only:
     refs:
@@ -300,12 +290,11 @@ configure-gcc-7-release:
 configure-gcc-7-simd-sse41:
   extends:
     - .configure-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
   variables:
-    COMPILER_MAJOR_VERSION: 7
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
   except:
     variables:
@@ -314,12 +303,11 @@ configure-gcc-7-simd-sse41:
 configure-gcc-7-double:
   extends:
     - .configure-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
   variables:
-    COMPILER_MAJOR_VERSION: 7
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
   except:
     variables:
@@ -328,10 +316,9 @@ configure-gcc-7-double:
 configure-gcc-7-double-release:
   extends:
     - .configure-gcc-release
-    - .gcc7-template
+    - .use-gcc7
   cache: {}
   variables:
-    COMPILER_MAJOR_VERSION: 7
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
     RELEASE_BUILD_DIR: release-builds-gcc
   only:
@@ -350,12 +337,10 @@ configure-gcc-7-gmxapi:
   extends:
     - .configure-gcc
     - .configure-gmxapi-template
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 7
   except:
     variables:
       - $GROMACS_RELEASE
@@ -364,10 +349,9 @@ configure-gcc-7-gmxapi-release:
   extends:
     - .configure-gcc-release
     - .configure-gmxapi-template
-    - .gcc7-template
+    - .use-gcc7
   cache: {}
   variables:
-    COMPILER_MAJOR_VERSION: 7
     RELEASE_BUILD_DIR: release-builds-gcc
   only:
     refs:
@@ -384,12 +368,10 @@ configure-gcc-7-gmxapi-release:
 configure-gcc-8:
   extends:
     - .configure-gcc
-    - .gcc8-template
+    - .use-gcc8
   needs:
     - job: simple-build
       artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 8
   except:
     variables:
       - $GROMACS_RELEASE
@@ -397,10 +379,9 @@ configure-gcc-8:
 configure-gcc-8-release:
   extends:
     - .configure-gcc-release
-    - .gcc8-template
+    - .use-gcc8
   cache: {}
   variables:
-    COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-gcc
   only:
     refs:
@@ -417,7 +398,7 @@ configure-gcc-8-release:
 configure-gcc-8-cuda-10.2:
   extends:
     - .configure-gcc-cuda
-    - .gcc-8-cuda-10.2-template
+    - .use-gcc8:cuda-10.2
   needs:
     - job: simple-build
       artifacts: false
@@ -589,8 +570,6 @@ configure-clang-8-release:
 .build-gcc:
   extends:
     - .build-extends-template
-    - .gcc-before-script-template
-    - .build-gcc-template
 
 .build-gcc-cuda:
   extends:
@@ -600,7 +579,7 @@ configure-clang-8-release:
 build-gcc-7:
   extends:
     - .build-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
@@ -613,7 +592,7 @@ build-gcc-7:
 build-gcc-7-release:
   extends:
     - .build-gcc
-    - .gcc7-template
+    - .use-gcc7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
@@ -631,7 +610,7 @@ build-gcc-7-release:
 build-gcc-7-simd-sse41:
   extends:
     - .build-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
@@ -644,7 +623,7 @@ build-gcc-7-simd-sse41:
 build-gcc-7-double:
   extends:
     - .build-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
@@ -658,7 +637,7 @@ build-gcc-7-gmxapi:
   extends:
     - .build-gcc
     - .gmxapi-extra-installs
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
@@ -671,7 +650,7 @@ build-gcc-7-gmxapi:
 build-gcc-7-double-release:
   extends:
     - .build-gcc
-    - .gcc7-template
+    - .use-gcc7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
@@ -690,7 +669,7 @@ build-gcc-7-gmxapi-release:
   extends:
     - .build-gcc
     - .gmxapi-extra-installs
-    - .gcc7-template
+    - .use-gcc7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
@@ -708,7 +687,7 @@ build-gcc-7-gmxapi-release:
 build-gcc-8:
   extends:
     - .build-gcc
-    - .gcc8-template
+    - .use-gcc8
   needs:
     - job: simple-build
       artifacts: false
@@ -721,7 +700,7 @@ build-gcc-8:
 build-gcc-8-release:
   extends:
     - .build-gcc
-    - .gcc8-template
+    - .use-gcc8
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
@@ -739,7 +718,7 @@ build-gcc-8-release:
 build-gcc-8-cuda-10.2:
   extends:
     - .build-gcc-cuda
-    - .gcc-8-cuda-10.2-template
+    - .use-gcc8:cuda-10.2
   needs:
     - job: simple-build
       artifacts: false
@@ -904,13 +883,11 @@ build-clang-8-release:
 
 .test-gcc-template:
   variables:
-    COMPILER_MAJOR_VERSION: 7
     BUILD_DIR: build-gcc
 
 .test-gcc:
   extends:
     - .test-extends-template
-    - .gcc-before-script-template
     - .test-gcc-template
 
 .test-gcc-cuda:
@@ -921,7 +898,7 @@ build-clang-8-release:
 test-gcc-7:
   extends:
     - .test-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
@@ -933,7 +910,7 @@ test-gcc-7:
 test-gcc-7-release:
   extends:
     - .test-gcc
-    - .gcc7-template
+    - .use-gcc7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
@@ -953,7 +930,7 @@ test-gcc-7-release:
 test-gcc-7-simd-sse41:
   extends:
     - .test-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
@@ -965,7 +942,7 @@ test-gcc-7-simd-sse41:
 test-gcc-7-double:
   extends:
     - .test-gcc
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
@@ -977,7 +954,7 @@ test-gcc-7-double:
 test-gcc-7-double-release:
   extends:
     - .test-gcc
-    - .gcc7-template
+    - .use-gcc7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
@@ -998,7 +975,7 @@ test-gcc-7-gmxapi:
   extends:
     - .test-gcc
     - .gmxapi-extra-installs
-    - .gcc7-template
+    - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
@@ -1011,7 +988,7 @@ test-gcc-7-gmxapi-release:
   extends:
     - .test-gcc
     - .gmxapi-extra-installs
-    - .gcc7-template
+    - .use-gcc7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
@@ -1031,7 +1008,7 @@ test-gcc-7-gmxapi-release:
 test-gcc-8:
   extends:
     - .test-gcc
-    - .gcc8-template
+    - .use-gcc8
   needs:
     - job: simple-build
       artifacts: false
@@ -1043,7 +1020,7 @@ test-gcc-8:
 test-gcc-8-release:
   extends:
     - .test-gcc
-    - .gcc8-template
+    - .use-gcc8
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
@@ -1066,7 +1043,7 @@ test-gcc-8-cuda-10.2:
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   extends:
     - .test-gcc-cuda
-    - .gcc-8-cuda-10.2-template
+    - .use-gcc8:cuda-10.2
   needs:
     - job: simple-build
       artifacts: false
