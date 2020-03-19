@@ -28,16 +28,57 @@ Pipeline execution
 
 .. todo:: Comment on the number of pipelines that can be or which are likely to be running at the same time.
 
+Configuration files
+~~~~~~~~~~~~~~~~~~~
+
+At the root of the repository, :file:`.gitlab-ci.yml` defines the stages and
+some default parameters, then includes files from :file:`admin/gitlab-ci/` to
+define jobs to be executed in the pipelines.
+
+Note that job names beginning with a period (``.``) are
+`"hidden" <https://docs.gitlab.com/ee/ci/yaml/#hidden-keys-jobs>`_.
+Such jobs are not directly eligible to run, but may be used as templates
+via the `*extends* job property <https://docs.gitlab.com/ee/ci/yaml/#extends>`_.
+
+Job parameters
+~~~~~~~~~~~~~~
+
+Refer to https://docs.gitlab.com/ee/ci/yaml for complete documentation on
+GitLab CI job parameters, but note the following GROMACS-specific conventions.
+
+.. glossary::
+
+    before_script
+        Used by several of our templates to prepend shell commands to
+        a job *script* parameter.
+        Avoid using *before-script* directly, and be cautious
+        about nested *extends* overriding multiple *before_script* definitions.
+
+    image
+        Part of the tool chain configuration. Instead of setting *image*
+        directly, *extend* a *.use_<toolchain>* template from
+        :file:`admin/gitlab-ci/global.gitlab-ci.yml`
+
+    variables
+        Many job definitions will add or override keys in *variables*.
+        Refer to `GitLab <https://docs.gitlab.com/ee/ci/yaml/#variables>`__
+        for details of the merging behavior. Refer to :ref:`variables` for local usage.
+
+In addition to the templates in the main job definition files,
+common "mix-in" functionality and behavioral templates are defined in
+:file:`admin/gitlab-ci/global.gitlab-ci.yml`.
+
+.. _variables:
+
 Variables
 ~~~~~~~~~
 
 The GitLab CI framework, GitLab Runner, plugins, and our own scripts set and
-use several variables (usually as a key under a *variables* parameter in
-the YAML configuration).
+use several `variables <https://docs.gitlab.com/ee/ci/variables/README.html>`__.
 
-Some default values are specified for all jobs in :file:`.gitlab-ci.yml`.
-Many of the mix-in / template jobs in :file:`admin/gitlab-ci/global.gitlab-ci.yml`
-provide additional or overriding definitions.
+Default values are available from the ``.variables:default`` definition in
+:file:`admin/gitlab-ci/global.gitlab-ci.yml`.
+Many of the mix-in / template jobs provide additional or overriding definitions.
 Other variables may be set when making final job definitions.
 
 Variables may control the behvior of GitLab-CI (those beginning with ``CI_``),

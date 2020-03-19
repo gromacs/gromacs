@@ -22,7 +22,7 @@
 .build-docs-webpage:
   extends:
     - .binary-build-template
-    - .variables-template
+    - .variables:default
     - .no-cache-template
     - .build-docs-webpage-template
     - .documentation-before-script-template

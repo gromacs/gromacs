@@ -1,8 +1,0 @@
-.pull-cache-template:
-    cache:
-      key: "$CI_JOB_NAME-$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
-      # Read but don't update the cache
-      policy: pull
-
-.no-cache-template:
-    cache: {}

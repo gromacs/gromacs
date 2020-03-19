@@ -3,31 +3,31 @@
   extends:
     - .configure-build-template
     - .no-cache-template
-    - .variables-template
+    - .variables:default
 
 .configure-release-extends-template:
   extends:
     - .configure-build-release-template
     - .no-cache-template
-    - .variables-template
+    - .variables:default
 
 .build-extends-template:
   extends:
     - .binary-build-template
     - .build-cache-template
-    - .variables-template
+    - .variables:default
 
 .test-extends-template:
   extends:
     - .test-base-template
     - .pull-cache-template
     - .test-script-template
-    - .variables-template
+    - .variables:default
 
 .regressiontests-extends-template:
   extends:
     - .no-cache-template
-    - .variables-template
+    - .variables:default
 
 
 # Templates for configuration stage
@@ -120,7 +120,7 @@ simple-build:
   extends:
     - .simple-build-template
     - .build-cache-template
-    - .variables-template
+    - .variables:default
     - .gcc-before-script-template
     - .build-gcc-template
     - .gcc7-template
