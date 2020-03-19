@@ -88,6 +88,25 @@ If providing more than a default parameter value, the job name should be suffixe
 by a meaningful descriptor and documented within
 :file:`admin/gitlab-ci/global.gitlab-ci.yml`
 
+Job names
+~~~~~~~~~
+
+Job names should
+
+1. Indicate the purpose of the job.
+2. Indicate relationships between multi-stage tasks.
+3. Distinguish jobs in the same stage.
+4. Distinguish job definitions throughout the configuration.
+
+Jobs may be reassigned to different stages over time, so including the stage
+name in the job name is not helpful, generally. If tags like "pre" and "post,"
+or "build" and "test" are necessary to distinguish phases of, say, "webpage,"
+then such tags can be buried at the end of the job name.
+
+Stylistically, it is helpful to use delimiters like ``:`` to distinguish the
+basic job name from qualifiers or details. Also consider
+`grouping jobs <https://docs.gitlab.com/ee/ci/pipelines/index.html#grouping-jobs>`__
+
 .. _variables:
 
 Variables
