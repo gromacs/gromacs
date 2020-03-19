@@ -1132,8 +1132,7 @@ int Mdrunner::mdrunner()
     }
 
     // Produce the task assignment for this rank - done after DD is constructed
-    GpuTaskAssignmentsBuilder gpuTaskAssignmentsBuilder;
-    GpuTaskAssignments        gpuTaskAssignments = gpuTaskAssignmentsBuilder.build(
+    GpuTaskAssignments gpuTaskAssignments = GpuTaskAssignmentsBuilder::build(
             gpuIdsToUse, userGpuTaskAssignment, *hwinfo, communicator, physicalNodeComm,
             nonbondedTarget, pmeTarget, bondedTarget, updateTarget, useGpuForNonbonded,
             useGpuForPme, thisRankHasDuty(cr, DUTY_PP),

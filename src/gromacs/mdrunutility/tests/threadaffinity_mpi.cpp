@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,17 +114,17 @@ TEST(ThreadAffinityMultiRankTest, HandlesTooManyThreadsWithForce)
 class ThreadAffinityHeterogeneousNodesTest : public ::testing::Test
 {
 public:
-    int  currentNode() const { return gmx_node_rank() / 2; }
-    int  indexInNode() const { return gmx_node_rank() % 2; }
-    bool isMaster() const { return gmx_node_rank() == 0; }
+    static int  currentNode() { return gmx_node_rank() / 2; }
+    static int  indexInNode() { return gmx_node_rank() % 2; }
+    static bool isMaster() { return gmx_node_rank() == 0; }
 
-    void setupNodes(ThreadAffinityTestHelper* helper, std::array<int, 2> cores)
+    static void setupNodes(ThreadAffinityTestHelper* helper, std::array<int, 2> cores)
     {
         const int node = currentNode();
         helper->setPhysicalNodeId(node);
         helper->setLogicalProcessorCount(cores[node]);
     }
-    void expectNodeAffinitySet(ThreadAffinityTestHelper* helper, int node, int core)
+    static void expectNodeAffinitySet(ThreadAffinityTestHelper* helper, int node, int core)
     {
         if (currentNode() == node)
         {

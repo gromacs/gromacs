@@ -724,11 +724,7 @@ static real calc_fraction(const real angles[], int nangles)
         {
             trans += 1.0;
         }
-        else if (angle > 270 && angle < 330)
-        {
-            gauche += 1.0;
-        }
-        else if (angle < 90 && angle > 30)
+        else if ((angle > 270 && angle < 330) || (angle < 90 && angle > 30))
         {
             gauche += 1.0;
         }

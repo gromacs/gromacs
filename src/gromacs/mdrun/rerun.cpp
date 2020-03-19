@@ -510,7 +510,7 @@ void gmx::LegacySimulator::do_rerun()
 
         if (MASTER(cr))
         {
-            energyOutput.printHeader(fplog, step, t); /* can we improve the information printed here? */
+            EnergyOutput::printHeader(fplog, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != efepNO)
@@ -618,7 +618,7 @@ void gmx::LegacySimulator::do_rerun()
             const bool do_dr  = ir->nstdisreout != 0;
             const bool do_or  = ir->nstorireout != 0;
 
-            energyOutput.printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
+            EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
                                                do_log ? fplog : nullptr, step, t, fcd, awh);
 

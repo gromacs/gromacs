@@ -588,11 +588,11 @@ private:
     /*! \brief
      * Prints markup for starting a list of keywords.
      */
-    void writeKeywordListStart(const HelpWriterContext& context, const char* heading) const;
+    static void writeKeywordListStart(const HelpWriterContext& context, const char* heading);
     /*! \brief
      * Prints markup for ending a list of keywords.
      */
-    void writeKeywordListEnd(const HelpWriterContext& context, const char* extraInfo) const;
+    static void writeKeywordListEnd(const HelpWriterContext& context, const char* extraInfo);
 
     /*! \brief
      * Prints a brief list of keywords (selection methods) available.
@@ -667,7 +667,7 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext& context) const
     writeKeywordSubTopics(context);
 }
 
-void KeywordsHelpTopic::writeKeywordListStart(const HelpWriterContext& context, const char* heading) const
+void KeywordsHelpTopic::writeKeywordListStart(const HelpWriterContext& context, const char* heading)
 {
     context.paragraphBreak();
     std::string fullHeading("* ");
@@ -681,7 +681,7 @@ void KeywordsHelpTopic::writeKeywordListStart(const HelpWriterContext& context, 
     }
 }
 
-void KeywordsHelpTopic::writeKeywordListEnd(const HelpWriterContext& context, const char* extraInfo) const
+void KeywordsHelpTopic::writeKeywordListEnd(const HelpWriterContext& context, const char* extraInfo)
 {
     if (context.outputFormat() == eHelpOutputFormat_Rst)
     {

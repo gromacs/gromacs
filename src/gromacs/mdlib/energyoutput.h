@@ -216,7 +216,7 @@ public:
      * \param[in] opts    Atom temperature coupling groups options
      *                    (annealing is done by groups).
      */
-    void printAnnealingTemperatures(FILE* log, const SimulationGroups* groups, t_grpopts* opts);
+    static void printAnnealingTemperatures(FILE* log, const SimulationGroups* groups, t_grpopts* opts);
 
     /*! \brief Prints average values to log file.
      *
@@ -256,7 +256,7 @@ public:
     void restoreFromEnergyHistory(const energyhistory_t& enerhist);
 
     //! Print an output header to the log file.
-    void printHeader(FILE* log, int64_t steps, double time);
+    static void printHeader(FILE* log, int64_t steps, double time);
 
 private:
     //! Timestep

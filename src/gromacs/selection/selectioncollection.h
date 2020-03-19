@@ -419,7 +419,7 @@ private:
     /*! \brief
      * Needed for the compiler to freely modify the collection.
      */
-    friend class SelectionCompiler;
+    friend void compileSelection(SelectionCollection* /*coll*/);
     /*! \brief
      * Needed for the evaluator to freely modify the collection.
      */

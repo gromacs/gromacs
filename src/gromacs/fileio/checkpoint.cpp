@@ -1272,16 +1272,11 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
                     break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
+                 * It's OK that three case statements fall through.
                  */
                 case estLD_RNG_NOTSUPPORTED:
-                    ret = do_cpte_ints(xd, part, i, sflags, 0, nullptr, list);
-                    break;
                 case estLD_RNGI_NOTSUPPORTED:
-                    ret = do_cpte_ints(xd, part, i, sflags, 0, nullptr, list);
-                    break;
                 case estMC_RNG_NOTSUPPORTED:
-                    ret = do_cpte_ints(xd, part, i, sflags, 0, nullptr, list);
-                    break;
                 case estMC_RNGI_NOTSUPPORTED:
                     ret = do_cpte_ints(xd, part, i, sflags, 0, nullptr, list);
                     break;

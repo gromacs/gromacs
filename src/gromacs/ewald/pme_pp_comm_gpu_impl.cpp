@@ -68,7 +68,7 @@ PmePpCommGpu::PmePpCommGpu(MPI_Comm /* comm */,
                            const DeviceStream& /* deviceStream */) :
     impl_(nullptr)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
 }
@@ -78,7 +78,7 @@ PmePpCommGpu::~PmePpCommGpu() = default;
 /*!\brief init PME-PP GPU communication stub */
 void PmePpCommGpu::reinit(int /* size */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "
                "correct implementation.");
 }
@@ -87,7 +87,7 @@ void PmePpCommGpu::receiveForceFromPmeCudaDirect(void* /* recvPtr */,
                                                  int /* recvSize */,
                                                  bool /* receivePmeForceToGpu */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
 }
@@ -97,14 +97,14 @@ void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void* /* sendPtr */,
                                                   bool /* sendPmeCoordinatesFromGpu */,
                                                   GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
 }
 
 void* PmePpCommGpu::getGpuForceStagingPtr()
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
     return nullptr;
@@ -112,7 +112,7 @@ void* PmePpCommGpu::getGpuForceStagingPtr()
 
 void* PmePpCommGpu::getForcesReadySynchronizer()
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
     return nullptr;

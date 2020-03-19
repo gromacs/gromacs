@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,6 +69,7 @@ struct is_resizable<T, void_t<decltype(std::declval<T>().resize(size_t()))>> : s
 
 //! Type has a resize member function callable with size_t argument
 template<typename T>
+// NOLINTNEXTLINE misc-definitions-in-headers
 constexpr bool is_resizable_v = is_resizable<T>::value;
 } // namespace detail
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -198,12 +198,12 @@ std::string FileNameOptionManager::completeFileName(const std::string& value, co
                 return processedValue;
             }
             if (bAllowMissing)
-            {
+            { // NOLINT bugprone-branch-clone
                 return value + option.defaultExtension();
             }
             else if (option.isLibraryFile())
             {
-                // TODO: Treat also library files here.
+                // TODO: Treat also library files here and remove the NOLINT.
                 return value + option.defaultExtension();
             }
             else
@@ -262,12 +262,12 @@ std::string FileNameOptionManager::completeDefaultFileName(const std::string&   
             return completedName;
         }
         if (option.allowMissing())
-        {
+        { // NOLINT bugprone-branch-clone
             return realPrefix + option.defaultExtension();
         }
-        else if (option.isLibraryFile())
+        else if (option.isLibraryFile()) // NOLINT bugprone-branch-clone
         {
-            // TODO: Treat also library files here.
+            // TODO: Treat also library files here and remove the NOLINT
             return realPrefix + option.defaultExtension();
         }
         else if (option.isSet())

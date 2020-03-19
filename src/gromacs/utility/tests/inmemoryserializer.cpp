@@ -109,13 +109,13 @@ public:
         real           realValue_;
     };
 
-    void serialize(ISerializer* serializer, SerializerValues* values)
+    static void serialize(ISerializer* serializer, SerializerValues* values)
     {
         EXPECT_FALSE(serializer->reading());
         doValues(serializer, values);
     }
 
-    SerializerValues deserialize(ISerializer* serializer)
+    static SerializerValues deserialize(ISerializer* serializer)
     {
         EXPECT_TRUE(serializer->reading());
         SerializerValues result;
@@ -123,7 +123,7 @@ public:
         return result;
     }
 
-    void checkSerializerValuesforEquality(const SerializerValues& lhs, const SerializerValues& rhs)
+    static void checkSerializerValuesforEquality(const SerializerValues& lhs, const SerializerValues& rhs)
     {
         EXPECT_EQ(lhs.boolValue_, rhs.boolValue_);
         EXPECT_EQ(lhs.unsignedCharValue_, rhs.unsignedCharValue_);
@@ -138,7 +138,7 @@ public:
     }
 
 private:
-    void doValues(ISerializer* serializer, SerializerValues* values)
+    static void doValues(ISerializer* serializer, SerializerValues* values)
     {
         serializer->doBool(&values->boolValue_);
         serializer->doUChar(&values->unsignedCharValue_);

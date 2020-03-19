@@ -255,7 +255,7 @@ static e_index_t index_type_for_poscalc(e_poscalc_t type)
         case POS_ATOM: return INDEX_ATOM;
         case POS_RES: return INDEX_RES;
         case POS_MOL: return INDEX_MOL;
-        case POS_ALL: return INDEX_ALL;
+        case POS_ALL: // Intended fall through
         case POS_ALL_PBC: return INDEX_ALL;
     }
     return INDEX_UNKNOWN;

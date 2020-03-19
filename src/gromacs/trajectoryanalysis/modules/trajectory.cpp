@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -253,7 +253,7 @@ void analyzeFrameImpl(int frnr, const t_trxframe& fr, AnalysisDataHandle* dh, co
 void Trajectory::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* /* pbc */, TrajectoryAnalysisModuleData* pdata)
 {
     AnalysisDataHandle   dh  = pdata->dataHandle(xdata_);
-    const SelectionList& sel = pdata->parallelSelections(sel_);
+    const SelectionList& sel = TrajectoryAnalysisModuleData::parallelSelections(sel_);
     analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition& pos) { return pos.x(); });
     if (fr.bV)
     {

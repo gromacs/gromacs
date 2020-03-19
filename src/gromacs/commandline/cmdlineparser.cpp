@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,7 @@ public:
      * \returns The beginning of the option name in \p arg, or NULL if
      *     \p arg does not look like an option.
      */
-    const char* toOptionName(const char* arg) const;
+    static const char* toOptionName(const char* arg);
 
     //! Helper object for assigning the options.
     OptionsAssigner assigner_;
@@ -100,7 +100,7 @@ CommandLineParser::Impl::Impl(Options* options) :
     assigner_.setAcceptBooleanNoPrefix(true);
 }
 
-const char* CommandLineParser::Impl::toOptionName(const char* arg) const
+const char* CommandLineParser::Impl::toOptionName(const char* arg)
 {
     // Lone '-' or '--' is not an option.
     if (arg[0] != '-' || arg[1] == '\0' || (arg[1] == '-' && arg[2] == '\0'))

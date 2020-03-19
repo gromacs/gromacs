@@ -303,7 +303,7 @@ void FreeVolume::initAnalysis(const TrajectoryAnalysisSettings& settings, const 
 void FreeVolume::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata)
 {
     AnalysisDataHandle                 dh  = pdata->dataHandle(data_);
-    const Selection&                   sel = pdata->parallelSelection(sel_);
+    const Selection&                   sel = TrajectoryAnalysisModuleData::parallelSelection(sel_);
     gmx::UniformRealDistribution<real> dist;
 
     GMX_RELEASE_ASSERT(nullptr != pbc, "You have no periodic boundary conditions");

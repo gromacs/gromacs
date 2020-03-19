@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -167,7 +167,7 @@ static int init_method_token(YYSTYPE*                          yylval,
         }
         switch (method->type)
         {
-            case INT_VALUE: return METHOD_NUMERIC;
+            case INT_VALUE: // Intended fall through
             case REAL_VALUE: return METHOD_NUMERIC;
             case POS_VALUE: return METHOD_POS;
             case GROUP_VALUE: return METHOD_GROUP;
@@ -304,7 +304,7 @@ int _gmx_sel_lexer_process_identifier(YYSTYPE* yylval, YYLTYPE* yylloc, char* yy
         yylval->sel = new gmx::SelectionTreeElementPointer(var);
         switch (var->v.type)
         {
-            case INT_VALUE: return VARIABLE_NUMERIC;
+            case INT_VALUE: // Intended fall through
             case REAL_VALUE: return VARIABLE_NUMERIC;
             case POS_VALUE: return VARIABLE_POS;
             case GROUP_VALUE: return VARIABLE_GROUP;

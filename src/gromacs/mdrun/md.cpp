@@ -879,7 +879,8 @@ void gmx::LegacySimulator::do_md()
 
         if (MASTER(cr) && do_log)
         {
-            energyOutput.printHeader(fplog, step, t); /* can we improve the information printed here? */
+            gmx::EnergyOutput::printHeader(fplog, step,
+                                           t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != efepNO)
@@ -1544,7 +1545,8 @@ void gmx::LegacySimulator::do_md()
 
             if (doSimulatedAnnealing)
             {
-                energyOutput.printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
+                gmx::EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, groups,
+                                                              &(ir->opts));
             }
             if (do_log || do_ene || do_dr || do_or)
             {
@@ -1671,7 +1673,7 @@ void gmx::LegacySimulator::do_md()
     {
         if (ir->nstcalcenergy > 0)
         {
-            energyOutput.printAnnealingTemperatures(fplog, groups, &(ir->opts));
+            gmx::EnergyOutput::printAnnealingTemperatures(fplog, groups, &(ir->opts));
             energyOutput.printAverages(fplog, groups);
         }
     }

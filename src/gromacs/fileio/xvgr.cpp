@@ -512,11 +512,7 @@ static int wordcount(char* ptr)
         for (i = 0; (ptr[i] != '\0'); i++)
         {
             is[cur] = std::isspace(ptr[i]);
-            if ((0 == i) && !is[cur])
-            {
-                n++;
-            }
-            else if ((i > 0) && (!is[cur] && is[prev]))
+            if (((0 == i) && !is[cur]) || ((i > 0) && (!is[cur] && is[prev])))
             {
                 n++;
             }

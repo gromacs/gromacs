@@ -277,7 +277,7 @@ public:
                                              char***                         argv);
 
     //! Prints the footer at the end of execution.
-    void printThanks(FILE* fp);
+    static void printThanks(FILE* fp);
 
     /*! \brief
      * Maps module names to module objects.

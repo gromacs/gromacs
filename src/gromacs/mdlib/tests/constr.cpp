@@ -167,7 +167,9 @@ public:
      * \param[in] testData        Test data structure.
      * \param[in] pbc             Periodic boundary data.
      */
-    void checkConstrainsLength(FloatingPointTolerance tolerance, const ConstraintsTestData& testData, t_pbc pbc)
+    static void checkConstrainsLength(FloatingPointTolerance     tolerance,
+                                      const ConstraintsTestData& testData,
+                                      t_pbc                      pbc)
     {
 
         // Test if all the constraints are satisfied
@@ -208,7 +210,7 @@ public:
      * \param[in] testData        Test data structure.
      * \param[in] pbc             Periodic boundary data.
      */
-    void checkConstrainsDirection(const ConstraintsTestData& testData, t_pbc pbc)
+    static void checkConstrainsDirection(const ConstraintsTestData& testData, t_pbc pbc)
     {
 
         for (index c = 0; c < ssize(testData.constraints_) / 3; c++)
@@ -248,7 +250,7 @@ public:
      * \param[in] tolerance       Allowed tolerance in COM coordinates.
      * \param[in] testData        Test data structure.
      */
-    void checkCOMCoordinates(FloatingPointTolerance tolerance, const ConstraintsTestData& testData)
+    static void checkCOMCoordinates(FloatingPointTolerance tolerance, const ConstraintsTestData& testData)
     {
 
         RVec comPrime0({ 0.0, 0.0, 0.0 });
@@ -278,7 +280,7 @@ public:
      * \param[in] tolerance       Allowed tolerance in COM velocity components.
      * \param[in] testData        Test data structure.
      */
-    void checkCOMVelocity(FloatingPointTolerance tolerance, const ConstraintsTestData& testData)
+    static void checkCOMVelocity(FloatingPointTolerance tolerance, const ConstraintsTestData& testData)
     {
 
         RVec comV0({ 0.0, 0.0, 0.0 });
@@ -307,7 +309,7 @@ public:
      * \param[in] tolerance       Tolerance for the tensor values.
      * \param[in] testData        Test data structure.
      */
-    void checkVirialTensor(FloatingPointTolerance tolerance, const ConstraintsTestData& testData)
+    static void checkVirialTensor(FloatingPointTolerance tolerance, const ConstraintsTestData& testData)
     {
         for (int i = 0; i < DIM; i++)
         {

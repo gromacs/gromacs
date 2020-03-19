@@ -180,7 +180,7 @@ void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nb
 
 bool GpuBonded::haveInteractions() const
 {
-    return false;
+    return !impl_;
 }
 
 void GpuBonded::launchKernel(const t_forcerec* /* fr */,

@@ -158,16 +158,6 @@ RestraintMDModuleImpl::RestraintMDModuleImpl(std::shared_ptr<IRestraintPotential
     GMX_ASSERT(forceProvider_, "Class invariant implies non-null ForceProvider.");
 }
 
-IMdpOptionProvider* RestraintMDModuleImpl::mdpOptionProvider()
-{
-    return nullptr;
-}
-
-IMDOutputProvider* RestraintMDModuleImpl::outputProvider()
-{
-    return nullptr;
-}
-
 void RestraintMDModuleImpl::initForceProviders(ForceProviders* forceProviders)
 {
     GMX_ASSERT(forceProvider_, "Class invariant implies non-null ForceProvider member.");

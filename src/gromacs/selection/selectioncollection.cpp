@@ -503,7 +503,7 @@ bool SelectionCollection::Impl::areForcesRequested() const
 
 
 SelectionTopologyProperties
-SelectionCollection::Impl::requiredTopologyPropertiesForPositionType(const std::string& post, bool forces) const
+SelectionCollection::Impl::requiredTopologyPropertiesForPositionType(const std::string& post, bool forces)
 {
     SelectionTopologyProperties props;
     if (!post.empty())
@@ -687,7 +687,8 @@ bool SelectionCollection::requiresIndexGroups() const
 
 SelectionList SelectionCollection::parseFromStdin(int count, bool bInteractive, const std::string& context)
 {
-    return parseInteractive(count, &StandardInputStream::instance(),
+    StandardInputStream inputStream;
+    return parseInteractive(count, &inputStream,
                             bInteractive ? &TextOutputFile::standardError() : nullptr, context);
 }
 
@@ -764,8 +765,7 @@ void SelectionCollection::compile()
         printTree(stderr, false);
     }
 
-    SelectionCompiler compiler;
-    compiler.compile(this);
+    compileSelection(this);
 
     if (impl_->debugLevel_ != Impl::DebugLevel::None)
     {

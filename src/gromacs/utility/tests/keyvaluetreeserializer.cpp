@@ -108,7 +108,7 @@ public:
     gmx::KeyValueTreeBuilder builder_;
 
 private:
-    std::vector<char> serializeTree(const gmx::KeyValueTreeObject& tree)
+    static std::vector<char> serializeTree(const gmx::KeyValueTreeObject& tree)
     {
         gmx::InMemorySerializer serializer;
         gmx::serializeKeyValueTree(tree, &serializer);

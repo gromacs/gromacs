@@ -66,7 +66,7 @@ PmeForceSenderGpu::PmeForceSenderGpu(const DeviceStream& /*pmeStream */,
                                      gmx::ArrayRef<PpRanks> /* ppRanks */) :
     impl_(nullptr)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
 }
@@ -76,14 +76,14 @@ PmeForceSenderGpu::~PmeForceSenderGpu() = default;
 /*!\brief init PME-PP GPU communication stub */
 void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec* /* d_f */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "
                "correct implementation.");
 }
 
 void PmeForceSenderGpu::sendFToPpCudaDirect(int /* ppRank */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
 }

@@ -123,8 +123,11 @@ private:
 
     typedef std::vector<PositionTest> PositionTestList;
 
-    void setTopologyIfRequired();
-    void checkPositions(gmx::test::TestReferenceChecker* checker, const char* name, gmx_ana_pos_t* p, bool bCoordinates);
+    void        setTopologyIfRequired();
+    static void checkPositions(gmx::test::TestReferenceChecker* checker,
+                               const char*                      name,
+                               gmx_ana_pos_t*                   p,
+                               bool                             bCoordinates);
 
     std::vector<gmx_ana_poscalc_t*> pcList_;
     PositionTestList                posList_;

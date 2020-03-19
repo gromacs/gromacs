@@ -202,9 +202,9 @@ public:
      * \param[in]  tolerance         Tolerance to compare floating point numbers.
      * \param[in]  testData          An object, containing all the data structures needed by SETTLE.
      */
-    void checkConstrainsSatisfied(const int                    numSettles,
-                                  const FloatingPointTolerance tolerance,
-                                  const SettleTestData&        testData)
+    static void checkConstrainsSatisfied(const int                    numSettles,
+                                         const FloatingPointTolerance tolerance,
+                                         const SettleTestData&        testData)
     {
         for (int i = 0; i < numSettles; ++i)
         {
@@ -234,9 +234,9 @@ public:
      * \param[in]  tolerance         Tolerance to compare floating point numbers.
      * \param[in]  testData          An object, containing all the data structures needed by SETTLE.
      */
-    void checkVirialSymmetric(const bool                   calcVirial,
-                              const FloatingPointTolerance tolerance,
-                              const SettleTestData&        testData)
+    static void checkVirialSymmetric(const bool                   calcVirial,
+                                     const FloatingPointTolerance tolerance,
+                                     const SettleTestData&        testData)
     {
         for (int d = 0; d < DIM; ++d)
         {

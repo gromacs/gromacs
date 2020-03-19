@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,7 +107,7 @@ public:
      * \param[in] bSet     Value of the property to check against.
      * \throws    APIError if \p module is not compatible with the data.
      */
-    void checkModuleProperty(const IAnalysisDataModule& module, DataProperty property, bool bSet) const;
+    static void checkModuleProperty(const IAnalysisDataModule& module, DataProperty property, bool bSet);
     /*! \brief
      * Checks whether a module is compatible with the data properties.
      *
@@ -175,7 +175,7 @@ AnalysisDataModuleManager::Impl::Impl() :
 
 void AnalysisDataModuleManager::Impl::checkModuleProperty(const IAnalysisDataModule& module,
                                                           DataProperty               property,
-                                                          bool                       bSet) const
+                                                          bool                       bSet)
 {
     bool      bOk   = true;
     const int flags = module.flags();

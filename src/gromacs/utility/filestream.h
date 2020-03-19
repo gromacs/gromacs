@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,18 +78,11 @@ public:
      *
      * Does not throw.
      */
-    bool isInteractive() const;
+    static bool isInteractive();
 
     // From TextInputStream
     bool readLine(std::string* line) override;
     void close() override {}
-
-    /*! \brief
-     * Returns a stream for accessing `stdin`.
-     *
-     * Does not throw.
-     */
-    static StandardInputStream& instance();
 };
 
 /*! \libinternal \brief

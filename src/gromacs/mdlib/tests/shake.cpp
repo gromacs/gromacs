@@ -147,12 +147,12 @@ public:
     }
 
     //! Run the test
-    void runTest(size_t gmx_unused        numAtoms,
-                 size_t                   numConstraints,
-                 const std::vector<int>&  iatom,
-                 const std::vector<real>& constrainedDistances,
-                 const std::vector<real>& inverseMasses,
-                 const std::vector<RVec>& positions)
+    static void runTest(size_t gmx_unused        numAtoms,
+                        size_t                   numConstraints,
+                        const std::vector<int>&  iatom,
+                        const std::vector<real>& constrainedDistances,
+                        const std::vector<real>& inverseMasses,
+                        const std::vector<RVec>& positions)
     {
         // Check the test input is consistent
         assert(numConstraints * constraintStride == iatom.size());

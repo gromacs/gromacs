@@ -3636,14 +3636,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     er->restartWithAppending = (startingBehavior == gmx::StartingBehavior::RestartWithAppending);
 
     /* When appending, skip first output to avoid duplicate entries in the data files */
-    if (er->restartWithAppending)
-    {
-        er->bOut = FALSE;
-    }
-    else
-    {
-        er->bOut = TRUE;
-    }
+    er->bOut = er->restartWithAppending;
 
     if (MASTER(cr) && er->bOut)
     {

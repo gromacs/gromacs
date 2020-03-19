@@ -120,9 +120,7 @@ static void fill_ft_ind(int nft, const int* ft, const t_idef* idef, int ft_ind[]
                         sprintf(buf, "RB-A1=%.2f", idef->iparams[i].rbdihs.rbcA[1]);
                         break;
                     case F_RESTRANGLES:
-                        sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
-                                idef->iparams[i].harmonic.krA);
-                        break;
+                        // Fall through intended
                     case F_RESTRDIHS:
                         sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);

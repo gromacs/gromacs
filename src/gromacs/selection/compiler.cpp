@@ -2586,11 +2586,8 @@ static void free_item_compilerdata(const SelectionTreeElementPointer& sel)
 namespace gmx
 {
 
-SelectionCompiler::SelectionCompiler() {}
-
 /*!
  * \param[in,out] coll Selection collection to be compiled.
- * \returns       0 on successful compilation, a non-zero error code on error.
  *
  * Before compilation, the selection collection should have been initialized
  * with gmx_ana_selcollection_parse_*().
@@ -2601,7 +2598,7 @@ SelectionCompiler::SelectionCompiler() {}
  * The covered fraction information in \p sc is initialized to
  * \ref CFRAC_NONE.
  */
-void SelectionCompiler::compile(SelectionCollection* coll)
+void compileSelection(SelectionCollection* coll)
 {
     gmx_ana_selcollection_t*    sc = &coll->impl_->sc_;
     gmx_sel_evaluate_t          evaldata;

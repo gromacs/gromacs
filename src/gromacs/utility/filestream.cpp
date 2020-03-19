@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -153,7 +153,8 @@ using internal::FileStreamImpl;
  * StandardInputStream
  */
 
-bool StandardInputStream::isInteractive() const
+// static
+bool StandardInputStream::isInteractive()
 {
 #ifdef HAVE_UNISTD_H
     return isatty(fileno(stdin)) != 0;
@@ -165,13 +166,6 @@ bool StandardInputStream::isInteractive() const
 bool StandardInputStream::readLine(std::string* line)
 {
     return readLineImpl(stdin, line);
-}
-
-// static
-StandardInputStream& StandardInputStream::instance()
-{
-    static StandardInputStream stdinObject;
-    return stdinObject;
 }
 
 /********************************************************************

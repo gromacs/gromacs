@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -203,6 +203,7 @@ template<typename T>
 static inline void gmx_snew_impl(const char* name, const char* file, int line, T*& ptr, size_t nelem)
 {
     static_assert(std::is_pod<T>::value, "snew() called on C++ type");
+    // NOLINTNEXTLINE bugprone-sizeof-expression
     ptr = static_cast<T*>(save_calloc(name, file, line, nelem, sizeof(T)));
 }
 /** C++ helper for srenew(). */
@@ -210,6 +211,7 @@ template<typename T>
 static inline void gmx_srenew_impl(const char* name, const char* file, int line, T*& ptr, size_t nelem)
 {
     static_assert(std::is_pod<T>::value, "srenew() called on C++ type");
+    // NOLINTNEXTLINE bugprone-sizeof-expression
     ptr = static_cast<T*>(save_realloc(name, file, line, ptr, nelem, sizeof(T)));
 }
 /** C++ helper for smalloc(). */

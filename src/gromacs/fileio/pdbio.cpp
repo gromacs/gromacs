@@ -730,15 +730,7 @@ gmx_bool is_hydrogen(const char* nm)
     std::strcpy(buf, nm);
     trim(buf);
 
-    if (buf[0] == 'H')
-    {
-        return TRUE;
-    }
-    else if ((std::isdigit(buf[0])) && (buf[1] == 'H'))
-    {
-        return TRUE;
-    }
-    return FALSE;
+    return ((buf[0] == 'H') || ((std::isdigit(buf[0]) != 0) && (buf[1] == 'H')));
 }
 
 gmx_bool is_dummymass(const char* nm)

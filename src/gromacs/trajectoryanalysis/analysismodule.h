@@ -130,7 +130,7 @@ public:
      *
      * Does not throw.
      */
-    Selection parallelSelection(const Selection& selection);
+    static Selection parallelSelection(const Selection& selection);
     /*! \brief
      * Returns a set of selection that corresponds to the given selections.
      *
@@ -140,7 +140,7 @@ public:
      *
      * \see parallelSelection()
      */
-    SelectionList parallelSelections(const SelectionList& selections);
+    static SelectionList parallelSelections(const SelectionList& selections);
 
 protected:
     /*! \brief

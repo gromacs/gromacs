@@ -1123,7 +1123,7 @@ void LegacySimulator::do_cg()
                                          enerd, nullptr, nullptr, nullptr, nullBox, nullptr,
                                          nullptr, vir, pres, nullptr, mu_tot, constr);
 
-        energyOutput.printHeader(fplog, step, step);
+        EnergyOutput::printHeader(fplog, step, step);
         energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step,
                                            step, fcd, nullptr);
     }
@@ -1537,7 +1537,7 @@ void LegacySimulator::do_cg()
 
             if (do_log)
             {
-                energyOutput.printHeader(fplog, step, step);
+                EnergyOutput::printHeader(fplog, step, step);
             }
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                                                do_log ? fplog : nullptr, step, step, fcd, nullptr);
@@ -1577,7 +1577,7 @@ void LegacySimulator::do_cg()
         if (!do_log)
         {
             /* Write final value to log since we didn't do anything the last step */
-            energyOutput.printHeader(fplog, step, step);
+            EnergyOutput::printHeader(fplog, step, step);
         }
         if (!do_ene || !do_log)
         {
@@ -1772,7 +1772,7 @@ void LegacySimulator::do_lbfgs()
                                          enerd, nullptr, nullptr, nullptr, nullBox, nullptr,
                                          nullptr, vir, pres, nullptr, mu_tot, constr);
 
-        energyOutput.printHeader(fplog, step, step);
+        EnergyOutput::printHeader(fplog, step, step);
         energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step,
                                            step, fcd, nullptr);
     }
@@ -2263,7 +2263,7 @@ void LegacySimulator::do_lbfgs()
 
             if (do_log)
             {
-                energyOutput.printHeader(fplog, step, step);
+                EnergyOutput::printHeader(fplog, step, step);
             }
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, FALSE, FALSE,
                                                do_log ? fplog : nullptr, step, step, fcd, nullptr);
@@ -2303,7 +2303,7 @@ void LegacySimulator::do_lbfgs()
      */
     if (!do_log) /* Write final value to log since we didn't do anythin last step */
     {
-        energyOutput.printHeader(fplog, step, step);
+        EnergyOutput::printHeader(fplog, step, step);
     }
     if (!do_ene || !do_log) /* Write final energy file entries */
     {
@@ -2441,7 +2441,7 @@ void LegacySimulator::do_steep()
 
         if (MASTER(cr))
         {
-            energyOutput.printHeader(fplog, count, count);
+            EnergyOutput::printHeader(fplog, count, count);
         }
 
         if (count == 0)

@@ -160,8 +160,8 @@ public:
     /*! \brief
      * Returns topology properties needed for a certain position type.
      */
-    SelectionTopologyProperties requiredTopologyPropertiesForPositionType(const std::string& post,
-                                                                          bool forces) const;
+    static SelectionTopologyProperties requiredTopologyPropertiesForPositionType(const std::string& post,
+                                                                                 bool forces);
 
     //! Describes the available debugging levels
     enum class DebugLevel : int

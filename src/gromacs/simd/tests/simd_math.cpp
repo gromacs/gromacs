@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -149,11 +149,11 @@ public:
      *        to avoid altering any value the user has set on the command line; since
      *        it's a static member, changing it would have permanent effect.
      */
-    std::vector<real> generateTestPoints(Range range, std::size_t points);
+    static std::vector<real> generateTestPoints(Range range, std::size_t points);
 
     /*! \brief Test routine for the test point vector generation
      */
-    void generateTestPointsTest();
+    static void generateTestPointsTest();
 };
 
 /*! \brief Test approximate equality of SIMD vs reference version of a function.

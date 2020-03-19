@@ -70,7 +70,7 @@ class PullTest : public ::testing::Test
 protected:
     PullTest() {}
 
-    void test(PbcType pbcType, matrix box)
+    static void test(PbcType pbcType, matrix box)
     {
         t_pbc pbc;
 

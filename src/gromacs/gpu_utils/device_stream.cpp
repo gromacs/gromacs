@@ -54,6 +54,7 @@ void DeviceStream::init(const DeviceContext& /* deviceContext */,
 
 DeviceStream::~DeviceStream() = default;
 
+// NOLINTNEXTLINE readability-convert-member-functions-to-static
 bool DeviceStream::isValid() const
 {
     return false;

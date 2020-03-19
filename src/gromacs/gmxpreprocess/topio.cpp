@@ -634,9 +634,7 @@ static char** read_topol(const char*                           infile,
                                     bGenPairs ? &pair : nullptr, wi);
                             break;
 
-                        case Directive::d_bondtypes:
-                            push_bt(d, interactions, 2, nullptr, &bondAtomType, pline, wi);
-                            break;
+                        case Directive::d_bondtypes: // Intended to fall through
                         case Directive::d_constrainttypes:
                             push_bt(d, interactions, 2, nullptr, &bondAtomType, pline, wi);
                             break;
@@ -662,7 +660,7 @@ static char** read_topol(const char*                           infile,
                             push_nbt(d, nbparam, atypes, pline, nb_funct, wi);
                             break;
 
-                        case Directive::d_implicit_genborn_params:
+                        case Directive::d_implicit_genborn_params: // NOLINT bugprone-branch-clone
                             // Skip this line, so old topologies with
                             // GB parameters can be read.
                             break;

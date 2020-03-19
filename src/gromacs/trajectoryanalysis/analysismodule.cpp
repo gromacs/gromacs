@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,7 +105,7 @@ public:
          const SelectionCollection&         selections);
 
     //! Checks whether the given AnalysisData has been initialized.
-    bool isInitialized(const AnalysisData& data) const;
+    static bool isInitialized(const AnalysisData& data);
 
     //! Keeps a data handle for each AnalysisData object.
     HandleContainer handles_;
@@ -130,7 +130,7 @@ TrajectoryAnalysisModuleData::Impl::Impl(TrajectoryAnalysisModule*          modu
     }
 }
 
-bool TrajectoryAnalysisModuleData::Impl::isInitialized(const AnalysisData& data) const
+bool TrajectoryAnalysisModuleData::Impl::isInitialized(const AnalysisData& data)
 {
     for (int i = 0; i < data.dataSetCount(); ++i)
     {

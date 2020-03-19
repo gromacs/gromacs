@@ -308,7 +308,7 @@ static int detectGroup(int                     firstAtom,
     {
         AtomIndexExtremes extremes = vsiteConstructRange(lastAtom + 1, moltype);
         if (extremes.minAtom < firstAtom)
-        {
+        { // NOLINT bugprone-branch-clone
             /* Constructing atom precedes the group */
             return 0;
         }

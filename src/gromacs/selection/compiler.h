@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2013,2019, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2013,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@ class SelectionCollection;
  * \brief
  * Implements selection compilation.
  *
- * This class is used to implement SelectionCollection::compile().
+ * This function is used to implement SelectionCollection::compile().
  * It prepares the selections in a selection collection for evaluation and
  * performs some optimizations.
  *
@@ -59,15 +59,7 @@ class SelectionCollection;
  *
  * \ingroup module_selection
  */
-class SelectionCompiler
-{
-public:
-    //! Creates a selection compiler.
-    SelectionCompiler();
-
-    //! Compiles the given selection collection.
-    void compile(SelectionCollection* coll);
-};
+void compileSelection(SelectionCollection* coll);
 
 } // namespace gmx
 

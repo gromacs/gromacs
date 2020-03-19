@@ -639,7 +639,11 @@ gmx_bool inputrecNphTrotter(const t_inputrec* ir);
 bool inputrecPbcXY2Walls(const t_inputrec* ir);
 
 /*! \brief Returns true for MD integator with T and/or P-coupling that supports
- * calculating the conserved energy quantity.
+ * calculating a conserved energy quantity.
+ *
+ * Note that dynamical integrators without T and P coupling (ie NVE)
+ * return false, i.e. the return value refers to whether there
+ * is a conserved quantity different than the total energy.
  */
 bool integratorHasConservedEnergyQuantity(const t_inputrec* ir);
 

@@ -268,15 +268,9 @@ static void check_oo(t_atoms* atoms)
 
     for (i = 0; (i < atoms->nr); i++)
     {
-        if (std::strcmp(*(atoms->atomname[i]), "OXT") == 0)
-        {
-            *atoms->atomname[i] = OOO;
-        }
-        else if (std::strcmp(*(atoms->atomname[i]), "O1") == 0)
-        {
-            *atoms->atomname[i] = OOO;
-        }
-        else if (std::strcmp(*(atoms->atomname[i]), "OC1") == 0)
+        if ((std::strcmp(*(atoms->atomname[i]), "OXT") == 0)
+            || (std::strcmp(*(atoms->atomname[i]), "O1") == 0)
+            || (std::strcmp(*(atoms->atomname[i]), "OC1") == 0))
         {
             *atoms->atomname[i] = OOO;
         }

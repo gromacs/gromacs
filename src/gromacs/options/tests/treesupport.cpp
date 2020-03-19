@@ -347,14 +347,14 @@ public:
     gmx::KeyValueTreeBuilder builder_;
 
 private:
-    std::vector<char> serializeTree(const gmx::KeyValueTreeObject& tree)
+    static std::vector<char> serializeTree(const gmx::KeyValueTreeObject& tree)
     {
         gmx::InMemorySerializer serializer;
         gmx::serializeKeyValueTree(tree, &serializer);
         return serializer.finishAndGetBuffer();
     }
 
-    std::string formatBuffer(const std::vector<char>& buffer)
+    static std::string formatBuffer(const std::vector<char>& buffer)
     {
         return gmx::formatAndJoin(buffer, " ", [](char c) {
             return gmx::formatString("%02x", static_cast<unsigned char>(c));

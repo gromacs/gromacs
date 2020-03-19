@@ -212,7 +212,7 @@ int gmx_g_angle(int argc, char* argv[])
             mult   = 3;
             maxang = 180.0;
             break;
-        case 'd': break;
+        case 'd': // Intended fall through
         case 'i': break;
         case 'r': bRb = TRUE; break;
     }

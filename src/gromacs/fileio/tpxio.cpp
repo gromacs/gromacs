@@ -1156,20 +1156,14 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
             real dummy_rlistlong = -1;
             serializer->doReal(&dummy_rlistlong);
 
-            if (ir->rlist > 0 && (dummy_rlistlong == 0 || dummy_rlistlong > ir->rlist))
-            {
-                // Get mdrun to issue an error (regardless of
-                // ir->cutoff_scheme).
-                ir->useTwinRange = true;
-            }
-            else
-            {
-                // grompp used to set rlistlong actively. Users were
-                // probably also confused and set rlistlong == rlist.
-                // However, in all remaining cases, it is safe to let
-                // mdrun proceed normally.
-                ir->useTwinRange = false;
-            }
+            ir->useTwinRange = (ir->rlist > 0 && (dummy_rlistlong == 0 || dummy_rlistlong > ir->rlist));
+            // When true, this forces mdrun to issue an error (regardless of
+            // ir->cutoff_scheme).
+            //
+            // Otherwise, grompp used to set rlistlong actively. Users
+            // were probably also confused and set rlistlong == rlist.
+            // However, in all remaining cases, it is safe to let
+            // mdrun proceed normally.
         }
     }
     else
@@ -1352,14 +1346,6 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     if (file_version >= 79)
     {
         serializer->doBool(&ir->bExpanded);
-        if (ir->bExpanded)
-        {
-            ir->bExpanded = TRUE;
-        }
-        else
-        {
-            ir->bExpanded = FALSE;
-        }
     }
     if (ir->bExpanded)
     {
@@ -1937,9 +1923,7 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             break;
         case F_CBTDIHS: serializer->doRealArray(iparams->cbtdihs.cbtcA, NR_CBTDIHS); break;
         case F_RBDIHS:
-            serializer->doRealArray(iparams->rbdihs.rbcA, NR_RBDIHS);
-            serializer->doRealArray(iparams->rbdihs.rbcB, NR_RBDIHS);
-            break;
+            // Fall-through intended
         case F_FOURDIHS:
             /* Fourier dihedrals are internally represented
              * as Ryckaert-Bellemans since those are faster to compute.

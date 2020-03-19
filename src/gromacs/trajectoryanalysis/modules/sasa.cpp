@@ -116,12 +116,12 @@ struct t_conect
 void add_rec(t_conect c[], int i, int j, real d2)
 {
     if (c[i].aa == -1)
-    {
+    { // NOLINT bugprone-branch-clone
         c[i].aa  = j;
         c[i].d2a = d2;
     }
     else if (c[i].ab == -1)
-    {
+    { // NOLINT bugprone-branch-clone
         c[i].ab  = j;
         c[i].d2b = d2;
     }
@@ -906,8 +906,8 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
     AnalysisDataHandle   aah        = pdata->dataHandle(atomArea_);
     AnalysisDataHandle   rah        = pdata->dataHandle(residueArea_);
     AnalysisDataHandle   vh         = pdata->dataHandle(volume_);
-    const Selection&     surfaceSel = pdata->parallelSelection(surfaceSel_);
-    const SelectionList& outputSel  = pdata->parallelSelections(outputSel_);
+    const Selection&     surfaceSel = TrajectoryAnalysisModuleData::parallelSelection(surfaceSel_);
+    const SelectionList& outputSel  = TrajectoryAnalysisModuleData::parallelSelections(outputSel_);
     SasaModuleData&      frameData  = *static_cast<SasaModuleData*>(pdata);
 
     const bool bResAt    = !frameData.res_a_.empty();

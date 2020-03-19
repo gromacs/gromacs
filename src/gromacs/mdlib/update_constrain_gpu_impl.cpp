@@ -62,7 +62,7 @@ UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec& /* ir   */,
                                        GpuEventSynchronizer* /* xUpdatedOnDevice */) :
     impl_(nullptr)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
@@ -79,13 +79,13 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer* /* fReadyOnDevice */,
                                    const float /* dtPressureCouple */,
                                    const matrix /* prVelocityScalingMatrix*/)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
 void UpdateConstrainGpu::scaleCoordinates(const matrix /* scalingMatrix */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
@@ -96,19 +96,19 @@ void UpdateConstrainGpu::set(DeviceBuffer<RVec> /* d_x */,
                              const t_mdatoms& /* md */,
                              const int /* numTempScaleValues */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
 void UpdateConstrainGpu::setPbc(const PbcType /* pbcType */, const matrix /* box */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
 GpuEventSynchronizer* UpdateConstrainGpu::getCoordinatesReadySync()
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
     return nullptr;
 }

@@ -28,7 +28,11 @@
 # We have many cases where int is converted to float and we don't care
 # enough about such potential loss of precision to use explicit casts
 # in large numbers of places.
-
+#
+#         -google-readability-avoid-underscore-in-googletest-name
+# We need to use underscores for readability for our legacy types
+# and command-line parameter names
+#
 Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
          bugprone-*,misc-*,readability-*,performance-*,mpi-*,
          -readability-inconsistent-declaration-parameter-name,
@@ -51,7 +55,8 @@ Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureA
          -readability-magic-numbers,
          -cppcoreguidelines-macro-usage,
          -cppcoreguidelines-narrowing-conversions,
-         -bugprone-narrowing-conversions
+         -bugprone-narrowing-conversions,
+         -google-readability-avoid-underscore-in-googletest-name
 HeaderFilterRegex: .*
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor

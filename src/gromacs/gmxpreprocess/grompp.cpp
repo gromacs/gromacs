@@ -1131,7 +1131,7 @@ static int nrdf_internal(const t_atoms* atoms)
     }
     switch (nmass)
     {
-        case 0: nrdf = 0; break;
+        case 0: // Fall through intended
         case 1: nrdf = 0; break;
         case 2: nrdf = 1; break;
         default: nrdf = nmass * 3 - 6; break;

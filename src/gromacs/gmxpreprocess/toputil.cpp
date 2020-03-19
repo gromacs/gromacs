@@ -90,7 +90,7 @@ static void print_bt(FILE*                                   out,
     int f = 0;
     switch (ftype)
     {
-        case F_G96ANGLES: f = 1; break;
+        case F_G96ANGLES: // Intended to fall through
         case F_G96BONDS: f = 1; break;
         case F_MORSE: f = 2; break;
         case F_CUBICBONDS: f = 3; break;
@@ -99,18 +99,18 @@ static void print_bt(FILE*                                   out,
         case F_CROSS_BOND_ANGLES: f = 2; break;
         case F_CROSS_BOND_BONDS: f = 3; break;
         case F_UREY_BRADLEY: f = 4; break;
-        case F_PDIHS:
-        case F_RBDIHS:
+        case F_PDIHS:  // Intended to fall through
+        case F_RBDIHS: // Intended to fall through
         case F_FOURDIHS: bDih = TRUE; break;
         case F_IDIHS:
             f    = 1;
             bDih = TRUE;
             break;
-        case F_CONSTRNC: f = 1; break;
+        case F_CONSTRNC: // Intended to fall through
         case F_VSITE3FD: f = 1; break;
         case F_VSITE3FAD: f = 2; break;
         case F_VSITE3OUT: f = 3; break;
-        case F_VSITE4FDN: f = 1; break;
+        case F_VSITE4FDN: // Intended to fall through
         case F_CMAP: f = 1; break;
 
         default: bDih = FALSE;

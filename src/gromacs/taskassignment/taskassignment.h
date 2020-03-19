@@ -159,19 +159,19 @@ public:
      * \throws   std::bad_alloc          If out of memory.
      *           InconsistentInputError  If user and/or detected inputs are inconsistent.
      */
-    GpuTaskAssignments build(const std::vector<int>&         gpuIdsToUse,
-                             const std::vector<int>&         userGpuTaskAssignment,
-                             const gmx_hw_info_t&            hardwareInfo,
-                             MPI_Comm                        gromacsWorldComm,
-                             const PhysicalNodeCommunicator& physicalNodeComm,
-                             TaskTarget                      nonbondedTarget,
-                             TaskTarget                      pmeTarget,
-                             TaskTarget                      bondedTarget,
-                             TaskTarget                      updateTarget,
-                             bool                            useGpuForNonbonded,
-                             bool                            useGpuForPme,
-                             bool                            rankHasPpTask,
-                             bool                            rankHasPmeTask);
+    static GpuTaskAssignments build(const std::vector<int>&         gpuIdsToUse,
+                                    const std::vector<int>&         userGpuTaskAssignment,
+                                    const gmx_hw_info_t&            hardwareInfo,
+                                    MPI_Comm                        gromacsWorldComm,
+                                    const PhysicalNodeCommunicator& physicalNodeComm,
+                                    TaskTarget                      nonbondedTarget,
+                                    TaskTarget                      pmeTarget,
+                                    TaskTarget                      bondedTarget,
+                                    TaskTarget                      updateTarget,
+                                    bool                            useGpuForNonbonded,
+                                    bool                            useGpuForPme,
+                                    bool                            rankHasPpTask,
+                                    bool                            rankHasPmeTask);
 };
 
 /*! \libinternal

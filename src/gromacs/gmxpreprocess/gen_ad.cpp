@@ -78,11 +78,7 @@ static bool acomp(const InteractionOfType& a1, const InteractionOfType& a2)
 {
     int ac;
 
-    if ((ac = (a1.aj() - a2.aj())) != 0)
-    {
-        return ac < 0;
-    }
-    else if ((ac = (a1.ai() - a2.ai())) != 0)
+    if (((ac = (a1.aj() - a2.aj())) != 0) || ((ac = (a1.ai() - a2.ai())) != 0))
     {
         return ac < 0;
     }
@@ -111,12 +107,8 @@ static bool dcomp(const InteractionOfType& d1, const InteractionOfType& d2)
     int dc;
 
     /* First sort by J & K (the two central) atoms */
-    if ((dc = (d1.aj() - d2.aj())) != 0)
-    {
-        return dc < 0;
-    }
-    else if ((dc = (d1.ak() - d2.ak())) != 0)
-    {
+    if (((dc = (d1.aj() - d2.aj())) != 0) || ((dc = (d1.ak() - d2.ak())) != 0))
+    { // NOLINT bugprone-branch-clone
         return dc < 0;
     }
     /* Then make sure to put rtp dihedrals before generated ones */
@@ -129,11 +121,7 @@ static bool dcomp(const InteractionOfType& d1, const InteractionOfType& d2)
         return false;
     }
     /* Then sort by I and J (two outer) atoms */
-    else if ((dc = (d1.ai() - d2.ai())) != 0)
-    {
-        return dc < 0;
-    }
-    else if ((dc = (d1.al() - d2.al())) != 0)
+    else if (((dc = (d1.ai() - d2.ai())) != 0) || ((dc = (d1.al() - d2.al())) != 0))
     {
         return dc < 0;
     }
@@ -194,15 +182,7 @@ static bool idcomp(const InteractionOfType& a, const InteractionOfType& b)
 {
     int d;
 
-    if ((d = (a.ai() - b.ai())) != 0)
-    {
-        return d < 0;
-    }
-    else if ((d = (a.al() - b.al())) != 0)
-    {
-        return d < 0;
-    }
-    else if ((d = (a.aj() - b.aj())) != 0)
+    if (((d = (a.ai() - b.ai())) != 0) || ((d = (a.al() - b.al())) != 0) || ((d = (a.aj() - b.aj())) != 0))
     {
         return d < 0;
     }

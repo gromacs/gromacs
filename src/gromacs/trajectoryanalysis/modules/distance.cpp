@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -324,7 +324,7 @@ void Distance::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, Trajecto
 {
     AnalysisDataHandle   distHandle = pdata->dataHandle(distances_);
     AnalysisDataHandle   xyzHandle  = pdata->dataHandle(xyz_);
-    const SelectionList& sel        = pdata->parallelSelections(sel_);
+    const SelectionList& sel        = TrajectoryAnalysisModuleData::parallelSelections(sel_);
 
     checkSelections(sel);
 

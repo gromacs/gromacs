@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@ public:
     /*! \brief
      * Initializes the communicator
      */
-    void init();
+    static void init();
 
     /*! \brief
      * Sends the data needed for MiMiC initialization
@@ -73,14 +73,14 @@ public:
      * @param mtop global topology data
      * @param coords coordinates of all atoms
      */
-    void sendInitData(gmx_mtop_t* mtop, PaddedHostVector<gmx::RVec> coords);
+    static void sendInitData(gmx_mtop_t* mtop, PaddedHostVector<gmx::RVec> coords);
 
     /*! \brief
      * Gets the number of MD steps to perform from MiMiC
      *
      * @return nsteps the number of MD steps to perform
      */
-    int64_t getStepNumber();
+    static int64_t getStepNumber();
 
     /*! \brief
      * Receive and array of updated atomic coordinates from MiMiC
@@ -88,14 +88,14 @@ public:
      * @param x array of coordinates to fill
      * @param natoms number of atoms in the system
      */
-    void getCoords(PaddedHostVector<RVec>* x, int natoms);
+    static void getCoords(PaddedHostVector<RVec>* x, int natoms);
 
     /*! \brief
      * Send the potential energy value to MiMiC
      *
      * @param energy energy value to send
      */
-    void sendEnergies(real energy);
+    static void sendEnergies(real energy);
 
     /*! \brief
      * Send classical forces acting on all atoms in the system
@@ -104,12 +104,12 @@ public:
      * @param forces array of forces to send
      * @param natoms number of atoms in the system
      */
-    void sendForces(ArrayRef<gmx::RVec> forces, int natoms);
+    static void sendForces(ArrayRef<gmx::RVec> forces, int natoms);
 
     /*! \brief
      * Finish communications and disconnect from the server
      */
-    void finalize();
+    static void finalize();
 };
 
 } // namespace gmx

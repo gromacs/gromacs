@@ -127,7 +127,7 @@ t_dlist* mk_dlist(FILE*          log,
                      || (std::strcmp(*(atoms->atomname[i]), "SD") == 0)
                      || (std::strcmp(*(atoms->atomname[i]), "OD1") == 0)
                      || (std::strcmp(*(atoms->atomname[i]), "ND1") == 0))
-            {
+            { // NOLINT bugprone-branch-clone
                 atm.Cn[4] = i;
             }
             /* by grs - split the Cn[4] into 2 bits to check allowing dih to H */

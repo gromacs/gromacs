@@ -137,18 +137,20 @@ protected:
         checker_.checkReal(testResult, "Integral");
     }
 
-    int getDim(unsigned long type)
+    static int getDim(unsigned long type)
     {
         switch (type)
         {
             case eacNormal: return 1;
             case eacVector: return 3;
-            case eacCos: return 1;
-            case eacRcross: return 3;
-            case eacP0: return 3;
-            case eacP1: return 3;
-            case eacP2: return 3;
-            case eacP3: return 3;
+            case eacCos:
+                return 1;
+                // Several intended fall-throughs follow
+            case eacRcross:
+            case eacP0:
+            case eacP1:
+            case eacP2:
+            case eacP3:
             case eacP4: return 3;
             case eacIden: return 1;
             default: GMX_RELEASE_ASSERT(false, "Invalid auto correlation option"); return -1;

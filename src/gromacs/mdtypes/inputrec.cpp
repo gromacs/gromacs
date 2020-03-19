@@ -1458,7 +1458,7 @@ bool inputrecPbcXY2Walls(const t_inputrec* ir)
 bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)
 {
     if (!EI_MD(ir->eI))
-    {
+    { // NOLINT bugprone-branch-clone
         // Energy minimization or stochastic integrator: no conservation
         return false;
     }

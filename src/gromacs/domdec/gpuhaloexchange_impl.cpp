@@ -78,7 +78,7 @@ GpuHaloExchange::~GpuHaloExchange() = default;
 void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> /* d_coordinatesBuffer */,
                                  DeviceBuffer<RVec> /* d_forcesBuffer */)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 
@@ -86,7 +86,7 @@ void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> /* d_coordinatesBuffer */,
 void GpuHaloExchange::communicateHaloCoordinates(const matrix /* box */,
                                                  GpuEventSynchronizer* /*coordinatesOnDeviceEvent*/)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange exchange was called insted of the correct "
                "implementation.");
 }
@@ -94,14 +94,14 @@ void GpuHaloExchange::communicateHaloCoordinates(const matrix /* box */,
 /*!\brief apply F halo exchange stub. */
 void GpuHaloExchange::communicateHaloForces(bool gmx_unused accumulateForces)
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 
 /*!\brief get forces ready on device event stub. */
 GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
 {
-    GMX_ASSERT(false,
+    GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
     return nullptr;
 }

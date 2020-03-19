@@ -208,13 +208,11 @@ void gmx::LegacySimulator::do_mimic()
     int        nstglobalcomm = 1;
     const bool bNS           = true;
 
-    // Communicator to interact with MiMiC
-    MimicCommunicator mimicCommunicator{};
     if (MASTER(cr))
     {
-        mimicCommunicator.init();
-        mimicCommunicator.sendInitData(top_global, state_global->x);
-        ir->nsteps = mimicCommunicator.getStepNumber();
+        MimicCommunicator::init();
+        MimicCommunicator::sendInitData(top_global, state_global->x);
+        ir->nsteps = MimicCommunicator::getStepNumber();
     }
 
     ir->nstxout_compressed                   = 0;
@@ -364,7 +362,7 @@ void gmx::LegacySimulator::do_mimic()
 
         if (MASTER(cr))
         {
-            mimicCommunicator.getCoords(&state_global->x, state_global->natoms);
+            MimicCommunicator::getCoords(&state_global->x, state_global->natoms);
         }
 
         if (ir->efep != efepNO)
@@ -396,7 +394,7 @@ void gmx::LegacySimulator::do_mimic()
 
         if (MASTER(cr))
         {
-            energyOutput.printHeader(fplog, step, t); /* can we improve the information printed here? */
+            EnergyOutput::printHeader(fplog, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != efepNO)
@@ -493,8 +491,8 @@ void gmx::LegacySimulator::do_mimic()
 
             if (MASTER(cr))
             {
-                mimicCommunicator.sendEnergies(enerd->term[F_EPOT]);
-                mimicCommunicator.sendForces(ftemp, state_global->natoms);
+                MimicCommunicator::sendEnergies(enerd->term[F_EPOT]);
+                MimicCommunicator::sendForces(ftemp, state_global->natoms);
             }
         }
 
@@ -526,7 +524,7 @@ void gmx::LegacySimulator::do_mimic()
             const bool do_dr  = ir->nstdisreout != 0;
             const bool do_or  = ir->nstorireout != 0;
 
-            energyOutput.printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
+            EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
                                                do_log ? fplog : nullptr, step, t, fcd, awh);
 
@@ -570,7 +568,7 @@ void gmx::LegacySimulator::do_mimic()
 
     if (MASTER(cr))
     {
-        mimicCommunicator.finalize();
+        MimicCommunicator::finalize();
     }
 
     if (!thisRankHasDuty(cr, DUTY_PME))

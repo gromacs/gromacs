@@ -840,11 +840,7 @@ static bool pcompar(const InteractionOfType& a, const InteractionOfType& b)
 {
     int d;
 
-    if ((d = a.ai() - b.ai()) != 0)
-    {
-        return d < 0;
-    }
-    else if ((d = a.aj() - b.aj()) != 0)
+    if (((d = a.ai() - b.ai()) != 0) || ((d = a.aj() - b.aj()) != 0))
     {
         return d < 0;
     }

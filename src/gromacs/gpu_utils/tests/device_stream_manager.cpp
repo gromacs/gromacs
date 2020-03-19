@@ -69,35 +69,36 @@ const EnumerationArray<DeviceStreamType, std::string> c_deviceStreamNames = {
     { "non-bonded local", "non-bonded non-local", "PME", "PME-PP transfer", "update" }
 };
 
-//! Test fixture
-class DeviceStreamManagerTest : public GpuTest
+/*! \brief Non-GPU builds return nullptr instead of streams,
+ * so we have to expect that in such build configurations. */
+const bool c_canExpectValidStreams = (GMX_GPU != GMX_GPU_NONE);
+
+//! Helper function to implement readable testing
+void expectValidStreams(DeviceStreamManager* manager, std::initializer_list<DeviceStreamType> types)
 {
-public:
-    //! Helper function to implement readable testing
-    void expectValidStreams(DeviceStreamManager* manager, std::initializer_list<DeviceStreamType> types)
-    {
-        if (canExpectValidStreams_)
-        {
-            for (const DeviceStreamType type : types)
-            {
-                SCOPED_TRACE("Testing " + c_deviceStreamNames[type] + " stream.");
-                EXPECT_TRUE(manager->streamIsValid(type));
-            }
-        }
-    }
-    //! Helper function to implement readable testing
-    void expectInvalidStreams(DeviceStreamManager* manager, std::initializer_list<DeviceStreamType> types)
+    if (c_canExpectValidStreams)
     {
         for (const DeviceStreamType type : types)
         {
             SCOPED_TRACE("Testing " + c_deviceStreamNames[type] + " stream.");
-            EXPECT_FALSE(manager->streamIsValid(type));
+            EXPECT_TRUE(manager->streamIsValid(type));
         }
     }
+}
+//! Helper function to implement readable testing
+void expectInvalidStreams(DeviceStreamManager* manager, std::initializer_list<DeviceStreamType> types)
+{
+    for (const DeviceStreamType type : types)
+    {
+        SCOPED_TRACE("Testing " + c_deviceStreamNames[type] + " stream.");
+        EXPECT_FALSE(manager->streamIsValid(type));
+    }
+}
 
-    /*! \brief Non-GPU builds return nullptr instead of streams,
-     * so we have to expect that in such build configurations. */
-    const bool canExpectValidStreams_ = (GMX_GPU != GMX_GPU_NONE);
+//! Test fixture
+class DeviceStreamManagerTest : public GpuTest
+{
+public:
 };
 
 TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)

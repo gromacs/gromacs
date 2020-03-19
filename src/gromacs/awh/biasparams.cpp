@@ -184,12 +184,13 @@ double gaussianGeometryFactor(gmx::ArrayRef<const double> xArray)
         zetaTable = zetaTable1d;
     }
     else if (xArray.size() == 2)
-    {
+    { // NOLINT bugprone-branch-clone
         zetaTable = zetaTable2d;
     }
     else
     {
-        /* TODO... but this is anyway a rough estimate and > 2 dimensions is not so popular. */
+        /* TODO... but this is anyway a rough estimate and > 2 dimensions is not so popular.
+         * Remove the above NOLINT when addressing this */
         zetaTable = zetaTable2d;
     }
 

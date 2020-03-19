@@ -280,7 +280,7 @@ static void doStopComMotionLinear(const t_mdatoms& mdatoms, gmx::ArrayRef<gmx::R
         }
     }
     else if (group_id == nullptr)
-    {
+    { // NOLINT bugprone-branch-clone This is actually a clang-tidy bug
 #pragma omp for schedule(static)
         for (int i = 0; i < homenr; i++)
         {
@@ -324,6 +324,7 @@ static void doStopComMotionAccelerationCorrection(int                      homen
 {
     const real xCorrectionFactor = 0.5 * vcm.timeStep;
 
+    // NOLINTNEXTLINE bugprone-branch-clone This is actually a clang-tidy bug
     if (group_id == nullptr)
     {
 #pragma omp for schedule(static)

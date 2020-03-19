@@ -149,13 +149,13 @@ public:
         GMX_RELEASE_ASSERT(testPos_.empty(), "Cannot add positions after testPositions() call");
         testPositions_.emplace_back(x);
     }
-    gmx::RVec        generateRandomPosition();
-    std::vector<int> generateIndex(int count, uint64_t seed) const;
-    void             generateRandomRefPositions(int count);
-    void             generateRandomTestPositions(int count);
-    void             useRefPositionsAsTestPositions();
-    void             computeReferences(t_pbc* pbc) { computeReferencesInternal(pbc, false); }
-    void             computeReferencesXY(t_pbc* pbc) { computeReferencesInternal(pbc, true); }
+    gmx::RVec               generateRandomPosition();
+    static std::vector<int> generateIndex(int count, uint64_t seed);
+    void                    generateRandomRefPositions(int count);
+    void                    generateRandomTestPositions(int count);
+    void                    useRefPositionsAsTestPositions();
+    void                    computeReferences(t_pbc* pbc) { computeReferencesInternal(pbc, false); }
+    void computeReferencesXY(t_pbc* pbc) { computeReferencesInternal(pbc, true); }
 
     bool containsPair(int testIndex, const RefPair& pair) const
     {
@@ -217,7 +217,7 @@ gmx::RVec NeighborhoodSearchTestData::generateRandomPosition()
     return x;
 }
 
-std::vector<int> NeighborhoodSearchTestData::generateIndex(int count, uint64_t seed) const
+std::vector<int> NeighborhoodSearchTestData::generateIndex(int count, uint64_t seed)
 {
     gmx::DefaultRandomEngine           rngIndex(seed);
     gmx::UniformRealDistribution<real> dist;
@@ -389,21 +389,24 @@ void ExclusionsHelper::generateExclusions()
 class NeighborhoodSearchTest : public ::testing::Test
 {
 public:
-    void testIsWithin(gmx::AnalysisNeighborhoodSearch* search, const NeighborhoodSearchTestData& data);
-    void testMinimumDistance(gmx::AnalysisNeighborhoodSearch*  search,
+    static void testIsWithin(gmx::AnalysisNeighborhoodSearch*  search,
                              const NeighborhoodSearchTestData& data);
-    void testNearestPoint(gmx::AnalysisNeighborhoodSearch* search, const NeighborhoodSearchTestData& data);
-    void testPairSearch(gmx::AnalysisNeighborhoodSearch* search, const NeighborhoodSearchTestData& data);
-    void testPairSearchIndexed(gmx::AnalysisNeighborhood*        nb,
-                               const NeighborhoodSearchTestData& data,
-                               uint64_t                          seed);
-    void testPairSearchFull(gmx::AnalysisNeighborhoodSearch*          search,
-                            const NeighborhoodSearchTestData&         data,
-                            const gmx::AnalysisNeighborhoodPositions& pos,
-                            const gmx::ListOfLists<int>*              excls,
-                            const gmx::ArrayRef<const int>&           refIndices,
-                            const gmx::ArrayRef<const int>&           testIndices,
-                            bool                                      selfPairs);
+    static void testMinimumDistance(gmx::AnalysisNeighborhoodSearch*  search,
+                                    const NeighborhoodSearchTestData& data);
+    static void testNearestPoint(gmx::AnalysisNeighborhoodSearch*  search,
+                                 const NeighborhoodSearchTestData& data);
+    static void testPairSearch(gmx::AnalysisNeighborhoodSearch*  search,
+                               const NeighborhoodSearchTestData& data);
+    static void testPairSearchIndexed(gmx::AnalysisNeighborhood*        nb,
+                                      const NeighborhoodSearchTestData& data,
+                                      uint64_t                          seed);
+    static void testPairSearchFull(gmx::AnalysisNeighborhoodSearch*          search,
+                                   const NeighborhoodSearchTestData&         data,
+                                   const gmx::AnalysisNeighborhoodPositions& pos,
+                                   const gmx::ListOfLists<int>*              excls,
+                                   const gmx::ArrayRef<const int>&           refIndices,
+                                   const gmx::ArrayRef<const int>&           testIndices,
+                                   bool                                      selfPairs);
 
     gmx::AnalysisNeighborhood nb_;
 };

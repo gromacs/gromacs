@@ -56,10 +56,10 @@ namespace gmx
 namespace test
 {
 
-class XvgioTester
+class XvgioTest : public ::testing::Test
 {
 public:
-    XvgioTester() { referenceFilename_ = fileManager_.getTemporaryFilePath("ref.xvg"); }
+    XvgioTest() { referenceFilename_ = fileManager_.getTemporaryFilePath("ref.xvg"); }
 
     const std::string& referenceFilename() const { return referenceFilename_; }
 
@@ -72,8 +72,8 @@ public:
         gmx::TextWriter::writeFileFromString(referenceFilename(), referenceContents());
     }
 
-    void compareValues(basic_mdspan<const double, dynamicExtents2D> ref,
-                       basic_mdspan<const double, dynamicExtents2D> test)
+    static void compareValues(basic_mdspan<const double, dynamicExtents2D> ref,
+                              basic_mdspan<const double, dynamicExtents2D> test)
     {
         // The xvg reading routines use a column-major layout, while we would
         // like to enforce row major behaviour everywhere else. This requires
@@ -97,34 +97,30 @@ private:
     std::string                referenceContents_;
 };
 
-TEST(XvgioTest, readXvgIntWorks)
+TEST_F(XvgioTest, readXvgIntWorks)
 {
-    XvgioTester xvgioTester;
-    xvgioTester.useStringAsXvgFile(
+    useStringAsXvgFile(
             "1 2 3\n"
             "4 5 6\n");
-    xvgioTester.writeXvgFile();
-    MultiDimArray<std::vector<double>, dynamicExtents2D> xvgTestData =
-            readXvgData(xvgioTester.referenceFilename());
+    writeXvgFile();
+    MultiDimArray<std::vector<double>, dynamicExtents2D> xvgTestData = readXvgData(referenceFilename());
 
     const int                                            numRows    = 2;
     const int                                            numColumns = 3;
     MultiDimArray<std::vector<double>, dynamicExtents2D> xvgRefData(numRows, numColumns);
     std::iota(begin(xvgRefData), end(xvgRefData), 1);
 
-    xvgioTester.compareValues(xvgRefData.asConstView(), xvgTestData.asConstView());
+    compareValues(xvgRefData.asConstView(), xvgTestData.asConstView());
 }
 
-TEST(XvgioTest, readXvgRealWorks)
+TEST_F(XvgioTest, readXvgRealWorks)
 {
-    XvgioTester xvgioTester;
-    xvgioTester.useStringAsXvgFile(
+    useStringAsXvgFile(
             "1.1 2.2\n"
             "3.3 4.4\n"
             "5.5 6.6\n");
-    xvgioTester.writeXvgFile();
-    MultiDimArray<std::vector<double>, dynamicExtents2D> xvgTestData =
-            readXvgData(xvgioTester.referenceFilename());
+    writeXvgFile();
+    MultiDimArray<std::vector<double>, dynamicExtents2D> xvgTestData = readXvgData(referenceFilename());
 
     const int                                            numRows    = 3;
     const int                                            numColumns = 2;
@@ -133,42 +129,39 @@ TEST(XvgioTest, readXvgRealWorks)
         n += 1.1;
         return n;
     });
-    xvgioTester.compareValues(xvgRefData.asConstView(), xvgTestData.asConstView());
+    compareValues(xvgRefData.asConstView(), xvgTestData.asConstView());
 }
 
-TEST(XvgioTest, readXvgIgnoreCommentLineWorks)
+TEST_F(XvgioTest, readXvgIgnoreCommentLineWorks)
 {
-    XvgioTester xvgioTester;
-    xvgioTester.useStringAsXvgFile(
+    useStringAsXvgFile(
             "1 2 3\n"
             "#comment\n"
             "4 5 6\n");
-    xvgioTester.writeXvgFile();
+    writeXvgFile();
 
-    MultiDimArray<std::vector<double>, dynamicExtents2D> xvgTestData =
-            readXvgData(xvgioTester.referenceFilename());
+    MultiDimArray<std::vector<double>, dynamicExtents2D> xvgTestData = readXvgData(referenceFilename());
 
     const int                                            numRows    = 2;
     const int                                            numColumns = 3;
     MultiDimArray<std::vector<double>, dynamicExtents2D> xvgRefData(numRows, numColumns);
     std::iota(begin(xvgRefData), end(xvgRefData), 1);
 
-    xvgioTester.compareValues(xvgRefData.asConstView(), xvgTestData.asConstView());
+    compareValues(xvgRefData.asConstView(), xvgTestData.asConstView());
 }
 
-// Todo: Remove this test once all calls to read_xvg have been ported to readXvgData
-TEST(XvgioTest, readXvgDeprecatedWorks)
+// TODO Remove this test once all calls to read_xvg have been ported to readXvgData
+TEST_F(XvgioTest, readXvgDeprecatedWorks)
 {
-    XvgioTester xvgioTester;
-    xvgioTester.useStringAsXvgFile(
+    useStringAsXvgFile(
             "1 2 3\n"
             "4 5 6\n");
-    xvgioTester.writeXvgFile();
+    writeXvgFile();
     std::vector<std::vector<double>> xvgData = { { 1, 4 }, { 2, 5 }, { 3, 6 } };
 
     double** xvgTestData = nullptr;
     int      testNumColumns;
-    int testNumRows = read_xvg(xvgioTester.referenceFilename().c_str(), &xvgTestData, &testNumColumns);
+    int      testNumRows = read_xvg(referenceFilename().c_str(), &xvgTestData, &testNumColumns);
 
     double** xvgRefData    = nullptr;
     int      refNumColumns = 3;

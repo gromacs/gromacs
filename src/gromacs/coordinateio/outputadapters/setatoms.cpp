@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,7 +100,7 @@ void SetAtoms::processFrame(const int /*framenumber*/, t_trxframe* input)
     }
 }
 
-bool SetAtoms::haveFrameAtoms(const t_trxframe& input) const
+bool SetAtoms::haveFrameAtoms(const t_trxframe& input)
 {
     return input.bAtoms;
 }

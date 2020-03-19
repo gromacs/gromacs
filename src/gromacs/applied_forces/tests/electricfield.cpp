@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,7 @@ namespace
 class ElectricFieldTest : public ::testing::Test
 {
 public:
-    void test(int dim, real E0, real omega, real t0, real sigma, real expectedValue)
+    static void test(int dim, real E0, real omega, real t0, real sigma, real expectedValue)
     {
         // Make the electric field module
         auto module = createElectricFieldModule();
