@@ -624,6 +624,16 @@ build-clang-8-release:
 
 
 # Jobs running during test stage
+.test-base-template:
+  variables:
+    BUILD_DIR: build
+  # Docker image uploaded to dockerhub by user eriklindahl
+  # TODO: Get DockerFile for admin/dockerfiles
+  image: biophysics/gcc-gromacs
+  stage: test
+  retry:
+    max: 2
+
 .test-script-template:
   script:
     - cd $BUILD_DIR
