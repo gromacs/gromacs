@@ -188,13 +188,13 @@
 
 .configure-docs:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .configure-docs-template
     - .documentation-before-script-template
 
 .configure-docs-release:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .configure-docs-release-template
     - .documentation-before-script-template
   cache: {}
@@ -277,14 +277,16 @@ configure-docs-gmxapi:
 
 .build-docs-binary:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-ccache
     - .build-docs-binary-template
     - .documentation-before-script-template
 
 .build-docs-webpage:
   extends:
-    - .binary-build-template
+    - .gromacs:base:build
     - .variables:default
     - .build-docs-webpage-template
     - .documentation-before-script-template

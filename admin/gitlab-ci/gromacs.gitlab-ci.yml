@@ -1,3 +1,4 @@
+# Build, test, and install variously configured GROMACS installations.
 
 # Initial build that always needs to pass before follow-up stages run
 simple-build:
@@ -79,7 +80,7 @@ simple-build:
 
 # Jobs running in first pre-build stage
 
-.configure-extends-template:
+.gromacs:base:configure:
   extends:
     - .variables:default
   cache: {}
@@ -132,7 +133,7 @@ simple-build:
     paths:
       - $BUILD_DIR
 
-.configure-release-extends-template:
+.gromacs:base:release:configure:
   extends:
     - .variables:default
   cache: {}
@@ -224,14 +225,10 @@ simple-build:
       - $RELEASE_SOURCE
 
 # Templates for configuration stage
-.configure-gcc-cuda:
-  extends:
-    - .configure-extends-template
-    - .cuda-template
 
-configure-gcc-7:
+gromacs:gcc-7:configure:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .use-gcc7
   needs:
     - job: simple-build
@@ -240,9 +237,9 @@ configure-gcc-7:
     variables:
       - $GROMACS_RELEASE
 
-configure-gcc-7-release:
+gromacs:gcc-7:release:configure:
   extends:
-    - .configure-release-extends-template
+    - .gromacs:base:release:configure
     - .use-gcc7
   cache: {}
   variables:
@@ -259,9 +256,9 @@ configure-gcc-7-release:
     - package-regressiontests-release
     - prepare-release-version
 
-configure-gcc-7-simd-sse41:
+gromacs:gcc-7-simd-sse41:configure:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .use-gcc7
   needs:
     - job: simple-build
@@ -272,9 +269,9 @@ configure-gcc-7-simd-sse41:
     variables:
       - $GROMACS_RELEASE
 
-configure-gcc-7-double:
+gromacs:gcc-7-double:configure:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .use-gcc7
   needs:
     - job: simple-build
@@ -285,9 +282,9 @@ configure-gcc-7-double:
     variables:
       - $GROMACS_RELEASE
 
-configure-gcc-7-double-release:
+gromacs:gcc-7-double:release:configure:
   extends:
-    - .configure-release-extends-template
+    - .gromacs:base:release:configure
     - .use-gcc7
   cache: {}
   variables:
@@ -305,9 +302,9 @@ configure-gcc-7-double-release:
     - package-regressiontests-release
     - prepare-release-version
 
-configure-gcc-7-gmxapi:
+gromacs:gcc-7:configure-gmxapi:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .configure-gmxapi-template
     - .use-gcc7
   needs:
@@ -317,9 +314,9 @@ configure-gcc-7-gmxapi:
     variables:
       - $GROMACS_RELEASE
 
-configure-gcc-7-gmxapi-release:
+gromacs:gcc-7:release:configure-gmxapi:
   extends:
-    - .configure-release-extends-template
+    - .gromacs:base:release:configure
     - .configure-gmxapi-template
     - .use-gcc7
   cache: {}
@@ -337,9 +334,9 @@ configure-gcc-7-gmxapi-release:
     - package-regressiontests-release
     - prepare-release-version
 
-configure-gcc-8:
+gromacs:gcc-8:configure:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .use-gcc8
   needs:
     - job: simple-build
@@ -348,9 +345,9 @@ configure-gcc-8:
     variables:
       - $GROMACS_RELEASE
 
-configure-gcc-8-release:
+gromacs:gcc-8:release:configure:
   extends:
-    - .configure-release-extends-template
+    - .gromacs:base:release:configure
     - .use-gcc8
   cache: {}
   variables:
@@ -367,9 +364,10 @@ configure-gcc-8-release:
     - package-regressiontests-release
     - prepare-release-version
 
-configure-gcc-8-cuda-10.2:
+gromacs:gcc-8-cuda-10.2:configure:
   extends:
-    - .configure-gcc-cuda
+    - .gromacs:base:configure
+    - .use-cuda
     - .use-gcc8:cuda-10.2
   needs:
     - job: simple-build
@@ -381,9 +379,9 @@ configure-gcc-8-cuda-10.2:
 # For version of clang before 7, we need to always provide the full version
 # Use something like this instead in the download script:
 # APT_COMPILER_VERSION=$(($COMPILER_MAJOR_VERSION < 7 ? "${COMPILER_MAJOR_VERSION}.0" : $COMPILER_MAJOR_VERSION))
-configure-clang-6:
+gromacs:clang-6:configure:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .use-clang6
   needs:
     - job: simple-build
@@ -395,9 +393,9 @@ configure-clang-6:
     variables:
       - $GROMACS_RELEASE
 
-configure-clang-7:
+gromacs:clang-7:configure:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .use-clang7
   needs:
     - job: simple-build
@@ -406,9 +404,9 @@ configure-clang-7:
     variables:
       - $GROMACS_RELEASE
 
-configure-clang-7-release:
+gromacs:clang-7:release:configure:
   extends:
-    - .configure-release-extends-template
+    - .gromacs:base:release:configure
     - .use-clang7
   cache: {}
   variables:
@@ -425,9 +423,9 @@ configure-clang-7-release:
     - package-regressiontests-release
     - prepare-release-version
 
-configure-clang-7-gmxapi:
+gromacs:clang-7:configure-gmxapi:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .configure-gmxapi-template
     - .use-clang7
   needs:
@@ -437,9 +435,9 @@ configure-clang-7-gmxapi:
     variables:
       - $GROMACS_RELEASE
 
-configure-clang-7-gmxapi-release:
+gromacs:clang-7:release:configure-gmxapi:
   extends:
-    - .configure-release-extends-template
+    - .gromacs:base:release:configure
     - .configure-gmxapi-template
     - .use-clang7
   cache: {}
@@ -457,9 +455,9 @@ configure-clang-7-gmxapi-release:
     - package-regressiontests-release
     - prepare-release-version
 
-configure-clang-8:
+gromacs:clang-8:configure:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .use-clang8
   needs:
     - job: simple-build
@@ -468,9 +466,9 @@ configure-clang-8:
     variables:
       - $GROMACS_RELEASE
 
-configure-clang-8-release:
+gromacs:clang-8:release:configure:
   extends:
-    - .configure-release-extends-template
+    - .gromacs:base:release:configure
     - .use-clang8
   cache: {}
   variables:
@@ -489,13 +487,10 @@ configure-clang-8-release:
 
 # Jobs running during build stage
 
-.binary-build-template:
+.gromacs:base:build:
   # Dockerfiles are from dockerhub, user eriklindahl
   # image in admin/dockerimages/ci-docs-py27
   stage: build
-  image: biophysics/gcc-gromacs
-  variables:
-
   script:
     - cd $BUILD_DIR
     - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
@@ -512,39 +507,32 @@ configure-clang-8-release:
       - $BUILD_DIR
       - $INSTALL_DIR/
 
-.build-extends-template:
+gromacs:gcc-7:build:
   extends:
-    - .binary-build-template
+    - .gromacs:base:build
     - .use-ccache
     - .variables:default
-
-.build-gcc-cuda:
-  extends:
-    - .build-extends-template
-    - .cuda-template
-
-build-gcc-7:
-  extends:
-    - .build-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-gcc-7
+    - job: gromacs:gcc-7:configure
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-7-release:
+gromacs:gcc-7:release:build:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-gcc7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: configure-gcc-7-release
+    - job: gromacs:gcc-7:release:configure
       artifacts: true
   only:
     refs:
@@ -554,55 +542,63 @@ build-gcc-7-release:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-7-simd-sse41:
+gromacs:gcc-7-simd-sse41:build:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-gcc-7-simd-sse41
+    - job: gromacs:gcc-7-simd-sse41:configure
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-7-double:
+gromacs:gcc-7-double:build:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-gcc-7-double
+    - job: gromacs:gcc-7-double:configure
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-7-gmxapi:
+gromacs:gcc-7:build-gmxapi:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .gmxapi-extra-installs
     - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-gcc-7-gmxapi
+    - job: gromacs:gcc-7:configure-gmxapi
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-7-double-release:
+gromacs:gcc-7-double:release:build:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-gcc7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: configure-gcc-7-double-release
+    - job: gromacs:gcc-7-double:release:configure
       artifacts: true
   only:
     refs:
@@ -612,16 +608,18 @@ build-gcc-7-double-release:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-7-gmxapi-release:
+gromacs:gcc-7:release:build-gmxapi:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .gmxapi-extra-installs
     - .use-gcc7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: configure-gcc-7-gmxapi-release
+    - job: gromacs:gcc-7:release:configure-gmxapi
       artifacts: true
   only:
     refs:
@@ -631,28 +629,32 @@ build-gcc-7-gmxapi-release:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-8:
+gromacs:gcc-8:build:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-gcc8
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-gcc-8
+    - job: gromacs:gcc-8:configure
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-8-release:
+gromacs:gcc-8:release:build:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-gcc8
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: configure-gcc-8-release
+    - job: gromacs:gcc-8:release:configure
       artifacts: true
   only:
     refs:
@@ -662,58 +664,63 @@ build-gcc-8-release:
     variables:
       - $GROMACS_RELEASE
 
-build-gcc-8-cuda-10.2:
+gromacs:gcc-8-cuda-10.2:build:
   extends:
-    - .build-gcc-cuda
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
+    - .use-cuda
     - .use-gcc8:cuda-10.2
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-gcc-8-cuda-10.2
+    - job: gromacs:gcc-8-cuda-10.2:configure
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-.build-clang:
+gromacs:clang-6:build:
   extends:
-    - .build-extends-template
-
-build-clang-6:
-  extends:
-    - .build-clang
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-clang6
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-clang-6
+    - job: gromacs:clang-6:configure
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-clang-7:
+gromacs:clang-7:build:
   extends:
-    - .build-clang
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-clang-7
+    - job: gromacs:clang-7:configure
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-clang-7-release:
+gromacs:clang-7:release:build:
   extends:
-    - .build-clang
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-clang7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
   needs:
-    - job: configure-clang-7-release
+    - job: gromacs:clang-7:release:configure
       artifacts: true
   only:
     refs:
@@ -723,30 +730,34 @@ build-clang-7-release:
     variables:
       - $GROMACS_RELEASE
 
-build-clang-7-gmxapi:
+gromacs:clang-7:build-gmxapi:
   extends:
-    - .build-clang
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .gmxapi-extra-installs
     - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-clang-7-gmxapi
+    - job: gromacs:clang-7:configure-gmxapi
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-clang-7-gmxapi-release:
+gromacs:clang-7:release:build-gmxapi:
   extends:
-    - .build-clang
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .gmxapi-extra-installs
     - .use-clang7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
   needs:
-    - job: configure-clang-7-gmxapi-release
+    - job: gromacs:clang-7:release:configure-gmxapi
       artifacts: true
   only:
     refs:
@@ -756,28 +767,32 @@ build-clang-7-gmxapi-release:
     variables:
       - $GROMACS_RELEASE
 
-build-clang-8:
+gromacs:clang-8:build:
   extends:
-    - .build-clang
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-clang8
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-clang-8
+    - job: gromacs:clang-8:configure
       artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
 
-build-clang-8-release:
+gromacs:clang-8:release:build:
   extends:
-    - .build-clang
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-clang8
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
   needs:
-    - job: configure-clang-8-release
+    - job: gromacs:clang-8:release:configure
       artifacts: true
   only:
     refs:
@@ -789,7 +804,13 @@ build-clang-8-release:
 
 
 # Jobs running during test stage
-.test-script-template:
+
+.gromacs:base:test:
+  stage: test
+  retry:
+    max: 2
+  extends:
+    - .variables:default
   script:
     - cd $BUILD_DIR
     - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
@@ -810,42 +831,29 @@ build-clang-8-release:
     when: always
     expire_in: 1 week
 
-.test-extends-template:
-  stage: test
-  retry:
-    max: 2
+gromacs:gcc-7:test:
   extends:
-    - .test-script-template
-    - .variables:default
-
-.test-gcc-cuda:
-  extends:
-    - .test-extends-template
-    - .cuda-template
-
-test-gcc-7:
-  extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-gcc-7
+    - job: gromacs:gcc-7:build
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-7-release:
+gromacs:gcc-7:release:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-gcc7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: configure-gcc-7-release
+    - job: gromacs:gcc-7:release:configure
       artifacts: true
-    - job: build-gcc-7-release
+    - job: gromacs:gcc-7:release:build
       artifacts: true
   only:
     refs:
@@ -855,41 +863,41 @@ test-gcc-7-release:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-7-simd-sse41:
+gromacs:gcc-7-simd-sse41:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-gcc-7-simd-sse41
+    - job: gromacs:gcc-7-simd-sse41:build
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-7-double:
+gromacs:gcc-7-double:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-gcc-7-double
+    - job: gromacs:gcc-7-double:build
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-7-double-release:
+gromacs:gcc-7-double:release:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-gcc7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: configure-gcc-7-double-release
+    - job: gromacs:gcc-7-double:release:configure
       artifacts: true
-    - job: build-gcc-7-double-release
+    - job: gromacs:gcc-7-double:release:build
       artifacts: true
   only:
     refs:
@@ -899,31 +907,31 @@ test-gcc-7-double-release:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-7-gmxapi:
+gromacs:gcc-7:test-gmxapi:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .gmxapi-extra-installs
     - .use-gcc7
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-gcc-7-gmxapi
+    - job: gromacs:gcc-7:build-gmxapi
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-7-gmxapi-release:
+gromacs:gcc-7:release:test-gmxapi:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .gmxapi-extra-installs
     - .use-gcc7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: configure-gcc-7-gmxapi-release
+    - job: gromacs:gcc-7:release:configure-gmxapi
       artifacts: true
-    - job: build-gcc-7-gmxapi-release
+    - job: gromacs:gcc-7:release:build-gmxapi
       artifacts: true
   only:
     refs:
@@ -933,29 +941,29 @@ test-gcc-7-gmxapi-release:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-8:
+gromacs:gcc-8:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-gcc8
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-gcc-8
+    - job: gromacs:gcc-8:build
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-8-release:
+gromacs:gcc-8:release:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-gcc8
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: configure-gcc-8-release
+    - job: gromacs:gcc-8:release:configure
       artifacts: true
-    - job: build-gcc-8-release
+    - job: gromacs:gcc-8:release:build
       artifacts: true
   only:
     refs:
@@ -965,56 +973,57 @@ test-gcc-8-release:
     variables:
       - $GROMACS_RELEASE
 
-test-gcc-8-cuda-10.2:
+gromacs:gcc-8-cuda-10.2:test:
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   extends:
-    - .test-gcc-cuda
+    - .gromacs:base:test
+    - .use-cuda
     - .use-gcc8:cuda-10.2
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-gcc-8-cuda-10.2
+    - job: gromacs:gcc-8-cuda-10.2:build
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-clang-6:
+gromacs:clang-6:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-clang6
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-clang-6
+    - job: gromacs:clang-6:build
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-clang-7:
+gromacs:clang-7:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-clang-7
+    - job: gromacs:clang-7:build
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-clang-7-release:
+gromacs:clang-7:release:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-clang7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-clang
   needs:
-    - job: configure-clang-7-release
+    - job: gromacs:clang-7:release:configure
       artifacts: true
-    - job: build-clang-7-release
+    - job: gromacs:clang-7:release:build
       artifacts: true
   only:
     refs:
@@ -1024,31 +1033,31 @@ test-clang-7-release:
     variables:
       - $GROMACS_RELEASE
 
-test-clang-7-gmxapi:
+gromacs:clang-7:test-gmxapi:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .gmxapi-extra-installs
     - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-clang-7-gmxapi
+    - job: gromacs:clang-7:build-gmxapi
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-clang-7-gmxapi-release:
+gromacs:clang-7:release:test-gmxapi:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .gmxapi-extra-installs
     - .use-clang7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-clang
   needs:
-    - job: configure-clang-7-gmxapi-release
+    - job: gromacs:clang-7:release:configure-gmxapi
       artifacts: true
-    - job: build-clang-7-gmxapi-release
+    - job: gromacs:clang-7:release:build-gmxapi
       artifacts: true
   only:
     refs:
@@ -1058,29 +1067,29 @@ test-clang-7-gmxapi-release:
     variables:
       - $GROMACS_RELEASE
 
-test-clang-8:
+gromacs:clang-8:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-clang8
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-clang-8
+    - job: gromacs:clang-8:build
   except:
     variables:
       - $GROMACS_RELEASE
 
-test-clang-8-release:
+gromacs:clang-8:release:test:
   extends:
-    - .test-extends-template
+    - .gromacs:base:test
     - .use-clang8
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-clang
   needs:
-    - job: configure-clang-8-release
+    - job: gromacs:clang-8:release:configure
       artifacts: true
-    - job: build-clang-8-release
+    - job: gromacs:clang-8:release:build
       artifacts: true
   only:
     refs:

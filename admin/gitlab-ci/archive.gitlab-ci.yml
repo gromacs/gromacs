@@ -234,7 +234,9 @@ configure-archive-release:
 
 .build-archive:
   extends:
-    - .build-extends-template
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .documentation-before-script-template
     - .build-docs-binary-template
     - .archive-build-template

@@ -2,7 +2,7 @@
 
 configure-clang-tidy:
   extends:
-    - .configure-extends-template
+    - .gromacs:base:configure
     - .use-clang7
   needs:
     - job: simple-build
@@ -17,7 +17,9 @@ configure-clang-tidy:
 
 build-clang-tidy:
   extends:
-    - .build-clang
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
     - .use-clang7
   stage: source-check
   needs:
@@ -34,7 +36,7 @@ build-clang-tidy:
 
 run-clang-format:
   extends:
-    - .binary-build-template
+    - .gromacs:base:build
     - .variables:default
     - .use-clang7
   cache: {}
@@ -64,7 +66,7 @@ run-clang-format:
 
 run-copyright-check:
   extends:
-    - .binary-build-template
+    - .gromacs:base:build
     - .variables:default
     - .use-clang7
   cache: {}

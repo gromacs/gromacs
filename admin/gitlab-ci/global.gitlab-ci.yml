@@ -36,7 +36,7 @@
 
 # Tool chains
 
-.cuda-template:
+.use-cuda:
   variables:
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
     CUDA_BASE_VERSION: ""
