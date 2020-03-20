@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,14 +58,14 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "grid.h"
+#include "biasgrid.h"
 
 namespace gmx
 {
 
 CoordState::CoordState(const AwhBiasParams&          awhBiasParams,
                        const std::vector<DimParams>& dimParams,
-                       const Grid&                   grid)
+                       const BiasGrid&               grid)
 {
     for (size_t d = 0; d < dimParams.size(); d++)
     {
@@ -126,7 +126,7 @@ int getSampleFromDistribution(ArrayRef<const double> distr, int64_t seed, int64_
 
 } // namespace
 
-void CoordState::sampleUmbrellaGridpoint(const Grid&                 grid,
+void CoordState::sampleUmbrellaGridpoint(const BiasGrid&             grid,
                                          int                         gridpointIndex,
                                          gmx::ArrayRef<const double> probWeightNeighbor,
                                          int64_t                     step,
@@ -145,7 +145,7 @@ void CoordState::sampleUmbrellaGridpoint(const Grid&                 grid,
     umbrellaGridpoint_ = neighbor[localIndex];
 }
 
-void CoordState::setCoordValue(const Grid& grid, const awh_dvec coordValue)
+void CoordState::setCoordValue(const BiasGrid& grid, const awh_dvec coordValue)
 {
     /* We need to check for valid (probable) coordinate values, to give
      * a clear error message instead of a low-level assertion failure.
@@ -165,7 +165,7 @@ void CoordState::setCoordValue(const Grid& grid, const awh_dvec coordValue)
          */
         if (!axis.isPeriodic())
         {
-            const double margin = axis.spacing() * c_marginInSigma / Grid::c_numPointsPerSigma;
+            const double margin = axis.spacing() * c_marginInSigma / BiasGrid::c_numPointsPerSigma;
             if (coordValue[dim] < axis.origin() - margin
                 || coordValue[dim] > axis.origin() + axis.length() + margin)
             {

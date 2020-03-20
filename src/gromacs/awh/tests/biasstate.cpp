@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/awh/grid.h"
+#include "gromacs/awh/biasgrid.h"
 #include "gromacs/awh/pointstate.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/awh_params.h"
@@ -137,7 +137,7 @@ public:
         std::vector<DimParams> dimParams;
         dimParams.emplace_back(1.0, 15.0, params.beta);
         dimParams.emplace_back(1.0, 15.0, params.beta);
-        Grid       grid(dimParams, awhBiasParams.dimParams);
+        BiasGrid   grid(dimParams, awhBiasParams.dimParams);
         BiasParams biasParams(awhParams, awhBiasParams, dimParams, 1.0, 1.0,
                               BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
         biasState_ = std::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid);

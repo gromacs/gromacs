@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,8 +51,8 @@
  * \ingroup module_awh
  */
 
-#ifndef GMX_AWH_GRID_H
-#define GMX_AWH_GRID_H
+#ifndef GMX_AWH_BIASGRID_H
+#define GMX_AWH_BIASGRID_H
 
 #include <memory>
 #include <string>
@@ -159,13 +159,13 @@ struct GridPoint
 };
 
 /*! \internal
- * \brief The grid, generally multidimensional and periodic.
+ * \brief The grid for a single bias, generally multidimensional and periodic.
  *
  * The grid discretizes a multidimensional space with some given resolution.
  * Each dimension is represented by an axis which sets the spatial extent,
  * point spacing and periodicity of the grid in that direction.
  */
-class Grid
+class BiasGrid
 {
 private:
     /*! \brief Initializes the grid points.
@@ -189,7 +189,7 @@ public:
      * \param[in] dimParams     Dimension parameters including the expected inverse variance of the coordinate living on the grid (determines the grid spacing).
      * \param[in] awhDimParams  Dimension params from inputrec.
      */
-    Grid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams);
+    BiasGrid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams);
 
     /*! \brief Returns the number of points in the grid.
      *
@@ -250,7 +250,7 @@ private:
  * \param[in] indexMulti  Multidimensional grid point index to convert to a linear one.
  * \returns the linear index.
  */
-int multiDimGridIndexToLinear(const Grid& grid, const awh_ivec indexMulti);
+int multiDimGridIndexToLinear(const BiasGrid& grid, const awh_ivec indexMulti);
 
 /*! \brief Convert multidimensional array index to a linear one.
  *
@@ -268,7 +268,7 @@ int multiDimArrayIndexToLinear(const awh_ivec indexMulti, int numDim, const awh_
  * \param[in]  indexLinear  Linear grid point index to convert to a multidimensional one.
  * \param[out] indexMulti   The multidimensional index.
  */
-void linearGridindexToMultiDim(const Grid& grid, int indexLinear, awh_ivec indexMulti);
+void linearGridindexToMultiDim(const BiasGrid& grid, int indexLinear, awh_ivec indexMulti);
 
 /*! \brief Convert a linear array index to a multidimensional one.
  *
@@ -298,10 +298,10 @@ void linearArrayIndexToMultiDim(int indexLinear, int ndim, const awh_ivec numPoi
  * \param[in,out] gridPointIndex  Pointer to the starting/next grid point index.
  * \returns true if the grid point was updated.
  */
-bool advancePointInSubgrid(const Grid&    grid,
-                           const awh_ivec subgridOrigin,
-                           const awh_ivec subgridNpoints,
-                           int*           gridPointIndex);
+bool advancePointInSubgrid(const BiasGrid& grid,
+                           const awh_ivec  subgridOrigin,
+                           const awh_ivec  subgridNpoints,
+                           int*            gridPointIndex);
 
 /*! \brief Maps each point in the grid to a point in the data grid.
  *
@@ -321,7 +321,7 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
                        const double* const* data,
                        int                  numDataPoints,
                        const std::string&   dataFilename,
-                       const Grid&          grid,
+                       const BiasGrid&      grid,
                        const std::string&   correctFormatMessage);
 
 /*! \brief
@@ -329,11 +329,11 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
  *
  * \param[in] grid        The grid.
  * \param[in] dimIndex    Dimensional index in [0, ndim -1].
- * \param[in] pointIndex  Grid point index.
+ * \param[in] pointIndex  BiasGrid point index.
  * \param[in] value       Value along the given dimension.
  * \returns the deviation of the given value to the given point.
  */
-double getDeviationFromPointAlongGridAxis(const Grid& grid, int dimIndex, int pointIndex, double value);
+double getDeviationFromPointAlongGridAxis(const BiasGrid& grid, int dimIndex, int pointIndex, double value);
 
 } // namespace gmx
 

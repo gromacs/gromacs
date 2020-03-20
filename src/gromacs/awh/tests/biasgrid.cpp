@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/awh/grid.h"
+#include "gromacs/awh/biasgrid.h"
 
 #include <cmath>
 
@@ -55,9 +55,9 @@ namespace gmx
 namespace test
 {
 
-TEST(gridTest, neighborhood)
+TEST(biasGridTest, neighborhood)
 {
-    constexpr double pointsPerScope = Grid::c_scopeCutoff * Grid::c_numPointsPerSigma;
+    constexpr double pointsPerScope = BiasGrid::c_scopeCutoff * BiasGrid::c_numPointsPerSigma;
     GMX_RELEASE_ASSERT(std::abs(pointsPerScope - std::round(pointsPerScope)) > 1e-4,
                        "If the scope is close to an integer number of points, this test can be "
                        "unstable due to rounding issues");
@@ -89,7 +89,7 @@ TEST(gridTest, neighborhood)
     dimParams.emplace_back(conversionFactor, 1 / (beta * 0.7 * 0.7), beta);
     dimParams.emplace_back(conversionFactor, 1 / (beta * 0.1 * 0.1), beta);
 
-    Grid grid(dimParams, awhDimParams.data());
+    BiasGrid grid(dimParams, awhDimParams.data());
 
     const int numPoints = grid.numPoints();
 

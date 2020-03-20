@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,11 +59,11 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "biasgrid.h"
 #include "biasparams.h"
 #include "biasstate.h"
 #include "biaswriter.h"
 #include "dimparams.h"
-#include "grid.h"
 
 struct gmx_multisim_t;
 struct t_commrec;
@@ -78,7 +78,7 @@ struct AwhHistory;
 struct AwhParams;
 struct AwhPointStateHistory;
 class CorrelationGrid;
-class Grid;
+class BiasGrid;
 class GridAxis;
 class PointState;
 
@@ -331,7 +331,7 @@ public:
     /* Data members. */
 private:
     const std::vector<DimParams> dimParams_; /**< Parameters for each dimension. */
-    const Grid grid_; /**< The multidimensional grid organizing the coordinate point locations. */
+    const BiasGrid grid_; /**< The multidimensional grid organizing the coordinate point locations. */
 
     const BiasParams params_; /**< Constant parameters for the method. */
 

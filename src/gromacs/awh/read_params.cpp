@@ -187,7 +187,7 @@ static void checkDimParams(const std::string&   prefix,
         warning_error(wi, message);
     }
 
-    /* Grid params for each axis */
+    /* BiasGrid params for each axis */
     int eGeom = pull_params->coord[dimParams->coordIndex].eGeom;
 
     if (gmx_within_tol(dimParams->end - dimParams->origin, 0, GMX_REAL_EPS))

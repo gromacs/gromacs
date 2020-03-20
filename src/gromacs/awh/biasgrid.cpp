@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 
 #include "gmxpre.h"
 
-#include "grid.h"
+#include "biasgrid.h"
 
 #include <cassert>
 #include <cmath>
@@ -187,7 +187,7 @@ double getDeviationPeriodic(double x, double x0, double period)
 
 } // namespace
 
-double getDeviationFromPointAlongGridAxis(const Grid& grid, int dimIndex, int pointIndex, double value)
+double getDeviationFromPointAlongGridAxis(const BiasGrid& grid, int dimIndex, int pointIndex, double value)
 {
     double coordValue = grid.point(pointIndex).coordValue[dimIndex];
 
@@ -210,7 +210,7 @@ void linearArrayIndexToMultiDim(int indexLinear, int numDimensions, const awh_iv
     }
 }
 
-void linearGridindexToMultiDim(const Grid& grid, int indexLinear, awh_ivec indexMulti)
+void linearGridindexToMultiDim(const BiasGrid& grid, int indexLinear, awh_ivec indexMulti)
 {
     awh_ivec  numPointsDim;
     const int numDimensions = grid.numDimensions();
@@ -259,7 +259,7 @@ int multiDimGridIndexToLinear(const std::vector<GridAxis>& axis, const awh_ivec 
 
 } // namespace
 
-int multiDimGridIndexToLinear(const Grid& grid, const awh_ivec indexMulti)
+int multiDimGridIndexToLinear(const BiasGrid& grid, const awh_ivec indexMulti)
 {
     return multiDimGridIndexToLinear(grid.axis(), indexMulti);
 }
@@ -323,14 +323,14 @@ bool stepInMultiDimArray(int numDim, const awh_ivec numPoints, awh_ivec indexDim
  * \param[in]     grid            The grid.
  * \param[in]     subgridOrigin   Vector locating the subgrid origin relative to the grid origin.
  * \param[in]     subgridNpoints  The number of subgrid points in each dimension.
- * \param[in]     point           Grid point to get subgrid index for.
+ * \param[in]     point           BiasGrid point to get subgrid index for.
  * \param[in,out] subgridIndex    Subgrid multidimensional index.
  */
-void gridToSubgridIndex(const Grid&    grid,
-                        const awh_ivec subgridOrigin,
-                        const awh_ivec subgridNpoints,
-                        int            point,
-                        awh_ivec       subgridIndex)
+void gridToSubgridIndex(const BiasGrid& grid,
+                        const awh_ivec  subgridOrigin,
+                        const awh_ivec  subgridNpoints,
+                        int             point,
+                        awh_ivec        subgridIndex)
 {
     /* Get the subgrid index of the given grid point, for each dimension. */
     for (int d = 0; d < grid.numDimensions(); d++)
@@ -356,10 +356,10 @@ void gridToSubgridIndex(const Grid&    grid,
  * \param[in]     grid           The grid.
  * \param[in]     subgridOrigin  Vector locating the subgrid origin relative to the grid origin.
  * \param[in]     subgridIndex   Subgrid multidimensional index to get grid point index for.
- * \param[in,out] gridIndex      Grid point index.
+ * \param[in,out] gridIndex      BiasGrid point index.
  * \returns true if the transformation was successful.
  */
-bool subgridToGridIndex(const Grid& grid, const awh_ivec subgridOrigin, const awh_ivec subgridIndex, int* gridIndex)
+bool subgridToGridIndex(const BiasGrid& grid, const awh_ivec subgridOrigin, const awh_ivec subgridIndex, int* gridIndex)
 {
     awh_ivec globalIndexDim;
 
@@ -417,10 +417,10 @@ bool subgridToGridIndex(const Grid& grid, const awh_ivec subgridOrigin, const aw
 
 } // namespace
 
-bool advancePointInSubgrid(const Grid&    grid,
-                           const awh_ivec subgridOrigin,
-                           const awh_ivec subgridNumPoints,
-                           int*           gridPointIndex)
+bool advancePointInSubgrid(const BiasGrid& grid,
+                           const awh_ivec  subgridOrigin,
+                           const awh_ivec  subgridNumPoints,
+                           int*            gridPointIndex)
 {
     /* Initialize the subgrid index to the subgrid origin. */
     awh_ivec subgridIndex = { 0 };
@@ -461,7 +461,7 @@ bool advancePointInSubgrid(const Grid&    grid,
  * number of points in the axis. For a periodic axis, the distance is chosen
  * to be in [0, period), i.e. always positive but not the shortest one.
  *
- * \param[in]  axis   Grid axis.
+ * \param[in]  axis   BiasGrid axis.
  * \param[in]  x      From value.
  * \param[in]  x0     To value.
  * \returns (x - x0) in number of points.
@@ -510,7 +510,7 @@ static bool valueIsInGrid(const awh_dvec value, const std::vector<GridAxis>& axi
     return true;
 }
 
-bool Grid::covers(const awh_dvec value) const
+bool BiasGrid::covers(const awh_dvec value) const
 {
     return valueIsInGrid(value, axis());
 }
@@ -559,7 +559,7 @@ static int getNearestIndexInGrid(const awh_dvec value, const std::vector<GridAxi
     return multiDimGridIndexToLinear(axis, indexMulti);
 }
 
-int Grid::nearestIndex(const awh_dvec value) const
+int BiasGrid::nearestIndex(const awh_dvec value) const
 {
     return getNearestIndexInGrid(value, axis());
 }
@@ -573,14 +573,14 @@ namespace
  * The search space for neighbors is a subgrid with size set by a scope cutoff.
  * In general not all point within scope will be valid grid points.
  *
- * \param[in]     pointIndex           Grid point index.
+ * \param[in]     pointIndex           BiasGrid point index.
  * \param[in]     grid                 The grid.
  * \param[in,out] neighborIndexArray   Array to fill with neighbor indices.
  */
-void setNeighborsOfGridPoint(int pointIndex, const Grid& grid, std::vector<int>* neighborIndexArray)
+void setNeighborsOfGridPoint(int pointIndex, const BiasGrid& grid, std::vector<int>* neighborIndexArray)
 {
     const int c_maxNeighborsAlongAxis =
-            1 + 2 * static_cast<int>(Grid::c_numPointsPerSigma * Grid::c_scopeCutoff);
+            1 + 2 * static_cast<int>(BiasGrid::c_numPointsPerSigma * BiasGrid::c_scopeCutoff);
 
     awh_ivec numCandidates = { 0 };
     awh_ivec subgridOrigin = { 0 };
@@ -613,7 +613,7 @@ void setNeighborsOfGridPoint(int pointIndex, const Grid& grid, std::vector<int>*
 
 } // namespace
 
-void Grid::initPoints()
+void BiasGrid::initPoints()
 {
     awh_ivec numPointsDimWork = { 0 };
     awh_ivec indexWork        = { 0 };
@@ -696,7 +696,7 @@ GridAxis::GridAxis(double origin, double end, double period, int numPoints) :
     numPointsInPeriod_ = static_cast<int>(std::round(period_ / spacing_));
 }
 
-Grid::Grid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams)
+BiasGrid::BiasGrid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams)
 {
     /* Define the discretization along each dimension */
     awh_dvec period;
@@ -735,7 +735,7 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
                        const double* const* data,
                        int                  numDataPoints,
                        const std::string&   dataFilename,
-                       const Grid&          grid,
+                       const BiasGrid&      grid,
                        const std::string&   correctFormatMessage)
 {
     /* Transform the data into a grid in order to map each grid point to a data point

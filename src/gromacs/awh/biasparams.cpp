@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "grid.h"
+#include "biasgrid.h"
 
 namespace gmx
 {
@@ -112,7 +112,7 @@ int64_t calcTargetUpdateInterval(const AwhParams& awhParams, const AwhBiasParams
  *
  * \param[in] awhParams      AWH parameters.
  * \param[in] dimParams         Parameters for the dimensions of the coordinate.
- * \param[in] gridAxis          The Grid axes.
+ * \param[in] gridAxis          The BiasGrid axes.
  * \returns the check interval in steps.
  */
 int64_t calcCheckCoveringInterval(const AwhParams&              awhParams,
@@ -238,7 +238,7 @@ double gaussianGeometryFactor(gmx::ArrayRef<const double> xArray)
  *
  * \param[in] dimParams         Parameters for the dimensions of the coordinate.
  * \param[in] awhBiasParams     Bias parameters.
- * \param[in] gridAxis          The Grid axes.
+ * \param[in] gridAxis          The BiasGrid axes.
  * \param[in] beta              1/(k_B T).
  * \param[in] samplingTimestep  Sampling frequency of probability weights.
  * \returns estimate of initial histogram size.
