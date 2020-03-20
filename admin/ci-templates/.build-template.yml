@@ -107,7 +107,8 @@
     - mv $SOURCENAME ../$RELEASE_SOURCE
     - tar -xf $REGTESTTARBALL
     - mv $REGTESTNAME ../$RELEASE_REGRESSIONTESTS
-    - rm $SOURCETARBALL $REGTESTTARBALL
+    - rm $SOURCETARBALL
+    - cp $REGTESTTARBALL gmx-regressiontests.tar.gz
     - cd ..
     - echo $CMAKE_COMPILER_SCRIPT
     - echo $CMAKE_EXTRA_OPTIONS

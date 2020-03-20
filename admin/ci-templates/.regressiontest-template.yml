@@ -13,9 +13,6 @@
       - pushes
       - merge_requests
       - schedules
-  except:
-    variables:
-      - $GROMACS_RELEASE
 # Always clone the default version for this branch, release-2020 in this case
   script:
     - export REGTESTBRANCH=release-2020

@@ -1348,6 +1348,7 @@ test-gcc-7-release:
         artifacts: true
       - job: build-gcc-7-release
         artifacts: true
+      - job: prepare-regressiontests
     only:
       refs:
         - triggers
@@ -1369,6 +1370,7 @@ test-gcc-7-gmxapi-release:
         artifacts: true
       - job: build-gcc-7-gmxapi-release
         artifacts: true
+      - job: prepare-regressiontests
     only:
       refs:
         - triggers
@@ -1384,11 +1386,13 @@ test-gcc-7-double-release:
     stage: release-tests
     variables:
         BUILD_DIR: release-builds-gcc
+        REGRESSIONTEST_DOUBLE: "-double"
     needs:
       - job: configure-gcc-7-double-release
         artifacts: true
       - job: build-gcc-7-double-release
         artifacts: true
+      - job: prepare-regressiontests
     only:
       refs:
         - triggers
@@ -1409,6 +1413,7 @@ test-gcc-8-release:
         artifacts: true
       - job: build-gcc-8-release
         artifacts: true
+      - job: prepare-regressiontests
     only:
       refs:
         - triggers
@@ -1429,6 +1434,7 @@ test-clang-7-release:
         artifacts: true
       - job: build-clang-7-release
         artifacts: true
+      - job: prepare-regressiontests
     only:
       refs:
         - triggers
@@ -1450,6 +1456,7 @@ test-clang-7-gmxapi-release:
         artifacts: true
       - job: build-clang-7-gmxapi-release
         artifacts: true
+      - job: prepare-regressiontests
     only:
       refs:
         - triggers
@@ -1470,6 +1477,7 @@ test-clang-8-release:
         artifacts: true
       - job: build-clang-8-release
         artifacts: true
+      - job: prepare-regressiontests
     only:
       refs:
         - triggers
