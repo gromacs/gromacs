@@ -62,14 +62,14 @@ parser.add_argument('--cmake', type=str, default='3.13.0',
                     help='Selection of CMake version to provide to base image')
 compiler_group = parser.add_mutually_exclusive_group()
 compiler_group.add_argument('--gnu', type=int, nargs='?', const=7, default=7,
-                            choices=[6, 7, 8, 9],
+                            choices=[7, 8, 9],
                             help='Select GNU compiler tool chain. (Default) '
                                  'Some checking is implemented to avoid incompatible combinations')
 compiler_group.add_argument('--llvm', type=int, nargs='?', const=7, default=None,
-                            choices=[6, 7, 8],
+                            choices=[7, 8, 9],
                             help='Select LLVM compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
-compiler_group.add_argument('--icc', type=int, nargs='?', const=7, default=None,
+compiler_group.add_argument('--icc', type=int, nargs='?', const=19, default=None,
                             choices=[19, 20],
                             help='Select Intel compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
@@ -101,3 +101,7 @@ parser.add_argument('--opencl', type=str, nargs='?', const='nvidia', default=Non
 parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None,
                     choices=['master', 'develop'],
                     help='Add external clFFT libraries to the build image')
+
+parser.add_argument('--doxygen', type=str, nargs='?', const='1.8.5', default=None,
+                    choices=['1.8.5', '1.8.11'],
+                    help='Add doxygen environment for documentation builds. Also adds other requirements needed for final docs images.')
