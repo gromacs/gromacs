@@ -624,6 +624,26 @@ build-clang-8-release:
 
 
 # Jobs running during test stage
+.test-script-template:
+  script:
+    - cd $BUILD_DIR
+    - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
+    - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
+      ctestLog.log | tee ctestErrors.log
+    - xsltproc scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
+    - if [ -s ctestErrors.log ] ; then
+      echo "Error during running ctest";
+      exit 1;
+      fi
+    - cd ..
+  artifacts:
+    reports:
+      junit: $BUILD_DIR/JUnitTestResults.xml
+    paths:
+      - $BUILD_DIR/Testing
+      - $BUILD_DIR/tests
+    when: always
+    expire_in: 1 week
 
 .test-extends-template:
   extends:

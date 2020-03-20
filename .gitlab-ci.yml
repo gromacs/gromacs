@@ -52,7 +52,6 @@ include:
   - local: '/admin/ci-templates/.clang-build-template.yml'
   - local: '/admin/ci-templates/.clang-test-template.yml'
   - local: '/admin/ci-templates/.clang-before-script.yml'
-  - local: '/admin/ci-templates/.test-script-template.yml'
   - local: '/admin/ci-templates/.cuda-template.yml'
   - local: '/admin/ci-templates/.build-gmxapi-template.yml'
   # Build and test in a variety of environments and configurations.
