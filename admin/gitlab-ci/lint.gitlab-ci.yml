@@ -2,7 +2,7 @@
 
 configure-clang-tidy:
   extends:
-    - .configure-clang
+    - .configure-extends-template
     - .use-clang7
   needs:
     - job: simple-build

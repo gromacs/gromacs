@@ -1,8 +1,11 @@
 
-.simple-build-template:
-  # Docker images are from dockerhub, user eriklindahl
+# Initial build that always needs to pass before follow-up stages run
+simple-build:
+  extends:
+    - .use-ccache
+    - .variables:default
+    - .use-gcc7
   stage: pre-build
-  image: biophysics/gcc-gromacs
   variables:
     KUBERNETES_CPU_LIMIT: 8
     KUBERNETES_CPU_REQUEST: 4
@@ -15,7 +18,10 @@
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
-
+    BUILD_DIR: simple-build
+  except:
+    variables:
+      - $GROMACS_RELEASE
   script:
     - echo $CMAKE_COMPILER_SCRIPT
     - echo $CMAKE_EXTRA_OPTIONS
@@ -71,25 +77,13 @@
     when: always
     expire_in: 1 week
 
-# Initial build that always needs to pass before follow-up stages run
-simple-build:
-  extends:
-    - .simple-build-template
-    - .use-ccache
-    - .variables:default
-    - .use-gcc7
-  variables:
-    BUILD_DIR: simple-build
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
 # Jobs running in first pre-build stage
-.configure-build-template:
-  # Docker image uploaded to dockerhub by user eriklindahl
-  # TODO: Get DockerFile for admin/dockerfiles
+
+.configure-extends-template:
+  extends:
+    - .variables:default
+  cache: {}
   stage: configure-build
-  image: biophysics/gcc-gromacs
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -102,7 +96,6 @@ simple-build:
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
-
   script:
     - echo $CMAKE_COMPILER_SCRIPT
     - echo $CMAKE_EXTRA_OPTIONS
@@ -139,11 +132,11 @@ simple-build:
     paths:
       - $BUILD_DIR
 
-.configure-build-release-template:
-  # Dockerfiles are from dockerhub, user eriklindahl
-  # image in admin/dockerimages/ci-docs-py27
+.configure-release-extends-template:
+  extends:
+    - .variables:default
+  cache: {}
   stage: release-configure
-  image: biophysics/gcc-gromacs
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -159,7 +152,6 @@ simple-build:
     RELEASE_BUILD_DIR: release-builds
     RELEASE_SOURCE: release-source-from-tarball
     RELEASE_REGRESSIONTESTS: release-regressiontests-from-tarball
-
   only:
     refs:
       - web
@@ -231,35 +223,15 @@ simple-build:
       - $RELEASE_REGRESSIONTESTS
       - $RELEASE_SOURCE
 
-.configure-extends-template:
-  extends:
-    - .configure-build-template
-    - .variables:default
-  cache: {}
-
-.configure-release-extends-template:
-  extends:
-    - .configure-build-release-template
-    - .variables:default
-  cache: {}
-
 # Templates for configuration stage
-.configure-gcc:
-  extends:
-    - .configure-extends-template
-
-.configure-gcc-release:
-  extends:
-    - .configure-release-extends-template
-
 .configure-gcc-cuda:
   extends:
-    - .configure-gcc
+    - .configure-extends-template
     - .cuda-template
 
 configure-gcc-7:
   extends:
-    - .configure-gcc
+    - .configure-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -270,7 +242,7 @@ configure-gcc-7:
 
 configure-gcc-7-release:
   extends:
-    - .configure-gcc-release
+    - .configure-release-extends-template
     - .use-gcc7
   cache: {}
   variables:
@@ -289,7 +261,7 @@ configure-gcc-7-release:
 
 configure-gcc-7-simd-sse41:
   extends:
-    - .configure-gcc
+    - .configure-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -302,7 +274,7 @@ configure-gcc-7-simd-sse41:
 
 configure-gcc-7-double:
   extends:
-    - .configure-gcc
+    - .configure-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -315,7 +287,7 @@ configure-gcc-7-double:
 
 configure-gcc-7-double-release:
   extends:
-    - .configure-gcc-release
+    - .configure-release-extends-template
     - .use-gcc7
   cache: {}
   variables:
@@ -335,7 +307,7 @@ configure-gcc-7-double-release:
 
 configure-gcc-7-gmxapi:
   extends:
-    - .configure-gcc
+    - .configure-extends-template
     - .configure-gmxapi-template
     - .use-gcc7
   needs:
@@ -347,7 +319,7 @@ configure-gcc-7-gmxapi:
 
 configure-gcc-7-gmxapi-release:
   extends:
-    - .configure-gcc-release
+    - .configure-release-extends-template
     - .configure-gmxapi-template
     - .use-gcc7
   cache: {}
@@ -367,7 +339,7 @@ configure-gcc-7-gmxapi-release:
 
 configure-gcc-8:
   extends:
-    - .configure-gcc
+    - .configure-extends-template
     - .use-gcc8
   needs:
     - job: simple-build
@@ -378,7 +350,7 @@ configure-gcc-8:
 
 configure-gcc-8-release:
   extends:
-    - .configure-gcc-release
+    - .configure-release-extends-template
     - .use-gcc8
   cache: {}
   variables:
@@ -406,20 +378,12 @@ configure-gcc-8-cuda-10.2:
     variables:
       - $GROMACS_RELEASE
 
-.configure-clang:
-  extends:
-    - .configure-extends-template
-
-.configure-clang-release:
-  extends:
-    - .configure-release-extends-template
-
 # For version of clang before 7, we need to always provide the full version
 # Use something like this instead in the download script:
 # APT_COMPILER_VERSION=$(($COMPILER_MAJOR_VERSION < 7 ? "${COMPILER_MAJOR_VERSION}.0" : $COMPILER_MAJOR_VERSION))
 configure-clang-6:
   extends:
-    - .configure-clang
+    - .configure-extends-template
     - .use-clang6
   needs:
     - job: simple-build
@@ -433,7 +397,7 @@ configure-clang-6:
 
 configure-clang-7:
   extends:
-    - .configure-clang
+    - .configure-extends-template
     - .use-clang7
   needs:
     - job: simple-build
@@ -444,7 +408,7 @@ configure-clang-7:
 
 configure-clang-7-release:
   extends:
-    - .configure-clang-release
+    - .configure-release-extends-template
     - .use-clang7
   cache: {}
   variables:
@@ -463,7 +427,7 @@ configure-clang-7-release:
 
 configure-clang-7-gmxapi:
   extends:
-    - .configure-clang
+    - .configure-extends-template
     - .configure-gmxapi-template
     - .use-clang7
   needs:
@@ -475,7 +439,7 @@ configure-clang-7-gmxapi:
 
 configure-clang-7-gmxapi-release:
   extends:
-    - .configure-clang-release
+    - .configure-release-extends-template
     - .configure-gmxapi-template
     - .use-clang7
   cache: {}
@@ -495,7 +459,7 @@ configure-clang-7-gmxapi-release:
 
 configure-clang-8:
   extends:
-    - .configure-clang
+    - .configure-extends-template
     - .use-clang8
   needs:
     - job: simple-build
@@ -506,7 +470,7 @@ configure-clang-8:
 
 configure-clang-8-release:
   extends:
-    - .configure-clang-release
+    - .configure-release-extends-template
     - .use-clang8
   cache: {}
   variables:
@@ -554,18 +518,14 @@ configure-clang-8-release:
     - .use-ccache
     - .variables:default
 
-.build-gcc:
-  extends:
-    - .build-extends-template
-
 .build-gcc-cuda:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .cuda-template
 
 build-gcc-7:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -578,7 +538,7 @@ build-gcc-7:
 
 build-gcc-7-release:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .use-gcc7
   stage: release-build
   variables:
@@ -596,7 +556,7 @@ build-gcc-7-release:
 
 build-gcc-7-simd-sse41:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -609,7 +569,7 @@ build-gcc-7-simd-sse41:
 
 build-gcc-7-double:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -622,7 +582,7 @@ build-gcc-7-double:
 
 build-gcc-7-gmxapi:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .gmxapi-extra-installs
     - .use-gcc7
   needs:
@@ -636,7 +596,7 @@ build-gcc-7-gmxapi:
 
 build-gcc-7-double-release:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .use-gcc7
   stage: release-build
   variables:
@@ -654,7 +614,7 @@ build-gcc-7-double-release:
 
 build-gcc-7-gmxapi-release:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .gmxapi-extra-installs
     - .use-gcc7
   stage: release-build
@@ -673,7 +633,7 @@ build-gcc-7-gmxapi-release:
 
 build-gcc-8:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .use-gcc8
   needs:
     - job: simple-build
@@ -686,7 +646,7 @@ build-gcc-8:
 
 build-gcc-8-release:
   extends:
-    - .build-gcc
+    - .build-extends-template
     - .use-gcc8
   stage: release-build
   variables:
@@ -829,16 +789,6 @@ build-clang-8-release:
 
 
 # Jobs running during test stage
-.test-base-template:
-  variables:
-    BUILD_DIR: build
-  # Docker image uploaded to dockerhub by user eriklindahl
-  # TODO: Get DockerFile for admin/dockerfiles
-  image: biophysics/gcc-gromacs
-  stage: test
-  retry:
-    max: 2
-
 .test-script-template:
   script:
     - cd $BUILD_DIR
@@ -861,28 +811,21 @@ build-clang-8-release:
     expire_in: 1 week
 
 .test-extends-template:
+  stage: test
+  retry:
+    max: 2
   extends:
-    - .test-base-template
     - .test-script-template
     - .variables:default
 
-.test-gcc-template:
-  variables:
-    BUILD_DIR: build-gcc
-
-.test-gcc:
-  extends:
-    - .test-extends-template
-    - .test-gcc-template
-
 .test-gcc-cuda:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .cuda-template
 
 test-gcc-7:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -894,7 +837,7 @@ test-gcc-7:
 
 test-gcc-7-release:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .use-gcc7
   stage: release-tests
   variables:
@@ -914,7 +857,7 @@ test-gcc-7-release:
 
 test-gcc-7-simd-sse41:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -926,7 +869,7 @@ test-gcc-7-simd-sse41:
 
 test-gcc-7-double:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .use-gcc7
   needs:
     - job: simple-build
@@ -938,7 +881,7 @@ test-gcc-7-double:
 
 test-gcc-7-double-release:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .use-gcc7
   stage: release-tests
   variables:
@@ -958,7 +901,7 @@ test-gcc-7-double-release:
 
 test-gcc-7-gmxapi:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .gmxapi-extra-installs
     - .use-gcc7
   needs:
@@ -971,7 +914,7 @@ test-gcc-7-gmxapi:
 
 test-gcc-7-gmxapi-release:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .gmxapi-extra-installs
     - .use-gcc7
   stage: release-tests
@@ -992,7 +935,7 @@ test-gcc-7-gmxapi-release:
 
 test-gcc-8:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .use-gcc8
   needs:
     - job: simple-build
@@ -1004,7 +947,7 @@ test-gcc-8:
 
 test-gcc-8-release:
   extends:
-    - .test-gcc
+    - .test-extends-template
     - .use-gcc8
   stage: release-tests
   variables:
@@ -1037,18 +980,9 @@ test-gcc-8-cuda-10.2:
     variables:
       - $GROMACS_RELEASE
 
-.test-clang-template:
-  variables:
-    BUILD_DIR: build-clang
-
-.test-clang:
-  extends:
-    - .test-extends-template
-    - .test-clang-template
-
 test-clang-6:
   extends:
-    - .test-clang
+    - .test-extends-template
     - .use-clang6
   needs:
     - job: simple-build
@@ -1060,7 +994,7 @@ test-clang-6:
 
 test-clang-7:
   extends:
-    - .test-clang
+    - .test-extends-template
     - .use-clang7
   needs:
     - job: simple-build
@@ -1072,7 +1006,7 @@ test-clang-7:
 
 test-clang-7-release:
   extends:
-    - .test-clang
+    - .test-extends-template
     - .use-clang7
   stage: release-tests
   variables:
@@ -1092,7 +1026,7 @@ test-clang-7-release:
 
 test-clang-7-gmxapi:
   extends:
-    - .test-clang
+    - .test-extends-template
     - .gmxapi-extra-installs
     - .use-clang7
   needs:
@@ -1105,7 +1039,7 @@ test-clang-7-gmxapi:
 
 test-clang-7-gmxapi-release:
   extends:
-    - .test-clang
+    - .test-extends-template
     - .gmxapi-extra-installs
     - .use-clang7
   stage: release-tests
@@ -1126,7 +1060,7 @@ test-clang-7-gmxapi-release:
 
 test-clang-8:
   extends:
-    - .test-clang
+    - .test-extends-template
     - .use-clang8
   needs:
     - job: simple-build
@@ -1138,7 +1072,7 @@ test-clang-8:
 
 test-clang-8-release:
   extends:
-    - .test-clang
+    - .test-extends-template
     - .use-clang8
   stage: release-tests
   variables:
