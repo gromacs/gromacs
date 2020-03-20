@@ -55,7 +55,6 @@ include:
   - local: '/admin/ci-templates/.test-script-template.yml'
   - local: '/admin/ci-templates/.cuda-template.yml'
   - local: '/admin/ci-templates/.build-gmxapi-template.yml'
-  - local: '/admin/ci-templates/.regressiontest-template.yml'
   # Build and test in a variety of environments and configurations.
   # To do: expand matrix here to improve transparency and reduce file sizes.
   # E.g. '/admin/gitlab-ci/matrix/clang-8.gitlab-ci.yml
