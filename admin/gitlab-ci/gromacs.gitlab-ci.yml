@@ -631,6 +631,7 @@ gromacs:gcc-7:release:test:
       artifacts: true
     - job: gromacs:gcc-7:release:build
       artifacts: true
+    - job: regressiontests:package
 
 gromacs:gcc-7-simd-sse41:test:
   extends:
@@ -669,6 +670,7 @@ gromacs:gcc-7-double:release:test:
       artifacts: true
     - job: gromacs:gcc-7-double:release:build
       artifacts: true
+    - job: regressiontests:package
 
 gromacs:gcc-8:test:
   extends:
@@ -694,6 +696,7 @@ gromacs:gcc-8:release:test:
       artifacts: true
     - job: gromacs:gcc-8:release:build
       artifacts: true
+    - job: regressiontests:package
 
 gromacs:gcc-8-cuda-10.2:test:
   extends:
@@ -752,6 +755,7 @@ gromacs:clang-7:release:test:
       artifacts: true
     - job: gromacs:clang-7:release:build
       artifacts: true
+    - job: regressiontests:package
 
 gromacs:clang-8:test:
   extends:
@@ -777,3 +781,4 @@ gromacs:clang-8:release:test:
       artifacts: true
     - job: gromacs:clang-8:release:build
       artifacts: true
+    - job: regressiontests:package

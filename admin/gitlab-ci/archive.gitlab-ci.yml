@@ -98,12 +98,14 @@ regressiontests:package:
     - git clean -ffdxq
     - git gc
     - git archive -o $REGTESTNAME.tar.gz --prefix $REGTESTNAME/ -9 HEAD
-    - mv $REGTESTNAME.tar.gz ..
+    - cp $REGTESTNAME.tar.gz gmx-regressiontests.tar.gz
+    - mv $REGTESTNAME.tar.gz gmx-regressiontests.tar.gz ..
     - echo "Build regressiontests for branch  $REGTESTBRANCH"
     - cd ..
   artifacts:
     paths:
       - regressiontests-*.tar.gz
+      - gmx-regressiontests.tar.gz
 
 archive:configure:nightly:
   extends:
