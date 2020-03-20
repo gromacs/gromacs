@@ -79,29 +79,13 @@
     CUDA_BASE_VERSION: "10.2"
     COMPILER_MAJOR_VERSION: 8
 
-.clang6-template:
-  image: gromacs/ci-clang-6:master
-
-.clang6-gmxapi-template:
-  image: gromacs/ci-clang-6-gmxapi:master
-
-.clang7-template:
-  image: gromacs/ci-clang-7:master
-
-.clang7-gmxapi-template:
-  image: gromacs/ci-clang-7-gmxapi:master
-
-.clang8-template:
-  image: gromacs/ci-clang-8:master
-
-.clang8-gmxapi-template:
-  image: gromacs/ci-clang-8-gmxapi:master
-
-.clang-before-script-template:
+# Base definition, not to be used directly.
+# Use version-specific `.use-clangX` definitions when defining jobs.
+.use-clang:base:
   variables:
-    COMPILER_MAJOR_VERSION: 7
-    EXTRA_INSTALLS: ""
-
+    DEBIAN_FRONTEND: noninteractive
+    BUILD_DIR: build-clang
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=clang-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=clang++-$COMPILER_MAJOR_VERSION
   before_script:
     - echo $EXTRA_INSTALLS
     - time apt-get -qq update
@@ -111,10 +95,23 @@
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
 
-.build-clang-template:
+.use-clang6:
+  image: gromacs/ci-clang-6:master
   variables:
-    DEBIAN_FRONTEND: noninteractive
-    COMPILER_MAJOR_VERSION: 7
-    BUILD_DIR: build-clang
-    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=clang-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=clang++-$COMPILER_MAJOR_VERSION
+    COMPILER_MAJOR_VERSION: 6
+  extends:
+    - .use-clang:base
 
+.use-clang7:
+  image: gromacs/ci-clang-7:master
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+  extends:
+    - .use-clang:base
+
+.use-clang8:
+  image: gromacs/ci-clang-8:master
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+  extends:
+    - .use-clang:base

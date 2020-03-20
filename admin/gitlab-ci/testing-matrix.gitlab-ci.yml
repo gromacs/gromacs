@@ -409,14 +409,10 @@ configure-gcc-8-cuda-10.2:
 .configure-clang:
   extends:
     - .configure-extends-template
-    - .clang-before-script-template
-    - .build-clang-template
 
 .configure-clang-release:
   extends:
     - .configure-release-extends-template
-    - .clang-before-script-template
-    - .build-clang-template
 
 # For version of clang before 7, we need to always provide the full version
 # Use something like this instead in the download script:
@@ -424,7 +420,7 @@ configure-gcc-8-cuda-10.2:
 configure-clang-6:
   extends:
     - .configure-clang
-    - .clang6-template
+    - .use-clang6
   needs:
     - job: simple-build
       artifacts: false
@@ -438,12 +434,10 @@ configure-clang-6:
 configure-clang-7:
   extends:
     - .configure-clang
-    - .clang7-template
+    - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 7
   except:
     variables:
       - $GROMACS_RELEASE
@@ -451,10 +445,9 @@ configure-clang-7:
 configure-clang-7-release:
   extends:
     - .configure-clang-release
-    - .clang7-template
+    - .use-clang7
   cache: {}
   variables:
-    COMPILER_MAJOR_VERSION: 7
     RELEASE_BUILD_DIR: release-builds-clang
   only:
     refs:
@@ -472,12 +465,10 @@ configure-clang-7-gmxapi:
   extends:
     - .configure-clang
     - .configure-gmxapi-template
-    - .clang7-template
+    - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 7
   except:
     variables:
       - $GROMACS_RELEASE
@@ -486,10 +477,9 @@ configure-clang-7-gmxapi-release:
   extends:
     - .configure-clang-release
     - .configure-gmxapi-template
-    - .clang7-template
+    - .use-clang7
   cache: {}
   variables:
-    COMPILER_MAJOR_VERSION: 7
     RELEASE_BUILD_DIR: release-builds-clang
   only:
     refs:
@@ -506,12 +496,10 @@ configure-clang-7-gmxapi-release:
 configure-clang-8:
   extends:
     - .configure-clang
-    - .clang8-template
+    - .use-clang8
   needs:
     - job: simple-build
       artifacts: false
-  variables:
-    COMPILER_MAJOR_VERSION: 8
   except:
     variables:
       - $GROMACS_RELEASE
@@ -519,10 +507,9 @@ configure-clang-8:
 configure-clang-8-release:
   extends:
     - .configure-clang-release
-    - .clang8-template
+    - .use-clang8
   cache: {}
   variables:
-    COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-clang
   only:
     refs:
@@ -731,13 +718,11 @@ build-gcc-8-cuda-10.2:
 .build-clang:
   extends:
     - .build-extends-template
-    - .clang-before-script-template
-    - .build-clang-template
 
 build-clang-6:
   extends:
     - .build-clang
-    - .clang6-template
+    - .use-clang6
   needs:
     - job: simple-build
       artifacts: false
@@ -750,7 +735,7 @@ build-clang-6:
 build-clang-7:
   extends:
     - .build-clang
-    - .clang7-template
+    - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
@@ -763,7 +748,7 @@ build-clang-7:
 build-clang-7-release:
   extends:
     - .build-clang
-    - .clang7-template
+    - .use-clang7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
@@ -782,7 +767,7 @@ build-clang-7-gmxapi:
   extends:
     - .build-clang
     - .gmxapi-extra-installs
-    - .clang7-template
+    - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
@@ -796,7 +781,7 @@ build-clang-7-gmxapi-release:
   extends:
     - .build-clang
     - .gmxapi-extra-installs
-    - .clang7-template
+    - .use-clang7
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
@@ -814,7 +799,7 @@ build-clang-7-gmxapi-release:
 build-clang-8:
   extends:
     - .build-clang
-    - .clang8-template
+    - .use-clang8
   needs:
     - job: simple-build
       artifacts: false
@@ -827,7 +812,7 @@ build-clang-8:
 build-clang-8-release:
   extends:
     - .build-clang
-    - .clang8-template
+    - .use-clang8
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
@@ -1054,19 +1039,17 @@ test-gcc-8-cuda-10.2:
 
 .test-clang-template:
   variables:
-    COMPILER_MAJOR_VERSION: 7
     BUILD_DIR: build-clang
 
 .test-clang:
   extends:
     - .test-extends-template
-    - .clang-before-script-template
     - .test-clang-template
 
 test-clang-6:
   extends:
     - .test-clang
-    - .clang6-template
+    - .use-clang6
   needs:
     - job: simple-build
       artifacts: false
@@ -1078,7 +1061,7 @@ test-clang-6:
 test-clang-7:
   extends:
     - .test-clang
-    - .clang7-template
+    - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
@@ -1090,7 +1073,7 @@ test-clang-7:
 test-clang-7-release:
   extends:
     - .test-clang
-    - .clang7-template
+    - .use-clang7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-clang
@@ -1111,7 +1094,7 @@ test-clang-7-gmxapi:
   extends:
     - .test-clang
     - .gmxapi-extra-installs
-    - .clang7-template
+    - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
@@ -1124,7 +1107,7 @@ test-clang-7-gmxapi-release:
   extends:
     - .test-clang
     - .gmxapi-extra-installs
-    - .clang7-template
+    - .use-clang7
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-clang
@@ -1144,7 +1127,7 @@ test-clang-7-gmxapi-release:
 test-clang-8:
   extends:
     - .test-clang
-    - .clang8-template
+    - .use-clang8
   needs:
     - job: simple-build
       artifacts: false
@@ -1156,7 +1139,7 @@ test-clang-8:
 test-clang-8-release:
   extends:
     - .test-clang
-    - .clang8-template
+    - .use-clang8
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-clang

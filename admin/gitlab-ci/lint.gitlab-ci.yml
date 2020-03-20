@@ -3,13 +3,12 @@
 configure-clang-tidy:
   extends:
     - .configure-clang
-    - .clang7-template
+    - .use-clang7
   needs:
     - job: simple-build
       artifacts: false
   variables:
     BUILD_DIR: build-clang-tidy
-    COMPILER_MAJOR_VERSION: 7
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
   except:
@@ -19,7 +18,7 @@ configure-clang-tidy:
 build-clang-tidy:
   extends:
     - .build-clang
-    - .clang7-template
+    - .use-clang7
   stage: source-check
   needs:
     - job: simple-build
@@ -28,7 +27,6 @@ build-clang-tidy:
       artifacts: true
   variables:
     BUILD_DIR: build-clang-tidy
-    COMPILER_MAJOR_VERSION: 7
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
   except:
     variables:
@@ -38,9 +36,7 @@ run-clang-format:
   extends:
     - .binary-build-template
     - .variables:default
-    - .clang-before-script-template
-    - .build-clang-template
-    - .clang7-template
+    - .use-clang7
   cache: {}
   stage: source-check
   when: always
@@ -51,7 +47,6 @@ run-clang-format:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
-    COMPILER_MAJOR_VERSION: 7
     EXTRA_INSTALLS: clang-format-$COMPILER_MAJOR_VERSION
   except:
     variables:
@@ -71,9 +66,7 @@ run-copyright-check:
   extends:
     - .binary-build-template
     - .variables:default
-    - .clang-before-script-template
-    - .build-clang-template
-    - .clang7-template
+    - .use-clang7
   cache: {}
   stage: source-check
   when: always
@@ -119,7 +112,6 @@ run-check-source:
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
     BUILD_DIR: build-docs
-    COMPILER_MAJOR_VERSION: 7
   except:
     variables:
       - $GROMACS_RELEASE
