@@ -37,11 +37,11 @@ build-clang-tidy:
 run-clang-format:
   extends:
     - .binary-build-template
-    - .no-cache-template
     - .variables:default
     - .clang-before-script-template
     - .build-clang-template
     - .clang7-template
+  cache: {}
   stage: source-check
   when: always
   needs:
@@ -70,11 +70,11 @@ run-clang-format:
 run-copyright-check:
   extends:
     - .binary-build-template
-    - .no-cache-template
     - .variables:default
     - .clang-before-script-template
     - .build-clang-template
     - .clang7-template
+  cache: {}
   stage: source-check
   when: always
   needs:
@@ -104,10 +104,10 @@ run-copyright-check:
 
 run-check-source:
   extends:
-    - .no-cache-template
     - .variables:default
     - .build-docs-binary-template
     - .documentation-before-script-template
+  cache: {}
   stage: source-check
   needs:
     - job: simple-build

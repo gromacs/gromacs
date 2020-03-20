@@ -75,7 +75,7 @@
 simple-build:
   extends:
     - .simple-build-template
-    - .build-cache-template
+    - .use-ccache
     - .variables:default
     - .gcc-before-script-template
     - .build-gcc-template
@@ -237,14 +237,14 @@ simple-build:
 .configure-extends-template:
   extends:
     - .configure-build-template
-    - .no-cache-template
     - .variables:default
+  cache: {}
 
 .configure-release-extends-template:
   extends:
     - .configure-build-release-template
-    - .no-cache-template
     - .variables:default
+  cache: {}
 
 # Templates for configuration stage
 .configure-gcc:
@@ -280,8 +280,8 @@ configure-gcc-7:
 configure-gcc-7-release:
   extends:
     - .configure-gcc-release
-    - .no-cache-template
     - .gcc7-template
+  cache: {}
   variables:
     COMPILER_MAJOR_VERSION: 7
     RELEASE_BUILD_DIR: release-builds-gcc
@@ -328,8 +328,8 @@ configure-gcc-7-double:
 configure-gcc-7-double-release:
   extends:
     - .configure-gcc-release
-    - .no-cache-template
     - .gcc7-template
+  cache: {}
   variables:
     COMPILER_MAJOR_VERSION: 7
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
@@ -364,8 +364,8 @@ configure-gcc-7-gmxapi-release:
   extends:
     - .configure-gcc-release
     - .configure-gmxapi-template
-    - .no-cache-template
     - .gcc7-template
+  cache: {}
   variables:
     COMPILER_MAJOR_VERSION: 7
     RELEASE_BUILD_DIR: release-builds-gcc
@@ -397,8 +397,8 @@ configure-gcc-8:
 configure-gcc-8-release:
   extends:
     - .configure-gcc-release
-    - .no-cache-template
     - .gcc8-template
+  cache: {}
   variables:
     COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-gcc
@@ -470,8 +470,8 @@ configure-clang-7:
 configure-clang-7-release:
   extends:
     - .configure-clang-release
-    - .no-cache-template
     - .clang7-template
+  cache: {}
   variables:
     COMPILER_MAJOR_VERSION: 7
     RELEASE_BUILD_DIR: release-builds-clang
@@ -505,8 +505,8 @@ configure-clang-7-gmxapi-release:
   extends:
     - .configure-clang-release
     - .configure-gmxapi-template
-    - .no-cache-template
     - .clang7-template
+  cache: {}
   variables:
     COMPILER_MAJOR_VERSION: 7
     RELEASE_BUILD_DIR: release-builds-clang
@@ -538,8 +538,8 @@ configure-clang-8:
 configure-clang-8-release:
   extends:
     - .configure-clang-release
-    - .no-cache-template
     - .clang8-template
+  cache: {}
   variables:
     COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-clang
@@ -583,7 +583,7 @@ configure-clang-8-release:
 .build-extends-template:
   extends:
     - .binary-build-template
-    - .build-cache-template
+    - .use-ccache
     - .variables:default
 
 .build-gcc:
@@ -899,7 +899,6 @@ build-clang-8-release:
 .test-extends-template:
   extends:
     - .test-base-template
-    - .pull-cache-template
     - .test-script-template
     - .variables:default
 

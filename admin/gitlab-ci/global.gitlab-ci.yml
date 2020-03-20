@@ -1,3 +1,7 @@
+# Mix-in job definitions.
+
+# Centralized definitions of common job parameter values.
+
 .variables:default:
   variables:
     KUBERNETES_CPU_LIMIT: 8
@@ -9,20 +13,14 @@
     BUILD_DIR: build
     INSTALL_DIR: install
 
-.build-cache-template:
+# Behavioral templates
+
+# Use a persistent compiler cache to speed up rebuilds for a single job.
+.use-ccache:
   cache:
     key: "$CI_JOB_NAME-$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
     paths:
       - ccache/
-
-.pull-cache-template:
-  cache:
-    key: "$CI_JOB_NAME-$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
-    # Read but don't update the cache
-    policy: pull
-
-.no-cache-template:
-  cache: {}
 
 
 .gmxapi-extra-installs:

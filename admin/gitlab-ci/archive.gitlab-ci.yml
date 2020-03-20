@@ -124,8 +124,8 @@ prepare-release-version:
 
 .regressiontests-extends-template:
   extends:
-    - .no-cache-template
     - .variables:default
+  cache: {}
 
 prepare-regressiontests:
   extends:

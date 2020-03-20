@@ -197,6 +197,7 @@
     - .configure-extends-template
     - .configure-docs-release-template
     - .documentation-before-script-template
+  cache: {}
 
 configure-docs:
   extends:
@@ -277,7 +278,7 @@ configure-docs-gmxapi:
 .build-docs-binary:
   extends:
     - .build-extends-template
-    - .build-cache-template
+    - .use-ccache
     - .build-docs-binary-template
     - .documentation-before-script-template
 
@@ -285,7 +286,6 @@ configure-docs-gmxapi:
   extends:
     - .binary-build-template
     - .variables:default
-    - .no-cache-template
     - .build-docs-webpage-template
     - .documentation-before-script-template
 
@@ -391,7 +391,7 @@ webpage-configure-release:
   extends:
     - .configure-docs-release
     - .configure-gmxapi-template
-    - .no-cache-template
+  cache: {}
   only:
     refs:
       - web

@@ -54,6 +54,14 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         Avoid using *before-script* directly, and be cautious
         about nested *extends* overriding multiple *before_script* definitions.
 
+    cache
+        There is no global default, but jobs that build software will likely
+        set *cache*. To explicitly unset *cache* directives, specify a job
+        parameter of ``cache: {}``.
+        Refer to `GitLab docs <https://docs.gitlab.com/ee/ci/yaml/#cache>`__
+        for details. In particular, note the details of cache identity according
+        to `cache:key <https://docs.gitlab.com/ee/ci/yaml/#cachekey>`__
+
     image
         Part of the tool chain configuration. Instead of setting *image*
         directly, *extend* a *.use_<toolchain>* template from
@@ -64,9 +72,21 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         Refer to `GitLab <https://docs.gitlab.com/ee/ci/yaml/#variables>`__
         for details of the merging behavior. Refer to :ref:`variables` for local usage.
 
+Global templates
+~~~~~~~~~~~~~~~~
+
 In addition to the templates in the main job definition files,
 common "mix-in" functionality and behavioral templates are defined in
 :file:`admin/gitlab-ci/global.gitlab-ci.yml`.
+
+Jobs beginning with ``.use-`` provide mix-in behavior, such as boilerplate for
+jobs using a particular tool chain.
+
+Jobs beginning with a `parameter <https://docs.gitlab.com/ee/ci/yaml>`__
+name allow parameters to be set in a single place for common job characteristics.
+If providing more than a default parameter value, the job name should be suffixed
+by a meaningful descriptor and documented within
+:file:`admin/gitlab-ci/global.gitlab-ci.yml`
 
 .. _variables:
 
