@@ -67,7 +67,20 @@ enum class DeviceStreamPriority : int
     Count
 };
 
-// Stub for device context
+/*! \libinternal \brief Declaration of platform-agnostic device stream/queue.
+ *
+ * The command stream (or command queue) is a sequence of operations that are executed
+ * in they order they were issued. Several streams may co-exist to represent concurency.
+ * This class declares the interfaces, that are exposed to platform-agnostic code and
+ * it should be implemented for each compute architecture (e.g. CUDA and OpenCL).
+ *
+ * Destruction of the \p DeviceStream calls the destructor of the underlying low-level
+ * stream/queue, hence should only be called when the stream is no longer needed. To
+ * prevent accidental stream destruction, while copying or moving a \p DeviceStream
+ * object, copy and move constructors and copy and move assignments are not allowed
+ * and the \p DeviceStream object should be passed as a pointer or constant reference.
+ *
+ */
 class DeviceStream
 {
 public:
@@ -82,7 +95,7 @@ public:
      * \param[in] priority       Stream priority: high or normal.
      * \param[in] useTiming      If the timing should be enabled (not used in CUDA).
      */
-    void init(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming);
+    void init(const DeviceContext& deviceContext, DeviceStreamPriority priority, bool useTiming);
 
     /*! \brief Construct and init.
      *
@@ -94,6 +107,12 @@ public:
     {
         init(deviceContext, priority, useTiming);
     }
+
+    /*! \brief Check if the underlying stream is valid.
+     *
+     *  \returns Whether the stream is valid (false in CPU-only builds).
+     */
+    bool isValid() const;
 
     //! Synchronize the steam
     void synchronize() const;

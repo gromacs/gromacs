@@ -71,7 +71,7 @@ void DeviceStream::init(const DeviceContext& deviceContext, DeviceStreamPriority
 
 DeviceStream::~DeviceStream()
 {
-    if (stream_)
+    if (isValid())
     {
         cl_int clError = clReleaseCommandQueue(stream_);
         GMX_RELEASE_ASSERT(
@@ -84,6 +84,11 @@ DeviceStream::~DeviceStream()
 cl_command_queue DeviceStream::stream() const
 {
     return stream_;
+}
+
+bool DeviceStream::isValid() const
+{
+    return (stream_ != nullptr);
 }
 
 void DeviceStream::synchronize() const
