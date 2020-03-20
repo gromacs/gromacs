@@ -126,7 +126,7 @@ def main(args) -> hpccm.Stage:
     Stage0 += hpccm.building_blocks.cmake(eula=True, version=args.cmake)
 
     # We always add Python3 and Pip
-    Stage0 += hpccm.building_blocks.python(python3=True, python2=False)
+    Stage0 += hpccm.building_blocks.python(python3=True, python2=False, devel=True)
     Stage0 += hpccm.building_blocks.pip(upgrade=True, pip='pip3',
                                         packages=['pytest', 'networkx', 'numpy'])
 
@@ -147,17 +147,18 @@ def main(args) -> hpccm.Stage:
             compiler_branch = 'release_'+str(args.llvm)+'0'
             compiler = hpccm.building_blocks.generic_cmake(repository='https://git.llvm.org/git/llvm.git',
                     prefix='/usr/local', recursive=True, branch=compiler_branch,
-                    cmake_opts=['-D CMAKE_BUILD_TYPE=Release', '-D LLVM_ENABLE_PROJECTS="clang;openmp"', '-D LIBOMP_TSAN_SUPPORT=on'],
+                    cmake_opts=['-D CMAKE_BUILD_TYPE=Release', '-D LLVM_ENABLE_PROJECTS="clang;openmp;clang-tools-extra"', '-D LIBOMP_TSAN_SUPPORT=on'],
                     preconfigure=['export branch='+compiler_branch,
                                   '(cd projects; git clone https://git.llvm.org/git/libcxx.git; cd libcxx; git checkout $branch)',
                                   '(cd projects; git clone https://git.llvm.org/git/libcxxabi.git; cd libcxxabi; git checkout $branch)',
                                   '(cd projects; git clone https://git.llvm.org/git/compiler-rt.git; cd compiler-rt; git checkout $branch)',
                                   '(cd ..; git clone https://git.llvm.org/git/openmp.git; cd openmp; git checkout $branch)',
                                   '(cd ..; git clone https://git.llvm.org/git/clang.git; cd clang; git checkout $branch)',
-                                  '(cd ../clang/tools; git clone https://git.llvm.org/git/clang-tools-extra.git extra; cd extra; git checkout $branch)'],
+                                  '(cd ..; git clone https://git.llvm.org/git/clang-tools-extra.git clang-tools-extra; cd clang-tools-extra; git checkout $branch)'],
                     postinstall=['ln -s /usr/local/bin/clang++ /usr/local/bin/clang++-'+str(args.llvm),
                                  'ln -s /usr/local/bin/clang-format /usr/local/bin/clang-format-'+str(args.llvm),
-                                 'ln -s /usr/local/bin/clang-tidy /usr/local/bin/clang-tidy-'+str(args.llvm)])
+                                 'ln -s /usr/local/bin/clang-tidy /usr/local/bin/clang-tidy-'+str(args.llvm),
+                                 'ln -s /usr/local/libexec/c++-analyzer /usr/local/bin/c++-analyzer-'+str(args.llvm)])
 
 
     elif (args.gnu is not None):
@@ -215,7 +216,45 @@ def main(args) -> hpccm.Stage:
             Stage0 += hpccm.building_blocks.generic_cmake(repository='https://github.com/clMathLibraries/clFFT.git',
                                                           prefix='/usr/local', recursive=True, branch=args.clfft, directory='clFFT/src')
 
-
+    # Add documentation requirements (doxygen and sphinx + misc).
+    if (args.doxygen is not None):
+        if (args.doxygen == '1.8.5'):
+                doxygen_commit = 'ed4ed873ab0e7f15116e2052119a6729d4589f7a'
+        elif (args.doxygen == '1.8.11'):
+                doxygen_commit = 'a6d4f4df45febe588c38de37641513fd576b998f'
+        else:
+            raise RuntimeError('Need to provide either 1.8.5 or 1.8.11 as doxygen version.')
+        Stage0 += hpccm.building_blocks.packages(ospackages=['autoconf',
+                                                             'automake',
+                                                             'autopoint',
+                                                             'autotools-dev',
+                                                             'bison',
+                                                             'flex',
+                                                             'ghostscript',
+                                                             'graphviz',
+                                                             'help2man',
+                                                             'imagemagick',
+                                                             'libtool',
+                                                             'linkchecker',
+                                                             'mscgen',
+                                                             'm4',
+                                                             'texinfo',
+                                                             'texlive-latex-base',
+                                                             'texlive-latex-extra',
+                                                             'texlive-fonts-recommended',
+                                                             'texlive-fonts-extra'])
+        Stage0 += hpccm.building_blocks.generic_autotools(repository='https://github.com/westes/flex.git',
+                                                          commit='f7788a9a0ecccdc953ed12043ccb59ca25714018',
+                                                          prefix='/tmp/install-of-flex',
+                                                          configure_opts=['--disable-shared'],
+                                                          preconfigure=['./autogen.sh'])
+        Stage0 += hpccm.building_blocks.generic_autotools(repository='https://github.com/doxygen/doxygen.git',
+                                                          commit=doxygen_commit,
+                                                          prefix='',
+                                                          configure_opts=['--flex /tmp/install-of-flex/bin/flex', '--static'],
+                                                          postinstall=['sed -i \'/\"XPS\"/d;/\"PDF\"/d;/\"PS\"/d;/\"EPS\"/d;/disable ghostscript format types/d\' /etc/ImageMagick-6/policy.xml'])
+        Stage0 += hpccm.building_blocks.pip(pip='pip3', packages=['sphinx==1.6.1'])
+    
     return Stage0
 
 

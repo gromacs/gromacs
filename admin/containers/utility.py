@@ -101,3 +101,7 @@ parser.add_argument('--opencl', type=str, nargs='?', const='nvidia', default=Non
 parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None,
                     choices=['master', 'develop'],
                     help='Add external clFFT libraries to the build image')
+
+parser.add_argument('--doxygen', type=str, nargs='?', const='1.8.5', default=None,
+                    choices=['1.8.5', '1.8.11'],
+                    help='Add doxygen environment for documentation builds. Also adds other requirements needed for final docs images.')
