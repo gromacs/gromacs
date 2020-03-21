@@ -1020,14 +1020,13 @@ gromacs:gcc-8-cuda-10.2:test:
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
   extends:
     - .gromacs:base:test
     - .use-cuda
     - .use-gcc8:cuda-10.2
-  variables:
-    REGRESSIONTEST_PME_RANK_NUMBER: 0
-    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
-    REGRESSIONTEST_OMP_RANK_NUMBER: 1
   needs:
     - job: simple-build
       artifacts: false
