@@ -16,6 +16,17 @@
     EXTRA_INSTALLS: "python3-dev python3-setuptools python3-pip python3-pytest"
 # TODO: Get these from updated Docker images.
 
+# Our generic before_script to install dependencies and prepare the ccache directory.
+.before_script:default:
+  before_script:
+    - echo $EXTRA_INSTALLS
+    - time apt-get -qq update
+    - time apt-get -qqy --no-install-suggests --no-install-recommends install
+      $EXTRA_INSTALLS
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
+
 # Behavioral templates
 
 # Use a persistent compiler cache to speed up rebuilds for a single job.

@@ -262,8 +262,8 @@ gromacs:gcc-7:release:configure:
     variables:
       - $GROMACS_RELEASE
   dependencies:
-    - package-archive-release
-    - package-regressiontests-release
+    - archive:package
+    - regressiontests:package
     - prepare-release-version
 
 gromacs:gcc-7-simd-sse41:configure:
@@ -308,8 +308,8 @@ gromacs:gcc-7-double:release:configure:
     variables:
       - $GROMACS_RELEASE
   dependencies:
-    - package-archive-release
-    - package-regressiontests-release
+    - archive:package
+    - regressiontests:package
     - prepare-release-version
 
 gromacs:gcc-8:configure:
@@ -338,8 +338,8 @@ gromacs:gcc-8:release:configure:
     variables:
       - $GROMACS_RELEASE
   dependencies:
-    - package-archive-release
-    - package-regressiontests-release
+    - archive:package
+    - regressiontests:package
     - prepare-release-version
 
 gromacs:gcc-8-cuda-10.2:configure:
@@ -400,8 +400,8 @@ gromacs:clang-7:release:configure:
     variables:
       - $GROMACS_RELEASE
   dependencies:
-    - package-archive-release
-    - package-regressiontests-release
+    - archive:package
+    - regressiontests:package
     - prepare-release-version
 
 gromacs:clang-8:configure:
@@ -430,8 +430,8 @@ gromacs:clang-8:release:configure:
     variables:
       - $GROMACS_RELEASE
   dependencies:
-    - package-archive-release
-    - package-regressiontests-release
+    - archive:package
+    - regressiontests:package
     - prepare-release-version
 
 # Jobs running during build stage
@@ -741,7 +741,7 @@ gromacs:gcc-7:test:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-7:build
-    - job: prepare-regressiontests
+    - job: regressiontests:prepare
   except:
     variables:
       - $GROMACS_RELEASE
@@ -774,7 +774,7 @@ gromacs:gcc-7-simd-sse41:test:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-7-simd-sse41:build
-    - job: prepare-regressiontests
+    - job: regressiontests:prepare
   except:
     variables:
       - $GROMACS_RELEASE
@@ -789,7 +789,7 @@ gromacs:gcc-7-double:test:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-7-double:build
-    - job: prepare-regressiontests
+    - job: regressiontests:prepare
   except:
     variables:
       - $GROMACS_RELEASE
@@ -822,7 +822,7 @@ gromacs:gcc-8:test:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-8:build
-    - job: prepare-regressiontests
+    - job: regressiontests:prepare
   except:
     variables:
       - $GROMACS_RELEASE
@@ -864,7 +864,7 @@ gromacs:gcc-8-cuda-10.2:test:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-8-cuda-10.2:build
-    - job: prepare-regressiontests
+    - job: regressiontests:prepare
   except:
     variables:
       - $GROMACS_RELEASE
@@ -879,7 +879,7 @@ gromacs:clang-6:test:
     - job: simple-build
       artifacts: false
     - job: gromacs:clang-6:build
-    - job: prepare-regressiontests
+    - job: regressiontests:prepare
   except:
     variables:
       - $GROMACS_RELEASE
@@ -892,7 +892,7 @@ gromacs:clang-7:test:
     - job: simple-build
       artifacts: false
     - job: gromacs:clang-7:build
-    - job: prepare-regressiontests
+    - job: regressiontests:prepare
   except:
     variables:
       - $GROMACS_RELEASE
@@ -925,7 +925,7 @@ gromacs:clang-8:test:
     - job: simple-build
       artifacts: false
     - job: gromacs:clang-8:build
-    - job: prepare-regressiontests
+    - job: regressiontests:prepare
   except:
     variables:
       - $GROMACS_RELEASE

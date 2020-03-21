@@ -1,6 +1,6 @@
 # Repository cleanliness. Source tidiness, linting, and policy compliance.
 
-configure-clang-tidy:
+clang-tidy:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang7
@@ -17,7 +17,7 @@ configure-clang-tidy:
     variables:
       - $GROMACS_RELEASE
 
-build-clang-tidy:
+clang-tidy:build:
   extends:
     - .gromacs:base:build
     - .use-ccache
@@ -27,7 +27,7 @@ build-clang-tidy:
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-clang-tidy
+    - job: clang-tidy:configure
       artifacts: true
   variables:
     BUILD_DIR: build-clang-tidy
@@ -36,7 +36,7 @@ build-clang-tidy:
     variables:
       - $GROMACS_RELEASE
 
-run-clang-format:
+clang-format:
   extends:
     - .gromacs:base:build
     - .variables:default
@@ -66,7 +66,7 @@ run-clang-format:
       - clang-format.log
       - formatting.txt
 
-run-copyright-check:
+copyright-check:
   extends:
     - .gromacs:base:build
     - .variables:default
@@ -99,17 +99,17 @@ run-copyright-check:
       - years.log
       - headers.log
 
-run-check-source:
+check-source:
   extends:
     - .variables:default
-    - .build-docs-binary-template
-    - .documentation-before-script-template
+    - .docs:build
+    - .before_script:default
   cache: {}
   stage: source-check
   needs:
     - job: simple-build
       artifacts: false
-    - job: build-docs
+    - job: docs:build
       artifacts: true
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -135,10 +135,10 @@ run-check-source:
 
 linkchecker:
   extends:
-    - .build-docs-webpage
+    - .webpage:build
   stage: nightly-build
   dependencies:
-    - webpage
+    - webpage:build
   only:
     - web
     - schedules

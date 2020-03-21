@@ -1,21 +1,14 @@
 # Build documentation and web page.
-.documentation-before-script-template:
-  before_script:
-    - echo $EXTRA_INSTALLS
-    - time apt-get -qq update
-    - time apt-get -qqy --no-install-suggests --no-install-recommends install
-      $EXTRA_INSTALLS
-    - mkdir -p ccache
-    - export CCACHE_BASEDIR=${PWD}
-    - export CCACHE_DIR=${PWD}/ccache
 
-.configure-docs-template:
+.docs:configure:
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
   stage: configure-build
   extends:
+    - .gromacs:base:configure
     - .variables:default
+    - .before_script:default
   only:
     refs:
       - web
@@ -78,13 +71,16 @@
     paths:
       - $BUILD_DIR
 
-.configure-docs-release-template:
+.docs:configure:release:
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
   stage: release-configure
   extends:
+    - .gromacs:base:configure
     - .variables:default
+    - .before_script:default
+  cache: {}
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -190,22 +186,9 @@
       - $RELEASE_REGRESSIONTESTS
       - $RELEASE_SOURCE
 
-.configure-docs:
+docs:configure:
   extends:
-    - .gromacs:base:configure
-    - .configure-docs-template
-    - .documentation-before-script-template
-
-.configure-docs-release:
-  extends:
-    - .gromacs:base:configure
-    - .configure-docs-release-template
-    - .documentation-before-script-template
-  cache: {}
-
-configure-docs:
-  extends:
-    - .configure-docs
+    - .docs:configure
   needs:
     - job: simple-build
       artifacts: false
@@ -216,7 +199,7 @@ configure-docs:
     variables:
       - $GROMACS_RELEASE
 
-.build-docs-binary-template:
+.docs:build:
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
@@ -237,7 +220,38 @@ configure-docs:
     paths:
       - $BUILD_DIR
 
-.build-docs-webpage-template:
+docs:build:
+  extends:
+    - .gromacs:base:build
+    - .variables:default
+    - .use-ccache
+    - .docs:build
+    - .before_script:default
+  stage: documentation
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: docs:configure
+      artifacts: true
+  variables:
+    BUILD_DIR: build-docs
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+# The manual build is built separately so that errors in converting
+# Sphinx to LaTeX and compiling can always be found in the
+# all-output.txt file, while avoiding many thousands of lines of spam
+# from pdflatex for normal builds. This does reduce the available
+# parallel utilization, and so increases the build time.
+#
+# TODO why are the doxygen and sphinx log files disappearing
+# TODO use a feature from gitlab runner instead of using pipefail to get timings for the job
+.webpage:build:
+  extends:
+    - .gromacs:base:build
+    - .variables:default
+    - .before_script:default
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
@@ -277,53 +291,14 @@ configure-docs:
       - $BUILD_DIR/docs/doxygen/doxygen-full.log
       - $BUILD_DIR/docs/sphinx-html.log
 
-.build-docs-binary:
+webpage:build:
   extends:
-    - .gromacs:base:build
-    - .use-ccache
-    - .variables:default
-    - .use-ccache
-    - .build-docs-binary-template
-    - .documentation-before-script-template
-
-.build-docs-webpage:
-  extends:
-    - .gromacs:base:build
-    - .variables:default
-    - .build-docs-webpage-template
-    - .documentation-before-script-template
-
-build-docs:
-  extends:
-    - .build-docs-binary
-  stage: documentation
-  needs:
-    - job: simple-build
-      artifacts: false
-    - job: configure-docs
-      artifacts: true
-  variables:
-    BUILD_DIR: build-docs
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-# The manual build is built separately so that errors in converting
-# Sphinx to LaTeX and compiling can always be found in the
-# all-output.txt file, while avoiding many thousands of lines of spam
-# from pdflatex for normal builds. This does reduce the available
-# parallel utilization, and so increases the build time.
-#
-# TODO why are the doxygen and sphinx log files disappearing
-# TODO use a feature from gitlab runner instead of using pipefail to get timings for the job
-webpage:
-  extends:
-    - .build-docs-webpage
+    - .webpage:build
   stage: post-test
   needs:
-    - job: build-docs
+    - job: docs:build
       artifacts: true
-    - job: run-check-source
+    - job: check-source
       artifacts: false
   variables:
     BUILD_DIR: build-docs
@@ -331,36 +306,9 @@ webpage:
     variables:
       - $GROMACS_RELEASE
 
-webpage-nightly:
+webpage:configure:
   extends:
-    - .build-docs-webpage
-  stage: nightly-deploy
-  only:
-    - web
-    - triggers
-    - schedules
-  except:
-    variables:
-      - $GROMACS_RELEASE
-  needs:
-    - job: simple-build
-      artifacts: false
-    - job: linkchecker
-      artifacts: false
-    - job: webpage
-      artifacts: true
-  variables:
-    BUILD_DIR: build-docs
-  script:
-    - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
-  artifacts:
-    when: always
-    paths:
-      - webpage.tar.gz
-
-webpage-configure-release:
-  extends:
-    - .configure-docs-release
+    - .docs:configure:release
   cache: {}
   only:
     refs:
@@ -370,19 +318,23 @@ webpage-configure-release:
     variables:
       - $GROMACS_RELEASE
   dependencies:
-    - package-archive-release
-    - package-regressiontests-release
+    - archive:package
+    - regressiontests:package
     - prepare-release-version
   variables:
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
 
 
-webpage-binary-release:
+webpage:dependencies:
   extends:
-    - .build-docs-binary
+    - .gromacs:base:build
+    - .variables:default
+    - .use-ccache
+    - .docs:build
+    - .before_script:default
   stage: release-build
   needs:
-    - job: webpage-configure-release
+    - job: webpage:configure
       artifacts: true
   variables:
     BUILD_DIR: release-doc-builds
@@ -394,12 +346,12 @@ webpage-binary-release:
     variables:
       - $GROMACS_RELEASE
 
-webpage-build-release:
+webpage:build:release:
   extends:
-    - .build-docs-webpage
+    - .webpage:build
   dependencies:
-    - webpage-binary-release
-    - webpage-configure-release
+    - webpage:dependencies
+    - webpage:configure
   stage: release-prepare-deploy
   only:
     refs:

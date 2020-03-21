@@ -31,7 +31,7 @@ prepare-release-version:
 # Special job to package regressiontest files and have them available for testing
 # Runs during pre-build
 # Set up to only fetch the files and prepare everything for merge requests
-prepare-regressiontests:
+regressiontests:prepare:
   extends:
     - .variables:default
   cache: {}
@@ -73,7 +73,7 @@ prepare-regressiontests:
     paths:
       - gmx-regressiontests.tar.gz
 
-package-regressiontests-release:
+regressiontests:package:
   extends:
     - .variables:default
   cache: {}
@@ -126,7 +126,7 @@ package-regressiontests-release:
     paths:
       - regressiontests-*.tar.gz
 
-configure-archive-nightly:
+archive:configure:nightly:
   stage: nightly-configure
   only:
     - web
@@ -139,14 +139,14 @@ configure-archive-nightly:
     variables:
       - $GROMACS_RELEASE
   extends:
-    - .configure-docs
+    - .docs:configure
   variables:
     BUILD_DIR: build-package
     CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
     CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
 
-configure-archive-release:
+archive:configure:release:
   only:
     refs:
       - web
@@ -155,7 +155,7 @@ configure-archive-release:
     variables:
       - $GROMACS_RELEASE
   extends:
-    - .configure-docs
+    - .docs:configure
   variables:
     BUILD_DIR: build-package
     CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
@@ -167,13 +167,13 @@ configure-archive-release:
 # the custom build directory due to https://gitlab.com/gitlab-org/gitlab-runner/issues/4203
 # As soon as this is resolved we should use the separate build directories instead of
 # manually hacking things. TODO: #3361
-.build-archive:
+.archive:build:
   extends:
     - .gromacs:base:build
     - .use-ccache
     - .variables:default
-    - .documentation-before-script-template
-    - .build-docs-binary-template
+    - .before_script:default
+    - .docs:build
   # Dockerfiles are from dockerhub, user eriklindahl
   image: gromacs/ci-docs-clang:master
   only:
@@ -223,14 +223,14 @@ configure-archive-release:
       - $BUILD_DIR/*log
       - gromacs*tar.gz
 
-build-archive-nightly:
+archive:build:
   extends:
-    - .build-archive
+    - .archive:build
   stage: nightly-build
   needs:
     - job: simple-build
       artifacts: false
-    - job: configure-archive-nightly
+    - job: archive:configure:nightly
       artifacts: true
   only:
     - web
@@ -242,12 +242,12 @@ build-archive-nightly:
   variables:
     BUILD_DIR: build-package
 
-package-archive-release:
+archive:package:
   extends:
-    - .build-archive
+    - .archive:build
   stage: release-package
   needs:
-    - job: configure-archive-release
+    - job: archive:configure:release
       artifacts: true
   only:
     refs:
@@ -300,13 +300,40 @@ release-verify:
       exit 1;
       fi
   dependencies:
-    - package-archive-release
-    - package-regressiontests-release
+    - archive:package
+    - regressiontests:package
     - prepare-release-version
 
-webpage-archive-release:
+archive:nightly-webpage:
   extends:
-    - .build-docs-webpage
+    - .webpage:build
+  stage: nightly-deploy
+  only:
+    - web
+    - triggers
+    - schedules
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  needs:
+    - job: simple-build
+      artifacts: false
+    - job: linkchecker
+      artifacts: false
+    - job: webpage:build
+      artifacts: true
+  variables:
+    BUILD_DIR: build-docs
+  script:
+    - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
+  artifacts:
+    when: always
+    paths:
+      - webpage.tar.gz
+
+archive:full-release:
+  extends:
+    - .webpage:build
   stage: release-deploy
   only:
     refs:
@@ -316,9 +343,9 @@ webpage-archive-release:
     variables:
       - $GROMACS_RELEASE
   dependencies:
-    - webpage-build-release
-    - package-archive-release
-    - package-regressiontests-release
+    - webpage:build:release
+    - archive:package
+    - regressiontests:package
   variables:
     BUILD_DIR: release-doc-builds
   script:
