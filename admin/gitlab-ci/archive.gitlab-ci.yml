@@ -3,6 +3,7 @@
 prepare-release-version:
   extends:
     - .variables:default
+    - .rules:nightly-only-for-release
   cache: {}
   # Docker image uploaded to dockerhub by user eriklindahl
   # TODO: Get DockerFile for admin/dockerfiles
@@ -13,14 +14,6 @@ prepare-release-version:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
-
-  only:
-    refs:
-      - merge_requests
-      - schedules
-      - web
-    variables:
-      - $GROMACS_RELEASE
   script:
     - cmake -P cmake/gmxVersionInfo.cmake &> version.json
 
@@ -34,6 +27,7 @@ prepare-release-version:
 regressiontests:prepare:
   extends:
     - .variables:default
+    - .rules:not-for-release
   cache: {}
   image: biophysics/gcc-gromacs
   stage: configure-build
@@ -42,15 +36,6 @@ regressiontests:prepare:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
-  only:
-    refs:
-      - web
-      - pushes
-      - merge_requests
-      - schedules
-  except:
-    variables:
-      - $GROMACS_RELEASE
   # Always clone the default version for this branch, master in this case
   script:
     - export REGTESTBRANCH=master
@@ -76,6 +61,7 @@ regressiontests:prepare:
 regressiontests:package:
   extends:
     - .variables:default
+    - .rules:nightly-only-for-release
   cache: {}
   # Docker image uploaded to dockerhub by user eriklindahl
   # TODO: Get DockerFile for admin/dockerfiles
@@ -89,13 +75,6 @@ regressiontests:package:
   needs:
     - job: prepare-release-version
       artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
   script:
     - VERSION=`cat version.json |
       python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
@@ -127,19 +106,13 @@ regressiontests:package:
       - regressiontests-*.tar.gz
 
 archive:configure:nightly:
+  extends:
+    - .docs:configure
+    - .rules:nightly-not-for-release
   stage: nightly-configure
-  only:
-    - web
-    - triggers
-    - schedules
   needs:
     - job: simple-build
       artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
-  extends:
-    - .docs:configure
   variables:
     BUILD_DIR: build-package
     CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
@@ -147,15 +120,9 @@ archive:configure:nightly:
     CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
 
 archive:configure:release:
-  only:
-    refs:
-      - web
-      - triggers
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
   extends:
     - .docs:configure
+    - .rules:nightly-only-for-release
   variables:
     BUILD_DIR: build-package
     CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
@@ -176,12 +143,6 @@ archive:configure:release:
     - .docs:build
   # Dockerfiles are from dockerhub, user eriklindahl
   image: gromacs/ci-docs-clang:master
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -226,36 +187,24 @@ archive:configure:release:
 archive:build:
   extends:
     - .archive:build
+    - .rules:nightly-not-for-release
   stage: nightly-build
   needs:
     - job: simple-build
       artifacts: false
     - job: archive:configure:nightly
       artifacts: true
-  only:
-    - web
-    - triggers
-    - schedules
-  except:
-    variables:
-      - $GROMACS_RELEASE
   variables:
     BUILD_DIR: build-package
 
 archive:package:
   extends:
     - .archive:build
+    - .rules:nightly-only-for-release
   stage: release-package
   needs:
     - job: archive:configure:release
       artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
   variables:
     BUILD_DIR: build-package
 
@@ -264,20 +213,13 @@ release-verify:
   stage: release-verify
   extends:
     - .variables:default
+    - .rules:nightly-only-for-release
   cache: {}
 
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
-
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
   script:
     - VERSION=`cat version.json |
       python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
@@ -307,14 +249,8 @@ release-verify:
 archive:nightly-webpage:
   extends:
     - .webpage:build
+    - .rules:nightly-not-for-release
   stage: nightly-deploy
-  only:
-    - web
-    - triggers
-    - schedules
-  except:
-    variables:
-      - $GROMACS_RELEASE
   needs:
     - job: simple-build
       artifacts: false
@@ -334,14 +270,8 @@ archive:nightly-webpage:
 archive:full-release:
   extends:
     - .webpage:build
+    - .rules:nightly-only-for-release
   stage: release-deploy
-  only:
-    refs:
-      - web
-      - triggers
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
   dependencies:
     - webpage:build:release
     - archive:package

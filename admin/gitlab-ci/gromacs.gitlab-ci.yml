@@ -6,6 +6,7 @@ simple-build:
     - .use-ccache
     - .variables:default
     - .use-gcc7
+    - .rules:not-for-release
   stage: pre-build
   variables:
     KUBERNETES_CPU_LIMIT: 8
@@ -20,15 +21,6 @@ simple-build:
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
     BUILD_DIR: simple-build
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
-  except:
-    variables:
-      - $GROMACS_RELEASE
   script:
     - echo $CMAKE_COMPILER_SCRIPT
     - echo $CMAKE_EXTRA_OPTIONS
@@ -91,12 +83,6 @@ simple-build:
     - .variables:default
   cache: {}
   stage: configure-build
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -163,13 +149,6 @@ simple-build:
     RELEASE_BUILD_DIR: release-builds
     RELEASE_SOURCE: release-source-from-tarball
     RELEASE_REGRESSIONTESTS: release-regressiontests-from-tarball
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   script:
     - VERSION=`cat version.json |
       python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
@@ -240,27 +219,19 @@ gromacs:gcc-7:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc7
+    - .rules:nightly-only-for-release
   cache: {}
   variables:
     RELEASE_BUILD_DIR: release-builds-gcc
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   dependencies:
     - archive:package
     - regressiontests:package
@@ -270,43 +241,33 @@ gromacs:gcc-7-simd-sse41:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
   variables:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7-double:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
   variables:
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7-double:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc7
+    - .rules:nightly-only-for-release
   cache: {}
   variables:
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
     RELEASE_BUILD_DIR: release-builds-gcc
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   dependencies:
     - archive:package
     - regressiontests:package
@@ -316,27 +277,19 @@ gromacs:gcc-8:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc8
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-8:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc8
+    - .rules:nightly-only-for-release
   cache: {}
   variables:
     RELEASE_BUILD_DIR: release-builds-gcc
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   dependencies:
     - archive:package
     - regressiontests:package
@@ -347,15 +300,13 @@ gromacs:gcc-8-cuda-10.2:configure:
     - .gromacs:base:configure
     - .use-cuda
     - .use-gcc8:cuda-10.2
+    - .rules:not-for-release
   variables:
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
   # TODO: Enable GMX_PYTHON_PACKAGE when dependencies are in Docker image.
   needs:
     - job: simple-build
       artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 # For version of clang before 7, we need to always provide the full version
 # Use something like this instead in the download script:
@@ -364,41 +315,31 @@ gromacs:clang-6:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang6
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
   variables:
     COMPILER_MAJOR_VERSION: "6.0"
     CMAKE_MPI_OPTIONS: -DGMX_OPENMP=OFF
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-7:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-7:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-clang7
+    - .rules:nightly-only-for-release
   cache: {}
   variables:
     RELEASE_BUILD_DIR: release-builds-clang
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   dependencies:
     - archive:package
     - regressiontests:package
@@ -408,27 +349,19 @@ gromacs:clang-8:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang8
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-8:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-clang8
+    - .rules:nightly-only-for-release
   cache: {}
   variables:
     RELEASE_BUILD_DIR: release-builds-clang
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   dependencies:
     - archive:package
     - regressiontests:package
@@ -440,12 +373,6 @@ gromacs:clang-8:release:configure:
   # Dockerfiles are from dockerhub, user eriklindahl
   # image in admin/dockerimages/ci-docs-py27
   stage: build
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
   script:
     - cd $BUILD_DIR
     - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
@@ -468,14 +395,12 @@ gromacs:gcc-7:build:
     - .use-ccache
     - .variables:default
     - .use-gcc7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-7:configure
       artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7:release:build:
   extends:
@@ -483,19 +408,13 @@ gromacs:gcc-7:release:build:
     - .use-ccache
     - .variables:default
     - .use-gcc7
+    - .rules:nightly-only-for-release
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
     - job: gromacs:gcc-7:release:configure
       artifacts: true
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7-simd-sse41:build:
   extends:
@@ -503,14 +422,12 @@ gromacs:gcc-7-simd-sse41:build:
     - .use-ccache
     - .variables:default
     - .use-gcc7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-7-simd-sse41:configure
       artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7-double:build:
   extends:
@@ -518,14 +435,12 @@ gromacs:gcc-7-double:build:
     - .use-ccache
     - .variables:default
     - .use-gcc7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-7-double:configure
       artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7-double:release:build:
   extends:
@@ -533,19 +448,13 @@ gromacs:gcc-7-double:release:build:
     - .use-ccache
     - .variables:default
     - .use-gcc7
+    - .rules:nightly-only-for-release
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
     - job: gromacs:gcc-7-double:release:configure
       artifacts: true
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-8:build:
   extends:
@@ -553,14 +462,12 @@ gromacs:gcc-8:build:
     - .use-ccache
     - .variables:default
     - .use-gcc8
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-8:configure
       artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-8:release:build:
   extends:
@@ -568,19 +475,13 @@ gromacs:gcc-8:release:build:
     - .use-ccache
     - .variables:default
     - .use-gcc8
+    - .rules:nightly-only-for-release
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
     - job: gromacs:gcc-8:release:configure
       artifacts: true
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-8-cuda-10.2:build:
   extends:
@@ -589,6 +490,7 @@ gromacs:gcc-8-cuda-10.2:build:
     - .variables:default
     - .use-cuda
     - .use-gcc8:cuda-10.2
+    - .rules:not-for-release
   variables:
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
   # TODO: Enable GMX_PYTHON_PACKAGE when dependencies are in Docker image.
@@ -597,9 +499,6 @@ gromacs:gcc-8-cuda-10.2:build:
       artifacts: false
     - job: gromacs:gcc-8-cuda-10.2:configure
       artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-6:build:
   extends:
@@ -607,14 +506,12 @@ gromacs:clang-6:build:
     - .use-ccache
     - .variables:default
     - .use-clang6
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:clang-6:configure
       artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-7:build:
   extends:
@@ -622,14 +519,12 @@ gromacs:clang-7:build:
     - .use-ccache
     - .variables:default
     - .use-clang7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:clang-7:configure
       artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-7:release:build:
   extends:
@@ -637,19 +532,13 @@ gromacs:clang-7:release:build:
     - .use-ccache
     - .variables:default
     - .use-clang7
+    - .rules:nightly-only-for-release
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
   needs:
     - job: gromacs:clang-7:release:configure
       artifacts: true
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-8:build:
   extends:
@@ -657,14 +546,12 @@ gromacs:clang-8:build:
     - .use-ccache
     - .variables:default
     - .use-clang8
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:clang-8:configure
       artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-8:release:build:
   extends:
@@ -672,24 +559,19 @@ gromacs:clang-8:release:build:
     - .use-ccache
     - .variables:default
     - .use-clang8
+    - .rules:nightly-only-for-release
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
   needs:
     - job: gromacs:clang-8:release:configure
       artifacts: true
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
-
 
 # Jobs running during test stage
 
 .gromacs:base:test:
+  extends:
+    - .variables:default
   variables:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
@@ -699,14 +581,6 @@ gromacs:clang-8:release:build:
   stage: test
   retry:
     max: 2
-  extends:
-    - .variables:default
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
   script:
     - cd $BUILD_DIR
     - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
@@ -737,19 +611,18 @@ gromacs:gcc-7:test:
   extends:
     - .gromacs:base:test
     - .use-gcc7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-7:build
     - job: regressiontests:prepare
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7:release:test:
   extends:
     - .gromacs:base:test
     - .use-gcc7
+    - .rules:nightly-only-for-release
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
@@ -758,31 +631,23 @@ gromacs:gcc-7:release:test:
       artifacts: true
     - job: gromacs:gcc-7:release:build
       artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7-simd-sse41:test:
   extends:
     - .gromacs:base:test
     - .use-gcc7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-7-simd-sse41:build
     - job: regressiontests:prepare
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7-double:test:
   extends:
     - .gromacs:base:test
     - .use-gcc7
+    - .rules:not-for-release
   variables:
     REGRESSIONTEST_DOUBLE: "-double"
   needs:
@@ -790,14 +655,12 @@ gromacs:gcc-7-double:test:
       artifacts: false
     - job: gromacs:gcc-7-double:build
     - job: regressiontests:prepare
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-7-double:release:test:
   extends:
     - .gromacs:base:test
     - .use-gcc7
+    - .rules:nightly-only-for-release
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
@@ -806,31 +669,23 @@ gromacs:gcc-7-double:release:test:
       artifacts: true
     - job: gromacs:gcc-7-double:release:build
       artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-8:test:
   extends:
     - .gromacs:base:test
     - .use-gcc8
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-8:build
     - job: regressiontests:prepare
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-8:release:test:
   extends:
     - .gromacs:base:test
     - .use-gcc8
+    - .rules:nightly-only-for-release
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-gcc
@@ -839,15 +694,13 @@ gromacs:gcc-8:release:test:
       artifacts: true
     - job: gromacs:gcc-8:release:build
       artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:gcc-8-cuda-10.2:test:
+  extends:
+    - .gromacs:base:test
+    - .use-cuda
+    - .use-gcc8:cuda-10.2
+    - .rules:not-for-release
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
@@ -856,23 +709,17 @@ gromacs:gcc-8-cuda-10.2:test:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
   # TODO: Enable GMX_PYTHON_PACKAGE when dependencies are in Docker image.
-  extends:
-    - .gromacs:base:test
-    - .use-cuda
-    - .use-gcc8:cuda-10.2
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:gcc-8-cuda-10.2:build
     - job: regressiontests:prepare
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-6:test:
   extends:
     - .gromacs:base:test
     - .use-clang6
+    - .rules:not-for-release
   variables:
     REGRESSIONTEST_OMP_RANK_NUMBER: 0
   needs:
@@ -880,27 +727,23 @@ gromacs:clang-6:test:
       artifacts: false
     - job: gromacs:clang-6:build
     - job: regressiontests:prepare
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-7:test:
   extends:
     - .gromacs:base:test
     - .use-clang7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:clang-7:build
     - job: regressiontests:prepare
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-7:release:test:
   extends:
     - .gromacs:base:test
     - .use-clang7
+    - .rules:nightly-only-for-release
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-clang
@@ -909,31 +752,23 @@ gromacs:clang-7:release:test:
       artifacts: true
     - job: gromacs:clang-7:release:build
       artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-8:test:
   extends:
     - .gromacs:base:test
     - .use-clang8
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
     - job: gromacs:clang-8:build
     - job: regressiontests:prepare
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 gromacs:clang-8:release:test:
   extends:
     - .gromacs:base:test
     - .use-clang8
+    - .rules:nightly-only-for-release
   stage: release-tests
   variables:
     BUILD_DIR: release-builds-clang
@@ -942,10 +777,3 @@ gromacs:clang-8:release:test:
       artifacts: true
     - job: gromacs:clang-8:release:build
       artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE

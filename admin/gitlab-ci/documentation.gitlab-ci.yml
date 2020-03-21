@@ -1,20 +1,14 @@
 # Build documentation and web page.
 
 .docs:configure:
-  # Built by admin/dockerfiles/ci-docs-clang
-  # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-clang:master
-  stage: configure-build
   extends:
     - .gromacs:base:configure
     - .variables:default
     - .before_script:default
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
+  # Built by admin/dockerfiles/ci-docs-clang
+  # TODO this should be organized more like the current documentation.py script
+  image: gromacs/ci-docs-clang:master
+  stage: configure-build
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -72,14 +66,15 @@
       - $BUILD_DIR
 
 .docs:configure:release:
-  # Built by admin/dockerfiles/ci-docs-clang
-  # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-clang:master
-  stage: release-configure
   extends:
     - .gromacs:base:configure
     - .variables:default
     - .before_script:default
+    - .rules:nightly-only-for-release
+  # Built by admin/dockerfiles/ci-docs-clang
+  # TODO this should be organized more like the current documentation.py script
+  image: gromacs/ci-docs-clang:master
+  stage: release-configure
   cache: {}
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -95,14 +90,6 @@
     RELEASE_BUILD_DIR: release-doc-builds
     RELEASE_SOURCE: release-source-from-tarball
     RELEASE_REGRESSIONTESTS: release-regressiontests-from-tarball
-
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   script:
     - if [[ $GROMACS_RELEASE == "true" ]] ; then
       REL_OPTION="-DGMX_BUILD_TARBALL=ON" ;
@@ -189,26 +176,18 @@
 docs:configure:
   extends:
     - .docs:configure
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
   variables:
     BUILD_DIR: build-docs
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 .docs:build:
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
   script:
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j8
@@ -227,6 +206,7 @@ docs:build:
     - .use-ccache
     - .docs:build
     - .before_script:default
+    - .rules:not-for-release
   stage: documentation
   needs:
     - job: simple-build
@@ -235,9 +215,6 @@ docs:build:
       artifacts: true
   variables:
     BUILD_DIR: build-docs
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 # The manual build is built separately so that errors in converting
 # Sphinx to LaTeX and compiling can always be found in the
@@ -255,12 +232,6 @@ docs:build:
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -294,6 +265,7 @@ docs:build:
 webpage:build:
   extends:
     - .webpage:build
+    - .rules:not-for-release
   stage: post-test
   needs:
     - job: docs:build
@@ -302,21 +274,12 @@ webpage:build:
       artifacts: false
   variables:
     BUILD_DIR: build-docs
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 webpage:configure:
   extends:
     - .docs:configure:release
+    - .rules:nightly-only-for-release
   cache: {}
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   dependencies:
     - archive:package
     - regressiontests:package
@@ -332,33 +295,21 @@ webpage:dependencies:
     - .use-ccache
     - .docs:build
     - .before_script:default
+    - .rules:nightly-only-for-release
   stage: release-build
   needs:
     - job: webpage:configure
       artifacts: true
   variables:
     BUILD_DIR: release-doc-builds
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
 
 webpage:build:release:
   extends:
     - .webpage:build
+    - .rules:nightly-only-for-release
   dependencies:
     - webpage:dependencies
     - webpage:configure
   stage: release-prepare-deploy
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
   variables:
     BUILD_DIR: release-doc-builds

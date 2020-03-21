@@ -67,10 +67,43 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         directly, *extend* a *.use_<toolchain>* template from
         :file:`admin/gitlab-ci/global.gitlab-ci.yml`
 
+    rules
+    only
+    except
+    when
+        *Job* parameters for controlling the circumstances under which jobs run.
+        (Some key words may have different meanings when occurring as elements
+        of other parameters, such as *archive:when*, to which this note is not
+        intended to apply.)
+        Instead of setting any of these directly in a job definition, try to use
+        one of the pre-defined behaviors (defined as ``.rules:<something>`` in
+        :file:`admin/gitlab-ci/global.gitlab-ci.yml`).
+        Errors or unexpected behavior will occur if you specify more than one
+        *.rules:...* template, or if you use these parameters in combination
+        with a *.rules...* template.
+        To reduce errors and unexpected behavior, restrict usage of these controls
+        to regular job definitions (don't use in "hidden" or parent jobs).
+
     variables
         Many job definitions will add or override keys in *variables*.
         Refer to `GitLab <https://docs.gitlab.com/ee/ci/yaml/#variables>`__
         for details of the merging behavior. Refer to :ref:`variables` for local usage.
+
+Schedules and triggers
+~~~~~~~~~~~~~~~~~~~~~~
+
+Pipeline `schedules <https://gitlab.com/help/ci/pipelines/schedules>`__ are
+configured through the GitLab web interface.
+Scheduled pipelines may provide different variable definitions through the
+environment to jobs that run under the ``schedules``
+`condition <https://gitlab.com/help/ci/pipelines/schedules#using-only-and-except>`__.
+
+Nightly scheduled pipelines run against ``master`` and *release* branches in
+the GROMACS repository.
+
+Pending resolution of :issue:`3272`,
+the repository hosted on Gerrit is mirrored to GitLab.
+Mirror updates trigger pipeline builds.
 
 Global templates
 ~~~~~~~~~~~~~~~~
@@ -141,6 +174,12 @@ Other important variable keys are as follows.
 
     CMAKE_MPI_OPTIONS
         Provide CMake command line arguments to define GROMACS MPI build options.
+
+    GROMACS_RELEASE
+        Read-only environment variable that can be checked to see if a job is
+        executing in a pipeline for preparing a tagged release.
+        Can be set when launching pipelines via the GitLab web interface.
+        For example, see *rules* mix-ins in :file:`admin/gitlab-ci/global.gitlab-ci.yml`.
 
     EXTRA_INSTALLS
         List additional OS package requirements. Used in *before_script* for some

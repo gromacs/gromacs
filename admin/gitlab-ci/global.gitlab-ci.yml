@@ -27,6 +27,41 @@
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
 
+# Rule to run a job only in nightly release-preparation pipelines.
+# Checks if the GROMACS_RELEASE variable was set (typically through the GitLab web interface).
+# Excludes merge_requests
+# TODO: Update to *rules* syntax.
+.rules:nightly-only-for-release:
+  only:
+    refs:
+      - web
+      - schedules
+    variables:
+      - $GROMACS_RELEASE
+
+# Jobs that run on schedules, but not for merge requests or when GROMACS_RELEASE
+# is set.
+.rules:nightly-not-for-release:
+  only:
+    - web
+    - schedules
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
+# Jobs that run for merge requests and schedules, but not when GROMACS_RELEASE
+# is set.
+.rules:not-for-release:
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
+  except:
+    variables:
+      - $GROMACS_RELEASE
+
 # Behavioral templates
 
 # Use a persistent compiler cache to speed up rebuilds for a single job.

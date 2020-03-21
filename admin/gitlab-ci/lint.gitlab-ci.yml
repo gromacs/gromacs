@@ -4,6 +4,7 @@ clang-tidy:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang7
+    - .rules:not-for-release
   needs:
     - job: simple-build
       artifacts: false
@@ -13,9 +14,6 @@ clang-tidy:configure:
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
   # TODO: Enable GMX_PYTHON_PACKAGE for clang-tidy when dependencies are in Docker image.
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 clang-tidy:build:
   extends:
@@ -23,6 +21,7 @@ clang-tidy:build:
     - .use-ccache
     - .variables:default
     - .use-clang7
+    - .rules:not-for-release
   stage: source-check
   needs:
     - job: simple-build
@@ -32,15 +31,13 @@ clang-tidy:build:
   variables:
     BUILD_DIR: build-clang-tidy
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
-  except:
-    variables:
-      - $GROMACS_RELEASE
 
 clang-format:
   extends:
     - .gromacs:base:build
     - .variables:default
     - .use-clang7
+    - .rules:not-for-release
   cache: {}
   stage: source-check
   when: always
@@ -52,9 +49,6 @@ clang-format:
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
     EXTRA_INSTALLS: clang-format-$COMPILER_MAJOR_VERSION
-  except:
-    variables:
-      - $GROMACS_RELEASE
   script:
     - export CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION
     - admin/clang-format.sh check --rev=HEAD^ --warnings=clang-format.log
@@ -71,6 +65,7 @@ copyright-check:
     - .gromacs:base:build
     - .variables:default
     - .use-clang7
+    - .rules:not-for-release
   cache: {}
   stage: source-check
   when: always
@@ -81,9 +76,6 @@ copyright-check:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
-  except:
-    variables:
-      - $GROMACS_RELEASE
   script:
     - admin/copyright.sh check --rev=HEAD^ --warnings=copyright.log
     - grep -iq "copyright year" copyright.log | tee years.log || true
@@ -104,6 +96,7 @@ check-source:
     - .variables:default
     - .docs:build
     - .before_script:default
+    - .rules:not-for-release
   cache: {}
   stage: source-check
   needs:
@@ -116,9 +109,6 @@ check-source:
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
     BUILD_DIR: build-docs
-  except:
-    variables:
-      - $GROMACS_RELEASE
   script:
     - cd $BUILD_DIR
     - cmake --build . --target check-source
@@ -136,17 +126,10 @@ check-source:
 linkchecker:
   extends:
     - .webpage:build
+    - .rules:nightly-not-for-release
   stage: nightly-build
   dependencies:
     - webpage:build
-  only:
-    - web
-    - schedules
-    - triggers
-    - merge_requests
-  except:
-    variables:
-      - $GROMACS_RELEASE
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
