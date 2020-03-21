@@ -17,6 +17,12 @@
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
   stage: configure-build
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -29,7 +35,6 @@
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
-
   script:
     - if [[ ! -z $GROMACS_RELEASE && $GROMACS_RELEASE == "true" ]] ; then
       REL_OPTION="-DGMX_BUILD_TARBALL=ON" ;
@@ -230,6 +235,12 @@ configure-docs-gmxapi:
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   script:
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j8
@@ -245,6 +256,12 @@ configure-docs-gmxapi:
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -368,6 +385,7 @@ webpage-nightly:
     - .configure-gmxapi-template
   stage: nightly-deploy
   only:
+    - web
     - triggers
     - schedules
   except:

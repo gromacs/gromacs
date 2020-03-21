@@ -7,7 +7,7 @@ stages:
   - configure-build
   # Build GROMACS in multiple configurations
   - build
-  # Test each configuration, perhaps in multiple ways
+  # Unit test each configuration, perhaps in multiple ways
   - test
   # Generate documentation files
   - documentation

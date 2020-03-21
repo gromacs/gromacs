@@ -138,10 +138,10 @@ linkchecker:
   dependencies:
     - webpage-gmxapi
   only:
+    - web
     - schedules
     - triggers
     - merge_requests
-    - external_pull_requests
   except:
     variables:
       - $GROMACS_RELEASE

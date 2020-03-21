@@ -27,7 +27,7 @@
 
 prepare-release-version:
   extends:
-    - .regressiontests-extends-template
+    - .regressiontests-prepare-extends-template
     - .release-version-template
 
 # Special job to package regressiontest files and have them available for testing
@@ -43,34 +43,31 @@ prepare-release-version:
     KUBERNETES_MEMORY_LIMIT: 2Gi
   only:
     refs:
+      - web
+      - pushes
       - merge_requests
       - schedules
-      - web
   except:
     variables:
       - $GROMACS_RELEASE
   # Always clone the default version for this branch, master in this case
   script:
     - export REGTESTBRANCH=master
-    - if [ ! -z $CI_MERGE_REQUEST_TARGET_BRANCH_NAME ] ; then
-      if [[ ! -d regressiontests ]] ; then
-      mkdir regressiontests ;
-      cd regressiontests ;
-      git init ;
-      cd .. ;
-      fi ;
-      cd regressiontests ;
-      git fetch https://gitlab.com/gromacs/gromacs-regressiontests.git $REGTESTBRANCH ;
-      git checkout -qf FETCH_HEAD ;
-      git clean -ffdxq ;
-      git gc ;
-      git archive -o gmx-regressiontests.tar.gz --prefix regressiontests/ -9 HEAD;
-      echo "Build regressiontests for branch $CI_MERGE_REQUEST_TARGET_BRANCH_NAME";
-      cd ..;
-      else
-      touch regressiontests;
-      tar czf gmx-regressiontests.tar.gz regressiontests ;
-      fi;
+    - if [[ ! -d regressiontests ]] ; then
+        mkdir regressiontests ;
+        cd regressiontests ;
+        git init ;
+        cd .. ;
+      fi
+    - cd regressiontests
+    - git fetch https://gitlab.com/gromacs/gromacs-regressiontests.git $REGTESTBRANCH
+    - git checkout -qf FETCH_HEAD
+    - git clean -ffdxq
+    - git gc
+    - git archive -o gmx-regressiontests.tar.gz --prefix regressiontests/ -9 HEAD
+    - echo "Build regressiontests for branch $REGTESTBRANCH"
+    - mv gmx-regressiontests.tar.gz ..
+    - cd ..
   artifacts:
     paths:
       - gmx-regressiontests.tar.gz
@@ -87,8 +84,8 @@ prepare-release-version:
     KUBERNETES_MEMORY_LIMIT: 2Gi
   only:
     refs:
-      - schedules
       - web
+      - schedules
       - triggers
     variables:
       - $GROMACS_RELEASE
@@ -122,19 +119,19 @@ prepare-release-version:
     paths:
       - regressiontests-*.tar.gz
 
-.regressiontests-extends-template:
+.regressiontests-prepare-extends-template:
   extends:
     - .variables:default
   cache: {}
 
 prepare-regressiontests:
   extends:
-    - .regressiontests-extends-template
+    - .regressiontests-prepare-extends-template
     - .regressiontests-template
 
 package-regressiontests-release:
   extends:
-    - .regressiontests-extends-template
+    - .regressiontests-prepare-extends-template
     - .regressiontests-release-template
   needs:
     - job: prepare-release-version
@@ -150,6 +147,7 @@ package-regressiontests-release:
 configure-archive-nightly:
   stage: nightly-configure
   only:
+    - web
     - triggers
     - schedules
   needs:
@@ -191,6 +189,12 @@ configure-archive-release:
 .archive-build-template:
   # Dockerfiles are from dockerhub, user eriklindahl
   image: gromacs/ci-docs-clang:master
+  only:
+    refs:
+      - web
+      - pushes
+      - schedules
+      - merge_requests
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -251,6 +255,7 @@ build-archive-nightly:
     - job: configure-archive-nightly
       artifacts: true
   only:
+    - web
     - triggers
     - schedules
   except:
@@ -316,7 +321,7 @@ package-archive-release:
 
 release-verify:
   extends:
-    - .regressiontests-extends-template
+    - .regressiontests-prepare-extends-template
     - .release-verify-template
   only:
     refs:
