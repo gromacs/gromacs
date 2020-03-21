@@ -1,8 +1,5 @@
 # Build documentation and web page.
 .documentation-before-script-template:
-  variables:
-    EXTRA_INSTALLS: ""
-
   before_script:
     - echo $EXTRA_INSTALLS
     - time apt-get -qq update
@@ -17,6 +14,8 @@
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
   stage: configure-build
+  extends:
+    - .variables:default
   only:
     refs:
       - web
@@ -34,7 +33,6 @@
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
-    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
   script:
     - if [[ ! -z $GROMACS_RELEASE && $GROMACS_RELEASE == "true" ]] ; then
       REL_OPTION="-DGMX_BUILD_TARBALL=ON" ;
@@ -85,6 +83,8 @@
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/ci-docs-clang:master
   stage: release-configure
+  extends:
+    - .variables:default
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -96,7 +96,6 @@
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
-    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
     RELEASE_BUILD_DIR: release-doc-builds
     RELEASE_SOURCE: release-source-from-tarball
     RELEASE_REGRESSIONTESTS: release-regressiontests-from-tarball
@@ -217,20 +216,6 @@ configure-docs:
     variables:
       - $GROMACS_RELEASE
 
-configure-docs-gmxapi:
-  extends:
-    - .configure-docs
-    - .configure-gmxapi-template
-  needs:
-    - job: simple-build
-      artifacts: false
-  variables:
-    BUILD_DIR: build-docs-gmxapi
-    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
 .build-docs-binary-template:
   # Built by admin/dockerfiles/ci-docs-clang
   # TODO this should be organized more like the current documentation.py script
@@ -323,23 +308,6 @@ build-docs:
     variables:
       - $GROMACS_RELEASE
 
-build-docs-gmxapi:
-  extends:
-    - .build-docs-binary
-    - .gmxapi-extra-installs
-  stage: documentation
-  needs:
-    - job: simple-build
-      artifacts: false
-    - job: configure-docs-gmxapi
-      artifacts: true
-  variables:
-    BUILD_DIR: build-docs-gmxapi
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-
 # The manual build is built separately so that errors in converting
 # Sphinx to LaTeX and compiling can always be found in the
 # all-output.txt file, while avoiding many thousands of lines of spam
@@ -363,26 +331,9 @@ webpage:
     variables:
       - $GROMACS_RELEASE
 
-webpage-gmxapi:
-  extends:
-    - .build-docs-webpage
-    - .gmxapi-extra-installs
-  stage: post-test
-  needs:
-    - job: build-docs-gmxapi
-      artifacts: true
-    - job: run-check-source
-      artifacts: false
-  variables:
-    BUILD_DIR: build-docs-gmxapi
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
 webpage-nightly:
   extends:
     - .build-docs-webpage
-    - .configure-gmxapi-template
   stage: nightly-deploy
   only:
     - web
@@ -396,10 +347,10 @@ webpage-nightly:
       artifacts: false
     - job: linkchecker
       artifacts: false
-    - job: webpage-gmxapi
+    - job: webpage
       artifacts: true
   variables:
-    BUILD_DIR: build-docs-gmxapi
+    BUILD_DIR: build-docs
   script:
     - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
   artifacts:
@@ -410,7 +361,6 @@ webpage-nightly:
 webpage-configure-release:
   extends:
     - .configure-docs-release
-    - .configure-gmxapi-template
   cache: {}
   only:
     refs:
@@ -430,7 +380,6 @@ webpage-configure-release:
 webpage-binary-release:
   extends:
     - .build-docs-binary
-    - .gmxapi-extra-installs
   stage: release-build
   needs:
     - job: webpage-configure-release
@@ -448,7 +397,6 @@ webpage-binary-release:
 webpage-build-release:
   extends:
     - .build-docs-webpage
-    - .configure-gmxapi-template
   dependencies:
     - webpage-binary-release
     - webpage-configure-release

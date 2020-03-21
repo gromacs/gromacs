@@ -108,7 +108,6 @@ simple-build:
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
-    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
   script:
     - echo $CMAKE_COMPILER_SCRIPT
     - echo $CMAKE_EXTRA_OPTIONS
@@ -161,7 +160,6 @@ simple-build:
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
-    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
     RELEASE_BUILD_DIR: release-builds
     RELEASE_SOURCE: release-source-from-tarball
     RELEASE_REGRESSIONTESTS: release-regressiontests-from-tarball
@@ -314,38 +312,6 @@ gromacs:gcc-7-double:release:configure:
     - package-regressiontests-release
     - prepare-release-version
 
-gromacs:gcc-7:configure-gmxapi:
-  extends:
-    - .gromacs:base:configure
-    - .configure-gmxapi-template
-    - .use-gcc7
-  needs:
-    - job: simple-build
-      artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-gromacs:gcc-7:release:configure-gmxapi:
-  extends:
-    - .gromacs:base:release:configure
-    - .configure-gmxapi-template
-    - .use-gcc7
-  cache: {}
-  variables:
-    RELEASE_BUILD_DIR: release-builds-gcc
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
-  dependencies:
-    - package-archive-release
-    - package-regressiontests-release
-    - prepare-release-version
-
 gromacs:gcc-8:configure:
   extends:
     - .gromacs:base:configure
@@ -381,6 +347,9 @@ gromacs:gcc-8-cuda-10.2:configure:
     - .gromacs:base:configure
     - .use-cuda
     - .use-gcc8:cuda-10.2
+  variables:
+    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
+  # TODO: Enable GMX_PYTHON_PACKAGE when dependencies are in Docker image.
   needs:
     - job: simple-build
       artifacts: false
@@ -419,38 +388,6 @@ gromacs:clang-7:configure:
 gromacs:clang-7:release:configure:
   extends:
     - .gromacs:base:release:configure
-    - .use-clang7
-  cache: {}
-  variables:
-    RELEASE_BUILD_DIR: release-builds-clang
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
-  dependencies:
-    - package-archive-release
-    - package-regressiontests-release
-    - prepare-release-version
-
-gromacs:clang-7:configure-gmxapi:
-  extends:
-    - .gromacs:base:configure
-    - .configure-gmxapi-template
-    - .use-clang7
-  needs:
-    - job: simple-build
-      artifacts: false
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-gromacs:clang-7:release:configure-gmxapi:
-  extends:
-    - .gromacs:base:release:configure
-    - .configure-gmxapi-template
     - .use-clang7
   cache: {}
   variables:
@@ -590,22 +527,6 @@ gromacs:gcc-7-double:build:
     variables:
       - $GROMACS_RELEASE
 
-gromacs:gcc-7:build-gmxapi:
-  extends:
-    - .gromacs:base:build
-    - .use-ccache
-    - .variables:default
-    - .gmxapi-extra-installs
-    - .use-gcc7
-  needs:
-    - job: simple-build
-      artifacts: false
-    - job: gromacs:gcc-7:configure-gmxapi
-      artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
 gromacs:gcc-7-double:release:build:
   extends:
     - .gromacs:base:build
@@ -617,27 +538,6 @@ gromacs:gcc-7-double:release:build:
     BUILD_DIR: release-builds-gcc
   needs:
     - job: gromacs:gcc-7-double:release:configure
-      artifacts: true
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
-
-gromacs:gcc-7:release:build-gmxapi:
-  extends:
-    - .gromacs:base:build
-    - .use-ccache
-    - .variables:default
-    - .gmxapi-extra-installs
-    - .use-gcc7
-  stage: release-build
-  variables:
-    BUILD_DIR: release-builds-gcc
-  needs:
-    - job: gromacs:gcc-7:release:configure-gmxapi
       artifacts: true
   only:
     refs:
@@ -689,6 +589,9 @@ gromacs:gcc-8-cuda-10.2:build:
     - .variables:default
     - .use-cuda
     - .use-gcc8:cuda-10.2
+  variables:
+    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
+  # TODO: Enable GMX_PYTHON_PACKAGE when dependencies are in Docker image.
   needs:
     - job: simple-build
       artifacts: false
@@ -739,43 +642,6 @@ gromacs:clang-7:release:build:
     BUILD_DIR: release-builds-clang
   needs:
     - job: gromacs:clang-7:release:configure
-      artifacts: true
-  only:
-    refs:
-      - web
-      - schedules
-      - triggers
-    variables:
-      - $GROMACS_RELEASE
-
-gromacs:clang-7:build-gmxapi:
-  extends:
-    - .gromacs:base:build
-    - .use-ccache
-    - .variables:default
-    - .gmxapi-extra-installs
-    - .use-clang7
-  needs:
-    - job: simple-build
-      artifacts: false
-    - job: gromacs:clang-7:configure-gmxapi
-      artifacts: true
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-gromacs:clang-7:release:build-gmxapi:
-  extends:
-    - .gromacs:base:build
-    - .use-ccache
-    - .variables:default
-    - .gmxapi-extra-installs
-    - .use-clang7
-  stage: release-build
-  variables:
-    BUILD_DIR: release-builds-clang
-  needs:
-    - job: gromacs:clang-7:release:configure-gmxapi
       artifacts: true
   only:
     refs:
@@ -948,41 +814,6 @@ gromacs:gcc-7-double:release:test:
     variables:
       - $GROMACS_RELEASE
 
-gromacs:gcc-7:test-gmxapi:
-  extends:
-    - .gromacs:base:test
-    - .gmxapi-extra-installs
-    - .use-gcc7
-  needs:
-    - job: simple-build
-      artifacts: false
-    - job: gromacs:gcc-7:build-gmxapi
-    - job: prepare-regressiontests
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-gromacs:gcc-7:release:test-gmxapi:
-  extends:
-    - .gromacs:base:test
-    - .gmxapi-extra-installs
-    - .use-gcc7
-  stage: release-tests
-  variables:
-    BUILD_DIR: release-builds-gcc
-  needs:
-    - job: gromacs:gcc-7:release:configure-gmxapi
-      artifacts: true
-    - job: gromacs:gcc-7:release:build-gmxapi
-      artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
-
 gromacs:gcc-8:test:
   extends:
     - .gromacs:base:test
@@ -1023,6 +854,8 @@ gromacs:gcc-8-cuda-10.2:test:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
+  # TODO: Enable GMX_PYTHON_PACKAGE when dependencies are in Docker image.
   extends:
     - .gromacs:base:test
     - .use-cuda
@@ -1075,41 +908,6 @@ gromacs:clang-7:release:test:
     - job: gromacs:clang-7:release:configure
       artifacts: true
     - job: gromacs:clang-7:release:build
-      artifacts: true
-  only:
-    refs:
-      - triggers
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
-
-gromacs:clang-7:test-gmxapi:
-  extends:
-    - .gromacs:base:test
-    - .gmxapi-extra-installs
-    - .use-clang7
-  needs:
-    - job: simple-build
-      artifacts: false
-    - job: gromacs:clang-7:build-gmxapi
-    - job: prepare-regressiontests
-  except:
-    variables:
-      - $GROMACS_RELEASE
-
-gromacs:clang-7:release:test-gmxapi:
-  extends:
-    - .gromacs:base:test
-    - .gmxapi-extra-installs
-    - .use-clang7
-  stage: release-tests
-  variables:
-    BUILD_DIR: release-builds-clang
-  needs:
-    - job: gromacs:clang-7:release:configure-gmxapi
-      artifacts: true
-    - job: gromacs:clang-7:release:build-gmxapi
       artifacts: true
   only:
     refs:

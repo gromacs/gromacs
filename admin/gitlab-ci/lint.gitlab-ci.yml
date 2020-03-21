@@ -11,6 +11,8 @@ configure-clang-tidy:
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
+    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
+  # TODO: Enable GMX_PYTHON_PACKAGE for clang-tidy when dependencies are in Docker image.
   except:
     variables:
       - $GROMACS_RELEASE
@@ -136,7 +138,7 @@ linkchecker:
     - .build-docs-webpage
   stage: nightly-build
   dependencies:
-    - webpage-gmxapi
+    - webpage
   only:
     - web
     - schedules
@@ -149,7 +151,7 @@ linkchecker:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
-    BUILD_DIR: build-docs-gmxapi
+    BUILD_DIR: build-docs
   script:
     - cd $BUILD_DIR
     - linkchecker docs/html/index.html -f ../docs/linkcheckerrc -Fxml --ignore-url html-full

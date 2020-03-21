@@ -338,7 +338,6 @@ release-verify:
 webpage-archive-release:
   extends:
     - .build-docs-webpage
-    - .configure-gmxapi-template
   stage: release-deploy
   only:
     refs:

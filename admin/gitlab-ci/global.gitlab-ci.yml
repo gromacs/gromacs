@@ -12,7 +12,9 @@
     CACHE_FALLBACK_KEY: "$CI_JOB_NAME-$CI_JOB_STAGE-master"
     BUILD_DIR: build
     INSTALL_DIR: install
-    EXTRA_INSTALLS: ""
+    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=ON"
+    EXTRA_INSTALLS: "python3-dev python3-setuptools python3-pip python3-pytest"
+# TODO: Get these from updated Docker images.
 
 # Behavioral templates
 
@@ -22,17 +24,6 @@
     key: "$CI_JOB_NAME-$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
     paths:
       - ccache/
-
-
-.gmxapi-extra-installs:
-  variables:
-    EXTRA_INSTALLS: python3-dev python3-networkx python3-setuptools python3-mpi4py python3-numpy python3-pip python3-pytest
-
-.configure-gmxapi-template:
-  extends:
-    - .gmxapi-extra-installs
-  variables:
-    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=ON"
 
 # Tool chains
 
