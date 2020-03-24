@@ -1,0 +1,6 @@
+set(nblib_VERSION @NBLIB_RELEASE@)
+@PACKAGE_INIT@
+# Refer to CMake docs for information on more elaborate use of this stub file:
+# https://cmake.org/cmake/help/v3.4/module/CMakePackageConfigHelpers.html#command:configure_package_config_file
+include("${CMAKE_CURRENT_LIST_DIR}/nblib.cmake")
+check_required_components(nblib)
