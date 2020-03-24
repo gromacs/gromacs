@@ -79,7 +79,7 @@ struct gmx_mdoutf
     FILE*                         fp_dhdl;
     int                           natoms_global;
     int                           natoms_x_compressed;
-    SimulationGroups*             groups; /* for compressed position writing */
+    const SimulationGroups*       groups; /* for compressed position writing */
     gmx_wallcycle_t               wcycle;
     rvec*                         f_global;
     gmx::IMDOutputProvider*       outputProvider;
@@ -97,7 +97,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
                          gmx::IMDOutputProvider*       outputProvider,
                          const gmx::MdModulesNotifier& mdModulesNotifier,
                          const t_inputrec*             ir,
-                         gmx_mtop_t*                   top_global,
+                         const gmx_mtop_t*             top_global,
                          const gmx_output_env_t*       oenv,
                          gmx_wallcycle_t               wcycle,
                          const gmx::StartingBehavior   startingBehavior,

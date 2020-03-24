@@ -156,7 +156,7 @@ private:
                       IMDOutputProvider*                    outputProvider,
                       const MdModulesNotifier&              mdModulesNotifier,
                       const t_inputrec*                     inputrec,
-                      gmx_mtop_t*                           top_global,
+                      const gmx_mtop_t*                     top_global,
                       const gmx_output_env_t*               oenv,
                       gmx_wallcycle*                        wcycle,
                       StartingBehavior                      startingBehavior,
