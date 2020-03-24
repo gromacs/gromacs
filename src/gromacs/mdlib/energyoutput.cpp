@@ -1294,7 +1294,7 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
     }
 }
 
-void EnergyOutput::printAnnealingTemperatures(FILE* log, SimulationGroups* groups, t_grpopts* opts)
+void EnergyOutput::printAnnealingTemperatures(FILE* log, const SimulationGroups* groups, t_grpopts* opts)
 {
     if (log)
     {

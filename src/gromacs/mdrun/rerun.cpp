@@ -276,8 +276,8 @@ void gmx::LegacySimulator::do_rerun()
     int        nstglobalcomm = 1;
     const bool bNS           = true;
 
-    ir->nstxout_compressed   = 0;
-    SimulationGroups* groups = &top_global->groups;
+    ir->nstxout_compressed         = 0;
+    const SimulationGroups* groups = &top_global->groups;
     if (ir->eI == eiMimic)
     {
         top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);

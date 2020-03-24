@@ -218,7 +218,7 @@ void gmx::LegacySimulator::do_mimic()
     }
 
     ir->nstxout_compressed                   = 0;
-    SimulationGroups* groups                 = &top_global->groups;
+    const SimulationGroups* groups           = &top_global->groups;
     top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);

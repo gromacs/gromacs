@@ -236,7 +236,7 @@ void gmx::LegacySimulator::do_md()
     int nstglobalcomm = computeGlobalCommunicationPeriod(mdlog, ir, cr);
     bGStatEveryStep   = (nstglobalcomm == 1);
 
-    SimulationGroups* groups = &top_global->groups;
+    const SimulationGroups* groups = &top_global->groups;
 
     std::unique_ptr<EssentialDynamics> ed = nullptr;
     if (opt2bSet("-ei", nfile, fnm))

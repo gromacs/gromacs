@@ -216,7 +216,7 @@ public:
      * \param[in] opts    Atom temperature coupling groups options
      *                    (annealing is done by groups).
      */
-    void printAnnealingTemperatures(FILE* log, SimulationGroups* groups, t_grpopts* opts);
+    void printAnnealingTemperatures(FILE* log, const SimulationGroups* groups, t_grpopts* opts);
 
     /*! \brief Prints average values to log file.
      *

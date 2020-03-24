@@ -223,7 +223,7 @@ void LegacySimulator::do_tpi()
 
     gmx_mtop_generate_local_top(*top_global, &top, inputrec->efep != efepNO);
 
-    SimulationGroups* groups = &top_global->groups;
+    const SimulationGroups* groups = &top_global->groups;
 
     bCavity = (inputrec->eI == eiTPIC);
     if (bCavity)
