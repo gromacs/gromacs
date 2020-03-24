@@ -365,7 +365,7 @@ static void init_em(FILE*                fplog,
                     gmx::ImdSession*     imdSession,
                     pull_t*              pull_work,
                     t_state*             state_global,
-                    gmx_mtop_t*          top_global,
+                    const gmx_mtop_t*    top_global,
                     em_state_t*          ems,
                     gmx_localtop_t*      top,
                     t_nrnb*              nrnb,
@@ -506,7 +506,7 @@ static void write_em_traj(FILE*               fplog,
                           gmx_bool            bX,
                           gmx_bool            bF,
                           const char*         confout,
-                          gmx_mtop_t*         top_global,
+                          const gmx_mtop_t*   top_global,
                           t_inputrec*         ir,
                           int64_t             step,
                           em_state_t*         state,
@@ -713,7 +713,7 @@ static void em_dd_partition_system(FILE*                fplog,
                                    const gmx::MDLogger& mdlog,
                                    int                  step,
                                    const t_commrec*     cr,
-                                   gmx_mtop_t*          top_global,
+                                   const gmx_mtop_t*    top_global,
                                    t_inputrec*          ir,
                                    gmx::ImdSession*     imdSession,
                                    pull_t*              pull_work,
@@ -768,7 +768,7 @@ public:
     //! Coordinates multi-simulations.
     const gmx_multisim_t* ms;
     //! Holds the simulation topology.
-    gmx_mtop_t* top_global;
+    const gmx_mtop_t* top_global;
     //! Holds the domain topology.
     gmx_localtop_t* top;
     //! User input options.
@@ -912,11 +912,11 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 } // namespace
 
 //! Parallel utility summing energies and forces
-static double reorder_partsum(const t_commrec* cr,
-                              t_grpopts*       opts,
-                              gmx_mtop_t*      top_global,
-                              em_state_t*      s_min,
-                              em_state_t*      s_b)
+static double reorder_partsum(const t_commrec*  cr,
+                              t_grpopts*        opts,
+                              const gmx_mtop_t* top_global,
+                              em_state_t*       s_min,
+                              em_state_t*       s_b)
 {
     if (debug)
     {
@@ -946,10 +946,10 @@ static double reorder_partsum(const t_commrec* cr,
     /* Now we will determine the part of the sum for the cgs in state s_b */
     gmx::ArrayRef<const int> indicesB = s_b->s.cg_gl;
 
-    double partsum                  = 0;
-    i                               = 0;
-    int                          gf = 0;
-    gmx::ArrayRef<unsigned char> grpnrFREEZE =
+    double partsum                        = 0;
+    i                                     = 0;
+    int                                gf = 0;
+    gmx::ArrayRef<const unsigned char> grpnrFREEZE =
             top_global->groups.groupNumbers[SimulationAtomGroupType::Freeze];
     for (int a : indicesB)
     {
@@ -973,12 +973,12 @@ static double reorder_partsum(const t_commrec* cr,
 }
 
 //! Print some stuff, like beta, whatever that means.
-static real pr_beta(const t_commrec* cr,
-                    t_grpopts*       opts,
-                    t_mdatoms*       mdatoms,
-                    gmx_mtop_t*      top_global,
-                    em_state_t*      s_min,
-                    em_state_t*      s_b)
+static real pr_beta(const t_commrec*  cr,
+                    t_grpopts*        opts,
+                    t_mdatoms*        mdatoms,
+                    const gmx_mtop_t* top_global,
+                    em_state_t*       s_min,
+                    em_state_t*       s_b)
 {
     double sum;
 
