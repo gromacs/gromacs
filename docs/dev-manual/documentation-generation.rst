@@ -113,7 +113,8 @@ LaTeX
   Also requires ImageMagick for converting graphics file formats.
 
 linkchecker
-  The linkchecker program is used together with the linkcheckerrc file to ensure
+  `linkchecker <http://wummel.github.io/linkchecker/>`__ is used together with the
+  :file:`docs/linkcheckerrc` file to ensure
   that all the links in the documentation can be resolved correctly.
 
 documentation exported from source files

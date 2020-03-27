@@ -137,7 +137,7 @@ linkchecker:
     BUILD_DIR: build-docs
   script:
     - cd $BUILD_DIR
-    - linkchecker docs/html/index.html -f ../docs/linkcheckerrc -Fxml --ignore-url html-full
+    - linkchecker docs/html/index.html -f $CI_PROJECT_DIR/docs/linkcheckerrc -Fxml --ignore-url html-full
       --ignore-url html-user --ignore-url html-lib --ignore-url .tar.gz --ignore-url _sources
       -o xml
   artifacts:
