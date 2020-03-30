@@ -339,7 +339,7 @@ list(APPEND SET_OF_DIRECTORIES_TO_CHECKSUM "${PROJECT_SOURCE_DIR}/python_packagi
 string(REPLACE ";" ":" DIRECTORIES_TO_CHECKSUM_STRING "${SET_OF_DIRECTORIES_TO_CHECKSUM}")
 # Try to find python for the checksumming script
 set(PythonInterp_FIND_QUIETLY ON)
-find_package(PythonInterp 3.5)
+find_package(PythonInterp 3.6)
 
 # Rules to create the VersionInfo.cmake file.
 # For git info, the sequence is:
