@@ -169,9 +169,9 @@ def get_compiler(args) -> bb_base:
                              'ln -s /usr/local/libexec/c++-analyzer /usr/local/bin/c++-analyzer-' + str(args.llvm)])
 
 
-    elif (args.gnu is not None):
+    elif (args.gcc is not None):
         compiler = hpccm.building_blocks.gnu(extra_repository=True,
-                                             version=args.gnu,
+                                             version=args.gcc,
                                              fortran=False)
     else:
         raise RuntimeError('Logic error: no compiler toolchain selected.')
