@@ -394,6 +394,14 @@ def add_python_stages(building_blocks: typing.Mapping[str, bb_base],
         # Add the intermediate build stage to the sequence
         output_stages[stage_name] = stage
 
+    # TODO: If we activate pyenv for login shells, the `global` "version" should be full-featured.
+    # # `version` should be a system installation or pyenv environment (or pyenv-virtualenv)
+    # # with the dependencies for all of the Python aspects of CMake-driven builds.
+    # commands = '{pyenv} global {version}'.format(
+    #             pyenv=pyenv,
+    #             version=...)
+    # pyenv_stage += hpccm.primitives.shell(commands=commands)
+
     # Add the aggregating build stage to the sequence. This allows the main stage to copy
     # the files in a single stage, potentially reducing the overall output image size.
     output_stages['pyenv'] = pyenv_stage
@@ -475,13 +483,14 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
         stages['main'] += hpccm.building_blocks.pip(pip='pip3', packages=['sphinx==1.6.1'])
 
     if 'pyenv' in stages and stages['pyenv'] is not None:
-        # TODO: Update user home directory.
-        stages['main'] += hpccm.primitives.copy(_from='pyenv', src=['/root/.bashrc'],
-                                                dest='/root/')
         stages['main'] += hpccm.primitives.copy(_from='pyenv', _mkdir=True, src=['/root/.pyenv/'],
                                                 dest='/root/.pyenv')
         stages['main'] += hpccm.primitives.copy(_from='pyenv', _mkdir=True, src=['/root/venv/'],
                                                 dest='/root/venv')
+        # TODO: Update user home directory.
+        # TODO: If we activate pyenv for login shells, the `global` "version" should be full-featured.
+        # stages['main'] += hpccm.primitives.copy(_from='pyenv', src=['/root/.bashrc'],
+        #                                         dest='/root/')
 
     # Note that the list of stages should be sorted in dependency order.
     for build_stage in stages.values():
