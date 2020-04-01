@@ -29,6 +29,13 @@ This will be fixed in release-2021.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Time output unit fixes
+^^^^^^^^^^^^^^^^^^^^^^
+
+When selecting a time unit of microseconds or larger,
+``gmx tool -tu`` now produces the correct string in .xvg and
+particularly .xvgr plots
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
