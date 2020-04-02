@@ -418,8 +418,9 @@ class GromacsInterface(object):
         if exe is None:
             exe = self._exe
         try:
-            devnull = open(os.devnull)
-            exe_out = subprocess.check_output([exe, '--version'], stderr=devnull)
+            exe_out = subprocess.run([exe, '--version'],
+                                     stdout=subprocess.PIPE,
+                                     universal_newlines=True).stdout
         except OSError as e:
             if hasattr(errno, 'ENOENT') and e.errno == errno.ENOENT:
                 # file not found error.
@@ -430,7 +431,7 @@ class GromacsInterface(object):
             else:
                 raise e
         # check that output is as expected
-        return re.search(br':-\) GROMACS - gmx.* \(-:', exe_out)
+        return re.search(r':-\) GROMACS - gmx.* \(-:', exe_out)
 
     def _run(self, cmd, args, cwd=None, stdin=None, stdout=None, stderr=None, mpicmd=None):
         if self.exe is None:
