@@ -280,7 +280,8 @@ void gmx::LegacySimulator::do_rerun()
     const SimulationGroups* groups = &top_global->groups;
     if (ir->eI == eiMimic)
     {
-        top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
+        auto nonConstGlobalTopology                          = const_cast<gmx_mtop_t*>(top_global);
+        nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(*top_global);
     }
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);

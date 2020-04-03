@@ -211,13 +211,17 @@ void gmx::LegacySimulator::do_mimic()
     if (MASTER(cr))
     {
         MimicCommunicator::init();
-        MimicCommunicator::sendInitData(top_global, state_global->x);
+        auto nonConstGlobalTopology = const_cast<gmx_mtop_t*>(top_global);
+        MimicCommunicator::sendInitData(nonConstGlobalTopology, state_global->x);
         ir->nsteps = MimicCommunicator::getStepNumber();
     }
 
-    ir->nstxout_compressed                   = 0;
-    const SimulationGroups* groups           = &top_global->groups;
-    top_global->intermolecularExclusionGroup = genQmmmIndices(*top_global);
+    ir->nstxout_compressed         = 0;
+    const SimulationGroups* groups = &top_global->groups;
+    {
+        auto nonConstGlobalTopology                          = const_cast<gmx_mtop_t*>(top_global);
+        nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(*top_global);
+    }
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
 
