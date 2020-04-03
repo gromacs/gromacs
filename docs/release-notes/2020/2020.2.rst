@@ -26,6 +26,15 @@ This will be fixed in release-2021.
 
 :issue:`3441`
 
+Expanded ensemble simulations restarted from checkpoints
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When restarting expanded ensemble simulations from checkpoints, expanded
+ensemble would silently refuse to run, and simulations would remain in
+their original lambda state.
+
+:issue:`3465`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

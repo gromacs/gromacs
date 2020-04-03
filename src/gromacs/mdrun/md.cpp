@@ -782,7 +782,7 @@ void gmx::LegacySimulator::do_md()
             bDoDHDL     = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP      = ((ir->efep != efepNO) && do_per_step(step, nstfep));
             bDoExpanded = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded)
-                           && (step > 0) && (startingBehavior == StartingBehavior::NewSimulation));
+                           && (!bFirstStep));
         }
 
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep
@@ -1177,7 +1177,7 @@ void gmx::LegacySimulator::do_md()
         bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x.rvec_array(), t);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
-        if (startingBehavior != StartingBehavior::NewSimulation
+        if (startingBehavior != StartingBehavior::NewSimulation && bFirstStep
             && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
         {
             copy_mat(state->svir_prev, shake_vir);
