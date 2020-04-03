@@ -872,7 +872,7 @@ void gmx::LegacySimulator::do_md()
                     GMX_RELEASE_ASSERT(fr->deviceStreamManager != nullptr,
                                        "GPU device manager has to be initialized to use GPU "
                                        "version of halo exchange.");
-                    // TODO remove need to pass local stream into GPU halo exchange - Redmine #3093
+                    // TODO remove need to pass local stream into GPU halo exchange - Issue #3093
                     constructGpuHaloExchange(mdlog, *cr, *fr->deviceStreamManager);
                 }
             }
@@ -1370,7 +1370,7 @@ void gmx::LegacySimulator::do_md()
             /* this factor or 2 correction is necessary
                because half of the constraint force is removed
                in the vv step, so we have to double it.  See
-               the Redmine issue #1255.  It is not yet clear
+               the Issue #1255.  It is not yet clear
                if the factor of 2 is exact, or just a very
                good approximation, and this will be
                investigated.  The next step is to see if this

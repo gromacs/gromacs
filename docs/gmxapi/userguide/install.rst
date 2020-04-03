@@ -497,7 +497,7 @@ https://hub.docker.com/r/gmxapi/docs for more information.
 .. todo::
 
     Document sample_restraint package. Reference issue
-    `3027 <https://redmine.gromacs.org/issues/3027>`_
+    `3027 <https://gitlab.com/gromacs/gromacs/-/issues/3027>`_
 
 .. _gmxapi install troubleshooting:
 

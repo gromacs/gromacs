@@ -69,7 +69,7 @@ struct DeviceInformation;
  * This also doesn't manage cuFFT/clFFT kernels, which depend on the PME grid dimensions.
  *
  * TODO: pass cl_context to the constructor and not create it inside.
- * See also Redmine #2522.
+ * See also Issue #2522.
  */
 struct PmeGpuProgramImpl
 {

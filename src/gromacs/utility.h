@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@
  *
  * The header path.h declares helpers for manipulating paths as strings and for
  * managing directories and files.
- * The fate of this header depends on what is decided in Redmine issue #950.
+ * The fate of this header depends on what is decided in Issue #950.
  *
  * <H3>Logging</H3>
  *

@@ -1,7 +1,7 @@
 ; original reference: [M. W. Mahoney and W. L. Jorgensen, J. Chem. Phys. 112 , 2000]
 ;
 ; Note that there are various issues with tip5p and the different forcefields.
-; Discussion is here: http://redmine.gromacs.org/issues/1348
+; Discussion is here: https://gitlab.com/gromacs/gromacs/-/issues/1348
 
 [ moleculetype ]
 ; molname       nrexcl

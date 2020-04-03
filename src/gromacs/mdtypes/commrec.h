@@ -150,7 +150,7 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
  * This is true if havePPDomainDecomposition is true, but the converse does not
  * apply (see docs of havePpDomainDecomposition()).
  *
- * \todo As part of Redmine #2395, replace calls to this with
+ * \todo As part of Issue #2395, replace calls to this with
  * havePPDomainDecomposition or a call of some other/new function, as
  * appropriate to each case. Then eliminate this macro. */
 #define DOMAINDECOMP(cr) (((cr)->dd != nullptr) && PAR(cr))

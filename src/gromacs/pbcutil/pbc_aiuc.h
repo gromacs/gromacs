@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,8 +40,8 @@
  *
  * \todo CPU, GPU and SIMD routines essentially do the same operations on
  *       different data-types. Currently this leads to code duplication,
- *       which has to be resolved. For details, see Redmine task #2863
- *       https://redmine.gromacs.org/issues/2863
+ *       which has to be resolved. For details, see Issue #2863
+ *       https://gitlab.com/gromacs/gromacs/-/issues/2863
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \author Berk Hess <hess@kth.se>
@@ -143,8 +143,8 @@ static inline void setPbcAiuc(int numPbcDim, const matrix box, PbcAiuc* pbcAiuc)
  * \todo This routine operates on rvec types and uses PbcAiuc to define
  *       periodic box, but essentially does the same thing as SIMD and GPU
  *       version. These will have to be unified in future to avoid code
- *       duplication. See Redmine task #2863:
- *       https://redmine.gromacs.org/issues/2863
+ *       duplication. See Issue #2863:
+ *       https://gitlab.com/gromacs/gromacs/-/issues/2863
  *
  * \param[in]  pbcAiuc  PBC object.
  * \param[in]  r1       Coordinates of the first point.

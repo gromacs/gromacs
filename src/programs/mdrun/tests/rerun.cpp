@@ -74,7 +74,7 @@ namespace
  * needed/useful.
  *
  * We should also not compare pressure, because with constraints the
- * non-search steps need a much larger tolerance, and per Redmine 1868
+ * non-search steps need a much larger tolerance, and per Issue #1868
  * we should stop computing pressure in reruns anyway.
  *
  * Similarly, per 1868, in the present implementation the kinetic

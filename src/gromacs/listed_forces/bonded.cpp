@@ -866,7 +866,7 @@ real thole_pol(int             nbonds,
     return V;
 }
 
-// Avoid gcc 386 -O3 code generation bug in this function (see Redmine
+// Avoid gcc 386 -O3 code generation bug in this function (see Issue
 // #3205 for more information)
 #if defined(__GNUC__) && defined(__i386__) && defined(__OPTIMIZE__)
 #    pragma GCC push_options

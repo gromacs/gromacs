@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,8 +73,8 @@ class ArrayRef;
  * other resources to create or configure the context. The simulation may in
  * turn consume or borrow some resources from the context. This is a new
  * framework that will evolve in the contexts of
- * https://redmine.gromacs.org/issues/2375
- * https://redmine.gromacs.org/issues/2587
+ * https://gitlab.com/gromacs/gromacs/-/issues/2375
+ * https://gitlab.com/gromacs/gromacs/-/issues/2587
  *
  * The public interface of SimulationContext is not yet well-specified.
  * Client code can create an instance with gmx::createSimulationContext()
@@ -96,7 +96,7 @@ class ArrayRef;
  * Non-const accessors to shared resources need to be associated with update
  * signals that the simulation components (modules and runner) can subscribe to.
  *
- * Also reference https://redmine.gromacs.org/issues/2587
+ * Also reference https://gitlab.com/gromacs/gromacs/-/issues/2587
  */
 class SimulationContext final
 {

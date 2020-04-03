@@ -96,7 +96,7 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  *        3. Use analytical solution for matrix A inversion.
  *        4. Introduce mapping of thread id to both single constraint and single atom, thus designating
  *           Nth threads to deal with Nat <= Nth coupled atoms and Nc <= Nth coupled constraints.
- *       See Redmine issue #2885 for details (https://redmine.gromacs.org/issues/2885)
+ *       See Issue #2885 for details (https://gitlab.com/gromacs/gromacs/-/issues/2885)
  * \todo The use of __restrict__  for gm_xp and gm_v causes failure, probably because of the atomic
          operations. Investigate this issue further.
  *

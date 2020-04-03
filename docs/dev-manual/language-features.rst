@@ -34,7 +34,7 @@ C++ compilers, and because we want to increase readability. However, |Gromacs| i
 advanced projects in constant development, and as our needs evolve we will both
 relax and tighten many of these points. Some of these changes happen naturally as
 part of agreements in code review, while major parts where we don't agree should be
-pushed to a redmine thread. Large changes should be suggested early in the development
+pushed to a `issue tracker`_ thread. Large changes should be suggested early in the development
 cycle for each release so we avoid being hit by last-minute compiler bugs just before
 a release.
 

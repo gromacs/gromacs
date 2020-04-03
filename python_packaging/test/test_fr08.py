@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,7 @@ import pytest
 import gmxapi as gmx
 from gmxapi.version import has_feature
 
-# Ref https://redmine.gromacs.org/issues/3192
+# Ref https://gitlab.com/gromacs/gromacs/-/issues/3192
 @pytest.mark.skipif(not has_feature('fr8'),
                    reason="Feature level not met.")
 def test_fr8(spc_water_box):

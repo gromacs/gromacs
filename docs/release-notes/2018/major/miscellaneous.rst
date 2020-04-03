@@ -47,7 +47,7 @@ the reference to the three term dihedral to an older paper.
 Updated many aspects of the documentation
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Imported and updated more material from the wiki. Incorporated
-suggestions arising from many Redmine issues. Updated user guide,
+suggestions arising from many tracked issues. Updated user guide,
 developer guide, install guide, and reference manual.
 
 Updated mdrun signal help text

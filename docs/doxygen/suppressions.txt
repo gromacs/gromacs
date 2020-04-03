@@ -50,7 +50,7 @@ src/gromacs/tables/quadraticsplinetable.h: warning: includes "simd.h" unnecessar
 *: warning: includes non-local file as "corewrap.h"
 src/gmxpre.h: warning: includes non-local file as "swindirect.h"
 
-# New external API (see https://redmine.gromacs.org/issues/2586) has some unresolved
+# New external API (see https://gitlab.com/gromacs/gromacs/-/issues/2586) has some unresolved
 # conflicts with previous definitions of public API, installed API, and other things
 # described or implemented in check-source.py, gmxtree.py, gmxtree.rst, and others
 # TODO: resolve definitions, update testing heuristics, and activate policy checks

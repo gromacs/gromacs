@@ -23,8 +23,8 @@ Guidelines for git commit messages
 Commit messages should contain a quick explanation in verb form on what has been
 changed or what has been the purpose of the change. If available, the final
 part of the message before the ChangeId should be a short section like
-**Fixes #redmine-id** to link the change to a possibly previously 
-posted issue, or **Refs #redmine-id** if the present patch is somehow
+**Fixes #issue-id** to link the change to a possibly previously
+posted issue, or **Refs #issue-id** if the present patch is somehow
 related to that work without necessarily fixing the whole issue.
 
 Concerning inline code comments

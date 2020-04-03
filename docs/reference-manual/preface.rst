@@ -38,7 +38,7 @@ which in some cases might mean the information is not entirely correct.
 Comments on form and content are welcome, please send them to one of
 the mailing lists (see our `webpage`_ or this section on
 how to :ref:`contribute <gmx-contribute>`), or open an issue
-on our `redmine`_. Corrections can also be made in the |Gromacs| git
+on our `issue tracker`_. Corrections can also be made in the |Gromacs| git
 source repository and uploaded to the |Gromacs| `gerrit`_.
 
 We release an updated version of the manual whenever

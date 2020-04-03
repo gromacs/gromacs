@@ -11,7 +11,7 @@ changes to the functionality supported, whereas patch releases contain
 only fixes for issues identified in the corresponding major releases.
 
 Where issue numbers are reported in these release notes, more details
-can be found at https://redmine.gromacs.org at that issue number.
+can be found at https://gitlab.com/gromacs/gromacs/-/issues at that issue number.
 
 |Gromacs| 5.1 series
 -----------------------------------

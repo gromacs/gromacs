@@ -43,7 +43,7 @@
 # to establish compatibility guarantees consistent with semantic versioning.
 # (https://semver.org). When the API is deemed suitably stable, gmxapi 1.0 should
 # be tagged. Official GROMACS releases should be mappable to a distinct gmxapi
-# release string. For roadmap details, see https://redmine.gromacs.org/issues/2585
+# release string. For roadmap details, see https://gitlab.com/gromacs/gromacs/-/issues/2585
 set(GMXAPI_MAJOR 0)
 set(GMXAPI_MINOR 1)
 set(GMXAPI_PATCH 0)

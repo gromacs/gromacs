@@ -59,7 +59,7 @@ namespace ocl
  *  This is platform implementation dependent and seems to only work on the Nvidia and AMD
  * platforms! Nvidia reports 32, AMD for GPU 64. Intel seems to report 16, but that is not correct,
  *  as it execution width can be between 8-32 and it's picked per-kernel at compile-time.
- *  Therefore, for Intel it should actually be queried separately for each kernel (Redmine #2520).
+ *  Therefore, for Intel it should actually be queried separately for each kernel (Issue #2520).
  *
  *  \param  context   Current OpenCL context
  *  \param  deviceId OpenCL device with the context

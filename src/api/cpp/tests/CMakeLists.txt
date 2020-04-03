@@ -61,7 +61,7 @@ if(NOT GMX_USE_OPENCL)
     # GPU resources may not be properly reinitialized between simulations in
     # the same process.
     # TODO: include this with the other test sources once the issue is resolved
-    # Ref https://redmine.gromacs.org/issues/2689
+    # Ref https://gitlab.com/gromacs/gromacs/-/issues/2689
     target_sources(gmxapi-test PRIVATE runner.cpp stopsignaler.cpp)
 endif()
 
@@ -93,7 +93,7 @@ if(NOT GMX_USE_OPENCL)
     # GPU resources may not be properly reinitialized between simulations in
     # the same process.
     # TODO: include this with the other test sources once the issue is resolved
-    # Ref https://redmine.gromacs.org/issues/2689
+    # Ref https://gitlab.com/gromacs/gromacs/-/issues/2689
     target_sources(gmxapi-mpi-test PRIVATE runner.cpp stopsignaler.cpp)
 endif()
 

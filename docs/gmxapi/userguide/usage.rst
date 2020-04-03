@@ -42,7 +42,7 @@ a *gmxapi* script.
 
     :py:class:`gmxapi.commandline_operation` relies on the environment :envvar:`PATH`
     to locate executables, including the :command:`gmx` wrapper binary.
-    Relates to `#2961 <https://redmine.gromacs.org/issues/2961>`__.
+    Relates to `#2961 <https://gitlab.com/gromacs/gromacs/-/issues/2961>`__.
 
 .. _parallelism:
 
@@ -351,7 +351,7 @@ More
 Refer to the :doc:`pythonreference` for complete and granular documentation.
 
 For more information on writing or using pluggable simulation extension code,
-refer to https://redmine.gromacs.org/issues/3133.
+refer to https://gitlab.com/gromacs/gromacs/-/issues/3133.
 (For gmxapi 0.0.7 and GROMACS 2019, see https://github.com/kassonlab/sample_restraint)
 
 .. todo:: :issue:`3133`: Replace these links as resources for pluggable extension code become available.

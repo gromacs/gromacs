@@ -134,7 +134,7 @@ bool gmx_pme_check_restrictions(int  pme_order,
  * \todo We should evolve something like a \c GpuManager that holds \c
  * DeviceInformation* and \c PmeGpuProgram* and perhaps other
  * related things whose lifetime can/should exceed that of a task (or
- * perhaps task manager). See Redmine #2522.
+ * perhaps task manager). See Issue #2522.
  */
 gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
                         const NumPmeDomains& numPmeDomains,

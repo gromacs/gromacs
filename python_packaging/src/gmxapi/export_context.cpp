@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ namespace py = pybind11;
  * Note that the current library infrastructure does not provide a way for the
  * simulation machinery to express human-readable parameter names with rich
  * descriptions, so a few of the most necessary mdrun command line parameters
- * are hard coded here. Ref. https://redmine.gromacs.org/issues/2877
+ * are hard coded here. Ref. https://gitlab.com/gromacs/gromacs/-/issues/2877
  *
  * For reference and default values, see
  * http://manual.gromacs.org/current/onlinehelp/gmx-mdrun.html#options

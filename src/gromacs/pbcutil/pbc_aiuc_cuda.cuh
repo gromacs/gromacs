@@ -40,8 +40,8 @@
  *
  * \todo CPU, GPU and SIMD routines essentially do the same operations on
  *       different data-types. Currently this leads to code duplication,
- *       which has to be resolved. For details, see Redmine task #2863
- *       https://redmine.gromacs.org/issues/2863
+ *       which has to be resolved. For details, see Issue #2863
+ *       https://gitlab.com/gromacs/gromacs/-/issues/2863
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \author Berk Hess <hess@kth.se>
@@ -72,8 +72,8 @@
  *       the same thing as the version below, as well as SIMD and CPU
  *       versions. This routine is used in gpubonded module.
  *       To avoid code duplication, these implementations should be
- *       unified. See Redmine task #2863:
- *       https://redmine.gromacs.org/issues/2863
+ *       unified. See Issue #2863:
+ *       https://gitlab.com/gromacs/gromacs/-/issues/2863
  *
  * \param[in]  pbcAiuc  PBC object.
  * \param[in]  r1       Coordinates of the first point.
@@ -127,8 +127,8 @@ static __forceinline__ __device__ int
  *       version above, as well as SIMD and CPU versions. This routine is
  *       used in GPU-based constraints.
  *       To avoid code duplication, these implementations should be
- *       unified. See Redmine task #2863:
- *       https://redmine.gromacs.org/issues/2863
+ *       unified. See Issue #2863:
+ *       https://gitlab.com/gromacs/gromacs/-/issues/2863
  *
  * \param[in]  pbcAiuc  PBC object.
  * \param[in]  r1       Coordinates of the first point.

@@ -269,7 +269,7 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
         // ensure non-local stream waits for local stream, due to dependence on
         // the previous H2D copy of CPU forces (if accumulateForces is true)
         // or the above clearing.
-        // TODO remove this dependency on localStream - edmine issue #3093
+        // TODO remove this dependency on localStream - edmine Issue #3093
         GpuEventSynchronizer eventLocal;
         eventLocal.markEvent(localStream_);
         eventLocal.enqueueWaitEvent(nonLocalStream_);

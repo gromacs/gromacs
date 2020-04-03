@@ -68,7 +68,7 @@ NodeSpecification::paramsType MDNodeSpecification::params() const noexcept
 NodeKey Workflow::addNode(std::unique_ptr<NodeSpecification> spec)
 {
     // TODO capture provided NodeSpecification.
-    // Relates to gmxapi milestone 7, described at https://redmine.gromacs.org/issues/2585
+    // Relates to gmxapi milestone 7, described at https://gitlab.com/gromacs/gromacs/-/issues/2585
     throw gmxapi::NotImplementedError("Member function not yet implemented or used.");
     (void)spec;
     return {};

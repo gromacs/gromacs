@@ -101,10 +101,6 @@ environment to jobs that run under the ``schedules``
 Nightly scheduled pipelines run against ``master`` and *release* branches in
 the GROMACS repository.
 
-Pending resolution of :issue:`3272`,
-the repository hosted on Gerrit is mirrored to GitLab.
-Mirror updates trigger pipeline builds.
-
 Global templates
 ~~~~~~~~~~~~~~~~
 

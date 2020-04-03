@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -228,7 +228,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         fourthPart.append("mdrun");
         fourthPart.addOption("-cpi", runner_.cptFileName_);
         fourthPart.addOption("-cpo", runner_.cptFileName_);
-        // TODO this is necessary, but ought not be. Is this the issue in Redmine #2804?
+        // TODO this is necessary, but ought not be. Is this the issue in Issue #2804?
         fourthPart.append("-noappend");
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0004.edr");
         runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0004.log");
@@ -247,7 +247,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         fifthPart.append("mdrun");
         fifthPart.addOption("-cpi", runner_.cptFileName_);
         fifthPart.addOption("-cpo", runner_.cptFileName_);
-        // TODO this is necessary, but ought not be. Is this the issue in Redmine #2804?
+        // TODO this is necessary, but ought not be. Is this the issue in Issue #2804?
         fifthPart.append("-noappend");
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".part0005.edr");
         runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0005.log");

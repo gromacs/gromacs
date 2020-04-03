@@ -7,9 +7,7 @@ by future Jenkins infrastructure.
 Assume you have already checked out the commit you want to build for.
 Assume the following definitions.
 
-    git fetch https://github.com/gromacs/gromacs.git master
-    git branch gerrit_master FETCH_HEAD
-    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base gerrit_master HEAD`)
+    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base master HEAD`)
     TAG="fr1" # for functional requirement 1
 
 ## Building

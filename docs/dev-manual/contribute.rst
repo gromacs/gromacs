@@ -40,7 +40,7 @@ please make sure that you have checked all the points on this list:
   widespread adoption of the method.
 
 * *Advance discussion*: Please communicate with the other developers,
-  e.g.  on the `developer mailing list`_ mailing list, or `redmine`_ to let them know of the general
+  e.g.  on the `developer mailing list`_ mailing list, or `issue tracker`_ to let them know of the general
   nature of your plans. This will prevent duplicate or wasted
   effort. It is also a good idea to search those resources as well as
   the literature and WWW for other projects that may be relevant.
@@ -124,13 +124,13 @@ please make sure that you have checked all the points on this list:
 Preparing code for submission
 -----------------------------
 
-|Gromacs| revision control uses a ``git`` repository managed by :ref:`Gerrit <gmx-gerrit>`.
+|Gromacs| uses ``git`` for :doc:`change-management`.
 Instead of accepting "pull requests", |Gromacs| changes are submitted as individual
-commits on the tip of the ``master`` branch hosted at https://gerrit.gromacs.org.
+commits on the tip of the ``master`` branch hosted at `gitlab`_.
 Preparing, submitting, and managing patches for a change requires a little bit
 of set-up. Refer to :doc:`change-management` for information about
 
-* accessing the |Gromacs| Gerrit server
+* accessing the |Gromacs| *git* repository
 * structure of the repository
 * source control without merge commits
 * ``git`` usage that may be less common in other development work flows

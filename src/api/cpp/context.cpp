@@ -132,7 +132,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
          * process starts and instead manage files (paths) in an absolute and
          * immutable way, with abstraction provided through the Context chain-of-responsibility.
          * TODO: API abstractions for initializing simulations that may be new or partially
-         * complete. Reference gmxapi milestone 13 at https://redmine.gromacs.org/issues/2585
+         * complete. Reference gmxapi milestone 13 at https://gitlab.com/gromacs/gromacs/-/issues/2585
          */
 
         // Create a mock argv. Note that argv[0] is expected to hold the program name.

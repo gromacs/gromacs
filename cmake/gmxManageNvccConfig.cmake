@@ -51,7 +51,7 @@
 # glibc source shows that _FORCE_INLINES is only used in this string.h
 # feature and performance of memcpy variants is unimportant for CUDA
 # code in GROMACS. So this workaround is good enough to keep problems
-# away from users installing GROMACS. See Redmine 1942.
+# away from users installing GROMACS. See Issue #1942.
 function(work_around_glibc_2_23)
     try_compile(IS_GLIBC_2_23_OR_HIGHER ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/cmake/TestGlibcVersion.cpp)
     if(IS_GLIBC_2_23_OR_HIGHER)

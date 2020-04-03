@@ -37,7 +37,7 @@ to do these (once):
    (``/path/to/uncrustify`` below).
 
 Alternatively, if you are running Linux, you can try whether the binary from
-http://redmine.gromacs.org/issues/845 works for you.
+https://gitlab.com/gromacs/gromacs/-/issues/845 works for you.
 
 In order to use the binary for ``uncrustify.sh`` and for the pre-commit hook, you
 also need to run this in each of your |Gromacs| repositories::

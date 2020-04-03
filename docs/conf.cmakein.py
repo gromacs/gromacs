@@ -120,7 +120,7 @@ extensions = [
     # 'sphinx.ext.viewcode',
     'gmxsphinx'
 ]
-extlinks = {'issue': ('https://redmine.gromacs.org/issues/%s',
+extlinks = {'issue': ('https://gitlab.com/gromacs/gromacs/-/issues/%s',
                       'Issue ')}
 
 # Add any paths that contain templates here, relative to this directory.
@@ -228,6 +228,9 @@ rst_epilog += """
 .. _webpage: http://www.gromacs.org
 .. _ftp site: ftp://ftp.gromacs.org/pub/gromacs/
 .. _tutorials: http://www.gromacs.org/Documentation/Tutorials
+.. _issue tracker: https://gitlab.com/gromacs/gromacs/-/issues/
+.. _issues: https://gitlab.com/gromacs/gromacs/-/issues/
+.. _gitlab: https://gitlab.com/gromacs/gromacs/
 .. _redmine: http://redmine.gromacs.org
 .. _gerrit: http://gerrit.gromacs.org
 .. _download: ../download.html

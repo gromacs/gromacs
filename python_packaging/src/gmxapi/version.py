@@ -97,7 +97,7 @@ _named_features_0_1 = []
 # Bugs and bug fixes may be indicated with names consisting of tracked issue URLs.
 #
 # Features consisting of 'fr' and a numeric suffix are the functional requirements
-# described in roadmap.rst, as described at https://redmine.gromacs.org/issues/2893
+# described in roadmap.rst, as described at https://gitlab.com/gromacs/gromacs/-/issues/2893
 #
 # fr1: wrap importable Python code.
 # fr2: output proxy establishes execution dependency (superseded by fr3)

@@ -48,15 +48,15 @@ package.
     the Pybind project (ref <https://github.com/pybind/pybind11> ). It
     is used to wrap the C++ restraint code and give it a Python
     interface.</strike> Note: pybind is currently retrieved while configuring
-    with CMake. Ref redmine issues [3027](https://redmine.gromacs.org/issues/3027)
-    and [3033](https://redmine.gromacs.org/issues/3033)
+    with CMake. Ref issues [3027](https://gitlab.com/gromacs/gromacs/-/issues/3027)
+    and [3033](https://gitlab.com/gromacs/gromacs/-/issues/3033)
 -   `tests/` contains C++ and Python tests for the provided code. Update
     `CMakeLists.txt` to add your own, based on these examples. C++ unit
     tests use [googletest](https://github.com/google/googletest). Python
     tests use the [pytest](https://docs.pytest.org/en/latest/). Refer to
     those respective projects for more about how they make test-writing
     easier. Note: googletest is currently downloaded while configuring with
-    CMake. Ref [3033](https://redmine.gromacs.org/issues/3033)
+    CMake. Ref [3033](https://gitlab.com/gromacs/gromacs/-/issues/3033)
 -   `examples` contains a sample SLURM job script and
     `restrained-ensemble.py` gmxapi script that have been used to do
     restrained ensemble simulations. `example.py` and `example.ipynb`

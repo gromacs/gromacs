@@ -84,7 +84,7 @@ void detail::export_tprfile(pybind11::module& module)
                              // Less trivial types (strings, maps, arrays) warrant additional
                              // design discussion before being exposed through an interface
                              // like this one.
-                             // Also reference https://redmine.gromacs.org/issues/2993
+                             // Also reference https://gitlab.com/gromacs/gromacs/-/issues/2993
 
                              // We can use templates and/or tag dispatch in a more complete
                              // future implementation.

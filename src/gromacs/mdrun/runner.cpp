@@ -320,7 +320,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
 
     // Copy members of master runner.
     // \todo Replace with builder when Simulation context and/or runner phases are better defined.
-    // Ref https://redmine.gromacs.org/issues/2587 and https://redmine.gromacs.org/issues/2375
+    // Ref https://gitlab.com/gromacs/gromacs/-/issues/2587 and https://gitlab.com/gromacs/gromacs/-/issues/2375
     newRunner.hw_opt    = hw_opt;
     newRunner.filenames = filenames;
 

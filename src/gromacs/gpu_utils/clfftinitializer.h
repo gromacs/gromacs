@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,13 +73,13 @@ namespace gmx
  * \todo Consider making a composite object that also handles
  * on-demand compilation, managing lifetime of PME FFT kernel programs
  * to avoid exhausting resources and/or recompiling kernels previously
- * used.  See Redmine #2535.
+ * used.  See Issue #2535.
  *
  * \todo Consider implementing an appropriate flavor of the nifty
  * counter idiom so that both static initialization and
  * deinitialization can work in a fast, leak-free, and thread-safe way
  * without imposing constraints on the calling code.
- * See Redmine #2535. */
+ * See Issue #2535. */
 class ClfftInitializer
 {
 public:

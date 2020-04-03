@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2016, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2016,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -160,7 +160,7 @@ endmacro()
 # there is need to (say) use vendor BLAS with MKL for FFTs.
 #
 # If the vendor BLAS and/or LAPACK have abnormal library names, then
-# the default searching procedure will fail (e.g. Redmine #771). The
+# the default searching procedure will fail (e.g. Issue #771). The
 # GMX_(BLAS|LAPACK)_USER variables can be used to indicate the correct
 # libraries. If these do not work, a warning is emitted and we try to
 # use them anyway, assuming the user knows what they are doing.

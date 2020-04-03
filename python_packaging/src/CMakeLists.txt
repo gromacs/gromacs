@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,7 @@
 # simplest use case is to allow the `setup.py` file to invoke skbuild to
 # configure and run CMake. CMake could be invoked directly by the user or a
 # parent package, but the Python distribution would not be packaged automatically.
-# Reference https://redmine.gromacs.org/issues/2896 for additional discussion.
+# Reference https://gitlab.com/gromacs/gromacs/-/issues/2896 for additional discussion.
 cmake_minimum_required(VERSION 3.9.6)
 
 # This needs to be set before project() in order to pick up toolchain files
@@ -112,7 +112,7 @@ option(GMXAPI_USE_BUNDLED_PYBIND
 if(GMXAPI_USE_BUNDLED_PYBIND)
     add_subdirectory(external/pybind)
 else()
-    # Reference https://redmine.gromacs.org/issues/2896
+    # Reference https://gitlab.com/gromacs/gromacs/-/issues/2896
     find_package(pybind11 2.2 REQUIRED)
 endif()
 
@@ -164,7 +164,7 @@ else()
     target_link_libraries(_gmxapi PRIVATE Gromacs::gmxapi)
 
     # TODO: Determine packaging and installation cases and implementation.
-    # Reference https://redmine.gromacs.org/issues/2896 for additional discussion.
+    # Reference https://gitlab.com/gromacs/gromacs/-/issues/2896 for additional discussion.
     # Currently, CMake should be run by scikit-build through setup.py for proper Python packaging.
     # We don't want to install by default in the outer scope of the GROMACS
     # CMake procedure because we could end up trying to install to a system directory
@@ -176,7 +176,7 @@ else()
     # source distribution archive to be installed in the GROMACS installation
     # destination. We can use the build directory as the working directory for
     # easier clean-up, as well.
-    # TODO: (ref issue #2896) Build and install 'sdist' with GROMACS.
+    # TODO: (ref Issue #2896) Build and install 'sdist' with GROMACS.
 
     # However, we can still produce an importable package for documentation builds and
     # basic testing in ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging

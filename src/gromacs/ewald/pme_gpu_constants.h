@@ -42,7 +42,7 @@
  *
  * \todo The values are currently common to both CUDA and OpenCL
  * implementations, but should be reconsidered when we tune the OpenCL
- * implementation. See Redmine #2528.
+ * implementation. See Issue #2528.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \ingroup module_ewald
@@ -111,13 +111,13 @@ constexpr int c_pmeGpuOrder = 4;
 /*! \brief The number of GPU threads used for computing spread/gather
  * contributions of a single atom, which relates to the PME order.
  *
- * TODO: this assumption leads to minimum execution width of 16. See Redmine #2516
+ * TODO: this assumption leads to minimum execution width of 16. See Issue #2516
  */
 enum class ThreadsPerAtom : int
 {
     /*! \brief Use a number of threads equal to the PME order (ie. 4)
      *
-     * Only CUDA implements this. See Redmine #2516 */
+     * Only CUDA implements this. See Issue #2516 */
     Order,
     //! Use a number of threads equal to the square of the PME order (ie. 16)
     OrderSquared,
@@ -128,7 +128,7 @@ enum class ThreadsPerAtom : int
 /*
  * The execution widths for PME GPU kernels, used both on host and device for correct scheduling.
  * TODO: those were tuned for CUDA with assumption of warp size 32; specialize those for OpenCL
- * (Redmine #2528).
+ * (Issue #2528).
  * As noted below, these are very approximate maximum sizes; in run time we might have to use
  * smaller block/workgroup sizes, depending on device capabilities.
  */

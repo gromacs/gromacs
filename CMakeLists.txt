@@ -837,7 +837,7 @@ if (BUILD_TESTING)
 endif()
 
 # TODO: Determine control flow and defaults for package installation and testing use cases.
-# Ref: http://redmine.gromacs.org/issues/2896
+# Ref: https://gitlab.com/gromacs/gromacs/-/issues/2896
 option(GMX_PYTHON_PACKAGE "Configure gmxapi Python package" OFF)
 mark_as_advanced(GMX_PYTHON_PACKAGE)
 
@@ -856,7 +856,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     if(GMX_PYTHON_PACKAGE)
         find_package(PythonInterp 3.6 REQUIRED)
         # Note: PythonLibs will be found later by pybind11.
-        # TODO: (issue #2998) When CMake >= 3.12 is required, update detection.
+        # TODO: (Issue #2998) When CMake >= 3.12 is required, update detection.
         # I.e.  find_package(Python3 3.6 COMPONENTS Interpreter Development REQUIRED)
     else()
         find_package(PythonInterp 3.6)

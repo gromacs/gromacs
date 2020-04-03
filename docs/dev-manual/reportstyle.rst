@@ -1,10 +1,8 @@
-Guidelines for creating meaningful redmine issue reports
-========================================================
+Guidelines for creating meaningful issue reports
+================================================
 This section gives some started on how to generate useful issues on the
-|Gromacs| `redmine issue tracker`_. The information here comes to a large extent
+|Gromacs| `issue tracker`_. The information here comes to a large extent
 directly from there, to help you in preparing your reports.
-
-.. _redmine issue tracker: https://redmine.gromacs.org
 
 What to report
 ^^^^^^^^^^^^^^
@@ -36,7 +34,7 @@ does not result in any warnings or errors in itself. If your example generates e
 not be considered as *real*, or at the minimum it will be much harder to analyse to find the actual issue.
 
 
-If your inputs are sensitive, then it is possible to create private Redmine issues so that the
+If your inputs are sensitive, then it is possible to create private `issues`_ so that the
 developer team can have access to solve the problem, while preventing widespread
 visibility on the internet.
 
@@ -61,7 +59,7 @@ General issue workflow
 The general issue workflow is shown in the figure below:
 
 .. image:: redmine-states.png
-   :alt:  Sample procedure pathway for issues reported in redmine.
+   :alt:  Sample procedure pathway for reported issues.
 
 
 .. Text below is stolen from the old Gromacs web page

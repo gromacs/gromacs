@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -129,9 +129,9 @@ string(REGEX REPLACE "-" "" HEAD_DATE "${HEAD_DATE}")
 set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}")
 
 # find the names of remotes that are located on the official gromacs
-# git/gerrit servers
+# git servers
 execute_process(COMMAND ${GIT_EXECUTABLE} config --get-regexp
-                "remote\\..*\\.url" "\\.gromacs\\.org[:/].*gromacs(\\.git)?$"
+                "remote\\..*\\.url" "\\gitlab\\.com[:/]gromacs.gromacs(\\.git)?$"
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     OUTPUT_VARIABLE GMX_REMOTES
     ERROR_VARIABLE EXEC_ERR

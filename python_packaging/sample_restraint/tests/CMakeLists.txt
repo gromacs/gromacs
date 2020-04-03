@@ -53,7 +53,7 @@ if (GMXAPI_EXTENSION_MASTER_PROJECT)
     # We also build a test file in the spc_water_box pytest test fixture, but we can
     # presumably extract both of those from the GROMACS installation, or at least
     # through the gmxapi Python package resources.
-    # Ref: https://redmine.gromacs.org/issues/2961
+    # Ref: https://gitlab.com/gromacs/gromacs/-/issues/2961
     file(DOWNLOAD
          https://github.com/kassonlab/sample_restraint/raw/master/tests/data/topol.tpr
          ${CMAKE_CURRENT_BINARY_DIR}/topol.tpr

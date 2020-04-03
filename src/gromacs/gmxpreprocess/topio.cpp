@@ -908,6 +908,7 @@ static char** read_topol(const char*                           infile,
                 "algorithms "
                 "can be found at https://doi.org/10.26434/chemrxiv.11474583.v1 .");
     }
+    // TODO: Update URL for Issue #2884 in conjunction with updating grompp.warn in regressiontests.
 
     cpp_done(handle);
 

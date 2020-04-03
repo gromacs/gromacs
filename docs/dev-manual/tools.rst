@@ -39,22 +39,19 @@ git
 
   Other basic tutorial material for ``git`` can be found on the `web <https://git-scm.com/doc/ext>`__.
 
-Gerrit
-  All code changes go through a code review system at
-  http://gerrit.gromacs.org.
+GitLab
+  Bugs and issues, as well as some random features and discussions,
+  are tracked, and all code changes go through a code review system at
+  https://gitlab.com/gromacs/gromacs.
 
 Build testing
-  All changes pushed to Gerrit are automatically compiled and otherwise
+  All changes pushed to GitLab are automatically compiled and otherwise
   checked on various platforms.
   :doc:`infrastructure` documents how builds are automated,
   providing information on how to replicate the builds (e.g., to
   diagnose issues).
   :doc:`releng/index` provides more information on the technical implementation
   of the builds.
-
-Redmine
-  Bugs and issues, as well as some random features and discussions,
-  are tracked at http://redmine.gromacs.org.
 
 .. _Git Tips & Tricks: http://www.gromacs.org/index.php?title=Developer_Zone/Git/Git_Tips_%26_Tricks
 

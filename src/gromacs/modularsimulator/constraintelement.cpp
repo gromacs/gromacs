@@ -171,7 +171,7 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
      * good approximation, statistically insignificant in any real free energy
      * calculation. Any possible error is not a simulation propagation error,
      * but a potential reporting error in the data that goes to dh/dlambda.
-     * Cf. redmine issue #1255
+     * Cf. Issue #1255
      */
     const real c_dvdlConstraintCorrectionFactor = EI_VV(inputrec_->eI) ? 2.0 : 1.0;
     energyElement_->enerdata()->term[F_DVDL_CONSTR] += c_dvdlConstraintCorrectionFactor * dvdlambda;

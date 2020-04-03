@@ -1,7 +1,7 @@
 # Python package sources
 
 This directory exists as a staging area supporting GROMACS enhancement
-[#2045](https://redmine.gromacs.org/issues/2045),
+[#2045](https://gitlab.com/gromacs/gromacs/-/issues/2045),
 which attempts to update the gmxapi efforts from GROMACS 2019,
 merge external repositories from
 https://github.com/kassonlab/gmxapi
@@ -42,7 +42,7 @@ Use `pytest` to run unit tests and integration tests.
     pytest test
 
 For additional discussion on packaging and distribution, see
-https://redmine.gromacs.org/issues/2896
+https://gitlab.com/gromacs/gromacs/-/issues/2896
 
 ## Sample MD extension code
 
@@ -107,7 +107,7 @@ Additional information in `python_packaging/docker/README.md`.
 
 Hint: the fork point from `master` and the current git ref can be set as environment variables:
 
-    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base gerrit_master HEAD`)
+    FORKPOINT=$(git show -s --pretty=format:"%h" `git merge-base master HEAD`)
     REF=`git show -s --pretty=format:"%h"`
 
 ## External project code
@@ -124,7 +124,7 @@ Scikit-build is installed with Python packaging tools automatically with
 `pip install -r requirements.txt`, as above.
 
 Note: scikit-build is only required for convenient management of the Python
-build environment and packaging. See https://redmine.gromacs.org/issues/2896
+build environment and packaging. See https://gitlab.com/gromacs/gromacs/-/issues/2896
 
 # pybind11
 

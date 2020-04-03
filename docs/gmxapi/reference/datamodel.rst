@@ -16,7 +16,7 @@ Proxies and managed resources
 Operations, factories, and data flow: declaration, definition, and initialization
 =================================================================================
 
-..  todo:: Reference https://redmine.gromacs.org/issues/2993
+..  todo:: Reference https://gitlab.com/gromacs/gromacs/-/issues/2993
 
 Expressing inputs and outputs
 -----------------------------
