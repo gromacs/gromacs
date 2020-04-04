@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2010,2014,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,6 +32,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+if(APPLE)
+  set(LD_LIBRARY_PATH "DYLD_LIBRARY_PATH")
+else()
+  set(LD_LIBRARY_PATH "LD_LIBRARY_PATH")
+endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.cmakein      ${CMAKE_CURRENT_BINARY_DIR}/GMXRC @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.bash.cmakein ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.bash @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.csh.cmakein  ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.csh @ONLY)

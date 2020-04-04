@@ -11,12 +11,12 @@ IFS=":"
 
 # First remove gromacs part of ld_library_path
 tmppath=""
-for i in $LD_LIBRARY_PATH; do
+for i in $@LD_LIBRARY_PATH@; do
   if test "$i" != "$GMXLDLIB"; then
     tmppath="${tmppath}${tmppath:+:}${i}"
   fi
 done
-LD_LIBRARY_PATH=$tmppath
+@LD_LIBRARY_PATH@=$tmppath
 
 # remove gromacs part of PKG_CONFIG_PATH
 tmppath=""
@@ -58,14 +58,14 @@ GMXDATA=${GMXPREFIX}/@GMX_INSTALL_GMXDATADIR@
 GMXTOOLCHAINDIR=${GMXPREFIX}/@GMX_INSTALL_CMAKEDIR@
 GROMACS_DIR=${GMXPREFIX}
 
-LD_LIBRARY_PATH=${GMXLDLIB}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
+@LD_LIBRARY_PATH@=${GMXLDLIB}${@LD_LIBRARY_PATH@:+:}${@LD_LIBRARY_PATH@}
 PKG_CONFIG_PATH=${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
 PATH=${GMXBIN}${PATH:+:}${PATH}
 #debian/ubuntu needs a : at the end
 MANPATH=${GMXMAN}:${MANPATH}
 
 # export should be separate, so /bin/sh understands it
-export GMXBIN GMXLDLIB GMXMAN GMXDATA LD_LIBRARY_PATH PATH MANPATH
+export GMXBIN GMXLDLIB GMXMAN GMXDATA @LD_LIBRARY_PATH@ PATH MANPATH
 export PKG_CONFIG_PATH GROMACS_DIR
 
 IFS="$old_IFS"
