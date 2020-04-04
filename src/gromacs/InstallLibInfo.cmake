@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2016,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,7 @@ function (do_cmake_config)
     endif()
     install(EXPORT libgromacs
             FILE ${EXPORT_FILE_NAME}
+            NAMESPACE Gromacs::
             DESTINATION ${GMX_INSTALL_CMAKEPKGDIR}
             COMPONENT libraries)
 

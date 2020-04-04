@@ -173,6 +173,9 @@ compile the \Gromacs headers.</dd>
 <dd>Required compiler flags.</dd>
 </dl>
 
+Additionally an imported target named `Gromacs::libgromacs` is provided and can
+be used with `target_link_libraries(foo PRIVATE Gromacs::libgromacs)`.
+
 Declared macros/functions that can be used for checking for correctness of some
 settings:
 
