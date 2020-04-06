@@ -78,6 +78,7 @@ _common_packages = ['build-essential',
                     'ca-certificates',
                     'ccache',
                     'git',
+                    'gnupg',
                     'libfftw3-dev',
                     'libhwloc-dev',
                     'liblapack-dev',
@@ -234,23 +235,18 @@ def get_opencl(args):
             return hpccm.building_blocks.packages(ospackages=['nvidia-opencl-dev'])
 
         elif args.opencl == 'intel':
-            return hpccm.building_blocks.packages(ospackages=['ocl-icd-opencl-dev', 'opencl-headers',
-                                                              'beignet-opencl-icd'])
+            return hpccm.building_blocks.packages(
+                    apt_ppas=['ppa:intel-opencl/intel-opencl'],
+                    ospackages=['opencl-headers', 'ocl-icd-libopencl1',
+                                'ocl-icd-opencl-dev', 'intel-opencl-icd'])
+
         elif args.opencl == 'amd':
-            # Due to the wisdom of AMD, this needs to be done differently for the OS and version! Hurray!
-            # And they don't allow wget, so this branch is not taken for now! AMD, please allow me to use wget.
-            raise RuntimeError(
-                'AMD recipe can not be generated because they do not allow wget for getting the packages.')
-            # if args.ubuntu:
-            #     if args.ubuntu is not '16.04':
-            #         Stage0 += hpccm.building_blocks.generic_build(url='https://www2.ati.com/drivers/linux/ubuntu/'+args.ubuntu+'/amdgpu-pro-18.30-641594.tar.xz',
-            #                                                       install=['./amdgpu-install --opencl=legacy --headless -y'])
-            #     elif:
-            #         Stage0 += hpccm.building_blocks.generic_build(url='https://www2.ati.com/drivers/linux/ubuntu/amdgpu-pro-18.30-641594.tar.xz',
-            #                                                       install=['./amdgpu-install --opencl=legacy --headless -y'])
-            # elif args.centos:
-            #         Stage0 += hpccm.building_blocks.generic_build(url='https://www2.ati.com/drivers/linux/rhel'+args.centos'/amdgpu-pro-18.30-641594.tar.xz',
-            #                                                       install=['./amdgpu-install --opencl=legacy --headless -y'])
+            # libelf1 is a necessary dependency for something in the ROCm stack,
+            # which they should set up, but seem to have omitted.
+            return hpccm.building_blocks.packages(
+                    apt_keys=['http://repo.radeon.com/rocm/apt/debian/rocm.gpg.key'],
+                    apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main'],
+                    ospackages=['ocl-icd-libopencl1', 'ocl-icd-opencl-dev', 'opencl-headers', 'libelf1', 'rocm-opencl'])
     else:
         return None
 

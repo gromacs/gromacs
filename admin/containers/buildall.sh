@@ -4,6 +4,11 @@ set -ev
 
 SCRIPT=$PWD/scripted_gmx_docker_builds.py
 
+# Note: All official GROMACS CI images are built
+# with openmpi on. That reduces the total number of
+# images needed, because the same one can test library,
+# thread and no MPI configurations.
+
 tag="gromacs/cmake-3.9.6-gcc-5-cuda-9.0-openmpi:2020"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.9.6 --gcc 5 --cuda 9.0 --ubuntu 16.04 --mpi openmpi | docker build -t $tag -
@@ -36,6 +41,10 @@ tag="gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.15.7 --llvm 8 --opencl intel --mpi openmpi | docker build -t $tag -
 
+tag="gromacs/cmake-3.9.6-llvm-8-amdopencl-openmpi:2020"
+tags[${#tags[@]}]=$tag
+python3 $SCRIPT --cmake 3.9.6 --llvm 8 --opencl amd --mpi openmpi | docker build -t $tag -
+
 tag="gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi:master"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.15.7 --gcc 8 --cuda 10.1 --opencl --clfft --mpi openmpi \
@@ -61,6 +70,10 @@ tag="gromacs/cmake-3.13.0-llvm-9-intelopencl-openmpi:master"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl intel --mpi openmpi | docker build -t $tag -
 
+tag="gromacs/cmake-3.13.0-llvm-9-amdopencl-openmpi:master"
+tags[${#tags[@]}]=$tag
+python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl amd --mpi openmpi | docker build -t $tag -
+
 tag=gromacs/ci-docs-llvm:master
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --llvm --doxygen | docker build -t $tag -
@@ -68,7 +81,6 @@ python3 $SCRIPT --llvm --doxygen | docker build -t $tag -
 tag=gromacs/ci-docs-gcc:master
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --gcc --doxygen | docker build -t $tag -
-
 
 docker login
 for tag in "${tags[@]}"; do
