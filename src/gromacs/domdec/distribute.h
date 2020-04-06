@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,6 @@
 #ifndef GMX_DOMDEC_DOMDEC_DISTRIBUTE_H
 #define GMX_DOMDEC_DOMDEC_DISTRIBUTE_H
 
-#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_ddbox_t;
@@ -57,12 +56,11 @@ class MDLogger;
 }
 
 /*! \brief Distributes the state from the master rank to all DD ranks */
-void distributeState(const gmx::MDLogger&              mdlog,
-                     gmx_domdec_t*                     dd,
-                     const gmx_mtop_t&                 mtop,
-                     t_state*                          state_global,
-                     const gmx_ddbox_t&                ddbox,
-                     t_state*                          state_local,
-                     gmx::PaddedHostVector<gmx::RVec>* f);
+void distributeState(const gmx::MDLogger& mdlog,
+                     gmx_domdec_t*        dd,
+                     const gmx_mtop_t&    mtop,
+                     t_state*             state_global,
+                     const gmx_ddbox_t&   ddbox,
+                     t_state*             state_local);
 
 #endif

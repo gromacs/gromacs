@@ -428,9 +428,8 @@ static void init_em(FILE*                fplog,
         /* Just copy the state */
         ems->s = *state_global;
         state_change_natoms(&ems->s, ems->s.natoms);
-        ems->f.resizeWithPadding(ems->s.natoms);
 
-        mdAlgorithmsSetupAtomData(cr, ir, *top_global, top, fr, mdAtoms, constr, vsite,
+        mdAlgorithmsSetupAtomData(cr, ir, *top_global, top, fr, &ems->f, mdAtoms, constr, vsite,
                                   shellfc ? *shellfc : nullptr);
 
         if (vsite)

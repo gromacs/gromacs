@@ -54,38 +54,55 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+namespace gmx
+{
+
 /* TODO: Add a routine that collects the initial setup of the algorithms.
  *
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-void mdAlgorithmsSetupAtomData(const t_commrec*  cr,
-                               const t_inputrec* ir,
-                               const gmx_mtop_t& top_global,
-                               gmx_localtop_t*   top,
-                               t_forcerec*       fr,
-                               gmx::MDAtoms*     mdAtoms,
-                               gmx::Constraints* constr,
-                               gmx_vsite_t*      vsite,
-                               gmx_shellfc_t*    shellfc)
+void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
+                               const t_inputrec*       ir,
+                               const gmx_mtop_t&       top_global,
+                               gmx_localtop_t*         top,
+                               t_forcerec*             fr,
+                               PaddedHostVector<RVec>* force,
+                               MDAtoms*                mdAtoms,
+                               Constraints*            constr,
+                               gmx_vsite_t*            vsite,
+                               gmx_shellfc_t*          shellfc)
 {
     bool usingDomDec = DOMAINDECOMP(cr);
 
-    int  numAtomIndex, numHomeAtoms;
+    int  numAtomIndex;
     int* atomIndex;
+    int  numHomeAtoms;
+    int  numTotalAtoms;
 
     if (usingDomDec)
     {
-        numAtomIndex = dd_natoms_mdatoms(cr->dd);
-        atomIndex    = cr->dd->globalAtomIndices.data();
-        numHomeAtoms = dd_numHomeAtoms(*cr->dd);
+        numAtomIndex  = dd_natoms_mdatoms(cr->dd);
+        atomIndex     = cr->dd->globalAtomIndices.data();
+        numHomeAtoms  = dd_numHomeAtoms(*cr->dd);
+        numTotalAtoms = dd_natoms_mdatoms(cr->dd);
     }
     else
     {
-        numAtomIndex = -1;
-        atomIndex    = nullptr;
-        numHomeAtoms = top_global.natoms;
+        numAtomIndex  = -1;
+        atomIndex     = nullptr;
+        numHomeAtoms  = top_global.natoms;
+        numTotalAtoms = top_global.natoms;
     }
+
+    if (force != nullptr)
+    {
+        /* We need to allocate one element extra, since we might use
+         * (unaligned) 4-wide SIMD loads to access rvec entries.
+         */
+        force->resizeWithPadding(numTotalAtoms);
+    }
+
     atoms2md(&top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
 
     auto mdatoms = mdAtoms->mdatoms();
@@ -140,3 +157,5 @@ void mdAlgorithmsSetupAtomData(const t_commrec*  cr,
         constr->setConstraints(top, *mdatoms);
     }
 }
+
+} // namespace gmx

@@ -600,11 +600,6 @@ void forcerec_set_ranges(t_forcerec* fr, int natoms_force, int natoms_force_cons
     fr->natoms_force        = natoms_force;
     fr->natoms_force_constr = natoms_force_constr;
 
-    if (fr->natoms_force_constr > fr->nalloc_force)
-    {
-        fr->nalloc_force = over_alloc_dd(fr->natoms_force_constr);
-    }
-
     if (fr->haveDirectVirialContributions)
     {
         fr->forceBufferForDirectVirialContributions.resize(natoms_f_novirsum);

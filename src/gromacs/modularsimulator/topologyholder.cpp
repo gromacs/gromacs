@@ -65,8 +65,11 @@ TopologyHolder::TopologyHolder(const gmx_mtop_t& globalTopology,
         // Generate and initialize new topology
         // Note that most of the data needed for the constructor is used here -
         // this function should probably be simplified sooner or later.
-        mdAlgorithmsSetupAtomData(cr, inputrec, globalTopology, localTopology_.get(), fr, mdAtoms,
-                                  constr, vsite, nullptr);
+        // Note: Legacy mdrun resizes the force buffer in mdAlgorithmsSetupAtomData()
+        //       TopologyHolder has no access to the forces, so we are passing a nullptr
+        //       TODO: Find a unique approach to resizing the forces in modular simulator (#3461)
+        mdAlgorithmsSetupAtomData(cr, inputrec, globalTopology, localTopology_.get(), fr, nullptr,
+                                  mdAtoms, constr, vsite, nullptr);
     }
 }
 

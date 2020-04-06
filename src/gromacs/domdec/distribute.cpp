@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -187,10 +187,7 @@ static void dd_distribute_dfhist(gmx_domdec_t* dd, df_history_t* dfhist)
     }
 }
 
-static void dd_distribute_state(gmx_domdec_t*                dd,
-                                const t_state*               state,
-                                t_state*                     state_local,
-                                PaddedHostVector<gmx::RVec>* f)
+static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state* state_local)
 {
     int nh = state_local->nhchainlength;
 
@@ -252,7 +249,7 @@ static void dd_distribute_state(gmx_domdec_t*                dd,
     /* communicate df_history -- required for restarting from checkpoint */
     dd_distribute_dfhist(dd, state_local->dfhist);
 
-    dd_resize_state(state_local, f, dd->comm->atomRanges.numHomeAtoms());
+    state_change_natoms(state_local, dd->comm->atomRanges.numHomeAtoms());
 
     if (state_local->flags & (1 << estX))
     {
@@ -552,17 +549,16 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
     }
 }
 
-void distributeState(const gmx::MDLogger&         mdlog,
-                     gmx_domdec_t*                dd,
-                     const gmx_mtop_t&            mtop,
-                     t_state*                     state_global,
-                     const gmx_ddbox_t&           ddbox,
-                     t_state*                     state_local,
-                     PaddedHostVector<gmx::RVec>* f)
+void distributeState(const gmx::MDLogger& mdlog,
+                     gmx_domdec_t*        dd,
+                     const gmx_mtop_t&    mtop,
+                     t_state*             state_global,
+                     const gmx_ddbox_t&   ddbox,
+                     t_state*             state_local)
 {
     rvec* xGlobal = (DDMASTER(dd) ? state_global->x.rvec_array() : nullptr);
 
     distributeAtomGroups(mdlog, dd, mtop, DDMASTER(dd) ? state_global->box : nullptr, &ddbox, xGlobal);
 
-    dd_distribute_state(dd, state_global, state_local, f);
+    dd_distribute_state(dd, state_global, state_local);
 }

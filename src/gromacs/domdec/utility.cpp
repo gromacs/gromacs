@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,34 +102,11 @@ void check_screw_box(const matrix box)
         gmx_fatal(FARGS, "pbc=screw with non-zero box_zy is not supported");
     }
 }
-/*! \brief Resize the state and f*/
-void dd_resize_state(t_state* state, PaddedHostVector<gmx::RVec>* f, int natoms)
+
+void dd_resize_atominfo_and_state(t_forcerec* fr, t_state* state, const int numAtoms)
 {
-    if (debug)
-    {
-        fprintf(debug, "Resizing state: currently %d, required %d\n", state->natoms, natoms);
-    }
-
-    state_change_natoms(state, natoms);
-
-    if (f != nullptr)
-    {
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        f->resizeWithPadding(natoms);
-    }
-}
-
-/*! \brief Ensure fr, state and f, if != nullptr, can hold numChargeGroups
- *         atoms for the Verlet scheme and charge groups for the group scheme.
- *
- * todo refactor this now that group scheme is removed
- */
-void dd_check_alloc_ncg(t_forcerec* fr, t_state* state, PaddedHostVector<gmx::RVec>* f, int numChargeGroups)
-{
-    fr->cginfo.resize(numChargeGroups);
+    fr->cginfo.resize(numAtoms);
 
     /* We use x during the setup of the atom communication */
-    dd_resize_state(state, f, numChargeGroups);
+    state_change_natoms(state, numAtoms);
 }

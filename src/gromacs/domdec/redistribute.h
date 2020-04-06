@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 
 #include <cstdio>
 
-#include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct gmx_domdec_t;
@@ -53,14 +53,13 @@ struct t_nrnb;
 class t_state;
 
 /*! \brief Redistribute the atoms to their, new, local domains */
-void dd_redistribute_cg(FILE*                             fplog,
-                        int64_t                           step,
-                        gmx_domdec_t*                     dd,
-                        ivec                              tric_dir,
-                        t_state*                          state,
-                        gmx::PaddedHostVector<gmx::RVec>* f,
-                        t_forcerec*                       fr,
-                        t_nrnb*                           nrnb,
-                        int*                              ncg_moved);
+void dd_redistribute_cg(FILE*         fplog,
+                        int64_t       step,
+                        gmx_domdec_t* dd,
+                        ivec          tric_dir,
+                        t_state*      state,
+                        t_forcerec*   fr,
+                        t_nrnb*       nrnb,
+                        int*          ncg_moved);
 
 #endif

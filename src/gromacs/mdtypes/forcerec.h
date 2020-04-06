@@ -214,11 +214,8 @@ struct t_forcerec
 
     /* The number of atoms participating in do_force_lowlevel */
     int natoms_force = 0;
-    /* The number of atoms participating in force and constraints */
+    /* The number of atoms participating in force calculation and constraints */
     int natoms_force_constr = 0;
-    /* The allocation size of vectors of size natoms_force */
-    int nalloc_force = 0;
-
     /* Forces that should not enter into the coord x force virial summation:
      * PPPM/PME/Ewald/posres/ForceProviders
      */

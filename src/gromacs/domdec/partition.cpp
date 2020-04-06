@@ -1807,12 +1807,7 @@ static void clearCommSetupData(dd_comm_setup_work_t* work)
 }
 
 //! Prepare DD communication.
-static void setup_dd_communication(gmx_domdec_t*                dd,
-                                   matrix                       box,
-                                   gmx_ddbox_t*                 ddbox,
-                                   t_forcerec*                  fr,
-                                   t_state*                     state,
-                                   PaddedHostVector<gmx::RVec>* f)
+static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* ddbox, t_forcerec* fr, t_state* state)
 {
     int                    dim_ind, dim, dim0, dim1, dim2, dimd, nat_tot;
     int                    nzone, nzone_send, zone, zonei, cg0, cg1;
@@ -2089,7 +2084,7 @@ static void setup_dd_communication(gmx_domdec_t*                dd,
             ddSendrecv<int>(dd, dim_ind, dddirBackward, work.atomGroupBuffer, integerBufferRef);
 
             /* Make space for cg_cm */
-            dd_check_alloc_ncg(fr, state, f, pos_cg + ind->nrecv[nzone]);
+            dd_resize_atominfo_and_state(fr, state, pos_cg + ind->nrecv[nzone]);
 
             /* Communicate the coordinates */
             gmx::ArrayRef<gmx::RVec> rvecBufferRef;
@@ -2865,10 +2860,10 @@ void dd_partition_system(FILE*                        fplog,
 
         set_ddbox(*dd, true, DDMASTER(dd) ? state_global->box : nullptr, true, xGlobal, &ddbox);
 
-        distributeState(mdlog, dd, top_global, state_global, ddbox, state_local, f);
+        distributeState(mdlog, dd, top_global, state_global, ddbox, state_local);
 
         /* Ensure that we have space for the new distribution */
-        dd_check_alloc_ncg(fr, state_local, f, dd->ncg_home);
+        dd_resize_atominfo_and_state(fr, state_local, dd->ncg_home);
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
@@ -2961,7 +2956,7 @@ void dd_partition_system(FILE*                        fplog,
         wallcycle_sub_start(wcycle, ewcsDD_REDIST);
 
         ncgindex_set = dd->ncg_home;
-        dd_redistribute_cg(fplog, step, dd, ddbox.tric_dir, state_local, f, fr, nrnb, &ncg_moved);
+        dd_redistribute_cg(fplog, step, dd, ddbox.tric_dir, state_local, fr, nrnb, &ncg_moved);
 
         GMX_RELEASE_ASSERT(bSortCG, "Sorting is required after redistribution");
 
@@ -3015,7 +3010,7 @@ void dd_partition_system(FILE*                        fplog,
         dd_sort_state(dd, fr, state_local);
 
         /* After sorting and compacting we set the correct size */
-        dd_resize_state(state_local, f, comm->atomRanges.numHomeAtoms());
+        state_change_natoms(state_local, comm->atomRanges.numHomeAtoms());
 
         /* Rebuild all the indices */
         dd->ga2la->clear();
@@ -3049,7 +3044,7 @@ void dd_partition_system(FILE*                        fplog,
     make_dd_indices(dd, ncgindex_set);
 
     /* Setup up the communication and communicate the coordinates */
-    setup_dd_communication(dd, state_local->box, &ddbox, fr, state_local, f);
+    setup_dd_communication(dd, state_local->box, &ddbox, fr, state_local);
 
     /* Set the indices for the halo atoms */
     make_dd_indices(dd, dd->ncg_home);
@@ -3120,7 +3115,7 @@ void dd_partition_system(FILE*                        fplog,
      */
     state_local->natoms = comm->atomRanges.numAtomsTotal();
 
-    dd_resize_state(state_local, f, state_local->natoms);
+    state_change_natoms(state_local, state_local->natoms);
 
     if (fr->haveDirectVirialContributions)
     {
@@ -3155,7 +3150,7 @@ void dd_partition_system(FILE*                        fplog,
                         comm->atomRanges.end(DDAtomRanges::Type::Constraints), nat_f_novirsum);
 
     /* Update atom data for mdatoms and several algorithms */
-    mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr, mdAtoms, constr, vsite, nullptr);
+    mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))

@@ -1,8 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009 by the GROMACS development team.
+ * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
+ * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -545,15 +547,14 @@ static void applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog&     updateGroups
     }
 }
 
-void dd_redistribute_cg(FILE*                        fplog,
-                        int64_t                      step,
-                        gmx_domdec_t*                dd,
-                        ivec                         tric_dir,
-                        t_state*                     state,
-                        PaddedHostVector<gmx::RVec>* f,
-                        t_forcerec*                  fr,
-                        t_nrnb*                      nrnb,
-                        int*                         ncg_moved)
+void dd_redistribute_cg(FILE*         fplog,
+                        int64_t       step,
+                        gmx_domdec_t* dd,
+                        ivec          tric_dir,
+                        t_state*      state,
+                        t_forcerec*   fr,
+                        t_nrnb*       nrnb,
+                        int*          ncg_moved)
 {
     gmx_domdec_comm_t* comm = dd->comm;
 
@@ -777,7 +778,7 @@ void dd_redistribute_cg(FILE*                        fplog,
             nvr += i;
         }
 
-        dd_check_alloc_ncg(fr, state, f, home_pos_cg + ncg_recv);
+        dd_resize_atominfo_and_state(fr, state, home_pos_cg + ncg_recv);
 
         /* Process the received charge or update groups */
         int buf_pos = 0;

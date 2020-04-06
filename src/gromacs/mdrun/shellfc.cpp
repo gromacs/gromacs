@@ -537,7 +537,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE* fplog, const gmx_mtop_t* mtop, int nflex
     return shfc;
 }
 
-void make_local_shells(const t_commrec* cr, const t_mdatoms* md, gmx_shellfc_t* shfc)
+void gmx::make_local_shells(const t_commrec* cr, const t_mdatoms* md, gmx_shellfc_t* shfc)
 {
     int           a0, a1;
     gmx_domdec_t* dd = nullptr;

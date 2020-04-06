@@ -960,6 +960,10 @@ void do_force(FILE*                               fplog,
               int                                 legacyFlags,
               const DDBalanceRegionHandler&       ddBalanceRegionHandler)
 {
+    GMX_ASSERT(force.unpaddedArrayRef().ssize() >= fr->natoms_force_constr,
+               "The size of the force buffer should be at least the number of atoms to compute "
+               "forces for");
+
     nonbonded_verlet_t*          nbv      = fr->nbv.get();
     interaction_const_t*         ic       = fr->ic;
     gmx::StatePropagatorDataGpu* stateGpu = fr->stateGpu;

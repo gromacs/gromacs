@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,9 @@
 #ifndef GMX_DOMDEC_DOMDEC_UTILITY_H
 #define GMX_DOMDEC_DOMDEC_UTILITY_H
 
-#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/math/vectypes.h"
 
 #include "domdec_internal.h"
 
@@ -96,22 +96,13 @@ static inline int dd_load_count(const gmx_domdec_comm_t* comm)
     return (comm->ddSettings.eFlop ? comm->flop_n : comm->cycl_n[ddCyclF]);
 }
 
-/*! \brief Resize the state and f, if !=nullptr, to natoms
+/*! \brief Ensure fr and state can hold numAtoms atoms
  *
- * \param[in]  state   Current state
- * \param[in]  f       The vector of forces to be resized
- * \param[out] natoms  New number of atoms to accommodate
+ * \param[in]  fr        Force record
+ * \param[in]  state     Current state
+ * \param[out] numAtoms  Number of atoms
  */
-void dd_resize_state(t_state* state, gmx::PaddedHostVector<gmx::RVec>* f, int natoms);
-
-/*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups atoms for the Verlet scheme and charge groups for the group scheme
- *
- * \param[in]  fr               Force record
- * \param[in]  state            Current state
- * \param[in]  f                The force buffer
- * \param[out] numChargeGroups  Number of charged groups
- */
-void dd_check_alloc_ncg(t_forcerec* fr, t_state* state, gmx::PaddedHostVector<gmx::RVec>* f, int numChargeGroups);
+void dd_resize_atominfo_and_state(t_forcerec* fr, t_state* state, int numAtoms);
 
 /*! \brief Returns a domain-to-domain cutoff distance given an atom-to-atom cutoff */
 static inline real atomToAtomIntoDomainToDomainCutoff(const DDSystemInfo& systemInfo, real cutoff)
