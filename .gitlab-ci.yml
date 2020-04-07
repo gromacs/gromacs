@@ -1,4 +1,5 @@
-# CI is organized into stages so that if early stages fail
+# Declare and sequence the stages to which jobs may be assigned.
+# The pipeline is organized into stages so that if early stages fail
 # the later ones are not run.
 stages:
   # Initial test build for checking simple compilation and getting regressiontest repo
@@ -43,6 +44,12 @@ default:
 include:
   # Mix-in helper job definitions of general utility.
   - local: '/admin/gitlab-ci/global.gitlab-ci.yml'
+  # gmxapi Python package.
+  - local: '/admin/gitlab-ci/python-gmxapi.gitlab-ci.yml'
+  # Further API validation and usability of sample gmxapi extension package.
+  - local: '/admin/gitlab-ci/sample_restraint.gitlab-ci.yml'
+  # API regression testing using sample gmxapi extension package.
+  - local: '/admin/gitlab-ci/sample_restraint-regression.gitlab-ci.yml'
   # Build and test GROMACS in a variety of environments and configurations.
   # To do: Consider expanding matrix here to improve transparency and reduce file sizes.
   # E.g. '/admin/gitlab-ci/matrix/clang-8.gitlab-ci.yml

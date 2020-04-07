@@ -147,7 +147,7 @@
     - .use-clang:base
 
 .use-clang8:
-  image: gromacs/ci-clang-8:master
+  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
   variables:
     COMPILER_MAJOR_VERSION: 8
   extends:

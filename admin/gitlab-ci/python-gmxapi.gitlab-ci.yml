@@ -1,0 +1,179 @@
+#
+# Jobs to test gmxapi client (Python) packages
+#
+
+# Base job definition for gmxapi 0.1 tests against GROMACS 2020 in clang-8 environments.
+.gmxapi-0.1:clang-8:
+  extends:
+    - .variables:default
+    - .use-clang8
+  stage: test
+  variables:
+    PY_UNIT_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
+    PY_MPI_UNIT_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
+    PY_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-JUnitTestResults.xml
+    PY_MPI_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-mpi-JUnitTestResults.xml
+    EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
+  script:
+    - source $INSTALL_DIR/bin/GMXRC
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash -x admin/ci-scripts/build-and-test-py-gmxapi-0.1.sh
+  artifacts:
+    reports:
+      junit:
+        - $PY_UNIT_TEST_XML
+        - $PY_MPI_UNIT_TEST_XML
+        - $PY_ACCEPTANCE_TEST_XML
+        - $PY_MPI_ACCEPTANCE_TEST_XML
+    when: always
+    expire_in: 1 week
+  needs:
+    - job: gromacs:clang-8:build
+      artifacts: true
+
+gmxapi-0.1:clang-8:py-3.5.9:
+  extends:
+    - .gmxapi-0.1:clang-8
+  rules:
+    # Allow explicit trigger through web interface.
+    - if: '$GMX_GMXAPI_0_1'
+      when: always
+    - if: '$GROMACS_RELEASE'
+      when: never
+    # Run this job for release-2020 branch and merge-requests targeting it.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "release-2020" || $CI_COMMIT_BRANCH == "release-2020"'
+      when: always
+  variables:
+    VENVPATH: "/root/venv/py3.5"
+    PY_VER: "3.5.9"
+
+gmxapi-0.1:clang-8:py-3.6.10:
+  extends:
+    - .gmxapi-0.1:clang-8
+  rules:
+    # Allow explicit trigger through web interface.
+    - if: '$GMX_GMXAPI_0_1'
+      when: always
+    - if: '$GROMACS_RELEASE'
+      when: never
+    # Run this job for release-2020 branch and merge-requests targeting it.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "release-2020" || $CI_COMMIT_BRANCH == "release-2020"'
+      when: always
+  variables:
+    VENVPATH: "/root/venv/py3.6"
+    PY_VER: "3.6.10"
+
+gmxapi-0.1:clang-8:py-3.7.7:
+  extends:
+    - .gmxapi-0.1:clang-8
+  rules:
+    # Allow explicit trigger through web interface.
+    - if: '$GMX_GMXAPI_0_1'
+      when: always
+    - if: '$GROMACS_RELEASE'
+      when: never
+    # Run this job for release-2020 branch and merge-requests targeting it.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "release-2020" || $CI_COMMIT_BRANCH == "release-2020"'
+      when: always
+  variables:
+    VENVPATH: "/root/venv/py3.7"
+    PY_VER: "3.7.7"
+
+gmxapi-0.1:clang-8:py-3.8.2:
+  extends:
+    - .gmxapi-0.1:clang-8
+  rules:
+    # Allow explicit trigger through web interface.
+    - if: '$GMX_GMXAPI_0_1'
+      when: always
+    - if: '$GROMACS_RELEASE'
+      when: never
+    # Run this job for release-2020 branch and merge-requests targeting it.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "release-2020" || $CI_COMMIT_BRANCH == "release-2020"'
+      when: always
+  variables:
+    VENVPATH: "/root/venv/py3.8"
+    PY_VER: "3.8.2"
+
+# Base job definition for gmxapi 0.2 tests against GROMACS 2021 in clang-8 environments.
+.gmxapi-0.2:clang-8:gmx2021:
+  extends:
+    - .variables:default
+    - .use-clang8
+  rules:
+    # Allow explicit trigger through web interface.
+    - if: '$GMX_GMXAPI_0_2'
+      when: always
+    - if: '$GROMACS_RELEASE'
+      when: never
+    # Run this job for master branch and merge-requests targeting it.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" || $CI_COMMIT_BRANCH == "master"'
+      when: always
+  stage: test
+  variables:
+    PY_UNIT_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
+    PY_MPI_UNIT_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
+    PY_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-JUnitTestResults.xml
+    PY_MPI_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-mpi-JUnitTestResults.xml
+  script:
+    - source $INSTALL_DIR/bin/GMXRC
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash -x admin/ci-scripts/build-and-test-py-gmxapi-0.2.sh
+  artifacts:
+    reports:
+      junit:
+        - $PY_UNIT_TEST_XML
+        - $PY_MPI_UNIT_TEST_XML
+        - $PY_ACCEPTANCE_TEST_XML
+        - $PY_MPI_ACCEPTANCE_TEST_XML
+    when: always
+    expire_in: 1 week
+  needs:
+    - job: gromacs:clang-8:build
+      artifacts: true
+
+gmxapi-0.2:clang-8:gmx2021:py-3.6.10:
+  extends:
+    - .gmxapi-0.2:clang-8:gmx2021
+  rules:
+    # Allow explicit trigger through web interface.
+    - if: '$GMX_GMXAPI_0_2'
+      when: always
+    - if: '$GROMACS_RELEASE'
+      when: never
+    # Run this job for master branch and merge-requests targeting it.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" || $CI_COMMIT_BRANCH == "master"'
+      when: always
+  variables:
+    VENVPATH: "/root/venv/py3.6"
+    PY_VER: "3.6.10"
+
+gmxapi-0.2:clang-8:gmx2021:py-3.7.7:
+  extends:
+    - .gmxapi-0.2:clang-8:gmx2021
+  rules:
+    # Allow explicit trigger through web interface.
+    - if: '$GMX_GMXAPI_0_2'
+      when: always
+    - if: '$GROMACS_RELEASE'
+      when: never
+    # Run this job for master branch and merge-requests targeting it.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" || $CI_COMMIT_BRANCH == "master"'
+      when: always
+  variables:
+    VENVPATH: "/root/venv/py3.7"
+    PY_VER: "3.7.7"
+
+gmxapi-0.2:clang-8:gmx2021:py-3.8.2:
+  extends:
+    - .gmxapi-0.2:clang-8:gmx2021
+  rules:
+    # Allow explicit trigger through web interface.
+    - if: '$GMX_GMXAPI_0_2'
+      when: always
+    - if: '$GROMACS_RELEASE'
+      when: never
+    # Run this job for master branch and merge-requests targeting it.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" || $CI_COMMIT_BRANCH == "master"'
+      when: always
+  variables:
+    VENVPATH: "/root/venv/py3.8"
+    PY_VER: "3.8.2"
