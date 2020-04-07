@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,69 +48,70 @@
 #include <vector>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/smalloc.h"
 
 struct gmx_mtop_t;
-struct t_commrec;
 struct t_inputrec;
 struct PartialDeserializedTprFile;
 class t_state;
 
-//! Convenience wrapper for gmx_bcast of a single value.
+//! Convenience wrapper for gmx_bcast to communicator of a single value.
 template<typename T>
-void block_bc(const t_commrec* cr, T& data)
+void block_bc(MPI_Comm communicator, T& data)
 {
-    gmx_bcast(sizeof(T), static_cast<void*>(&data), cr);
+    gmx_bcast(sizeof(T), static_cast<void*>(&data), communicator);
 }
-//! Convenience wrapper for gmx_bcast of a C-style array.
+//! Convenience wrapper for gmx_bcast to communicator of a C-style array.
 template<typename T>
-void nblock_bc(const t_commrec* cr, int numElements, T* data)
+void nblock_bc(MPI_Comm communicator, int numElements, T* data)
 {
-    gmx_bcast(numElements * sizeof(T), static_cast<void*>(data), cr);
+    gmx_bcast(numElements * sizeof(T), static_cast<void*>(data), communicator);
 }
-//! Convenience wrapper for gmx_bcast of an ArrayRef<T>
+//! Convenience wrapper for gmx_bcast to communicator of an ArrayRef<T>
 template<typename T>
-void nblock_bc(const t_commrec* cr, gmx::ArrayRef<T> data)
+void nblock_bc(MPI_Comm communicator, gmx::ArrayRef<T> data)
 {
-    gmx_bcast(data.size() * sizeof(T), static_cast<void*>(data.data()), cr);
+    gmx_bcast(data.size() * sizeof(T), static_cast<void*>(data.data()), communicator);
 }
 //! Convenience wrapper for allocation with snew of vectors that need allocation on non-master ranks.
 template<typename T>
-void snew_bc(const t_commrec* cr, T*& data, int numElements)
+void snew_bc(bool isMasterRank, T*& data, int numElements)
 {
-    if (!MASTER(cr))
+    if (!isMasterRank)
     {
         snew(data, numElements);
     }
 }
 //! Convenience wrapper for gmx_bcast of a C-style array which needs allocation on non-master ranks.
 template<typename T>
-void nblock_abc(const t_commrec* cr, int numElements, T** v)
+void nblock_abc(bool isMasterRank, MPI_Comm communicator, int numElements, T** v)
 {
-    snew_bc(cr, v, numElements);
-    nblock_bc(cr, numElements, *v);
+    snew_bc(isMasterRank, v, numElements);
+    nblock_bc(communicator, numElements, *v);
 }
 //! Convenience wrapper for gmx_bcast of a std::vector which needs resizing on non-master ranks.
 template<typename T>
-void nblock_abc(const t_commrec* cr, int numElements, std::vector<T>* v)
+void nblock_abc(bool isMasterRank, MPI_Comm communicator, int numElements, std::vector<T>* v)
 {
-    if (!MASTER(cr))
+    if (!isMasterRank)
     {
         v->resize(numElements);
     }
-    gmx_bcast(numElements * sizeof(T), v->data(), cr);
+    gmx_bcast(numElements * sizeof(T), v->data(), communicator);
 }
 
 //! \brief Broadcasts the, non-dynamic, state from the master to all ranks in cr->mpi_comm_mygroup
 //
 // This is intended to be used with MPI parallelization without
 // domain decompostion (currently with NM and TPI).
-void broadcastStateWithoutDynamics(const t_commrec* cr, t_state* state);
+void broadcastStateWithoutDynamics(MPI_Comm communicator,
+                                   bool     useDomainDecomposition,
+                                   bool     isParallelRun,
+                                   t_state* state);
 
 //! \brief Broadcast inputrec and mtop and allocate node-specific settings
-void init_parallel(t_commrec*                  cr,
+void init_parallel(MPI_Comm                    communicator,
+                   bool                        isMasterRank,
                    t_inputrec*                 inputrec,
                    gmx_mtop_t*                 mtop,
                    PartialDeserializedTprFile* partialDeserializedTpr);

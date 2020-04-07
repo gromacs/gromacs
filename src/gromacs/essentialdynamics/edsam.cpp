@@ -1184,10 +1184,10 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(int                      
 /* Broadcasts the structure data */
 static void bc_ed_positions(const t_commrec* cr, struct gmx_edx* s, EssentialDynamicsStructure stype)
 {
-    snew_bc(cr, s->anrs, s->nr); /* Index numbers     */
-    snew_bc(cr, s->x, s->nr);    /* Positions         */
-    nblock_bc(cr, s->nr, s->anrs);
-    nblock_bc(cr, s->nr, s->x);
+    snew_bc(MASTER(cr), s->anrs, s->nr); /* Index numbers     */
+    snew_bc(MASTER(cr), s->x, s->nr);    /* Positions         */
+    nblock_bc(cr->mpi_comm_mygroup, s->nr, s->anrs);
+    nblock_bc(cr->mpi_comm_mygroup, s->nr, s->x);
 
     /* For the average & reference structures we need an array for the collective indices,
      * and we need to broadcast the masses as well */
@@ -1197,25 +1197,26 @@ static void bc_ed_positions(const t_commrec* cr, struct gmx_edx* s, EssentialDyn
         snew(s->c_ind, s->nr); /* Collective indices */
         /* Local atom indices get assigned in dd_make_local_group_indices.
          * There, also memory is allocated */
-        s->nalloc_loc = 0;            /* allocation size of s->anrs_loc */
-        snew_bc(cr, s->x_old, s->nr); /* To be able to always make the ED molecule whole, ... */
-        nblock_bc(cr, s->nr, s->x_old); /* ... keep track of shift changes with the help of old coords */
+        s->nalloc_loc = 0;                    /* allocation size of s->anrs_loc */
+        snew_bc(MASTER(cr), s->x_old, s->nr); /* To be able to always make the ED molecule whole, ... */
+        nblock_bc(cr->mpi_comm_mygroup, s->nr,
+                  s->x_old); /* ... keep track of shift changes with the help of old coords */
     }
 
     /* broadcast masses for the reference structure (for mass-weighted fitting) */
     if (stype == EssentialDynamicsStructure::Reference)
     {
-        snew_bc(cr, s->m, s->nr);
-        nblock_bc(cr, s->nr, s->m);
+        snew_bc(MASTER(cr), s->m, s->nr);
+        nblock_bc(cr->mpi_comm_mygroup, s->nr, s->m);
     }
 
     /* For the average structure we might need the masses for mass-weighting */
     if (stype == EssentialDynamicsStructure::Average)
     {
-        snew_bc(cr, s->sqrtm, s->nr);
-        nblock_bc(cr, s->nr, s->sqrtm);
-        snew_bc(cr, s->m, s->nr);
-        nblock_bc(cr, s->nr, s->m);
+        snew_bc(MASTER(cr), s->sqrtm, s->nr);
+        nblock_bc(cr->mpi_comm_mygroup, s->nr, s->sqrtm);
+        snew_bc(MASTER(cr), s->m, s->nr);
+        nblock_bc(cr->mpi_comm_mygroup, s->nr, s->m);
     }
 }
 
@@ -1225,23 +1226,23 @@ static void bc_ed_vecs(const t_commrec* cr, t_eigvec* ev, int length)
 {
     int i;
 
-    snew_bc(cr, ev->ieig, ev->neig);    /* index numbers of eigenvector  */
-    snew_bc(cr, ev->stpsz, ev->neig);   /* stepsizes per eigenvector     */
-    snew_bc(cr, ev->xproj, ev->neig);   /* instantaneous x projection    */
-    snew_bc(cr, ev->fproj, ev->neig);   /* instantaneous f projection    */
-    snew_bc(cr, ev->refproj, ev->neig); /* starting or target projection */
+    snew_bc(MASTER(cr), ev->ieig, ev->neig);    /* index numbers of eigenvector  */
+    snew_bc(MASTER(cr), ev->stpsz, ev->neig);   /* stepsizes per eigenvector     */
+    snew_bc(MASTER(cr), ev->xproj, ev->neig);   /* instantaneous x projection    */
+    snew_bc(MASTER(cr), ev->fproj, ev->neig);   /* instantaneous f projection    */
+    snew_bc(MASTER(cr), ev->refproj, ev->neig); /* starting or target projection */
 
-    nblock_bc(cr, ev->neig, ev->ieig);
-    nblock_bc(cr, ev->neig, ev->stpsz);
-    nblock_bc(cr, ev->neig, ev->xproj);
-    nblock_bc(cr, ev->neig, ev->fproj);
-    nblock_bc(cr, ev->neig, ev->refproj);
+    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->ieig);
+    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->stpsz);
+    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->xproj);
+    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->fproj);
+    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->refproj);
 
-    snew_bc(cr, ev->vec, ev->neig); /* Eigenvector components        */
+    snew_bc(MASTER(cr), ev->vec, ev->neig); /* Eigenvector components        */
     for (i = 0; i < ev->neig; i++)
     {
-        snew_bc(cr, ev->vec[i], length);
-        nblock_bc(cr, length, ev->vec[i]);
+        snew_bc(MASTER(cr), ev->vec[i], length);
+        nblock_bc(cr->mpi_comm_mygroup, length, ev->vec[i]);
     }
 }
 
@@ -1251,17 +1252,17 @@ static void bc_ed_vecs(const t_commrec* cr, t_eigvec* ev, int length)
 static void broadcast_ed_data(const t_commrec* cr, gmx_edsam* ed)
 {
     /* Master lets the other nodes know if its ED only or also flooding */
-    gmx_bcast(sizeof(ed->eEDtype), &(ed->eEDtype), cr);
+    gmx_bcast(sizeof(ed->eEDtype), &(ed->eEDtype), cr->mpi_comm_mygroup);
 
     int numedis = ed->edpar.size();
     /* First let everybody know how many ED data sets to expect */
-    gmx_bcast(sizeof(numedis), &numedis, cr);
-    nblock_abc(cr, numedis, &(ed->edpar));
+    gmx_bcast(sizeof(numedis), &numedis, cr->mpi_comm_mygroup);
+    nblock_abc(MASTER(cr), cr->mpi_comm_mygroup, numedis, &(ed->edpar));
     /* Now transfer the ED data set(s) */
     for (auto& edi : ed->edpar)
     {
         /* Broadcast a single ED data set */
-        block_bc(cr, edi);
+        block_bc(cr->mpi_comm_mygroup, edi);
 
         /* Broadcast positions */
         bc_ed_positions(cr, &(edi.sref),
@@ -1284,10 +1285,10 @@ static void broadcast_ed_data(const t_commrec* cr, gmx_edsam* ed)
         /* For harmonic restraints the reference projections can change with time */
         if (edi.flood.bHarmonic)
         {
-            snew_bc(cr, edi.flood.initialReferenceProjection, edi.flood.vecs.neig);
-            snew_bc(cr, edi.flood.referenceProjectionSlope, edi.flood.vecs.neig);
-            nblock_bc(cr, edi.flood.vecs.neig, edi.flood.initialReferenceProjection);
-            nblock_bc(cr, edi.flood.vecs.neig, edi.flood.referenceProjectionSlope);
+            snew_bc(MASTER(cr), edi.flood.initialReferenceProjection, edi.flood.vecs.neig);
+            snew_bc(MASTER(cr), edi.flood.referenceProjectionSlope, edi.flood.vecs.neig);
+            nblock_bc(cr->mpi_comm_mygroup, edi.flood.vecs.neig, edi.flood.initialReferenceProjection);
+            nblock_bc(cr->mpi_comm_mygroup, edi.flood.vecs.neig, edi.flood.referenceProjectionSlope);
         }
     }
 }
@@ -3029,7 +3030,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
     for (auto edi = ed->edpar.begin(); edi != ed->edpar.end(); ++edi)
     {
         /* Allocate space for ED buffer variables */
-        snew_bc(cr, edi->buf, 1); /* MASTER has already allocated edi->buf in init_edi() */
+        snew_bc(MASTER(cr), edi->buf, 1); /* MASTER has already allocated edi->buf in init_edi() */
         snew(edi->buf->do_edsam, 1);
 
         /* Space for collective ED buffer variables */

@@ -940,10 +940,10 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&           mdlog,
     }
 
     /* Communicate the information set by the master to all ranks */
-    gmx_bcast(sizeof(numDomains), numDomains, cr);
+    gmx_bcast(sizeof(numDomains), numDomains, cr->mpi_comm_mygroup);
     if (EEL_PME(ir.coulombtype))
     {
-        gmx_bcast(sizeof(numPmeOnlyRanks), &numPmeOnlyRanks, cr);
+        gmx_bcast(sizeof(numPmeOnlyRanks), &numPmeOnlyRanks, cr->mpi_comm_mygroup);
     }
 
     DDGridSetup ddGridSetup;

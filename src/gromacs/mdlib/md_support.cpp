@@ -497,7 +497,7 @@ void rerun_parallel_comm(t_commrec* cr, t_trxframe* fr, gmx_bool* bLastStep)
     }
     xp = fr->x;
     vp = fr->v;
-    gmx_bcast(sizeof(*fr), fr, cr);
+    gmx_bcast(sizeof(*fr), fr, cr->mpi_comm_mygroup);
     fr->x = xp;
     fr->v = vp;
 

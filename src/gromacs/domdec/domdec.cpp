@@ -2161,8 +2161,8 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
                 dd_bonded_cg_distance(mdlog, &mtop, &ir, as_rvec_array(xGlobal.data()), box,
                                       options.checkBondedInteractions, &r_2b, &r_mb);
             }
-            gmx_bcast(sizeof(r_2b), &r_2b, cr);
-            gmx_bcast(sizeof(r_mb), &r_mb, cr);
+            gmx_bcast(sizeof(r_2b), &r_2b, cr->mpi_comm_mygroup);
+            gmx_bcast(sizeof(r_mb), &r_mb, cr->mpi_comm_mygroup);
 
             /* We use an initial margin of 10% for the minimum cell size,
              * except when we are just below the non-bonded cut-off.

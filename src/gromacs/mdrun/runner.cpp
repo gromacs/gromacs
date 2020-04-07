@@ -843,7 +843,7 @@ int Mdrunner::mdrunner()
         {
             inputrec = &inputrecInstance;
         }
-        init_parallel(cr, inputrec, &mtop, partialDeserializedTpr.get());
+        init_parallel(cr->mpi_comm_mygroup, MASTER(cr), inputrec, &mtop, partialDeserializedTpr.get());
     }
     GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
     partialDeserializedTpr.reset(nullptr);
@@ -956,7 +956,7 @@ int Mdrunner::mdrunner()
         {
             globalState = std::make_unique<t_state>();
         }
-        broadcastStateWithoutDynamics(cr, globalState.get());
+        broadcastStateWithoutDynamics(cr->mpi_comm_mygroup, DOMAINDECOMP(cr), PAR(cr), globalState.get());
     }
 
     /* A parallel command line option consistency check that we can
@@ -1093,7 +1093,7 @@ int Mdrunner::mdrunner()
 
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(box), box, cr);
+        gmx_bcast(sizeof(box), box, cr->mpi_comm_mygroup);
     }
 
     if (inputrec->cutoff_scheme != ecutsVERLET)
@@ -1131,7 +1131,7 @@ int Mdrunner::mdrunner()
         }
     }
 
-    // Produce the task assignment for this rank.
+    // Produce the task assignment for this rank - done after DD is constructed
     GpuTaskAssignmentsBuilder gpuTaskAssignmentsBuilder;
     GpuTaskAssignments        gpuTaskAssignments = gpuTaskAssignmentsBuilder.build(
             gpuIdsToUse, userGpuTaskAssignment, *hwinfo, communicator, physicalNodeComm,
@@ -1328,7 +1328,7 @@ int Mdrunner::mdrunner()
         /* Master synchronizes its value of reset_counters with all nodes
          * including PME only nodes */
         int64_t reset_counters = wcycle_get_reset_counters(wcycle);
-        gmx_bcast_sim(sizeof(reset_counters), &reset_counters, cr);
+        gmx_bcast(sizeof(reset_counters), &reset_counters, cr->mpi_comm_mysim);
         wcycle_set_reset_counters(wcycle, reset_counters);
     }
 
@@ -1494,8 +1494,8 @@ int Mdrunner::mdrunner()
         if (cr->npmenodes > 0)
         {
             /* The PME only nodes need to know nChargePerturbed(FEP on Q) and nTypePerturbed(FEP on LJ)*/
-            gmx_bcast_sim(sizeof(nChargePerturbed), &nChargePerturbed, cr);
-            gmx_bcast_sim(sizeof(nTypePerturbed), &nTypePerturbed, cr);
+            gmx_bcast(sizeof(nChargePerturbed), &nChargePerturbed, cr->mpi_comm_mysim);
+            gmx_bcast(sizeof(nTypePerturbed), &nTypePerturbed, cr->mpi_comm_mysim);
         }
 
         if (thisRankHasDuty(cr, DUTY_PME))

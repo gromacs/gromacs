@@ -546,7 +546,7 @@ void gmx::LegacySimulator::do_md()
     bool hasReadEkinState = MASTER(cr) ? state_global->ekinstate.hasReadEkinState : false;
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr);
+        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr->mpi_comm_mygroup);
     }
     if (hasReadEkinState)
     {
@@ -737,7 +737,7 @@ void gmx::LegacySimulator::do_md()
                               "The initial step is not consistent across multi simulations which "
                               "share the state");
                 }
-                gmx_barrier(cr);
+                gmx_barrier(cr->mpi_comm_mygroup);
             }
             else
             {

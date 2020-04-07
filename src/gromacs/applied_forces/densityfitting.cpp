@@ -454,9 +454,12 @@ public:
     {
         if (PAR(&(checkpointBroadcast.cr_)))
         {
-            block_bc(&(checkpointBroadcast.cr_), densityFittingState_.stepsSinceLastCalculation_);
-            block_bc(&(checkpointBroadcast.cr_), densityFittingState_.adaptiveForceConstantScale_);
-            block_bc(&(checkpointBroadcast.cr_), densityFittingState_.exponentialMovingAverageState_);
+            block_bc(checkpointBroadcast.cr_.mpi_comm_mygroup,
+                     densityFittingState_.stepsSinceLastCalculation_);
+            block_bc(checkpointBroadcast.cr_.mpi_comm_mygroup,
+                     densityFittingState_.adaptiveForceConstantScale_);
+            block_bc(checkpointBroadcast.cr_.mpi_comm_mygroup,
+                     densityFittingState_.exponentialMovingAverageState_);
         }
     }
 

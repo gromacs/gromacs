@@ -132,7 +132,7 @@ void sumOverSimulations(gmx::ArrayRef<T> arrayRef, const t_commrec* commRecord, 
     }
     if (commRecord->nnodes > 1)
     {
-        gmx_bcast(arrayRef.size() * sizeof(T), arrayRef.data(), commRecord);
+        gmx_bcast(arrayRef.size() * sizeof(T), arrayRef.data(), commRecord->mpi_comm_mygroup);
     }
 }
 
@@ -1372,13 +1372,14 @@ void BiasState::restoreFromHistory(const AwhBiasHistory& biasHistory, const Bias
 
 void BiasState::broadcast(const t_commrec* commRecord)
 {
-    gmx_bcast(sizeof(coordState_), &coordState_, commRecord);
+    gmx_bcast(sizeof(coordState_), &coordState_, commRecord->mpi_comm_mygroup);
 
-    gmx_bcast(points_.size() * sizeof(PointState), points_.data(), commRecord);
+    gmx_bcast(points_.size() * sizeof(PointState), points_.data(), commRecord->mpi_comm_mygroup);
 
-    gmx_bcast(weightSumCovering_.size() * sizeof(double), weightSumCovering_.data(), commRecord);
+    gmx_bcast(weightSumCovering_.size() * sizeof(double), weightSumCovering_.data(),
+              commRecord->mpi_comm_mygroup);
 
-    gmx_bcast(sizeof(histogramSize_), &histogramSize_, commRecord);
+    gmx_bcast(sizeof(histogramSize_), &histogramSize_, commRecord->mpi_comm_mygroup);
 }
 
 void BiasState::setFreeEnergyToConvolvedPmf(const std::vector<DimParams>& dimParams, const BiasGrid& grid)

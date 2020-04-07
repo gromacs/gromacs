@@ -933,9 +933,10 @@ static void bc_initial_concentrations(t_commrec* cr, t_swapcoords* swap, t_swap*
 
         for (ic = 0; ic < eCompNR; ic++)
         {
-            gmx_bcast(sizeof(g->comp[ic].nMolReq), &(g->comp[ic].nMolReq), cr);
-            gmx_bcast(sizeof(g->comp[ic].nMol), &(g->comp[ic].nMol), cr);
-            gmx_bcast(swap->nAverage * sizeof(g->comp[ic].nMolPast[0]), g->comp[ic].nMolPast, cr);
+            gmx_bcast(sizeof(g->comp[ic].nMolReq), &(g->comp[ic].nMolReq), cr->mpi_comm_mygroup);
+            gmx_bcast(sizeof(g->comp[ic].nMol), &(g->comp[ic].nMol), cr->mpi_comm_mygroup);
+            gmx_bcast(swap->nAverage * sizeof(g->comp[ic].nMolPast[0]), g->comp[ic].nMolPast,
+                      cr->mpi_comm_mygroup);
         }
     }
 }
@@ -1562,7 +1563,8 @@ t_swap* init_swapcoords(FILE*                       fplog,
         for (int ig = eGrpSplit0; ig <= eGrpSplit1; ig++)
         {
             g = &(s->group[ig]);
-            gmx_bcast((g->atomset.numAtomsGlobal()) * sizeof((g->xc_old)[0]), g->xc_old, (cr));
+            gmx_bcast((g->atomset.numAtomsGlobal()) * sizeof((g->xc_old)[0]), g->xc_old,
+                      cr->mpi_comm_mygroup);
         }
     }
 

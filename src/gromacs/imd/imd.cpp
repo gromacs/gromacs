@@ -76,6 +76,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
@@ -833,7 +834,7 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     /* Notify the other nodes whether we are still connected. */
     if (PAR(cr))
     {
-        block_bc(cr, bConnected);
+        block_bc(cr->mpi_comm_mygroup, bConnected);
     }
 
     /* ...if not connected, the job is done here. */
@@ -845,7 +846,7 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     /* Let the other nodes know whether we got a new IMD synchronization frequency. */
     if (PAR(cr))
     {
-        block_bc(cr, nstimd_new);
+        block_bc(cr->mpi_comm_mygroup, nstimd_new);
     }
 
     /* Now we all set the (new) nstimd communication time step */
@@ -876,7 +877,7 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     /* make new_forces known to the clients */
     if (PAR(cr))
     {
-        block_bc(cr, new_nforces);
+        block_bc(cr->mpi_comm_mygroup, new_nforces);
     }
 
     /* When new_natoms < 0 then we know that these are still the same forces
@@ -909,8 +910,8 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     /* In parallel mode we communicate the to-be-applied forces to the other nodes */
     if (PAR(cr))
     {
-        nblock_bc(cr, nforces, f_ind);
-        nblock_bc(cr, nforces, f);
+        nblock_bc(cr->mpi_comm_mygroup, nforces, f_ind);
+        nblock_bc(cr->mpi_comm_mygroup, nforces, f);
     }
 
     /* done communicating the forces, reset bNewForces */
@@ -1268,7 +1269,7 @@ void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, const rve
     /* Communicate initial coordinates xa_old to all processes */
     if (PAR(cr))
     {
-        gmx_bcast(nat * sizeof(xa_old[0]), xa_old, cr);
+        gmx_bcast(nat * sizeof(xa_old[0]), xa_old, cr->mpi_comm_mygroup);
     }
 }
 
@@ -1373,7 +1374,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*           ir,
     /* Let the other nodes know whether we want IMD */
     if (PAR(cr))
     {
-        block_bc(cr, createSession);
+        block_bc(cr->mpi_comm_mygroup, createSession);
     }
 
     /*... if not we are done.*/
@@ -1472,7 +1473,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*           ir,
     /* do we allow interactive pulling? If so let the other nodes know. */
     if (PAR(cr))
     {
-        block_bc(cr, impl->bForceActivated);
+        block_bc(cr->mpi_comm_mygroup, impl->bForceActivated);
     }
 
     /* setup the listening socket on master process */

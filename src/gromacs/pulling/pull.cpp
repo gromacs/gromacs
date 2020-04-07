@@ -1718,7 +1718,7 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
                                "date prev. COM "
                                "to bcast here as well as to e.g. checkpointing");
 
-                    gmx_bcast(sizeof(dvec), group.x_prev_step, cr);
+                    gmx_bcast(sizeof(dvec), group.x_prev_step, cr->mpi_comm_mygroup);
                 }
             }
         }
@@ -2314,7 +2314,8 @@ void preparePrevStepPullCom(const t_inputrec* ir,
         if (PAR(cr))
         {
             /* Only the master rank has the checkpointed COM from the previous step */
-            gmx_bcast(sizeof(double) * state->pull_com_prev_step.size(), &state->pull_com_prev_step[0], cr);
+            gmx_bcast(sizeof(double) * state->pull_com_prev_step.size(),
+                      &state->pull_com_prev_step[0], cr->mpi_comm_mygroup);
         }
         setPrevStepPullComFromState(pull_work, state);
     }

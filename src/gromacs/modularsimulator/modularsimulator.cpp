@@ -350,7 +350,7 @@ void ModularSimulator::constructElementsAndSignallers()
     bool hasReadEkinState = MASTER(cr) ? state_global->ekinstate.hasReadEkinState : false;
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr);
+        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr->mpi_comm_mygroup);
     }
     if (hasReadEkinState)
     {

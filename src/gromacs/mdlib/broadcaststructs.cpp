@@ -41,24 +41,27 @@
 #include "broadcaststructs.h"
 
 #include "gromacs/fileio/tpxio.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/state.h"
 
 template<typename AllocatorType>
-static void bcastPaddedRVecVector(const t_commrec* cr, gmx::PaddedVector<gmx::RVec, AllocatorType>* v, int numAtoms)
+static void bcastPaddedRVecVector(MPI_Comm                                     communicator,
+                                  gmx::PaddedVector<gmx::RVec, AllocatorType>* v,
+                                  int                                          numAtoms)
 {
     v->resizeWithPadding(numAtoms);
-    nblock_bc(cr, makeArrayRef(*v));
+    nblock_bc(communicator, makeArrayRef(*v));
 }
 
-void broadcastStateWithoutDynamics(const t_commrec* cr, t_state* state)
+void broadcastStateWithoutDynamics(MPI_Comm communicator,
+                                   bool     useDomainDecomposition,
+                                   bool     isParallelRun,
+                                   t_state* state)
 {
-    GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr),
+    GMX_RELEASE_ASSERT(!useDomainDecomposition,
                        "broadcastStateWithoutDynamics should only be used for special cases "
                        "without domain decomposition");
 
-    if (!PAR(cr))
+    if (!isParallelRun)
     {
         return;
     }
@@ -66,8 +69,8 @@ void broadcastStateWithoutDynamics(const t_commrec* cr, t_state* state)
     /* Broadcasts the state sizes and flags from the master to all ranks
      * in cr->mpi_comm_mygroup.
      */
-    block_bc(cr, state->natoms);
-    block_bc(cr, state->flags);
+    block_bc(communicator, state->natoms);
+    block_bc(communicator, state->flags);
 
     for (int i = 0; i < estNR; i++)
     {
@@ -75,10 +78,10 @@ void broadcastStateWithoutDynamics(const t_commrec* cr, t_state* state)
         {
             switch (i)
             {
-                case estLAMBDA: nblock_bc(cr, efptNR, state->lambda.data()); break;
-                case estFEPSTATE: block_bc(cr, state->fep_state); break;
-                case estBOX: block_bc(cr, state->box); break;
-                case estX: bcastPaddedRVecVector(cr, &state->x, state->natoms); break;
+                case estLAMBDA: nblock_bc(communicator, efptNR, state->lambda.data()); break;
+                case estFEPSTATE: block_bc(communicator, state->fep_state); break;
+                case estBOX: block_bc(communicator, state->box); break;
+                case estX: bcastPaddedRVecVector(communicator, &state->x, state->natoms); break;
                 default:
                     GMX_RELEASE_ASSERT(false,
                                        "The state has a dynamic entry, while no dynamic entries "
@@ -89,37 +92,41 @@ void broadcastStateWithoutDynamics(const t_commrec* cr, t_state* state)
     }
 }
 
-static void bc_tpxheader(const t_commrec* cr, TpxFileHeader* tpx)
+static void bc_tpxheader(MPI_Comm communicator, TpxFileHeader* tpx)
 {
-    block_bc(cr, tpx->bIr);
-    block_bc(cr, tpx->bBox);
-    block_bc(cr, tpx->bTop);
-    block_bc(cr, tpx->bX);
-    block_bc(cr, tpx->bV);
-    block_bc(cr, tpx->bF);
-    block_bc(cr, tpx->natoms);
-    block_bc(cr, tpx->ngtc);
-    block_bc(cr, tpx->lambda);
-    block_bc(cr, tpx->fep_state);
-    block_bc(cr, tpx->sizeOfTprBody);
-    block_bc(cr, tpx->fileVersion);
-    block_bc(cr, tpx->fileGeneration);
-    block_bc(cr, tpx->isDouble);
+    block_bc(communicator, tpx->bIr);
+    block_bc(communicator, tpx->bBox);
+    block_bc(communicator, tpx->bTop);
+    block_bc(communicator, tpx->bX);
+    block_bc(communicator, tpx->bV);
+    block_bc(communicator, tpx->bF);
+    block_bc(communicator, tpx->natoms);
+    block_bc(communicator, tpx->ngtc);
+    block_bc(communicator, tpx->lambda);
+    block_bc(communicator, tpx->fep_state);
+    block_bc(communicator, tpx->sizeOfTprBody);
+    block_bc(communicator, tpx->fileVersion);
+    block_bc(communicator, tpx->fileGeneration);
+    block_bc(communicator, tpx->isDouble);
 }
 
-static void bc_tprCharBuffer(const t_commrec* cr, std::vector<char>* charBuffer)
+static void bc_tprCharBuffer(MPI_Comm communicator, bool isMasterRank, std::vector<char>* charBuffer)
 {
     int elements = charBuffer->size();
-    block_bc(cr, elements);
+    block_bc(communicator, elements);
 
-    nblock_abc(cr, elements, charBuffer);
+    nblock_abc(isMasterRank, communicator, elements, charBuffer);
 }
 
-void init_parallel(t_commrec* cr, t_inputrec* inputrec, gmx_mtop_t* mtop, PartialDeserializedTprFile* partialDeserializedTpr)
+void init_parallel(MPI_Comm                    communicator,
+                   bool                        isMasterRank,
+                   t_inputrec*                 inputrec,
+                   gmx_mtop_t*                 mtop,
+                   PartialDeserializedTprFile* partialDeserializedTpr)
 {
-    bc_tpxheader(cr, &partialDeserializedTpr->header);
-    bc_tprCharBuffer(cr, &partialDeserializedTpr->body);
-    if (!MASTER(cr))
+    bc_tpxheader(communicator, &partialDeserializedTpr->header);
+    bc_tprCharBuffer(communicator, isMasterRank, &partialDeserializedTpr->body);
+    if (!isMasterRank)
     {
         completeTprDeserialization(partialDeserializedTpr, inputrec, mtop);
     }

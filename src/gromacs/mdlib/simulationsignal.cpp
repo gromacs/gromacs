@@ -113,7 +113,7 @@ void SimulationSignaller::signalInterSim()
         gmx_sum_sim(eglsNR, mpiBuffer_.data(), ms_);
     }
     // Communicate the signals from the master to the others.
-    gmx_bcast(eglsNR * sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_);
+    gmx_bcast(eglsNR * sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_->mpi_comm_mygroup);
 }
 
 void SimulationSignaller::setSignals()

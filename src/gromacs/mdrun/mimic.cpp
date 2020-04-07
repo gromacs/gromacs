@@ -262,7 +262,7 @@ void gmx::LegacySimulator::do_mimic()
                             imdSession, pull_work, state, &f, mdAtoms, &top, fr, vsite, constr,
                             nrnb, nullptr, FALSE);
         shouldCheckNumberOfBondedInteractions = true;
-        gmx_bcast(sizeof(ir->nsteps), &ir->nsteps, cr);
+        gmx_bcast(sizeof(ir->nsteps), &ir->nsteps, cr->mpi_comm_mygroup);
     }
     else
     {

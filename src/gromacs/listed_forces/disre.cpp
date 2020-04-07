@@ -234,7 +234,7 @@ void init_disres(FILE*                 fplog,
         {
             check_multi_int(fplog, ms, dd->nsystems, "the number of systems per ensemble", FALSE);
         }
-        gmx_bcast_sim(sizeof(int), &dd->nsystems, cr);
+        gmx_bcast(sizeof(int), &dd->nsystems, cr->mpi_comm_mysim);
 
         /* We use to allow any value of nsystems which was a divisor
          * of ms->nsim. But this required an extra communicator which
@@ -402,7 +402,7 @@ void calc_disres_R_6(const t_commrec*      cr,
 
         if (DOMAINDECOMP(cr))
         {
-            gmx_bcast(2 * dd->nres, dd->Rt_6, cr);
+            gmx_bcast(2 * dd->nres, dd->Rt_6, cr->mpi_comm_mygroup);
         }
     }
 

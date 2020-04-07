@@ -313,5 +313,5 @@ void set_ddbox_cr(const t_commrec&               cr,
                       nullptr, ddbox);
     }
 
-    gmx_bcast(sizeof(gmx_ddbox_t), ddbox, &cr);
+    gmx_bcast(sizeof(gmx_ddbox_t), ddbox, cr.mpi_comm_mygroup);
 }

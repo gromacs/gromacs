@@ -239,30 +239,21 @@ void gmx_setup_nodecomm(FILE gmx_unused* fplog, t_commrec* cr)
 #endif
 }
 
-void gmx_barrier(const t_commrec gmx_unused* cr)
+void gmx_barrier(MPI_Comm gmx_unused communicator)
 {
 #if !GMX_MPI
     gmx_call("gmx_barrier");
 #else
-    MPI_Barrier(cr->mpi_comm_mygroup);
+    MPI_Barrier(communicator);
 #endif
 }
 
-void gmx_bcast(int gmx_unused nbytes, void gmx_unused* b, const t_commrec gmx_unused* cr)
+void gmx_bcast(int gmx_unused nbytes, void gmx_unused* b, MPI_Comm gmx_unused communicator)
 {
 #if !GMX_MPI
-    gmx_call("gmx_bast");
+    gmx_call("gmx_bcast");
 #else
-    MPI_Bcast(b, nbytes, MPI_BYTE, MASTERRANK(cr), cr->mpi_comm_mygroup);
-#endif
-}
-
-void gmx_bcast_sim(int gmx_unused nbytes, void gmx_unused* b, const t_commrec gmx_unused* cr)
-{
-#if !GMX_MPI
-    gmx_call("gmx_bast");
-#else
-    MPI_Bcast(b, nbytes, MPI_BYTE, MASTERRANK(cr), cr->mpi_comm_mysim);
+    MPI_Bcast(b, nbytes, MPI_BYTE, 0, communicator);
 #endif
 }
 

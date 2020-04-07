@@ -647,7 +647,7 @@ static real estimate_reciprocal(t_inputinfo* info,
         /* Broadcast the random number array to the other nodes */
         if (PAR(cr))
         {
-            nblock_bc(cr, xtot, numbers);
+            nblock_bc(cr->mpi_comm_mygroup, xtot, numbers);
         }
 
         if (bVerbose && MASTER(cr))
@@ -825,11 +825,11 @@ static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec 
     if (PAR(cr))
     {
         /* Transfer the number of charges */
-        block_bc(cr, nq);
-        snew_bc(cr, *x, nq);
-        snew_bc(cr, *q, nq);
-        nblock_bc(cr, nq, *x);
-        nblock_bc(cr, nq, *q);
+        block_bc(cr->mpi_comm_mygroup, nq);
+        snew_bc(MASTER(cr), *x, nq);
+        snew_bc(MASTER(cr), *q, nq);
+        nblock_bc(cr->mpi_comm_mygroup, nq, *x);
+        nblock_bc(cr->mpi_comm_mygroup, nq, *q);
     }
 
     return nq;
@@ -884,20 +884,20 @@ static void read_tpr_file(const char*  fn_sim_tpr,
 /* Transfer what we need for parallelizing the reciprocal error estimate */
 static void bcast_info(t_inputinfo* info, const t_commrec* cr)
 {
-    nblock_bc(cr, info->n_entries, info->nkx);
-    nblock_bc(cr, info->n_entries, info->nky);
-    nblock_bc(cr, info->n_entries, info->nkz);
-    nblock_bc(cr, info->n_entries, info->ewald_beta);
-    nblock_bc(cr, info->n_entries, info->pme_order);
-    nblock_bc(cr, info->n_entries, info->e_dir);
-    nblock_bc(cr, info->n_entries, info->e_rec);
-    block_bc(cr, info->volume);
-    block_bc(cr, info->recipbox);
-    block_bc(cr, info->natoms);
-    block_bc(cr, info->fracself);
-    block_bc(cr, info->bTUNE);
-    block_bc(cr, info->q2all);
-    block_bc(cr, info->q2allnr);
+    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->nkx);
+    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->nky);
+    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->nkz);
+    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->ewald_beta);
+    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->pme_order);
+    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->e_dir);
+    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->e_rec);
+    block_bc(cr->mpi_comm_mygroup, info->volume);
+    block_bc(cr->mpi_comm_mygroup, info->recipbox);
+    block_bc(cr->mpi_comm_mygroup, info->natoms);
+    block_bc(cr->mpi_comm_mygroup, info->fracself);
+    block_bc(cr->mpi_comm_mygroup, info->bTUNE);
+    block_bc(cr->mpi_comm_mygroup, info->q2all);
+    block_bc(cr->mpi_comm_mygroup, info->q2allnr);
 }
 
 
