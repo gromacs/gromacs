@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,17 +57,12 @@ namespace gmx
 /*! \brief
  * The methods that determine how amplitudes are spread on a grid in density guided simulations.
  */
-enum class DensityFittingAmplitudeMethod
+enum class DensityFittingAmplitudeMethod : int
 {
     Unity,  //!< same spread amplitude, unity, for all atoms
     Mass,   //!< atom mass is the spread amplitude
     Charge, //!< partial charge determines the spread amplitude
     Count
-};
-
-//! The names of the methods to determine the amplitude of the atoms to be spread on a grid
-const EnumerationArray<DensityFittingAmplitudeMethod, const char* const> c_densityFittingAmplitudeMethodNames = {
-    { "unity", "mass", "charge" }
 };
 
 class DensityFittingAmplitudeLookupImpl;

@@ -538,7 +538,7 @@ int gmx_enemat(int argc, char* argv[])
         if (output_env_get_print_xvgr_codes(oenv))
         {
             char str1[STRLEN], str2[STRLEN];
-            if (output_env_get_xvg_format(oenv) == exvgXMGR)
+            if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgr)
             {
                 sprintf(str1, "@ legend string ");
                 sprintf(str2, " ");

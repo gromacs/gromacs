@@ -764,12 +764,9 @@ bool rewrite_tprfile(const std::string& inFile, const std::string& outFile, doub
 
     /* set program name, command line, and default values for output options */
     gmx_output_env_t* oenv;
-    gmx::TimeUnit     timeUnit = gmx::TimeUnit_Default;
+    gmx::TimeUnit     timeUnit = gmx::TimeUnit::Default;
     bool              bView{ false }; // argument that says we don't want to view graphs.
-    int               xvgFormat{ 0 };
-    output_env_init(&oenv, gmx::getProgramContext(),
-                    static_cast<time_unit_t>(timeUnit + 1), // NOLINT(misc-misplaced-widening-cast)
-                    bView, static_cast<xvg_format_t>(xvgFormat + 1), 0);
+    output_env_init(&oenv, gmx::getProgramContext(), timeUnit, bView, XvgFormat::Xmgrace, 0);
 
     double run_t = irInstance.init_step * irInstance.delta_t + irInstance.init_t;
 

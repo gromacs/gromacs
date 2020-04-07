@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,14 +138,13 @@ inline unsigned long convertFlag(CoordinateFileFlags flag)
 }
 
 //! Enum class for setting basic flags in a t_trxframe
-enum class ChangeSettingType
+enum class ChangeSettingType : int
 {
     PreservedIfPresent,
     Always,
-    Never
+    Never,
+    Count
 };
-//! Mapping for enums from \ref ChangeSettingType.
-const char* const cChangeSettingTypeEnum[] = { "preserved-if-present", "always", "never" };
 
 //! Enum class for t_atoms settings
 enum class ChangeAtomsType
@@ -153,21 +152,17 @@ enum class ChangeAtomsType
     PreservedIfPresent,
     AlwaysFromStructure,
     Never,
-    Always
+    Always,
+    Count
 };
-
-//! Mapping for enums from \ref ChangeAtomsType.
-const char* const cChangeAtomsTypeEnum[] = { "preserved-if-present", "always-from-structure",
-                                             "never", "always" };
 
 //! Enum class for setting fields new or not.
 enum class ChangeFrameInfoType
 {
     PreservedIfPresent,
-    Always
+    Always,
+    Count
 };
-//! Mapping for enums from \ref ChangeFrameInfoType.
-const char* const cChangeFrameInfoTypeEnum[] = { "preserved-if-present", "always" };
 
 //! Enum class for setting frame time from user input.
 enum class ChangeFrameTimeType
@@ -175,13 +170,9 @@ enum class ChangeFrameTimeType
     PreservedIfPresent,
     StartTime,
     TimeStep,
-    Both
+    Both,
+    Count
 };
-
-//! Mapping for values from \ref ChangeFrameTimeType.
-const char* const cChangeFrameTimeTypeEnum[] = { "preserved-if-present", "starttime", "timestep",
-                                                 "both" };
-
 
 } // namespace gmx
 

@@ -73,6 +73,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -80,13 +81,15 @@
 using gmx::RVec;
 
 /* enum for random rotations of inserted solutes */
-enum RotationType
+enum class RotationType : int
 {
-    en_rotXYZ,
-    en_rotZ,
-    en_rotNone
+    XYZ,
+    Z,
+    None,
+    Count
 };
-const char* const cRotationEnum[] = { "xyz", "z", "none" };
+static const gmx::EnumerationArray<RotationType, const char*> c_rotationTypeNames = { { "xyz", "z",
+                                                                                        "none" } };
 
 static void center_molecule(gmx::ArrayRef<RVec> x)
 {
@@ -114,18 +117,19 @@ static void generate_trial_conf(gmx::ArrayRef<RVec>       xin,
     real alfa = 0.0, beta = 0.0, gamma = 0.0;
     switch (enum_rot)
     {
-        case en_rotXYZ:
+        case RotationType::XYZ:
             alfa  = dist(*rng);
             beta  = dist(*rng);
             gamma = dist(*rng);
             break;
-        case en_rotZ:
+        case RotationType::Z:
             alfa = beta = 0.;
             gamma       = dist(*rng);
             break;
-        case en_rotNone: alfa = beta = gamma = 0.; break;
+        case RotationType::None: alfa = beta = gamma = 0.; break;
+        default: GMX_THROW(gmx::InternalError("Invalid RotationType"));
     }
-    if (enum_rot == en_rotXYZ || enum_rot == en_rotZ)
+    if (enum_rot == RotationType::XYZ || enum_rot == RotationType::Z)
     {
         rotate_conf(xout->size(), as_rvec_array(xout->data()), nullptr, alfa, beta, gamma);
     }
@@ -332,7 +336,7 @@ public:
         seed_(0),
         defaultDistance_(0.105),
         scaleFactor_(0.57),
-        enumRot_(en_rotXYZ)
+        enumRot_(RotationType::XYZ)
     {
         clear_rvec(newBox_);
         clear_rvec(deltaR_);
@@ -473,7 +477,7 @@ void InsertMolecules::initOptions(IOptionsContainer* options, ICommandLineOption
     options->addOption(RealOption("dr").vector().store(deltaR_).description(
             "Allowed displacement in x/y/z from positions in [TT]-ip[tt] file"));
     options->addOption(EnumOption<RotationType>("rot")
-                               .enumValue(cRotationEnum)
+                               .enumValue(c_rotationTypeNames)
                                .store(&enumRot_)
                                .description("Rotate inserted molecules randomly"));
 }

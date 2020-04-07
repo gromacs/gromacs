@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ class FloatingPointTolerance;
  *
  * \ingroup module_testutils
  */
-enum ReferenceDataMode
+enum class ReferenceDataMode : int
 {
     /*! \brief
      * Compare to existing reference data.
@@ -81,36 +81,38 @@ enum ReferenceDataMode
      * If reference data does not exist, or if the test results differ from
      * those in the reference data, the test fails.
      */
-    erefdataCompare,
+    Compare,
     /*! \brief
      * Create missing reference data.
      *
      * If reference data does not exist for a test, that test behaves as if
-     * ::erefdataUpdateAll had been specified.  Tests for which reference data
-     * exists, behave like with ::erefdataCompare.
+     * ReferenceDataMode::UpdateAll had been specified.  Tests for which reference data
+     * exists, behave like with ReferenceDataMode::Compare.
      */
-    erefdataCreateMissing,
+    CreateMissing,
     /*! \brief
      * Update reference data that does not pass comparison.
      *
      * Tests utilizing reference data should always pass in this mode unless
      * there is an I/O error.
      */
-    erefdataUpdateChanged,
+    UpdateChanged,
     /*! \brief
      * Update reference data, overwriting old data.
      *
      * Tests utilizing reference data should always pass in this mode unless
      * there is an I/O error.
      */
-    erefdataUpdateAll
+    UpdateAll,
+    //! Marks the end of the enum
+    Count
 };
 
 /*! \libinternal \brief
  * Initializes reference data handling.
  *
  * Adds command-line options to \p options to set the reference data mode.
- * By default, ::erefdataCompare is used, but ``--ref-data create`` or
+ * By default, ReferenceDataMode::Compare is used, but ``--ref-data create`` or
  * ``--ref-data update`` can be used to change it.
  *
  * This function is automatically called by initTestUtils().
@@ -150,19 +152,25 @@ class TestReferenceDataImpl;
  * \code
    int functionToTest(int param);
 
+   namespace gmx
+   {
+   namespace test
+   {
    TEST(MyTest, SimpleTest)
    {
-       gmx::test::TestReferenceData data;
+       TestReferenceData data;
 
-       gmx::test::TestReferenceChecker checker(data.rootChecker());
+       TestReferenceChecker checker(data.rootChecker());
        checker.checkInteger(functionToTest(3), "ValueWith3");
        checker.checkInteger(functionToTest(5), "ValueWith5");
-       gmx::test::TestReferenceChecker compound(
+       TestReferenceChecker compound(
                checker.checkCompound("CustomCompound", "Item"));
        compound.checkInteger(function2ToTest(3), "ValueWith3");
        compound.checkInteger(function2ToTest(5), "ValueWith5");
        checker.checkInteger(functionToTest(4), "ValueWith4");
    }
+   } // namespace test
+   } // namespace gmx
  * \endcode
  *
  * If rootChecker() is never called, no comparison is done (i.e., missing

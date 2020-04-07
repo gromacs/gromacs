@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,7 +154,7 @@ typedef std::shared_ptr<internal::TestReferenceDataImpl> TestReferenceDataImplPo
  */
 TestReferenceDataImplPointer g_referenceData;
 //! Global reference data mode set with setReferenceDataMode().
-ReferenceDataMode g_referenceDataMode = erefdataCompare;
+ReferenceDataMode g_referenceDataMode = ReferenceDataMode::Compare;
 
 //! Returns the global reference data mode.
 ReferenceDataMode getReferenceDataMode()
@@ -268,10 +268,11 @@ void checkUnusedEntries(const ReferenceDataEntry& root, const std::string& rootP
 
 void initReferenceData(IOptionsContainer* options)
 {
-    // Needs to correspond to the enum order in refdata.h.
-    const char* const refDataEnum[] = { "check", "create", "update-changed", "update-all" };
+    static const gmx::EnumerationArray<ReferenceDataMode, const char*> s_refDataNames = {
+        { "check", "create", "update-changed", "update-all" }
+    };
     options->addOption(EnumOption<ReferenceDataMode>("ref-data")
-                               .enumValue(refDataEnum)
+                               .enumValue(s_refDataNames)
                                .store(&g_referenceDataMode)
                                .description("Operation mode for tests that use reference data"));
     ::testing::UnitTest::GetInstance()->listeners().Append(new ReferenceDataTestEventListener);
@@ -296,13 +297,13 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfT
 
     switch (mode)
     {
-        case erefdataCompare:
+        case ReferenceDataMode::Compare:
             if (File::exists(fullFilename_, File::throwOnError))
             {
                 compareRootEntry_ = readReferenceDataFile(fullFilename_);
             }
             break;
-        case erefdataCreateMissing:
+        case ReferenceDataMode::CreateMissing:
             if (File::exists(fullFilename_, File::throwOnError))
             {
                 compareRootEntry_ = readReferenceDataFile(fullFilename_);
@@ -313,7 +314,7 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfT
                 outputRootEntry_  = ReferenceDataEntry::createRoot();
             }
             break;
-        case erefdataUpdateChanged:
+        case ReferenceDataMode::UpdateChanged:
             if (File::exists(fullFilename_, File::throwOnError))
             {
                 compareRootEntry_ = readReferenceDataFile(fullFilename_);
@@ -325,10 +326,11 @@ TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfT
             outputRootEntry_          = ReferenceDataEntry::createRoot();
             updateMismatchingEntries_ = true;
             break;
-        case erefdataUpdateAll:
+        case ReferenceDataMode::UpdateAll:
             compareRootEntry_ = ReferenceDataEntry::createRoot();
             outputRootEntry_  = ReferenceDataEntry::createRoot();
             break;
+        case ReferenceDataMode::Count: GMX_THROW(InternalError("Invalid reference data mode"));
     }
 }
 

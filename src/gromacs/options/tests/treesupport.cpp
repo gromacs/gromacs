@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -398,15 +398,8 @@ TEST_F(TreeValueSupportTest, SupportsDoubleOption)
     runTest();
 }
 
-TEST_F(TreeValueSupportTest, SupportsEnumIntOption)
-{
-    const char* const values[] = { "foo", "bar" };
-    options_.addOption(gmx::EnumIntOption("a").enumValue(values).defaultValue(0));
-    runTest();
-}
-
 //! Enum for testing EnumOption.
-enum class TestEnum
+enum class TestEnum : int
 {
     Foo,
     Bar
@@ -414,8 +407,14 @@ enum class TestEnum
 
 TEST_F(TreeValueSupportTest, SupportsEnumOption)
 {
-    const char* const values[] = { "foo", "bar" };
-    options_.addOption(gmx::EnumOption<TestEnum>("a").enumValue(values).defaultValue(TestEnum::Foo));
+    enum class TestEnum : int
+    {
+        Foo,
+        Bar,
+        Count
+    };
+    const gmx::EnumerationArray<TestEnum, const char*> testEnumNames = { { "foo", "bar" } };
+    options_.addOption(gmx::EnumOption<TestEnum>("a").enumValue(testEnumNames).defaultValue(TestEnum::Foo));
     runTest();
 }
 

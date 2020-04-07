@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include "gromacs/options/abstractoption.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "ivaluestore.h"
@@ -487,35 +488,33 @@ AbstractOptionStorage* createEnumOptionStorage(const AbstractOption& option,
 //! \{
 
 /*! \brief
- * Specifies an option that accepts enumerated string values and writes the
- * selected index into an `enum` variable.
- *
- * \tparam EnumType  Type of the variable that receives the values
- *     (can also be `int`).
- *
- * Examples:
- * \code
-   enum MyEnum { eAtom, eRes, eMol };
-   using gmx::EnumOption;
-   const char * const  allowed[] = { "atom", "residue", "molecule" };
-   MyEnum       value = eAtom; // default value
-   options.addOption(EnumOption<MyEnum>("type").enumValue(allowed).store(&value));
- * \endcode
- *
- * storeCount() is not currently implemented for this option type, and
- * providing multiple default values through an array passed to store() does
- * not work consistently in all cases.
- * In the current implementation, the values of the enum type should correspond
- * to indices in the array passed to enumValue(), i.e., be consencutive
- * starting from zero.  Only values corresponding to valid indices are accepted
- * as parameters to, e.g., defaultValue().  However, other values can be used
- * as the initial value of the variable (`value` in the above example), and
- * those will be preserved if the option is not set.
- *
- * Public methods in this class do not throw.
- *
- * \inpublicapi
- */
+* Specifies an option that accepts an EnumerationArray of string values and writes the
+* selected index into an `enum` variable.
+*
+* \tparam EnumType  DataType of the variable that receives the values
+*
+* Examples:
+* \code
+  enum class MyEnum { Atom, Res, Mol, Count } : int;
+  EnumerationArray<MyEnum, const char *> myEnumNames = { "atom", "residue", "molecule" };
+  MyEnum       value = MyEnum::Atom; // default value
+  options.addOption(EnumOption<MyEnum>("type").enumValue(myEnumNames).store(&value));
+* \endcode
+*
+* storeCount() is not currently implemented for this option type, and
+* providing multiple default values through an array passed to store() does
+* not work consistently in all cases.
+* In the current implementation, the values of the enum type should correspond
+* to indices in the array passed to enumValue(), i.e., be consecutive
+* starting from zero.  Only values corresponding to valid indices are accepted
+* as parameters to, e.g., defaultValue().  However, other values can be used
+* as the initial value of the variable (`value` in the above example), and
+* those will be preserved if the option is not set.
+*
+* Public methods in this class do not throw.
+*
+* \inpublicapi
+*/
 template<typename EnumType>
 class EnumOption : public OptionTemplate<EnumType, EnumOption<EnumType>>
 {
@@ -536,6 +535,7 @@ public:
     /*! \brief
      * Sets the option to only accept one of a fixed set of strings.
      *
+
      * \param[in] values  Array of strings to accept.
      *
      * Also accepts prefixes of the strings; if a prefix matches more than
@@ -544,36 +544,16 @@ public:
      *
      * The strings are copied once the option is created.
      */
-    template<size_t count>
-    EnumOption& enumValue(const char* const (&values)[count])
+    EnumOption& enumValue(const EnumerationArray<EnumType, const char*>& values)
     {
         GMX_ASSERT(enumValues_ == nullptr, "Multiple sets of enumerated values specified");
-        enumValues_      = values;
-        enumValuesCount_ = count;
-        return MyBase::me();
-    }
-    /*! \brief
-     * Sets the option to only accept one of a fixed set of strings.
-     *
-     * \param[in] values  Array of strings to accept, with a NULL pointer
-     *      following the last string.
-     *
-     * Works otherwise as the array version, but accepts a pointer to
-     * an array of undetermined length.  The end of the array is indicated
-     * by a NULL pointer in the array.
-     *
-     * \see enumValue()
-     */
-    EnumOption& enumValueFromNullTerminatedArray(const char* const* values)
-    {
-        GMX_ASSERT(enumValues_ == nullptr, "Multiple sets of enumerated values specified");
-        enumValues_      = values;
-        enumValuesCount_ = -1;
+        enumValues_      = values.data();
+        enumValuesCount_ = values.size();
         return MyBase::me();
     }
 
 private:
-    //! Helper function to convert default values for storate initialization.
+    //! Helper function to convert default values for storage initialization.
     static int convertToInt(const EnumType* defaultValue)
     {
         return defaultValue != nullptr ? static_cast<int>(*defaultValue) : -1;
@@ -600,8 +580,117 @@ private:
     friend class EnumOptionStorage;
 };
 
-//! Shorthand for an enumerated option that stores into an `int` variable.
-typedef EnumOption<int> EnumIntOption;
+/*! \brief
+* Specifies an option that accepts enumerated string values and writes the
+* selected index into an `enum` variable.
+*
+* \tparam EnumType  Type of the variable that receives the values
+*     (can also be `int`).
+*
+* Examples:
+* \code
+  enum MyEnum { eAtom, eRes, eMol };
+  using gmx::LegacyEnumOption;
+  const char * const  allowed[] = { "atom", "residue", "molecule" };
+  MyEnum       value = eAtom; // default value
+  options.addOption(LegacyEnumOption<MyEnum>("type").enumValue(allowed).store(&value));
+* \endcode
+*
+* Works exactly as EnumOption.
+*
+* This is legacy support for pargsToOptions and can be removed when it
+* is removed.  No new uses of it should be made.
+*
+* Public methods in this class do not throw.
+*
+* \inpublicapi
+*/
+template<typename EnumType>
+class LegacyEnumOption : public OptionTemplate<EnumType, LegacyEnumOption<EnumType>>
+{
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef EnumOptionInfo InfoType;
+
+    // This needs to be duplicated from OptionTemplate because this class
+    // is a template.
+    //! Short-hand for the base class.
+    typedef OptionTemplate<EnumType, LegacyEnumOption<EnumType>> MyBase;
+
+    //! Initializes an option with the given name.
+    explicit LegacyEnumOption(const char* name) :
+        MyBase(name),
+        enumValues_(nullptr),
+        enumValuesCount_(0)
+    {
+    }
+
+    /*! \brief
+     * Sets the option to only accept one of a fixed set of strings.
+     *
+     * \param[in] values  Array of strings to accept.
+     *
+     * Also accepts prefixes of the strings; if a prefix matches more than
+     * one of the possible strings, the shortest one is used (in a tie, the
+     * first one is).
+     *
+     * The strings are copied once the option is created.
+     */
+    template<size_t count>
+    LegacyEnumOption& enumValue(const char* const (&values)[count])
+    {
+        GMX_ASSERT(enumValues_ == nullptr, "Multiple sets of enumerated values specified");
+        enumValues_      = values;
+        enumValuesCount_ = count;
+        return MyBase::me();
+    }
+    /*! \brief
+     * Sets the option to only accept one of a fixed set of strings.
+     *
+     * \param[in] values  Array of strings to accept, with a NULL pointer
+     *      following the last string.
+     *
+     * Works otherwise as the array version, but accepts a pointer to
+     * an array of undetermined length.  The end of the array is indicated
+     * by a NULL pointer in the array.
+     *
+     * \see enumValue()
+     */
+    LegacyEnumOption& enumValueFromNullTerminatedArray(const char* const* values)
+    {
+        GMX_ASSERT(enumValues_ == nullptr, "Multiple sets of enumerated values specified");
+        enumValues_      = values;
+        enumValuesCount_ = -1;
+        return MyBase::me();
+    }
+
+private:
+    //! Helper function to convert default values for storage initialization.
+    static int convertToInt(const EnumType* defaultValue)
+    {
+        return defaultValue != nullptr ? static_cast<int>(*defaultValue) : -1;
+    }
+
+    //! Creates a EnumOptionStorage object.
+    AbstractOptionStorage* createStorage(const OptionManagerContainer& /*managers*/) const override
+    {
+        // TODO: Implement storeCount() if necessary.
+        return internal::createEnumOptionStorage(*this, enumValues_, enumValuesCount_,
+                                                 convertToInt(MyBase::defaultValue()),
+                                                 convertToInt(MyBase::defaultValueIfSet()),
+                                                 std::make_unique<internal::EnumIndexStore<EnumType>>(
+                                                         MyBase::store(), MyBase::storeVector()));
+    }
+
+    const char* const* enumValues_;
+    int                enumValuesCount_;
+
+    /*! \brief
+     * Needed to initialize EnumOptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class EnumOptionStorage;
+};
 
 /*! \brief
  * Wrapper class for accessing boolean option information.

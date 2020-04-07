@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,13 +52,17 @@
 
 #include "testutils/refdata.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
 class InteractiveSession
 {
 public:
-    explicit InteractiveSession(gmx::test::ReferenceDataMode mode) :
+    explicit InteractiveSession(ReferenceDataMode mode) :
         data_(mode),
         helper_(data_.rootChecker()),
         nextInputLine_(0)
@@ -123,17 +127,17 @@ private:
     // The latter is the output string.
     typedef std::pair<EventType, const char*> Event;
 
-    gmx::test::TestReferenceData     data_;
-    gmx::test::InteractiveTestHelper helper_;
-    std::vector<const char*>         inputLines_;
-    size_t                           nextInputLine_;
-    std::vector<Event>               events_;
+    TestReferenceData        data_;
+    InteractiveTestHelper    helper_;
+    std::vector<const char*> inputLines_;
+    size_t                   nextInputLine_;
+    std::vector<Event>       events_;
 };
 
 TEST(InteractiveTestHelperTest, ChecksSimpleSession)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addOutput("First line\n");
         session.addOutput("> ");
         session.addInput("input");
@@ -145,7 +149,7 @@ TEST(InteractiveTestHelperTest, ChecksSimpleSession)
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addOutput("First line\n");
         session.addOutput("> ");
         session.addInput("input");
@@ -161,7 +165,7 @@ TEST(InteractiveTestHelperTest, ChecksSimpleSession)
 TEST(InteractiveTestHelperTest, ChecksSessionWithoutLastNewline)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addOutput("First line\n");
         session.addOutput("> ");
         session.addInput("input");
@@ -173,7 +177,7 @@ TEST(InteractiveTestHelperTest, ChecksSessionWithoutLastNewline)
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addOutput("First line\n");
         session.addOutput("> ");
         session.addInput("input");
@@ -189,7 +193,7 @@ TEST(InteractiveTestHelperTest, ChecksSessionWithoutLastNewline)
 TEST(InteractiveTestHelperTest, ChecksSessionWithMissingOutput)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addInput("input2");
@@ -199,7 +203,7 @@ TEST(InteractiveTestHelperTest, ChecksSessionWithMissingOutput)
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addInput("input2");
@@ -213,7 +217,7 @@ TEST(InteractiveTestHelperTest, ChecksSessionWithMissingOutput)
 TEST(InteractiveTestHelperTest, ChecksSessionWithEquivalentOutput)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addOutput("First line\n");
         session.addOutput("> ");
         session.addInput("input");
@@ -224,7 +228,7 @@ TEST(InteractiveTestHelperTest, ChecksSessionWithEquivalentOutput)
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addOutput("Second line\n");
@@ -238,7 +242,7 @@ TEST(InteractiveTestHelperTest, ChecksSessionWithEquivalentOutput)
 TEST(InteractiveTestHelperTest, DetectsIncorrectOutput)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addOutput("Second line\n> ");
@@ -247,7 +251,7 @@ TEST(InteractiveTestHelperTest, DetectsIncorrectOutput)
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addOutput("Incorrect line\n> ");
@@ -260,7 +264,7 @@ TEST(InteractiveTestHelperTest, DetectsIncorrectOutput)
 TEST(InteractiveTestHelperTest, DetectsMissingOutput)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addOutput("Second line\n> ");
@@ -271,7 +275,7 @@ TEST(InteractiveTestHelperTest, DetectsMissingOutput)
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addInput("input2");
@@ -285,7 +289,7 @@ TEST(InteractiveTestHelperTest, DetectsMissingOutput)
 TEST(InteractiveTestHelperTest, DetectsMissingFinalOutput)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addOutput("Second line\n> ");
@@ -294,7 +298,7 @@ TEST(InteractiveTestHelperTest, DetectsMissingFinalOutput)
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addOutput("Second line\n> ");
@@ -306,7 +310,7 @@ TEST(InteractiveTestHelperTest, DetectsMissingFinalOutput)
 TEST(InteractiveTestHelperTest, DetectsExtraOutput)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addInput("input2");
@@ -316,7 +320,7 @@ TEST(InteractiveTestHelperTest, DetectsExtraOutput)
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addOutput("First line\n> ");
         session.addInput("input");
         session.addOutput("Extra output\n> ");
@@ -331,14 +335,14 @@ TEST(InteractiveTestHelperTest, DetectsExtraOutput)
 TEST(InteractiveTestHelperTest, DetectsMissingInput)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addInput("input");
         session.addInput("input2");
         session.addReadInput();
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addInputLine("input");
         session.addInputLine("input2");
         session.addReadInput();
@@ -350,14 +354,14 @@ TEST(InteractiveTestHelperTest, DetectsMissingInput)
 TEST(InteractiveTestHelperTest, DetectsExtraInput)
 {
     {
-        InteractiveSession session(gmx::test::erefdataUpdateAll);
+        InteractiveSession session(ReferenceDataMode::UpdateAll);
         session.addInput("input");
         session.addInput("input2");
         session.addReadInput();
         session.run();
     }
     {
-        InteractiveSession session(gmx::test::erefdataCompare);
+        InteractiveSession session(ReferenceDataMode::Compare);
         session.addInputLine("input");
         session.addInputLine("input2");
         session.addReadInput();
@@ -369,3 +373,5 @@ TEST(InteractiveTestHelperTest, DetectsExtraInput)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

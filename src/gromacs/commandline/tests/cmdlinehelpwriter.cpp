@@ -58,6 +58,7 @@
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -114,10 +115,19 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     options.addOption(DoubleOption("time").description("Time option (%t)").timeValue().defaultValue(10.0));
     options.addOption(StringOption("string").description("String option").defaultValue("test"));
     const char* const enumValues[] = { "no", "opt1", "opt2" };
+    enum class TestEnum : int
+    {
+        No,
+        Opt1,
+        Opt2,
+        Count
+    };
+    const gmx::EnumerationArray<TestEnum, const char*> testEnumNames = { { "no", "opt1", "opt2" } };
+
     options.addOption(
             StringOption("enum").description("Enum option").enumValue(enumValues).defaultEnumIndex(0));
     options.addOption(
-            EnumIntOption("ienum").description("Enum option").enumValue(enumValues).defaultValue(1));
+            EnumOption<TestEnum>("ienum").description("Enum option").enumValue(testEnumNames).defaultValue(TestEnum::Opt1));
 
     std::string filename;
     options.addOption(FileNameOption("f")
@@ -153,10 +163,11 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
 }
 
 //! Enum value for testing.
-enum TestEnum
+enum class TestEnum : int
 {
-    eFoo,
-    eBar
+    Foo,
+    Bar,
+    Count
 };
 
 /*
@@ -183,8 +194,8 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
     svalues.emplace_back("foo");
     options.addOption(StringOption("str").description("String option").storeVector(&svalues).multiValue());
 
-    TestEnum          evalue    = eBar;
-    const char* const allowed[] = { "foo", "bar" };
+    TestEnum                                           evalue  = TestEnum::Bar;
+    const gmx::EnumerationArray<TestEnum, const char*> allowed = { { "foo", "bar" } };
     options.addOption(
             EnumOption<TestEnum>("enum").description("Enum option").enumValue(allowed).store(&evalue));
 

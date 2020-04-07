@@ -39,7 +39,7 @@ Other options:
            Atoms stored in the trajectory file (if not set, assume first N
            atoms)
  -xvg    <enum>             (xmgrace)
-           Plot formatting: none, xmgrace, xmgr
+           Plot formatting: xmgrace, xmgr, none
  -[no]rmpbc                 (yes)
            Make molecules whole for each frame
  -[no]pbc                   (yes)

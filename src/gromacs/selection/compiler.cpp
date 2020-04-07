@@ -2609,7 +2609,8 @@ void SelectionCompiler::compile(SelectionCollection* coll)
     e_poscalc_t                 post;
     size_t                      i;
     int                         flags;
-    bool bDebug = (coll->impl_->debugLevel_ >= 2 && coll->impl_->debugLevel_ != 3);
+    bool bDebug = (coll->impl_->debugLevel_ == SelectionCollection::Impl::DebugLevel::Compiled
+                   && coll->impl_->debugLevel_ == SelectionCollection::Impl::DebugLevel::Full);
 
     /* FIXME: Clean up the collection on exceptions */
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,23 +50,41 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
 
+//! Mapping for enums from \ref ChangeSettingType.
+static const EnumerationArray<ChangeSettingType, const char*> c_changeSettingTypeNames = {
+    { "preserved-if-present", "always", "never" }
+};
+//! Mapping for enums from \ref ChangeAtomsType.
+static const EnumerationArray<ChangeAtomsType, const char*> c_changeAtomsTypeNames = {
+    { "preserved-if-present", "always-from-structure", "never", "always" }
+};
+/* Currently unused
+//! Mapping for enums from \ref ChangeFrameInfoType.
+static const EnumerationArray<ChangeFrameInfoType, const char*> c_changeFrameInfoTypeNames = { {
+"preserved-if-present", "always" } };
+//! Mapping for values from \ref ChangeFrameTimeType.
+static const EnumerationArray<ChangeFrameTimeType, const char*> c_changeFrameTimeTypeNames = { {
+"preserved-if-present", "starttime", "timestep", "both" } };
+*/
+
 void OutputRequirementOptionDirector::initOptions(IOptionsContainer* options)
 {
     options->addOption(EnumOption<ChangeSettingType>("vel")
-                               .enumValue(cChangeSettingTypeEnum)
+                               .enumValue(c_changeSettingTypeNames)
                                .store(&velocity_)
                                .description("Save velocities from frame if possible"));
     options->addOption(EnumOption<ChangeSettingType>("force")
-                               .enumValue(cChangeSettingTypeEnum)
+                               .enumValue(c_changeSettingTypeNames)
                                .store(&force_)
                                .description("Save forces from frame if possible"));
     options->addOption(
-            EnumOption<ChangeAtomsType>("atoms").enumValue(cChangeAtomsTypeEnum).store(&atoms_).description("Decide on providing new atom information from topology or using current frame atom information"));
+            EnumOption<ChangeAtomsType>("atoms").enumValue(c_changeAtomsTypeNames).store(&atoms_).description("Decide on providing new atom information from topology or using current frame atom information"));
     options->addOption(IntegerOption("precision")
                                .store(&prec_)
                                .defaultValue(prec_)

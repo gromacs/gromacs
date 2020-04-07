@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,11 +54,12 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
-
-using gmx::test::checkXvgFile;
-using gmx::test::XvgMatchSettings;
 
 //! Input testing data - an inline xvg file.
 const char* const input[] = { "0     2905.86    -410.199",   "0.2     6656.67    -430.437",
@@ -69,16 +70,16 @@ TEST(XvgTests, CreateFile)
 {
     {
         // Create new data
-        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        TestReferenceData    data(ReferenceDataMode::UpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
         // Now read it back
-        gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        TestReferenceData    data(ReferenceDataMode::Compare);
+        TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
@@ -89,8 +90,8 @@ TEST(XvgTests, CheckMissing)
 {
     {
         // Create new data
-        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        TestReferenceData    data(ReferenceDataMode::UpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
@@ -99,9 +100,9 @@ TEST(XvgTests, CheckMissing)
         const char* const input[] = { "0     2905.86    -410.199", "0.2     6656.67    -430.437",
                                       "0.4     5262.44    -409.399" };
         // Now check with missing data
-        gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
-        gmx::StringInputStream          sis(input);
+        TestReferenceData      data(ReferenceDataMode::Compare);
+        TestReferenceChecker   checker(data.rootChecker());
+        gmx::StringInputStream sis(input);
         EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()),
                                 "not used in test");
     }
@@ -111,8 +112,8 @@ TEST(XvgTests, CheckExtra)
 {
     {
         // Create new data
-        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        TestReferenceData    data(ReferenceDataMode::UpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
@@ -123,9 +124,9 @@ TEST(XvgTests, CheckExtra)
                                       "0.8     5941.37    -408.337", "1     5869.87    -411.124",
                                       "1.2     5889.87    -413.124" };
         // Now check with missing data
-        gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
-        gmx::StringInputStream          sis(input);
+        TestReferenceData      data(ReferenceDataMode::Compare);
+        TestReferenceChecker   checker(data.rootChecker());
+        gmx::StringInputStream sis(input);
         EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "Row6");
     }
 }
@@ -134,8 +135,8 @@ TEST(XvgTests, ReadIncorrect)
 {
     {
         // Create new data
-        gmx::test::TestReferenceData    data(gmx::test::erefdataUpdateAll);
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        TestReferenceData    data(ReferenceDataMode::UpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
         // Convert char array to a stream and add it to the checker
         gmx::StringInputStream sis(input);
         checkXvgFile(&sis, &checker, XvgMatchSettings());
@@ -145,11 +146,13 @@ TEST(XvgTests, ReadIncorrect)
                                       "0.4     5262.44    -409.399", "0.6     5994.69    -405.763",
                                       "0.8     5941.37    -408.337", "1     5869.87    -421.124" };
         // Now check with incorrect data
-        gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
-        gmx::test::TestReferenceChecker checker(data.rootChecker());
-        gmx::StringInputStream          sis(input);
+        TestReferenceData      data(ReferenceDataMode::Compare);
+        TestReferenceChecker   checker(data.rootChecker());
+        gmx::StringInputStream sis(input);
         EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "-411");
     }
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

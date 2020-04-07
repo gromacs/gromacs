@@ -111,7 +111,7 @@ static void write_xvgr_graphs(const char*             file,
     real  ymin, ymax, xsp, ysp;
 
     out = gmx_ffopen(file, "w");
-    if (output_env_get_xvg_format(oenv) == exvgXMGRACE)
+    if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgrace)
     {
         fprintf(out, "@ autoscale onread none\n");
     }

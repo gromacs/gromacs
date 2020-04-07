@@ -64,7 +64,7 @@ class TrajectoryAnalysisSettings::Impl
 public:
     //! Initializes the default values for the settings object.
     Impl() :
-        timeUnit(TimeUnit_Default),
+        timeUnit(TimeUnit::Default),
         flags(0),
         frflags(0),
         bRmPBC(true),

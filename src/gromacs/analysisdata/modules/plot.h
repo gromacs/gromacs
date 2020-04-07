@@ -51,6 +51,8 @@
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/utility/classhelpers.h"
 
+enum class XvgFormat : int;
+
 namespace gmx
 {
 
@@ -76,10 +78,8 @@ public:
     TimeUnit timeUnit() const { return timeUnit_; }
     /*! \brief
      * Returns the plot format.
-     *
-     * \todo Use a proper enum.
      */
-    int plotFormat() const { return plotFormat_; }
+    XvgFormat plotFormat() const { return plotFormat_; }
 
     /*! \brief
      * Set selection collection to print as comments into the output.
@@ -111,7 +111,7 @@ public:
 private:
     const SelectionCollection* selections_;
     TimeUnit                   timeUnit_;
-    int                        plotFormat_;
+    XvgFormat                  plotFormat_;
 };
 
 /*! \brief

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,14 +65,6 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
 
-namespace
-{
-
-//! Enum values for plot formats.
-const char* const g_plotFormats[] = { "none", "xmgrace", "xmgr" };
-
-} // namespace
-
 namespace gmx
 {
 
@@ -82,8 +74,8 @@ namespace gmx
 
 AnalysisDataPlotSettings::AnalysisDataPlotSettings() :
     selections_(nullptr),
-    timeUnit_(TimeUnit_Default),
-    plotFormat_(1)
+    timeUnit_(TimeUnit::Default),
+    plotFormat_(XvgFormat::Xmgrace)
 {
 }
 
@@ -92,11 +84,18 @@ void AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection*
     selections_ = selections;
 }
 
+/*! \brief Names for XvgFormat
+ *
+ * Technically this duplicates a definition in pargs.cpp for legacy
+ * support code, but as the latter will go away and the alternatives
+ * are ugly, the duplication is acceptable. */
+const gmx::EnumerationArray<XvgFormat, const char*> c_xvgFormatNames = { { "xmgrace", "xmgr",
+                                                                           "none" } };
 
 void AnalysisDataPlotSettings::initOptions(IOptionsContainer* options)
 {
     options->addOption(
-            EnumIntOption("xvg").enumValue(g_plotFormats).store(&plotFormat_).description("Plot formatting"));
+            EnumOption<XvgFormat>("xvg").enumValue(c_xvgFormatNames).store(&plotFormat_).description("Plot formatting"));
 }
 
 
@@ -308,18 +307,15 @@ void AbstractPlotModule::dataStarted(AbstractAnalysisData* /* data */)
         }
         else
         {
-            // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-            time_unit_t       time_unit = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
-            xvg_format_t      xvg_format = (impl_->settings_.plotFormat() > 0
-                                               ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
-                                               : exvgNONE);
+            const TimeUnit    timeUnit  = impl_->settings_.timeUnit();
+            const XvgFormat   xvgFormat = impl_->settings_.plotFormat();
             gmx_output_env_t* oenv;
-            output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
+            output_env_init(&oenv, getProgramContext(), timeUnit, FALSE, xvgFormat, 0);
             const unique_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(), impl_->xlabel_,
                                   impl_->ylabel_, oenv);
             const SelectionCollection* selections = impl_->settings_.selectionCollection();
-            if (selections != nullptr && output_env_get_xvg_format(oenv) != exvgNONE)
+            if (selections != nullptr && output_env_get_xvg_format(oenv) != XvgFormat::None)
             {
                 selections->printXvgrInfo(impl_->fp_);
             }

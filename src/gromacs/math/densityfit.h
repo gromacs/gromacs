@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,6 @@
 
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -53,7 +52,7 @@ namespace gmx
 /*! \brief
  * The methods that determine how two densities are compared to one another.
  */
-enum class DensitySimilarityMeasureMethod
+enum class DensitySimilarityMeasureMethod : int
 {
     /*! \brief Measure similarity between densities as normalized inner product of their
      * voxel values.
@@ -87,11 +86,6 @@ enum class DensitySimilarityMeasureMethod
      */
     crossCorrelation,
     Count,
-};
-
-//! Name the methods that may be used to evaluate similarity between densities
-const EnumerationArray<DensitySimilarityMeasureMethod, const char* const> c_densitySimilarityMeasureMethodNames = {
-    { "inner-product", "relative-entropy", "cross-correlation" }
 };
 
 /* Forward declaration of implementation class outside class to allow

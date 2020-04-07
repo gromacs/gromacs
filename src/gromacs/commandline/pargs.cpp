@@ -59,6 +59,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -187,29 +188,30 @@ namespace gmx
 namespace
 {
 
-/*! \brief
- * Returns the index of the default xvg format.
+//! Names for XvgFormat
+const gmx::EnumerationArray<XvgFormat, const char*> c_xvgFormatNames = { { "xmgrace", "xmgr",
+                                                                           "none" } };
+
+/*! \brief Returns the default xvg format, as modified by GMX_VIEW_XVG
+ * if that environment variable is set.
  *
  * \ingroup module_commandline
  */
-int getDefaultXvgFormat(gmx::ArrayRef<const char* const> xvgFormats)
+XvgFormat getDefaultXvgFormat()
 {
     const char* const select = getenv("GMX_VIEW_XVG");
     if (select != nullptr)
     {
-        ArrayRef<const char* const>::const_iterator i =
-                std::find(xvgFormats.begin(), xvgFormats.end(), std::string(select));
-        if (i != xvgFormats.end())
+        for (XvgFormat c : keysOf(c_xvgFormatNames))
         {
-            return std::distance(xvgFormats.begin(), i);
+            if (std::strcmp(select, c_xvgFormatNames[c]) == 0)
+            {
+                return c;
+            }
         }
-        else
-        {
-            return exvgNONE - 1;
-        }
+        return XvgFormat::None;
     }
-    /* The default is the first option */
-    return 0;
+    return XvgFormat::Xmgrace;
 }
 
 /*! \brief
@@ -387,8 +389,13 @@ void OptionsAdapter::pargsToOptions(Options* options, t_pargs* pa)
             return;
         case etENUM:
         {
+            // TODO This is the only use of LegacyEnumOption. It
+            // exists to support dozens of analysis tools use that
+            // don't make sense to fix without either test coverage or
+            // automated refactoring. No new uses of LegacyEnumOption
+            // should be made.
             const int defaultIndex = (pa->u.c[0] != nullptr ? nenum(pa->u.c) - 1 : 0);
-            data.optionInfo        = options->addOption(EnumIntOption(name)
+            data.optionInfo        = options->addOption(LegacyEnumOption<int>(name)
                                                          .store(&data.enumIndex)
                                                          .defaultValue(defaultIndex)
                                                          .enumValueFromNullTerminatedArray(pa->u.c + 1)
@@ -455,9 +462,6 @@ gmx_bool parse_common_args(int*               argc,
                            const char**       bugs,
                            gmx_output_env_t** oenv)
 {
-    /* This array should match the order of the enum in oenv.h */
-    const char* const xvg_formats[] = { "xmgrace", "xmgr", "none" };
-
     // Lambda function to test the (local) Flags parameter against a bit mask.
     auto isFlagSet = [Flags](unsigned long bits) { return (Flags & bits) == bits; };
 
@@ -465,8 +469,7 @@ gmx_bool parse_common_args(int*               argc,
     {
         double                         tbegin = 0.0, tend = 0.0, tdelta = 0.0;
         bool                           bBeginTimeSet = false, bEndTimeSet = false, bDtSet = false;
-        bool                           bView     = false;
-        int                            xvgFormat = 0;
+        bool                           bView = false;
         gmx::OptionsAdapter            adapter(*argc, argv);
         gmx::Options                   options;
         gmx::OptionsBehaviorCollection behaviors(&options);
@@ -494,7 +497,7 @@ gmx_bool parse_common_args(int*               argc,
             options.addOption(gmx::DoubleOption("dt").store(&tdelta).storeIsSet(&bDtSet).timeValue().description(
                     "Only use frame when t MOD dt = first time (default unit %t)"));
         }
-        gmx::TimeUnit timeUnit = gmx::TimeUnit_Default;
+        gmx::TimeUnit timeUnit = gmx::TimeUnit::Default;
         if (isFlagSet(PCA_TIME_UNIT))
         {
             std::shared_ptr<gmx::TimeUnitBehavior> timeUnitBehavior(new gmx::TimeUnitBehavior());
@@ -515,11 +518,13 @@ gmx_bool parse_common_args(int*               argc,
         {
             bXvgr = bXvgr || (fnm[i].ftp == efXVG);
         }
-        xvgFormat = gmx::getDefaultXvgFormat(xvg_formats);
+        XvgFormat xvgFormat = gmx::getDefaultXvgFormat();
         if (bXvgr)
         {
-            options.addOption(
-                    gmx::EnumIntOption("xvg").enumValue(xvg_formats).store(&xvgFormat).description("xvg plot formatting"));
+            options.addOption(gmx::EnumOption<XvgFormat>("xvg")
+                                      .enumValue(gmx::c_xvgFormatNames)
+                                      .store(&xvgFormat)
+                                      .description("xvg plot formatting"));
         }
 
         /* Now append the program specific arguments */
@@ -555,8 +560,7 @@ gmx_bool parse_common_args(int*               argc,
 
         /* set program name, command line, and default values for output options */
         // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
-        output_env_init(oenv, gmx::getProgramContext(), static_cast<time_unit_t>(timeUnit + 1),
-                        bView, static_cast<xvg_format_t>(xvgFormat + 1), 0);
+        output_env_init(oenv, gmx::getProgramContext(), timeUnit, bView, xvgFormat, 0);
 
         /* Extract Time info from arguments */
         if (bBeginTimeSet)

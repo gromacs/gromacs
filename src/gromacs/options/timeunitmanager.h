@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,36 +43,15 @@
 #ifndef GMX_OPTIONS_TIMEUNITMANAGER_H
 #define GMX_OPTIONS_TIMEUNITMANAGER_H
 
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/options/ioptionsbehavior.h"
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
 class IOptionsContainer;
 class Options;
-
-/*! \brief
- * Time values for TimeUnitManager.
- *
- * \if internal
- * Currently, this should match with the time_unit_t enum defined in oenv.h
- * except that there is no NULL first item in this enum.
- * \endif
- *
- * \inpublicapi
- */
-enum TimeUnit
-{
-    TimeUnit_fs,                   //!< Femtoseconds.
-    TimeUnit_ps,                   //!< Picoseconds.
-    TimeUnit_ns,                   //!< Nanoseconds.
-    TimeUnit_us,                   //!< Microseconds.
-    TimeUnit_ms,                   //!< Milliseconds.
-    TimeUnit_s,                    //!< Seconds.
-    TimeUnit_Default = TimeUnit_ps //!< Default time unit.
-};
 
 /*! \brief
  * Provides common functionality for time unit conversions.
@@ -103,12 +82,7 @@ public:
     explicit TimeUnitManager(TimeUnit unit);
 
     //! Returns the currently selected time unit.
-    TimeUnit timeUnit() const
-    {
-        GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
-                   "Time unit index has become out-of-range");
-        return timeUnit_;
-    }
+    TimeUnit timeUnit() const { return timeUnit_; }
     //! Set a new time unit for the manager.
     void setTimeUnit(TimeUnit unit);
 
@@ -144,12 +118,7 @@ public:
     TimeUnitBehavior();
 
     //! Returns the current time unit.
-    TimeUnit timeUnit() const
-    {
-        GMX_ASSERT(timeUnit_ >= 0 && timeUnit_ <= TimeUnit_s,
-                   "Time unit index has become out-of-range");
-        return static_cast<TimeUnit>(timeUnit_);
-    }
+    TimeUnit timeUnit() const { return timeUnit_; }
     //! Sets the time unit.
     void setTimeUnit(TimeUnit unit);
 

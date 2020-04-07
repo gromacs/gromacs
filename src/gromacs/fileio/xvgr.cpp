@@ -60,11 +60,9 @@
 
 gmx_bool output_env_get_print_xvgr_codes(const gmx_output_env_t* oenv)
 {
-    int xvg_format;
+    XvgFormat xvgFormat = output_env_get_xvg_format(oenv);
 
-    xvg_format = output_env_get_xvg_format(oenv);
-
-    return (xvg_format == exvgXMGRACE || xvg_format == exvgXMGR);
+    return (xvgFormat == XvgFormat::Xmgrace || xvgFormat == XvgFormat::Xmgr);
 }
 
 static char* xvgrstr(const std::string& gmx, const gmx_output_env_t* oenv, char* buf, int buflen)
@@ -73,13 +71,12 @@ static char* xvgrstr(const std::string& gmx, const gmx_output_env_t* oenv, char*
     const char* sym[]  = { "beta",  "chi", "delta", "eta", "lambda", "mu",
                           "omega", "phi", "psi",   "rho", "theta",  nullptr };
     const char  symc[] = { 'b', 'c', 'd', 'h', 'l', 'm', 'w', 'f', 'y', 'r', 'q', '\0' };
-    int         xvgf;
     gmx_bool    bXVGR;
     int         g, b, i;
     char        c;
 
-    xvgf  = output_env_get_xvg_format(oenv);
-    bXVGR = (xvgf == exvgXMGRACE || xvgf == exvgXMGR);
+    XvgFormat xvgf = output_env_get_xvg_format(oenv);
+    bXVGR          = (xvgf == XvgFormat::Xmgrace || xvgf == XvgFormat::Xmgr);
 
     g = 0;
     b = 0;
@@ -146,8 +143,8 @@ static char* xvgrstr(const std::string& gmx, const gmx_output_env_t* oenv, char*
                 /* Backward compatibility for xmgr normal font "\4" */
                 switch (xvgf)
                 {
-                    case exvgXMGRACE: sprintf(buf + b, "%s", "\\f{}"); break;
-                    case exvgXMGR: sprintf(buf + b, "%s", "\\4"); break;
+                    case XvgFormat::Xmgrace: sprintf(buf + b, "%s", "\\f{}"); break;
+                    case XvgFormat::Xmgr: sprintf(buf + b, "%s", "\\4"); break;
                     default: buf[b] = '\0'; break;
                 }
                 g++;
@@ -158,8 +155,8 @@ static char* xvgrstr(const std::string& gmx, const gmx_output_env_t* oenv, char*
                 /* Backward compatibility for xmgr symbol font "\8" */
                 switch (xvgf)
                 {
-                    case exvgXMGRACE: sprintf(buf + b, "%s", "\\x"); break;
-                    case exvgXMGR: sprintf(buf + b, "%s", "\\8"); break;
+                    case XvgFormat::Xmgrace: sprintf(buf + b, "%s", "\\x"); break;
+                    case XvgFormat::Xmgr: sprintf(buf + b, "%s", "\\8"); break;
                     default: buf[b] = '\0'; break;
                 }
                 g++;
@@ -182,8 +179,10 @@ static char* xvgrstr(const std::string& gmx, const gmx_output_env_t* oenv, char*
                     }
                     switch (xvgf)
                     {
-                        case exvgXMGRACE: sprintf(buf + b, "%s%c%s", "\\x", c, "\\f{}"); break;
-                        case exvgXMGR: sprintf(buf + b, "%s%c%s", "\\8", c, "\\4"); break;
+                        case XvgFormat::Xmgrace:
+                            sprintf(buf + b, "%s%c%s", "\\x", c, "\\f{}");
+                            break;
+                        case XvgFormat::Xmgr: sprintf(buf + b, "%s%c%s", "\\8", c, "\\4"); break;
                         default:
                             std::strncat(buf + b, &gmx[g], std::strlen(sym[i]));
                             b += std::strlen(sym[i]);
@@ -247,7 +246,7 @@ void xvgr_header(FILE*                   fp,
         switch (exvg_graph_type)
         {
             case exvggtXNY:
-                if (output_env_get_xvg_format(oenv) == exvgXMGR)
+                if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgr)
                 {
                     fprintf(fp, "@TYPE nxy\n");
                 }
@@ -351,7 +350,7 @@ static void xvgr_legend(FILE* out, int nsets, const T* setname, const gmx_output
         {
             if (!stringIsEmpty(setname[i]))
             {
-                if (output_env_get_xvg_format(oenv) == exvgXMGR)
+                if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgr)
                 {
                     fprintf(out, "@ legend string %d \"%s\"\n", i, xvgrstr(setname[i], oenv, buf, STRLEN));
                 }
@@ -385,7 +384,7 @@ void xvgr_new_dataset(FILE* out, int nr_first, int nsets, const char** setname, 
         {
             if (setname[i])
             {
-                if (output_env_get_xvg_format(oenv) == exvgXMGR)
+                if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgr)
                 {
                     fprintf(out, "@ legend string %d \"%s\"\n", i + nr_first,
                             xvgrstr(setname[i], oenv, buf, STRLEN));

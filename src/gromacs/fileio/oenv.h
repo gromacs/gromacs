@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,27 +53,37 @@ struct gmx_output_env_t;
    There are still legacy functions for the program name, and the command
    line, but the output_env versions are now preferred.*/
 
-typedef enum
+namespace gmx
 {
-    timeNULL,
-    time_fs,
-    time_ps,
-    time_ns,
-    time_us,
-    time_ms,
-    time_s
-} time_unit_t;
-/* the time units. For the time being, ps means no conversion. */
 
-typedef enum
+/*! \brief
+ * Time values for TimeUnitManager and legacy oenv module.
+ *
+ * \inpublicapi
+ */
+enum class TimeUnit : int
 {
-    exvgNULL,
-    exvgXMGRACE,
-    exvgXMGR,
-    exvgNONE
-} xvg_format_t;
-/* the xvg output formattings */
+    Femtoseconds,
+    Picoseconds,
+    Nanoseconds,
+    Microseconds,
+    Milliseconds,
+    Seconds,
+    Count,
+    Default = Picoseconds
+};
 
+} // namespace gmx
+
+//! The xvg output format
+enum class XvgFormat : int
+{
+    // Select,
+    Xmgrace,
+    Xmgr,
+    None,
+    Count
+};
 
 void output_env_init_default(gmx_output_env_t** oenvp);
 /* initialize an output_env structure, with reasonable default settings.
@@ -113,7 +123,7 @@ void output_env_conv_times(const gmx_output_env_t* oenv, int n, real* time);
 gmx_bool output_env_get_view(const gmx_output_env_t* oenv);
 /* Return TRUE when user requested viewing of the file */
 
-xvg_format_t output_env_get_xvg_format(const gmx_output_env_t* oenv);
+XvgFormat output_env_get_xvg_format(const gmx_output_env_t* oenv);
 /* Returns enum (see above) for xvg output formatting */
 
 /*! \brief
@@ -128,9 +138,9 @@ class IProgramContext;
 
 void output_env_init(gmx_output_env_t**          oenvp,
                      const gmx::IProgramContext& context,
-                     time_unit_t                 tmu,
+                     gmx::TimeUnit               tmu,
                      gmx_bool                    view,
-                     xvg_format_t                xvg_format,
+                     XvgFormat                   xvgFormat,
                      int                         verbosity);
 /* initialize an output_env structure, setting the command line,
    the default time value a gmx_boolean view that is set to TRUE when the

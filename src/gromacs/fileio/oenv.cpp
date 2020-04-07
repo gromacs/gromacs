@@ -39,6 +39,7 @@
 
 #include "oenv.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
@@ -48,9 +49,9 @@ struct gmx_output_env_t
 {
     explicit gmx_output_env_t(const gmx::IProgramContext& context) :
         programContext(context),
-        time_unit(time_ps),
+        timeUnit(gmx::TimeUnit::Picoseconds),
         view(FALSE),
-        xvg_format(exvgNONE),
+        xvgFormat(XvgFormat::None),
         verbosity(0),
         trajectory_io_verbosity(0)
     {
@@ -59,12 +60,12 @@ struct gmx_output_env_t
 
     const gmx::IProgramContext& programContext;
 
-    /* the time unit, enum defined in oenv.h */
-    time_unit_t time_unit;
+    /* the time unit, enum defined in timeunitmanager.h */
+    gmx::TimeUnit timeUnit;
     /* view of file requested */
     gmx_bool view;
     /* xvg output format, enum defined in oenv.h */
-    xvg_format_t xvg_format;
+    XvgFormat xvgFormat;
     /* The level of verbosity for this program */
     int verbosity;
     /* The level of verbosity during trajectory I/O. Default=1, quiet=0. */
@@ -81,31 +82,36 @@ struct gmx_output_env_t
  ******************************************************************/
 
 /* read only time names */
-/* These must correspond to the time units type time_unit_t in oenv.h */
-static const real  timefactors[]     = { real(0),    real(1e3),  real(1),     real(1e-3),
-                                    real(1e-6), real(1e-9), real(1e-12), real(0) };
-static const real  timeinvfactors[]  = { real(0),   real(1e-3), real(1),    real(1e3),
-                                       real(1e6), real(1e9),  real(1e12), real(0) };
-static const char* time_units_str[]  = { nullptr, "fs", "ps", "ns", "us", "\\mus", "ms", "s" };
-static const char* time_units_xvgr[] = { nullptr, "fs", "ps", "ns", "ms", "s", nullptr };
+static const gmx::EnumerationArray<gmx::TimeUnit, real> c_picosecondsInTimeUnit = {
+    { real(1e3), real(1), real(1e-3), real(1e-6), real(1e-9), real(1e-12) }
+};
+static const gmx::EnumerationArray<gmx::TimeUnit, real> c_timeUnitsInPicoseconds = {
+    { real(1e-3), real(1), real(1e3), real(1e6), real(1e9), real(1e12) }
+};
+static const gmx::EnumerationArray<gmx::TimeUnit, const char*> c_timeUnitNames = {
+    { "fs", "ps", "ns", "us", "ms", "s" }
+};
+static const gmx::EnumerationArray<gmx::TimeUnit, const char*> c_timeUnitNamesForXvgr = {
+    { "fs", "ps", "ns", "\\mus", "ms", "s" }
+};
 
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
 void output_env_init(gmx_output_env_t**          oenvp,
                      const gmx::IProgramContext& context,
-                     time_unit_t                 tmu,
+                     gmx::TimeUnit               tmu,
                      gmx_bool                    view,
-                     xvg_format_t                xvg_format,
+                     XvgFormat                   xvgFormat,
                      int                         verbosity)
 {
     try
     {
         gmx_output_env_t* oenv        = new gmx_output_env_t(context);
         *oenvp                        = oenv;
-        oenv->time_unit               = tmu;
+        oenv->timeUnit                = tmu;
         oenv->view                    = view;
-        oenv->xvg_format              = xvg_format;
+        oenv->xvgFormat               = xvgFormat;
         oenv->verbosity               = verbosity;
         const char* env               = getenv("GMX_TRAJECTORY_IO_VERBOSITY");
         oenv->trajectory_io_verbosity = (env != nullptr ? strtol(env, nullptr, 10) : 1);
@@ -141,40 +147,38 @@ int output_env_get_trajectory_io_verbosity(const gmx_output_env_t* oenv)
 
 std::string output_env_get_time_unit(const gmx_output_env_t* oenv)
 {
-    return time_units_str[oenv->time_unit];
+    return c_timeUnitNames[oenv->timeUnit];
 }
 
 std::string output_env_get_time_label(const gmx_output_env_t* oenv)
 {
-    return gmx::formatString(
-            "Time (%s)", time_units_str[oenv->time_unit] ? time_units_str[oenv->time_unit] : "ps");
+    return gmx::formatString("Time (%s)", c_timeUnitNames[oenv->timeUnit]);
 }
 
 std::string output_env_get_xvgr_tlabel(const gmx_output_env_t* oenv)
 {
-    return gmx::formatString(
-            "Time (%s)", time_units_xvgr[oenv->time_unit] ? time_units_xvgr[oenv->time_unit] : "ps");
+    return gmx::formatString("Time (%s)", c_timeUnitNamesForXvgr[oenv->timeUnit]);
 }
 
 real output_env_get_time_factor(const gmx_output_env_t* oenv)
 {
-    return timefactors[oenv->time_unit];
+    return c_picosecondsInTimeUnit[oenv->timeUnit];
 }
 
 real output_env_get_time_invfactor(const gmx_output_env_t* oenv)
 {
-    return timeinvfactors[oenv->time_unit];
+    return c_timeUnitsInPicoseconds[oenv->timeUnit];
 }
 
 real output_env_conv_time(const gmx_output_env_t* oenv, real time)
 {
-    return time * timefactors[oenv->time_unit];
+    return time * c_picosecondsInTimeUnit[oenv->timeUnit];
 }
 
 void output_env_conv_times(const gmx_output_env_t* oenv, int n, real* time)
 {
     int    i;
-    double fact = timefactors[oenv->time_unit];
+    double fact = c_picosecondsInTimeUnit[oenv->timeUnit];
 
     if (fact != 1.)
     {
@@ -190,9 +194,9 @@ gmx_bool output_env_get_view(const gmx_output_env_t* oenv)
     return oenv->view;
 }
 
-xvg_format_t output_env_get_xvg_format(const gmx_output_env_t* oenv)
+XvgFormat output_env_get_xvg_format(const gmx_output_env_t* oenv)
 {
-    return oenv->xvg_format;
+    return oenv->xvgFormat;
 }
 
 const char* output_env_get_program_display_name(const gmx_output_env_t* oenv)

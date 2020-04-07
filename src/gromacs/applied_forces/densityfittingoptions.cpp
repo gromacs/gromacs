@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
@@ -147,6 +148,15 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
                                                c_adaptiveForceScalingTimeConstantTag_);
 }
 
+//! Name the methods that may be used to evaluate similarity between densities
+static const EnumerationArray<DensitySimilarityMeasureMethod, const char*> c_densitySimilarityMeasureMethodNames = {
+    { "inner-product", "relative-entropy", "cross-correlation" }
+};
+//! The names of the methods to determine the amplitude of the atoms to be spread on a grid
+static const EnumerationArray<DensityFittingAmplitudeMethod, const char*> c_densityFittingAmplitudeMethodNames = {
+    { "unity", "mass", "charge" }
+};
+
 void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
 
@@ -208,11 +218,11 @@ void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections* option
     section.addOption(StringOption(c_groupTag_.c_str()).store(&groupString_));
 
     section.addOption(EnumOption<DensitySimilarityMeasureMethod>(c_similarityMeasureTag_.c_str())
-                              .enumValue(c_densitySimilarityMeasureMethodNames.m_elements)
+                              .enumValue(c_densitySimilarityMeasureMethodNames)
                               .store(&parameters_.similarityMeasureMethod_));
 
     section.addOption(EnumOption<DensityFittingAmplitudeMethod>(c_amplitudeMethodTag_.c_str())
-                              .enumValue(c_densityFittingAmplitudeMethodNames.m_elements)
+                              .enumValue(c_densityFittingAmplitudeMethodNames)
                               .store(&parameters_.amplitudeLookupMethod_));
 
     section.addOption(RealOption(c_forceConstantTag_.c_str()).store(&parameters_.forceConstant_));

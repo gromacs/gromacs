@@ -255,11 +255,11 @@ int gmx_saltbr(int argc, char* argv[])
                     }
                     else
                     {
-                        if (output_env_get_xvg_format(oenv) == exvgXMGR)
+                        if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgr)
                         {
                             fprintf(out[nnn], "@ legend string %d \"%s\"\n", nset[nnn], buf);
                         }
-                        else if (output_env_get_xvg_format(oenv) == exvgXMGRACE)
+                        else if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgrace)
                         {
                             fprintf(out[nnn], "@ s%d legend \"%s\"\n", nset[nnn], buf);
                         }

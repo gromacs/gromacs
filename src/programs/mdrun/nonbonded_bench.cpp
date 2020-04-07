@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,9 +157,15 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
 
     settings->setHelpText(desc);
 
-    const char* const cNbnxmSimdStrings[]   = { "auto", "no", "4xm", "2xmm" };
-    const char* const cCombRuleStrings[]    = { "geometric", "lb", "none" };
-    const char* const cCoulombTypeStrings[] = { "ewald", "reaction-field" };
+    static const EnumerationArray<Nbnxm::BenchMarkKernels, const char*> c_nbnxmSimdStrings = {
+        { "auto", "no", "4xm", "2xmm" }
+    };
+    static const EnumerationArray<Nbnxm::BenchMarkCombRule, const char*> c_combRuleStrings = {
+        { "geometric", "lb", "none" }
+    };
+    static const EnumerationArray<Nbnxm::BenchMarkCoulomb, const char*> c_coulombTypeStrings = {
+        { "ewald", "reaction-field" }
+    };
 
     options->addOption(
             IntegerOption("size").store(&sizeFactor_).description("The system size is 3000 atoms times this value"));
@@ -167,12 +173,12 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
             IntegerOption("nt").store(&benchmarkOptions_.numThreads).description("The number of OpenMP threads to use"));
     options->addOption(EnumOption<Nbnxm::BenchMarkKernels>("simd")
                                .store(&benchmarkOptions_.nbnxmSimd)
-                               .enumValue(cNbnxmSimdStrings)
+                               .enumValue(c_nbnxmSimdStrings)
                                .description("SIMD type, auto runs all supported SIMD setups or no "
                                             "SIMD when SIMD is not supported"));
     options->addOption(EnumOption<Nbnxm::BenchMarkCoulomb>("coulomb")
                                .store(&benchmarkOptions_.coulombType)
-                               .enumValue(cCoulombTypeStrings)
+                               .enumValue(c_coulombTypeStrings)
                                .description("The functional form for the Coulomb interactions"));
     options->addOption(
             BooleanOption("table")
@@ -180,7 +186,7 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
                     .description("Use lookup table for Ewald correction instead of analytical"));
     options->addOption(EnumOption<Nbnxm::BenchMarkCombRule>("combrule")
                                .store(&benchmarkOptions_.ljCombinationRule)
-                               .enumValue(cCombRuleStrings)
+                               .enumValue(c_combRuleStrings)
                                .description("The LJ combination rule"));
     options->addOption(BooleanOption("halflj")
                                .store(&benchmarkOptions_.useHalfLJOptimization)

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,7 +84,10 @@ namespace gmx
  * SelectionCollection::Impl
  */
 
-SelectionCollection::Impl::Impl() : debugLevel_(0), bExternalGroupsSet_(false), grps_(nullptr)
+SelectionCollection::Impl::Impl() :
+    debugLevel_(DebugLevel::None),
+    bExternalGroupsSet_(false),
+    grps_(nullptr)
 {
     sc_.nvars   = 0;
     sc_.varstrs = nullptr;
@@ -532,7 +535,9 @@ SelectionCollection::~SelectionCollection() {}
 
 void SelectionCollection::initOptions(IOptionsContainer* options, SelectionTypeOption selectionTypeOption)
 {
-    const char* const debug_levels[] = { "no", "basic", "compile", "eval", "full" };
+    static const EnumerationArray<Impl::DebugLevel, const char*> s_debugLevelNames = {
+        { "no", "basic", "compile", "eval", "full" }
+    };
 
     const char* const* postypes = PositionCalculationCollection::typeEnumValues;
     options->addOption(StringOption("selrpos")
@@ -552,11 +557,10 @@ void SelectionCollection::initOptions(IOptionsContainer* options, SelectionTypeO
     {
         impl_->spost_ = postypes[0];
     }
-    GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,
-                       "Debug level out of range");
-    options->addOption(EnumIntOption("seldebug")
-                               .hidden(impl_->debugLevel_ == 0)
-                               .enumValue(debug_levels)
+    GMX_RELEASE_ASSERT(impl_->debugLevel_ != Impl::DebugLevel::Count, "Debug level out of range");
+    options->addOption(EnumOption<Impl::DebugLevel>("seldebug")
+                               .hidden(impl_->debugLevel_ == Impl::DebugLevel::None)
+                               .enumValue(s_debugLevelNames)
                                .store(&impl_->debugLevel_)
                                .description("Print out selection trees for debugging"));
 }
@@ -586,7 +590,7 @@ void SelectionCollection::setOutputPosType(const char* type)
 
 void SelectionCollection::setDebugLevel(int debugLevel)
 {
-    impl_->debugLevel_ = debugLevel;
+    impl_->debugLevel_ = Impl::DebugLevel(debugLevel);
 }
 
 
@@ -755,7 +759,7 @@ void SelectionCollection::compile()
     {
         setIndexGroups(nullptr);
     }
-    if (impl_->debugLevel_ >= 1)
+    if (impl_->debugLevel_ != Impl::DebugLevel::None)
     {
         printTree(stderr, false);
     }
@@ -763,7 +767,7 @@ void SelectionCollection::compile()
     SelectionCompiler compiler;
     compiler.compile(this);
 
-    if (impl_->debugLevel_ >= 1)
+    if (impl_->debugLevel_ != Impl::DebugLevel::None)
     {
         std::fprintf(stderr, "\n");
         printTree(stderr, false);
@@ -772,7 +776,7 @@ void SelectionCollection::compile()
         std::fprintf(stderr, "\n");
     }
     impl_->sc_.pcc.initEvaluation();
-    if (impl_->debugLevel_ >= 1)
+    if (impl_->debugLevel_ != Impl::DebugLevel::None)
     {
         impl_->sc_.pcc.printTree(stderr);
         std::fprintf(stderr, "\n");
@@ -858,7 +862,7 @@ void SelectionCollection::evaluate(t_trxframe* fr, t_pbc* pbc)
     SelectionEvaluator evaluator;
     evaluator.evaluate(this, fr, pbc);
 
-    if (impl_->debugLevel_ >= 3)
+    if (impl_->debugLevel_ == Impl::DebugLevel::Evaluated || impl_->debugLevel_ == Impl::DebugLevel::Full)
     {
         std::fprintf(stderr, "\n");
         printTree(stderr, true);

@@ -208,8 +208,7 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
     {
         return;
     }
-    time_unit_t time_unit = static_cast<time_unit_t>(settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
-    output_env_init(&oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0);
+    output_env_init(&oenv_, getProgramContext(), settings_.timeUnit(), FALSE, XvgFormat::None, 0);
 
     int frflags = settings_.frflags();
     frflags |= TRX_NEED_X;

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2016, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -163,6 +163,23 @@ public:
     SelectionTopologyProperties requiredTopologyPropertiesForPositionType(const std::string& post,
                                                                           bool forces) const;
 
+    //! Describes the available debugging levels
+    enum class DebugLevel : int
+    {
+        //! No debugging
+        None,
+        //! Print selection trees after parsing and compilation
+        Basic,
+        //! As PrintCompiled, also print intermediate compilation trees
+        Compiled,
+        //! As PrintCompiled, also print the tree after evaluation
+        Evaluated,
+        //! Combine Compiled and Evaluated
+        Full,
+        //! Ends the enumeration
+        Count
+    };
+
     //! Internal data, used for interfacing with old C code.
     gmx_ana_selcollection_t sc_;
     //! Default reference position type for selections.
@@ -171,17 +188,8 @@ public:
     std::string spost_;
     //! Atoms needed for evaluating the selections.
     gmx_ana_index_t requiredAtoms_;
-    /*! \brief
-     * Debugging level for the collection.
-     *
-     * Possible values:
-     *  - 0: no debugging
-     *  - 1: print selection trees after parsing and compilation
-     *  - 2: like 1, also print intermediate compilation trees
-     *  - 3: like 1, also print the tree after evaluation
-     *  - 4: combine 2 and 3
-     */
-    int debugLevel_;
+    //! Debugging level for the collection.
+    DebugLevel debugLevel_;
     //! Whether setIndexGroups() has been called.
     bool bExternalGroupsSet_;
     //! External index groups (can be NULL).
