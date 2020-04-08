@@ -163,6 +163,7 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
                                            check=True,
                                            stdout=subprocess.PIPE,
                                            stderr=subprocess.STDOUT,
+                                           encoding='utf-8',
                                            universal_newlines=True
                                            )
         returncode = completed_process.returncode
