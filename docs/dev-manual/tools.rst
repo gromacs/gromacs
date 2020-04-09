@@ -86,29 +86,20 @@ The tools and scripts listed below are used to automatically check/apply
 formatting that follows |Gromacs| style guidelines described on a separate page:
 :doc:`style`.
 
-uncrustify
-  `uncrustify <http://uncrustify.sourceforge.net>`_ is used for automatic
-  indentation and other formatting of the source code to follow
-  :doc:`formatting`.  All code must remain invariant under uncrustify
-  with the config at ``admin/uncrustify.cfg``.  A patched version of uncrustify is
-  used.  See :ref:`gmx-uncrustify` for details.
-
 clang-format
   We use clang-format to enforce a consistent coding style, with the
   settings recorded in ``.clang-format`` in the main tree.
   See :ref:`gmx-clang-format` for details.
 
+clang-tidy
+  The source code linter clang-tidy is used to enforce common restrictions to the
+  code, with the checks collected under ``.clang-tidy`` at the top of the main tree.
+  See :ref:`gmx-clang-tidy` for details.
+
 ``admin/copyright.py``
   This Python script adds and formats copyright headers in source files.
   ``copyright.sh`` (see below) uses the script to check/update copyright years on
   changed files automatically.
-
-``admin/uncrustify.sh``
-  This ``bash`` script runs uncrustify for all
-  files that have local changes and checks that they conform to the prescribed
-  style.  Optionally, the script can also apply changes to make the files
-  conform. It is included only for historical reasons.
-  See :doc:`formatting` for details.
 
 ``admin/copyright.sh``
   This ``bash`` script runs the ``copyright.py`` python script to enforce
@@ -116,19 +107,25 @@ clang-format
   and checks that they conform to the prescribed
   style.  Optionally, the script can also apply changes to make the files
   conform.
-  This script is automatically run by Jenkins to ensure that all commits adhere
+  This script is automatically run by the CI to ensure that all commits adhere
   to :doc:`formatting`.  If the copyright job does not succeed, it
   means that this script has something to complain.
   See :doc:`code-formatting` for details.
 
 ``admin/clang-format.sh``
   This script enforces coding style using clang-format.
-  This script is automatically run by Jenkins to ensure that all commits adhere
+  This script is automatically run by our CI to ensure that all commits adhere
   to :doc:`formatting`.
+
+``admin/clang-tidy.sh``
+  The clang-tidy code correctness restrictions are enforced by this script.
+  The script is also used by the CI to verify the code, in addition to nightly
+  compilations using clang-tidy on the whole tree.
 
 ``admin/git-pre-commit``
   This sample git pre-commit hook can be used if one wants to apply
-  ``uncrustify.sh`` and ``clang-format.sh`` automatically before every commit to check for formatting
+  ``clang-tidy.sh``, ``copyright.sh`` and ``clang-format.sh`` automatically
+  before every commit to check for formatting
   issues.  See :doc:`code-formatting` for details.
 
 ``docs/doxygen/includesorter.py``
@@ -142,12 +139,12 @@ include directive checker
   applied in the formatting script.  To check for issues, it is instead integrated into
   a ``check-source`` build target.  When this target is built, it also checks for
   include formatting issues.  Internally, it uses the sorter script.  This check
-  is run in Jenkins as part of the Documentation job.
+  is run in the CI as part of the Documentation job.
   Details for the checking mechanism are on a separate page (common for several
   checkers): :doc:`gmxtree`.
 
 ``admin/reformat_all.sh``
-  This ``bash`` script runs uncrustify/clang-format/``copyright.py``/include sorter
+  This ``bash`` script runs clang-format/``copyright.py``/include sorter
   on all relevant files in the source tree (or in a particular directory).
   The script can also produce the list of files where these scripts are applied,
   for use with other scripts.  See :doc:`code-formatting` for details.
@@ -160,4 +157,3 @@ git attributes
   checking/formatting to apply.  Custom attributes are used for specifying some
   build system dependencies for easier processing in CMake.
 
-include-what-you-use

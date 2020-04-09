@@ -6,51 +6,16 @@ Automatic source code formatting
 .. highlight:: bash
 
 The source code can be automatically formatted using clang-format
-(GROMACS 2020 and later)
-or uncrustify (GROMACS 2019 and earlier).
+since GROMACS 2020.
 Both are formatting tools that apply the guidelines in :doc:`formatting`.
 Additionally, other Python scripts are used for a few other automatic
 formatting/checking tasks.  The overview tools page contains a list of these
 tools: :ref:`dev-formatting-tools`.
-This page provides more details for clang-format, uncrustify and copyright scripts.
+This page provides more details for clang-format, clang-tidy and copyright scripts.
 
-Jenkins uses these same scripts (in particular, ``clang-format.sh``,
-``copyright.sh`` and the ``check-source`` target) to enforce that
+Our CI uses these same scripts (in particular, ``clang-format.sh``,
+``copyright.sh``, ``clang-tidy.sh`` and the ``check-source`` target) to enforce that
 the code stays invariant under such formatting.
-
-.. _gmx-uncrustify:
-
-Setting up uncrustify
----------------------
-
-A patched version of uncrustify is used for |Gromacs|.  To set this up, you need
-to do these (once):
-
-1. Change to a directory under which you want to build uncrustify and run::
-
-     git clone -b gromacs git://github.com/rolandschulz/uncrustify.git
-     cd uncrustify
-     ./configure
-     make
-
-2. Copy the binary ``src/uncrustify`` into a directory of your choice
-   (``/path/to/uncrustify`` below).
-
-Alternatively, if you are running Linux, you can try whether the binary from
-https://gitlab.com/gromacs/gromacs/-/issues/845 works for you.
-
-In order to use the binary for ``uncrustify.sh`` and for the pre-commit hook, you
-also need to run this in each of your |Gromacs| repositories::
-
-  git config hooks.uncrustifypath /path/to/uncrustify
-
-Alternatively, if you just want to use ``uncrustify.sh``, you can set the
-``UNCRUSTIFY`` environment variable to ``/path/to/uncrustify``.
-
-Using the pre-commit hook or git filters needs additional setup; see the
-respective sections below.
-
-Note that Jenkins now only allows formatting using ``clang-format``.
 
 .. _gmx-clang-format:
 
@@ -97,7 +62,8 @@ and for the pre-commit hook, you also need to run this in each of your |Gromacs|
 Alternatively, if you just want to use ``clang-format.sh``, you can set the
 ``CLANG_FORMAT`` environment variable to ``/path/to/clang-format``.
 
-As above, see the sections below for using the pre-commit hook or git filters.
+Using the pre-commit hook or git filters needs additional setup; see the
+respective sections below.
 
 clang-format discovers which formatting rules to apply from the
 :file:`.clang-format` configuration file(s) in project directories,
@@ -114,13 +80,61 @@ git filters, specified in ``.gitattributes`` files.  Only files that have the
 attribute ``filter`` set to one of the below values are processed:
 
 - ``filter=complete_formatting``: Performs all formatting. Uses clang-format for code formatting.
-- ``filter=uncrustify``: uncrustify is run. Deprecated and here for historical reasons.
-- ``filter=clangformat``: clang-format is run.
+                                  Files included here are also passed to the clang-tidy code checker.
+- ``filter=clangformat``: clang-format is run. Again also runs clang-tidy.
 - ``filter=includesort``: include order is enforced and copyright headers are checked.
 - ``filter=copyright``: only copyright headers are checked.
 
-Other files are ignored by ``uncrustify.sh``, ``clang-format.sh``,
+Other files are ignored by ``clang-tidy.sh``, ``clang-format.sh``,
 ``copyright.sh`` and ``reformat_all.sh`` scripts (see below).
+
+.. _gmx-clang-tidy:
+
+Setting up clang-tidy
+---------------------
+
+|Gromacs| source code tidiness checking is enforced with clang-tidy 8.0.1.
+:command:`clang-tidy` is one of the core *clang* tools.
+It may be included in a *clang* or *llvm* package from your favorite packaging
+system or you may find a standalone *clang-tidy* package,
+but you should confirm that the provided command is version 8.0.1 or
+7.1.0. Example::
+
+    $ clang-tidy --version
+    clang-tidy version 7.1.0 (tags/RELEASE_710/final)
+
+If you use a different version of clang-tidy,
+you will likely get different checking results than
+the |Gromacs| continuous integration testing system,
+and the commits that you push will fail the automated tests.
+
+.. note::
+
+    Refer to `LLVM <http://releases.llvm.org/download.html#7.1.0>`__ for
+    source and binary downloads.
+    If downloading sources, note that you will need to download both the
+    *LLVM source code* and the *Clang source code*.
+    As per the clang
+    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/7.x/clang/INSTALL.txt>`__,
+    place the expanded clang source into a :file:`tools/clang` subdirectory within
+    the expanded llvm archive, then run CMake against the llvm source directory.
+
+In order to use the installed version of clang-tidy for ``clang-tidy.sh``
+and for the pre-commit hook, you also need to run this in each of your |Gromacs| repositories::
+
+  git config hooks.runclangtidypath /path/to/run-clang-tidy.py
+
+Alternatively, if you just want to use ``clang-tidy.sh``, you can set the
+``RUN_CLANG_TIDY`` environment variable to ``/path/to/run-clang-tidy.py``.
+
+As above, see the sections below for using the pre-commit hook or git filters.
+
+clang-tidy discovers which formatting rules to apply from the
+:file:`.clang-tidy` configuration file(s) in project directories,
+which will be automatically updated (if necessary) when you :command:`git pull`
+from the |Gromacs| repository.
+For more about the tool and the :file:`.clang-tidy` configuration file,
+visit https://releases.llvm.org/7.0.1/tools/clang/docs/ClangTidy.html
 
 
 Scripts
@@ -142,45 +156,11 @@ directly, but instead the bash scripts below use it internally.  You can run
 the script with ``--help`` option if you want to see what all options it provides
 if you need to do some maintenance on the copyright headers themselves.
 
-``uncrustify.sh``
-^^^^^^^^^^^^^^^^^
-
-The information for ``uncrustify`` is mainly provided for historical reasons,
-as the actual code formatting is now done using ``clang-format``.
-
-This script runs ``uncrustify`` on modified files and reports/applies the results.
-By default, the current HEAD commit is compared to the work tree,
-and files that
-
-1. are different between these two trees and
-2. change under uncrustify
-
-are reported.  This behavior can be changed by
-
-1. Specifying an ``--rev=REV`` argument, which uses ``REV`` instead of HEAD as
-   the base of the comparison.  A typical use case is to specify ``--rev=HEAD^``
-   to check the HEAD commit.
-2. Specifying an action:
-
-   - ``check-*``:   reports the files that uncrustify changes
-   - ``diff-*``:    prints the actual diff of what would change
-   - ``update-*``:  applies the changes to the repository
-   - ``*-workdir``: operates on the working directory (files on disk)
-   - ``*-index``:   operates on the index of the repository
-
-   For convenience, if you omit the workdir/index suffix, workdir is assumed
-   (i.e., ``diff`` equals ``diff-workdir``).
-3. Specifying ``--uncrustify=off``, which does not run uncrustify.
-
-By default, ``update-*`` refuses to update dirty files (i.e., that differ
-between the disk and the index) to make it easy to revert the changes.
-This can be overridden by adding a ``-f``/``--force`` option.
-
 ``copyright.sh``
 ^^^^^^^^^^^^^^^^
 
 This script runs ``copyright.py`` on modified files and reports/applies the results.
-By default, the current HEAD commit is compared to the work tree,
+By default, the current HEAD commit on the source branch is compared to the work tree,
 and files that
 
 1. are different between these two trees and
@@ -217,7 +197,7 @@ This can be overridden by adding a ``-f``/``--force`` option.
 ^^^^^^^^^^^^^^^^^^^
 
 This script runs ``clang-format`` on modified files and reports/applies the results.
-By default, the current HEAD commit is compared to the work tree,
+By default, the current HEAD commit on the source branch is compared to the work tree,
 and files that
 
 1. are different between these two trees and
@@ -244,36 +224,70 @@ By default, ``update-*`` refuses to update dirty files (i.e., that differ
 between the disk and the index) to make it easy to revert the changes.
 This can be overridden by adding a ``-f``/``--force`` option.
 
+``clang-tidy.sh``
+^^^^^^^^^^^^^^^^^
+
+This script runs the ``clang-tidy`` source code checker on modified files
+and either reports or applies resulting changes. By default, the current
+HEAD commit on the source branch is compared to the work tree,
+and files that
+
+1. are different between these two trees and
+2. change when applying clang-tidy
+
+are reported. This behavior can be changed by
+
+1. Specifying an ``--rev=REV`` argument, which uses ``REV`` instead of HEAD as
+   the base of the comparison.  A typical use case is to specify ``--rev=HEAD^``
+   to check the HEAD commit.
+2. Specifying an action:
+
+   - ``check-*``:   reports the files that clang-format changes
+   - ``diff-*``:    prints the actual diff of what would change
+   - ``update-*``:  applies the changes to the repository
+   - ``*-workdir``: operates on the working directory (files on disk)
+   - ``*-index``:   operates on the index of the repository
+
+   For convenience, if you omit the workdir/index suffix, workdir is assumed
+   (i.e., ``diff`` equals ``diff-workdir``).
+3. Specifying ``--tidy=off``, which does not run clang-tidy.
+
+By default, ``update-*`` refuses to update dirty files (i.e., that differ
+between the disk and the index) to make it easy to revert the changes.
+This can be overridden by adding a ``-f``/``--force`` option.
+
+
 git pre-commit hook
 ^^^^^^^^^^^^^^^^^^^
 
-If you want to run ``uncrustify.sh``, ``copyright.sh`` and/or
+If you want to run ``copyright.sh``, ``clang-tidy.sh`` and/or
 ``clang-format.sh`` automatically for changes you make, you can
 configure a pre-commit hook using ``admin/git-pre-commit``:
 
 1. Copy the ``git-pre-commit`` script to .git/hooks/pre-commit.
 
-2. Specify the paths to ``uncrustify`` and ``clang-format`` for the hook if you have not already done
+2. Specify the paths to ``run-clang-tidy`` and ``clang-format`` for the hook if you have not already done
    so::
 
-     git config hooks.uncrustifypath /path/to/uncrustify
+     git config hooks.runclangtidypath /path/to/run-clang-tidy.py
      git config hooks.clangformatpath /path/to/clang-format
 
 3. Set the operation modes for the hook::
 
-     git config hooks.uncrustifymode check
+     git config hooks.clangtidymode check
      git config hooks.clangformatmode check
      git config hooks.copyrightmode  update
 
 With this configuration, all source files modified in the commit are run
-through the respective code formatting tool and checked for correct copyright headers.
-If any file would be changed by ``uncrustify.sh``, ``clang-format.sh`` or ``copyright.sh``,
+through the code formatting tool, are checked with clang-tidy
+and also checked for correct copyright headers.
+If any file would be changed by ``clang-tidy.sh``, ``clang-format.sh`` or ``copyright.sh``,
 the names of those files are reported and the commit is prevented.
 The issues can be fixed by running the scripts manually.
 
 To disable the hook without removing the ``pre-commit`` file, you can set ::
 
-  git config hooks.uncrustifymode off
+  git config hooks.clangtidymode off
   git config hooks.copyrightmode off
   git config hooks.clangformatmode off
 
@@ -289,15 +303,15 @@ Note that when you run ``git commit --amend``, the hook is only run for the
 changes that are getting amended, not for the whole commit.  During a rebase,
 the hook is not run.
 
-The actual work is done by the ``admin/uncrustify.sh``, ``admin/clang-format.sh``
+The actual work is done by the ``admin/clang-tidy.sh``, ``admin/clang-format.sh``
 and ``admin/copyright.sh`` scripts, which get run with the ``check-index`` action,
-and with ``--uncrustify``, ``--copyright`` and ``--format`` getting set according
+and with ``--copyright`` and ``--format`` getting set according
 to the ``git config`` settings.
 
 ``reformat_all.sh``
 ^^^^^^^^^^^^^^^^^^^
 
-This script runs uncrustify, clang-format, ``copyright.py``, or the include sorter for all
+This script runs clang-format, ``copyright.py``, or the include sorter for all
 applicable files in the source tree.  See ``reformat_all.sh -h`` for the
 invocation.
 
@@ -323,8 +337,6 @@ An alternative to using a pre-commit hook to automatically apply uncrustify or
 clang-format on changes is to use a git filter (does not require either of the scripts,
 only the ``.gitattributes`` file).  You can run ::
 
-  git config filter.complete_formatting.clean \
-      "/path/to/uncrustify -c admin/uncrustify.cfg -q -l cpp"
   git config filter.clangformat.clean \
       "/path/to/clang-format -i"
 
