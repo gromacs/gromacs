@@ -31,6 +31,8 @@ sample_restraint:clang-8:gmx2020:3.5.9:
     - .sample_restraint:clang-8:gmx2020
   # Run only for changes affecting the python_packaging subdirectory of the release-2020 branch.
   rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
     # Allow explicit trigger through web interface.
     - if: '$GMX_GMXAPI_0_2'
       when: always
@@ -52,6 +54,8 @@ sample_restraint:clang-8:gmx2020:py-3.6.10:
     - .sample_restraint:clang-8:gmx2020
   # Run only for changes affecting the python_packaging subdirectory of the release-2020 branch.
   rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
     # Allow explicit trigger through web interface.
     - if: '$GMX_GMXAPI_0_2'
       when: always
@@ -73,6 +77,8 @@ sample_restraint:clang-8:gmx2020:py-3.7.7:
     - .sample_restraint:clang-8:gmx2020
   # Run only for changes affecting the python_packaging subdirectory of the release-2020 branch.
   rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
     # Allow explicit trigger through web interface.
     - if: '$GMX_GMXAPI_0_2'
       when: always
@@ -94,6 +100,8 @@ sample_restraint:clang-8:gmx2020:py-3.8.2:
     - .sample_restraint:clang-8:gmx2020
   # Run only for changes affecting the python_packaging subdirectory of the release-2020 branch.
   rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
     # Allow explicit trigger through web interface.
     - if: '$GMX_GMXAPI_0_2'
       when: always

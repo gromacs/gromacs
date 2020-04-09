@@ -5,9 +5,7 @@ clang-tidy:configure:
     - .gromacs:base:configure
     - .use-clang7
     - .rules:not-for-release
-  needs:
-    - job: simple-build
-      artifacts: false
+  dependencies: []
   variables:
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
@@ -24,8 +22,6 @@ clang-tidy:build:
     - .rules:not-for-release
   stage: source-check
   needs:
-    - job: simple-build
-      artifacts: false
     - job: clang-tidy:configure
       artifacts: true
   variables:
@@ -34,16 +30,12 @@ clang-tidy:build:
 
 clang-format:
   extends:
-    - .gromacs:base:build
     - .variables:default
     - .use-clang7
-    - .rules:not-for-release
+    - .rules:basic
   cache: {}
-  stage: source-check
-  when: always
-  needs:
-    - job: simple-build
-      artifacts: false
+  stage: pre-build
+  tags: []
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -62,16 +54,12 @@ clang-format:
 
 copyright-check:
   extends:
-    - .gromacs:base:build
     - .variables:default
     - .use-clang7
-    - .rules:not-for-release
+    - .rules:basic
   cache: {}
-  stage: source-check
-  when: always
-  needs:
-    - job: simple-build
-      artifacts: false
+  stage: pre-build
+  tags: []
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -100,8 +88,6 @@ check-source:
   cache: {}
   stage: source-check
   needs:
-    - job: simple-build
-      artifacts: false
     - job: docs:build
       artifacts: true
   variables:

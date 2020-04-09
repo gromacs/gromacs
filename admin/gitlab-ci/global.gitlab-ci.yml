@@ -27,40 +27,64 @@
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
 
-# Rule to run a job only in nightly release-preparation pipelines.
-# Checks if the GROMACS_RELEASE variable was set (typically through the GitLab web interface).
-# Excludes merge_requests
-# TODO: Update to *rules* syntax.
-.rules:nightly-only-for-release:
-  only:
-    refs:
-      - web
-      - schedules
-    variables:
-      - $GROMACS_RELEASE
-
-# Jobs that run on schedules, but not for merge requests or when GROMACS_RELEASE
-# is set.
-.rules:nightly-not-for-release:
-  only:
-    - web
-    - schedules
-  except:
-    variables:
-      - $GROMACS_RELEASE
+# Jobs that run for merge requests and schedules, but not when GROMACS_RELEASE
+# is set. Includes non-gromacs projects. Note that jobs using this rule are
+# eligible to run on non-gromacs project infrastructure, and should therefore
+# override the default *tag* parameter to exclude tags specific to the GROMACS
+# GitLab Runner infrastructure. I.e. in the job definition, set `tags: []`
+.rules:basic:
+  rules:
+    - if: '$GROMACS_RELEASE'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
 
 # Jobs that run for merge requests and schedules, but not when GROMACS_RELEASE
-# is set.
+# is set. Excludes non-gromacs projects.
 .rules:not-for-release:
-  only:
-    refs:
-      - web
-      - pushes
-      - schedules
-      - merge_requests
-  except:
-    variables:
-      - $GROMACS_RELEASE
+  rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
+    - if: '$GROMACS_RELEASE'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+
+# Rule to run a job only in nightly release-preparation pipelines.
+# Checks if the GROMACS_RELEASE variable was set (typically through the GitLab web interface).
+# Excludes merge_requests and non-gromacs projects.
+# TODO: Update to *rules* syntax.
+.rules:nightly-only-for-release:
+  rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
+    - if: '$GROMACS_RELEASE && $CI_PIPELINE_SOURCE == "web"'
+      when: always
+    - if: '$GROMACS_RELEASE && $CI_PIPELINE_SOURCE == "schedule"'
+      when: always
+
+# Jobs that run on schedules, but not for merge requests or when GROMACS_RELEASE
+# is set. Excludes non-gromacs projects.
+.rules:nightly-not-for-release:
+  rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
+    - if: '$GROMACS_RELEASE'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "schedule"'
+      when: always
 
 # Behavioral templates
 

@@ -112,9 +112,7 @@ archive:configure:nightly:
     - .docs:configure
     - .rules:nightly-not-for-release
   stage: nightly-configure
-  needs:
-    - job: simple-build
-      artifacts: false
+  dependencies: []
   variables:
     BUILD_DIR: build-package
     CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
@@ -192,8 +190,6 @@ archive:build:
     - .rules:nightly-not-for-release
   stage: nightly-build
   needs:
-    - job: simple-build
-      artifacts: false
     - job: archive:configure:nightly
       artifacts: true
   variables:
@@ -254,8 +250,6 @@ archive:nightly-webpage:
     - .rules:nightly-not-for-release
   stage: nightly-deploy
   needs:
-    - job: simple-build
-      artifacts: false
     - job: linkchecker
       artifacts: false
     - job: webpage:build

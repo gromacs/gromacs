@@ -26,6 +26,8 @@ sample_restraint:clang-8:gmx2021:py-3.6.10:
   extends:
     - .sample_restraint:clang-8:gmx2021
   rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
     # Allow explicit trigger through web interface.
     - if: '$GMX_GMXAPI_0_2'
       when: always
@@ -42,6 +44,8 @@ sample_restraint:clang-8:gmx2021:py-3.7.7:
   extends:
     - .sample_restraint:clang-8:gmx2021
   rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
     # Allow explicit trigger through web interface.
     - if: '$GMX_GMXAPI_0_2'
       when: always
@@ -58,6 +62,8 @@ sample_restraint:clang-8:gmx2021:py-3.8.2:
   extends:
     - .sample_restraint:clang-8:gmx2021
   rules:
+    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
+      when: never
     # Allow explicit trigger through web interface.
     - if: '$GMX_GMXAPI_0_2'
       when: always

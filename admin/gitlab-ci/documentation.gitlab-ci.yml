@@ -177,9 +177,6 @@ docs:configure:
   extends:
     - .docs:configure
     - .rules:not-for-release
-  needs:
-    - job: simple-build
-      artifacts: false
   variables:
     BUILD_DIR: build-docs
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
@@ -209,8 +206,6 @@ docs:build:
     - .rules:not-for-release
   stage: documentation
   needs:
-    - job: simple-build
-      artifacts: false
     - job: docs:configure
       artifacts: true
   variables:
