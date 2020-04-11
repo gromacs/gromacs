@@ -50,6 +50,10 @@ tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.15.7 --gcc 8 --cuda 10.1 --opencl --clfft --mpi openmpi \
 | docker build -t $tag -
 
+tag="gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi:master"
+tags[${#tags[@]}]=$tag
+python3 $SCRIPT --cmake 3.13.0 --gcc 7 --opencl amd --clfft --mpi openmpi | docker build -t $tag -
+
 tag="gromacs/cmake-3.13.0-llvm-8-tsan:master"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.13.0 --llvm 8 --tsan | docker build -t $tag -
