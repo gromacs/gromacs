@@ -228,8 +228,8 @@ TEST_F(SimdIntegerTest, cvtI2R)
 {
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(2.0), cvtI2R(SimdInt32(2)));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-2.0), cvtI2R(SimdInt32(-2)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(102448689), cvtI2R(SimdInt32(102448689)));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-102448689), cvtI2R(SimdInt32(-102448689)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(102448689._real), cvtI2R(SimdInt32(102448689)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(-102448689._real), cvtI2R(SimdInt32(-102448689)));
 }
 #    endif // GMX_SIMD_HAVE_REAL
 

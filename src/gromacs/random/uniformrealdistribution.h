@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <type_traits>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -109,10 +110,17 @@ RealType generateCanonical(Rng& g)
     const uint64_t range    = Rng::max() - Rng::min() + uint64_t(1);
     uint64_t       log2R    = (range == 0) ? std::numeric_limits<uint64_t>::digits : log2I(range);
     uint64_t       k        = realBits / log2R + (realBits % log2R != 0) + (realBits == 0);
-    RealType       r        = Rng::max() - Rng::min() + RealType(1);
-    RealType       s        = g() - Rng::min();
-    RealType       base     = r;
-    RealType       result;
+    // Note that Rng::max and Rng::min are typically an integer type.
+    // Only unsigned integer types can express the range using the
+    // same type. Converting to RealType before computing the range
+    // would work but we have no need for that.
+    static_assert(std::is_unsigned<decltype(Rng::max())>::value
+                          && std::is_unsigned<decltype(Rng::min())>::value,
+                  "Rng::max and Rng::min must be unsigned");
+    RealType r    = RealType(Rng::max() - Rng::min()) + RealType(1);
+    RealType s    = g() - Rng::min();
+    RealType base = r;
+    RealType result;
 
     for (uint64_t i = 1; i < k; ++i)
     {
