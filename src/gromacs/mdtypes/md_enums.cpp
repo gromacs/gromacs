@@ -73,8 +73,8 @@ const char* eel_names[eelNR + 1] = { "Cut-off",
                                      "Shift",
                                      "User",
                                      "Generalized-Born (unused)",
-                                     "Reaction-Field-nec",
-                                     "Encad-shift",
+                                     "Reaction-Field-nec (unsupported)",
+                                     "Encad-shift (unused)",
                                      "PME-User",
                                      "PME-Switch",
                                      "PME-User-Switch",
@@ -85,8 +85,8 @@ const char* eewg_names[eewgNR + 1] = { "3d", "3dc", nullptr };
 
 const char* eljpme_names[eljpmeNR + 1] = { "Geometric", "Lorentz-Berthelot", nullptr };
 
-const char* evdw_names[evdwNR + 1] = { "Cut-off",     "Switch", "Shift", "User",
-                                       "Encad-shift", "PME",    nullptr };
+const char* evdw_names[evdwNR + 1] = { "Cut-off", "Switch", "Shift", "User", "Encad-shift (unused)",
+                                       "PME",     nullptr };
 
 const char* econstr_names[econtNR + 1] = { "Lincs", "Shake", nullptr };
 

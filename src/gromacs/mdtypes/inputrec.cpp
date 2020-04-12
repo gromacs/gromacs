@@ -215,7 +215,7 @@ int ir_optimal_nstpcouple(const t_inputrec* ir)
 
 gmx_bool ir_coulomb_switched(const t_inputrec* ir)
 {
-    return (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT || ir->coulombtype == eelENCADSHIFT
+    return (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT
             || ir->coulombtype == eelPMESWITCH || ir->coulombtype == eelPMEUSERSWITCH
             || ir->coulomb_modifier == eintmodPOTSWITCH || ir->coulomb_modifier == eintmodFORCESWITCH);
 }
@@ -233,7 +233,7 @@ gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec* ir)
 
 gmx_bool ir_vdw_switched(const t_inputrec* ir)
 {
-    return (ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT || ir->vdwtype == evdwENCADSHIFT
+    return (ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT
             || ir->vdw_modifier == eintmodPOTSWITCH || ir->vdw_modifier == eintmodFORCESWITCH);
 }
 

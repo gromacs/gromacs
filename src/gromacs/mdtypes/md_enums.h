@@ -239,7 +239,7 @@ enum
     eelUSER,
     eelGB_NOTUSED,
     eelRF_NEC_UNSUPPORTED,
-    eelENCADSHIFT,
+    eelENCADSHIFT_NOTUSED,
     eelPMEUSER,
     eelPMESWITCH,
     eelPMEUSERSWITCH,
@@ -282,7 +282,7 @@ enum
     evdwSWITCH,
     evdwSHIFT,
     evdwUSER,
-    evdwENCADSHIFT,
+    evdwENCADSHIFT_UNUSED,
     evdwPME,
     evdwNR
 };
