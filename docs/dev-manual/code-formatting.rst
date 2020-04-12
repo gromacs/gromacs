@@ -93,15 +93,17 @@ Other files are ignored by ``clang-tidy.sh``, ``clang-format.sh``,
 Setting up clang-tidy
 ---------------------
 
-|Gromacs| source code tidiness checking is enforced with clang-tidy 8.0.1.
+|Gromacs| source code tidiness checking is enforced with clang-tidy provided
+alongside *clang* compiler version 9.
 :command:`clang-tidy` is one of the core *clang* tools.
 It may be included in a *clang* or *llvm* package from your favorite packaging
-system or you may find a standalone *clang-tidy* package,
-but you should confirm that the provided command is version 8.0.1 or
-7.1.0. Example::
+system or you may find a standalone *clang-tidy* or *clang-tools* package,
+but you should confirm that the provided command is version 9.
+Example::
 
     $ clang-tidy --version
-    clang-tidy version 7.1.0 (tags/RELEASE_710/final)
+      LLVM (http://llvm.org/):
+        LLVM version 9.0.0
 
 If you use a different version of clang-tidy,
 you will likely get different checking results than
@@ -110,12 +112,12 @@ and the commits that you push will fail the automated tests.
 
 .. note::
 
-    Refer to `LLVM <http://releases.llvm.org/download.html#7.1.0>`__ for
+    Refer to `LLVM <http://releases.llvm.org/download.html#9.0.1>`__ for
     source and binary downloads.
     If downloading sources, note that you will need to download both the
     *LLVM source code* and the *Clang source code*.
     As per the clang
-    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/7.x/clang/INSTALL.txt>`__,
+    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/9.x/clang/INSTALL.txt>`__,
     place the expanded clang source into a :file:`tools/clang` subdirectory within
     the expanded llvm archive, then run CMake against the llvm source directory.
 
@@ -134,8 +136,7 @@ clang-tidy discovers which formatting rules to apply from the
 which will be automatically updated (if necessary) when you :command:`git pull`
 from the |Gromacs| repository.
 For more about the tool and the :file:`.clang-tidy` configuration file,
-visit https://releases.llvm.org/7.0.1/tools/clang/docs/ClangTidy.html
-
+visit http://releases.llvm.org/9.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html
 
 Scripts
 -------

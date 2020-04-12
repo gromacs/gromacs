@@ -176,3 +176,10 @@
     COMPILER_MAJOR_VERSION: 8
   extends:
     - .use-clang:base
+
+.use-clang9:
+  image: gromacs/cmake-3.13.0-llvm-9-intelopencl-openmpi:master
+  variables:
+    COMPILER_MAJOR_VERSION: 9
+  extends:
+    - .use-clang:base

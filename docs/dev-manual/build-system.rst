@@ -352,13 +352,13 @@ Variables affecting the ``all`` target
 
 .. cmake:: GMX_CLANG_TIDY
 
-  `clang-tidy <http://releases.llvm.org/8.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
+  `clang-tidy <http://releases.llvm.org/9.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
   is used for static code analysis and (some) automated fixing of issues detected. clang-tidy is easy to install. It is contained in
-  the llvm binary `package <http://releases.llvm.org/download.html#8.0.0>`_. Only
-  version 8.0.* with libstdc++<7 or libc++ is supported. Others might miss tests or give false positives.
-  It is run automatically on Jenkins for each commit. Many checks have fixes which can automatically be
+  the llvm binary `package <http://releases.llvm.org/download.html#9.0.0>`_. Only
+  version 9.0.* with libstdc++<7 or libc++ is supported. Others might miss tests or give false positives.
+  It is run automatically in gitlab CI for each commit. Many checks have fixes which can automatically be
   applied. To run it, the build has to be configured with
-  ``cmake -DGMX_CLANG_TIDY=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=on``.
+  ``cmake -DGMX_CLANG_TIDY=ON -DCMAKE_BUILD_TYPE=Debug``.
   Any ``CMAKE_BUILD_TYPE`` which enables asserts (e.g. ASAN) works. Such a configured build will
   run both the compiler as well as clang-tidy when building. The name of the clang-tidy executable is set with
   ``-DCLANG_TIDY=...``, and the full path to it can be set with ``-DCLANG_TIDY_EXE=...``.
