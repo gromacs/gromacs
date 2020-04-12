@@ -781,7 +781,7 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
     int    i;
     double reppow, p;
     double r1, rc, r12, r13;
-    double r, r2, r6, rc2, rc6, rc12;
+    double r, r2, r6, rc2;
     double expr, Vtab, Ftab;
     /* Parameters for David's function */
     double A = 0, B = 0, C = 0, A_3 = 0, B_4 = 0;
@@ -867,8 +867,9 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
 
     if (bPotentialShift)
     {
-        rc2 = rc * rc;
-        rc6 = 1.0 / (rc2 * rc2 * rc2);
+        rc2        = rc * rc;
+        double rc6 = 1.0 / (rc2 * rc2 * rc2);
+        double rc12;
         if (gmx_within_tol(reppow, 12.0, 10 * GMX_DOUBLE_EPS))
         {
             rc12 = rc6 * rc6;
@@ -963,9 +964,6 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
             swi  = 1.0;
             swi1 = 0.0;
         }
-
-        rc6 = rc * rc * rc;
-        rc6 = 1.0 / (rc6 * rc6);
 
         switch (tp)
         {
