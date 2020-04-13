@@ -28,10 +28,18 @@
     - job: gromacs:clang-8:build
       artifacts: true
 
+sample_restraint:clang-8:gmx2020:3.5.9:
+  extends:
+    - .sample_restraint:clang-8:gmx2020
+    - .rules:merge-requests:release-2020
+  variables:
+    VENVPATH: "/root/venv/py3.5"
+    PY_VER: "3.5.9"
+
 sample_restraint:clang-8:gmx2020:py-3.6.10:
   extends:
     - .sample_restraint:clang-8:gmx2020
-    - .rules:merge-requests
+    - .rules:merge-requests:release-2020
   variables:
     VENVPATH: "/root/venv/py3.6"
     PY_VER: "3.6.10"
@@ -39,7 +47,7 @@ sample_restraint:clang-8:gmx2020:py-3.6.10:
 sample_restraint:clang-8:gmx2020:py-3.7.7:
   extends:
     - .sample_restraint:clang-8:gmx2020
-    - .rules:merge-requests
+    - .rules:merge-requests:release-2020
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
@@ -47,7 +55,7 @@ sample_restraint:clang-8:gmx2020:py-3.7.7:
 sample_restraint:clang-8:gmx2020:py-3.8.2:
   extends:
     - .sample_restraint:clang-8:gmx2020
-    - .rules:merge-requests
+    - .rules:merge-requests:release-2020
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
