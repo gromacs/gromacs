@@ -2,13 +2,13 @@
 
 .docs:configure:
   extends:
-    - .gromacs:base:configure
     - .variables:default
+    - .gromacs:base:configure
     - .before_script:default
-  # Built by admin/dockerfiles/ci-docs-clang
-  # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-clang:master
+  # TODO (#3480) this should be organized more like the current documentation.py script
+  image: gromacs/ci-docs-llvm:master
   stage: configure-build
+  cache: {}
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -67,13 +67,12 @@
 
 .docs:configure:release:
   extends:
-    - .gromacs:base:configure
     - .variables:default
+    - .gromacs:base:configure
     - .before_script:default
     - .rules:nightly-only-for-release
-  # Built by admin/dockerfiles/ci-docs-clang
-  # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-clang:master
+  # TODO (#3480) this should be organized more like the current documentation.py script
+  image: gromacs/ci-docs-llvm:master
   stage: release-configure
   cache: {}
   variables:
@@ -176,15 +175,15 @@
 docs:configure:
   extends:
     - .docs:configure
-    - .rules:not-for-release
+    - .rules:basic-push
+  tags: []
   variables:
     BUILD_DIR: build-docs
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
 
 .docs:build:
-  # Built by admin/dockerfiles/ci-docs-clang
-  # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-clang:master
+  # TODO (#3480) this should be organized more like the current documentation.py script
+  image: gromacs/ci-docs-llvm:master
   script:
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j8
@@ -198,16 +197,16 @@ docs:configure:
 
 docs:build:
   extends:
-    - .gromacs:base:build
     - .variables:default
+    - .gromacs:base:build
     - .use-ccache
     - .docs:build
     - .before_script:default
-    - .rules:not-for-release
+    - .rules:basic-push
   stage: documentation
+  tags: []
   needs:
     - job: docs:configure
-      artifacts: true
   variables:
     BUILD_DIR: build-docs
 
@@ -221,12 +220,12 @@ docs:build:
 # TODO use a feature from gitlab runner instead of using pipefail to get timings for the job
 .webpage:build:
   extends:
-    - .gromacs:base:build
     - .variables:default
+    - .gromacs:base:build
     - .before_script:default
-  # Built by admin/dockerfiles/ci-docs-clang
-  # TODO this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-clang:master
+  # TODO (#3480) this should be organized more like the current documentation.py script
+  image: gromacs/ci-docs-llvm:master
+  cache: {}
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -260,11 +259,11 @@ docs:build:
 webpage:build:
   extends:
     - .webpage:build
-    - .rules:not-for-release
+    - .rules:basic-push
   stage: post-test
+  tags: []
   needs:
     - job: docs:build
-      artifacts: true
     - job: check-source
       artifacts: false
   variables:
@@ -294,7 +293,6 @@ webpage:dependencies:
   stage: release-build
   needs:
     - job: webpage:configure
-      artifacts: true
   variables:
     BUILD_DIR: release-doc-builds
 

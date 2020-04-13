@@ -27,7 +27,7 @@ prepare-release-version:
 regressiontests:prepare:
   extends:
     - .variables:default
-    - .rules:not-for-release
+    - .rules:merge-requests
   cache: {}
   image: biophysics/gcc-gromacs
   stage: configure-build
@@ -74,7 +74,6 @@ regressiontests:package:
     KUBERNETES_MEMORY_LIMIT: 2Gi
   needs:
     - job: prepare-release-version
-      artifacts: true
   script:
     - VERSION=`cat version.json |
       python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
@@ -98,7 +97,7 @@ regressiontests:package:
     - git clean -ffdxq
     - git gc
     - git archive -o $REGTESTNAME.tar.gz --prefix $REGTESTNAME/ -9 HEAD
-    - cp $REGTESTNAME.tar.gz gmx-regressiontests.tar.gz
+    - git archive -o gmx-regressiontests.tar.gz --prefix regressiontests/ -9 HEAD
     - mv $REGTESTNAME.tar.gz gmx-regressiontests.tar.gz ..
     - echo "Build regressiontests for branch  $REGTESTBRANCH"
     - cd ..
@@ -136,13 +135,12 @@ archive:configure:release:
 # manually hacking things. TODO: #3361
 .archive:build:
   extends:
+    - .variables:default
     - .gromacs:base:build
     - .use-ccache
-    - .variables:default
     - .before_script:default
     - .docs:build
-  # Dockerfiles are from dockerhub, user eriklindahl
-  image: gromacs/ci-docs-clang:master
+  image: gromacs/ci-docs-llvm:master
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -191,7 +189,6 @@ archive:build:
   stage: nightly-build
   needs:
     - job: archive:configure:nightly
-      artifacts: true
   variables:
     BUILD_DIR: build-package
 
@@ -202,7 +199,6 @@ archive:package:
   stage: release-package
   needs:
     - job: archive:configure:release
-      artifacts: true
   variables:
     BUILD_DIR: build-package
 
@@ -253,7 +249,6 @@ archive:nightly-webpage:
     - job: linkchecker
       artifacts: false
     - job: webpage:build
-      artifacts: true
   variables:
     BUILD_DIR: build-docs
   script:

@@ -1,43 +1,57 @@
 # Repository cleanliness. Source tidiness, linting, and policy compliance.
 
-clang-tidy:configure:
+clang-tidy:configure-push:
   extends:
     - .gromacs:base:configure
-    - .use-clang9
-    - .rules:not-for-release
+    - .use-clang:base
+    - .rules:basic-push
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
   dependencies: []
+  tags: []
   variables:
+    COMPILER_MAJOR_VERSION: 9
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
-    EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
-    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
-  # TODO: Enable GMX_PYTHON_PACKAGE for clang-tidy when dependencies are in Docker image.
+
+clang-tidy:configure-schedule:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:nightly-not-for-release
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  dependencies: []
+  tags: []
+  variables:
+    COMPILER_MAJOR_VERSION: 9
+    BUILD_DIR: build-clang-tidy
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
 
 clang-tidy:build:
   extends:
     - .gromacs:base:build
     - .use-ccache
     - .variables:default
-    - .use-clang9
     - .rules:nightly-not-for-release
   stage: source-check
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
   needs:
-    - job: clang-tidy:configure
+    - job: clang-tidy:configure-schedule
   variables:
     BUILD_DIR: build-clang-tidy
-    EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
 
 clang-tidy:test:
   extends:
     - .gromacs:base:build
     - .use-ccache
     - .variables:default
-    - .use-clang9
-    - .rules:not-for-release
+    - .rules:basic-push
   stage: source-check
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  tags: []
   needs:
-    - job: clang-tidy:configure
+    - job: clang-tidy:configure-push
   variables:
+    COMPILER_MAJOR_VERSION: 9
     BUILD_DIR: build-clang-tidy
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
     KUBERNETES_CPU_LIMIT: 4
@@ -59,12 +73,13 @@ clang-tidy:test:
 clang-format:
   extends:
     - .variables:default
-    - .use-clang7
-    - .rules:basic
+    - .rules:basic-push
   cache: {}
   stage: pre-build
+  image: gromacs/ci-docs-llvm:master
   tags: []
   variables:
+    COMPILER_MAJOR_VERSION: 7
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
@@ -83,10 +98,10 @@ clang-format:
 copyright-check:
   extends:
     - .variables:default
-    - .use-clang7
-    - .rules:basic
+    - .rules:basic-push
   cache: {}
   stage: pre-build
+  image: gromacs/ci-docs-llvm:master
   tags: []
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -112,9 +127,10 @@ check-source:
     - .variables:default
     - .docs:build
     - .before_script:default
-    - .rules:not-for-release
+    - .rules:basic-push
   cache: {}
   stage: source-check
+  tags: []
   needs:
     - job: docs:build
       artifacts: true
