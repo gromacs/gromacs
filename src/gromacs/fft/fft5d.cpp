@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -123,7 +124,7 @@ static int lfactor(int z)
 double MPI_Wtime()
 {
     struct timeval tv;
-    gettimeofday(&tv, 0);
+    gettimeofday(&tv, nullptr);
     return tv.tv_sec + tv.tv_usec * 1e-6;
 }
 #    else
@@ -1277,7 +1278,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
                                  GMX_MPI_REAL, cart[s]);
                 }
 #    else
-                gmx_incons("fft5d MPI call without MPI configuration");
+                GMX_RELEASE_ASSERT(false, "Invalid call to fft5d_execute");
 #    endif /*GMX_MPI*/
 #endif     /*FFT5D_MPI_TRANSPOSE*/
 #ifdef NOGMX

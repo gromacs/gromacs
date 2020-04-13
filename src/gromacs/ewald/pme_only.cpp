@@ -588,7 +588,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     /* Wait for the forces to arrive */
     MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
 #else
-    gmx_call("MPI not enabled");
+    GMX_RELEASE_ASSERT(false, "Invalid call to gmx_pme_send_force_vir_ener");
     GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(pme_pp);
     GMX_UNUSED_VALUE(output);
