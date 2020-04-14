@@ -71,18 +71,11 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
     "-Wno-switch-enum" # default statement for enum is OK
 
-    # TODO uncomment the next few ignore lines when we upgrade to test with clang 8 in Jenkins
-
-    # The barriers we use for tMPI and Nbnxm are sufficient, but it's
-    # not known whether they're excessive. We assume they not
-    # excessive.
-    # "-Wno-atomic-implicit-seq-cst"
-
     # We need to use macros like
     # GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR. Those will look strange
     # if they don't have a semicolon after them, and might confuse
     # tools like IDEs also.
-    # "-Wno-extra-semi-stmt"
+    "-Wno-extra-semi-stmt"
 
     #Following ones are undecided/TODO
     "-Wno-disabled-macro-expansion"

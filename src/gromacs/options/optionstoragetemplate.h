@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -554,7 +554,7 @@ void OptionStorageTemplate<T>::commitValues()
     store_->reserve(setValues_.size());
     // For bool the loop variable isn't a reference (it's its special reference type)
     // clang-format off
-    CLANG_DIAGNOSTIC_IGNORE(-Wrange-loop-analysis)
+    CLANG_DIAGNOSTIC_IGNORE(-Wrange-loop-analysis);
     // clang-format on
     for (const auto& value : setValues_)
     {

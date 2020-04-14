@@ -244,6 +244,11 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
                                .c_str());
 }
 
+#if defined(__clang__)
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wunused-template"
+#endif
+
 /*! \brief Check the validity of the device buffer.
  *
  * Checks if the buffer is not nullptr and if its allocation is big enough.
@@ -264,5 +269,9 @@ static bool checkDeviceBuffer(DeviceBuffer<T> buffer, int requiredSize)
                "Number of atoms in device buffer is smaller then required size.");
     return retval == CL_SUCCESS && static_cast<int>(size) >= requiredSize;
 }
+
+#if defined(__clang__)
+#    pragma clang diagnostic pop
+#endif
 
 #endif
