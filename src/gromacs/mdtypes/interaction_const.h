@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,9 +143,8 @@ struct interaction_const_t
 
     // Coulomb Ewald correction table
     std::unique_ptr<EwaldCorrectionTables> coulombEwaldTables;
-    /* Note that a Van der Waals Ewald correction table
-     * of type EwaldCorrectionTables can be added here if wanted.
-     */
+    // Van der Waals Ewald correction table
+    std::unique_ptr<EwaldCorrectionTables> vdwEwaldTables;
 };
 
 #endif

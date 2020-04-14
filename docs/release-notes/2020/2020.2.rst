@@ -35,6 +35,15 @@ their original lambda state.
 
 :issue:`3465`
 
+Fixed free energy calculations with LJ PME
+""""""""""""""""""""""""""""""""""""""""""
+
+Fixed an issue that calculated wrong long-range corrections when using
+free energy perturbation with ``vdwtype = pme``. This affected forces,
+energies, lambda derivatives and foreign lambdas.
+
+:issue:`3470`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

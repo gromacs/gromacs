@@ -760,12 +760,12 @@ static void init_ewald_f_table(const interaction_const_t& ic,
 
 void init_interaction_const_tables(FILE* fp, interaction_const_t* ic)
 {
-    if (EEL_PME_EWALD(ic->eeltype))
+    if (EEL_PME_EWALD(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
-        init_ewald_f_table(*ic, ic->coulombEwaldTables.get(), nullptr);
+        init_ewald_f_table(*ic, ic->coulombEwaldTables.get(), ic->vdwEwaldTables.get());
         if (fp != nullptr)
         {
-            fprintf(fp, "Initialized non-bonded Coulomb Ewald tables, spacing: %.2e size: %zu\n\n",
+            fprintf(fp, "Initialized non-bonded Ewald tables, spacing: %.2e size: %zu\n\n",
                     1 / ic->coulombEwaldTables->scale, ic->coulombEwaldTables->tableF.size());
         }
     }
@@ -826,6 +826,7 @@ static void init_interaction_const(FILE*                 fp,
     ic->cutoff_scheme = ir->cutoff_scheme;
 
     ic->coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
+    ic->vdwEwaldTables     = std::make_unique<EwaldCorrectionTables>();
 
     /* Lennard-Jones */
     ic->vdwtype         = ir->vdwtype;
