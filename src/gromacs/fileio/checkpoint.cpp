@@ -2833,7 +2833,9 @@ void load_checkpoint(const char*                   fn,
     if (PAR(cr))
     {
         gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr->mpi_comm_mygroup);
-        gmx::MdModulesCheckpointReadingBroadcast broadcastCheckPointData = { *cr, headerContents.file_version };
+        gmx::MdModulesCheckpointReadingBroadcast broadcastCheckPointData = {
+            cr->mpi_comm_mygroup, PAR(cr), headerContents.file_version
+        };
         mdModulesNotifier.checkpointingNotifications_.notify(broadcastCheckPointData);
     }
     ir->bContinuation = TRUE;

@@ -51,7 +51,6 @@
 #include "gromacs/fileio/mrcdensitymap.h"
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdlib/broadcaststructs.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
@@ -452,14 +451,11 @@ public:
      */
     void broadcastCheckpointData(MdModulesCheckpointReadingBroadcast checkpointBroadcast)
     {
-        if (PAR(&(checkpointBroadcast.cr_)))
+        if (checkpointBroadcast.isParallelRun_)
         {
-            block_bc(checkpointBroadcast.cr_.mpi_comm_mygroup,
-                     densityFittingState_.stepsSinceLastCalculation_);
-            block_bc(checkpointBroadcast.cr_.mpi_comm_mygroup,
-                     densityFittingState_.adaptiveForceConstantScale_);
-            block_bc(checkpointBroadcast.cr_.mpi_comm_mygroup,
-                     densityFittingState_.exponentialMovingAverageState_);
+            block_bc(checkpointBroadcast.communicator_, densityFittingState_.stepsSinceLastCalculation_);
+            block_bc(checkpointBroadcast.communicator_, densityFittingState_.adaptiveForceConstantScale_);
+            block_bc(checkpointBroadcast.communicator_, densityFittingState_.exponentialMovingAverageState_);
         }
     }
 

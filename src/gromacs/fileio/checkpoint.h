@@ -76,8 +76,10 @@ struct MdModulesCheckpointReadingDataOnMaster
  */
 struct MdModulesCheckpointReadingBroadcast
 {
-    //! The communication record
-    const t_commrec& cr_;
+    //! The communicator
+    MPI_Comm communicator_;
+    //! Whether the run is executed in parallel
+    bool isParallelRun_;
     //! The version of the read file version
     int checkpointFileVersion_;
 };
