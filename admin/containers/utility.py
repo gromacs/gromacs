@@ -57,7 +57,7 @@ parsers for tools.
 """
 
 # TODO: Try using distutils.version.StrictVersion.
-parser.add_argument('--cmake', type=str, default='3.9.6',
+parser.add_argument('--cmake', type=str, default='3.13.0',
                     choices=['3.9.6', '3.11.4', '3.13.0', '3.14.7', '3.15.7'],
                     help='Selection of CMake version to provide to base image')
 compiler_group = parser.add_mutually_exclusive_group()
