@@ -26,17 +26,7 @@
 sample_restraint:clang-8:gmx2021:py-3.6.10:
   extends:
     - .sample_restraint:clang-8:gmx2021
-  rules:
-    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
-      when: never
-    # Allow explicit trigger through web interface.
-    - if: '$GMX_GMXAPI_0_2'
-      when: always
-    - if: '$GROMACS_RELEASE'
-      when: never
-    # Run this job for master branch and merge-requests targeting it.
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" || $CI_COMMIT_BRANCH == "master"'
-      when: always
+    - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.6"
     PY_VER: "3.6.10"
@@ -44,17 +34,7 @@ sample_restraint:clang-8:gmx2021:py-3.6.10:
 sample_restraint:clang-8:gmx2021:py-3.7.7:
   extends:
     - .sample_restraint:clang-8:gmx2021
-  rules:
-    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
-      when: never
-    # Allow explicit trigger through web interface.
-    - if: '$GMX_GMXAPI_0_2'
-      when: always
-    - if: '$GROMACS_RELEASE'
-      when: never
-    # Run this job for master branch and merge-requests targeting it.
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" || $CI_COMMIT_BRANCH == "master"'
-      when: always
+    - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
@@ -62,17 +42,7 @@ sample_restraint:clang-8:gmx2021:py-3.7.7:
 sample_restraint:clang-8:gmx2021:py-3.8.2:
   extends:
     - .sample_restraint:clang-8:gmx2021
-  rules:
-    - if: '$CI_PROJECT_NAMESPACE != "gromacs"'
-      when: never
-    # Allow explicit trigger through web interface.
-    - if: '$GMX_GMXAPI_0_2'
-      when: always
-    - if: '$GROMACS_RELEASE'
-      when: never
-    # Run this job for master branch and merge-requests targeting it.
-    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" || $CI_COMMIT_BRANCH == "master"'
-      when: always
+    - .rules:merge-requests
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
