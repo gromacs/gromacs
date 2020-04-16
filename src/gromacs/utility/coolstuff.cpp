@@ -1522,6 +1522,9 @@ std::string getCoolQuote()
           "Niels Bohr" },
         { "We must be clear that when it comes to atoms, language can be used only as in poetry. ",
           "Niels Bohr" },
+        { "\"What are the biological implications of your research?\" - \"Well, I simulate "
+          "water.\" ",
+          "Petter Johansson" },
     };
 
     if (beCool())
