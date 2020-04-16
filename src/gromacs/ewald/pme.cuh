@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,17 +50,12 @@
 #include "pme_gpu_types.h"
 
 /*! \brief \internal
- * A single structure encompassing all the PME data used in CUDA kernels.
- * This inherits from PmeGpuKernelParamsBase and adds a couple cudaTextureObject_t handles,
- * which we would like to avoid in plain C++.
+ * An alias for PME parameters in CUDA.
+ * \todo Remove if we decide to unify CUDA and OpenCL
  */
 struct PmeGpuCudaKernelParams : PmeGpuKernelParamsBase
 {
-    /* These are CUDA texture objects, related to the grid size. */
-    /*! \brief CUDA texture object for accessing grid.d_fractShiftsTable */
-    cudaTextureObject_t fractShiftsTableTexture;
-    /*! \brief CUDA texture object for accessing grid.d_gridlineIndicesTable */
-    cudaTextureObject_t gridlineIndicesTableTexture;
+    // Place CUDA-specific stuff here
 };
 
 #endif

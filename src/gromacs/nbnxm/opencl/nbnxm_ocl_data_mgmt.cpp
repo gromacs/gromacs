@@ -118,35 +118,16 @@ static void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
                                            cl_nbparam_t*                nbp,
                                            const DeviceContext&         deviceContext)
 {
-    cl_mem coul_tab;
-
-    cl_int cl_error;
-
     if (nbp->coulomb_tab_climg2d != nullptr)
     {
         freeDeviceBuffer(&(nbp->coulomb_tab_climg2d));
     }
 
-    /* Switched from using textures to using buffers */
-    // TODO: decide which alternative is most efficient - textures or buffers.
-    /*
-       cl_image_format array_format;
+    DeviceBuffer<real> coulomb_tab;
 
-       array_format.image_channel_data_type = CL_FLOAT;
-       array_format.image_channel_order     = CL_R;
+    initParamLookupTable(&coulomb_tab, nullptr, tables.tableF.data(), tables.tableF.size(), deviceContext);
 
-       coul_tab = clCreateImage2D(deviceContext.context(), CL_MEM_READ_WRITE |
-       CL_MEM_COPY_HOST_PTR, &array_format, tabsize, 1, 0, ftmp, &cl_error);
-     */
-
-    coul_tab = clCreateBuffer(deviceContext.context(),
-                              CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-                              tables.tableF.size() * sizeof(cl_float),
-                              const_cast<real*>(tables.tableF.data()), &cl_error);
-    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
-
-    nbp->coulomb_tab_climg2d = coul_tab;
+    nbp->coulomb_tab_climg2d = coulomb_tab;
     nbp->coulomb_tab_scale   = tables.scale;
 }
 
@@ -320,22 +301,7 @@ static void init_nbparam(cl_nbparam_t*                   nbp,
         init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, deviceContext);
     }
     else
-    // TODO: improvement needed.
-    // The image2d is created here even if eeltype is not eelCuEWALD_TAB or eelCuEWALD_TAB_TWIN
-    // because the OpenCL kernels don't accept nullptr values for image2D parameters.
     {
-        /* Switched from using textures to using buffers */
-        // TODO: decide which alternative is most efficient - textures or buffers.
-        /*
-           cl_image_format array_format;
-
-           array_format.image_channel_data_type = CL_FLOAT;
-           array_format.image_channel_order     = CL_R;
-
-           nbp->coulomb_tab_climg2d = clCreateImage2D(deviceContext.context(),
-           CL_MEM_READ_WRITE, &array_format, 1, 1, 0, nullptr, &cl_error);
-         */
-
         nbp->coulomb_tab_climg2d = clCreateBuffer(deviceContext.context(), CL_MEM_READ_ONLY,
                                                   sizeof(cl_float), nullptr, &cl_error);
         GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
@@ -346,51 +312,16 @@ static void init_nbparam(cl_nbparam_t*                   nbp,
     const int nnbfp_comb = 2 * nbatParams.numTypes;
 
     {
-        /* Switched from using textures to using buffers */
-        // TODO: decide which alternative is most efficient - textures or buffers.
-        /*
-           cl_image_format array_format;
-
-           array_format.image_channel_data_type = CL_FLOAT;
-           array_format.image_channel_order     = CL_R;
-
-           nbp->nbfp_climg2d = clCreateImage2D(deviceContext.context(), CL_MEM_READ_ONLY |
-           CL_MEM_COPY_HOST_PTR, &array_format, nnbfp, 1, 0, nbat->nbfp, &cl_error);
-         */
-
-        nbp->nbfp_climg2d = clCreateBuffer(
-                deviceContext.context(), CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-                nnbfp * sizeof(cl_float), const_cast<float*>(nbatParams.nbfp.data()), &cl_error);
-        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                           ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+        /* set up LJ parameter lookup table */
+        DeviceBuffer<real> nbfp;
+        initParamLookupTable(&nbfp, nullptr, nbatParams.nbfp.data(), nnbfp, deviceContext);
+        nbp->nbfp_climg2d = nbfp;
 
         if (ic->vdwtype == evdwPME)
         {
-            /* Switched from using textures to using buffers */
-            // TODO: decide which alternative is most efficient - textures or buffers.
-            /*  nbp->nbfp_comb_climg2d = clCreateImage2D(deviceContext.context(), CL_MEM_READ_WRITE |
-               CL_MEM_COPY_HOST_PTR, &array_format, nnbfp_comb, 1, 0, nbat->nbfp_comb, &cl_error);*/
-            nbp->nbfp_comb_climg2d =
-                    clCreateBuffer(deviceContext.context(),
-                                   CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY | CL_MEM_COPY_HOST_PTR,
-                                   nnbfp_comb * sizeof(cl_float),
-                                   const_cast<float*>(nbatParams.nbfp_comb.data()), &cl_error);
-            GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                               ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
-        }
-        else
-        {
-            // TODO: improvement needed.
-            // The image2d is created here even if vdwtype is not evdwPME because the OpenCL kernels
-            // don't accept nullptr values for image2D parameters.
-            /* Switched from using textures to using buffers */
-            // TODO: decide which alternative is most efficient - textures or buffers.
-            /* nbp->nbfp_comb_climg2d = clCreateImage2D(deviceContext.context(),
-               CL_MEM_READ_WRITE, &array_format, 1, 1, 0, nullptr, &cl_error);*/
-            nbp->nbfp_comb_climg2d = clCreateBuffer(deviceContext.context(), CL_MEM_READ_ONLY,
-                                                    sizeof(cl_float), nullptr, &cl_error);
-            GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                               ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+            DeviceBuffer<float> nbfp_comb;
+            initParamLookupTable(&nbfp_comb, nullptr, nbatParams.nbfp_comb.data(), nnbfp_comb, deviceContext);
+            nbp->nbfp_comb_climg2d = nbfp_comb;
         }
     }
 }

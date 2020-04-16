@@ -199,11 +199,9 @@ struct PmeGpuDynamicParams
 };
 
 /*! \internal \brief
- * A single structure encompassing almost all the PME data used in GPU kernels on device.
- * This is inherited by the GPU framework-specific structure
- * (PmeGpuCudaKernelParams in pme.cuh).
- * This way, most code preparing the kernel parameters can be GPU-agnostic by casting
- * the kernel parameter data pointer to PmeGpuKernelParamsBase.
+ * A single structure encompassing all the PME data used in GPU kernels on device.
+ * To extend the list with platform-specific parameters, this can be inherited by the
+ * GPU framework-specific structure.
  */
 struct PmeGpuKernelParamsBase
 {
@@ -218,6 +216,11 @@ struct PmeGpuKernelParamsBase
      * before launching spreading.
      */
     struct PmeGpuDynamicParams current;
+    /* These texture objects are only used in CUDA and are related to the grid size. */
+    /*! \brief Texture object for accessing grid.d_fractShiftsTable */
+    HIDE_FROM_OPENCL_COMPILER(DeviceTexture) fractShiftsTableTexture;
+    /*! \brief Texture object for accessing grid.d_gridlineIndicesTable */
+    HIDE_FROM_OPENCL_COMPILER(DeviceTexture) gridlineIndicesTableTexture;
 };
 
 #endif

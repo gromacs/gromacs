@@ -367,35 +367,22 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
 
     const int newFractShiftsSize = cellCount * (nx + ny + nz);
 
-#if GMX_GPU == GMX_GPU_CUDA
-    initParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable, kernelParamsPtr->fractShiftsTableTexture,
-                         pmeGpu->common->fsh.data(), newFractShiftsSize);
+    initParamLookupTable(&kernelParamsPtr->grid.d_fractShiftsTable,
+                         &kernelParamsPtr->fractShiftsTableTexture, pmeGpu->common->fsh.data(),
+                         newFractShiftsSize, pmeGpu->archSpecific->deviceContext_);
 
-    initParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
-                         kernelParamsPtr->gridlineIndicesTableTexture, pmeGpu->common->nn.data(),
-                         newFractShiftsSize);
-#elif GMX_GPU == GMX_GPU_OPENCL
-    // No dedicated texture routines....
-    allocateDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable, newFractShiftsSize,
-                         pmeGpu->archSpecific->deviceContext_);
-    allocateDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable, newFractShiftsSize,
-                         pmeGpu->archSpecific->deviceContext_);
-    copyToDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable, pmeGpu->common->fsh.data(), 0,
-                       newFractShiftsSize, pmeGpu->archSpecific->pmeStream_,
-                       GpuApiCallBehavior::Async, nullptr);
-    copyToDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable, pmeGpu->common->nn.data(), 0,
-                       newFractShiftsSize, pmeGpu->archSpecific->pmeStream_,
-                       GpuApiCallBehavior::Async, nullptr);
-#endif
+    initParamLookupTable(&kernelParamsPtr->grid.d_gridlineIndicesTable,
+                         &kernelParamsPtr->gridlineIndicesTableTexture, pmeGpu->common->nn.data(),
+                         newFractShiftsSize, pmeGpu->archSpecific->deviceContext_);
 }
 
 void pme_gpu_free_fract_shifts(const PmeGpu* pmeGpu)
 {
     auto* kernelParamsPtr = pmeGpu->kernelParams.get();
 #if GMX_GPU == GMX_GPU_CUDA
-    destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
+    destroyParamLookupTable(&kernelParamsPtr->grid.d_fractShiftsTable,
                             kernelParamsPtr->fractShiftsTableTexture);
-    destroyParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
+    destroyParamLookupTable(&kernelParamsPtr->grid.d_gridlineIndicesTable,
                             kernelParamsPtr->gridlineIndicesTableTexture);
 #elif GMX_GPU == GMX_GPU_OPENCL
     freeDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable);

@@ -170,41 +170,6 @@ int cu_copy_H2D_async(void* /*d_dest*/, const void* /*h_src*/, size_t /*bytes*/,
 // GPU table object. There is also almost self-contained fetchFromParamLookupTable()
 // in cuda_kernel_utils.cuh. They could all live in a separate class/struct file.
 
-/*! \brief Initialize parameter lookup table.
- *
- * Initializes device memory, copies data from host and binds
- * a texture to allocated device memory to be used for parameter lookup.
- *
- * \tparam[in] T         Raw data type
- * \param[out] d_ptr     device pointer to the memory to be allocated
- * \param[out] texObj    texture object to be initialized
- * \param[in]  h_ptr     pointer to the host memory to be uploaded to the device
- * \param[in]  numElem   number of elements in the h_ptr
- */
-template<typename T>
-void initParamLookupTable(T*& d_ptr, cudaTextureObject_t& texObj, const T* h_ptr, int numElem);
-
-// Add extern declarations so each translation unit understands that
-// there will be a definition provided.
-extern template void initParamLookupTable<int>(int*&, cudaTextureObject_t&, const int*, int);
-extern template void initParamLookupTable<float>(float*&, cudaTextureObject_t&, const float*, int);
-
-/*! \brief Destroy parameter lookup table.
- *
- * Unbinds texture object, deallocates device memory.
- *
- * \tparam[in] T         Raw data type
- * \param[in]  d_ptr     Device pointer to the memory to be deallocated
- * \param[in]  texObj    Texture object to be deinitialized
- */
-template<typename T>
-void destroyParamLookupTable(T* d_ptr, cudaTextureObject_t texObj);
-
-// Add extern declarations so each translation unit understands that
-// there will be a definition provided.
-extern template void destroyParamLookupTable<int>(int*, cudaTextureObject_t);
-extern template void destroyParamLookupTable<float>(float*, cudaTextureObject_t);
-
 /*! \brief Add a triplets stored in a float3 to an rvec variable.
  *
  * \param[out]  a Rvec to increment
