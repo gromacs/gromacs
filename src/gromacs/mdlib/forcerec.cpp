@@ -38,6 +38,8 @@
 
 #include "forcerec.h"
 
+#include "config.h"
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -926,8 +928,8 @@ void init_forcerec(FILE*                            fp,
                    gmx::ArrayRef<const std::string> tabbfnm,
                    real                             print_force)
 {
-    /* By default we turn SIMD kernels on, but it might be turned off further down... */
-    fr->use_simd_kernels = TRUE;
+    /* The CMake default turns SIMD kernels on, but it might be turned off further down... */
+    fr->use_simd_kernels = GMX_USE_SIMD_KERNELS;
 
     if (check_box(ir->pbcType, box))
     {

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,34 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB NBNXM_SOURCES kernels_reference/*.cpp kernels_simd_4xm/*.cpp kernels_simd_2xmm/*.cpp *.cpp benchmark/*.cpp)
+add_subdirectory(kernels_simd_4xm)
+add_subdirectory(kernels_simd_2xmm)
+
+file (GLOB NBNXM_SOURCES
+    # Source files
+    atomdata.cpp
+    grid.cpp
+    gridset.cpp
+    kernel_common.cpp
+    kerneldispatch.cpp
+    nbnxm.cpp
+    nbnxm_geometry.cpp
+    nbnxm_setup.cpp
+    pairlist.cpp
+    pairlistparams.cpp
+    pairlistset.cpp
+    pairlist_tuning.cpp
+    pairsearch.cpp
+    prunekerneldispatch.cpp
+    # Reference kernel source files
+    kernels_reference/kernel_gpu_ref.cpp
+    kernels_reference/kernel_ref.cpp
+    kernels_reference/kernel_ref_prune.cpp
+    # Benchmark source files
+    # TODO these should not be in libgromacs
+    benchmark/bench_setup.cpp
+    benchmark/bench_system.cpp
+    )
 
 if(GMX_USE_CUDA)
     add_subdirectory(cuda)

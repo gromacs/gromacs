@@ -136,6 +136,9 @@
 /* Enable code that requires AVX-512 instruction support, without GMX_SIMD=AVX_512 */
 #cmakedefine01 SIMD_AVX_512_CXX_SUPPORTED
 
+/* Whether NBNXM and other SIMD kernels should be compiled */
+#cmakedefine01 GMX_USE_SIMD_KERNELS
+
 /* Whether a double-precision configuration may target accuracy equivalent to single precision */
 #cmakedefine01 GMX_RELAXED_DOUBLE_PRECISION
 

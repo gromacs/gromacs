@@ -271,6 +271,14 @@ target_include_directories(libgromacs PUBLIC
                            $<INSTALL_INTERFACE:include>
                            )
 
+# Permit the configuration to disable compiling the many nbnxm kernels
+# and others involved in force calculations. Currently only
+# short-ranged and bonded kernels are disabled this way, but in future
+# others may be appropriate. Thus the cmake option is not specific to
+# nbnxm module.
+option(GMX_USE_SIMD_KERNELS "Whether to compile NBNXM and other SIMD kernels" ON)
+mark_as_advanced(GMX_USE_SIMD_KERNELS)
+
 if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
     # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.
     # On KNL this can cause illegal instruction because the compiler might use non KNL AVX instructions

@@ -48,7 +48,7 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/real.h"
 
-#if GMX_SIMD
+#if GMX_SIMD && GMX_USE_SIMD_KERNELS
 /*! \brief The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
  * Currently the 2xNN SIMD kernels only make sense with:
  *  8-way SIMD: 4x4 setup, works with AVX-256 in single precision
@@ -65,6 +65,6 @@
 #        error "No SIMD kernel type defined"
 #    endif
 
-#endif // GMX_SIMD
+#endif // GMX_SIMD && GMX_USE_SIMD_KERNELS
 
 #endif
