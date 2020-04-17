@@ -712,6 +712,7 @@ static void initVdwEwaldParameters(FILE* fp, const t_inputrec* ir, interaction_c
  * both accuracy requirements, when relevant.
  */
 static void init_ewald_f_table(const interaction_const_t& ic,
+                               const real                 tableExtensionLength,
                                EwaldCorrectionTables*     coulombTables,
                                EwaldCorrectionTables*     vdwTables)
 {
@@ -723,7 +724,18 @@ static void init_ewald_f_table(const interaction_const_t& ic,
      */
     const real tableScale = ewald_spline3_table_scale(ic, useCoulombTable, useVdwTable);
 
-    const int tableSize = static_cast<int>(ic.rcoulomb * tableScale) + 2;
+    real tableLen = ic.rcoulomb;
+    if (useCoulombTable && tableExtensionLength > 0.0)
+    {
+        /* TODO: Ideally this should also check if couple-intramol == no, but that isn't
+         * stored in ir. Grompp puts that info into an opts structure that doesn't make it into the tpr.
+         * The alternative is to look through all the exclusions and check if they come from
+         * couple-intramol == no. Meanwhile, always having larger tables should only affect
+         * memory consumption, not speed (barring cache issues).
+         */
+        tableLen = ic.rcoulomb + tableExtensionLength;
+    }
+    const int tableSize = static_cast<int>(tableLen * tableScale) + 2;
 
     if (useCoulombTable)
     {
@@ -737,11 +749,11 @@ static void init_ewald_f_table(const interaction_const_t& ic,
     }
 }
 
-void init_interaction_const_tables(FILE* fp, interaction_const_t* ic)
+void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real tableExtensionLength)
 {
     if (EEL_PME_EWALD(ic->eeltype))
     {
-        init_ewald_f_table(*ic, ic->coulombEwaldTables.get(), nullptr);
+        init_ewald_f_table(*ic, tableExtensionLength, ic->coulombEwaldTables.get(), nullptr);
         if (fp != nullptr)
         {
             fprintf(fp, "Initialized non-bonded Coulomb Ewald tables, spacing: %.2e size: %zu\n\n",
@@ -1089,7 +1101,7 @@ void init_forcerec(FILE*                            fp,
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, ir, mtop, systemHasNetCharge);
-    init_interaction_const_tables(fp, fr->ic);
+    init_interaction_const_tables(fp, fr->ic, ir->tabext);
 
     const interaction_const_t* ic = fr->ic;
 

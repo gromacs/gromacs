@@ -399,14 +399,20 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
             const RealType dz  = iz - x[j3 + 2];
             const RealType rsq = dx * dx + dy * dy + dz * dz;
             RealType       FscalC[NSTATES], FscalV[NSTATES];
+            /* Check if this pair on the exlusions list.*/
+            const bool bPairIncluded = nlist->excl_fep == nullptr || nlist->excl_fep[k];
 
-            if (rsq >= rcutoff_max2)
+            if (rsq >= rcutoff_max2 && bPairIncluded)
             {
                 /* We save significant time by skipping all code below.
                  * Note that with soft-core interactions, the actual cut-off
                  * check might be different. But since the soft-core distance
                  * is always larger than r, checking on r here is safe.
+                 * Exclusions outside the cutoff can not be skipped as
+                 * when using Ewald: the reciprocal-space
+                 * Ewald component still needs to be subtracted.
                  */
+
                 continue;
             }
             npair_within_cutoff++;
@@ -455,7 +461,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
             tj[STATE_A] = ntiA + 2 * typeA[jnr];
             tj[STATE_B] = ntiB + 2 * typeB[jnr];
 
-            if (nlist->excl_fep == nullptr || nlist->excl_fep[k])
+            if (bPairIncluded)
             {
                 c6[STATE_A] = nbfp[tj[STATE_A]];
                 c6[STATE_B] = nbfp[tj[STATE_B]];
@@ -613,7 +619,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                         FscalC[i] *= rpinvC;
                         FscalV[i] *= rpinvV;
                     }
-                }
+                } // end for (int i = 0; i < NSTATES; i++)
 
                 /* Assemble A and B states */
                 for (int i = 0; i < NSTATES; i++)
@@ -637,7 +643,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                         dvdl_vdw += Vvdw[i] * DLF[i];
                     }
                 }
-            }
+            } // end if (bPairIncluded)
             else if (icoul == GMX_NBKERNEL_ELEC_REACTIONFIELD)
             {
                 /* For excluded pairs, which are only in this pair list when
@@ -660,7 +666,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                 }
             }
 
-            if (elecInteractionTypeIsEwald && r < rcoulomb)
+            if (elecInteractionTypeIsEwald && (r < rcoulomb || !bPairIncluded))
             {
                 /* See comment in the preamble. When using Ewald interactions
                  * (unless we use a switch modifier) we subtract the reciprocal-space
@@ -769,7 +775,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
 #pragma omp atomic
                 f[j3 + 2] -= tz;
             }
-        }
+        } // end for (int k = nj0; k < nj1; k++)
 
         /* The atomics below are expensive with many OpenMP threads.
          * Here unperturbed i-particles will usually only have a few
@@ -805,7 +811,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                 Vv[ggid] += vvtot;
             }
         }
-    }
+    } // end for (int n = 0; n < nri; n++)
 
 #pragma omp atomic
     dvdl[efptCOUL] += dvdl_coul;

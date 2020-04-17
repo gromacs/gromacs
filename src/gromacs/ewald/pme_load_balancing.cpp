@@ -833,7 +833,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
     }
 
     /* We always re-initialize the tables whether they are used or not */
-    init_interaction_const_tables(nullptr, ic);
+    init_interaction_const_tables(nullptr, ic, ir.tabext);
 
     Nbnxm::gpu_pme_loadbal_update_param(nbv, ic);
 
