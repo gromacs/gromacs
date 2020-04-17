@@ -2586,18 +2586,6 @@ static void free_item_compilerdata(const SelectionTreeElementPointer& sel)
 namespace gmx
 {
 
-/*!
- * \param[in,out] coll Selection collection to be compiled.
- *
- * Before compilation, the selection collection should have been initialized
- * with gmx_ana_selcollection_parse_*().
- * The compiled selection collection can be passed to
- * gmx_ana_selcollection_evaluate() to evaluate the selection for a frame.
- * If an error occurs, \p sc is cleared.
- *
- * The covered fraction information in \p sc is initialized to
- * \ref CFRAC_NONE.
- */
 void compileSelection(SelectionCollection* coll)
 {
     gmx_ana_selcollection_t*    sc = &coll->impl_->sc_;

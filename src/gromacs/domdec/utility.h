@@ -42,9 +42,9 @@
 #ifndef GMX_DOMDEC_DOMDEC_UTILITY_H
 #define GMX_DOMDEC_DOMDEC_UTILITY_H
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/math/vectypes.h"
 
 #include "domdec_internal.h"
 

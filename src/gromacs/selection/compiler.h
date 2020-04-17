@@ -55,7 +55,18 @@ class SelectionCollection;
  * It prepares the selections in a selection collection for evaluation and
  * performs some optimizations.
  *
+ * Before compilation, the selection collection should have been initialized
+ * with gmx_ana_selcollection_parse_*().
+ * The compiled selection collection can be passed to
+ * gmx_ana_selcollection_evaluate() to evaluate the selection for a frame.
+ * If an error occurs, \p coll is cleared.
+ *
+ * The covered fraction information in \p coll is initialized to
+ * \ref CFRAC_NONE.
+ *
  * See \ref page_module_selection_compiler.
+ *
+ * \param[in, out] coll Selection collection to work on.
  *
  * \ingroup module_selection
  */

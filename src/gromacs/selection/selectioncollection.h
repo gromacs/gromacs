@@ -416,13 +416,9 @@ private:
 
     PrivateImplPointer<Impl> impl_;
 
-    /*! \brief
-     * Needed for the compiler to freely modify the collection.
-     */
-    friend void compileSelection(SelectionCollection* /*coll*/);
-    /*! \brief
-     * Needed for the evaluator to freely modify the collection.
-     */
+    // Needed for the compiler to freely modify the collection.
+    friend void compileSelection(SelectionCollection* coll);
+    // Needed for the evaluator to freely modify the collection.
     friend class SelectionEvaluator;
 };
 

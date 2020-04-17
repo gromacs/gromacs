@@ -140,8 +140,9 @@ check-source:
   script:
     - cd $BUILD_DIR
     - cmake --build . --target check-source
-    - grep -qi "error" docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee doxygenError.txt || true
-    - grep -qi "warning" docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee -a doxygenError.txt || true
+    - awk '/warning.*include style.*order/,/You can use.*rst|^$/' docs/doxygen/check-source.log | tee doxygenError.txt || true
+    - awk '/Traceback/,/.*rror|^$/' docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee -a doxygenError.txt || true
+    - awk '/warning:/,/in doxygen.*|^$/' docs/doxygen/doxygen*log | tee -a doxygenError.txt || true
     - if [ -s doxygenError.txt ] ; then echo "Found errors while running doxygen"; exit 1; fi
   artifacts:
     name: docs-artifacts-$CI_COMMIT_REF_SLUG
