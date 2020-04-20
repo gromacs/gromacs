@@ -43,6 +43,14 @@ function (gmx_add_unit_test_library NAME)
         target_compile_definitions(${NAME} PRIVATE HAVE_CONFIG_H)
         target_include_directories(${NAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
         target_link_libraries(${NAME} PRIVATE testutils gmock)
+        if(GMX_CLANG_TIDY)
+            set_target_properties(${NAME} PROPERTIES CXX_CLANG_TIDY
+                "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
+        endif()
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7")
+            target_compile_options(${NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
+        endif()
+
     endif()
 endfunction ()
 
@@ -158,7 +166,7 @@ function (gmx_add_gtest_executable EXENAME)
             set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY
                 "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
         endif()
-        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7")
             target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
         endif()
     endif()
