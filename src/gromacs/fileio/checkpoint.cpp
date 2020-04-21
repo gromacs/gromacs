@@ -2849,17 +2849,19 @@ void load_checkpoint(const char*                   fn,
         // -nsteps to circumvent this condition.
         if (ir->nsteps + ir->init_step < headerContents.step)
         {
-            std::string message = gmx::formatString("The input requested %ld steps, ", ir->nsteps);
+            char        buf[STEPSTRSIZE];
+            std::string message =
+                    gmx::formatString("The input requested %s steps, ", gmx_step_str(ir->nsteps, buf));
             if (ir->init_step > 0)
             {
-                message += gmx::formatString("starting from step %ld, ", ir->init_step);
+                message += gmx::formatString("starting from step %s, ", gmx_step_str(ir->init_step, buf));
             }
             message += gmx::formatString(
                     "however the checkpoint "
-                    "file has already reached step %ld. The simulation will not "
+                    "file has already reached step %s. The simulation will not "
                     "proceed, because either your simulation is already complete, "
                     "or your combination of input files don't match.",
-                    headerContents.step);
+                    gmx_step_str(headerContents.step, buf));
             gmx_fatal(FARGS, "%s", message.c_str());
         }
         ir->nsteps += ir->init_step - headerContents.step;

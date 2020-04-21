@@ -101,7 +101,7 @@ enum class NbnxnLayout
     Gpu8x8x8   // i-cluster size 8, j-cluster size 8 + super-clustering
 };
 
-#if GMX_SIMD
+#if defined(GMX_NBNXN_SIMD_4XN) || defined(GMX_NBNXN_SIMD_2XNN)
 /* Returns the j-cluster size */
 template<NbnxnLayout layout>
 static constexpr int jClusterSize()
@@ -214,7 +214,7 @@ static inline int xIndexFromCj(int cj)
         return cj * STRIDE_P8;
     }
 }
-#endif // GMX_SIMD
+#endif // defined(GMX_NBNXN_SIMD_4XN) || defined(GMX_NBNXN_SIMD_2XNN)
 
 
 void nbnxn_init_pairlist_fep(t_nblist* nl)
