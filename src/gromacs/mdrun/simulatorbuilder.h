@@ -54,7 +54,6 @@ struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_multisim_t;
 struct gmx_output_env_t;
-struct gmx_vsite_t;
 struct gmx_wallcycle;
 struct gmx_walltime_accounting;
 struct ObservablesHistory;
@@ -82,6 +81,24 @@ class ISimulator;
 class StopHandlerBuilder;
 struct MdrunOptions;
 
+/*! \brief Membed SimulatorBuilder parameter type.
+ *
+ * Does not (yet) encapsulate ownership semantics of resources. Simulator is
+ * not (necessarily) granted ownership of resources. Client is responsible for
+ * maintaining the validity of resources for the life time of the Simulator,
+ * then for cleaning up those resources.
+ */
+class MembedHolder
+{
+public:
+    explicit MembedHolder(gmx_membed_t* membed) : membed_(membed) {}
+
+    gmx_membed_t* membed() { return membed_; }
+
+private:
+    gmx_membed_t* membed_;
+};
+
 /*! \libinternal
  * \brief Class preparing the creation of Simulator objects
  *
@@ -91,6 +108,11 @@ struct MdrunOptions;
 class SimulatorBuilder
 {
 public:
+    void add(MembedHolder&& membedHolder)
+    {
+        membedHolder_ = std::make_unique<MembedHolder>(membedHolder);
+    }
+
     void add(std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder)
     {
         stopHandlerBuilder_ = std::move(stopHandlerBuilder);
@@ -106,28 +128,27 @@ public:
      *
      * \return  Unique pointer to a Simulator object
      */
-    std::unique_ptr<ISimulator> build(bool                     useModularSimulator,
-                                      FILE*                    fplog,
-                                      t_commrec*               cr,
-                                      const gmx_multisim_t*    ms,
-                                      const MDLogger&          mdlog,
-                                      int                      nfile,
-                                      const t_filenm*          fnm,
-                                      const gmx_output_env_t*  oenv,
-                                      const MdrunOptions&      mdrunOptions,
-                                      StartingBehavior         startingBehavior,
-                                      VirtualSitesHandler*     vsite,
-                                      Constraints*             constr,
-                                      gmx_enfrot*              enforcedRotation,
-                                      BoxDeformation*          deform,
-                                      IMDOutputProvider*       outputProvider,
-                                      const MdModulesNotifier& mdModulesNotifier,
-                                      t_inputrec*              inputrec,
-                                      ImdSession*              imdSession,
-                                      pull_t*                  pull_work,
-                                      t_swap*                  swap,
-                                      gmx_mtop_t*              top_global,
-
+    std::unique_ptr<ISimulator> build(bool                             useModularSimulator,
+                                      FILE*                            fplog,
+                                      t_commrec*                       cr,
+                                      const gmx_multisim_t*            ms,
+                                      const MDLogger&                  mdlog,
+                                      int                              nfile,
+                                      const t_filenm*                  fnm,
+                                      const gmx_output_env_t*          oenv,
+                                      const MdrunOptions&              mdrunOptions,
+                                      StartingBehavior                 startingBehavior,
+                                      VirtualSitesHandler*             vsite,
+                                      Constraints*                     constr,
+                                      gmx_enfrot*                      enforcedRotation,
+                                      BoxDeformation*                  deform,
+                                      IMDOutputProvider*               outputProvider,
+                                      const MdModulesNotifier&         mdModulesNotifier,
+                                      t_inputrec*                      inputrec,
+                                      ImdSession*                      imdSession,
+                                      pull_t*                          pull_work,
+                                      t_swap*                          swap,
+                                      gmx_mtop_t*                      top_global,
                                       t_state*                         state_global,
                                       ObservablesHistory*              observablesHistory,
                                       MDAtoms*                         mdAtoms,
@@ -138,13 +159,14 @@ public:
                                       gmx_ekindata_t*                  ekind,
                                       MdrunScheduleWorkload*           runScheduleWork,
                                       const ReplicaExchangeParameters& replExParams,
-                                      gmx_membed_t*                    membed,
                                       gmx_walltime_accounting*         walltime_accounting,
                                       bool                             doRerun);
 
 private:
+    std::unique_ptr<MembedHolder>       membedHolder_;
     std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_;
 };
+
 } // namespace gmx
 
 #endif // GMX_MDRUN_SIMULATORBUILDER_SIMULATORBUILDER_H

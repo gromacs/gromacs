@@ -1641,6 +1641,7 @@ int Mdrunner::mdrunner()
         GMX_ASSERT(stopHandlerBuilder_, "Runner must provide StopHandlerBuilder to simulator.");
         SimulatorBuilder simulatorBuilder;
 
+        simulatorBuilder.add(MembedHolder(membed));
         simulatorBuilder.add(std::move(stopHandlerBuilder_));
 
         // build and run simulator object based on user-input
@@ -1648,10 +1649,9 @@ int Mdrunner::mdrunner()
                 useModularSimulator, fplog, cr, ms, mdlog, static_cast<int>(filenames.size()),
                 filenames.data(), oenv, mdrunOptions, startingBehavior, vsite.get(), constr.get(),
                 enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr, deform.get(),
-                mdModules_->outputProvider(), mdModules_->notifier(), inputrec, imdSession.get(),
-                pull_work, swap, &mtop, globalState.get(), &observablesHistory, mdAtoms.get(),
-                &nrnb, wcycle, fr, &enerd, &ekind, &runScheduleWork, replExParams, membed,
-                walltime_accounting, doRerun);
+                mdModules_->outputProvider(), mdModules_->notifier(), inputrec, imdSession.get(), pull_work,
+                swap, &mtop, globalState.get(), &observablesHistory, mdAtoms.get(), &nrnb, wcycle,
+                fr, &enerd, &ekind, &runScheduleWork, replExParams, walltime_accounting, doRerun);
         simulator->run();
 
         if (fr->pmePpCommGpu)
