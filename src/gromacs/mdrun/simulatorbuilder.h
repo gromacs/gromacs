@@ -43,11 +43,11 @@
 
 #include <memory>
 
-#include "gromacs/modularsimulator/modularsimulator.h"
-
-#include "legacysimulator.h"
+#include "gromacs/mdlib/vsite.h"
+#include "gromacs/utility/mdmodulenotification.h"
 
 class energyhistory_t;
+struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
@@ -101,23 +101,42 @@ public:
      *
      * @return  Unique pointer to a Simulator object
      */
-    template<typename... Args>
-    std::unique_ptr<ISimulator> build(bool useModularSimulator, Args&&... args);
+    std::unique_ptr<ISimulator> build(bool                                useModularSimulator,
+                                      FILE*                               fplog,
+                                      t_commrec*                          cr,
+                                      const gmx_multisim_t*               ms,
+                                      const MDLogger&                     mdlog,
+                                      int                                 nfile,
+                                      const t_filenm*                     fnm,
+                                      const gmx_output_env_t*             oenv,
+                                      const MdrunOptions&                 mdrunOptions,
+                                      StartingBehavior                    startingBehavior,
+                                      VirtualSitesHandler*                vsite,
+                                      Constraints*                        constr,
+                                      gmx_enfrot*                         enforcedRotation,
+                                      BoxDeformation*                     deform,
+                                      IMDOutputProvider*                  outputProvider,
+                                      const MdModulesNotifier&            mdModulesNotifier,
+                                      t_inputrec*                         inputrec,
+                                      ImdSession*                         imdSession,
+                                      pull_t*                             pull_work,
+                                      t_swap*                             swap,
+                                      gmx_mtop_t*                         top_global,
+                                      t_state*                            state_global,
+                                      ObservablesHistory*                 observablesHistory,
+                                      MDAtoms*                            mdAtoms,
+                                      t_nrnb*                             nrnb,
+                                      gmx_wallcycle*                      wcycle,
+                                      t_forcerec*                         fr,
+                                      gmx_enerdata_t*                     enerd,
+                                      gmx_ekindata_t*                     ekind,
+                                      MdrunScheduleWorkload*              runScheduleWork,
+                                      const ReplicaExchangeParameters&    replExParams,
+                                      gmx_membed_t*                       membed,
+                                      gmx_walltime_accounting*            walltime_accounting,
+                                      std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder,
+                                      bool                                doRerun);
 };
-
-
-//! Build a Simulator object
-template<typename... Args>
-std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator, Args&&... args)
-{
-    if (useModularSimulator)
-    {
-        // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
-        return std::unique_ptr<ModularSimulator>(new ModularSimulator(std::forward<Args>(args)...));
-    }
-    // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
-    return std::unique_ptr<LegacySimulator>(new LegacySimulator(std::forward<Args>(args)...));
-}
 
 } // namespace gmx
 
