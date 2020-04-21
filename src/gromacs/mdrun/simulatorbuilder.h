@@ -82,6 +82,24 @@ class ISimulator;
 class StopHandlerBuilder;
 struct MdrunOptions;
 
+struct SimulatorConfig
+{
+public:
+    SimulatorConfig(const MdrunOptions&    mdrunOptions,
+                    StartingBehavior       startingBehavior,
+                    MdrunScheduleWorkload* runScheduleWork) :
+        mdrunOptions_(mdrunOptions),
+        startingBehavior_(startingBehavior),
+        runScheduleWork_(runScheduleWork)
+    {
+    }
+    // TODO: Specify copy and move semantics.
+
+    const MdrunOptions&    mdrunOptions_;
+    StartingBehavior       startingBehavior_;
+    MdrunScheduleWorkload* runScheduleWork_;
+};
+
 /*! \brief Membed SimulatorBuilder parameter type.
  *
  * Does not (yet) encapsulate ownership semantics of resources. Simulator is
@@ -146,6 +164,12 @@ public:
         simulatorStateData_ = std::make_unique<SimulatorStateData>(simulatorStateData);
     }
 
+    void add(SimulatorConfig&& simulatorConfig)
+    {
+        // Note: SimulatorConfig appears to the compiler to be trivially copyable,
+        // but this may not be safe and may change in the future.
+        simulatorConfig_ = std::make_unique<SimulatorConfig>(simulatorConfig);
+    }
     /*! \brief Build a Simulator object based on input data
      *
      * Return a pointer to a simulation object. The use of a parameter
@@ -164,8 +188,6 @@ public:
                                       int                              nfile,
                                       const t_filenm*                  fnm,
                                       const gmx_output_env_t*          oenv,
-                                      const MdrunOptions&              mdrunOptions,
-                                      StartingBehavior                 startingBehavior,
                                       VirtualSitesHandler*             vsite,
                                       Constraints*                     constr,
                                       gmx_enfrot*                      enforcedRotation,
@@ -181,12 +203,11 @@ public:
                                       t_nrnb*                          nrnb,
                                       gmx_wallcycle*                   wcycle,
                                       t_forcerec*                      fr,
-                                      MdrunScheduleWorkload*           runScheduleWork,
                                       const ReplicaExchangeParameters& replExParams,
-                                      gmx_walltime_accounting*         walltime_accounting,
-                                      bool                             doRerun);
+                                      gmx_walltime_accounting*         walltime_accounting);
 
 private:
+    std::unique_ptr<SimulatorConfig>    simulatorConfig_;
     std::unique_ptr<MembedHolder>       membedHolder_;
     std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_;
     std::unique_ptr<SimulatorStateData> simulatorStateData_;

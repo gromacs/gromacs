@@ -945,7 +945,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
 
 void ModularSimulator::checkInputForDisabledFunctionality()
 {
-    isInputCompatible(true, inputrec, doRerun, *top_global, ms, replExParams,
+    isInputCompatible(true, inputrec, mdrunOptions.rerun, *top_global, ms, replExParams,
                       &fr->listedForces->fcdata(), opt2bSet("-ei", nfile, fnm), membed != nullptr);
     if (observablesHistory->edsamHistory)
     {

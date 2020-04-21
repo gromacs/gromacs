@@ -43,6 +43,7 @@
 
 #include <memory>
 
+#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/modularsimulator/modularsimulator.h"
 #include "gromacs/topology/topology.h"
@@ -64,8 +65,6 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
                                                     int                      nfile,
                                                     const t_filenm*          fnm,
                                                     const gmx_output_env_t*  oenv,
-                                                    const MdrunOptions&      mdrunOptions,
-                                                    StartingBehavior         startingBehavior,
                                                     VirtualSitesHandler*     vsite,
                                                     Constraints*             constr,
                                                     gmx_enfrot*              enforcedRotation,
@@ -81,10 +80,8 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
                                                     t_nrnb*                  nrnb,
                                                     gmx_wallcycle*           wcycle,
                                                     t_forcerec*              fr,
-                                                    MdrunScheduleWorkload*   runScheduleWork,
                                                     const ReplicaExchangeParameters& replExParams,
-                                                    gmx_walltime_accounting* walltime_accounting,
-                                                    bool                     doRerun)
+                                                    gmx_walltime_accounting* walltime_accounting)
 {
     if (!stopHandlerBuilder_)
     {
@@ -98,28 +95,32 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
     {
         throw APIError("Simulator State Data has not been added to the builder");
     }
+    if (!simulatorConfig_)
+    {
+        throw APIError("Simulator config should be set before building the simulator");
+    }
 
     if (useModularSimulator)
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
         return std::unique_ptr<ModularSimulator>(new ModularSimulator(
-                fplog, cr, ms, mdlog, nfile, fnm, oenv, mdrunOptions, startingBehavior, vsite,
-                constr, enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec,
-                imdSession, pull_work, swap, top_global, simulatorStateData_->globalState_p,
-                simulatorStateData_->observablesHistory_p, mdAtoms, nrnb, wcycle, fr,
-                simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p, runScheduleWork,
-                replExParams, membedHolder_->membed(), walltime_accounting,
-                std::move(stopHandlerBuilder_), doRerun));
+                fplog, cr, ms, mdlog, nfile, fnm, oenv, simulatorConfig_->mdrunOptions_,
+                simulatorConfig_->startingBehavior_, vsite, constr, enforcedRotation, deform,
+                outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
+                simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p, mdAtoms,
+                nrnb, wcycle, fr, simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p,
+                simulatorConfig_->runScheduleWork_, replExParams, membedHolder_->membed(), walltime_accounting,
+                std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<LegacySimulator>(new LegacySimulator(
-            fplog, cr, ms, mdlog, nfile, fnm, oenv, mdrunOptions, startingBehavior, vsite, constr,
-            enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec, imdSession,
-            pull_work, swap, top_global, simulatorStateData_->globalState_p,
-            simulatorStateData_->observablesHistory_p, mdAtoms, nrnb, wcycle, fr,
-            simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p, runScheduleWork, replExParams,
-            membedHolder_->membed(), walltime_accounting, std::move(stopHandlerBuilder_), doRerun));
+            fplog, cr, ms, mdlog, nfile, fnm, oenv, simulatorConfig_->mdrunOptions_,
+            simulatorConfig_->startingBehavior_, vsite, constr, enforcedRotation, deform,
+            outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
+            simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p, mdAtoms,
+            nrnb, wcycle, fr, simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p,
+            simulatorConfig_->runScheduleWork_, replExParams, membedHolder_->membed(), walltime_accounting,
+            std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
 }
-
 
 } // namespace gmx

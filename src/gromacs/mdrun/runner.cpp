@@ -1644,15 +1644,16 @@ int Mdrunner::mdrunner()
         simulatorBuilder.add(SimulatorStateData(globalState.get(), &observablesHistory, &enerd, &ekind));
         simulatorBuilder.add(MembedHolder(membed));
         simulatorBuilder.add(std::move(stopHandlerBuilder_));
+        simulatorBuilder.add(SimulatorConfig(mdrunOptions, startingBehavior, &runScheduleWork));
+
 
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(
                 useModularSimulator, fplog, cr, ms, mdlog, static_cast<int>(filenames.size()),
-                filenames.data(), oenv, mdrunOptions, startingBehavior, vsite.get(), constr.get(),
+                filenames.data(), oenv, vsite.get(), constr.get(),
                 enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr, deform.get(),
-                mdModules_->outputProvider(), mdModules_->notifier(), inputrec, imdSession.get(),
-                pull_work, swap, &mtop, mdAtoms.get(), &nrnb, wcycle, fr, &runScheduleWork,
-                replExParams, walltime_accounting, doRerun);
+                mdModules_->outputProvider(), mdModules_->notifier(), inputrec, imdSession.get(), pull_work,
+                swap, &mtop, mdAtoms.get(), &nrnb, wcycle, fr, replExParams, walltime_accounting);
         simulator->run();
 
         if (fr->pmePpCommGpu)
