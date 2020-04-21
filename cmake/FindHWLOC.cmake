@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -402,4 +402,4 @@ find_package_handle_standard_args(HWLOC
                                   REQUIRED_VARS HWLOC_LIBRARIES HWLOC_INCLUDE_DIRS
                                   VERSION_VAR HWLOC_VERSION)
 
-mark_as_advanced(HWLOC_INCLUDE_DIRS HWLOC_LIBRARIES HWLOC_VERSION)
+mark_as_advanced(HWLOC_INCLUDE_DIRS HWLOC_LIBRARIES HWLOC_VERSION GMX_HWLOC_API_VERSION)
