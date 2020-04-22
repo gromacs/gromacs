@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,13 @@ function (gmx_add_unit_test_library NAME)
         target_compile_definitions(${NAME} PRIVATE HAVE_CONFIG_H)
         target_include_directories(${NAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
         target_link_libraries(${NAME} PRIVATE testutils gmock)
+        # clang-3.6 warns about a number of issues that are not reported by more modern compilers
+        # and we know they are not real issues. So we only check that it can compile without error
+        # but ignore all warnings.
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^3\.6")
+            target_compile_options(${NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-w>)
+        endif()
+
     endif()
 endfunction ()
 
@@ -93,6 +100,12 @@ function (gmx_add_gtest_executable EXENAME)
         endif()
         if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
             target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
+        endif()
+        # clang-3.6 warns about a number of issues that are not reported by more modern compilers
+        # and we know they are not real issues. So we only check that it can compile without error
+        # but ignore all warnings.
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^3\.6")
+            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-w>)
         endif()
     endif()
 endfunction()

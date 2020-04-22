@@ -1,0 +1,280 @@
+# Packages, exported artifacts, and release engineering processes.
+
+prepare-release-version:
+  extends:
+    - .variables:default
+    - .rules:nightly-only-for-release
+  cache: {}
+  # Docker image uploaded to dockerhub by user eriklindahl
+  # TODO: Get DockerFile for admin/dockerfiles
+  image: biophysics/gcc-gromacs
+  stage: configure-build
+
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+  script:
+    - cmake -P cmake/gmxVersionInfo.cmake &> version.json
+
+  artifacts:
+    paths:
+      - version.json
+
+# Special job to package regressiontest files and have them available for testing
+# Runs during pre-build
+# Set up to only fetch the files and prepare everything for merge requests
+regressiontests:prepare:
+  extends:
+    - .variables:default
+    - .rules:merge-requests
+  cache: {}
+  image: biophysics/gcc-gromacs
+  stage: configure-build
+
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+  # Always clone the default version for this branch, master in this case
+  script:
+    - export REGTESTBRANCH=release-2020
+    - if [[ ! -d regressiontests ]] ; then
+        mkdir regressiontests ;
+        cd regressiontests ;
+        git init ;
+        cd .. ;
+      fi
+    - cd regressiontests
+    - git fetch https://gitlab.com/gromacs/gromacs-regressiontests.git $REGTESTBRANCH
+    - git checkout -qf FETCH_HEAD
+    - git clean -ffdxq
+    - git gc
+    - git archive -o gmx-regressiontests.tar.gz --prefix regressiontests/ -9 HEAD
+    - echo "Build regressiontests for branch $REGTESTBRANCH"
+    - mv gmx-regressiontests.tar.gz ..
+    - cd ..
+  artifacts:
+    paths:
+      - gmx-regressiontests.tar.gz
+
+regressiontests:package:
+  extends:
+    - .variables:default
+    - .rules:nightly-only-for-release
+  cache: {}
+  # Docker image uploaded to dockerhub by user eriklindahl
+  # TODO: Get DockerFile for admin/dockerfiles
+  image: biophysics/gcc-gromacs
+  stage: release-package
+
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+  needs:
+    - job: prepare-release-version
+  script:
+    - VERSION=`cat version.json |
+      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - REGTESTNAME="regressiontests-"$VERSION
+    - if [[ $GROMACS_RELEASE != "true" ]] ; then
+      REGTESTNAME=$REGTESTNAME-dev ;
+      fi
+    - export REGTESTBRANCH=release-2020
+    - if [[ $CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "release-20"[1-2][0-9] ]] ; then
+      export REGTESTBRANCH=$CI_COMMIT_REF_NAME ;
+      fi
+    - if [[ ! -d regressiontests ]] ; then
+      mkdir regressiontests ;
+      cd regressiontests ;
+      git init ;
+      cd .. ;
+      fi
+    - cd regressiontests
+    - git fetch https://gitlab.com/gromacs/gromacs-regressiontests.git $REGTESTBRANCH
+    - git checkout -qf FETCH_HEAD
+    - git clean -ffdxq
+    - git gc
+    - git archive -o $REGTESTNAME.tar.gz --prefix $REGTESTNAME/ -9 HEAD
+    - git archive -o gmx-regressiontests.tar.gz --prefix regressiontests/ -9 HEAD
+    - mv $REGTESTNAME.tar.gz gmx-regressiontests.tar.gz ..
+    - echo "Build regressiontests for branch  $REGTESTBRANCH"
+    - cd ..
+  artifacts:
+    paths:
+      - regressiontests-*.tar.gz
+      - gmx-regressiontests.tar.gz
+
+archive:configure:nightly:
+  extends:
+    - .docs:configure
+    - .rules:nightly-not-for-release
+  stage: nightly-configure
+  dependencies: []
+  variables:
+    BUILD_DIR: build-package
+    CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
+    CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
+
+archive:configure:release:
+  extends:
+    - .docs:configure
+    - .rules:nightly-only-for-release
+  variables:
+    BUILD_DIR: build-package
+    CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
+    CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
+
+# Right now we need to use an ugly hack to move the original build directory
+# and the ccache files out of the build archive, as it is not possible to use
+# the custom build directory due to https://gitlab.com/gitlab-org/gitlab-runner/issues/4203
+# As soon as this is resolved we should use the separate build directories instead of
+# manually hacking things. TODO: #3361
+.archive:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-ccache
+    - .before_script:default
+    - .docs:build
+  image: gromacs/ci-docs-llvm:2020
+  variables:
+    KUBERNETES_CPU_LIMIT: 4
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_LIMIT: 4Gi
+  script:
+    - rm -rf gromacs*tar.gz
+    - cd $BUILD_DIR
+    - cmake --build . --target gmx -- -j4 2>&1 | tee buildLogFile.log
+    - cmake --build . --target man -- -j4 2>&1 | tee manBuildLogFile.log
+    - cmake --build . --target completion -- -j4 2>&1 | tee completionBuildLogFile.log
+    - cmake --build . --target install-guide -- -j4 2>&1 | tee installGuideBuildLogFile.log
+    - cmake --build . --target reference_checksum -- -j4 2>&1 | tee checksumBuildLogFile.log
+    - cmake --build . --target package_source -- -j4 2>&1 | tee packageBuildLogFile.log
+    - awk '/warning/,/warning.*generated|^$/' buildLogFile.log manBuildLogFile.log
+      completionBuildLogFile.log installGuideBuildLogFile.log checksumBuildLogFile.log
+      packageBuildLogFile.log | grep -v "CMake" | tee buildErrors.log || true
+    - grep "cannot be built" buildLogFile.log manBuildLogFile.log
+      completionBuildLogFile.log installGuideBuildLogFile.log checksumBuildLogFile.log
+      packageBuildLogFile.log | tee -a buildErrors.log || true
+    - if [ -s buildErrors.log ] ; then echo "Found warnings during build"; cat buildErrors.log; exit 1; fi
+    - mv gromacs*tar.gz ..
+    - cd ..
+    # ugly hack begins here
+    - mkdir tempdir
+    - SOURCETARBALL=`ls gromacs*tar.gz`
+    - mv $SOURCETARBALL tempdir
+    - cd tempdir
+    - tar -xf $SOURCETARBALL
+    - rm -rf gromacs-*/$BUILD_DIR
+    - tar -c --gzip -f $SOURCETARBALL gromacs-*/
+    - mv $SOURCETARBALL ..
+    - cd ..
+    - rm -rf tempdir
+    # Hack ends here
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - $BUILD_DIR/*log
+      - gromacs*tar.gz
+
+archive:build:
+  extends:
+    - .archive:build
+    - .rules:nightly-not-for-release
+  stage: nightly-build
+  needs:
+    - job: archive:configure:nightly
+  variables:
+    BUILD_DIR: build-package
+
+archive:package:
+  extends:
+    - .archive:build
+    - .rules:nightly-only-for-release
+  stage: release-package
+  needs:
+    - job: archive:configure:release
+  variables:
+    BUILD_DIR: build-package
+
+release-verify:
+  image: biophysics/gcc-gromacs
+  stage: release-verify
+  extends:
+    - .variables:default
+    - .rules:nightly-only-for-release
+  cache: {}
+
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+  script:
+    - VERSION=`cat version.json |
+      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - if [[ $GROMACS_RELEASE != "true" ]] ; then
+      VERSION=$VERSION-dev ;
+      fi
+    - REGTEST_COMPARE=`cat version.json |
+      python3 -c "import json,sys; print(json.load(sys.stdin)['regressiontest-md5sum'])"`
+    - SOURCENAME=gromacs-$VERSION
+    - SOURCETARBALL=$SOURCENAME.tar.gz
+    - SOURCE_MD5SUM=`md5sum $SOURCETARBALL | awk '{print $1}'`
+    - REGTESTNAME=regressiontests-$VERSION
+    - REGTESTTARBALL=$REGTESTNAME.tar.gz
+    - REGTEST_MD5SUM=`md5sum $REGTESTTARBALL | awk '{print $1}'`
+    - echo "$SOURCETARBALL md5sum = $SOURCE_MD5SUM"
+    - echo "$REGTESTTARBALL md5sum = $REGTEST_MD5SUM"
+    - echo "$REGTESTTARBALL reference md5sum = $REGTEST_COMPARE"
+    - if [[ $REGTEST_COMPARE != $REGTEST_MD5SUM && $GROMACS_RELEASE == "true" ]] ; then
+      echo "Mismatch in regressiontest md5sums";
+      exit 1;
+      fi
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+archive:nightly-webpage:
+  extends:
+    - .webpage:build
+    - .rules:nightly-not-for-release
+  stage: nightly-deploy
+  needs:
+    - job: linkchecker
+      artifacts: false
+    - job: webpage:build
+  variables:
+    BUILD_DIR: build-docs
+  script:
+    - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
+  artifacts:
+    when: always
+    paths:
+      - webpage.tar.gz
+
+archive:full-release:
+  extends:
+    - .webpage:build
+    - .rules:nightly-only-for-release
+  stage: release-deploy
+  dependencies:
+    - webpage:build:release
+    - archive:package
+    - regressiontests:package
+  variables:
+    BUILD_DIR: release-doc-builds
+  script:
+    - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
+  artifacts:
+    when: always
+    paths:
+      - webpage.tar.gz
+      - gromacs-*tar.gz
+      - regressiontests-*tar.gz
+

@@ -1,0 +1,813 @@
+# Build, test, and install variously configured GROMACS installations.
+
+# Initial build that always needs to pass before follow-up stages run
+simple-build:
+  extends:
+    - .variables:default
+    - .use-ccache
+    - .use-gcc:base
+    - .rules:basic-push
+  stage: pre-build
+  image: gromacs/cmake-3.9.6-gcc-5-cuda-9.0-openmpi:2020
+  tags: []
+  variables:
+    KUBERNETES_CPU_LIMIT: 8
+    KUBERNETES_CPU_REQUEST: 4
+    KUBERNETES_MEMORY_LIMIT: 8Gi
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
+    CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
+    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
+    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
+    COMPILER_MAJOR_VERSION: 5
+    BUILD_DIR: simple-build
+  script:
+    - echo $CMAKE_COMPILER_SCRIPT
+    - echo $CMAKE_EXTRA_OPTIONS
+    - echo $CMAKE_SIMD_OPTIONS
+    - echo $CMAKE_GPU_OPTIONS
+    - echo $CMAKE_MPI_OPTIONS
+    - echo $CMAKE_PRECISION_OPTIONS
+    - echo $CMAKE_BUILD_TYPE_OPTIONS
+    - echo $CMAKE_GMXAPI_OPTIONS
+    - if [[ -d $BUILD_DIR ]] ; then
+      echo "Cleaning up build directory" ;
+      rm -rf $BUILD_DIR && mkdir $BUILD_DIR ;
+      else
+      echo "Preparing new build directory" ;
+      mkdir $BUILD_DIR ;
+      fi
+    - cd $BUILD_DIR
+    - cmake ..
+      -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      $CMAKE_COMPILER_SCRIPT
+      $CMAKE_EXTRA_OPTIONS
+      $CMAKE_SIMD_OPTIONS
+      $CMAKE_MPI_OPTIONS
+      $CMAKE_PRECISION_OPTIONS
+      $CMAKE_BUILD_TYPE_OPTIONS
+      $CMAKE_GPU_OPTIONS
+      $CMAKE_GMXAPI_OPTIONS
+      -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR -DGMX_COMPILER_WARNINGS=ON
+      2>&1 | tee cmakeLog.log
+    - awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
+    - if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; cat cmakeErrors.log ; exit 1; fi
+    - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
+    - cmake --build . --target tests -- -j8 2>&1 | tee testBuildLogFile.log
+    - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
+      | grep -v "CMake" | tee buildErrors.log || true
+    - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
+    - cmake --build . --target install 2>&1 | tee installBuildLogFile.log
+    - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
+    - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
+    - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
+      ctestLog.log | tee ctestErrors.log
+    - xsltproc scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
+    - if [ -s ctestErrors.log ] ; then
+      echo "Error during running ctest";
+      exit 1;
+      fi
+    - cd ..
+  artifacts:
+    reports:
+      junit: $BUILD_DIR/JUnitTestResults.xml
+    paths:
+      - $BUILD_DIR/*log
+    when: always
+    expire_in: 1 week
+
+# Jobs running in first pre-build stage
+
+.gromacs:base:configure:
+  extends:
+    - .variables:default
+  stage: configure-build
+  cache: {}
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    CMAKE_COMPILER_SCRIPT: ""
+    CMAKE_EXTRA_OPTIONS: ""
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AUTO"
+    CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
+    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
+  script:
+    - echo $CMAKE_COMPILER_SCRIPT
+    - echo $CMAKE_EXTRA_OPTIONS
+    - echo $CMAKE_SIMD_OPTIONS
+    - echo $CMAKE_GPU_OPTIONS
+    - echo $CMAKE_MPI_OPTIONS
+    - echo $CMAKE_PRECISION_OPTIONS
+    - echo $CMAKE_BUILD_TYPE_OPTIONS
+    - echo $CMAKE_GMXAPI_OPTIONS
+    - if [[ -d $BUILD_DIR ]] ; then
+      rm -rf $BUILD_DIR && mkdir $BUILD_DIR ;
+      else
+      echo "Preparing new build directory" ;
+      mkdir $BUILD_DIR ;
+      fi
+    - cd $BUILD_DIR
+    - cmake ..
+      -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      $CMAKE_COMPILER_SCRIPT
+      $CMAKE_EXTRA_OPTIONS
+      $CMAKE_SIMD_OPTIONS
+      $CMAKE_MPI_OPTIONS
+      $CMAKE_PRECISION_OPTIONS
+      $CMAKE_BUILD_TYPE_OPTIONS
+      $CMAKE_GPU_OPTIONS
+      $CMAKE_GMXAPI_OPTIONS
+      -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR -DGMX_COMPILER_WARNINGS=ON
+      2>&1 | tee cmakeLog.log
+    - awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
+    - if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; cat cmakeErrors.log ; exit 1; fi
+    - cd ..
+  artifacts:
+    when: always
+    paths:
+      - $BUILD_DIR
+
+.gromacs:base:release:configure:
+  extends:
+    - .variables:default
+  stage: release-configure
+  cache: {}
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    CMAKE_COMPILER_SCRIPT: ""
+    CMAKE_EXTRA_OPTIONS: ""
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AUTO"
+    CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
+    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
+    CMAKE_REGRESSIONTEST_OPTIONS: "-DREGRESSIONTEST_PATH=../\\$RELEASE_REGRESSIONTESTS"
+    RELEASE_BUILD_DIR: release-builds
+    RELEASE_SOURCE: release-source-from-tarball
+    RELEASE_REGRESSIONTESTS: release-regressiontests-from-tarball
+  script:
+    - VERSION=`cat version.json |
+      python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
+    - if [[ $GROMACS_RELEASE != "true" ]] ; then
+      VERSION=$VERSION-dev ;
+      fi
+    - SOURCENAME=gromacs-$VERSION
+    - SOURCETARBALL=$SOURCENAME.tar.gz
+    - REGTESTNAME=regressiontests-$VERSION
+    - REGTESTTARBALL=$REGTESTNAME.tar.gz
+    - echo "$SOURCETARBALL"
+    - echo "$REGTESTTARBALL"
+    - RELEASE_TARBALLS=release-tarballs
+    - rm -rf $RELEASE_TARBALLS $RELEASE_SOURCE $RELEASE_REGRESSIONTESTS && mkdir $RELEASE_TARBALLS
+    - mv $SOURCETARBALL $RELEASE_TARBALLS
+    - mv $REGTESTTARBALL $RELEASE_TARBALLS
+    - cd $RELEASE_TARBALLS
+    # We rename the source and regressiontest directories
+    # to have names for them that don't change for different versions.
+    - tar -xf $SOURCETARBALL
+    - mv $SOURCENAME ../$RELEASE_SOURCE
+    - tar -xf $REGTESTTARBALL
+    - mv $REGTESTNAME ../$RELEASE_REGRESSIONTESTS
+    - rm $SOURCETARBALL $REGTESTTARBALL
+    - cd ..
+    - echo $CMAKE_COMPILER_SCRIPT
+    - echo $CMAKE_EXTRA_OPTIONS
+    - echo $CMAKE_SIMD_OPTIONS
+    - echo $CMAKE_GPU_OPTIONS
+    - echo $CMAKE_MPI_OPTIONS
+    - echo $CMAKE_PRECISION_OPTIONS
+    - echo $CMAKE_BUILD_TYPE_OPTIONS
+    - echo $CMAKE_GMXAPI_OPTIONS
+    - if [[ -d $RELEASE_BUILD_DIR ]] ; then
+      echo "Cleaning up build directory" ;
+      rm -rf $RELEASE_BUILD_DIR && mkdir $RELEASE_BUILD_DIR ;
+      else
+      echo "Preparing new build directory" ;
+      mkdir $RELEASE_BUILD_DIR ;
+      fi
+    - cd $RELEASE_BUILD_DIR
+    - cmake ../$RELEASE_SOURCE/
+      -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      $CMAKE_COMPILER_SCRIPT
+      $CMAKE_EXTRA_OPTIONS
+      $CMAKE_SIMD_OPTIONS
+      $CMAKE_MPI_OPTIONS
+      $CMAKE_PRECISION_OPTIONS
+      $CMAKE_BUILD_TYPE_OPTIONS
+      $CMAKE_GPU_OPTIONS
+      $CMAKE_GMXAPI_OPTIONS
+      $CMAKE_REGRESSIONTEST_OPTIONS
+      -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR
+      2>&1 | tee cmakeLog.log
+    - awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
+    - if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; cat cmakeErrors.log ; exit 1; fi
+    - cd ..
+  artifacts:
+    when: always
+    paths:
+      - $RELEASE_BUILD_DIR
+      - $RELEASE_REGRESSIONTESTS
+      - $RELEASE_SOURCE
+
+# Templates for configuration stage
+
+gromacs:gcc-7:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
+  variables:
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=ON -DGMX_USE_OPENCL=ON"
+    COMPILER_MAJOR_VERSION: 7
+
+gromacs:gcc-6:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+    - .use-opencl
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
+  variables:
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+    COMPILER_MAJOR_VERSION: 6
+    CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
+
+gromacs:clang-TSAN:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=TSAN"
+
+gromacs:clang-8:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+
+gromacs:clang-3.6:configure:
+  extends:
+   - .gromacs:base:configure
+   - .use-clang:base
+   - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-llvm-3.6-amdopencl-openmpi:2020
+  variables:
+    COMPILER_MAJOR_VERSION: "3.6"
+    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
+    CMAKE_MPI_OPTIONS: "-DGMX_OPENMP=OFF"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+
+gromacs:clang-static-analyzer:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  variables:
+     CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
+     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_ANALYZER=ON -DGMX_OPENMP=OFF -DGMX_USE_RDTSCP=OFF -DGMX_FFT_LIBRARY=fftpack -DGMX_DEVELOPER_BUILD=ON"
+     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
+
+gromacs:clang-ASAN:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
+
+gromacs:gcc-6:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-gcc:base
+    - .use-cuda
+    - .rules:nightly-only-for-release
+  image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
+  variables:
+    COMPILER_MAJOR_VERSION: 6
+    RELEASE_BUILD_DIR: release-builds-gcc
+    CMAKE_EXTRA_OPTIONS: "-DGMX_BUILD_MDRUN_ONLY=ON"
+    CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithDebug"
+    CMAKE_REGRESSIONTEST_OPTIONS: ""
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+gromacs:gcc-7:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-gcc:base
+    - .rules:nightly-only-for-release
+  image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    RELEASE_BUILD_DIR: release-builds-gcc
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+gromacs:clang-3.6:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-clang:base
+    - .rules:nightly-only-for-release
+  image: gromacs/cmake-3.9.6-llvm-3.6-amdopencl-openmpi:2020
+  variables:
+    COMPILER_MAJOR_VERSION: "3.6"
+    RELEASE_BUILD_DIR: release-builds-clang
+    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
+    CMAKE_MPI_OPTIONS: "-DGMX_OPENMP=OFF"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+gromacs:clang-8:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-clang:base
+    - .use-cuda
+    - .rules:nightly-only-for-release
+  image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi:2020
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    RELEASE_BUILD_DIR: release-builds-clang
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebug"
+
+# Jobs running during build stage
+
+.gromacs:base:build:
+  stage: build
+  script:
+    - cd $BUILD_DIR
+    - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
+    - cmake --build . --target tests -- -j8 2>&1 | tee testBuildLogFile.log
+    - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
+      | grep -v "CMake" | tee buildErrors.log || true
+    - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
+    - cmake --build . --target install 2>&1 | tee installBuildLogFile.log
+    - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
+    - cd ..
+  artifacts:
+    when: always
+    paths:
+      - $BUILD_DIR
+      - $INSTALL_DIR/
+
+.gromacs:static-analyzer-build:
+  stage: build
+  script:
+    - cd $BUILD_DIR
+    - scan-build -o scan_html cmake --build . -- -j8 2>&1 | tee buildLogFile.log
+    - awk '/warning/,/warning.*generated|^$/' buildLogFile.log
+      | grep -v "CMake" | tee buildErrors.log || true
+    - grep "cannot be built" buildLogFile.log | tee -a buildErrors.log || true
+    - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
+    - cd ..
+  artifacts:
+    when: always
+    paths:
+      - $BUILD_DIR/scan_html
+
+gromacs:gcc-7:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
+  needs:
+    - job: gromacs:gcc-7:configure
+      artifacts: true
+
+gromacs:gcc-6:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
+  needs:
+    - job: gromacs:gcc-6:configure
+
+gromacs:clang-TSAN:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  needs:
+    - job: gromacs:clang-TSAN:configure
+
+gromacs:clang-ASAN:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  needs:
+    - job: gromacs:clang-ASAN:configure
+
+gromacs:clang-static-analyzer:build:
+  extends:
+    - .variables:default
+    - .gromacs:static-analyzer-build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  needs:
+    - job: gromacs:clang-static-analyzer:configure
+
+gromacs:clang-8:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  needs:
+    - job: gromacs:clang-8:configure
+
+gromacs:clang-3.6:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-llvm-3.6-amdopencl-openmpi:2020
+  needs:
+    - job: gromacs:clang-3.6:configure
+
+gromacs:gcc-6:release:build:
+  extends:
+    - .variables:default  
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-gcc
+  image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
+  needs:
+    - job: gromacs:gcc-6:release:configure
+
+gromacs:gcc-7:release:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-gcc
+  image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
+  needs:
+    - job: gromacs:gcc-7:release:configure
+
+gromacs:clang-3.6:release:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-clang
+  image: gromacs/cmake-3.9.6-llvm-3.6-amdopencl-openmpi:2020
+  needs:
+    - job: gromacs:clang-3.6:release:configure
+
+gromacs:clang-8:release:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-clang
+  image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi:2020
+  needs:
+    - job: gromacs:clang-8:release:configure
+
+# Jobs running during test stage
+
+.gromacs:base:test:
+  extends:
+    - .variables:default
+  stage: test
+  cache: {}
+  retry:
+    max: 1
+  variables:
+    CTEST_RUN_MODE: "ExperimentalTest"
+  script:
+    - cd $BUILD_DIR
+    # Needed to run MPI enabled code in the docker images, until we set up different users
+    - export OMPI_ALLOW_RUN_AS_ROOT=1
+    - export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+    - ctest -D $CTEST_RUN_MODE --output-on-failure | tee ctestLog.log || true
+    - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
+      ctestLog.log | tee ctestErrors.log
+    - if [ $CTEST_RUN_MODE == "ExperimentalTest" ] ; then
+      xsltproc scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml;
+      else
+      touch JUnitTestResults.xml;
+      fi
+    - if [ -s ctestErrors.log ] ; then
+      echo "Error during running ctest";
+      exit 1;
+      fi
+    - cd ..
+  artifacts:
+    reports:
+      junit: $BUILD_DIR/JUnitTestResults.xml
+    paths:
+      - $BUILD_DIR/Testing
+      - $BUILD_DIR/tests
+    when: always
+    expire_in: 1 week
+
+.gromacs:base:regressiontest:
+  extends:
+    - .variables:default
+  variables:
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
+    REGRESSIONTEST_OMP_RANK_NUMBER: 2
+    REGRESSIONTEST_PME_RANK_NUMBER: 1
+    REGRESSIONTEST_MPI_RUN_COMMAND: ""
+    REGRESSIONTEST_DOUBLE: ""
+    REGRESSIONTEST_PARALLEL: "-nt"
+  stage: test
+  cache: {}
+  retry:
+    max: 1
+  script:
+    # This should go away once we are able to run ASAN on mdrun
+    - export ASAN_OPTIONS="detect_leaks=0"
+    # Needed to run MPI enabled code in the docker images, until we set up different users
+    - export OMPI_ALLOW_RUN_AS_ROOT=1
+    - export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+    - tar xzf gmx-regressiontests.tar.gz
+    - source $INSTALL_DIR/bin/GMXRC
+    - cd regressiontests
+    - perl gmxtest.pl $REGRESSIONTEST_PARALLEL $REGRESSIONTEST_TOTAL_RANK_NUMBER -ntomp $REGRESSIONTEST_OMP_RANK_NUMBER -npme $REGRESSIONTEST_PME_RANK_NUMBER $REGRESSIONTEST_DOUBLE $REGRESSIONTEST_MPI_RUN_COMMAND -xml all
+  artifacts:
+    reports:
+      junit: regressiontests/gmxtest.xml
+    when: always
+    expire_in: 1 week
+
+gromacs:gcc-7:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
+  variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  needs:
+    - job: gromacs:gcc-7:build
+
+gromacs:gcc-6:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
+  variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  needs:
+    - job: gromacs:gcc-6:build
+
+gromacs:clang-8:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  needs:
+    - job: gromacs:clang-8:build
+
+gromacs:clang-TSAN:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  needs:
+    - job: gromacs:clang-TSAN:build
+
+gromacs:clang-ASAN:test:
+  extends:
+    - .gromacs:base:test
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  variables:
+    CTEST_RUN_MODE: "ExperimentalMemCheck"
+  needs:
+    - job: gromacs:clang-ASAN:build
+
+gromacs:clang-3.6:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-llvm-3.6-amdopencl-openmpi:2020
+  needs:
+    - job: gromacs:clang-3.6:build
+
+gromacs:gcc-7:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
+  variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  needs:
+    - job: gromacs:gcc-7:build
+    - job: regressiontests:prepare
+
+gromacs:gcc-6:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
+  variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  needs:
+    - job: gromacs:gcc-6:build
+    - job: regressiontests:prepare
+
+gromacs:clang-8:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  needs:
+    - job: gromacs:clang-8:build
+    - job: regressiontests:prepare
+
+gromacs:clang-TSAN:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  needs:
+    - job: gromacs:clang-TSAN:build
+    - job: regressiontests:prepare
+
+gromacs:clang-ASAN:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  needs:
+    - job: gromacs:clang-ASAN:build
+    - job: regressiontests:prepare
+
+gromacs:clang-3.6:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:merge-requests
+  image: gromacs/cmake-3.9.6-llvm-3.6-amdopencl-openmpi:2020
+  variables:
+    REGRESSIONTEST_DOUBLE: "-double"
+    REGRESSIONTEST_OMP_RANK_NUMBER: 0
+  needs:
+    - job: gromacs:clang-3.6:build
+    - job: regressiontests:prepare
+
+gromacs:gcc-6:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: gromacs:gcc-6:release:configure
+    - job: gromacs:gcc-6:release:build
+
+gromacs:gcc-7:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: gromacs:gcc-7:release:configure
+    - job: gromacs:gcc-7:release:build
+
+gromacs:clang-3.6:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.9.6-llvm-3.6-amdopencl-openmpi:2020
+  variables:
+    BUILD_DIR: release-builds-clang
+  needs:
+    - job: gromacs:clang-3.6:release:configure
+    - job: gromacs:clang-3.6:release:build
+
+gromacs:clang-8:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi:2020
+  variables:
+    BUILD_DIR: release-builds-clang
+  needs:
+    - job: gromacs:clang-8:release:configure
+    - job: gromacs:clang-8:release:build
+
+gromacs:gcc-7:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
+  variables:
+    BUILD_DIR: release-builds-gcc
+  needs:
+    - job: gromacs:gcc-7:release:build
+    - job: regressiontests:package
+
+gromacs:clang-3.6:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.9.6-llvm-3.6-amdopencl-openmpi:2020
+  variables:
+    BUILD_DIR: release-builds-clang
+    REGRESSIONTEST_DOUBLE: "-double"
+    REGRESSIONTEST_OMP_RANK_NUMBER: 0
+  needs:
+    - job: gromacs:clang-3.6:release:build
+    - job: regressiontests:package
+
+gromacs:clang-8:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi:2020
+  variables:
+    BUILD_DIR: release-builds-clang
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+
+  needs:
+    - job: gromacs:clang-8:release:build
+    - job: regressiontests:package
+

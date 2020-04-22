@@ -1,6 +1,0 @@
-.build-clang-template:
-  variables:
-    DEBIAN_FRONTEND: noninteractive
-    COMPILER_MAJOR_VERSION: 7
-    BUILD_DIR: build-clang
-    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=clang-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=clang++-$COMPILER_MAJOR_VERSION

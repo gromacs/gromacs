@@ -1,7 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2010,2012,2013,2014,2015, The GROMACS development team.
+# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -53,6 +54,7 @@ else()
     gmx_target_warning_suppression(scanner -Wno-unused HAS_NO_UNUSED)
     gmx_target_warning_suppression(scanner -Wno-unused-parameter HAS_NO_UNUSED_PARAMETER)
     gmx_target_warning_suppression(scanner -Wno-missing-declarations HAS_NO_MISSING_DECLARATIONS)
+    gmx_target_warning_suppression(scanner -Wno-null-conversion HAS_NO_NULL_CONVERSIONS)
     gmx_target_warning_suppression(scanner -wd1419 HAS_DECL_IN_SOURCE)
 endif()
 list(APPEND libgromacs_object_library_dependencies scanner)

@@ -432,6 +432,7 @@ static t_matrix read_xpm_entry(FILE* in)
             line = line_buf;
         }
         bSetLine = TRUE;
+        GMX_RELEASE_ASSERT(line, "Need to have valid line to parse");
         if (strstr(line, "x-axis"))
         {
             line = std::strstr(line, "x-axis");

@@ -1,0 +1,53 @@
+# Test for API regression or unexpected breakage.
+
+# Base job definition for sample_restraint tests against GROMACS 2020.
+.sample_restraint:clang-8:gmx2020:
+  extends:
+    - .variables:default
+    - .use-clang:base
+  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  stage: test
+  variables:
+    PLUGIN_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
+    PLUGIN_MPI_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
+    EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
+  script:
+    - source $INSTALL_DIR/bin/GMXRC
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash -x admin/ci-scripts/build-and-test-sample_restraint-2020.sh
+  artifacts:
+    reports:
+      junit:
+        - $PLUGIN_TEST_XML
+        - $PLUGIN_MPI_TEST_XML
+    when: always
+    expire_in: 1 week
+  needs:
+    # Note: if we want to run regression tests using artifacts from the `release-2020`
+    # pipelines, we could specify *project* and *ref*, but initially we are only
+    # testing within a single repository.
+    - job: gromacs:clang-8:build
+      artifacts: true
+
+sample_restraint:clang-8:gmx2020:py-3.6.10:
+  extends:
+    - .sample_restraint:clang-8:gmx2020
+    - .rules:merge-requests
+  variables:
+    VENVPATH: "/root/venv/py3.6"
+    PY_VER: "3.6.10"
+
+sample_restraint:clang-8:gmx2020:py-3.7.7:
+  extends:
+    - .sample_restraint:clang-8:gmx2020
+    - .rules:merge-requests
+  variables:
+    VENVPATH: "/root/venv/py3.7"
+    PY_VER: "3.7.7"
+
+sample_restraint:clang-8:gmx2020:py-3.8.2:
+  extends:
+    - .sample_restraint:clang-8:gmx2020
+    - .rules:merge-requests
+  variables:
+    VENVPATH: "/root/venv/py3.8"
+    PY_VER: "3.8.2"

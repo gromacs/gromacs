@@ -42,8 +42,9 @@
 # Parse command-line arguments
 function usage() {
     echo "usage: clang-tidy.sh [-f|--force] [--parallel=#Jobs] [--rev=REV]"
-    echo "           [--format=(off|check)]"
+    echo "           [--tidy=(off|check)]"
     echo "           [--warnings=<file>] [<action>]"
+    echo "           [-B=<builddir>]"
     echo "<action>: (check*|diff|update)[-(index|workdir*)] (*=default)"
 }
 
@@ -53,6 +54,7 @@ baserev="HEAD"
 force=
 tidy_mode=check
 warning_file=
+builddir=
 concurrency=2
 for arg in "$@" ; do
     if [[ "$arg" == "check-index" || "$arg" == "check-workdir" || \
@@ -64,8 +66,8 @@ for arg in "$@" ; do
         action=$arg-workdir
     elif [[ "$action" == diff-* ]] ; then
         diffargs+=("$arg")
-    elif [[ "$arg" == --format=* ]] ; then
-        tidy_mode=${arg#--format=}
+    elif [[ "$arg" == --tidy=* ]] ; then
+        tidy_mode=${arg#--tidy=}
         if [[ "$tidy_mode" != "off" && "$tidy_mode" != "check" ]] ; then
             echo "Unknown option: $arg"
             echo
@@ -74,12 +76,14 @@ for arg in "$@" ; do
         fi
     elif [[ "$arg" == "-f" || "$arg" == "--force" ]] ; then
         force=1
-    elif [[ "$arg" == "--parallel=*" ]] ; then
+    elif [[ "$arg" == --parallel=* ]] ; then
         concurrency=${arg#--parallel=}
     elif [[ "$arg" == --rev=* ]] ; then
         baserev=${arg#--rev=}
     elif [[ "$arg" == --warnings=* ]] ; then
         warning_file=${arg#--warnings=}
+    elif [[ "$arg" == -B=* ]] ; then
+        builddir=${arg#-B=}
     elif [[ "$arg" == "-h" || "$arg" == "--help" ]] ; then
         usage
         exit 0
@@ -96,27 +100,26 @@ if [[ "$tidy_mode" != "off" ]]
 then
     if [ -z "$RUN_CLANG_TIDY" ]
     then
-        RUN_CLANG_TIDY=`git config hooks.run_clang_tidypath`
+        RUN_CLANG_TIDY=`git config hooks.runclangtidypath`
     fi
     if [ -z "$RUN_CLANG_TIDY" ]
     then
         echo "Please set the path to run-clang-tidy using the git hook"
-        echo "git config hooks.run_clang_tidypath /path/to/run-clang-tidy"
+        echo "git config hooks.runclangtidypath /path/to/run-clang-tidy-8.py"
         echo "or by setting an environment variable, e.g."
-        echo "RUN_CLANG_TIDY=/path/to/run-clang-tidy"
+        echo "RUN_CLANG_TIDY=/path/to/run-clang-tidy-8.py"
         exit 2
     fi
     if ! which "$RUN_CLANG_TIDY" 1>/dev/null
     then
-        echo "run-clang-tidy not found: $RUN_CLANG_TIDY"
+        echo "run-clang-tidy-8.py not found: $RUN_CLANG_TIDY"
         exit 2
     fi
 fi
 
 # Switch to the root of the source tree and check the config file
 srcdir=`git rev-parse --show-toplevel`
-pushd $srcdir >/dev/null
-admin_dir=$srcdir/admin
+pushd $srcdir >/dev/null || exit
 
 # Actual processing starts: create a temporary directory
 tmpdir=`mktemp -d -t gmxclangtidy.XXXXXX`
@@ -133,23 +136,33 @@ cut -f2 <$tmpdir/difflist | \
     git check-attr --stdin filter | \
     sed -e 's/.*: filter: //' | \
     paste $tmpdir/difflist - | \
-    grep -E '(complete_formatting)$' >$tmpdir/filtered
+    grep -E '(complete_formatting|clangformat|copyright|includesort)$' >$tmpdir/filtered
 cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
-grep -E '(complete_formatting)$' <$tmpdir/filtered | \
+grep -E '(complete_formatting|clangformat)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_clangtidy
 git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 
 # Extract changed files to a temporary directory
 mkdir $tmpdir/org
 if [[ $action == *-index ]] ; then
-    git checkout-index --prefix=$tmpdir/org/
+    git checkout-index --prefix=$tmpdir/org/ --stdin <$tmpdir/filelist_all
 else
-    rsync -a $srcdir/src/ $tmpdir/org/src/
+    rsync --files-from=$tmpdir/filelist_all -a $srcdir/ $tmpdir/org/ 
 fi
-# Need to have compilation database file available somewhere above where we are using it
-rsync -a $srcdir/compile_commands.json $tmpdir/org
-# Duplicate the original files to a separate directory, where all changes will
-# be made.
+# check for the existence of the compile_commands.json file and abort
+# if it is not present. If we don't have a build directory, try the
+# current source directory.
+if [ -z $builddir ] ; then
+    builddir=$srcdir
+fi
+if [[ ! -f $builddir/compile_commands.json ]] ; then
+    echo "Could not find compile_commands.json in builddir=$builddir"
+    echo "Make sure you gave a correct build tree and that it contains the file!"
+else
+    # Need to have compilation database file available somewhere above where we are using it
+    rsync -a $builddir/compile_commands.json $tmpdir/org
+fi
+# Prepare directory to use for comparing changed and original files
 cp -r $tmpdir/org $tmpdir/new
 
 # Create output file for what was done (in case no messages get written)
@@ -159,20 +172,23 @@ touch $tmpdir/messages
 # Can only perform clang-tidy on a non-empty list of files
 cd $tmpdir/new
 if [[ $tidy_mode != "off" &&  -s $tmpdir/filelist_clangtidy ]] ; then
-    $RUN_CLANG_TIDY `cat $tmpdir/filelist_clangtidy` -- -header-filter=.* -j $concurrency -fix -fix-errors --cuda-host-only -nocudainc -quiet >$tmpdir/clang-tidy.out 2>&1
-    grep -v "clang-analyzer" $tmpdir/clang-tidy.out | grep -v "to display errors from all non" | grep -i "error|warning" - > $tmpdir/clang-tidy-errors.out
+    $RUN_CLANG_TIDY `cat $tmpdir/filelist_clangtidy` -header-filter=.* -j $concurrency -fix -quiet -extra-arg=--cuda-host-only -extra-arg=-nocudainc>$tmpdir/clang-tidy.out 2>&1
+    awk '/warning/,/clang-tidy|^$/' $tmpdir/clang-tidy.out | grep -v "warnings generated." | grep -v "Suppressed .* warnings" | grep -v "clang-analyzer"  | grep -v "to display errors from all non" | sed '/^\s*$/d' > $tmpdir/clang-tidy-warnings.out
+    awk '/.*error.*/' $tmpdir/clang-tidy.out > $tmpdir/clang-tidy-errors.out || true
     if [ -s $tmpdir/clang-tidy-errors.out ]; then
-        echo "Running code tidying failed. Check output below for errors:"
+        echo "Running of clang-tidy failed. Check output below for errors:"
         cat $tmpdir/clang-tidy-errors.out
         rm -rf $tmpdir
         exit 2
     fi
     # Find the changed files if necessary
     if [[ $action != diff-* ]] ; then
-        msg="needs formatting"
+        msg="found code issues"
         if [[ $action == update-* ]] ; then
             msg="clang-tidy performed"
         fi
+        rsync --files-from=$tmpdir/filelist_all -a $srcdir/ ./
+        rsync -a $tmpdir/org/ $srcdir/
         git diff --no-index --name-only ../org/ . | \
             awk -v msg="$msg" '{sub(/.\//,""); print $0 ": " msg}' >> $tmpdir/messages
     fi
@@ -240,7 +256,10 @@ fi
 popd >/dev/null
 
 # Report what was done
-sort $tmpdir/messages | tee $warning_file
+if [ -s $tmpdir/clang-tidy-warnings.out ] ; then
+    cat $tmpdir/clang-tidy-warnings.out | tee $warning_file
+fi
+sort $tmpdir/messages | tee -a $warning_file
 
 rm -rf $tmpdir
 exit $changes

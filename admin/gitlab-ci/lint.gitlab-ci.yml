@@ -1,0 +1,173 @@
+# Repository cleanliness. Source tidiness, linting, and policy compliance.
+
+clang-tidy:configure-push:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:basic-push
+  image: gromacs/cmake-3.11.4-llvm-8-openmpi:2020
+  tags: []
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    BUILD_DIR: build-clang-tidy
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+clang-tidy:configure-schedule:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:nightly-not-for-release
+  image: gromacs/cmake-3.11.4-llvm-8-openmpi:2020
+  tags: []
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    BUILD_DIR: build-clang-tidy
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
+
+clang-tidy:build:
+  extends:
+    - .gromacs:base:build
+    - .use-ccache
+    - .variables:default
+    - .rules:nightly-not-for-release
+  stage: source-check
+  image: gromacs/cmake-3.11.4-llvm-8-openmpi:2020
+  needs:
+    - job: clang-tidy:configure-schedule
+  variables:
+    BUILD_DIR: build-clang-tidy
+
+clang-tidy:test:
+  extends:
+    - .gromacs:base:build
+    - .variables:default
+    - .rules:basic-push
+  stage: source-check
+  image: gromacs/cmake-3.11.4-llvm-8-openmpi:2020
+  tags: []
+  needs:
+    - job: clang-tidy:configure-push
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    BUILD_DIR: build-clang-tidy
+    EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
+    KUBERNETES_CPU_LIMIT: 4
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_LIMIT: 4Gi
+  script:
+    # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
+    # See discussion at https://gitlab.com/gromacs/gromacs/-/merge_requests/67
+    - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git release-2020 && git show -s --pretty=format:"%h" `git merge-base --fork-point FETCH_HEAD HEAD`)
+    - RUN_CLANG_TIDY=run-clang-tidy-$COMPILER_MAJOR_VERSION bash admin/clang-tidy.sh check --parallel=$KUBERNETES_CPU_LIMIT --warnings=clang-tidy.log --rev=$REV -B=$BUILD_DIR
+    - grep -iq "found code issues" clang-tidy.log | tee code-lint.txt || true
+    - if [ -s code-lint.txt ] ; then echo "clang-tidy.sh found issues"; exit 1; fi
+  artifacts:
+    when: on_failure
+    paths:
+      - clang-tidy.log
+      - code-lint.txt
+
+clang-format:
+  extends:
+    - .variables:default
+    - .rules:basic-push
+  cache: {}
+  stage: pre-build
+  image: gromacs/ci-docs-llvm:2020
+  tags: []
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    EXTRA_INSTALLS: clang-format-$COMPILER_MAJOR_VERSION
+  script:
+    - export CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION
+    - admin/clang-format.sh check --rev=HEAD^ --warnings=clang-format.log
+    - grep -iq "needs formatting" clang-format.log | tee formatting.txt || true
+    - if [ -s formatting.txt ] ; then echo "clang-format.sh found issues"; exit 1; fi
+  artifacts:
+    when: on_failure
+    paths:
+      - clang-format.log
+      - formatting.txt
+
+copyright-check:
+  extends:
+    - .variables:default
+    - .rules:basic-push
+  cache: {}
+  stage: pre-build
+  image: gromacs/ci-docs-llvm:2020
+  tags: []
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+  script:
+    - admin/copyright.sh check --rev=HEAD^ --warnings=copyright.log
+    - grep -iq "copyright year" copyright.log | tee years.log || true
+    - grep -iq "copyright header" copyright.log | tee headers.log || true
+    - if [[ -s years.log || -s headers.log ]] ; then
+      echo "Copyright information needs updating" ;
+      exit 1 ;
+      fi
+  artifacts:
+    when: on_failure
+    paths:
+      - copyright.log
+      - years.log
+      - headers.log
+
+check-source:
+  extends:
+    - .variables:default
+    - .docs:build
+    - .before_script:default
+    - .rules:basic-push
+  cache: {}
+  stage: source-check
+  tags: []
+  needs:
+    - job: docs:build
+      artifacts: true
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    BUILD_DIR: build-docs
+  script:
+    - cd $BUILD_DIR
+    - cmake --build . --target check-source
+    - awk '/warning.*include style.*order/,/You can use.*rst|^$/' docs/doxygen/check-source.log | tee doxygenError.txt || true
+    - awk '/Traceback/,/.*rror|^$/' docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee -a doxygenError.txt || true
+    - awk '/warning:/,/in doxygen.*|^$/' docs/doxygen/doxygen*log | tee -a doxygenError.txt || true
+    - if [ -s doxygenError.txt ] ; then echo "Found errors while running doxygen"; exit 1; fi
+  artifacts:
+    name: docs-artifacts-$CI_COMMIT_REF_SLUG
+    when: always
+    expire_in: 1 week
+    paths:
+      - $BUILD_DIR/docs/doxygen/doxygen-xml.log
+      - $BUILD_DIR/docs/doxygen/check-source.log
+
+linkchecker:
+  extends:
+    - .webpage:build
+    - .rules:nightly-not-for-release
+  stage: nightly-build
+  dependencies:
+    - webpage:build
+  variables:
+    KUBERNETES_CPU_LIMIT: 1
+    KUBERNETES_CPU_REQUEST: 1
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    BUILD_DIR: build-docs
+  script:
+    - cd $BUILD_DIR
+    - linkchecker docs/html/index.html -f $CI_PROJECT_DIR/docs/linkcheckerrc -Fxml --ignore-url html-full
+      --ignore-url html-user --ignore-url html-lib --ignore-url .tar.gz --ignore-url _sources
+      -o xml
+  artifacts:
+    reports:
+      junit: $BUILD_DIR/linkchecker-out.xml
