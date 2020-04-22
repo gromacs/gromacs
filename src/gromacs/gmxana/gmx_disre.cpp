@@ -60,6 +60,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -799,7 +800,8 @@ int gmx_disre(int argc, char* argv[])
     }
 
     ir->dr_tau = 0.0;
-    init_disres(fplog, topInfo.mtop(), ir, nullptr, nullptr, &fcd, nullptr, FALSE);
+    init_disres(fplog, topInfo.mtop(), ir, DisResRunMode::AnalysisTool, DDRole::Master,
+                NumRanks::Single, MPI_COMM_NULL, nullptr, &fcd, nullptr, FALSE);
 
     int natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5 * natoms);

@@ -50,6 +50,20 @@ struct gmx_domdec_t;
 #define DUTY_PP (1U << 0U)
 #define DUTY_PME (1U << 1U)
 
+//! Whether the current DD role is master or slave
+enum class DDRole
+{
+    Master,
+    Agent
+};
+
+//! Whether one or more ranks are used
+enum class NumRanks
+{
+    Single,
+    Multiple
+};
+
 typedef struct
 {
     int      bUse;

@@ -1037,7 +1037,9 @@ int Mdrunner::mdrunner()
     snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog, &mtop, inputrec, cr, ms, fcd, globalState.get(), replExParams.exchangeInterval > 0);
+    init_disres(fplog, &mtop, inputrec, DisResRunMode::MDRun, MASTER(cr) ? DDRole::Master : DDRole::Agent,
+                PAR(cr) ? NumRanks::Multiple : NumRanks::Single, cr->mpi_comm_mysim, ms, fcd,
+                globalState.get(), replExParams.exchangeInterval > 0);
 
     init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
 

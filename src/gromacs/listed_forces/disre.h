@@ -49,6 +49,7 @@
 
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
@@ -57,6 +58,15 @@ struct t_commrec;
 struct t_inputrec;
 struct t_pbc;
 class t_state;
+enum class DDRole;
+enum class NumRanks;
+
+//! Whether distance restraints are called from mdrun or from an analysis tool
+enum class DisResRunMode
+{
+    MDRun,
+    AnalysisTool
+};
 
 /*! \brief
  * Initiates *fcd data.
@@ -71,7 +81,10 @@ class t_state;
 void init_disres(FILE*                 fplog,
                  const gmx_mtop_t*     mtop,
                  t_inputrec*           ir,
-                 const t_commrec*      cr,
+                 DisResRunMode         disResRunMode,
+                 DDRole                ddRole,
+                 NumRanks              numRanks,
+                 MPI_Comm              communicator,
                  const gmx_multisim_t* ms,
                  t_fcdata*             fcd,
                  t_state*              state,
