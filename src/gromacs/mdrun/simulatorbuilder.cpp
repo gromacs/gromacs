@@ -56,14 +56,12 @@ namespace gmx
 {
 
 //! \brief Build a Simulator object
-std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     useModularSimulator,
-                                                    BoxDeformation*          deform,
-                                                    IMDOutputProvider*       outputProvider,
-                                                    const MdModulesNotifier& mdModulesNotifier,
-                                                    pull_t*                  pull_work,
-                                                    t_swap*                  swap,
-                                                    gmx_mtop_t*              top_global,
-                                                    MDAtoms*                 mdAtoms,
+std::unique_ptr<ISimulator> SimulatorBuilder::build(bool            useModularSimulator,
+                                                    BoxDeformation* deform,
+                                                    pull_t*         pull_work,
+                                                    t_swap*         swap,
+                                                    gmx_mtop_t*     top_global,
+                                                    MDAtoms*        mdAtoms,
                                                     const ReplicaExchangeParameters& replExParams)
 {
     // TODO: Reduce protocol complexity.
@@ -133,10 +131,10 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
                 simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
                 simulatorEnv_->logger_, legacyInput_->numFile, legacyInput_->filenames,
                 simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
-                simulatorConfig_->startingBehavior_, constraintsParam_->vsite,
-                constraintsParam_->constr, constraintsParam_->enforcedRotation, deform, outputProvider,
-                mdModulesNotifier, legacyInput_->inputrec, interactiveMD_->imdSession, pull_work,
-                swap, top_global, simulatorStateData_->globalState_p,
+                simulatorConfig_->startingBehavior_, constraintsParam_->vsite, constraintsParam_->constr,
+                constraintsParam_->enforcedRotation, deform, simulatorModules_->outputProvider,
+                simulatorModules_->mdModulesNotifier, legacyInput_->inputrec, interactiveMD_->imdSession,
+                pull_work, swap, top_global, simulatorStateData_->globalState_p,
                 simulatorStateData_->observablesHistory_p, mdAtoms, profiling_->nrnb,
                 profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
                 simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_, replExParams,
@@ -148,9 +146,9 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
             simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
             simulatorEnv_->logger_, legacyInput_->numFile, legacyInput_->filenames,
             simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
-            simulatorConfig_->startingBehavior_, constraintsParam_->vsite,
-            constraintsParam_->constr, constraintsParam_->enforcedRotation, deform,
-            outputProvider, mdModulesNotifier, legacyInput_->inputrec, interactiveMD_->imdSession, pull_work,
+            simulatorConfig_->startingBehavior_, constraintsParam_->vsite, constraintsParam_->constr,
+            constraintsParam_->enforcedRotation, deform, simulatorModules_->outputProvider,
+            simulatorModules_->mdModulesNotifier, legacyInput_->inputrec, interactiveMD_->imdSession, pull_work,
             swap, top_global, simulatorStateData_->globalState_p,
             simulatorStateData_->observablesHistory_p, mdAtoms, profiling_->nrnb,
             profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,

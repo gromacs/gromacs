@@ -211,9 +211,14 @@ public:
 class SimulatorModules
 {
 public:
-    SimulatorModules(IMDOutputProvider gmx_unused* pProvider, const MdModulesNotifier gmx_unused& notifier)
+    SimulatorModules(IMDOutputProvider* mdOutputProvider, const MdModulesNotifier& notifier) :
+        outputProvider(mdOutputProvider),
+        mdModulesNotifier(notifier)
     {
     }
+
+    IMDOutputProvider*       outputProvider;
+    const MdModulesNotifier& mdModulesNotifier;
 };
 
 class CenterOfMassPulling
@@ -322,8 +327,6 @@ public:
      */
     std::unique_ptr<ISimulator> build(bool                             useModularSimulator,
                                       BoxDeformation*                  deform,
-                                      IMDOutputProvider*               outputProvider,
-                                      const MdModulesNotifier&         mdModulesNotifier,
                                       pull_t*                          pull_work,
                                       t_swap*                          swap,
                                       gmx_mtop_t*                      top_global,
