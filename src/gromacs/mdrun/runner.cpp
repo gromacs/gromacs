@@ -1656,11 +1656,11 @@ int Mdrunner::mdrunner()
 
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(
-                useModularSimulator, fplog, cr, ms, mdlog, static_cast<int>(filenames.size()),
-                filenames.data(), oenv, vsite.get(), constr.get(),
-                enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr, deform.get(),
-                mdModules_->outputProvider(), mdModules_->notifier(), inputrec, imdSession.get(), pull_work,
-                swap, &mtop, mdAtoms.get(), &nrnb, wcycle, fr, replExParams, walltime_accounting);
+                useModularSimulator, static_cast<int>(filenames.size()), filenames.data(), vsite.get(),
+                constr.get(), enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
+                deform.get(), mdModules_->outputProvider(), mdModules_->notifier(), inputrec,
+                imdSession.get(), pull_work, swap, &mtop,  mdAtoms.get(), &nrnb, wcycle, fr,
+                replExParams, walltime_accounting);
         simulator->run();
 
         if (fr->pmePpCommGpu)

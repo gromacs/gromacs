@@ -57,13 +57,8 @@ namespace gmx
 
 //! \brief Build a Simulator object
 std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     useModularSimulator,
-                                                    FILE*                    fplog,
-                                                    t_commrec*               cr,
-                                                    const gmx_multisim_t*    ms,
-                                                    const MDLogger&          mdlog,
                                                     int                      nfile,
                                                     const t_filenm*          fnm,
-                                                    const gmx_output_env_t*  oenv,
                                                     VirtualSitesHandler*     vsite,
                                                     Constraints*             constr,
                                                     gmx_enfrot*              enforcedRotation,
@@ -146,17 +141,20 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
         return std::unique_ptr<ModularSimulator>(new ModularSimulator(
-                fplog, cr, ms, mdlog, nfile, fnm, oenv, simulatorConfig_->mdrunOptions_,
-                simulatorConfig_->startingBehavior_, vsite, constr, enforcedRotation, deform,
-                outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
-                simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p, mdAtoms,
-                nrnb, wcycle, fr, simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p,
+                simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
+                simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_,
+                simulatorConfig_->mdrunOptions_, simulatorConfig_->startingBehavior_, vsite, constr,
+                enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec, imdSession,
+                pull_work, swap, top_global,  simulatorStateData_->globalState_p,
+                simulatorStateData_->observablesHistory_p, mdAtoms, nrnb, wcycle, fr,
+                simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p,
                 simulatorConfig_->runScheduleWork_, replExParams, membedHolder_->membed(), walltime_accounting,
                 std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<LegacySimulator>(new LegacySimulator(
-            fplog, cr, ms, mdlog, nfile, fnm, oenv, simulatorConfig_->mdrunOptions_,
+            simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
+            simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
             simulatorConfig_->startingBehavior_, vsite, constr, enforcedRotation, deform,
             outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
             simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p, mdAtoms,

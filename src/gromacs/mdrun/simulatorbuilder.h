@@ -126,15 +126,25 @@ struct SimulatorStateData
 
 class SimulatorEnv
 {
-
 public:
-    SimulatorEnv(FILE gmx_unused* pFile,
-                 t_commrec gmx_unused* pCommrec,
-                 gmx_multisim_t gmx_unused* pMultisim,
-                 const MDLogger gmx_unused& logger,
-                 gmx_output_env_t gmx_unused* pEnv)
+    SimulatorEnv(FILE*             fplog,
+                 t_commrec*        commRec,
+                 gmx_multisim_t*   multisimCommRec,
+                 const MDLogger&   logger,
+                 gmx_output_env_t* outputEnv) :
+        fplog_{ fplog },
+        commRec_{ commRec },
+        multisimCommRec_{ multisimCommRec },
+        logger_{ logger },
+        outputEnv_{ outputEnv }
     {
     }
+
+    FILE*                   fplog_;
+    t_commrec*              commRec_;
+    const gmx_multisim_t*   multisimCommRec_;
+    const MDLogger&         logger_;
+    const gmx_output_env_t* outputEnv_;
 };
 
 class Profiling
@@ -287,13 +297,8 @@ public:
      * \return  Unique pointer to a Simulator object
      */
     std::unique_ptr<ISimulator> build(bool                             useModularSimulator,
-                                      FILE*                            fplog,
-                                      t_commrec*                       cr,
-                                      const gmx_multisim_t*            ms,
-                                      const MDLogger&                  mdlog,
                                       int                              nfile,
                                       const t_filenm*                  fnm,
-                                      const gmx_output_env_t*          oenv,
                                       VirtualSitesHandler*             vsite,
                                       Constraints*                     constr,
                                       gmx_enfrot*                      enforcedRotation,
