@@ -1043,7 +1043,9 @@ int Mdrunner::mdrunner()
 
     init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
 
-    auto deform = prepareBoxDeformation(globalState->box, cr, *inputrec);
+    auto deform = prepareBoxDeformation(globalState->box, MASTER(cr) ? DDRole::Master : DDRole::Agent,
+                                        PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
+                                        cr->mpi_comm_mygroup, *inputrec);
 
     ObservablesHistory observablesHistory = {};
 
