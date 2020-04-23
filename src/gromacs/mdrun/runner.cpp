@@ -98,7 +98,6 @@
 #include "gromacs/mdlib/makeconstraints.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdlib/membed.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdlib/tgroup.h"
@@ -165,6 +164,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "isimulator.h"
+#include "membedholder.h"
 #include "replicaexchange.h"
 #include "simulatorbuilder.h"
 
@@ -711,8 +711,8 @@ int Mdrunner::mdrunner()
     int                       nChargePerturbed = -1, nTypePerturbed = 0;
     gmx_wallcycle_t           wcycle;
     gmx_walltime_accounting_t walltime_accounting = nullptr;
-    gmx_membed_t*             membed              = nullptr;
-    gmx_hw_info_t*            hwinfo              = nullptr;
+    MembedHolder              membedHolder(filenames.size(), filenames.data());
+    gmx_hw_info_t*            hwinfo = nullptr;
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -720,7 +720,6 @@ int Mdrunner::mdrunner()
 
     /* TODO: inputrec should tell us whether we use an algorithm, not a file option */
     const bool doEssentialDynamics = opt2bSet("-ei", filenames.size(), filenames.data());
-    const bool doMembed            = opt2bSet("-membed", filenames.size(), filenames.data());
     const bool doRerun             = mdrunOptions.rerun;
 
     // Handle task-assignment related user options.
@@ -822,8 +821,9 @@ int Mdrunner::mdrunner()
          * TODO Over-writing the user-supplied value here does
          * prevent any possible subsequent checks from working
          * correctly. */
-        hw_opt.nthreads_tmpi = get_nthreads_mpi(hwinfo, &hw_opt, gpuIdsToUse, useGpuForNonbonded,
-                                                useGpuForPme, inputrec, &mtop, mdlog, doMembed);
+        hw_opt.nthreads_tmpi =
+                get_nthreads_mpi(hwinfo, &hw_opt, gpuIdsToUse, useGpuForNonbonded, useGpuForPme,
+                                 inputrec, &mtop, mdlog, membedHolder.doMembed());
 
         // Now start the threads for thread MPI.
         spawnThreads(hw_opt.nthreads_tmpi);
@@ -894,8 +894,9 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags =
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
-    const bool useModularSimulator = checkUseModularSimulator(
-            false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed);
+    const bool useModularSimulator =
+            checkUseModularSimulator(false, inputrec, doRerun, mtop, ms, replExParams, nullptr,
+                                     doEssentialDynamics, membedHolder.doMembed());
 
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
@@ -1340,18 +1341,8 @@ int Mdrunner::mdrunner()
     }
 
     // Membrane embedding must be initialized before we call init_forcerec()
-    if (doMembed)
-    {
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "Initializing membed");
-        }
-        /* Note that membed cannot work in parallel because mtop is
-         * changed here. Fix this if we ever want to make it run with
-         * multiple ranks. */
-        membed = init_membed(fplog, filenames.size(), filenames.data(), &mtop, inputrec,
-                             globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
-    }
+    membedHolder.initializeMembed(fplog, filenames.size(), filenames.data(), &mtop, inputrec,
+                                  globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
 
     const bool               thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
     std::unique_ptr<MDAtoms> mdAtoms;
@@ -1642,7 +1633,7 @@ int Mdrunner::mdrunner()
         SimulatorBuilder simulatorBuilder;
 
         simulatorBuilder.add(SimulatorStateData(globalState.get(), &observablesHistory, &enerd, &ekind));
-        simulatorBuilder.add(MembedHolder(membed));
+        simulatorBuilder.add(std::move(membedHolder));
         simulatorBuilder.add(std::move(stopHandlerBuilder_));
         simulatorBuilder.add(SimulatorConfig(mdrunOptions, startingBehavior, &runScheduleWork));
 
@@ -1739,11 +1730,6 @@ int Mdrunner::mdrunner()
     }
 
     free_gpu(deviceInfo);
-
-    if (doMembed)
-    {
-        free_membed(membed);
-    }
 
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());

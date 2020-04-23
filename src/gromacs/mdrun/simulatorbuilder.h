@@ -47,12 +47,13 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/mdmodulenotification.h"
 
+#include "replicaexchange.h"
+
 class energyhistory_t;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
-struct gmx_membed_t;
 struct gmx_multisim_t;
 struct gmx_output_env_t;
 struct gmx_wallcycle;
@@ -74,6 +75,7 @@ enum class StartingBehavior;
 class BoxDeformation;
 class Constraints;
 class MdrunScheduleWorkload;
+class MembedHolder;
 class IMDOutputProvider;
 class ImdSession;
 class MDLogger;
@@ -100,23 +102,6 @@ public:
     MdrunScheduleWorkload* runScheduleWork_;
 };
 
-/*! \brief Membed SimulatorBuilder parameter type.
- *
- * Does not (yet) encapsulate ownership semantics of resources. Simulator is
- * not (necessarily) granted ownership of resources. Client is responsible for
- * maintaining the validity of resources for the life time of the Simulator,
- * then for cleaning up those resources.
- */
-class MembedHolder
-{
-public:
-    explicit MembedHolder(gmx_membed_t* membed) : membed_(membed) {}
-
-    gmx_membed_t* membed() { return membed_; }
-
-private:
-    gmx_membed_t* membed_;
-};
 
 // TODO: Reconsider the name.
 struct SimulatorStateData
@@ -149,10 +134,7 @@ struct SimulatorStateData
 class SimulatorBuilder
 {
 public:
-    void add(MembedHolder&& membedHolder)
-    {
-        membedHolder_ = std::make_unique<MembedHolder>(membedHolder);
-    }
+    void add(MembedHolder&& membedHolder);
 
     void add(std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder)
     {

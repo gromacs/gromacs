@@ -49,6 +49,7 @@
 #include "gromacs/topology/topology.h"
 
 #include "legacysimulator.h"
+#include "membedholder.h"
 
 
 namespace gmx
@@ -122,5 +123,11 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
             simulatorConfig_->runScheduleWork_, replExParams, membedHolder_->membed(), walltime_accounting,
             std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
 }
+
+void SimulatorBuilder::add(MembedHolder&& membedHolder)
+{
+    membedHolder_ = std::make_unique<MembedHolder>(std::move(membedHolder));
+}
+
 
 } // namespace gmx
