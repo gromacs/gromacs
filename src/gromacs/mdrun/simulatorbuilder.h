@@ -150,11 +150,16 @@ public:
 class Profiling
 {
 public:
-    Profiling(t_nrnb gmx_unused*      nrnb,
-              gmx_walltime_accounting gmx_unused* pAccounting,
-              gmx_wallcycle gmx_unused* pWallcycle)
+    Profiling(t_nrnb* nrnb, gmx_walltime_accounting* walltimeAccounting, gmx_wallcycle* wallCycle) :
+        nrnb(nrnb),
+        wallCycle(wallCycle),
+        walltimeAccounting(walltimeAccounting)
     {
     }
+
+    t_nrnb*                  nrnb;
+    gmx_wallcycle*           wallCycle;
+    gmx_walltime_accounting* walltimeAccounting;
 };
 
 class ConstraintsParam
@@ -311,11 +316,8 @@ public:
                                       t_swap*                          swap,
                                       gmx_mtop_t*                      top_global,
                                       MDAtoms*                         mdAtoms,
-                                      t_nrnb*                          nrnb,
-                                      gmx_wallcycle*                   wcycle,
                                       t_forcerec*                      fr,
-                                      const ReplicaExchangeParameters& replExParams,
-                                      gmx_walltime_accounting*         walltime_accounting);
+                                      const ReplicaExchangeParameters& replExParams);
 
 private:
     // Note: we use std::unique_ptr instead of std::optional because we want to

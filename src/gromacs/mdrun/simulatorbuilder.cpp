@@ -71,11 +71,8 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
                                                     t_swap*                  swap,
                                                     gmx_mtop_t*              top_global,
                                                     MDAtoms*                 mdAtoms,
-                                                    t_nrnb*                  nrnb,
-                                                    gmx_wallcycle*           wcycle,
                                                     t_forcerec*              fr,
-                                                    const ReplicaExchangeParameters& replExParams,
-                                                    gmx_walltime_accounting* walltime_accounting)
+                                                    const ReplicaExchangeParameters& replExParams)
 {
     // TODO: Reduce protocol complexity.
     //     Investigate individual paramters. Identify default-constructable parameters and clarify
@@ -142,13 +139,13 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
         return std::unique_ptr<ModularSimulator>(new ModularSimulator(
                 simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
-                simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_,
-                simulatorConfig_->mdrunOptions_, simulatorConfig_->startingBehavior_, vsite, constr,
-                enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec, imdSession,
-                pull_work, swap, top_global,  simulatorStateData_->globalState_p,
-                simulatorStateData_->observablesHistory_p, mdAtoms, nrnb, wcycle, fr,
-                simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p,
-                simulatorConfig_->runScheduleWork_, replExParams, membedHolder_->membed(), walltime_accounting,
+                simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
+                simulatorConfig_->startingBehavior_, vsite, constr, enforcedRotation, deform,
+                outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
+                simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p,
+                mdAtoms, profiling_->nrnb, profiling_->wallCycle, fr, simulatorStateData_->enerdata_p,
+                simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_, replExParams,
+                membedHolder_->membed(), profiling_->walltimeAccounting,
                 std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
@@ -158,9 +155,10 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
             simulatorConfig_->startingBehavior_, vsite, constr, enforcedRotation, deform,
             outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
             simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p, mdAtoms,
-            nrnb, wcycle, fr, simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p,
-            simulatorConfig_->runScheduleWork_, replExParams, membedHolder_->membed(), walltime_accounting,
-            std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
+            profiling_->nrnb, profiling_->wallCycle, fr, simulatorStateData_->enerdata_p,
+            simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_, replExParams,
+            membedHolder_->membed(), profiling_->walltimeAccounting, std::move(stopHandlerBuilder_),
+            simulatorConfig_->mdrunOptions_.rerun));
 }
 
 void SimulatorBuilder::add(MembedHolder&& membedHolder)
