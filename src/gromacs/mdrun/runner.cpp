@@ -1656,9 +1656,8 @@ int Mdrunner::mdrunner()
 
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(
-                useModularSimulator, static_cast<int>(filenames.size()), filenames.data(),
-                deform.get(), mdModules_->outputProvider(), mdModules_->notifier(), inputrec,
-                imdSession.get(), pull_work, swap, &mtop, mdAtoms.get(), fr, replExParams);
+                useModularSimulator, deform.get(), mdModules_->outputProvider(), mdModules_->notifier(),
+                imdSession.get(), pull_work, swap, &mtop, mdAtoms.get(), replExParams);
         simulator->run();
 
         if (fr->pmePpCommGpu)

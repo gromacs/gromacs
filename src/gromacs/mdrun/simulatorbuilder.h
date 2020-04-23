@@ -180,12 +180,20 @@ public:
 class LegacyInput
 {
 public:
-    LegacyInput(int gmx_unused i,
-                const t_filenm gmx_unused* pFilenm,
-                t_inputrec gmx_unused* pInputrec,
-                t_forcerec gmx_unused* pForcerec)
+    LegacyInput(int             filenamesSize,
+                const t_filenm* filenamesData,
+                t_inputrec*     inputRec,
+                t_forcerec*     forceRec) :
+        numFile(filenamesSize),
+        filenames(filenamesData),
+        inputrec(inputRec),
+        forceRec(forceRec)
     {
     }
+    int             numFile;
+    const t_filenm* filenames;
+    t_inputrec*     inputrec;
+    t_forcerec*     forceRec;
 };
 
 class InteractiveMD
@@ -307,18 +315,14 @@ public:
      * \return  Unique pointer to a Simulator object
      */
     std::unique_ptr<ISimulator> build(bool                             useModularSimulator,
-                                      int                              nfile,
-                                      const t_filenm*                  fnm,
                                       BoxDeformation*                  deform,
                                       IMDOutputProvider*               outputProvider,
                                       const MdModulesNotifier&         mdModulesNotifier,
-                                      t_inputrec*                      inputrec,
                                       ImdSession*                      imdSession,
                                       pull_t*                          pull_work,
                                       t_swap*                          swap,
                                       gmx_mtop_t*                      top_global,
                                       MDAtoms*                         mdAtoms,
-                                      t_forcerec*                      fr,
                                       const ReplicaExchangeParameters& replExParams);
 
 private:

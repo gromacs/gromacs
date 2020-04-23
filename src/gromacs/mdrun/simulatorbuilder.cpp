@@ -57,18 +57,14 @@ namespace gmx
 
 //! \brief Build a Simulator object
 std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     useModularSimulator,
-                                                    int                      nfile,
-                                                    const t_filenm*          fnm,
                                                     BoxDeformation*          deform,
                                                     IMDOutputProvider*       outputProvider,
                                                     const MdModulesNotifier& mdModulesNotifier,
-                                                    t_inputrec*              inputrec,
                                                     ImdSession*              imdSession,
                                                     pull_t*                  pull_work,
                                                     t_swap*                  swap,
                                                     gmx_mtop_t*              top_global,
                                                     MDAtoms*                 mdAtoms,
-                                                    t_forcerec*              fr,
                                                     const ReplicaExchangeParameters& replExParams)
 {
     // TODO: Reduce protocol complexity.
@@ -136,12 +132,14 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
         return std::unique_ptr<ModularSimulator>(new ModularSimulator(
                 simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
-                simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
+                simulatorEnv_->logger_, legacyInput_->numFile, legacyInput_->filenames,
+                simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
                 simulatorConfig_->startingBehavior_, constraintsParam_->vsite,
                 constraintsParam_->constr, constraintsParam_->enforcedRotation, deform,
-                outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
-                simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p,
-                mdAtoms, profiling_->nrnb, profiling_->wallCycle, fr, simulatorStateData_->enerdata_p,
+                outputProvider, mdModulesNotifier, legacyInput_->inputrec, imdSession, pull_work,
+                swap, top_global, simulatorStateData_->globalState_p,
+                simulatorStateData_->observablesHistory_p, mdAtoms, profiling_->nrnb,
+                profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
                 simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_, replExParams,
                 membedHolder_->membed(), profiling_->walltimeAccounting,
                 std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
@@ -149,15 +147,17 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<LegacySimulator>(new LegacySimulator(
             simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
-            simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_,
-            simulatorConfig_->mdrunOptions_, simulatorConfig_->startingBehavior_,
-            constraintsParam_->vsite, constraintsParam_->constr, constraintsParam_->enforcedRotation,
-            deform, outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
-            simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p, mdAtoms,
-            profiling_->nrnb, profiling_->wallCycle, fr, simulatorStateData_->enerdata_p,
+            simulatorEnv_->logger_, legacyInput_->numFile, legacyInput_->filenames,
+            simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
+            simulatorConfig_->startingBehavior_, constraintsParam_->vsite,
+            constraintsParam_->constr, constraintsParam_->enforcedRotation, deform,
+            outputProvider, mdModulesNotifier, legacyInput_->inputrec, imdSession, pull_work,
+            swap, top_global, simulatorStateData_->globalState_p,
+            simulatorStateData_->observablesHistory_p, mdAtoms, profiling_->nrnb,
+            profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
             simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_, replExParams,
-            membedHolder_->membed(), profiling_->walltimeAccounting, std::move(stopHandlerBuilder_),
-            simulatorConfig_->mdrunOptions_.rerun));
+            membedHolder_->membed(), profiling_->walltimeAccounting,
+            std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
 }
 
 void SimulatorBuilder::add(MembedHolder&& membedHolder)
