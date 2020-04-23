@@ -165,11 +165,16 @@ public:
 class ConstraintsParam
 {
 public:
-    ConstraintsParam(Constraints gmx_unused* pConstraints,
-                     gmx_enfrot gmx_unused* pEnfrot,
-                     VirtualSitesHandler gmx_unused* pVsite)
+    ConstraintsParam(Constraints* constraints, gmx_enfrot* enforcedRotation, VirtualSitesHandler* vSite) :
+        constr(constraints),
+        enforcedRotation(enforcedRotation),
+        vsite(vSite)
     {
     }
+
+    Constraints*         constr;
+    gmx_enfrot*          enforcedRotation;
+    VirtualSitesHandler* vsite;
 };
 
 class LegacyInput
@@ -304,9 +309,6 @@ public:
     std::unique_ptr<ISimulator> build(bool                             useModularSimulator,
                                       int                              nfile,
                                       const t_filenm*                  fnm,
-                                      VirtualSitesHandler*             vsite,
-                                      Constraints*                     constr,
-                                      gmx_enfrot*                      enforcedRotation,
                                       BoxDeformation*                  deform,
                                       IMDOutputProvider*               outputProvider,
                                       const MdModulesNotifier&         mdModulesNotifier,

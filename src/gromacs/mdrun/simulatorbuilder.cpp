@@ -59,9 +59,6 @@ namespace gmx
 std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     useModularSimulator,
                                                     int                      nfile,
                                                     const t_filenm*          fnm,
-                                                    VirtualSitesHandler*     vsite,
-                                                    Constraints*             constr,
-                                                    gmx_enfrot*              enforcedRotation,
                                                     BoxDeformation*          deform,
                                                     IMDOutputProvider*       outputProvider,
                                                     const MdModulesNotifier& mdModulesNotifier,
@@ -140,7 +137,8 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
         return std::unique_ptr<ModularSimulator>(new ModularSimulator(
                 simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
                 simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
-                simulatorConfig_->startingBehavior_, vsite, constr, enforcedRotation, deform,
+                simulatorConfig_->startingBehavior_, constraintsParam_->vsite,
+                constraintsParam_->constr, constraintsParam_->enforcedRotation, deform,
                 outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
                 simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p,
                 mdAtoms, profiling_->nrnb, profiling_->wallCycle, fr, simulatorStateData_->enerdata_p,
@@ -151,9 +149,10 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<LegacySimulator>(new LegacySimulator(
             simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
-            simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
-            simulatorConfig_->startingBehavior_, vsite, constr, enforcedRotation, deform,
-            outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
+            simulatorEnv_->logger_, nfile, fnm, simulatorEnv_->outputEnv_,
+            simulatorConfig_->mdrunOptions_, simulatorConfig_->startingBehavior_,
+            constraintsParam_->vsite, constraintsParam_->constr, constraintsParam_->enforcedRotation,
+            deform, outputProvider, mdModulesNotifier, inputrec, imdSession, pull_work, swap, top_global,
             simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p, mdAtoms,
             profiling_->nrnb, profiling_->wallCycle, fr, simulatorStateData_->enerdata_p,
             simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_, replExParams,
