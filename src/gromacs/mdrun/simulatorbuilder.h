@@ -125,6 +125,82 @@ struct SimulatorStateData
     SimulatorStateData(const SimulatorStateData& simulatorStateData) = default;
 };
 
+class SimulatorEnv
+{
+
+public:
+    SimulatorEnv(FILE gmx_unused* pFile,
+                 t_commrec gmx_unused* pCommrec,
+                 gmx_multisim_t gmx_unused* pMultisim,
+                 const MDLogger gmx_unused& logger,
+                 gmx_output_env_t gmx_unused* pEnv)
+    {
+    }
+};
+
+class Profiling
+{
+public:
+    Profiling(t_nrnb gmx_unused*      nrnb,
+              gmx_walltime_accounting gmx_unused* pAccounting,
+              gmx_wallcycle gmx_unused* pWallcycle)
+    {
+    }
+};
+
+class ConstraintsParam
+{
+public:
+    ConstraintsParam(Constraints gmx_unused* pConstraints,
+                     gmx_enfrot gmx_unused* pEnfrot,
+                     VirtualSitesHandler gmx_unused* pVsite)
+    {
+    }
+};
+
+class LegacyInput
+{
+public:
+    LegacyInput(int gmx_unused i,
+                const t_filenm gmx_unused* pFilenm,
+                t_inputrec gmx_unused* pInputrec,
+                t_forcerec gmx_unused* pForcerec)
+    {
+    }
+};
+
+class InteractiveMD
+{
+public:
+    explicit InteractiveMD(ImdSession gmx_unused* pSession) {}
+};
+
+class SimulatorModules
+{
+public:
+    SimulatorModules(IMDOutputProvider gmx_unused* pProvider, const MdModulesNotifier gmx_unused& notifier)
+    {
+    }
+};
+
+class CenterOfMassPulling
+{
+public:
+    explicit CenterOfMassPulling(pull_t gmx_unused* pPull) {}
+};
+
+class IonSwapping
+{
+public:
+    IonSwapping(t_swap gmx_unused* pSwap) {}
+};
+
+class TopologyData
+{
+public:
+    TopologyData(gmx_mtop_t gmx_unused* pMtop, MDAtoms gmx_unused* pAtoms) {}
+};
+
 /*! \libinternal
  * \brief Class preparing the creation of Simulator objects
  *
@@ -152,6 +228,27 @@ public:
         // but this may not be safe and may change in the future.
         simulatorConfig_ = std::make_unique<SimulatorConfig>(simulatorConfig);
     }
+
+    void add(SimulatorEnv&& /*unused*/) {}
+
+    void add(Profiling&& /*unused*/) {}
+
+    void add(ConstraintsParam&& /*unused*/) {}
+
+    void add(LegacyInput&& /*unused*/) {}
+
+    void add(ReplicaExchangeParameters&& /*unused*/) {}
+
+    void add(InteractiveMD&& /*unused*/) {}
+
+    void add(SimulatorModules&& /*unused*/) {}
+
+    void add(CenterOfMassPulling&& /*unused*/) {}
+
+    void add(IonSwapping&& /*unused*/) {}
+
+    void add(TopologyData&& /*unused*/) {}
+
     /*! \brief Build a Simulator object based on input data
      *
      * Return a pointer to a simulation object. The use of a parameter

@@ -1638,6 +1638,22 @@ int Mdrunner::mdrunner()
         simulatorBuilder.add(SimulatorConfig(mdrunOptions, startingBehavior, &runScheduleWork));
 
 
+        simulatorBuilder.add(SimulatorEnv(fplog, cr, ms, mdlog, oenv));
+        simulatorBuilder.add(Profiling(&nrnb, walltime_accounting, wcycle));
+        simulatorBuilder.add(ConstraintsParam(
+                constr.get(), enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
+                vsite.get()));
+        // TODO: Separate `fr` to a separate add, and make the `build` handle the coupling sensibly.
+        simulatorBuilder.add(
+                LegacyInput(static_cast<int>(filenames.size()), filenames.data(), inputrec, fr));
+        simulatorBuilder.add(ReplicaExchangeParameters(replExParams));
+        simulatorBuilder.add(InteractiveMD(imdSession.get()));
+        simulatorBuilder.add(SimulatorModules(mdModules_->outputProvider(), mdModules_->notifier()));
+        simulatorBuilder.add(CenterOfMassPulling(pull_work));
+        // Todo move to an MDModule
+        simulatorBuilder.add(IonSwapping(swap));
+        simulatorBuilder.add(TopologyData(&mtop, mdAtoms.get()));
+
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(
                 useModularSimulator, fplog, cr, ms, mdlog, static_cast<int>(filenames.size()),
