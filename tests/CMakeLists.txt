@@ -290,10 +290,10 @@ if(GMX_PHYSICAL_VALIDATION)
         # End copied from regression tests.
         #
 
-        if (NOT PYTHONINTERP_FOUND)
+        if (NOT Python3_Interpreter_FOUND)
             message(FATAL_ERROR
                     "Python not found. Physical validation requires python. \
-                     Install python, set PYTHON_EXECUTABLE to a valid python location, \
+                     Install python, set Python3_ROOT_DIR or PYTHON_EXECUTABLE to a valid location, \
                      or set GMX_PHYSICAL_VALIDATION=OFF to disable the physical validation tests.")
         endif()
         #

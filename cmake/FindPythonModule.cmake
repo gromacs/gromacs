@@ -34,7 +34,6 @@
 
 # Adapted from code posted on cmake-users by Mark Moll (the execute_process()
 # call remains, but other things have been rewritten for nicer behavior).
-find_package(PythonInterp 3.6)
 
 function (find_python_module module)
     string(TOUPPER ${module} _module_upper)

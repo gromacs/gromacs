@@ -704,7 +704,7 @@ set(HTML_BUILD_NOT_POSSIBLE_REASON)
 set(HTML_BUILD_WARNINGS)
 
 # Next, turn it off if any of the preconditions are unsatisified
-if (NOT PythonInterp_FOUND)
+if (NOT Python3_Interpreter_FOUND)
     set(HTML_BUILD_IS_POSSIBLE OFF)
     set(HTML_BUILD_NOT_POSSIBLE_REASON "Python is required")
 elseif (NOT SPHINX_FOUND)

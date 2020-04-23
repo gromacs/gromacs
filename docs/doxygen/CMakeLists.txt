@@ -58,7 +58,7 @@ gmx_dependent_option(
 mark_as_advanced(GMX_COMPACT_DOXYGEN)
 
 set(USE_PYTHON_SCRIPTS OFF)
-if (PYTHONINTERP_FOUND)
+if (PYTHON_EXECUTABLE)
     set(USE_PYTHON_SCRIPTS ON)
 endif()
 

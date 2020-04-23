@@ -483,9 +483,14 @@ extract Python docstrings.
 
 Sometimes the build environment can choose a different Python interpreter than
 the one you intended.
-You can set the ``PYTHON_EXECUTABLE`` CMake variable to explicitly choose the
-Python interpreter for your chosen installation.
-For example: ``-DPYTHON_EXECUTABLE=\`which python\```
+You can set the ``Python3_ROOT`` or ``CMAKE_PREFIX_PATH`` CMake variable to
+explicitly choose the Python installation or *venv* directory.
+
+If you use pyenv or pyenv-virtualenv to dynamically manage your Python version,
+you can help identify a particular version with ``pyenv version-name`` and the
+directory with ``pyenv prefix {version}``. For example::
+
+    -DPython3_ROOT=$(pyenv prefix $(pyenv version-name))
 
 Docker web server
 -----------------

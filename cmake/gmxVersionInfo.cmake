@@ -337,9 +337,6 @@ set(SET_OF_DIRECTORIES_TO_CHECKSUM  "${PROJECT_SOURCE_DIR}/src")
 list(APPEND SET_OF_DIRECTORIES_TO_CHECKSUM "${PROJECT_SOURCE_DIR}/python_packaging")
 # Due to the limitations for passing a list as arguments, we make the directories a string here
 string(REPLACE ";" ":" DIRECTORIES_TO_CHECKSUM_STRING "${SET_OF_DIRECTORIES_TO_CHECKSUM}")
-# Try to find python for the checksumming script
-set(PythonInterp_FIND_QUIETLY ON)
-find_package(PythonInterp 3.6)
 
 # Rules to create the VersionInfo.cmake file.
 # For git info, the sequence is:
@@ -437,7 +434,7 @@ set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
 # not been tampered with.
 # Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
 # mean that the target is run in all builds
-if (PYTHONINTERP_FOUND)
+if (PYTHON_EXECUTABLE)
     gmx_add_custom_output_target(reference_checksum RUN_ALWAYS
         OUTPUT ${CHECKSUM_FILE}
         COMMAND ${PYTHON_EXECUTABLE}

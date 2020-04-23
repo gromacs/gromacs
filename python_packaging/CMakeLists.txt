@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -90,10 +90,7 @@
 # (system or user) GROMACS installation and (user) Python environment. For a
 # system-wide Python environment, the package needs to be built and installed
 # (to the ``site-packages`` directory) for each supported Python interpreter.
-# ``setup.py`` can just be invoked with different Python interpreters. We can
-# add CMake infrastructure to allow multiple/repeated PYTHON_EXECUTABLE
-# specification at the GROMACS project level if such a use case is important to
-# HPC site administrators or Linux distribution packagers.
+# ``setup.py`` can just be invoked with different Python interpreters.
 #
 # To drive the packaging of a Python package distribution archive
 # by a higher-level CMake configuration, a CMakeLists.txt file at this level would

@@ -68,6 +68,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 find_package(LibStdCpp)
 
+# Python is first referenced in gmxVersionInfo, so we perform the search early
+# to find a suitable installation for all components.
+include(gmxPythonDiscovery)
 # Set up common version variables, as well as general information about
 # the build tree (whether the build is from a source package or from a git
 # repository).  Also declares a few functions that will be used for generating
@@ -840,25 +843,6 @@ option(GMX_PYTHON_PACKAGE "Configure gmxapi Python package" OFF)
 mark_as_advanced(GMX_PYTHON_PACKAGE)
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
-    # Note: Though only documented as an output variable, PYTHON_EXECUTABLE is
-    # also effective as a CMake input variable to effectively hint the location
-    # of the Python interpreter. This may be helpful in environments with both
-    # Python 2 and Python 3 on the default PATH.
-    # Ref: https://cmake.org/cmake/help/latest/module/FindPythonInterp.html
-    if(FIND_PACKAGE_MESSAGE_DETAILS_PythonInterp)
-        # Keep quiet on subsequent runs of cmake
-        set(PythonInterp_FIND_QUIETLY ON)
-    endif()
-    # Older CMake versions might not search for Python newer than 3.7.
-    set(Python_ADDITIONAL_VERSIONS 3.8)
-    if(GMX_PYTHON_PACKAGE)
-        find_package(PythonInterp 3.6 REQUIRED)
-        # Note: PythonLibs will be found later by pybind11.
-        # TODO: (Issue #2998) When CMake >= 3.12 is required, update detection.
-        # I.e.  find_package(Python3 3.6 COMPONENTS Interpreter Development REQUIRED)
-    else()
-        find_package(PythonInterp 3.6)
-    endif()
     find_package(ImageMagick QUIET COMPONENTS convert)
     include(gmxTestImageMagick)
     GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
