@@ -224,7 +224,9 @@ public:
 class CenterOfMassPulling
 {
 public:
-    explicit CenterOfMassPulling(pull_t gmx_unused* pPull) {}
+    explicit CenterOfMassPulling(pull_t* pullWork) : pull_work(pullWork) {}
+
+    pull_t* pull_work;
 };
 
 class IonSwapping
@@ -327,7 +329,6 @@ public:
      */
     std::unique_ptr<ISimulator> build(bool            useModularSimulator,
                                       BoxDeformation* deform,
-                                      pull_t*         pull_work,
                                       t_swap*         swap,
                                       gmx_mtop_t*     top_global,
                                       MDAtoms*        mdAtoms);
