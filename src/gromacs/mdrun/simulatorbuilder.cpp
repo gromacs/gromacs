@@ -61,8 +61,7 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool            useModularSi
                                                     pull_t*         pull_work,
                                                     t_swap*         swap,
                                                     gmx_mtop_t*     top_global,
-                                                    MDAtoms*        mdAtoms,
-                                                    const ReplicaExchangeParameters& replExParams)
+                                                    MDAtoms*        mdAtoms)
 {
     // TODO: Reduce protocol complexity.
     //     Investigate individual paramters. Identify default-constructable parameters and clarify
@@ -137,8 +136,8 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool            useModularSi
                 pull_work, swap, top_global, simulatorStateData_->globalState_p,
                 simulatorStateData_->observablesHistory_p, mdAtoms, profiling_->nrnb,
                 profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
-                simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_, replExParams,
-                membedHolder_->membed(), profiling_->walltimeAccounting,
+                simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_,
+                *replicaExchangeParameters_, membedHolder_->membed(), profiling_->walltimeAccounting,
                 std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
@@ -152,8 +151,8 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool            useModularSi
             swap, top_global, simulatorStateData_->globalState_p,
             simulatorStateData_->observablesHistory_p, mdAtoms, profiling_->nrnb,
             profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
-            simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_, replExParams,
-            membedHolder_->membed(), profiling_->walltimeAccounting,
+            simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_,
+            *replicaExchangeParameters_, membedHolder_->membed(), profiling_->walltimeAccounting,
             std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
 }
 

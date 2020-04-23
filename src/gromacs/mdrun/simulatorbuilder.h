@@ -325,13 +325,12 @@ public:
      *
      * \return  Unique pointer to a Simulator object
      */
-    std::unique_ptr<ISimulator> build(bool                             useModularSimulator,
-                                      BoxDeformation*                  deform,
-                                      pull_t*                          pull_work,
-                                      t_swap*                          swap,
-                                      gmx_mtop_t*                      top_global,
-                                      MDAtoms*                         mdAtoms,
-                                      const ReplicaExchangeParameters& replExParams);
+    std::unique_ptr<ISimulator> build(bool            useModularSimulator,
+                                      BoxDeformation* deform,
+                                      pull_t*         pull_work,
+                                      t_swap*         swap,
+                                      gmx_mtop_t*     top_global,
+                                      MDAtoms*        mdAtoms);
 
 private:
     // Note: we use std::unique_ptr instead of std::optional because we want to
