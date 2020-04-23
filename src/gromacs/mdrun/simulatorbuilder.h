@@ -180,10 +180,7 @@ public:
 class LegacyInput
 {
 public:
-    LegacyInput(int             filenamesSize,
-                const t_filenm* filenamesData,
-                t_inputrec*     inputRec,
-                t_forcerec*     forceRec) :
+    LegacyInput(int filenamesSize, const t_filenm* filenamesData, t_inputrec* inputRec, t_forcerec* forceRec) :
         numFile(filenamesSize),
         filenames(filenamesData),
         inputrec(inputRec),
@@ -251,6 +248,15 @@ public:
     }
     gmx_mtop_t* top_global;
     MDAtoms*    mdAtoms;
+};
+
+// Design note: The client may own the BoxDeformation via std::unique_ptr, but we are not
+// transferring ownership at this time. (Maybe be the subject of future changes.)
+class BoxDeformationHandle
+{
+public:
+    BoxDeformationHandle(BoxDeformation* boxDeformation) : deform(boxDeformation) {}
+    BoxDeformation* deform;
 };
 
 /*! \libinternal
@@ -329,6 +335,11 @@ public:
         topologyData_ = std::make_unique<TopologyData>(topologyData);
     }
 
+    void add(BoxDeformationHandle&& boxDeformation)
+    {
+        boxDeformation_ = std::make_unique<BoxDeformationHandle>(boxDeformation);
+    }
+
     /*! \brief Build a Simulator object based on input data
      *
      * Return a pointer to a simulation object. The use of a parameter
@@ -339,7 +350,7 @@ public:
      *
      * \return  Unique pointer to a Simulator object
      */
-    std::unique_ptr<ISimulator> build(bool useModularSimulator, BoxDeformation* deform);
+    std::unique_ptr<ISimulator> build(bool useModularSimulator);
 
 private:
     // Note: we use std::unique_ptr instead of std::optional because we want to
@@ -358,6 +369,7 @@ private:
     std::unique_ptr<CenterOfMassPulling>       centerOfMassPulling_;
     std::unique_ptr<IonSwapping>               ionSwapping_;
     std::unique_ptr<TopologyData>              topologyData_;
+    std::unique_ptr<BoxDeformationHandle>      boxDeformation_;
 };
 
 } // namespace gmx

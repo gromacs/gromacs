@@ -56,8 +56,7 @@ namespace gmx
 {
 
 //! \brief Build a Simulator object
-std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator, BoxDeformation* deform)
-
+std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
 {
     // TODO: Reduce protocol complexity.
     //     Investigate individual paramters. Identify default-constructable parameters and clarify
@@ -126,11 +125,11 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator, Bo
                 simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
                 simulatorEnv_->logger_, legacyInput_->numFile, legacyInput_->filenames,
                 simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
-                simulatorConfig_->startingBehavior_, constraintsParam_->vsite, constraintsParam_->constr,
-                constraintsParam_->enforcedRotation, deform, simulatorModules_->outputProvider,
-                simulatorModules_->mdModulesNotifier, legacyInput_->inputrec,
-                interactiveMD_->imdSession, centerOfMassPulling_->pull_work, ionSwapping_->ionSwap,
-                topologyData_->top_global, simulatorStateData_->globalState_p,
+                simulatorConfig_->startingBehavior_, constraintsParam_->vsite,
+                constraintsParam_->constr, constraintsParam_->enforcedRotation, boxDeformation_->deform,
+                simulatorModules_->outputProvider, simulatorModules_->mdModulesNotifier,
+                legacyInput_->inputrec, interactiveMD_->imdSession, centerOfMassPulling_->pull_work,
+                ionSwapping_->ionSwap, topologyData_->top_global, simulatorStateData_->globalState_p,
                 simulatorStateData_->observablesHistory_p, topologyData_->mdAtoms, profiling_->nrnb,
                 profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
                 simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_,
@@ -142,12 +141,11 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator, Bo
             simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
             simulatorEnv_->logger_, legacyInput_->numFile, legacyInput_->filenames,
             simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
-            simulatorConfig_->startingBehavior_, constraintsParam_->vsite, constraintsParam_->constr,
-            constraintsParam_->enforcedRotation, deform, simulatorModules_->outputProvider,
-            simulatorModules_->mdModulesNotifier, legacyInput_->inputrec,
-            interactiveMD_->imdSession, centerOfMassPulling_->pull_work, ionSwapping_->ionSwap,
-            topologyData_->top_global,
-            simulatorStateData_->globalState_p,
+            simulatorConfig_->startingBehavior_, constraintsParam_->vsite,
+            constraintsParam_->constr, constraintsParam_->enforcedRotation, boxDeformation_->deform,
+            simulatorModules_->outputProvider, simulatorModules_->mdModulesNotifier,
+            legacyInput_->inputrec, interactiveMD_->imdSession, centerOfMassPulling_->pull_work,
+            ionSwapping_->ionSwap, topologyData_->top_global, simulatorStateData_->globalState_p,
             simulatorStateData_->observablesHistory_p, topologyData_->mdAtoms, profiling_->nrnb,
             profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
             simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_,

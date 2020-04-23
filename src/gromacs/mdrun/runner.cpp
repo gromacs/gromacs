@@ -1653,9 +1653,10 @@ int Mdrunner::mdrunner()
         // Todo move to an MDModule
         simulatorBuilder.add(IonSwapping(swap));
         simulatorBuilder.add(TopologyData(&mtop, mdAtoms.get()));
+        simulatorBuilder.add(BoxDeformationHandle(deform.get()));
 
         // build and run simulator object based on user-input
-        auto simulator = simulatorBuilder.build(useModularSimulator, deform.get());
+        auto simulator = simulatorBuilder.build(useModularSimulator);
         simulator->run();
 
         if (fr->pmePpCommGpu)
