@@ -420,19 +420,19 @@ public:
     std::string appendPath(const char* id) const;
 
     //! Creates an entry with given parameters and fills it with \p checker.
-    ReferenceDataEntry::EntryPointer createEntry(const char*                       type,
-                                                 const char*                       id,
-                                                 const IReferenceDataEntryChecker& checker) const
+    static ReferenceDataEntry::EntryPointer createEntry(const char*                       type,
+                                                        const char*                       id,
+                                                        const IReferenceDataEntryChecker& checker)
     {
         ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(type, id));
         checker.fillEntry(entry.get());
         return entry;
     }
     //! Checks an entry for correct type and using \p checker.
-    ::testing::AssertionResult checkEntry(const ReferenceDataEntry&         entry,
-                                          const std::string&                fullId,
-                                          const char*                       type,
-                                          const IReferenceDataEntryChecker& checker) const
+    static ::testing::AssertionResult checkEntry(const ReferenceDataEntry&         entry,
+                                                 const std::string&                fullId,
+                                                 const char*                       type,
+                                                 const IReferenceDataEntryChecker& checker)
     {
         if (entry.type() != type)
         {

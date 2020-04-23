@@ -145,9 +145,9 @@ git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 # Extract changed files to a temporary directory
 mkdir $tmpdir/org
 if [[ $action == *-index ]] ; then
-    git checkout-index --prefix=$tmpdir/org/
+    git checkout-index --prefix=$tmpdir/org/ --stdin <$tmpdir/filelist_all
 else
-    rsync -a $srcdir/src/ $tmpdir/org/src/
+    rsync --files-from=$tmpdir/filelist_all -a $srcdir/ $tmpdir/org/ 
 fi
 # check for the existence of the compile_commands.json file and abort
 # if it is not present. If we don't have a build directory, try the
@@ -162,8 +162,7 @@ else
     # Need to have compilation database file available somewhere above where we are using it
     rsync -a $builddir/compile_commands.json $tmpdir/org
 fi
-# Duplicate the original files to a separate directory, where all changes will
-# be made.
+# Prepare directory to use for comparing changed and original files
 cp -r $tmpdir/org $tmpdir/new
 
 # Create output file for what was done (in case no messages get written)
@@ -173,11 +172,11 @@ touch $tmpdir/messages
 # Can only perform clang-tidy on a non-empty list of files
 cd $tmpdir/new
 if [[ $tidy_mode != "off" &&  -s $tmpdir/filelist_clangtidy ]] ; then
-    $RUN_CLANG_TIDY `cat $tmpdir/filelist_clangtidy` -- -header-filter=.* -j $concurrency -fix -fix-errors --cuda-host-only -nocudainc -quiet >$tmpdir/clang-tidy.out 2>&1
-    awk '/warning/,/clang-tidy|^$/' $tmpdir/clang-tidy.out | grep -v "warnings generated." | grep -v "Suppressed .* warnings" | grep -v "clang-analyzer"  | grep -v "to display errors from all non" | sed '/^\s*$/d' > $tmpdir/clang-tidy-errors.out
-    cp $tmpdir/clang-tidy.out $tmpdir/clang-tidy-errors.out $srcdir
+    $RUN_CLANG_TIDY `cat $tmpdir/filelist_clangtidy` -header-filter=.* -j $concurrency -fix -quiet -extra-arg=--cuda-host-only -extra-arg=-nocudainc>$tmpdir/clang-tidy.out 2>&1
+    awk '/warning/,/clang-tidy|^$/' $tmpdir/clang-tidy.out | grep -v "warnings generated." | grep -v "Suppressed .* warnings" | grep -v "clang-analyzer"  | grep -v "to display errors from all non" | sed '/^\s*$/d' > $tmpdir/clang-tidy-warnings.out
+    awk '/.*error.*/' $tmpdir/clang-tidy.out > $tmpdir/clang-tidy-errors.out || true
     if [ -s $tmpdir/clang-tidy-errors.out ]; then
-        echo "Running code tidying failed. Check output below for errors:"
+        echo "Running of clang-tidy failed. Check output below for errors:"
         cat $tmpdir/clang-tidy-errors.out
         rm -rf $tmpdir
         exit 2
@@ -188,6 +187,8 @@ if [[ $tidy_mode != "off" &&  -s $tmpdir/filelist_clangtidy ]] ; then
         if [[ $action == update-* ]] ; then
             msg="clang-tidy performed"
         fi
+        rsync --files-from=$tmpdir/filelist_all -a $srcdir/ ./
+        rsync -a $tmpdir/org/ $srcdir/
         git diff --no-index --name-only ../org/ . | \
             awk -v msg="$msg" '{sub(/.\//,""); print $0 ": " msg}' >> $tmpdir/messages
     fi
@@ -255,7 +256,10 @@ fi
 popd >/dev/null
 
 # Report what was done
-sort $tmpdir/messages | tee $warning_file
+if [ -s $tmpdir/clang-tidy-warnings.out ] ; then
+    cat $tmpdir/clang-tidy-warnings.out | tee $warning_file
+fi
+sort $tmpdir/messages | tee -a $warning_file
 
 rm -rf $tmpdir
 exit $changes

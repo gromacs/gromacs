@@ -10,7 +10,7 @@ clang-tidy:configure-push:
   variables:
     COMPILER_MAJOR_VERSION: 9
     BUILD_DIR: build-clang-tidy
-    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 clang-tidy:configure-schedule:
   extends:
@@ -40,7 +40,6 @@ clang-tidy:build:
 clang-tidy:test:
   extends:
     - .gromacs:base:build
-    - .use-ccache
     - .variables:default
     - .rules:basic-push
   stage: source-check
@@ -58,7 +57,7 @@ clang-tidy:test:
   script:
     # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
     # See discussion at https://gitlab.com/gromacs/gromacs/-/merge_requests/67
-    - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
+    - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base --fork-point FETCH_HEAD HEAD`)
     - RUN_CLANG_TIDY=run-clang-tidy-$COMPILER_MAJOR_VERSION bash admin/clang-tidy.sh check --parallel=$KUBERNETES_CPU_LIMIT --warnings=clang-tidy.log --rev=$REV -B=$BUILD_DIR
     - grep -iq "found code issues" clang-tidy.log | tee code-lint.txt || true
     - if [ -s code-lint.txt ] ; then echo "clang-tidy.sh found issues"; exit 1; fi

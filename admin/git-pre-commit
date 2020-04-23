@@ -68,7 +68,7 @@ exec 1>&2
 clangtidy_mode=`git config hooks.clangtidymode`
 clangformat_mode=`git config hooks.clangformatmode`
 copyright_mode=`git config hooks.copyrightmode`
-if [ -z "$uncrustify_mode" ]
+if [ -z "$clangtidy_mode" ]
 then
     clangtidy_mode=off
 fi

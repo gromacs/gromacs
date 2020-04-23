@@ -86,7 +86,7 @@ void forcerec_set_ranges(t_forcerec* fr, int natoms_force, int natoms_force_cons
  * \param[in] ic                     Structure holding the table constant
  * \param[in] tableExtensionLength   Length by which to extend the tables. Taken from the input record.
  */
-void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real tableExtensionLength);
+void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real tableExtensionLength);
 
 /*! \brief Initialize forcerec structure.
  *
