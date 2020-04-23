@@ -56,10 +56,8 @@ namespace gmx
 {
 
 //! \brief Build a Simulator object
-std::unique_ptr<ISimulator> SimulatorBuilder::build(bool            useModularSimulator,
-                                                    BoxDeformation* deform,
-                                                    gmx_mtop_t*     top_global,
-                                                    MDAtoms*        mdAtoms)
+std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator, BoxDeformation* deform)
+
 {
     // TODO: Reduce protocol complexity.
     //     Investigate individual paramters. Identify default-constructable parameters and clarify
@@ -132,8 +130,8 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool            useModularSi
                 constraintsParam_->enforcedRotation, deform, simulatorModules_->outputProvider,
                 simulatorModules_->mdModulesNotifier, legacyInput_->inputrec,
                 interactiveMD_->imdSession, centerOfMassPulling_->pull_work, ionSwapping_->ionSwap,
-                top_global, simulatorStateData_->globalState_p,
-                simulatorStateData_->observablesHistory_p, mdAtoms, profiling_->nrnb,
+                topologyData_->top_global, simulatorStateData_->globalState_p,
+                simulatorStateData_->observablesHistory_p, topologyData_->mdAtoms, profiling_->nrnb,
                 profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
                 simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_,
                 *replicaExchangeParameters_, membedHolder_->membed(), profiling_->walltimeAccounting,
@@ -146,10 +144,12 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool            useModularSi
             simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
             simulatorConfig_->startingBehavior_, constraintsParam_->vsite, constraintsParam_->constr,
             constraintsParam_->enforcedRotation, deform, simulatorModules_->outputProvider,
-            simulatorModules_->mdModulesNotifier, legacyInput_->inputrec, interactiveMD_->imdSession,
-            centerOfMassPulling_->pull_work, ionSwapping_->ionSwap, top_global,
-            simulatorStateData_->globalState_p, simulatorStateData_->observablesHistory_p, mdAtoms,
-            profiling_->nrnb, profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
+            simulatorModules_->mdModulesNotifier, legacyInput_->inputrec,
+            interactiveMD_->imdSession, centerOfMassPulling_->pull_work, ionSwapping_->ionSwap,
+            topologyData_->top_global,
+            simulatorStateData_->globalState_p,
+            simulatorStateData_->observablesHistory_p, topologyData_->mdAtoms, profiling_->nrnb,
+            profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
             simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_,
             *replicaExchangeParameters_, membedHolder_->membed(), profiling_->walltimeAccounting,
             std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));

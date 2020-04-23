@@ -244,7 +244,13 @@ public:
 class TopologyData
 {
 public:
-    TopologyData(gmx_mtop_t gmx_unused* pMtop, MDAtoms gmx_unused* pAtoms) {}
+    TopologyData(gmx_mtop_t gmx_unused* globalTopology, MDAtoms gmx_unused* mdAtoms) :
+        top_global(globalTopology),
+        mdAtoms(mdAtoms)
+    {
+    }
+    gmx_mtop_t* top_global;
+    MDAtoms*    mdAtoms;
 };
 
 /*! \libinternal
@@ -333,10 +339,7 @@ public:
      *
      * \return  Unique pointer to a Simulator object
      */
-    std::unique_ptr<ISimulator> build(bool            useModularSimulator,
-                                      BoxDeformation* deform,
-                                      gmx_mtop_t*     top_global,
-                                      MDAtoms*        mdAtoms);
+    std::unique_ptr<ISimulator> build(bool useModularSimulator, BoxDeformation* deform);
 
 private:
     // Note: we use std::unique_ptr instead of std::optional because we want to
