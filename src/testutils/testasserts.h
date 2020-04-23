@@ -42,6 +42,7 @@
  *  - exceptions
  *  - floating-point comparison
  *  - comparison against NULL
+ *  - death tests
  *
  * \if internal
  * \todo
@@ -206,6 +207,34 @@ void processExpectedException(const std::exception& ex);
  * \hideinitializer
  */
 #define ASSERT_NO_THROW_GMX(statement) GMX_TEST_NO_THROW_(statement, GTEST_FATAL_FAILURE_)
+
+/*! \brief
+ * Wrapper around EXPECT_DEATH_IF_SUPPORTED gtest macro for thread safe execution.
+ *
+ * Makes sure that tests that are supposed to trigger an assertion are only executed
+ * in a threadsafe environment, and not when when running under e.g. MPI.
+ *
+ * \hideinitializer
+ */
+#define GMX_EXPECT_DEATH_IF_SUPPORTED(expr, msg) \
+    if (!GMX_LIB_MPI)                            \
+    {                                            \
+        EXPECT_DEATH_IF_SUPPORTED(expr, msg);    \
+    }
+
+/*! \brief
+ * Wrapper around ASSERT_DEATH_IF_SUPPORTED gtest macro for thread safe execution.
+ *
+ * Makes sure that tests that are supposed to trigger an assertion are only executed
+ * in a threadsafe environment when running under e.g. MPI.
+ *
+ * \hideinitializer
+ */
+#define GMX_ASSERT_DEATH_IF_SUPPORTED(expr, msg) \
+    if (!GMX_LIB_MPI)                            \
+    {                                            \
+        ASSERT_DEATH_IF_SUPPORTED(expr, msg);    \
+    }
 
 //! \}
 

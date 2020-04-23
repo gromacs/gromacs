@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,8 @@
  * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
+
+#include "config.h"
 
 #include <string>
 
@@ -171,8 +173,8 @@ TEST_F(DensityFittingTest, GromppErrorWhenEnergyEvaluationFrequencyMismatch)
 {
     runner_.useStringAsMdpFile(mdpMdDensfitYesUnsetValues + mdpEnergyAndDensityfittingIntervalMismatch_);
 
-    EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(),
-                              ".*is not a multiple of density-guided-simulation-nst.*");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(),
+                                  ".*is not a multiple of density-guided-simulation-nst.*");
 }
 
 /* Fit a subset of three of twelve argon atoms into a reference density

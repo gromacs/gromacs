@@ -263,6 +263,7 @@ gromacs:clang-9:configure:
   extends:
    - .gromacs:base:configure
    - .use-clang:base
+   - .use-mpi
    - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
   variables:
@@ -708,6 +709,7 @@ gromacs:clang-9:regressiontest:
   image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
   variables:
     REGRESSIONTEST_DOUBLE: "-double"
+    REGRESSIONTEST_PARALLEL: "-np"
   needs:
     - job: gromacs:clang-9:build
     - job: regressiontests:prepare

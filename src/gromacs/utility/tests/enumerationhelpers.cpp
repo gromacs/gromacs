@@ -42,11 +42,15 @@
 
 #include "gromacs/utility/enumerationhelpers.h"
 
+#include "config.h"
+
 #include <iostream>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
+
+#include "testutils/testasserts.h"
 
 namespace gmx
 {
@@ -146,7 +150,7 @@ TEST(EnumerationHelpersTest, EnumerationArrayCountIsSafe)
 #ifndef NDEBUG
     // Tests (where possible) that those assertions do fire in a build
     // with debug behavior.
-    EXPECT_DEATH_IF_SUPPORTED(fooStrings[Foo::Count], "index out of range");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(fooStrings[Foo::Count], "index out of range");
 #endif
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,8 @@
 
 #include "gromacs/gmxpreprocess/readir.h"
 
+#include "config.h"
+
 #include <string>
 
 #include <gtest/gtest.h>
@@ -61,8 +63,8 @@
 #include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
-
 namespace gmx
 {
 namespace test
@@ -139,7 +141,7 @@ TEST_F(GetIrTest, HandlesDifferentKindsOfMdpLines)
 TEST_F(GetIrTest, RejectsNonCommentLineWithNoEquals)
 {
     const char* inputMdpFile = "title simulation";
-    EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No '=' to separate");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No '=' to separate");
 }
 
 TEST_F(GetIrTest, AcceptsKeyWithoutValue)
@@ -152,13 +154,14 @@ TEST_F(GetIrTest, AcceptsKeyWithoutValue)
 TEST_F(GetIrTest, RejectsValueWithoutKey)
 {
     const char* inputMdpFile = "= -I/home/me/stuff";
-    EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No .mdp parameter name was found");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No .mdp parameter name was found");
 }
 
 TEST_F(GetIrTest, RejectsEmptyKeyAndEmptyValue)
 {
     const char* inputMdpFile = " = ";
-    EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "No .mdp parameter name or value was found");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile),
+                                  "No .mdp parameter name or value was found");
 }
 
 TEST_F(GetIrTest, AcceptsDefineParametersWithValuesIncludingAssignment)
@@ -198,8 +201,8 @@ TEST_F(GetIrTest, AcceptsElectricFieldOscillating)
 TEST_F(GetIrTest, RejectsDuplicateOldAndNewKeys)
 {
     const char* inputMdpFile[] = { "verlet-buffer-drift = 1.3", "verlet-buffer-tolerance = 2.7" };
-    EXPECT_DEATH_IF_SUPPORTED(runTest(joinStrings(inputMdpFile, "\n")),
-                              "A parameter is present with both");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(joinStrings(inputMdpFile, "\n")),
+                                  "A parameter is present with both");
 }
 
 TEST_F(GetIrTest, AcceptsImplicitSolventNo)
@@ -211,7 +214,7 @@ TEST_F(GetIrTest, AcceptsImplicitSolventNo)
 TEST_F(GetIrTest, RejectsImplicitSolventYes)
 {
     const char* inputMdpFile = "implicit-solvent = yes";
-    EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "Invalid enum");
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(inputMdpFile), "Invalid enum");
 }
 
 TEST_F(GetIrTest, AcceptsMimic)
