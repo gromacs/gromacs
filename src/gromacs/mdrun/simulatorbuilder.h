@@ -196,10 +196,16 @@ public:
     t_forcerec*     forceRec;
 };
 
+/*! \brief SimulatorBuilder parameter type for InteractiveMD.
+ *
+ * Conveys a non-owning pointer to implementation details.
+ */
 class InteractiveMD
 {
 public:
-    explicit InteractiveMD(ImdSession gmx_unused* pSession) {}
+    explicit InteractiveMD(ImdSession* imdSession) : imdSession(imdSession) {}
+
+    ImdSession* imdSession;
 };
 
 class SimulatorModules
@@ -318,7 +324,6 @@ public:
                                       BoxDeformation*                  deform,
                                       IMDOutputProvider*               outputProvider,
                                       const MdModulesNotifier&         mdModulesNotifier,
-                                      ImdSession*                      imdSession,
                                       pull_t*                          pull_work,
                                       t_swap*                          swap,
                                       gmx_mtop_t*                      top_global,
