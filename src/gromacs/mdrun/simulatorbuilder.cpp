@@ -55,9 +55,7 @@
 namespace gmx
 {
 
-// The build function will use members in a future change, and so should not be static.
-//! Build a Simulator object
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+//! \brief Build a Simulator object
 std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     useModularSimulator,
                                                     FILE*                    fplog,
                                                     t_commrec*               cr,
@@ -84,6 +82,9 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
                                                     const ReplicaExchangeParameters& replExParams,
                                                     gmx_walltime_accounting* walltime_accounting)
 {
+    // TODO: Reduce protocol complexity.
+    //     Investigate individual paramters. Identify default-constructable parameters and clarify
+    //     usage requirements.
     if (!stopHandlerBuilder_)
     {
         throw APIError("You must add a StopHandlerBuilder before calling build().");
@@ -99,6 +100,46 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
     if (!simulatorConfig_)
     {
         throw APIError("Simulator config should be set before building the simulator");
+    }
+    if (!simulatorEnv_)
+    {
+        throw APIError("You must add a SimulatorEnv before calling build().");
+    }
+    if (!profiling_)
+    {
+        throw APIError("You must add a Profiling before calling build().");
+    }
+    if (!constraintsParam_)
+    {
+        throw APIError("You must add a ConstraintsParam before calling build().");
+    }
+    if (!legacyInput_)
+    {
+        throw APIError("You must add a LegacyInput before calling build().");
+    }
+    if (!replicaExchangeParameters_)
+    {
+        throw APIError("You must add a ReplicaExchangeParameters before calling build().");
+    }
+    if (!interactiveMD_)
+    {
+        throw APIError("You must add a InteractiveMD before calling build().");
+    }
+    if (!simulatorModules_)
+    {
+        throw APIError("You must add a SimulatorModules before calling build().");
+    }
+    if (!centerOfMassPulling_)
+    {
+        throw APIError("You must add a CenterOfMassPulling before calling build().");
+    }
+    if (!ionSwapping_)
+    {
+        throw APIError("You must add a IonSwapping before calling build().");
+    }
+    if (!topologyData_)
+    {
+        throw APIError("You must add a TopologyData before calling build().");
     }
 
     if (useModularSimulator)

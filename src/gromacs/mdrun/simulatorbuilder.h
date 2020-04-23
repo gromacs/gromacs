@@ -60,7 +60,6 @@ struct gmx_wallcycle;
 struct gmx_walltime_accounting;
 struct ObservablesHistory;
 struct pull_t;
-struct ReplicaExchangeParameters;
 struct t_commrec;
 struct t_forcerec;
 struct t_filenm;
@@ -229,25 +228,53 @@ public:
         simulatorConfig_ = std::make_unique<SimulatorConfig>(simulatorConfig);
     }
 
-    void add(SimulatorEnv&& /*unused*/) {}
+    void add(SimulatorEnv&& simulatorEnv)
+    {
+        simulatorEnv_ = std::make_unique<SimulatorEnv>(simulatorEnv);
+    }
 
-    void add(Profiling&& /*unused*/) {}
+    void add(Profiling&& profiling) { profiling_ = std::make_unique<Profiling>(profiling); }
 
-    void add(ConstraintsParam&& /*unused*/) {}
+    void add(ConstraintsParam&& constraintsParam)
+    {
+        constraintsParam_ = std::make_unique<ConstraintsParam>(constraintsParam);
+    }
 
-    void add(LegacyInput&& /*unused*/) {}
+    void add(LegacyInput&& legacyInput)
+    {
+        legacyInput_ = std::make_unique<LegacyInput>(legacyInput);
+    }
 
-    void add(ReplicaExchangeParameters&& /*unused*/) {}
+    void add(ReplicaExchangeParameters&& replicaExchangeParameters)
+    {
+        replicaExchangeParameters_ =
+                std::make_unique<ReplicaExchangeParameters>(replicaExchangeParameters);
+    }
 
-    void add(InteractiveMD&& /*unused*/) {}
+    void add(InteractiveMD&& interactiveMd)
+    {
+        interactiveMD_ = std::make_unique<InteractiveMD>(interactiveMd);
+    }
 
-    void add(SimulatorModules&& /*unused*/) {}
+    void add(SimulatorModules&& simulatorModules)
+    {
+        simulatorModules_ = std::make_unique<SimulatorModules>(simulatorModules);
+    }
 
-    void add(CenterOfMassPulling&& /*unused*/) {}
+    void add(CenterOfMassPulling&& centerOfMassPulling)
+    {
+        centerOfMassPulling_ = std::make_unique<CenterOfMassPulling>(centerOfMassPulling);
+    }
 
-    void add(IonSwapping&& /*unused*/) {}
+    void add(IonSwapping&& ionSwapping)
+    {
+        ionSwapping_ = std::make_unique<IonSwapping>(ionSwapping);
+    }
 
-    void add(TopologyData&& /*unused*/) {}
+    void add(TopologyData&& topologyData)
+    {
+        topologyData_ = std::make_unique<TopologyData>(topologyData);
+    }
 
     /*! \brief Build a Simulator object based on input data
      *
@@ -286,10 +313,22 @@ public:
                                       gmx_walltime_accounting*         walltime_accounting);
 
 private:
-    std::unique_ptr<SimulatorConfig>    simulatorConfig_;
-    std::unique_ptr<MembedHolder>       membedHolder_;
-    std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_;
-    std::unique_ptr<SimulatorStateData> simulatorStateData_;
+    // Note: we use std::unique_ptr instead of std::optional because we want to
+    // allow for opaque types at the discretion of the module developer.
+    std::unique_ptr<SimulatorConfig>           simulatorConfig_;
+    std::unique_ptr<MembedHolder>              membedHolder_;
+    std::unique_ptr<StopHandlerBuilder>        stopHandlerBuilder_;
+    std::unique_ptr<SimulatorStateData>        simulatorStateData_;
+    std::unique_ptr<SimulatorEnv>              simulatorEnv_;
+    std::unique_ptr<Profiling>                 profiling_;
+    std::unique_ptr<ConstraintsParam>          constraintsParam_;
+    std::unique_ptr<LegacyInput>               legacyInput_;
+    std::unique_ptr<ReplicaExchangeParameters> replicaExchangeParameters_;
+    std::unique_ptr<InteractiveMD>             interactiveMD_;
+    std::unique_ptr<SimulatorModules>          simulatorModules_;
+    std::unique_ptr<CenterOfMassPulling>       centerOfMassPulling_;
+    std::unique_ptr<IonSwapping>               ionSwapping_;
+    std::unique_ptr<TopologyData>              topologyData_;
 };
 
 } // namespace gmx
