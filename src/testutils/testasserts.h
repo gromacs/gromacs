@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,7 @@
  *  - exceptions
  *  - floating-point comparison
  *  - comparison against NULL
+ *  - death tests
  *
  * \if internal
  * \todo
@@ -205,6 +206,34 @@ void processExpectedException(const std::exception& ex);
  * \hideinitializer
  */
 #define ASSERT_NO_THROW_GMX(statement) GMX_TEST_NO_THROW_(statement, GTEST_FATAL_FAILURE_)
+
+/*! \brief
+ * Wrapper around EXPECT_DEATH_IF_SUPPORTED gtest macro for thread safe execution.
+ *
+ * Makes sure that tests that are supposed to trigger an assertion are only executed
+ * in a threadsafe environment, and not when when running under e.g. MPI.
+ *
+ * \hideinitializer
+ */
+#define GMX_EXPECT_DEATH_IF_SUPPORTED(expr, msg) \
+    if (!GMX_LIB_MPI)                            \
+    {                                            \
+        EXPECT_DEATH_IF_SUPPORTED(expr, msg);    \
+    }
+
+/*! \brief
+ * Wrapper around ASSERT_DEATH_IF_SUPPORTED gtest macro for thread safe execution.
+ *
+ * Makes sure that tests that are supposed to trigger an assertion are only executed
+ * in a threadsafe environment when running under e.g. MPI.
+ *
+ * \hideinitializer
+ */
+#define GMX_ASSERT_DEATH_IF_SUPPORTED(expr, msg) \
+    if (!GMX_LIB_MPI)                            \
+    {                                            \
+        ASSERT_DEATH_IF_SUPPORTED(expr, msg);    \
+    }
 
 //! \}
 

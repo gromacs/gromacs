@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,15 @@
 
 #include "gromacs/utility/enumerationhelpers.h"
 
+#include "config.h"
+
 #include <iostream>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
+
+#include "testutils/testasserts.h"
 
 namespace gmx
 {
@@ -133,6 +137,21 @@ TEST(EnumerationHelpersTest, EnumerationArrayWorks)
     EXPECT_EQ(fooStrings[Foo::Bar], "Bar");
     EXPECT_EQ(fooStrings[Foo::Baz], "Baz");
     EXPECT_EQ(fooStrings[Foo::Fooz], "Fooz");
+}
+
+TEST(EnumerationHelpersTest, EnumerationArrayCountIsSafe)
+{
+    using FooArray = EnumerationArray<Foo, std::string>;
+    const FooArray fooStrings{ { "Bar", "Baz", "Fooz" } };
+
+    // Ensures that the assertions in EnumerationArray::operator[]
+    // would fire if an out-range value (including Count) was used.
+    EXPECT_LE(fooStrings.size(), size_t(Foo::Count));
+#ifndef NDEBUG
+    // Tests (where possible) that those assertions do fire in a build
+    // with debug behavior.
+    GMX_EXPECT_DEATH_IF_SUPPORTED(fooStrings[Foo::Count], "index out of range");
+#endif
 }
 
 //! Helper function

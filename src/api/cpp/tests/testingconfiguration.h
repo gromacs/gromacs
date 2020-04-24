@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,6 +41,8 @@
 #include <string>
 #include <vector>
 
+#include "config.h"
+
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/stringutil.h"
@@ -55,6 +57,11 @@ namespace gmxapi
 
 namespace testing
 {
+
+#if GMX_OPENMP || defined(DOXYGEN)
+//! Number of OpenMP threads for child mdrun call.
+static constexpr int g_numOpenMPThreads = 2;
+#endif
 
 /*! \brief Helper function to get step size as floating point number.
  *
@@ -127,6 +134,17 @@ public:
         mdArgs.emplace_back(runner_.edrFileName_);
         mdArgs.emplace_back("-cpo");
         mdArgs.emplace_back(runner_.cptFileName_);
+#if GMX_THREAD_MPI
+        /* This should be handled through the actual API we have for getting
+         * ranks, but currently this leads to data races right now */
+        mdArgs.emplace_back("-ntmpi");
+        mdArgs.emplace_back("1");
+#endif
+
+#if GMX_OPENMP
+        mdArgs.emplace_back("-ntomp");
+        mdArgs.emplace_back(std::to_string(g_numOpenMPThreads));
+#endif
 
         return mdArgs;
     }
