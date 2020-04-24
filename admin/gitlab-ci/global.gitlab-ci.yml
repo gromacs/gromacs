@@ -12,8 +12,7 @@
     CACHE_FALLBACK_KEY: "$CI_JOB_NAME-$CI_JOB_STAGE-master"
     BUILD_DIR: build
     INSTALL_DIR: install
-    CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=ON"
-# TODO: Get these from updated Docker images.
+    CMAKE_GMXAPI_OPTIONS: ""
 
 # Our generic before_script to install dependencies and prepare the ccache directory.
 .before_script:default:
