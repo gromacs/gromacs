@@ -88,6 +88,12 @@ set(GMX_VERSION_STRING_FULL          ${PROJECT_VERSION})
 # We had to pass the directory list as a string, so now we convert it back to a list
 string(REPLACE ":" ";" DIRECTORIES_TO_CHECKSUM_LIST ${DIRECTORIES_TO_CHECKSUM})
 
+# We need the full path to the directories after passing it through
+set(FULL_PATH_DIRECTORIES "")
+foreach(DIR ${DIRECTORIES_TO_CHECKSUM_LIST})
+    list(APPEND FULL_PATH_DIRECTORIES "${PROJECT_SOURCE_DIR}/${DIR}")
+endforeach()
+
 # Prepare for checking source tree file hashes.
 # To notify the user during compilation and at runtime that the build source
 # has not been modified after unpacking the source tarball, the contents are hashed
@@ -108,7 +114,7 @@ if(NOT VERSION_STRING_OF_FORK OR "${VERSION_STRING_OF_FORK}" STREQUAL "")
         set(CHECKSUM_RESULT_FILE "${CMAKE_CURRENT_BINARY_DIR}/computed_checksum")
         execute_process(COMMAND ${PYTHON_EXECUTABLE}
                                 ${PROJECT_SOURCE_DIR}/admin/createFileHash.py
-                                -s ${DIRECTORIES_TO_CHECKSUM_LIST}
+                                -s ${FULL_PATH_DIRECTORIES}
                                 -o ${CHECKSUM_RESULT_FILE}
                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                         OUTPUT_QUIET)
