@@ -229,7 +229,7 @@ gromacs:gcc-7:configure:
     CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
     COMPILER_MAJOR_VERSION: 7
 
-gromacs:gcc-8:configure:
+gromacs:gcc-8-cuda-10.1:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
@@ -291,7 +291,7 @@ gromacs:clang-ASAN:configure:
     COMPILER_MAJOR_VERSION: 8
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
 
-gromacs:gcc-8:release:configure:
+gromacs:gcc-8-cuda-10.1:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc:base
@@ -342,7 +342,7 @@ gromacs:clang-9:release:configure:
     - regressiontests:package
     - prepare-release-version
 
-gromacs:clang-8:release:configure:
+gromacs:clang-8-cuda-10.1:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-clang:base
@@ -401,7 +401,7 @@ gromacs:gcc-7:build:
     - job: gromacs:gcc-7:configure
       artifacts: true
 
-gromacs:gcc-8:build:
+gromacs:gcc-8-cuda-10.1:build:
   extends:
     - .variables:default
     - .gromacs:base:build
@@ -410,7 +410,7 @@ gromacs:gcc-8:build:
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi:master
   needs:
-    - job: gromacs:gcc-8:configure
+    - job: gromacs:gcc-8-cuda-10.1:configure
 
 gromacs:clang-TSAN:build:
   extends:
@@ -467,7 +467,7 @@ gromacs:clang-9:build:
   needs:
     - job: gromacs:clang-9:configure
 
-gromacs:gcc-8:release:build:
+gromacs:gcc-8-cuda-10.1:release:build:
   extends:
     - .variables:default  
     - .gromacs:base:build
@@ -479,7 +479,7 @@ gromacs:gcc-8:release:build:
     BUILD_DIR: release-builds-gcc
   image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi:master
   needs:
-    - job: gromacs:gcc-8:release:configure
+    - job: gromacs:gcc-8-cuda-10.1:release:configure
 
 gromacs:gcc-7:release:build:
   extends:
@@ -509,7 +509,7 @@ gromacs:clang-9:release:build:
   needs:
     - job: gromacs:clang-9:release:configure
 
-gromacs:clang-8:release:build:
+gromacs:clang-8-cuda-10.1:release:build:
   extends:
     - .variables:default
     - .gromacs:base:build
@@ -521,7 +521,7 @@ gromacs:clang-8:release:build:
     BUILD_DIR: release-builds-clang
   image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi:master
   needs:
-    - job: gromacs:clang-8:release:configure
+    - job: gromacs:clang-8-cuda-10.1:release:configure
 
 # Jobs running during test stage
 
@@ -598,7 +598,7 @@ gromacs:gcc-7:test:
   needs:
     - job: gromacs:gcc-7:build
 
-gromacs:gcc-8:test:
+gromacs:gcc-8-cuda-10.1:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
@@ -607,7 +607,7 @@ gromacs:gcc-8:test:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   needs:
-    - job: gromacs:gcc-8:build
+    - job: gromacs:gcc-8-cuda-10.1:build
 
 gromacs:clang-8:test:
   extends:
@@ -659,7 +659,7 @@ gromacs:gcc-7:regressiontest:
     - job: gromacs:gcc-7:build
     - job: regressiontests:prepare
 
-gromacs:gcc-8:regressiontest:
+gromacs:gcc-8-cuda-10.1:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
@@ -671,7 +671,7 @@ gromacs:gcc-8:regressiontest:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
   needs:
-    - job: gromacs:gcc-8:build
+    - job: gromacs:gcc-8-cuda-10.1:build
     - job: regressiontests:prepare
 
 gromacs:clang-8:regressiontest:
@@ -714,7 +714,7 @@ gromacs:clang-9:regressiontest:
     - job: gromacs:clang-9:build
     - job: regressiontests:prepare
 
-gromacs:gcc-8:release:test:
+gromacs:gcc-8-cuda-10.1:release:test:
   extends:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
@@ -723,8 +723,8 @@ gromacs:gcc-8:release:test:
   variables:
     BUILD_DIR: release-builds-gcc
   needs:
-    - job: gromacs:gcc-8:release:configure
-    - job: gromacs:gcc-8:release:build
+    - job: gromacs:gcc-8-cuda-10.1:release:configure
+    - job: gromacs:gcc-8-cuda-10.1:release:build
 
 gromacs:gcc-7:release:test:
   extends:
@@ -750,7 +750,7 @@ gromacs:clang-9:release:test:
     - job: gromacs:clang-9:release:configure
     - job: gromacs:clang-9:release:build
 
-gromacs:clang-8:release:test:
+gromacs:clang-8-cuda-10.1:release:test:
   extends:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
@@ -759,8 +759,8 @@ gromacs:clang-8:release:test:
   variables:
     BUILD_DIR: release-builds-clang
   needs:
-    - job: gromacs:clang-8:release:configure
-    - job: gromacs:clang-8:release:build
+    - job: gromacs:clang-8-cuda-10.1:release:configure
+    - job: gromacs:clang-8-cuda-10.1:release:build
 
 gromacs:gcc-7:release:regressiontest:
   extends:
@@ -788,7 +788,7 @@ gromacs:clang-9:release:regressiontest:
     - job: gromacs:clang-9:release:build
     - job: regressiontests:package
 
-gromacs:clang-8:release:regressiontest:
+gromacs:clang-8-cuda-10.1:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
@@ -803,6 +803,6 @@ gromacs:clang-8:release:regressiontest:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
 
   needs:
-    - job: gromacs:clang-8:release:build
+    - job: gromacs:clang-8-cuda-10.1:release:build
     - job: regressiontests:package
 
