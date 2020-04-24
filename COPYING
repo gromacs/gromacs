@@ -1369,7 +1369,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Questions? Contact Christian R. Trott (crtrott@sandia.gov)
 
-18. pybind11 release 2.2.4 from https://github.com/pybind/pybind11
+18. pybind11 release 2.5.0 from https://github.com/pybind/pybind11
 ==================================================================
 
     Files: python_packaging/src/external/pybind/*

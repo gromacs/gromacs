@@ -1,11 +1,11 @@
 ## pybind11
 
 For simplicity, the pybind headers were retrieved from 
-https://github.com/pybind/pybind11/archive/v2.4.3.tar.gz
+https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz
 
     git rm -rf pybind
     mkdir -p pybind
-    wget https://github.com/pybind/pybind11/archive/v2.4.3.tar.gz
+    wget https://github.com/pybind/pybind11/archive/v2.5.0.tar.gz
     tar xvf *.tar.gz
     mv pybind11*/include pybind/
     mv pybind11*/tools pybind/

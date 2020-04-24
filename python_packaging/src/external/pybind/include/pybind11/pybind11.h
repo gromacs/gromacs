@@ -529,7 +529,7 @@ protected:
                     call.args_convert.push_back(arg_rec ? arg_rec->convert : true);
                 }
                 if (bad_arg)
-                    continue; // Maybe it was meant for another overload (Issue #688)
+                    continue; // Maybe it was meant for another overload (issue #688)
 
                 // We'll need to copy this if we steal some kwargs for defaults
                 dict kwargs = reinterpret_borrow<dict>(kwargs_in);
@@ -1003,14 +1003,21 @@ void call_operator_delete(T *p, size_t s, size_t) { T::operator delete(p, s); }
 
 inline void call_operator_delete(void *p, size_t s, size_t a) {
     (void)s; (void)a;
-#if defined(PYBIND11_CPP17)
-    if (a > __STDCPP_DEFAULT_NEW_ALIGNMENT__)
-        ::operator delete(p, s, std::align_val_t(a));
-    else
+    #if defined(__cpp_aligned_new) && (!defined(_MSC_VER) || _MSC_VER >= 1912)
+        if (a > __STDCPP_DEFAULT_NEW_ALIGNMENT__) {
+            #ifdef __cpp_sized_deallocation
+                ::operator delete(p, s, std::align_val_t(a));
+            #else
+                ::operator delete(p, std::align_val_t(a));
+            #endif
+            return;
+        }
+    #endif
+    #ifdef __cpp_sized_deallocation
         ::operator delete(p, s);
-#else
-    ::operator delete(p);
-#endif
+    #else
+        ::operator delete(p);
+    #endif
 }
 
 NAMESPACE_END(detail)
@@ -1798,7 +1805,7 @@ public:
 NAMESPACE_BEGIN(detail)
 // Returns a reference to a function-local static exception object used in the simple
 // register_exception approach below.  (It would be simpler to have the static local variable
-// directly in register_exception, but that makes clang <3.5 segfault - Issue #1349).
+// directly in register_exception, but that makes clang <3.5 segfault - issue #1349).
 template <typename CppException>
 exception<CppException> &get_exception_object() { static exception<CppException> ex; return ex; }
 NAMESPACE_END(detail)
