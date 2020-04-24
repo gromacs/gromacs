@@ -49,8 +49,8 @@
 
 #include <algorithm>
 #include <memory>
-
 #include <unordered_set>
+
 #include <sys/types.h>
 
 #include "gromacs/utility/arrayref.h"

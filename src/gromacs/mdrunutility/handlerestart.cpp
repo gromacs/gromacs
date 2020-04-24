@@ -65,9 +65,8 @@
 #include <algorithm>
 #include <exception>
 #include <functional>
-#include <tuple>
-
 #include <optional>
+#include <tuple>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/checkpoint.h"

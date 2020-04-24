@@ -46,7 +46,6 @@
 #include <cmath>
 
 #include <algorithm>
-
 #include <cfenv>
 
 //! Floating point exception set that we use and care about

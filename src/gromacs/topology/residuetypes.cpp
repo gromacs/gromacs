@@ -42,9 +42,8 @@
 
 #include <algorithm>
 #include <iterator>
-#include <string>
-
 #include <optional>
+#include <string>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"

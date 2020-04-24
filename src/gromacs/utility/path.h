@@ -45,10 +45,9 @@
 #define GMX_UTILITY_PATH_H
 
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
-
-#include <string_view>
 
 namespace gmx
 {

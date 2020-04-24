@@ -46,9 +46,8 @@
 #define GMX_COMMANDLINE_FILENM_H
 
 #include <string>
-#include <vector>
-
 #include <string_view>
+#include <vector>
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/arrayref.h"

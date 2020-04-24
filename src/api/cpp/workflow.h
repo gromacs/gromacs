@@ -42,11 +42,10 @@
  * \ingroup gmxapi
  */
 
+#include <forward_list>
 #include <map>
 #include <memory>
 #include <string>
-
-#include <forward_list>
 
 namespace gmxapi
 {

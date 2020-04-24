@@ -44,7 +44,6 @@
 #include "densityfittingforceprovider.h"
 
 #include <numeric>
-
 #include <optional>
 
 #include "gromacs/gmxlib/network.h"

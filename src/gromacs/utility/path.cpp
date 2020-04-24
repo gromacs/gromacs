@@ -55,9 +55,9 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <utility>
 
-#include <string_view>
 #include <sys/stat.h>
 
 #if GMX_NATIVE_WINDOWS

@@ -43,15 +43,18 @@
 
 #include <map>
 
+#include "gromacs/mdrun/runner.h"
+#include "gromacs/mdrun/simulationcontext.h"
+#include "gromacs/mdrunutility/logging.h"
+
+// Above are the public headers from other modules.
+// Following are public headers for the current module.
 #include "gmxapi/context.h"
 #include "gmxapi/md.h"
 #include "gmxapi/status.h"
 #include "gmxapi/md/mdmodule.h"
 #include "gmxapi/session/resources.h"
 
-#include "gromacs/mdrun/runner.h"
-#include "gromacs/mdrun/simulationcontext.h"
-#include "gromacs/mdrunutility/logging.h"
 
 namespace gmxapi
 {

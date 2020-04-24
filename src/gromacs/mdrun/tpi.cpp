@@ -50,7 +50,6 @@
 #include <ctime>
 
 #include <algorithm>
-
 #include <cfenv>
 
 #include "gromacs/commandline/filenm.h"

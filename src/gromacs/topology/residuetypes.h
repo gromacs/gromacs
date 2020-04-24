@@ -35,9 +35,8 @@
 #ifndef GMX_TOPOLOGY_RESIDUETYPES_H
 #define GMX_TOPOLOGY_RESIDUETYPES_H
 
-#include <string>
-
 #include <optional>
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"

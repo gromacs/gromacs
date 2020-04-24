@@ -41,10 +41,12 @@
  * \ingroup gmxapi
  */
 
+#include "gromacs/mdrunutility/logging.h"
+
+// Above are headers for dependencies.
+// Following are public headers for the current module.
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"
-
-#include "gromacs/mdrunutility/logging.h"
 
 namespace gmx
 {

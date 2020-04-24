@@ -42,17 +42,20 @@
  * \ingroup gmxapi_md
  */
 
+#include <atomic>
 #include <functional>
 #include <memory>
 
-#include <atomic>
-#include "gmxapi/session.h"
-#include "gmxapi/md/mdsignals.h"
-
-#include "api/cpp/session_impl.h"
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrun/runner.h"
+
+// Public gmxapi headers.
+#include "gmxapi/session.h"
+#include "gmxapi/md/mdsignals.h"
+
+// Internal gmxapi headers.
+#include "api/cpp/session_impl.h"
 
 namespace gmxapi
 {

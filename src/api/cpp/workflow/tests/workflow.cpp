@@ -35,14 +35,9 @@
 
 #include <memory>
 
-#include "api/cpp/workflow.h"
-#include "api/cpp/workflow_impl.h"
-#include "api/cpp/include/gmxapi/context.h"
-#include "api/cpp/include/gmxapi/status.h"
-#include "api/cpp/include/gmxapi/system.h"
-#include "gromacs/utility/arrayref.h"
-
-#include "api/cpp/tests/testingconfiguration.h"
+#include "workflow.h"
+#include "workflow_impl.h"
+#include "tests/testingconfiguration.h"
 
 namespace gmxapi
 {

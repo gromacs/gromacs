@@ -44,11 +44,13 @@
 #include <memory>
 #include <string>
 
-#include "gmxapi/context.h"
-#include "gmxapi/session.h"
-
 #include "gromacs/mdrun/legacymdrunoptions.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+
+// Above are headers for dependencies.
+// Following are public headers for the current module.
+#include "gmxapi/context.h"
+#include "gmxapi/session.h"
 
 namespace gmxapi
 {
