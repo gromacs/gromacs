@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,9 @@ namespace gmx
 class SimdFloat
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     SimdFloat() {}
-
+    MSVC_DIAGNOSTIC_RESET
     SimdFloat(float f) : simdInternal_(_mm256_set1_ps(f)) {}
 
     // Internal utility constructor to simplify return statements
@@ -65,8 +66,9 @@ public:
 class SimdFInt32
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     SimdFInt32() {}
-
+    MSVC_DIAGNOSTIC_RESET
     SimdFInt32(std::int32_t i) : simdInternal_(_mm256_set1_epi32(i)) {}
 
     // Internal utility constructor to simplify return statements
@@ -78,8 +80,9 @@ public:
 class SimdFBool
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     SimdFBool() {}
-
+    MSVC_DIAGNOSTIC_RESET
     SimdFBool(bool b) : simdInternal_(_mm256_castsi256_ps(_mm256_set1_epi32(b ? 0xFFFFFFFF : 0))) {}
 
     // Internal utility constructor to simplify return statements

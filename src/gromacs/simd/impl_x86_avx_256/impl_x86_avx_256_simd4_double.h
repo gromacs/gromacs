@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,9 @@ namespace gmx
 class Simd4Double
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     Simd4Double() {}
+    MSVC_DIAGNOSTIC_RESET
 
     Simd4Double(double d) : simdInternal_(_mm256_set1_pd(d)) {}
 
@@ -62,7 +64,9 @@ public:
 class Simd4DBool
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     Simd4DBool() {}
+    MSVC_DIAGNOSTIC_RESET
 
     //! \brief Construct from scalar bool
     Simd4DBool(bool b) : simdInternal_(_mm256_castsi256_pd(_mm256_set1_epi32(b ? 0xFFFFFFFF : 0)))

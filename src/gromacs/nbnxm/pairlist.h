@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,6 +155,7 @@ typedef struct
 struct nbnxn_excl_t
 {
     /* Constructor, sets no exclusions, so all atom pairs interacting */
+    MSVC_DIAGNOSTIC_IGNORE(26495) // pair is not being initialized!
     nbnxn_excl_t()
     {
         for (unsigned int& pairEntry : pair)
@@ -162,6 +163,7 @@ struct nbnxn_excl_t
             pairEntry = NBNXN_INTERACTION_MASK_ALL;
         }
     }
+    MSVC_DIAGNOSTIC_RESET
 
     /* Topology exclusion interaction bits per warp */
     unsigned int pair[c_nbnxnGpuExclSize];

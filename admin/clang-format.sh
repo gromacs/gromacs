@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,7 @@ then
     if [ -z "$CLANG_FORMAT" ]
     then
         echo "Please set the path to clang-format using the git hook"
-        echo "git config hooks.clang_formatpath /path/to/clang-format"
+        echo "git config hooks.clangformatpath /path/to/clang-format"
         echo "or by setting an environment variable, e.g."
         echo "CLANG_FORMAT=/path/to/clang-format"
         echo "See docs/dev-manual/code-formatting.rst for how to get clang-format."

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -243,7 +243,7 @@ public:
     //! Returns the number of cells in the column
     int numCellsInColumn(int columnIndex) const
     {
-        return cxy_ind_[columnIndex + 1] - cxy_ind_[columnIndex];
+        return cxy_ind_[columnIndex + 1LL] - cxy_ind_[columnIndex];
     }
 
     //! Returns the index of the first atom in the column

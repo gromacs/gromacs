@@ -26,3 +26,5 @@ _build
 CMakeLists.txt.user
 /VersionInfo*.cmake
 Testing
+/.vs
+/CMakeSettings.json

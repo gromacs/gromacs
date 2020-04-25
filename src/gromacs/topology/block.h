@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,10 @@ public:
     int numBlocks() const { return static_cast<int>(index_.size()) - 1; }
 
     /*! \brief Returns the size of the block with index \p blockIndex */
-    Block block(int blockIndex) const { return Block(index_[blockIndex], index_[blockIndex + 1]); }
+    Block block(int blockIndex) const
+    {
+        return Block(index_[blockIndex], index_[blockIndex + 1LL]);
+    }
 
     /*! \brief Returns the full range */
     Block fullRange() const { return Block(index_.front(), index_.back()); }
@@ -98,7 +101,7 @@ public:
     void reduceNumBlocks(int newNumBlocks)
     {
         GMX_ASSERT(newNumBlocks <= numBlocks(), "Can only shrink to fewer blocks");
-        index_.resize(newNumBlocks + 1);
+        index_.resize(newNumBlocks + 1LL);
     }
 
     /*! \brief Sets the partitioning to \p numBlocks blocks each of size 1 */
