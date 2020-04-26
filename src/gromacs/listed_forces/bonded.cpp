@@ -3972,7 +3972,7 @@ struct BondedInteractions
  *
  * This must have as many entries as interaction_function in ifunc.cpp */
 template<BondedKernelFlavor flavor>
-const std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
+constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
     BondedInteractions{ bonds<flavor>, eNR_BONDS },                       // F_BONDS
     BondedInteractions{ g96bonds<flavor>, eNR_BONDS },                    // F_G96BONDS
     BondedInteractions{ morse_bonds<flavor>, eNR_MORSE },                 // F_MORSE
@@ -4068,7 +4068,7 @@ const std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
 };
 
 /*! \brief List of instantiated BondedInteractions list */
-const gmx::EnumerationArray<BondedKernelFlavor, std::array<BondedInteractions, F_NRE>> c_bondedInteractionFunctionsPerFlavor = {
+constexpr gmx::EnumerationArray<BondedKernelFlavor, std::array<BondedInteractions, F_NRE>> c_bondedInteractionFunctionsPerFlavor = {
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesSimdWhenAvailable>,
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesNoSimd>,
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>,
