@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3968,11 +3968,18 @@ struct BondedInteractions
     int            nrnbIndex;
 };
 
+// Bug in old clang versions prevents constexpr. constexpr is needed for MSVC.
+#if defined(__clang__) && __clang_major__ < 6
+#    define CONSTEXPR_EXCL_OLD_CLANG const
+#else
+#    define CONSTEXPR_EXCL_OLD_CLANG constexpr
+#endif
+
 /*! \brief Lookup table of bonded interaction functions
  *
  * This must have as many entries as interaction_function in ifunc.cpp */
 template<BondedKernelFlavor flavor>
-constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
+CONSTEXPR_EXCL_OLD_CLANG std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
     BondedInteractions{ bonds<flavor>, eNR_BONDS },                       // F_BONDS
     BondedInteractions{ g96bonds<flavor>, eNR_BONDS },                    // F_G96BONDS
     BondedInteractions{ morse_bonds<flavor>, eNR_MORSE },                 // F_MORSE
@@ -4068,7 +4075,8 @@ constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
 };
 
 /*! \brief List of instantiated BondedInteractions list */
-constexpr gmx::EnumerationArray<BondedKernelFlavor, std::array<BondedInteractions, F_NRE>> c_bondedInteractionFunctionsPerFlavor = {
+CONSTEXPR_EXCL_OLD_CLANG
+gmx::EnumerationArray<BondedKernelFlavor, std::array<BondedInteractions, F_NRE>> c_bondedInteractionFunctionsPerFlavor = {
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesSimdWhenAvailable>,
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesNoSimd>,
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>,
