@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -144,12 +144,13 @@ void checkEnergiesAgainstReferenceData(const std::string&          energyFilenam
             const EnergyFrame& frame     = energyReader->frame();
             const std::string  frameName = frame.frameName() + " in frame " + toString(frameNumber);
 
+            SCOPED_TRACE("Comparing frame " + frameName);
             for (const auto& energyTermToCompare : energyTermsToCompare)
             {
                 const std::string& energyName  = energyTermToCompare.first;
                 const real         energyValue = frame.at(energyName);
 
-                SCOPED_TRACE("Comparing " + energyName + " in " + frameName);
+                SCOPED_TRACE("Comparing energy " + energyName);
                 checkers[energyName].checkReal(energyValue, frameName.c_str());
             }
             ++frameNumber;
