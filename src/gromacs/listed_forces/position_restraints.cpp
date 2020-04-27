@@ -436,11 +436,6 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
 {
     real v;
 
-    if (idef.il[F_POSRES].empty())
-    {
-        return;
-    }
-
     wallcycle_sub_start_nocount(wcycle, ewcsRESTRAINTS);
     for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
     {

@@ -474,22 +474,13 @@ bool haveCpuListedForces(const t_forcerec& fr, const InteractionDefinitions& ide
 namespace
 {
 
-/*! \brief Calculates all listed force interactions.
- *
- * Note that pbc_full is used only for position restraints, and is
- * not initialized if there are none.
- */
-void calc_listed(const t_commrec*              cr,
-                 const gmx_multisim_t*         ms,
-                 struct gmx_wallcycle*         wcycle,
+/*! \brief Calculates all listed force interactions. */
+void calc_listed(struct gmx_wallcycle*         wcycle,
                  const InteractionDefinitions& idef,
                  const rvec                    x[],
-                 ArrayRef<const gmx::RVec>     xWholeMolecules,
-                 history_t*                    hist,
                  gmx::ForceOutputs*            forceOutputs,
                  const t_forcerec*             fr,
                  const struct t_pbc*           pbc,
-                 const struct t_pbc*           pbc_full,
                  gmx_enerdata_t*               enerd,
                  t_nrnb*                       nrnb,
                  const real*                   lambda,
@@ -498,53 +489,7 @@ void calc_listed(const t_commrec*              cr,
                  int*                          global_atom_index,
                  const gmx::StepWorkload&      stepWork)
 {
-    const t_pbc*        pbc_null;
     bonded_threading_t* bt = fr->bondedThreading;
-
-    if (fr->bMolPBC)
-    {
-        pbc_null = pbc;
-    }
-    else
-    {
-        pbc_null = nullptr;
-    }
-
-    if (haveRestraints(idef, *fcd))
-    {
-        /* TODO Use of restraints triggers further function calls
-           inside the loop over calc_one_bond(), but those are too
-           awkward to account to this subtimer properly in the present
-           code. We don't test / care much about performance with
-           restraints, anyway. */
-        wallcycle_sub_start(wcycle, ewcsRESTRAINTS);
-
-        if (!idef.il[F_POSRES].empty())
-        {
-            posres_wrapper(nrnb, idef, pbc_full, x, enerd, lambda, fr, &forceOutputs->forceWithVirial());
-        }
-
-        if (!idef.il[F_FBPOSRES].empty())
-        {
-            fbposres_wrapper(nrnb, idef, pbc_full, x, enerd, fr, &forceOutputs->forceWithVirial());
-        }
-
-        /* Do pre force calculation stuff which might require communication */
-        if (fcd->orires.nr > 0)
-        {
-            GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orienation restraints");
-            enerd->term[F_ORIRESDEV] =
-                    calc_orires_dev(ms, idef.il[F_ORIRES].size(), idef.il[F_ORIRES].iatoms.data(),
-                                    idef.iparams.data(), md, xWholeMolecules, x, pbc_null, fcd, hist);
-        }
-        if (fcd->disres.nres > 0)
-        {
-            calc_disres_R_6(cr, ms, idef.il[F_DISRES].size(), idef.il[F_DISRES].iatoms.data(), x,
-                            pbc_null, fcd, hist);
-        }
-
-        wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
-    }
 
     if (haveCpuBondeds(*fr))
     {
@@ -554,7 +499,7 @@ void calc_listed(const t_commrec*              cr,
         /* The dummy array is to have a place to store the dhdl at other values
            of lambda, which will be thrown away in the end */
         real dvdl[efptNR] = { 0 };
-        calcBondedForces(idef, x, fr, pbc_null, as_rvec_array(forceWithShiftForces.shiftForces().data()),
+        calcBondedForces(idef, x, fr, pbc, as_rvec_array(forceWithShiftForces.shiftForces().data()),
                          enerd, nrnb, lambda, dvdl, md, fcd, stepWork, global_atom_index);
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
@@ -669,20 +614,56 @@ void do_force_listed(struct gmx_wallcycle*          wcycle,
                      int*                           global_atom_index,
                      const gmx::StepWorkload&       stepWork)
 {
-    t_pbc pbc_full; /* Full PBC is needed for position restraints */
-
     if (!stepWork.computeListedForces)
     {
         return;
     }
 
-    if (!idef.il[F_POSRES].empty() || !idef.il[F_FBPOSRES].empty())
+    t_pbc pbc_full; /* Full PBC is needed for position restraints */
+    if (haveRestraints(idef, *fcd))
     {
-        /* Not enough flops to bother counting */
-        set_pbc(&pbc_full, fr->pbcType, box);
+        if (!idef.il[F_POSRES].empty() || !idef.il[F_FBPOSRES].empty())
+        {
+            /* Not enough flops to bother counting */
+            set_pbc(&pbc_full, fr->pbcType, box);
+        }
+
+        /* TODO Use of restraints triggers further function calls
+           inside the loop over calc_one_bond(), but those are too
+           awkward to account to this subtimer properly in the present
+           code. We don't test / care much about performance with
+           restraints, anyway. */
+        wallcycle_sub_start(wcycle, ewcsRESTRAINTS);
+
+        if (!idef.il[F_POSRES].empty())
+        {
+            posres_wrapper(nrnb, idef, &pbc_full, x, enerd, lambda, fr, &forceOutputs->forceWithVirial());
+        }
+
+        if (!idef.il[F_FBPOSRES].empty())
+        {
+            fbposres_wrapper(nrnb, idef, &pbc_full, x, enerd, fr, &forceOutputs->forceWithVirial());
+        }
+
+        /* Do pre force calculation stuff which might require communication */
+        if (fcd->orires.nr > 0)
+        {
+            GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orienation restraints");
+            enerd->term[F_ORIRESDEV] = calc_orires_dev(
+                    ms, idef.il[F_ORIRES].size(), idef.il[F_ORIRES].iatoms.data(), idef.iparams.data(),
+                    md, xWholeMolecules, x, fr->bMolPBC ? pbc : nullptr, fcd, hist);
+        }
+        if (fcd->disres.nres > 0)
+        {
+            calc_disres_R_6(cr, ms, idef.il[F_DISRES].size(), idef.il[F_DISRES].iatoms.data(), x,
+                            fr->bMolPBC ? pbc : nullptr, fcd, hist);
+        }
+
+        wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
-    calc_listed(cr, ms, wcycle, idef, x, xWholeMolecules, hist, forceOutputs, fr, pbc, &pbc_full,
-                enerd, nrnb, lambda, md, fcd, global_atom_index, stepWork);
+
+    calc_listed(wcycle, idef, x, forceOutputs, fr, fr->bMolPBC ? pbc : nullptr, enerd, nrnb, lambda,
+                md, fcd, global_atom_index, stepWork);
 
     /* Check if we have to determine energy differences
      * at foreign lambda's.
@@ -690,8 +671,10 @@ void do_force_listed(struct gmx_wallcycle*          wcycle,
     if (fepvals->n_lambda > 0 && stepWork.computeDhdl)
     {
         real dvdl[efptNR] = { 0 };
-        posres_wrapper_lambda(wcycle, fepvals, idef, &pbc_full, x, enerd, lambda, fr);
-
+        if (!idef.il[F_POSRES].empty())
+        {
+            posres_wrapper_lambda(wcycle, fepvals, idef, &pbc_full, x, enerd, lambda, fr);
+        }
         if (idef.ilsort != ilsortNO_FE)
         {
             wallcycle_sub_start(wcycle, ewcsLISTED_FEP);
