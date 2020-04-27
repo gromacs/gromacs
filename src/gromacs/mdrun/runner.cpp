@@ -1397,7 +1397,7 @@ int Mdrunner::mdrunner()
                                "GPU device stream manager should be valid in order to use GPU "
                                "version of bonded forces.");
             gpuBonded = std::make_unique<GpuBonded>(
-                    mtop.ffparams, deviceStreamManager->context(),
+                    mtop.ffparams, fr->ic->epsfac * fr->fudgeQQ, deviceStreamManager->context(),
                     deviceStreamManager->bondedStream(havePPDomainDecomposition(cr)), wcycle);
             fr->gpuBonded = gpuBonded.get();
         }

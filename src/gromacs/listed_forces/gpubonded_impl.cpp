@@ -161,6 +161,7 @@ class GpuBonded::Impl
 };
 
 GpuBonded::GpuBonded(const gmx_ffparams_t& /* ffparams */,
+                     const float /* electrostaticsScaleFactor */,
                      const DeviceContext& /* deviceContext */,
                      const DeviceStream& /* deviceStream */,
                      gmx_wallcycle* /* wcycle */) :
@@ -178,14 +179,21 @@ void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nb
 {
 }
 
+void GpuBonded::setPbc(PbcType /* pbcType */, const matrix /* box */, bool /* canMoleculeSpanPbc */)
+{
+}
+
 bool GpuBonded::haveInteractions() const
 {
     return !impl_;
 }
 
-void GpuBonded::launchKernel(const t_forcerec* /* fr */,
-                             const gmx::StepWorkload& /* stepWork */,
-                             const matrix /* box */)
+void GpuBonded::launchKernel(const gmx::StepWorkload& /* stepWork */) {}
+
+void GpuBonded::setPbcAndlaunchKernel(PbcType /* pbcType */,
+                                      const matrix /* box */,
+                                      bool /* canMoleculeSpanPbc */,
+                                      const gmx::StepWorkload& /* stepWork */)
 {
 }
 

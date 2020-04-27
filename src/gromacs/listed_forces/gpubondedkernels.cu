@@ -58,10 +58,8 @@
 #include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/force_flags.h"
-#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/simulation_workload.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 #include "gromacs/utility/gmxassert.h"
 
@@ -70,9 +68,6 @@
 #if defined(_MSVC)
 #    include <limits>
 #endif
-
-// CUDA threads per block
-#define TPB_BONDED 256
 
 /*-------------------------------- CUDA kernels-------------------------------- */
 /*------------------------------------------------------------------------------*/
@@ -792,10 +787,10 @@ __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
                                                  kernelParams.d_f, sm_fShiftLoc, kernelParams.pbcAiuc);
                     break;
                 case F_LJ14:
-                    pairs_gpu<calcVir, calcEner>(fTypeTid, numBonds, iatoms, kernelParams.d_forceParams,
-                                                 kernelParams.d_xq, kernelParams.d_f, sm_fShiftLoc,
-                                                 kernelParams.pbcAiuc, kernelParams.scaleFactor,
-                                                 &vtotVdw_loc, &vtotElec_loc);
+                    pairs_gpu<calcVir, calcEner>(
+                            fTypeTid, numBonds, iatoms, kernelParams.d_forceParams,
+                            kernelParams.d_xq, kernelParams.d_f, sm_fShiftLoc, kernelParams.pbcAiuc,
+                            kernelParams.electrostaticsScaleFactor, &vtotVdw_loc, &vtotElec_loc);
                     break;
             }
             break;
@@ -826,15 +821,10 @@ __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
 
 
 template<bool calcVir, bool calcEner>
-void GpuBonded::Impl::launchKernel(const t_forcerec* fr, const matrix box)
+void GpuBonded::Impl::launchKernel()
 {
     GMX_ASSERT(haveInteractions_,
                "Cannot launch bonded GPU kernels unless bonded GPU work was scheduled");
-    static_assert(TPB_BONDED >= SHIFTS,
-                  "TPB_BONDED must be >= SHIFTS for the virial kernel (calcVir=true)");
-
-    PbcAiuc pbcAiuc;
-    setPbcAiuc(fr->bMolPBC ? numPbcDimensions(fr->pbcType) : 0, box, &pbcAiuc);
 
     int fTypeRangeEnd = kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1];
 
@@ -843,38 +833,28 @@ void GpuBonded::Impl::launchKernel(const t_forcerec* fr, const matrix box)
         return;
     }
 
-    KernelLaunchConfig config;
-    config.blockSize[0] = TPB_BONDED;
-    config.blockSize[1] = 1;
-    config.blockSize[2] = 1;
-    config.gridSize[0]  = (fTypeRangeEnd + TPB_BONDED) / TPB_BONDED;
-    config.gridSize[1]  = 1;
-    config.gridSize[2]  = 1;
+    auto kernelPtr = exec_kernel_gpu<calcVir, calcEner>;
 
-    auto kernelPtr            = exec_kernel_gpu<calcVir, calcEner>;
-    kernelParams_.scaleFactor = fr->ic->epsfac * fr->fudgeQQ;
-    kernelParams_.pbcAiuc     = pbcAiuc;
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, kernelLaunchConfig_, &kernelParams_);
 
-    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, &kernelParams_);
-
-    launchGpuKernel(kernelPtr, config, deviceStream_, nullptr, "exec_kernel_gpu<calcVir, calcEner>",
-                    kernelArgs);
+    launchGpuKernel(kernelPtr, kernelLaunchConfig_, deviceStream_, nullptr,
+                    "exec_kernel_gpu<calcVir, calcEner>", kernelArgs);
 }
 
-void GpuBonded::launchKernel(const t_forcerec* fr, const gmx::StepWorkload& stepWork, const matrix box)
+void GpuBonded::launchKernel(const gmx::StepWorkload& stepWork)
 {
     if (stepWork.computeEnergy)
     {
         // When we need the energy, we also need the virial
-        impl_->launchKernel<true, true>(fr, box);
+        impl_->launchKernel<true, true>();
     }
     else if (stepWork.computeVirial)
     {
-        impl_->launchKernel<true, false>(fr, box);
+        impl_->launchKernel<true, false>();
     }
     else
     {
-        impl_->launchKernel<false, false>(fr, box);
+        impl_->launchKernel<false, false>();
     }
 }
 

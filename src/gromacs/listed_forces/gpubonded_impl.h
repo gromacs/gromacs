@@ -81,7 +81,7 @@ struct BondedCudaKernelParameters
     //! Periodic boundary data
     PbcAiuc pbcAiuc;
     //! Scale factor
-    float scaleFactor;
+    float electrostaticsScaleFactor;
     //! The bonded types on GPU
     int fTypesOnGpu[numFTypesOnGpu];
     //! The number of interaction atom (iatom) elements for every function type
@@ -112,12 +112,12 @@ struct BondedCudaKernelParameters
 
         setPbcAiuc(0, boxDummy, &pbcAiuc);
 
-        scaleFactor   = 1.0;
-        d_forceParams = nullptr;
-        d_xq          = nullptr;
-        d_f           = nullptr;
-        d_fShift      = nullptr;
-        d_vTot        = nullptr;
+        electrostaticsScaleFactor = 1.0;
+        d_forceParams             = nullptr;
+        d_xq                      = nullptr;
+        d_f                       = nullptr;
+        d_fShift                  = nullptr;
+        d_vTot                    = nullptr;
     }
 };
 
@@ -127,6 +127,7 @@ class GpuBonded::Impl
 public:
     //! Constructor
     Impl(const gmx_ffparams_t& ffparams,
+         const float           electrostaticsScaleFactor,
          const DeviceContext&  deviceContext,
          const DeviceStream&   deviceStream,
          gmx_wallcycle*        wcycle);
@@ -145,10 +146,20 @@ public:
                                                 void*                         xqDevice,
                                                 DeviceBuffer<RVec>            forceDevice,
                                                 DeviceBuffer<RVec>            fshiftDevice);
+    /*! \brief
+     * Update PBC data.
+     *
+     * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
+     *
+     * \param[in] pbcType The type of the periodic boundary.
+     * \param[in] box     The periodic boundary box matrix.
+     * \param[in] canMoleculeSpanPbc  Whether one molecule can have atoms in different PBC cells.
+     */
+    void setPbc(PbcType pbcType, const matrix box, bool canMoleculeSpanPbc);
 
     /*! \brief Launches bonded kernel on a GPU */
     template<bool calcVir, bool calcEner>
-    void launchKernel(const t_forcerec* fr, const matrix box);
+    void launchKernel();
     /*! \brief Returns whether there are bonded interactions
      * assigned to the GPU */
     bool haveInteractions() const;
@@ -190,6 +201,9 @@ private:
 
     //! Parameters and pointers, passed to the CUDA kernel
     BondedCudaKernelParameters kernelParams_;
+
+    //! GPU kernel launch configuration
+    KernelLaunchConfig kernelLaunchConfig_;
 
     //! \brief Pointer to wallcycle structure.
     gmx_wallcycle* wcycle_;
