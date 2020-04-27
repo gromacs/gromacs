@@ -260,7 +260,7 @@ void gmx_bcast(int gmx_unused nbytes, void gmx_unused* b, const t_commrec gmx_un
 void gmx_bcast_sim(int gmx_unused nbytes, void gmx_unused* b, const t_commrec gmx_unused* cr)
 {
 #if !GMX_MPI
-    gmx_call("gmx_bast");
+    GMX_RELEASE_ASSERT(false, "Invalid call to gmx_bcast_sim");
 #else
     MPI_Bcast(b, nbytes, MPI_BYTE, MASTERRANK(cr), cr->mpi_comm_mysim);
 #endif
