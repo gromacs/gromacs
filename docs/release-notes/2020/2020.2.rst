@@ -44,6 +44,16 @@ energies, lambda derivatives and foreign lambdas.
 
 :issue:`3470`
 
+The velocities of the center of mass are now removed correctly in case of -update gpu
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the center of mass motion is removed, the velocities are updated in the CPU memory.
+In case of GPU update, they should be copied back to the GPU memory after they were updated
+on the CPU. This affected most runs where the velocity of the center of mass has to be removed,
+in particular these where this velocity is large in the beginning of the run.
+
+:issue:`3508`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
