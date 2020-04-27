@@ -1011,22 +1011,19 @@ void do_force(FILE*                               fplog,
 
     nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, nbv->nbat.get());
 
-#if GMX_MPI
     const bool pmeSendCoordinatesFromGpu =
-            simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
+            GMX_MPI && simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
     const bool reinitGpuPmePpComms =
-            simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
-#endif
+            GMX_MPI && simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
 
-    const auto localXReadyOnDevice = (stateGpu != nullptr)
+    const auto localXReadyOnDevice = (useGpuPmeOnThisRank || simulationWork.useGpuBufferOps)
                                              ? stateGpu->getCoordinatesReadyOnDeviceEvent(
                                                        AtomLocality::Local, simulationWork, stepWork)
                                              : nullptr;
 
-#if GMX_MPI
     // If coordinates are to be sent to PME task from CPU memory, perform that send here.
     // Otherwise the send will occur after H2D coordinate transfer.
-    if (!thisRankHasDuty(cr, DUTY_PME) && !pmeSendCoordinatesFromGpu)
+    if (GMX_MPI && !thisRankHasDuty(cr, DUTY_PME) && !pmeSendCoordinatesFromGpu)
     {
         /* Send particle coordinates to the pme nodes */
         if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
@@ -1043,7 +1040,6 @@ void do_force(FILE*                               fplog,
                                  step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
                                  pmeSendCoordinatesFromGpu, localXReadyOnDevice, wcycle);
     }
-#endif /* GMX_MPI */
 
     // Coordinates on the device are needed if PME or BufferOps are offloaded.
     // The local coordinates can be copied right away.
@@ -1103,7 +1099,6 @@ void do_force(FILE*                               fplog,
         haveCopiedXFromGpu = true;
     }
 
-#if GMX_MPI
     // If coordinates are to be sent to PME task from GPU memory, perform that send here.
     // Otherwise the send will occur before the H2D coordinate transfer.
     if (pmeSendCoordinatesFromGpu)
@@ -1114,7 +1109,6 @@ void do_force(FILE*                               fplog,
                                  step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
                                  pmeSendCoordinatesFromGpu, localXReadyOnDevice, wcycle);
     }
-#endif /* GMX_MPI */
 
     if (useGpuPmeOnThisRank)
     {

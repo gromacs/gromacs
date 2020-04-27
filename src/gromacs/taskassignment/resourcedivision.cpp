@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/hardware/cpuinfo.h"
@@ -550,7 +551,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
 #if GMX_OPENMP && GMX_MPI
     GMX_UNUSED_VALUE(hwinfo);
 
-    int         nth_omp_min, nth_omp_max;
+    int         nth_omp_max;
     char        buf[1000];
     const char* mpi_option = GMX_THREAD_MPI ? " (option -ntmpi)" : "";
 
@@ -565,25 +566,22 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) >= 1,
                        "Must have at least one OpenMP thread");
 
-    nth_omp_min = gmx_omp_nthreads_get(emntDefault);
     nth_omp_max = gmx_omp_nthreads_get(emntDefault);
 
     bool anyRankIsUsingGpus = willUsePhysicalGpu;
     /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */
     if (cr->nnodes > 1)
     {
-        int count[3], count_max[3];
+        std::array<int, 2> count, count_max;
 
-        count[0] = -nth_omp_min;
-        count[1] = nth_omp_max;
-        count[2] = int(willUsePhysicalGpu);
+        count[0] = nth_omp_max;
+        count[1] = int(willUsePhysicalGpu);
 
-        MPI_Allreduce(count, count_max, 3, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
+        MPI_Allreduce(count.data(), count_max.data(), count.size(), MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
 
         /* In case of an inhomogeneous run setup we use the maximum counts */
-        nth_omp_min        = -count_max[0];
-        nth_omp_max        = count_max[1];
-        anyRankIsUsingGpus = count_max[2] > 0;
+        nth_omp_max        = count_max[0];
+        anyRankIsUsingGpus = count_max[1] > 0;
     }
 
     int nthreads_omp_mpi_ok_min;

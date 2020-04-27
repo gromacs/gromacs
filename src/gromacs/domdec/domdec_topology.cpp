@@ -798,6 +798,7 @@ static inline void add_ifunc_for_vsites(t_iatom*           tiatoms,
         tiatoms[1] = -a_gl - 1;
     }
 
+    GMX_ASSERT(nral >= 2 && nral <= 5, "Invalid nral for vsites");
     for (int k = 2; k < 1 + nral; k++)
     {
         int ak_gl = a_gl + iatoms[k] - a_mol;

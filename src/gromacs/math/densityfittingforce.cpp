@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,7 +79,9 @@ public:
 
 DensityFittingForce::Impl::Impl(const GaussianSpreadKernelParameters::Shape& kernelShapeParameters) :
     sigma_{ kernelShapeParameters.sigma_ },
-    latticeSpreadRange_{ kernelShapeParameters.latticeSpreadRange() },
+    latticeSpreadRange_{ kernelShapeParameters.latticeSpreadRange()[XX],
+                         kernelShapeParameters.latticeSpreadRange()[YY],
+                         kernelShapeParameters.latticeSpreadRange()[ZZ] },
     gauss1d_({ GaussianOn1DLattice(latticeSpreadRange_[XX], sigma_[XX]),
                GaussianOn1DLattice(latticeSpreadRange_[YY], sigma_[YY]),
                GaussianOn1DLattice(latticeSpreadRange_[ZZ], sigma_[ZZ]) })
