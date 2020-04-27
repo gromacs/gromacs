@@ -58,3 +58,8 @@ use this feature, we'd just want to turn it off, but there's no
 interface for that. So, GTEST_CAN_STREAM_RESULTS is added in
 googletest/include/gtest/internal/gtest-port.h to allow the default
 behaviour to be applied only if the user hasn't gotten involved.
+
+Some compiler warnings cannot be suppressed through CMake machinery,
+such as for the clang static analyzer, and some lines are removed
+from consideration by wrapping with `#ifndef __clang_analyzer__`
+... `#endif`.

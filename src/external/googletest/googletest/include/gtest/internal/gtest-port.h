@@ -1121,8 +1121,13 @@ class scoped_ptr {
 
   T& operator*() const { return *ptr_; }
   T* operator->() const { return ptr_; }
-  T* get() const { return ptr_; }
-
+  T* get() const {
+#ifndef __clang_analyzer__
+      return ptr_;
+#else
+      return nullptr;
+#endif
+  }
   T* release() {
     T* const ptr = ptr_;
     ptr_ = NULL;
@@ -1132,7 +1137,9 @@ class scoped_ptr {
   void reset(T* p = NULL) {
     if (p != ptr_) {
       if (IsTrue(sizeof(T) > 0)) {  // Makes sure T is a complete type.
+#ifndef __clang_analyzer__
         delete ptr_;
+#endif
       }
       ptr_ = p;
     }

@@ -144,13 +144,11 @@ public:
         {
             set_pbc(&pbc, PbcType::Xyz, box_);
         }
-        ASSERT_NO_THROW_GMX({
-            gmx::SurfaceAreaCalculator calculator;
-            calculator.setDotCount(ndots);
-            calculator.setRadii(radius_);
-            calculator.calculate(as_rvec_array(x_.data()), bPBC ? &pbc : nullptr, index_.size(),
-                                 index_.data(), flags, &area_, &volume_, &atomArea_, &dots_, &dotCount_);
-        });
+        gmx::SurfaceAreaCalculator calculator;
+        calculator.setDotCount(ndots);
+        calculator.setRadii(radius_);
+        calculator.calculate(as_rvec_array(x_.data()), bPBC ? &pbc : nullptr, index_.size(),
+                             index_.data(), flags, &area_, &volume_, &atomArea_, &dots_, &dotCount_);
     }
     real resultArea() const { return area_; }
     real resultVolume() const { return volume_; }
