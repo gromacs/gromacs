@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
+gmx_add_gtest_executable(gmxpreprocess-test
     CPP_SOURCE_FILES
         editconf.cpp
         genconf.cpp
@@ -44,6 +44,7 @@ gmx_add_unit_test(GmxPreprocessTests gmxpreprocess-test
         solvate.cpp
         topdirs.cpp
         )
+gmx_register_gtest_test(GmxPreprocessTests gmxpreprocess-test SLOW_TEST)
 
 # Currently these can be slow to run in Jenkins, so they are in
 # several test binaries.
@@ -54,7 +55,7 @@ gmx_add_gtest_executable(${exename}
        pdb2gmx.cpp
        )
 target_compile_definitions(${exename} PRIVATE OPLSAA=1 GROMOS=0 AMBER=0 CHARMM=0)
-gmx_register_gtest_test(Pdb2gmx1Test ${exename})
+gmx_register_gtest_test(Pdb2gmx1Test ${exename} SLOW_TEST)
 
 set(exename pdb2gmx2-test)
 gmx_add_gtest_executable(${exename}
@@ -62,7 +63,7 @@ gmx_add_gtest_executable(${exename}
         pdb2gmx.cpp
         )
 target_compile_definitions(${exename} PRIVATE OPLSAA=0 GROMOS=1 AMBER=0 CHARMM=0)
-gmx_register_gtest_test(Pdb2gmx2Test ${exename})
+gmx_register_gtest_test(Pdb2gmx2Test ${exename} SLOW_TEST)
 
 set(exename pdb2gmx3-test)
 gmx_add_gtest_executable(${exename}
@@ -70,4 +71,4 @@ gmx_add_gtest_executable(${exename}
         pdb2gmx.cpp
         )
 target_compile_definitions(${exename} PRIVATE OPLSAA=0 GROMOS=0 AMBER=1 CHARMM=1)
-gmx_register_gtest_test(Pdb2gmx3Test ${exename})
+gmx_register_gtest_test(Pdb2gmx3Test ${exename} SLOW_TEST)

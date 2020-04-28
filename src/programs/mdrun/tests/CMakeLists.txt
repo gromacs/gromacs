@@ -73,7 +73,7 @@ gmx_add_gtest_executable(${exename}
         $<TARGET_OBJECTS:mdrun_objlib>
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
 # To avoid running into test timeouts, some end-to-end tests of mdrun
 # functionality are split off. This can be rearranged in future as we
@@ -93,7 +93,7 @@ gmx_add_gtest_executable(${exename}
         $<TARGET_OBJECTS:mdrun_objlib>
         )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
 # TPI does not support OpenMP, so we need a separate test binary
 set(testname "MdrunTpiTests")
@@ -107,7 +107,7 @@ gmx_add_gtest_executable(${exename}
         $<TARGET_OBJECTS:mdrun_objlib>
         )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)
+gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST IGNORE_LEAKS)
 
 # Tests that only make sense to run with multiple ranks and/or real
 # MPI are implemented here.
@@ -128,7 +128,7 @@ gmx_add_gtest_executable(${exename} MPI
         $<TARGET_OBJECTS:mdrun_objlib>
         )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST)
+gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
 # Slow-running tests that target testing multiple-rank coordination behaviors
 set(exename "mdrun-mpi-coordination-test")
@@ -146,7 +146,7 @@ target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 # with OpenMP enabled.
 if (CMAKE_BUILD_TYPE MATCHES "Rel" AND GMX_OPENMP)
     set(testname "MdrunMpiCoordinationTestsOneRank")
-    gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 1 SLOW_TEST)
+    gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 1 SLOW_TEST IGNORE_LEAKS)
     set(testname "MdrunMpiCoordinationTestsTwoRanks")
-    gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 SLOW_TEST)
+    gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 SLOW_TEST IGNORE_LEAKS)
 endif()

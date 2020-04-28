@@ -179,13 +179,14 @@ endfunction()
 #   INTEGRATION_TEST      requires the use of the IntegrationTest label in CTest
 #   SLOW_TEST             requires the use of the SlowTest label in CTest, and
 #                         increase the length of the ctest timeout.
+#   IGNORE_LEAKS          Skip some memory safety checks.
 #
 # TODO When a test case needs it, generalize the MPI_RANKS mechanism so
 # that ctest can run the test binary over a range of numbers of MPI
 # ranks.
 function (gmx_register_gtest_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
-        set(_options INTEGRATION_TEST SLOW_TEST)
+        set(_options INTEGRATION_TEST SLOW_TEST IGNORE_LEAKS)
         set(_one_value_args MPI_RANKS OPENMP_THREADS)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
@@ -204,15 +205,16 @@ function (gmx_register_gtest_test NAME EXENAME)
             else()
                 set(_timeout 120)
             endif()
-            gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
         elseif (ARG_SLOW_TEST)
             list(APPEND _labels SlowTest)
             set(_timeout 480)
-            gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
         else()
             list(APPEND _labels UnitTest)
             gmx_get_test_prefix_cmd(_prefix_cmd)
         endif()
+        if (ARG_IGNORE_LEAKS)
+            gmx_get_test_prefix_cmd(_prefix_cmd IGNORE_LEAKS)
+        endif ()
         set(_cmd ${_prefix_cmd} $<TARGET_FILE:${EXENAME}>)
         if (ARG_OPENMP_THREADS)
             if (GMX_OPENMP)

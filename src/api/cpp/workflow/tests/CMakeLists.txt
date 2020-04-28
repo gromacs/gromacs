@@ -44,7 +44,7 @@ gmx_add_gtest_executable(workflow-details-test
 
 target_link_libraries(workflow-details-test PRIVATE Gromacs::gmxapi gmxapi-detail mdrun_test_infrastructure)
 
-gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test OPENMP_THREADS 2 INTEGRATION_TEST)
+gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
 set_tests_properties(GmxapiInternalInterfaceTests PROPERTIES
                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -62,4 +62,4 @@ gmx_add_gtest_executable(workflow-details-mpi-test MPI
 
 target_link_libraries(workflow-details-mpi-test PRIVATE Gromacs::gmxapi gmxapi-detail mdrun_test_infrastructure)
 
-gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST)
+gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)

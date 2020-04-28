@@ -33,7 +33,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
+gmx_add_gtest_executable(trajectoryanalysis-test
     CPP_SOURCE_FILES
         # Infrastructure
         moduletest.cpp
@@ -54,6 +54,7 @@ gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
         trajectory.cpp
         unionfind.cpp
         )
+gmx_register_gtest_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test SLOW_TEST)
 target_link_libraries(trajectoryanalysis-test PRIVATE analysisdata-test-shared)
 
 add_executable(test_selection ${UNITTEST_TARGET_OPTIONS} test_selection.cpp)
