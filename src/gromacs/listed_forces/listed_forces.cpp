@@ -480,7 +480,7 @@ void calc_listed(struct gmx_wallcycle*         wcycle,
                  const rvec                    x[],
                  gmx::ForceOutputs*            forceOutputs,
                  const t_forcerec*             fr,
-                 const struct t_pbc*           pbc,
+                 const t_pbc*                  pbc,
                  gmx_enerdata_t*               enerd,
                  t_nrnb*                       nrnb,
                  const real*                   lambda,
@@ -499,8 +499,9 @@ void calc_listed(struct gmx_wallcycle*         wcycle,
         /* The dummy array is to have a place to store the dhdl at other values
            of lambda, which will be thrown away in the end */
         real dvdl[efptNR] = { 0 };
-        calcBondedForces(idef, x, fr, pbc, as_rvec_array(forceWithShiftForces.shiftForces().data()),
-                         enerd, nrnb, lambda, dvdl, md, fcd, stepWork, global_atom_index);
+        calcBondedForces(idef, x, fr, fr->bMolPBC ? pbc : nullptr,
+                         as_rvec_array(forceWithShiftForces.shiftForces().data()), enerd, nrnb,
+                         lambda, dvdl, md, fcd, stepWork, global_atom_index);
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
@@ -662,8 +663,8 @@ void do_force_listed(struct gmx_wallcycle*          wcycle,
         wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
 
-    calc_listed(wcycle, idef, x, forceOutputs, fr, fr->bMolPBC ? pbc : nullptr, enerd, nrnb, lambda,
-                md, fcd, global_atom_index, stepWork);
+    calc_listed(wcycle, idef, x, forceOutputs, fr, pbc, enerd, nrnb, lambda, md, fcd,
+                global_atom_index, stepWork);
 
     /* Check if we have to determine energy differences
      * at foreign lambda's.
