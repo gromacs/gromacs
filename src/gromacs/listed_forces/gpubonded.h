@@ -119,7 +119,7 @@ public:
      *
      */
     GpuBonded(const gmx_ffparams_t& ffparams,
-              const float           electrostaticsScaleFactor,
+              float                 electrostaticsScaleFactor,
               const DeviceContext&  deviceContext,
               const DeviceStream&   deviceStream,
               gmx_wallcycle*        wcycle);

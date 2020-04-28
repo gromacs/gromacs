@@ -64,14 +64,17 @@ namespace gmx
 namespace test
 {
 
-const EnergyTermsToCompare EnergyComparison::s_defaultEnergyTermsToCompare = {
-    { interaction_function[F_EPOT].longname, relativeToleranceAsUlp(10.0, 50) },
-    { interaction_function[F_EKIN].longname, relativeToleranceAsUlp(10.0, 50) },
-    // The pressure is very strongly affected by summation errors,
-    // so we need a large tolerance.
-    // The value of 15000 is calibrated for running a small water box for 16 steps.
-    // For a single frame for a water box a value of 150 could work.
-    { interaction_function[F_PRES].longname, relativeToleranceAsUlp(10.0, 15000) },
+EnergyTermsToCompare EnergyComparison::defaultEnergyTermsToCompare()
+{
+    return {
+        { interaction_function[F_EPOT].longname, relativeToleranceAsUlp(10.0, 50) },
+        { interaction_function[F_EKIN].longname, relativeToleranceAsUlp(10.0, 50) },
+        // The pressure is very strongly affected by summation errors,
+        // so we need a large tolerance.
+        // The value of 15000 is calibrated for running a small water box for 16 steps.
+        // For a single frame for a water box a value of 150 could work.
+        { interaction_function[F_PRES].longname, relativeToleranceAsUlp(10.0, 15000) },
+    };
 };
 
 EnergyComparison::EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare) :

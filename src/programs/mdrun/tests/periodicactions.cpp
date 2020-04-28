@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,7 +106,7 @@ public:
     //! Names for the output files from the reference mdrun call
     ReferenceFileNames referenceFileNames_ = { fileManager_.getTemporaryFilePath("reference.edr") };
     //! Functor for energy comparison
-    EnergyComparison energyComparison_{ EnergyComparison::s_defaultEnergyTermsToCompare };
+    EnergyComparison energyComparison_{ EnergyComparison::defaultEnergyTermsToCompare() };
     //! Names of energies compared by energyComparison_
     std::vector<std::string> namesOfEnergiesToMatch_ = energyComparison_.getEnergyNames();
 };
