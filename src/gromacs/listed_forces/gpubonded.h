@@ -187,7 +187,7 @@ public:
 
     /*! \brief Waits on the energy transfer, and accumulates bonded energies to \c enerd.
      *
-     * \param[in,out] The energy data object to add energy terms to.
+     * \param[in,out] enerd The energy data object to add energy terms to.
      */
     void waitAccumulateEnergyTerms(gmx_enerdata_t* enerd);
 

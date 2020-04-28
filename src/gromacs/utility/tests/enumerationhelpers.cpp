@@ -42,8 +42,6 @@
 
 #include "gromacs/utility/enumerationhelpers.h"
 
-#include "config.h"
-
 #include <iostream>
 
 #include <gtest/gtest.h>

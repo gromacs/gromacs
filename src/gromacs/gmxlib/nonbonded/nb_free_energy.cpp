@@ -39,6 +39,8 @@
 
 #include "nb_free_energy.h"
 
+#include "config.h"
+
 #include <cmath>
 
 #include <algorithm>

@@ -42,8 +42,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <string>
 
 #include <gmock/gmock.h>

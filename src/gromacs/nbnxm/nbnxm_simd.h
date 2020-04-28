@@ -44,6 +44,8 @@
 #ifndef GMX_NBNXM_NBNXM_SIMD_H
 #define GMX_NBNXM_NBNXM_SIMD_H
 
+#include "config.h"
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/real.h"
