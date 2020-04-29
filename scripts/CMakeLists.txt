@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2010,2014,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -36,8 +36,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.cmakein      ${CMAKE_CURRENT_BI
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.bash.cmakein ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.bash @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.csh.cmakein  ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.csh @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.zsh.cmakein  ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.zsh @ONLY)
-
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/CTest2JUnit.xsl ${CMAKE_CURRENT_BINARY_DIR}/CTest2JUnit.xsl COPYONLY)
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/GMXRC      DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.bash DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime)

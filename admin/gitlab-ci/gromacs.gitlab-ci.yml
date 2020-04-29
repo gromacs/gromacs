@@ -63,7 +63,7 @@ simple-build:
     - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
     - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
       ctestLog.log | tee ctestErrors.log
-    - xsltproc scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
+    - xsltproc $CI_PROJECT_DIR/scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml
     - if [ -s ctestErrors.log ] ; then
       echo "Error during running ctest";
       exit 1;
@@ -545,7 +545,7 @@ gromacs:clang-8:release:build:
     - ctest -D $CTEST_RUN_MODE --output-on-failure | tee ctestLog.log || true
     - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
       ctestLog.log | tee ctestErrors.log
-    - xsltproc scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/*.xml > JUnitTestResults.xml
+    - xsltproc $CI_PROJECT_DIR/scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/*.xml > JUnitTestResults.xml
     - if [ -s ctestErrors.log ] ; then
       echo "Error during running ctest";
       exit 1;
