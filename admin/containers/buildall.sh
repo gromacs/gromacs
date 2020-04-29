@@ -80,7 +80,7 @@ python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl amd --mpi openmpi | docker buil
 
 tag=gromacs/ci-docs-llvm:master
 tags[${#tags[@]}]=$tag
-python3 $SCRIPT --llvm --doxygen | docker build -t $tag -
+python3 $SCRIPT --cmake 3.17.2 --llvm --doxygen | docker build -t $tag -
 
 tag=gromacs/ci-docs-gcc:master
 tags[${#tags[@]}]=$tag
