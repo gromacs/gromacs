@@ -930,8 +930,8 @@ static void checkResidueTypeSanity(t_atoms* pdba, int r0, int r1, ResidueType* r
 
 static void find_nc_ter(t_atoms* pdba, int r0, int r1, int* r_start, int* r_end, ResidueType* rt, const gmx::MDLogger& logger)
 {
-    int                                i;
-    gmx::compat::optional<std::string> startrestype;
+    int                        i;
+    std::optional<std::string> startrestype;
 
     *r_start = -1;
     *r_end   = -1;
@@ -1047,7 +1047,7 @@ static void find_nc_ter(t_atoms* pdba, int r0, int r1, int* r_start, int* r_end,
         /* Go through the rest of the residues, check that they are the same class, and identify the ending terminus. */
         for (int i = *r_start; i < r1; i++)
         {
-            gmx::compat::optional<std::string> restype =
+            std::optional<std::string> restype =
                     rt->optionalTypeOfNamedDatabaseResidue(*pdba->resinfo[i].name);
             if (!restype)
             {

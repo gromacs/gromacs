@@ -36,12 +36,12 @@
 if (GMX_BUILD_UNITTESTS)
     gmx_add_unit_test(CompatibilityHelpersTests compat-test
         CPP_SOURCE_FILES
-            optional.cpp
             pointers.cpp
-            string_view.cpp
             )
-    check_cxx_compiler_flag("-Wno-unused-member-function" HAS_NO_UNUSED_MEMBER_FUNCTION)
-    if (HAS_NO_UNUSED_MEMBER_FUNCTION)
-        set_source_files_properties(optional.cpp PROPERTIES COMPILE_FLAGS -Wno-unused-member-function)
-    endif()
+    # Maintainer note: The files here may be borrowed from other projects, and
+    # can require additional handling for compiler flags, warning suppression,
+    # etcetera. Rather than documenting best practices and tips here, we refer
+    # the reader to the `git` repository history for examples of how integration
+    # caveats have been handled in the past (for borrowed code that has since
+    # been removed when it became unnecessary).
 endif()

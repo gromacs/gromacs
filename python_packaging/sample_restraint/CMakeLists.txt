@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9.6)
+cmake_minimum_required(VERSION 3.13.0)
 # If you are using this repository as a template, you should probably change the
 # project name and adopt your own versioning scheme.
 project(sample_restraint VERSION 0.0.8)
@@ -62,7 +62,7 @@ endif()
 # versions of GROMACS. If building from the command line, you can specify a Python executable with the PYTHON_EXECUTABLE
 # variable. For instance, to make sure you are building for your default Python, cmake -DPYTHON_EXECUTABLE=`which python`.
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 # CMake modules are in a subdirectory to keep this file cleaner

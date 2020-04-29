@@ -104,20 +104,20 @@ PowerPC including POWER8, ARM v8, and SPARC VIII.
 Compiler
 ^^^^^^^^
 
-|Gromacs| can be compiled on any platform with ANSI C99 and C++14
+|Gromacs| can be compiled on any platform with ANSI C99 and C++17
 compilers, and their respective standard C/C++ libraries. Good
 performance on an OS and architecture requires choosing a good
 compiler. We recommend gcc, because it is free, widely available and
 frequently provides the best performance.
 
 You should strive to use the most recent version of your
-compiler. Since we require full C++14 support the minimum supported
+compiler. Since we require full C++17 support the minimum supported
 compiler versions are
 
-* GNU (gcc) 5.1
-* Intel (icc) 17.0.1
-* LLVM (clang) 3.6
-* Microsoft (MSVC) 2017
+* GNU (gcc/libstdc++) 7
+* Intel (icc) 19.1
+* LLVM (clang/libc++) 5
+* Microsoft (MSVC) 2017 15.7
 
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
@@ -131,7 +131,7 @@ You may also need the most recent version of other compiler toolchain
 components beside the compiler itself (e.g. assembler or linker);
 these are often shipped by your OS distribution's binutils package.
 
-C++14 support requires adequate support in both the compiler and the
+C++17 support requires adequate support in both the compiler and the
 C++ library. The gcc and MSVC compilers include their own standard
 libraries and require no further configuration. If your vendor's
 compiler also manages the standard library library via compiler flags,
@@ -139,12 +139,12 @@ these will be honored. For configuration of other compilers, read on.
 
 On Linux, both the Intel and clang compiler use the libstdc++ which
 comes with gcc as the default C++ library. For |Gromacs|, we require
-the compiler to support libstc++ version 5.1 or higher. To select a
+the compiler to support libstc++ version 7.1 or higher. To select a
 particular libstdc++ library, provide the path to g++ with
 ``-DGMX_GPLUSPLUS_PATH=/path/to/g++``.
 
 On Windows with the Intel compiler, the MSVC standard library is used,
-and at least MSVC 2017 is required. Load the enviroment variables with
+and at least MSVC 2017 15.7 is required. Load the enviroment variables with
 vcvarsall.bat.
 
 To build with clang and llvm's libcxx standard library, use

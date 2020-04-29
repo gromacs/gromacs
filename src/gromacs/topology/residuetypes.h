@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2014,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,8 @@
 
 #include <string>
 
-#include "gromacs/compat/optional.h"
+#include <optional>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -105,7 +106,7 @@ public:
      * \param[in] residueName Name of the residue to search for.
      * \returns An optional containing the residue type of any matching residue
      */
-    gmx::compat::optional<std::string> optionalTypeOfNamedDatabaseResidue(const std::string& residueName);
+    std::optional<std::string> optionalTypeOfNamedDatabaseResidue(const std::string& residueName);
 
 private:
     //! Implementation pointer.

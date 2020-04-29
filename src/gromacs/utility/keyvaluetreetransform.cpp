@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -519,7 +519,7 @@ KeyValueTreeTransformRuleBuilder::KeyValueTreeTransformRuleBuilder(internal::Key
 // warning is about as bad as any alternative.
 KeyValueTreeTransformRuleBuilder::~KeyValueTreeTransformRuleBuilder() // NOLINT(bugprone-exception-escape)
 {
-    if (!std::uncaught_exception())
+    if (!std::uncaught_exceptions())
     {
         data_->createRule(impl_);
     }

@@ -45,7 +45,8 @@
 
 #include "bench_setup.h"
 
-#include "gromacs/compat/optional.h"
+#include <optional>
+
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -80,7 +81,7 @@ namespace Nbnxm
  *
  * Returns an error string when the kernel is not available.
  */
-static gmx::compat::optional<std::string> checkKernelSetup(const KernelBenchOptions& options)
+static std::optional<std::string> checkKernelSetup(const KernelBenchOptions& options)
 {
     GMX_RELEASE_ASSERT(options.nbnxmSimd < BenchMarkKernels::Count
                                && options.nbnxmSimd != BenchMarkKernels::SimdAuto,

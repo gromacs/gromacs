@@ -44,7 +44,8 @@
 #include <iterator>
 #include <string>
 
-#include "gromacs/compat/optional.h"
+#include <optional>
+
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -111,14 +112,14 @@ ResidueType::~ResidueType() {}
  * \param[in] residueName Name of a residue to compare to database.
  * \returns An optional iterator to the residue entry that was found.
  */
-static gmx::compat::optional<gmx::ArrayRef<const ResidueTypeEntry>::const_iterator>
+static std::optional<gmx::ArrayRef<const ResidueTypeEntry>::const_iterator>
 findResidueEntryWithName(gmx::ArrayRef<const ResidueTypeEntry> entries, const std::string& residueName)
 {
     auto foundIt =
             std::find_if(entries.begin(), entries.end(), [&residueName](const ResidueTypeEntry& old) {
                 return gmx::equalCaseInsensitive(residueName, old.residueName);
             });
-    return (foundIt != entries.end()) ? gmx::compat::make_optional(foundIt) : gmx::compat::nullopt;
+    return (foundIt != entries.end()) ? std::make_optional(foundIt) : std::nullopt;
 }
 
 bool ResidueType::nameIndexedInResidueTypes(const std::string& residueName)
@@ -180,8 +181,8 @@ std::string ResidueType::typeOfNamedDatabaseResidue(const std::string& residueNa
     return foundIt ? (*foundIt)->residueType : c_undefinedResidueType;
 }
 
-gmx::compat::optional<std::string> ResidueType::optionalTypeOfNamedDatabaseResidue(const std::string& residueName)
+std::optional<std::string> ResidueType::optionalTypeOfNamedDatabaseResidue(const std::string& residueName)
 {
     auto foundIt = findResidueEntryWithName(impl_->entry, residueName);
-    return foundIt ? gmx::compat::make_optional((*foundIt)->residueType) : gmx::compat::nullopt;
+    return foundIt ? std::make_optional((*foundIt)->residueType) : std::nullopt;
 }

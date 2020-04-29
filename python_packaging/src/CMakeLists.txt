@@ -38,16 +38,16 @@
 # configure and run CMake. CMake could be invoked directly by the user or a
 # parent package, but the Python distribution would not be packaged automatically.
 # Reference https://gitlab.com/gromacs/gromacs/-/issues/2896 for additional discussion.
-cmake_minimum_required(VERSION 3.9.6)
+cmake_minimum_required(VERSION 3.13.0)
 
 # This needs to be set before project() in order to pick up toolchain files
 #list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
 
-# OS X deployment target should be >=10.9 for modern C++ compatibility.
+# OS X deployment target should be >=10.14 for modern C++ compatibility.
 # Reference https://scikit-build.readthedocs.io/en/latest/generators.html#macosx
 # and https://github.com/MacPython/wiki/wiki/Spinning-wheels
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING
-    "OS X deployment target below 10.9 does not use modern standard library"
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14 CACHE STRING
+    "OS X deployment target below 10.14 does not use modern standard library"
     FORCE)
 set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
     "OS X should build Python package for 64-bit architecture"
@@ -61,7 +61,7 @@ if (CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(GMXAPI_MASTER_PROJECT ON)
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Only interpret if() arguments as variables or keywords when unquoted.

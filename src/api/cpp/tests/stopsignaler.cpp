@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include <memory>
+#include <optional>
 
-#include "gromacs/compat/optional.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
@@ -113,7 +113,7 @@ public:
     /*!
      * \brief Record the simulation time at the last step active.
      */
-    gmx::compat::optional<double> lastSimulationTime_;
+    std::optional<double> lastSimulationTime_;
 
     /*!
      * \brief Whether restraint was ever used

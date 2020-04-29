@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 #include <string>
 #include <utility>
 
+#include <string_view>
 #include <sys/stat.h>
 
 #if GMX_NATIVE_WINDOWS
@@ -250,13 +251,13 @@ namespace
  *
  * \returns A view of the parent-path components, or empty if no
  * directory separator exists. */
-compat::string_view getParentPathView(const std::string& input)
+std::string_view getParentPathView(const std::string& input)
 {
-    auto   inputView = compat::to_string_view(input);
+    auto   inputView = std::string_view(input);
     size_t pos       = inputView.find_last_of(cDirSeparators);
     if (pos == std::string::npos)
     {
-        return compat::string_view();
+        return std::string_view();
     }
     return inputView.substr(0, pos);
 }
@@ -265,7 +266,7 @@ compat::string_view getParentPathView(const std::string& input)
  * last directory separator (if one exists).
  *
  * \returns A view of the filename component. */
-compat::string_view getFilenameView(const compat::string_view input)
+std::string_view getFilenameView(const std::string_view input)
 {
     size_t pos = input.find_last_of(cDirSeparators);
     if (pos == std::string::npos)
@@ -281,7 +282,7 @@ compat::string_view getFilenameView(const compat::string_view input)
  * filename component, ie. omitting any leading directories.
  *
  * \returns  The view of the filename stem, or empty if none exists. */
-compat::string_view getStemView(const std::string& input)
+std::string_view getStemView(const std::string& input)
 {
     auto   filenameView               = getFilenameView(input);
     size_t extensionSeparatorPosition = filenameView.find_last_of('.');
@@ -295,14 +296,14 @@ compat::string_view getStemView(const std::string& input)
  * filename component, ie. omitting any leading directories.
  *
  * \returns  The view of the file extension, or empty if none exists. */
-compat::string_view getExtensionView(const compat::string_view input)
+std::string_view getExtensionView(const std::string_view input)
 {
     auto   filenameView               = getFilenameView(input);
     size_t extensionSeparatorPosition = filenameView.find_last_of('.');
-    if (extensionSeparatorPosition == compat::string_view::npos)
+    if (extensionSeparatorPosition == std::string_view::npos)
     {
         // No separator was found
-        return compat::string_view();
+        return std::string_view();
     }
     return filenameView.substr(extensionSeparatorPosition);
 }
@@ -311,12 +312,12 @@ compat::string_view getExtensionView(const compat::string_view input)
 
 std::string Path::getParentPath(const std::string& input)
 {
-    return compat::to_string(getParentPathView(input));
+    return std::string(getParentPathView(input));
 }
 
 std::string Path::getFilename(const std::string& input)
 {
-    return to_string(getFilenameView(input));
+    return std::string(getFilenameView(input));
 }
 
 bool Path::hasExtension(const std::string& input)
@@ -327,7 +328,7 @@ bool Path::hasExtension(const std::string& input)
     return getFilenameView(input).find('.') != std::string::npos;
 }
 
-bool Path::extensionMatches(const compat::string_view input, const compat::string_view extension)
+bool Path::extensionMatches(const std::string_view input, const std::string_view extension)
 {
     auto extensionWithSeparator = getExtensionView(input);
     return (!extensionWithSeparator.empty() && extensionWithSeparator.substr(1) == extension);

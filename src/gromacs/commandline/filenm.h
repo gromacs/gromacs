@@ -48,7 +48,8 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/compat/string_view.h"
+#include <string_view>
+
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -177,7 +178,7 @@ gmx_bool is_set(const t_filenm* fnm);
  *
  * If so, it must match "prefix.partNNNN.extension", for four decimal
  * digits N and non-empty prefix and extension. */
-bool hasSuffixFromNoAppend(gmx::compat::string_view filename);
+bool hasSuffixFromNoAppend(std::string_view filename);
 
 /*! \brief
  * When we do checkpointing, this routine is called to check for previous

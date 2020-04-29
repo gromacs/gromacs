@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -147,18 +147,20 @@ endif()
 # Now run a sanity check on the compiler using libstdc++, regardless
 # of how it was specified or found.
 
-# Test a feature which was added in libstdc++ 5
-check_cxx_source_compiles("#include <iterator>
-int main() { int a[2]; std::cbegin(a); }" CXX14_COMPILES)
+# Test required 2017 standard library features.
+check_cxx_source_compiles("
+#include <string_view>
+#include <optional>
+int main() { std::string_view(); std::optional<int>(); }" CXX17_COMPILES)
 
-if (NOT CXX14_COMPILES)
+if (NOT CXX17_COMPILES)
     if (NEED_TO_FIND_GPLUSPLUS)
         set (EXTRA_MESSAGE " The g++ found at ${GMX_GPLUSPLUS_PATH} had a suitable version, so "
             "something else must be the problem")
     else()
         set (EXTRA_MESSAGE " Check your toolchain documentation or environment flags so that "
-            "they will find a suitable C++14 standard library")
+            "they will find a suitable C++17 standard library")
     endif()
-    message(FATAL_ERROR "GROMACS requires C++14, but a test of such functionality in the C++ standard "
+    message(FATAL_ERROR "GROMACS requires C++17, but a test of such functionality in the C++ standard "
         "library failed to compile.${EXTRA_MESSAGE}")
 endif()
