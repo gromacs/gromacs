@@ -54,6 +54,15 @@ in particular these where this velocity is large in the beginning of the run.
 
 :issue:`3508`
 
+Fix checkpoint restart with non-zero initial step
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+When restarting from the checkpoint, the init-step mdp parameter was ignored while
+checking if the simulation is already finished. As a result, this check only worked
+properly when init-step was 0 or was not specified.
+
+:issue:`3489`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
