@@ -34,5 +34,6 @@
 
 gmx_add_unit_test(MdtypesUnitTest mdtypes-test
     CPP_SOURCE_FILES
+        checkpointdata.cpp
         forcebuffers.cpp
         )

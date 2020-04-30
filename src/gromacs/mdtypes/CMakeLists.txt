@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB MDTYPES_SOURCES
+    checkpointdata.cpp
     df_history.cpp
     forcebuffers.cpp
     group.cpp
