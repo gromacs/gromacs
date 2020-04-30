@@ -125,8 +125,6 @@ function (gmx_cpack_write_config)
         \\\\.gitignore
         \\\\.gitattributes
         INSTALL-dev
-        cmake/FindCUDA\\\\.cmake
-        cmake/FindCUDA
         # entry below is needed for CI not to include the cache directory
         ccache)
     set(CPACK_SOURCE_IGNORE_FILES ${FILES_NOT_INCLUDED_IN_SOURCE_PACKAGE})

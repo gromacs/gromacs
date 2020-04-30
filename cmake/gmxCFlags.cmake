@@ -127,7 +127,31 @@ function(gmx_cuda_target_compile_options VARIABLE_NAME)
     if (GMX_SKIP_DEFAULT_CFLAGS)
         set (CXXFLAGS "")
     else()
+        # Prepare the generic compiler options
         gmx_target_compile_options_inner()
+        # CUDA headers issue lots of warnings when compiled with
+        # -Wundef because they use old-style #ifdef a lot. We'd prefer
+        # to have FindCUDA.cmake treat CUDA internal headers with
+        # -isystem so that these warnings are naturally suppressed,
+        # but there's no way to do that without bundling a modified
+        # form of FindCUDA.cmake. That creates its own problems,
+        # because people either don't know we do that, or don't
+        # remember that we don't do that in user tarballs.
+        #
+        # We have make check-source ensuring that we have included
+        # config.h any time we use such symbols in commits in a merge
+        # request. Local development could run that too. So, we can
+        # tolerate any remaining risk from accidentally using
+        # e.g. #ifdef GMX_MPI rather than #if GMX_MPI in CUDA source
+        # files.
+        #
+        # So we disable -Wundef by the simple hack of appending
+        # -Wno-undef after it. That's more maintainable than having
+        # logic to avoid adding -Wundef to GMXC_CXXFLAGS, given the
+        # current approach to adding them. Hopefully this will improve
+        # if/when we have more CMake object libraries, and/or native
+        # CUDA compilation.
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NOUNDEF "-Wno-undef" CXXFLAGS)
     endif()
 
     # Only C++ compilation is supported with CUDA code in GROMACS
@@ -213,11 +237,7 @@ macro (gmx_c_flags)
             # Problematic with CUDA
             # GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EFFCXX "-Wnon-virtual-dtor" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN_EXTRA "-Wextra;-Wno-missing-field-initializers;-Wpointer-arith;-Wmissing-declarations" GMXC_CXXFLAGS)
-            # CUDA versions prior to 7.5 come with a header (math_functions.h) which uses the _MSC_VER macro
-            # unconditionally, so we don't use -Wundef for earlier CUDA versions.
-            if(NOT(GMX_GPU AND CUDA_VERSION VERSION_LESS "7.5"))
-                GMX_TEST_CXXFLAG(CXXFLAGS_WARN_UNDEF "-Wundef" GMXC_CXXFLAGS)
-            endif()
+            GMX_TEST_CXXFLAG(CXXFLAGS_WARN_UNDEF "-Wundef" GMXC_CXXFLAGS)
             GMX_TEST_CFLAG(CXXFLAGS_WARN_REL "-Wno-array-bounds" GMXC_CXXFLAGS_RELEASE_ONLY)
             GMX_TEST_CXXFLAG(CXXFLAGS_STRINGOP_TRUNCATION "-Wstringop-truncation" GMXC_CXXFLAGS)
             if (CXXFLAGS_STRINGOP_TRUNCATION)

@@ -30,7 +30,6 @@ cmake/*.c.cmakein                       !filter
 cmake/*.h                               !filter
 cmake/*.cu                              !filter
 cmake/*.cuh                             !filter
-cmake/FindCUDA/*.cmake                  !filter
 docs/doxygen/Doxyfile-*.cmakein         !filter
 docs/doxygen/*.cpp                      !filter
 docs/doxygen/examples/*.cpp             filter=clangformat
