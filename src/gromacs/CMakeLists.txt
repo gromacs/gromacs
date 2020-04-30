@@ -66,6 +66,14 @@ function (gmx_compile_cpp_as_cuda)
     _gmx_add_files_to_property(GMX_LIBGROMACS_GPU_IMPL_SOURCES ${ARGN})
 endfunction ()
 
+# Permit the configuration to disable compiling the many nbnxm kernels
+# and others involved in force calculations. Currently only
+# short-ranged and bonded kernels are disabled this way, but in future
+# others may be appropriate. Thus the cmake option is not specific to
+# nbnxm module.
+option(GMX_USE_SIMD_KERNELS "Whether to compile NBNXM and other SIMD kernels" ON)
+mark_as_advanced(GMX_USE_SIMD_KERNELS)
+
 # Add these contents first because linking their tests can take a lot
 # of time, so we want lots of parallel work still available after
 # linking starts.
@@ -270,14 +278,6 @@ target_include_directories(libgromacs SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/e
 target_include_directories(libgromacs PUBLIC
                            $<INSTALL_INTERFACE:include>
                            )
-
-# Permit the configuration to disable compiling the many nbnxm kernels
-# and others involved in force calculations. Currently only
-# short-ranged and bonded kernels are disabled this way, but in future
-# others may be appropriate. Thus the cmake option is not specific to
-# nbnxm module.
-option(GMX_USE_SIMD_KERNELS "Whether to compile NBNXM and other SIMD kernels" ON)
-mark_as_advanced(GMX_USE_SIMD_KERNELS)
 
 if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
     # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.
