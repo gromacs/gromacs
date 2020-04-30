@@ -1,7 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015, The GROMACS development team.
+# Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -262,6 +263,13 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VMX")
     set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions using CXX flags: ${SIMD_IBM_VMX_CXX_FLAGS}")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
+
+    # IBM_VSX and gcc > 9 do not work together, so we need to prevent people from
+    # choosing a combination that might fail. Issue #3380.
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "9")
+        message(FATAL_ERROR "IBM_VSX does not work together with gcc > 9. Disable SIMD support (slower), or use an older version of the GNU compiler")
+    endif()
+
 
     gmx_find_simd_ibm_vsx_flags(SIMD_IBM_VSX_C_SUPPORTED SIMD_IBM_VSX_CXX_SUPPORTED
                                 SIMD_IBM_VSX_C_FLAGS SIMD_IBM_VSX_CXX_FLAGS)

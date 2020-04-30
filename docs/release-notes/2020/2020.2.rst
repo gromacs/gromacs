@@ -83,6 +83,13 @@ The tool would fail with a segmentation fault.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Give clearer message about not detecting IBM_VSX support in gcc > 9
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CMake would fail with a confusing error message.
+
+:issue:`3380`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
