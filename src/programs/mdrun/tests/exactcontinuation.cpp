@@ -260,7 +260,7 @@ void runTest(TestFileManager*            fileManager,
         caller.addOption("-maxwarn", maxWarningsTolerated);
         runner->useTopGroAndNdxFromDatabase(simulationName);
         auto firstPartMdpFieldValues      = mdpFieldValues;
-        firstPartMdpFieldValues["nsteps"] = "8";
+        firstPartMdpFieldValues["nsteps"] = std::to_string(std::stoi(mdpFieldValues.at("nsteps")) / 2);
         runner->useStringAsMdpFile(prepareMdpFileContents(firstPartMdpFieldValues));
         runner->tprFileName_ = firstPartRunTprFileName;
         EXPECT_EQ(0, runner->callGrompp(caller));
@@ -383,6 +383,7 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     // The exact lambda state choice is unimportant, so long as there
     // is one when using an FEP input.
     mdpFieldValues["other"] += formatString("\ninit-lambda-state = %d", 3);
+    mdpFieldValues["nsteps"] = "16";
 
     // Forces on GPUs are generally not reproducible enough for a tight
     // tolerance. Similarly, the propagation of sd and bd are not as
@@ -399,10 +400,32 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         // as the others, either in continuations or reruns.
         ulpToleranceInMixed = 128;
     }
-    EnergyTermsToCompare energyTermsToCompare{ {
-            { interaction_function[F_EPOT].longname,
-              relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) },
-    } };
+    EnergyTermsToCompare energyTermsToCompare{
+        { { interaction_function[F_EPOT].longname,
+            relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) },
+          { interaction_function[F_EKIN].longname,
+            relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) } }
+    };
+
+    if (temperatureCoupling != "no" || pressureCoupling != "no")
+    {
+        energyTermsToCompare.insert({ interaction_function[F_ECONSERVED].longname,
+                                      relativeToleranceAsPrecisionDependentUlp(
+                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+    }
+
+    if (pressureCoupling == "parrinello-rahman")
+    {
+        energyTermsToCompare.insert(
+                { "Box-Vel-XX", relativeToleranceAsPrecisionDependentUlp(1e-12, ulpToleranceInMixed,
+                                                                         ulpToleranceInDouble) });
+        energyTermsToCompare.insert(
+                { "Box-Vel-YY", relativeToleranceAsPrecisionDependentUlp(1e-12, ulpToleranceInMixed,
+                                                                         ulpToleranceInDouble) });
+        energyTermsToCompare.insert(
+                { "Box-Vel-ZZ", relativeToleranceAsPrecisionDependentUlp(1e-12, ulpToleranceInMixed,
+                                                                         ulpToleranceInDouble) });
+    }
 
     int numWarningsToTolerate = 1;
     runTest(&fileManager_, &runner_, simulationName, numWarningsToTolerate, mdpFieldValues,
