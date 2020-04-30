@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -295,9 +295,11 @@ void gmx_print_version_info(gmx::TextWriter* writer)
      * them. Can wait for later, as the master branch has ready code to do all
      * that. */
     writer->writeLine(formatString("C compiler:         %s", BUILD_C_COMPILER));
-    writer->writeLine(formatString("C compiler flags:   %s", BUILD_CFLAGS));
+    writer->writeLine(formatString("C compiler flags:   %s %s", BUILD_CFLAGS,
+                                   CMAKE_BUILD_CONFIGURATION_C_FLAGS));
     writer->writeLine(formatString("C++ compiler:       %s", BUILD_CXX_COMPILER));
-    writer->writeLine(formatString("C++ compiler flags: %s", BUILD_CXXFLAGS));
+    writer->writeLine(formatString("C++ compiler flags: %s %s", BUILD_CXXFLAGS,
+                                   CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
     writer->writeLine(formatString("Linked with Intel MKL version %d.%d.%d.", __INTEL_MKL__,
@@ -310,7 +312,8 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #endif
 #if GMX_GPU == GMX_GPU_CUDA
     writer->writeLine(formatString("CUDA compiler:      %s", CUDA_COMPILER_INFO));
-    writer->writeLine(formatString("CUDA compiler flags:%s", CUDA_COMPILER_FLAGS));
+    writer->writeLine(formatString("CUDA compiler flags:%s %s", CUDA_COMPILER_FLAGS,
+                                   CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
     writer->writeLine("CUDA driver:        " + gmx::getCudaDriverVersionString());
     writer->writeLine("CUDA runtime:       " + gmx::getCudaRuntimeVersionString());
 #endif

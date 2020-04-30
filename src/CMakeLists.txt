@@ -159,4 +159,7 @@ endif()
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
 configure_file(config.h.cmakein config.h)
 configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
+
+set(CMAKE_BUILD_CONFIGURATION_C_FLAGS   ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
+set(CMAKE_BUILD_CONFIGURATION_CXX_FLAGS ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
