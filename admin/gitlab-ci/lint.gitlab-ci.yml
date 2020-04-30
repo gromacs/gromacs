@@ -64,7 +64,7 @@ clang-tidy:test:
     - echo "Revision used for branch point is $REV"
     - git show -s $REV
     - RUN_CLANG_TIDY=run-clang-tidy-$COMPILER_MAJOR_VERSION bash admin/clang-tidy.sh check --parallel=$KUBERNETES_CPU_LIMIT --warnings=clang-tidy.log --rev=$REV -B=$BUILD_DIR
-    - grep -iq "found code issues" clang-tidy.log | tee code-lint.txt || true
+    - grep -i "found code issues" clang-tidy.log | tee code-lint.txt || true
     - if [ -s code-lint.txt ] ; then echo "clang-tidy.sh found issues"; exit 1; fi
   artifacts:
     when: on_failure
@@ -96,7 +96,7 @@ clang-format:
     - echo "Revision used for branch point is $REV"
     - git show -s $REV
     - CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION admin/clang-format.sh check --rev=$REV --warnings=clang-format.log
-    - grep -iq "needs formatting" clang-format.log | tee formatting.txt || true
+    - grep -i "needs formatting" clang-format.log | tee formatting.txt || true
     - if [ -s formatting.txt ] ; then echo "clang-format.sh found issues"; exit 1; fi
   artifacts:
     when: on_failure
@@ -126,8 +126,8 @@ copyright-check:
     - echo "Revision used for branch point is $REV"
     - git show -s $REV
     - admin/copyright.sh check --rev=$REV --warnings=copyright.log
-    - grep -iq "copyright year" copyright.log | tee years.log || true
-    - grep -iq "copyright header" copyright.log | tee headers.log || true
+    - grep -i "copyright year" copyright.log | tee years.log || true
+    - grep -i "copyright header" copyright.log | tee headers.log || true
     - if [[ -s years.log || -s headers.log ]] ; then
       echo "Copyright information needs updating" ;
       exit 1 ;
