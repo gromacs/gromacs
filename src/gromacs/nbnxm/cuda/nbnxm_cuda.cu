@@ -54,7 +54,7 @@
 
 #include "nbnxm_cuda.h"
 
-#include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
@@ -444,9 +444,10 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
         t->xf[atomLocality].nb_h2d.openTimingRegion(deviceStream);
     }
 
-    cu_copy_H2D_async(adat->xq + adat_begin,
-                      static_cast<const void*>(nbatom->x().data() + adat_begin * 4),
-                      adat_len * sizeof(*adat->xq), deviceStream.stream());
+    static_assert(sizeof(adat->xq[0]) == sizeof(float4),
+                  "The size of the xyzq buffer element should be equal to the size of float4.");
+    copyToDeviceBuffer(&adat->xq, reinterpret_cast<const float4*>(nbatom->x().data()) + adat_begin,
+                       adat_begin, adat_len, deviceStream, GpuApiCallBehavior::Async, nullptr);
 
     if (bDoTime)
     {
@@ -761,8 +762,11 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
      */
     if (!stepWork.useGpuFBufferOps)
     {
-        cu_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f + adat_begin,
-                          (adat_len) * sizeof(*adat->f), deviceStream.stream());
+        static_assert(
+                sizeof(adat->f[0]) == sizeof(float3),
+                "The size of the force buffer element should be equal to the size of float3.");
+        copyFromDeviceBuffer(reinterpret_cast<float3*>(nbatom->out[0].f.data()) + adat_begin, &adat->f,
+                             adat_begin, adat_len, deviceStream, GpuApiCallBehavior::Async, nullptr);
     }
 
     /* After the non-local D2H is launched the nonlocal_done event can be
@@ -781,15 +785,24 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         /* DtoH fshift when virial is needed */
         if (stepWork.computeVirial)
         {
-            cu_copy_D2H_async(nb->nbst.fshift, adat->fshift, SHIFTS * sizeof(*nb->nbst.fshift),
-                              deviceStream.stream());
+            static_assert(sizeof(nb->nbst.fshift[0]) == sizeof(adat->fshift[0]),
+                          "Sizes of host- and device-side shift vectors should be the same.");
+            copyFromDeviceBuffer(nb->nbst.fshift, &adat->fshift, 0, SHIFTS, deviceStream,
+                                 GpuApiCallBehavior::Async, nullptr);
         }
 
         /* DtoH energies */
         if (stepWork.computeEnergy)
         {
-            cu_copy_D2H_async(nb->nbst.e_lj, adat->e_lj, sizeof(*nb->nbst.e_lj), deviceStream.stream());
-            cu_copy_D2H_async(nb->nbst.e_el, adat->e_el, sizeof(*nb->nbst.e_el), deviceStream.stream());
+            static_assert(sizeof(nb->nbst.e_lj[0]) == sizeof(adat->e_lj[0]),
+                          "Sizes of host- and device-side LJ energy terms should be the same.");
+            copyFromDeviceBuffer(nb->nbst.e_lj, &adat->e_lj, 0, 1, deviceStream,
+                                 GpuApiCallBehavior::Async, nullptr);
+            static_assert(sizeof(nb->nbst.e_el[0]) == sizeof(adat->e_el[0]),
+                          "Sizes of host- and device-side electrostatic energy terms should be the "
+                          "same.");
+            copyFromDeviceBuffer(nb->nbst.e_el, &adat->e_el, 0, 1, deviceStream,
+                                 GpuApiCallBehavior::Async, nullptr);
         }
     }
 

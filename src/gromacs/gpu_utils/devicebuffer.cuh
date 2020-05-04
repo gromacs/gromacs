@@ -91,8 +91,6 @@ void freeDeviceBuffer(DeviceBuffer* buffer)
 /*! \brief
  * Performs the host-to-device data copy, synchronous or asynchronously on request.
  *
- * TODO: This is meant to gradually replace cu/ocl_copy_h2d.
- *
  * \tparam        ValueType            Raw value type of the \p buffer.
  * \param[in,out] buffer               Pointer to the device-side buffer
  * \param[in]     hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
@@ -114,7 +112,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
 {
     if (numValues == 0)
     {
-        return; // such calls are actually made with empty domains
+        return;
     }
     GMX_ASSERT(buffer, "needs a buffer pointer");
     GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
@@ -144,8 +142,6 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
 /*! \brief
  * Performs the device-to-host data copy, synchronous or asynchronously on request.
  *
- * TODO: This is meant to gradually replace cu/ocl_copy_d2h.
- *
  * \tparam        ValueType            Raw value type of the \p buffer.
  * \param[in,out] hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
  * \param[in]     buffer               Pointer to the device-side buffer
@@ -165,6 +161,10 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                           GpuApiCallBehavior       transferKind,
                           CommandEvent* /*timingEvent*/)
 {
+    if (numValues == 0)
+    {
+        return;
+    }
     GMX_ASSERT(buffer, "needs a buffer pointer");
     GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
 

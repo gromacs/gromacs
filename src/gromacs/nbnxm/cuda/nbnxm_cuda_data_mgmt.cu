@@ -572,13 +572,16 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
 
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 {
-    cu_atomdata_t* adat = nb->atdat;
-    cudaStream_t   ls   = nb->deviceStreams[InteractionLocality::Local]->stream();
+    cu_atomdata_t*      adat        = nb->atdat;
+    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
 
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
-        cu_copy_H2D_async(adat->shift_vec, nbatom->shift_vec.data(), SHIFTS * sizeof(*adat->shift_vec), ls);
+        static_assert(sizeof(adat->shift_vec[0]) == sizeof(nbatom->shift_vec[0]),
+                      "Sizes of host- and device-side shift vectors should be the same.");
+        copyToDeviceBuffer(&adat->shift_vec, reinterpret_cast<const float3*>(nbatom->shift_vec.data()),
+                           0, SHIFTS, localStream, GpuApiCallBehavior::Async, nullptr);
         adat->bShiftVecUploaded = true;
     }
 }
@@ -625,10 +628,10 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     cudaError_t         stat;
     int                 nalloc, natoms;
     bool                realloced;
-    bool                bDoTime      = nb->bDoTime;
-    cu_timers_t*        timers       = nb->timers;
-    cu_atomdata_t*      d_atdat      = nb->atdat;
-    const DeviceStream& deviceStream = *nb->deviceStreams[InteractionLocality::Local];
+    bool                bDoTime     = nb->bDoTime;
+    cu_timers_t*        timers      = nb->timers;
+    cu_atomdata_t*      d_atdat     = nb->atdat;
+    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
 
     natoms    = nbat->numAtoms();
     realloced = false;
@@ -636,7 +639,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     if (bDoTime)
     {
         /* time async copy */
-        timers->atdat.openTimingRegion(deviceStream);
+        timers->atdat.openTimingRegion(localStream);
     }
 
     /* need to reallocate if we have to copy more atoms than the amount of space
@@ -684,18 +687,23 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
     if (useLjCombRule(nb->nbparam))
     {
-        cu_copy_H2D_async(d_atdat->lj_comb, nbat->params().lj_comb.data(),
-                          natoms * sizeof(*d_atdat->lj_comb), deviceStream.stream());
+        static_assert(sizeof(d_atdat->lj_comb[0]) == sizeof(float2),
+                      "Size of the LJ parameters element should be equal to the size of float2.");
+        copyToDeviceBuffer(&d_atdat->lj_comb,
+                           reinterpret_cast<const float2*>(nbat->params().lj_comb.data()), 0,
+                           natoms, localStream, GpuApiCallBehavior::Async, nullptr);
     }
     else
     {
-        cu_copy_H2D_async(d_atdat->atom_types, nbat->params().type.data(),
-                          natoms * sizeof(*d_atdat->atom_types), deviceStream.stream());
+        static_assert(sizeof(d_atdat->atom_types[0]) == sizeof(nbat->params().type[0]),
+                      "Sizes of host- and device-side atom types should be the same.");
+        copyToDeviceBuffer(&d_atdat->atom_types, nbat->params().type.data(), 0, natoms, localStream,
+                           GpuApiCallBehavior::Async, nullptr);
     }
 
     if (bDoTime)
     {
-        timers->atdat.closeTimingRegion(deviceStream);
+        timers->atdat.closeTimingRegion(localStream);
     }
 }
 

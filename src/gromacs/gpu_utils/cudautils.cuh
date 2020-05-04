@@ -142,30 +142,6 @@ enum class GpuApiCallBehavior;
 
 #endif /* CHECK_CUDA_ERRORS */
 
-/*! Launches synchronous or asynchronous device to host memory copy.
- *
- *  The copy is launched in stream s or if not specified, in stream 0.
- */
-int cu_copy_D2H(void* h_dest, void* d_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = nullptr*/);
-
-/*! Launches synchronous host to device memory copy in stream 0. */
-int cu_copy_D2H_sync(void* /*h_dest*/, void* /*d_src*/, size_t /*bytes*/);
-
-/*! Launches asynchronous host to device memory copy in stream s. */
-int cu_copy_D2H_async(void* /*h_dest*/, void* /*d_src*/, size_t /*bytes*/, cudaStream_t /*s = nullptr*/);
-
-/*! Launches synchronous or asynchronous host to device memory copy.
- *
- *  The copy is launched in stream s or if not specified, in stream 0.
- */
-int cu_copy_H2D(void* d_dest, const void* h_src, size_t bytes, GpuApiCallBehavior transferKind, cudaStream_t /*s = nullptr*/);
-
-/*! Launches synchronous host to device memory copy. */
-int cu_copy_H2D_sync(void* /*d_dest*/, const void* /*h_src*/, size_t /*bytes*/);
-
-/*! Launches asynchronous host to device memory copy in stream s. */
-int cu_copy_H2D_async(void* /*d_dest*/, const void* /*h_src*/, size_t /*bytes*/, cudaStream_t /*s = nullptr*/);
-
 // TODO: the 2 functions below are pretty much a constructor/destructor of a simple
 // GPU table object. There is also almost self-contained fetchFromParamLookupTable()
 // in cuda_kernel_utils.cuh. They could all live in a separate class/struct file.
