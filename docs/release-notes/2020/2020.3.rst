@@ -22,6 +22,10 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix error with tinyxml2 linking
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The signature for linking the external library was wrong.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
