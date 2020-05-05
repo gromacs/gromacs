@@ -128,22 +128,15 @@ static void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
 
 /*! Initializes the atomdata structure first time, it only gets filled at
     pair-search. */
-static void init_atomdata_first(cu_atomdata_t* ad, int ntypes)
+static void init_atomdata_first(cu_atomdata_t* ad, int ntypes, const DeviceContext& deviceContext)
 {
-    cudaError_t stat;
-
     ad->ntypes = ntypes;
-    stat       = cudaMalloc((void**)&ad->shift_vec, SHIFTS * sizeof(*ad->shift_vec));
-    CU_RET_ERR(stat, "cudaMalloc failed on ad->shift_vec");
+    allocateDeviceBuffer(&ad->shift_vec, SHIFTS, deviceContext);
     ad->bShiftVecUploaded = false;
 
-    stat = cudaMalloc((void**)&ad->fshift, SHIFTS * sizeof(*ad->fshift));
-    CU_RET_ERR(stat, "cudaMalloc failed on ad->fshift");
-
-    stat = cudaMalloc((void**)&ad->e_lj, sizeof(*ad->e_lj));
-    CU_RET_ERR(stat, "cudaMalloc failed on ad->e_lj");
-    stat = cudaMalloc((void**)&ad->e_el, sizeof(*ad->e_el));
-    CU_RET_ERR(stat, "cudaMalloc failed on ad->e_el");
+    allocateDeviceBuffer(&ad->fshift, SHIFTS, deviceContext);
+    allocateDeviceBuffer(&ad->e_lj, 1, deviceContext);
+    allocateDeviceBuffer(&ad->e_el, 1, deviceContext);
 
     /* initialize to nullptr poiters to data that is not allocated here and will
        need reallocation in nbnxn_cuda_init_atomdata */
@@ -412,7 +405,7 @@ static void cuda_init_const(NbnxmGpu*                       nb,
                             const PairlistParams&           listParams,
                             const nbnxn_atomdata_t::Params& nbatParams)
 {
-    init_atomdata_first(nb->atdat, nbatParams.numTypes);
+    init_atomdata_first(nb->atdat, nbatParams.numTypes, *nb->deviceContext_);
     init_nbparam(nb->nbparam, ic, listParams, nbatParams, *nb->deviceContext_);
 
     /* clear energy and shift force outputs */
@@ -589,27 +582,20 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 /*! Clears the first natoms_clear elements of the GPU nonbonded force output array. */
 static void nbnxn_cuda_clear_f(NbnxmGpu* nb, int natoms_clear)
 {
-    cudaError_t    stat;
-    cu_atomdata_t* adat = nb->atdat;
-    cudaStream_t   ls   = nb->deviceStreams[InteractionLocality::Local]->stream();
-
-    stat = cudaMemsetAsync(adat->f, 0, natoms_clear * sizeof(*adat->f), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on f falied");
+    cu_atomdata_t*      adat        = nb->atdat;
+    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
+    clearDeviceBufferAsync(&adat->f, 0, natoms_clear, localStream);
 }
 
 /*! Clears nonbonded shift force output array and energy outputs on the GPU. */
 static void nbnxn_cuda_clear_e_fshift(NbnxmGpu* nb)
 {
-    cudaError_t    stat;
-    cu_atomdata_t* adat = nb->atdat;
-    cudaStream_t   ls   = nb->deviceStreams[InteractionLocality::Local]->stream();
+    cu_atomdata_t*      adat        = nb->atdat;
+    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
 
-    stat = cudaMemsetAsync(adat->fshift, 0, SHIFTS * sizeof(*adat->fshift), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on fshift falied");
-    stat = cudaMemsetAsync(adat->e_lj, 0, sizeof(*adat->e_lj), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on e_lj falied");
-    stat = cudaMemsetAsync(adat->e_el, 0, sizeof(*adat->e_el), ls);
-    CU_RET_ERR(stat, "cudaMemsetAsync on e_el falied");
+    clearDeviceBufferAsync(&adat->fshift, 0, SHIFTS, localStream);
+    clearDeviceBufferAsync(&adat->e_lj, 0, 1, localStream);
+    clearDeviceBufferAsync(&adat->e_el, 0, 1, localStream);
 }
 
 void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
@@ -625,13 +611,13 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 
 void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 {
-    cudaError_t         stat;
-    int                 nalloc, natoms;
-    bool                realloced;
-    bool                bDoTime     = nb->bDoTime;
-    cu_timers_t*        timers      = nb->timers;
-    cu_atomdata_t*      d_atdat     = nb->atdat;
-    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
+    int                  nalloc, natoms;
+    bool                 realloced;
+    bool                 bDoTime       = nb->bDoTime;
+    cu_timers_t*         timers        = nb->timers;
+    cu_atomdata_t*       d_atdat       = nb->atdat;
+    const DeviceContext& deviceContext = *nb->deviceContext_;
+    const DeviceStream&  localStream   = *nb->deviceStreams[InteractionLocality::Local];
 
     natoms    = nbat->numAtoms();
     realloced = false;
@@ -657,19 +643,15 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
             freeDeviceBuffer(&d_atdat->lj_comb);
         }
 
-        stat = cudaMalloc((void**)&d_atdat->f, nalloc * sizeof(*d_atdat->f));
-        CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->f");
-        stat = cudaMalloc((void**)&d_atdat->xq, nalloc * sizeof(*d_atdat->xq));
-        CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->xq");
+        allocateDeviceBuffer(&d_atdat->f, nalloc, deviceContext);
+        allocateDeviceBuffer(&d_atdat->xq, nalloc, deviceContext);
         if (useLjCombRule(nb->nbparam))
         {
-            stat = cudaMalloc((void**)&d_atdat->lj_comb, nalloc * sizeof(*d_atdat->lj_comb));
-            CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->lj_comb");
+            allocateDeviceBuffer(&d_atdat->lj_comb, nalloc, deviceContext);
         }
         else
         {
-            stat = cudaMalloc((void**)&d_atdat->atom_types, nalloc * sizeof(*d_atdat->atom_types));
-            CU_RET_ERR(stat, "cudaMalloc failed on d_atdat->atom_types");
+            allocateDeviceBuffer(&d_atdat->atom_types, nalloc, deviceContext);
         }
 
         d_atdat->nalloc = nalloc;
@@ -748,15 +730,11 @@ void gpu_free(NbnxmGpu* nb)
         destroyParamLookupTable(&nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
     }
 
-    stat = cudaFree(atdat->shift_vec);
-    CU_RET_ERR(stat, "cudaFree failed on atdat->shift_vec");
-    stat = cudaFree(atdat->fshift);
-    CU_RET_ERR(stat, "cudaFree failed on atdat->fshift");
+    freeDeviceBuffer(&atdat->shift_vec);
+    freeDeviceBuffer(&atdat->fshift);
 
-    stat = cudaFree(atdat->e_lj);
-    CU_RET_ERR(stat, "cudaFree failed on atdat->e_lj");
-    stat = cudaFree(atdat->e_el);
-    CU_RET_ERR(stat, "cudaFree failed on atdat->e_el");
+    freeDeviceBuffer(&atdat->e_lj);
+    freeDeviceBuffer(&atdat->e_el);
 
     freeDeviceBuffer(&atdat->f);
     freeDeviceBuffer(&atdat->xq);

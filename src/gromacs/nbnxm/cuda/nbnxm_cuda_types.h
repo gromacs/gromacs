@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
@@ -158,27 +159,27 @@ struct cu_atomdata
     int nalloc;
 
     //! atom coordinates + charges, size natoms
-    float4* xq;
+    DeviceBuffer<float4> xq;
     //! force output array, size natoms
-    float3* f;
+    DeviceBuffer<float3> f;
 
     //! LJ energy output, size 1
-    float* e_lj;
+    DeviceBuffer<float> e_lj;
     //! Electrostatics energy input, size 1
-    float* e_el;
+    DeviceBuffer<float> e_el;
 
     //! shift forces
-    float3* fshift;
+    DeviceBuffer<float3> fshift;
 
     //! number of atom types
     int ntypes;
     //! atom type indices, size natoms
-    int* atom_types;
+    DeviceBuffer<int> atom_types;
     //! sqrt(c6),sqrt(c12) size natoms
-    float2* lj_comb;
+    DeviceBuffer<float2> lj_comb;
 
     //! shifts
-    float3* shift_vec;
+    DeviceBuffer<float3> shift_vec;
     //! true if the shift vector has been uploaded
     bool bShiftVecUploaded;
 };
