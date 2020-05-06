@@ -787,7 +787,7 @@ void gmx::LegacySimulator::do_md()
             bDoDHDL     = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP      = ((ir->efep != efepNO) && do_per_step(step, nstfep));
             bDoExpanded = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded)
-                           && (step > 0) && (startingBehavior == StartingBehavior::NewSimulation));
+                           && (!bFirstStep));
         }
 
         bDoReplEx = (useReplicaExchange && (step > 0) && !bLastStep
@@ -1193,7 +1193,7 @@ void gmx::LegacySimulator::do_md()
         bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x.rvec_array(), t);
 
         /* kludge -- virial is lost with restart for MTTK NPT control. Must reload (saved earlier). */
-        if (startingBehavior != StartingBehavior::NewSimulation
+        if (startingBehavior != StartingBehavior::NewSimulation && bFirstStep
             && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)))
         {
             copy_mat(state->svir_prev, shake_vir);
@@ -1452,6 +1452,11 @@ void gmx::LegacySimulator::do_md()
                         // force kernels that use the coordinates on the next steps is not implemented
                         // (not because of a race on state->x being modified on the CPU while H2D is in progress).
                         stateGpu->waitCoordinatesCopiedToDevice(AtomLocality::Local);
+                        // If the COM removal changed the velocities on the CPU, this has to be accounted for.
+                        if (vcm.mode != ecmNO)
+                        {
+                            stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
+                        }
                     }
                 }
             }

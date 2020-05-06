@@ -256,7 +256,7 @@ public:
     //! Returns the number of cells in the column
     int numCellsInColumn(int columnIndex) const
     {
-        return cxy_ind_[columnIndex + 1] - cxy_ind_[columnIndex];
+        return cxy_ind_[columnIndex + 1LL] - cxy_ind_[columnIndex];
     }
 
     //! Returns the index of the first atom in the column

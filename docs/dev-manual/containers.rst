@@ -24,4 +24,5 @@ We use the `NVidia HPC Container Maker <https://github.com/NVIDIA/hpc-container-
 package for scripted Dockerfile generation.
 See :file:`admin/containers/scripted_gmx_docker_builds.py`.
 
-.. automodule:: scripted_gmx_docker_builds
+.. todo:: :issue:`3272` Insert tool documentation.
+    E.g. ``.. automodule:: scripted_gmx_docker_builds``

@@ -190,7 +190,7 @@ protected:
     //! Contains command-line options to mdrun.
     const MdrunOptions& mdrunOptions;
     //! Whether the simulation will start afresh, or restart with/without appending.
-    StartingBehavior startingBehavior;
+    const StartingBehavior startingBehavior;
     //! Handles virtual sites.
     gmx_vsite_t* vsite;
     //! Handles constraints.

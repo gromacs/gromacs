@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,8 +49,9 @@ namespace gmx
 class SimdFIBool
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     SimdFIBool() {}
-
+    MSVC_DIAGNOSTIC_RESET
     SimdFIBool(bool b) : simdInternal_(_mm256_set1_epi32(b ? 0xFFFFFFFF : 0)) {}
 
     // Internal utility constructor to simplify return statements

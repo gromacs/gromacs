@@ -17,6 +17,10 @@ tag="gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.9.6 --gcc 6 --cuda 10.1 --opencl --clfft --mpi openmpi | docker build -t $tag -
 
+tag="gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020"
+tags[${#tags[@]}]=$tag
+python3 $SCRIPT --cmake 3.9.6 --gcc 7 --opencl amd --clfft --mpi openmpi | docker build -t $tag -
+
 tag="gromacs/cmake-3.15.7-gcc-8-cuda-10.1-openmpi:2020"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.15.7 --gcc 8 --cuda 10.1 --mpi openmpi | docker build -t $tag -
@@ -88,5 +92,6 @@ python3 $SCRIPT --gcc --doxygen | docker build -t $tag -
 
 docker login
 for tag in "${tags[@]}"; do
-  docker push $tag
+  echo "Pushing $tag"
+  #docker push $tag
 done

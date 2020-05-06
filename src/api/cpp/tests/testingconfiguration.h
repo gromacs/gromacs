@@ -41,6 +41,8 @@
 #include <string>
 #include <vector>
 
+#include "config.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/gmxpreprocess/grompp.h"

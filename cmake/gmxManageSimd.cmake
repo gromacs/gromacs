@@ -264,6 +264,13 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VMX")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
 
+    # IBM_VSX and gcc > 9 do not work together, so we need to prevent people from
+    # choosing a combination that might fail. Issue #3380.
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "9")
+        message(FATAL_ERROR "IBM_VSX does not work together with gcc > 9. Disable SIMD support (slower), or use an older version of the GNU compiler")
+    endif()
+
+
     gmx_find_simd_ibm_vsx_flags(SIMD_IBM_VSX_C_SUPPORTED SIMD_IBM_VSX_CXX_SUPPORTED
                                 SIMD_IBM_VSX_C_FLAGS SIMD_IBM_VSX_CXX_FLAGS)
 

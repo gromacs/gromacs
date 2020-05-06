@@ -121,7 +121,7 @@ static void add_xr(t_xrama* xr, const int ff[5], const t_atoms* atoms)
     char buf[12];
     int  i;
 
-    srenew(xr->dih, xr->ndih + 2);
+    srenew(xr->dih, xr->ndih + 2LL);
     for (i = 0; (i < 4); i++)
     {
         xr->dih[xr->ndih].ai[i] = ff[i];
@@ -132,7 +132,7 @@ static void add_xr(t_xrama* xr, const int ff[5], const t_atoms* atoms)
     }
     xr->ndih += 2;
 
-    srenew(xr->pp, xr->npp + 1);
+    srenew(xr->pp, xr->npp + 1LL);
     xr->pp[xr->npp].iphi  = xr->ndih - 2;
     xr->pp[xr->npp].ipsi  = xr->ndih - 1;
     xr->pp[xr->npp].bShow = FALSE;
@@ -179,7 +179,9 @@ static void min_max(t_xrama* xr)
     {
         for (j = 0; (j < 4); j++)
         {
+            MSVC_DIAGNOSTIC_IGNORE(28182) // false positive in 2019 (16.5.4)
             ai = xr->dih[i].ai[j];
+            MSVC_DIAGNOSTIC_RESET
             if (ai < xr->amin)
             {
                 xr->amin = ai;
@@ -220,7 +222,7 @@ static void get_dih_props(t_xrama* xr, const t_idef* idef, int mult)
         }
 
         i += nra + 1;
-        ia += nra + 1;
+        ia += nra + 1LL;
     }
     /* Fill in defaults for values not in the topology */
     for (i = 0; (i < xr->ndih); i++)

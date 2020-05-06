@@ -74,7 +74,7 @@ target_link_libraries(testutils PRIVATE libgromacs ${GMX_COMMON_LIBRARIES} gmock
 
 if(HAVE_TINYXML2)
     include_directories(SYSTEM ${TinyXML2_INCLUDE_DIR})
-    target_link_libraries(testutils ${TinyXML2_LIBRARIES})
+    target_link_libraries(testutils PRIVATE ${TinyXML2_LIBRARIES})
 else()
     include_directories(BEFORE SYSTEM "../external/tinyxml2")
 endif()

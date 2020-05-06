@@ -144,9 +144,8 @@ struct interaction_const_t
 
     // Coulomb Ewald correction table
     std::unique_ptr<EwaldCorrectionTables> coulombEwaldTables;
-    /* Note that a Van der Waals Ewald correction table
-     * of type EwaldCorrectionTables can be added here if wanted.
-     */
+    // Van der Waals Ewald correction table
+    std::unique_ptr<EwaldCorrectionTables> vdwEwaldTables;
 };
 
 #endif

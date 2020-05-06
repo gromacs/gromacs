@@ -208,6 +208,7 @@ typedef struct
 struct nbnxn_excl_t
 {
     //! Constructor, sets no exclusions, so all atom pairs interacting
+    MSVC_DIAGNOSTIC_IGNORE(26495) // pair is not being initialized!
     nbnxn_excl_t()
     {
         for (unsigned int& pairEntry : pair)
@@ -215,6 +216,7 @@ struct nbnxn_excl_t
             pairEntry = NBNXN_INTERACTION_MASK_ALL;
         }
     }
+    MSVC_DIAGNOSTIC_RESET
 
     //! Topology exclusion interaction bits per warp
     unsigned int pair[c_nbnxnGpuExclSize];

@@ -1,7 +1,7 @@
 GROMACS 2020.2 release notes
 ----------------------------
 
-This version was released on TODO, 2020. These release notes
+This version was released on April 30th, 2020. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2020.1 version, to fix known issues. It also incorporates all
 fixes made in version 2019.6 and earlier, which you can find described
@@ -16,12 +16,85 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Ewald dipole correction incorrect without domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Ewald dipole correction (epsilon-surface != 0) is now disabled when not
+using domain decomposition. With domain decomposition, it only works
+when each molecule consists of a single update group (e.g. water).
+This will be fixed in release-2021.
+
+:issue:`3441`
+
+Expanded ensemble simulations restarted from checkpoints
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When restarting expanded ensemble simulations from checkpoints, expanded
+ensemble would silently refuse to run, and simulations would remain in
+their original lambda state.
+
+:issue:`3465`
+
+Fixed free energy calculations with LJ PME
+""""""""""""""""""""""""""""""""""""""""""
+
+Fixed an issue that calculated wrong long-range corrections when using
+free energy perturbation with ``vdwtype = pme``. This affected forces,
+energies, lambda derivatives and foreign lambdas.
+
+:issue:`3470`
+
+The velocities of the center of mass are now removed correctly in case of -update gpu
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the center of mass motion is removed, the velocities are updated in the CPU memory.
+In case of GPU update, they should be copied back to the GPU memory after they were updated
+on the CPU. This affected most runs where the velocity of the center of mass has to be removed,
+in particular these where this velocity is large in the beginning of the run.
+
+:issue:`3508`
+
+Fix checkpoint restart with non-zero initial step
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+When restarting from the checkpoint, the init-step mdp parameter was ignored while
+checking if the simulation is already finished. As a result, this check only worked
+properly when init-step was 0 or was not specified.
+
+:issue:`3489`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Time output unit fixes
+^^^^^^^^^^^^^^^^^^^^^^
+
+When selecting a time unit of microseconds or larger,
+``gmx tool -tu`` now produces the correct string in .xvg and
+particularly .xvgr plots
+
+Fix do_dssp
+^^^^^^^^^^^
+
+The tool would fail with a segmentation fault.
+
+:issue:`3444`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Give clearer message about not detecting IBM_VSX support in gcc > 9
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CMake would fail with a confusing error message.
+
+:issue:`3380`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixed initial DLB state reporting
+"""""""""""""""""""""""""""""""""
+
+The initial DLB state was reported incorrectly in the log file when
+the either "on" or "auto" value was the chosen at mdrun startup.

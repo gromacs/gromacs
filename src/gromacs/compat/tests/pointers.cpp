@@ -42,6 +42,8 @@
 
 #include "gromacs/compat/pointers.h"
 
+#include "config.h"
+
 #include <memory>
 #include <vector>
 

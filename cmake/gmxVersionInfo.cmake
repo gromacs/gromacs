@@ -262,7 +262,7 @@ set(REGRESSIONTEST_BRANCH "master")
 # build the regressiontests tarball with all the right naming. The
 # naming affects the md5sum that has to go here, and if it isn't right
 # release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "b032e4517195b1f8cd9db87cee1b30df" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "b75c3b1bac0e4114e236f049fc7f1f1c" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
@@ -333,8 +333,8 @@ set(VERSION_INFO_DEPS         ${VERSION_INFO_CMAKE_FILE})
 set(VERSION_INFO_CMAKEIN_FILE     ${CMAKE_CURRENT_LIST_DIR}/VersionInfo.cmake.cmakein)
 set(VERSION_INFO_CONFIGURE_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/gmxConfigureVersionInfo.cmake)
 # A set of directories to scan for calculating the hash of source files.
-set(SET_OF_DIRECTORIES_TO_CHECKSUM  "${PROJECT_SOURCE_DIR}/src")
-list(APPEND SET_OF_DIRECTORIES_TO_CHECKSUM "${PROJECT_SOURCE_DIR}/python_packaging")
+set(SET_OF_DIRECTORIES_TO_CHECKSUM  "src")
+list(APPEND SET_OF_DIRECTORIES_TO_CHECKSUM "python_packaging")
 # Due to the limitations for passing a list as arguments, we make the directories a string here
 string(REPLACE ";" ":" DIRECTORIES_TO_CHECKSUM_STRING "${SET_OF_DIRECTORIES_TO_CHECKSUM}")
 
@@ -434,12 +434,17 @@ set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
 # not been tampered with.
 # Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
 # mean that the target is run in all builds
-if (PYTHON_EXECUTABLE)
+if (PYTHONINTERP_FOUND)
+    # We need the full path to the directories after passing it through
+    set(FULL_PATH_DIRECTORIES "")
+    foreach(DIR ${SET_OF_DIRECTORIES_TO_CHECKSUM})
+        list(APPEND FULL_PATH_DIRECTORIES "${PROJECT_SOURCE_DIR}/${DIR}")
+    endforeach()
     gmx_add_custom_output_target(reference_checksum RUN_ALWAYS
         OUTPUT ${CHECKSUM_FILE}
         COMMAND ${PYTHON_EXECUTABLE}
             ${PROJECT_SOURCE_DIR}/admin/createFileHash.py
-            -s ${SET_OF_DIRECTORIES_TO_CHECKSUM}
+            -s ${FULL_PATH_DIRECTORIES}
             -o ${CHECKSUM_FILE}
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMENT "Generating reference checksum of source files")

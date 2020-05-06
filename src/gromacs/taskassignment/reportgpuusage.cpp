@@ -138,7 +138,7 @@ void reportGpuUsage(const MDLogger&                   mdlog,
         output += gmx::formatString(
                 "PP tasks will do (non-perturbed) short-ranged%s interactions on the GPU\n",
                 useGpuForBonded ? " and most bonded" : "");
-        output += gmx::formatString("PP task will update and constrain coordinates on the %s",
+        output += gmx::formatString("PP task will update and constrain coordinates on the %s\n",
                                     useGpuForUpdate ? "GPU" : "CPU");
         if (pmeRunMode == PmeRunMode::Mixed)
         {

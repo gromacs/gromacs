@@ -299,21 +299,32 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     real rcutoff_max2 = std::max(ic->rcoulomb, ic->rvdw);
     rcutoff_max2      = rcutoff_max2 * rcutoff_max2;
 
-    const real* tab_ewald_F_lj = nullptr;
-    const real* tab_ewald_V_lj = nullptr;
-    const real* ewtab          = nullptr;
-    real        ewtabscale     = 0;
-    real        ewtabhalfspace = 0;
-    real        sh_ewald       = 0;
+    const real* tab_ewald_F_lj           = nullptr;
+    const real* tab_ewald_V_lj           = nullptr;
+    const real* ewtab                    = nullptr;
+    real        coulombTableScale        = 0;
+    real        coulombTableScaleInvHalf = 0;
+    real        vdwTableScale            = 0;
+    real        vdwTableScaleInvHalf     = 0;
+    real        sh_ewald                 = 0;
     if (elecInteractionTypeIsEwald || vdwInteractionTypeIsEwald)
     {
-        const auto& tables = *ic->coulombEwaldTables;
-        sh_ewald           = ic->sh_ewald;
-        ewtab              = tables.tableFDV0.data();
-        ewtabscale         = tables.scale;
-        ewtabhalfspace     = half / ewtabscale;
-        tab_ewald_F_lj     = tables.tableF.data();
-        tab_ewald_V_lj     = tables.tableV.data();
+        sh_ewald = ic->sh_ewald;
+    }
+    if (elecInteractionTypeIsEwald)
+    {
+        const auto& coulombTables = *ic->coulombEwaldTables;
+        ewtab                     = coulombTables.tableFDV0.data();
+        coulombTableScale         = coulombTables.scale;
+        coulombTableScaleInvHalf  = half / coulombTableScale;
+    }
+    if (vdwInteractionTypeIsEwald)
+    {
+        const auto& vdwTables = *ic->vdwEwaldTables;
+        tab_ewald_F_lj        = vdwTables.tableF.data();
+        tab_ewald_V_lj        = vdwTables.tableV.data();
+        vdwTableScale         = vdwTables.scale;
+        vdwTableScaleInvHalf  = half / vdwTableScale;
     }
 
     /* For Ewald/PME interactions we cannot easily apply the soft-core component to
@@ -680,12 +691,12 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                  */
                 real v_lr, f_lr;
 
-                const RealType ewrt   = r * ewtabscale;
+                const RealType ewrt   = r * coulombTableScale;
                 IntType        ewitab = static_cast<IntType>(ewrt);
                 const RealType eweps  = ewrt - ewitab;
                 ewitab                = 4 * ewitab;
                 f_lr                  = ewtab[ewitab] + eweps * ewtab[ewitab + 1];
-                v_lr = (ewtab[ewitab + 2] - ewtabhalfspace * eweps * (ewtab[ewitab] + f_lr));
+                v_lr = (ewtab[ewitab + 2] - coulombTableScaleInvHalf * eweps * (ewtab[ewitab] + f_lr));
                 f_lr *= rinv;
 
                 /* Note that any possible Ewald shift has already been applied in
@@ -725,7 +736,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                  * r close to 0 for non-interacting pairs.
                  */
 
-                const RealType rs   = rsq * rinv * ewtabscale;
+                const RealType rs   = rsq * rinv * vdwTableScale;
                 const IntType  ri   = static_cast<IntType>(rs);
                 const RealType frac = rs - ri;
                 const RealType f_lr = (1 - frac) * tab_ewald_F_lj[ri] + frac * tab_ewald_F_lj[ri + 1];
@@ -734,7 +745,8 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                  */
                 const RealType FF = f_lr * rinv / six;
                 RealType       VV =
-                        (tab_ewald_V_lj[ri] - ewtabhalfspace * frac * (tab_ewald_F_lj[ri] + f_lr)) / six;
+                        (tab_ewald_V_lj[ri] - vdwTableScaleInvHalf * frac * (tab_ewald_F_lj[ri] + f_lr))
+                        / six;
 
                 if (ii == jnr)
                 {

@@ -1101,7 +1101,7 @@ void do_force(FILE*                               fplog,
 
     // If coordinates are to be sent to PME task from GPU memory, perform that send here.
     // Otherwise the send will occur before the H2D coordinate transfer.
-    if (pmeSendCoordinatesFromGpu)
+    if (!thisRankHasDuty(cr, DUTY_PME) && pmeSendCoordinatesFromGpu)
     {
         /* Send particle coordinates to the pme nodes */
         gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()), lambda[efptCOUL],

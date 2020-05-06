@@ -560,7 +560,7 @@ void OptionStorageTemplate<T>::commitValues()
     {
         store_->append(value);
     }
-    DIAGNOSTIC_RESET;
+    CLANG_DIAGNOSTIC_RESET;
     clearSet();
 }
 

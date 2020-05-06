@@ -189,7 +189,7 @@ static int strip_dssp(FILE*                   tapeout,
         mat->axis_y.resize(nr);
         std::iota(mat->axis_y.begin(), mat->axis_y.end(), 1);
         mat->axis_x.resize(0);
-        mat->matrix.resize(0, 0);
+        mat->matrix.resize(1, 1);
         bFirst = false;
     }
     mat->axis_x.push_back(t);

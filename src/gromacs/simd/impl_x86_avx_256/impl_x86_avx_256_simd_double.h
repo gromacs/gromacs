@@ -56,8 +56,9 @@ namespace gmx
 class SimdDouble
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     SimdDouble() {}
-
+    MSVC_DIAGNOSTIC_RESET
     SimdDouble(double d) : simdInternal_(_mm256_set1_pd(d)) {}
 
     // Internal utility constructor to simplify return statements
@@ -69,8 +70,9 @@ public:
 class SimdDInt32
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     SimdDInt32() {}
-
+    MSVC_DIAGNOSTIC_RESET
     SimdDInt32(std::int32_t i) : simdInternal_(_mm_set1_epi32(i)) {}
 
     // Internal utility constructor to simplify return statements
@@ -82,8 +84,9 @@ public:
 class SimdDBool
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     SimdDBool() {}
-
+    MSVC_DIAGNOSTIC_RESET
     SimdDBool(bool b) : simdInternal_(_mm256_castsi256_pd(_mm256_set1_epi32(b ? 0xFFFFFFFF : 0))) {}
 
     // Internal utility constructor to simplify return statements
@@ -95,8 +98,9 @@ public:
 class SimdDIBool
 {
 public:
+    MSVC_DIAGNOSTIC_IGNORE(26495) // simdInternal_ is not being initialized!
     SimdDIBool() {}
-
+    MSVC_DIAGNOSTIC_RESET
     SimdDIBool(bool b) : simdInternal_(_mm_set1_epi32(b ? 0xFFFFFFFF : 0)) {}
 
     // Internal utility constructor to simplify return statements

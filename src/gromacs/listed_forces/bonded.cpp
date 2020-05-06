@@ -3752,11 +3752,18 @@ struct BondedInteractions
     int            nrnbIndex;
 };
 
+// Bug in old clang versions prevents constexpr. constexpr is needed for MSVC.
+#if defined(__clang__) && __clang_major__ < 6
+#    define CONSTEXPR_EXCL_OLD_CLANG const
+#else
+#    define CONSTEXPR_EXCL_OLD_CLANG constexpr
+#endif
+
 /*! \brief Lookup table of bonded interaction functions
  *
  * This must have as many entries as interaction_function in ifunc.cpp */
 template<BondedKernelFlavor flavor>
-const std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
+CONSTEXPR_EXCL_OLD_CLANG std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
     BondedInteractions{ bonds<flavor>, eNR_BONDS },                       // F_BONDS
     BondedInteractions{ g96bonds<flavor>, eNR_BONDS },                    // F_G96BONDS
     BondedInteractions{ morse_bonds<flavor>, eNR_MORSE },                 // F_MORSE
@@ -3852,7 +3859,8 @@ const std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
 };
 
 /*! \brief List of instantiated BondedInteractions list */
-const gmx::EnumerationArray<BondedKernelFlavor, std::array<BondedInteractions, F_NRE>> c_bondedInteractionFunctionsPerFlavor = {
+CONSTEXPR_EXCL_OLD_CLANG
+gmx::EnumerationArray<BondedKernelFlavor, std::array<BondedInteractions, F_NRE>> c_bondedInteractionFunctionsPerFlavor = {
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesSimdWhenAvailable>,
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesNoSimd>,
     c_bondedInteractionFunctions<BondedKernelFlavor::ForcesAndVirialAndEnergy>,

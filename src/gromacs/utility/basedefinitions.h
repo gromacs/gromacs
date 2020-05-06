@@ -152,12 +152,22 @@ index ssize(const T& t)
 #    define DO_PRAGMA(x) _Pragma(#    x)
 #    define CLANG_DIAGNOSTIC_IGNORE(warning) \
         _Pragma("clang diagnostic push") DO_PRAGMA(clang diagnostic ignored #warning)
-#    define DIAGNOSTIC_RESET _Pragma("clang diagnostic pop")
+#    define CLANG_DIAGNOSTIC_RESET _Pragma("clang diagnostic pop")
 #else
-//! Ignore specified clang warning until DIAGNOSTIC_RESET
+//! Ignore specified clang warning until CLANG_DIAGNOSTIC_RESET
 #    define CLANG_DIAGNOSTIC_IGNORE(warning)
 //! Reset all diagnostics to default
-#    define DIAGNOSTIC_RESET
+#    define CLANG_DIAGNOSTIC_RESET
+#endif
+
+#ifdef _MSC_VER
+#    define MSVC_DIAGNOSTIC_IGNORE(id) __pragma(warning(push)) __pragma(warning(disable : id))
+#    define MSVC_DIAGNOSTIC_RESET __pragma(warning(pop))
+#else
+//! Ignore specified MSVC warning until MSVC_DIAGNOSTIC_RESET
+#    define MSVC_DIAGNOSTIC_IGNORE(warning)
+//! Reset all diagnostics to default
+#    define MSVC_DIAGNOSTIC_RESET
 #endif
 
 namespace gmx

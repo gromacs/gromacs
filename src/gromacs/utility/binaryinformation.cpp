@@ -296,9 +296,11 @@ void gmx_print_version_info(gmx::TextWriter* writer)
      * them. Can wait for later, as the master branch has ready code to do all
      * that. */
     writer->writeLine(formatString("C compiler:         %s", BUILD_C_COMPILER));
-    writer->writeLine(formatString("C compiler flags:   %s", BUILD_CFLAGS));
+    writer->writeLine(formatString("C compiler flags:   %s %s", BUILD_CFLAGS,
+                                   CMAKE_BUILD_CONFIGURATION_C_FLAGS));
     writer->writeLine(formatString("C++ compiler:       %s", BUILD_CXX_COMPILER));
-    writer->writeLine(formatString("C++ compiler flags: %s", BUILD_CXXFLAGS));
+    writer->writeLine(formatString("C++ compiler flags: %s %s", BUILD_CXXFLAGS,
+                                   CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
     writer->writeLine(formatString("Linked with Intel MKL version %d.%d.%d.", __INTEL_MKL__,
@@ -311,7 +313,8 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #endif
 #if GMX_GPU == GMX_GPU_CUDA
     writer->writeLine(formatString("CUDA compiler:      %s", CUDA_COMPILER_INFO));
-    writer->writeLine(formatString("CUDA compiler flags:%s", CUDA_COMPILER_FLAGS));
+    writer->writeLine(formatString("CUDA compiler flags:%s %s", CUDA_COMPILER_FLAGS,
+                                   CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));
     writer->writeLine("CUDA driver:        " + gmx::getCudaDriverVersionString());
     writer->writeLine("CUDA runtime:       " + gmx::getCudaRuntimeVersionString());
 #endif

@@ -43,10 +43,16 @@
 /** C compiler used to build */
 #define BUILD_C_COMPILER        "@BUILD_C_COMPILER@"
 
+/** C compiler flags for this build configuration */
+#define CMAKE_BUILD_CONFIGURATION_C_FLAGS "@CMAKE_BUILD_CONFIGURATION_C_FLAGS@"
+
 #include "compilerflaginfo-@CMAKE_BUILD_TYPE@-C.h"
 
-/** C++ compiler flags used to build, or empty string if no C++ */
+/** C++ compiler used to build */
 #define BUILD_CXX_COMPILER      "@BUILD_CXX_COMPILER@"
+
+/** C++ compiler flags for this build configuration */
+#define CMAKE_BUILD_CONFIGURATION_CXX_FLAGS "@CMAKE_BUILD_CONFIGURATION_CXX_FLAGS@"
 
 #include "compilerflaginfo-@CMAKE_BUILD_TYPE@-CXX.h"
 

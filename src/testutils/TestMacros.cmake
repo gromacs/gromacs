@@ -169,6 +169,12 @@ function (gmx_add_gtest_executable EXENAME)
         if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7")
             target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
         endif()
+        # clang-3.6 warns about a number of issues that are not reported by more modern compilers
+        # and we know they are not real issues. So we only check that it can compile without error
+        # but ignore all warnings.
+        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^3\.6")
+            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-w>)
+        endif()
     endif()
 endfunction()
 
