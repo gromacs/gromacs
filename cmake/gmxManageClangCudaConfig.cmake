@@ -80,7 +80,7 @@ if (GMX_CUDA_TARGET_SM)
 endif()
 
 # default flags
-list(APPEND _CUDA_CLANG_FLAGS "-x cuda" "-ffast-math")
+list(APPEND _CUDA_CLANG_FLAGS "-x cuda" "-ffast-math" "-fcuda-flush-denormals-to-zero")
 # Workaround for clang>=9 (Bug 45533). No CUDA file uses OpenMP.
 list(APPEND _CUDA_CLANG_FLAGS "-fno-openmp")
 # CUDA toolkit
