@@ -15,12 +15,3 @@ existing include paths and add GMX_DOUBLE define to interface
 definitions. The target now gets exported into the Gromacs namespace.
 
 :issue:`3468`
-
-Fix checkpoint restart with non-zero initial step
-"""""""""""""""""""""""""""""""""""""""""""""""""
-
-When restarting from the checkpoint, the init-step mdp parameter was ignored while
-checking if the simulation is already finished. As a result, this check only worked
-properly when init-step was 0 or was not specified.
-
-:issue:`3489`
