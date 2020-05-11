@@ -677,14 +677,16 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
 //! This function is documented in the header file
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 {
-    cl_atomdata_t*   adat = nb->atdat;
-    cl_command_queue ls   = nb->deviceStreams[InteractionLocality::Local]->stream();
+    cl_atomdata_t*      adat         = nb->atdat;
+    const DeviceStream& deviceStream = *nb->deviceStreams[InteractionLocality::Local];
 
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
-        ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec.data(), 0,
-                           SHIFTS * sizeof(nbatom->shift_vec[0]), ls, nullptr);
+        GMX_ASSERT(sizeof(float) * DIM == sizeof(*nbatom->shift_vec.data()),
+                   "Sizes of host- and device-side shift vectors should be the same.");
+        copyToDeviceBuffer(&adat->shift_vec, reinterpret_cast<const float*>(nbatom->shift_vec.data()),
+                           0, SHIFTS * DIM, deviceStream, GpuApiCallBehavior::Async, nullptr);
         adat->bShiftVecUploaded = CL_TRUE;
     }
 }
@@ -766,13 +768,18 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
-        ocl_copy_H2D_async(d_atdat->lj_comb, nbat->params().lj_comb.data(), 0, natoms * sizeof(cl_float2),
-                           deviceStream.stream(), bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+        GMX_ASSERT(sizeof(float) == sizeof(*nbat->params().lj_comb.data()),
+                   "Size of the LJ parameters element should be equal to the size of float2.");
+        copyToDeviceBuffer(&d_atdat->lj_comb, nbat->params().lj_comb.data(), 0, 2 * natoms,
+                           deviceStream, GpuApiCallBehavior::Async,
+                           bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
     else
     {
-        ocl_copy_H2D_async(d_atdat->atom_types, nbat->params().type.data(), 0, natoms * sizeof(int),
-                           deviceStream.stream(), bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+        GMX_ASSERT(sizeof(int) == sizeof(*nbat->params().type.data()),
+                   "Sizes of host- and device-side atom types should be the same.");
+        copyToDeviceBuffer(&d_atdat->atom_types, nbat->params().type.data(), 0, natoms, deviceStream,
+                           GpuApiCallBehavior::Async, bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
 
     if (bDoTime)

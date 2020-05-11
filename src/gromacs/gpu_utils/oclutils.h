@@ -69,54 +69,6 @@ struct gmx_device_runtime_data_t
     cl_program program;
 };
 
-/*! \brief Launches synchronous or asynchronous device to host memory copy.
- *
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying this particular device to host operation. The event can further
- *  be used to queue a wait for this operation or to query profiling information.
- */
-int ocl_copy_D2H(void*              h_dest,
-                 cl_mem             d_src,
-                 size_t             offset,
-                 size_t             bytes,
-                 GpuApiCallBehavior transferKind,
-                 cl_command_queue   command_queue,
-                 cl_event*          copy_event);
-
-
-/*! \brief Launches asynchronous device to host memory copy. */
-int ocl_copy_D2H_async(void*            h_dest,
-                       cl_mem           d_src,
-                       size_t           offset,
-                       size_t           bytes,
-                       cl_command_queue command_queue,
-                       cl_event*        copy_event);
-
-/*! \brief Launches synchronous or asynchronous host to device memory copy.
- *
- *  If copy_event is not NULL, on return it will contain an event object
- *  identifying this particular host to device operation. The event can further
- *  be used to queue a wait for this operation or to query profiling information.
- */
-int ocl_copy_H2D(cl_mem             d_dest,
-                 const void*        h_src,
-                 size_t             offset,
-                 size_t             bytes,
-                 GpuApiCallBehavior transferKind,
-                 cl_command_queue   command_queue,
-                 cl_event*          copy_event);
-
-/*! \brief Launches asynchronous host to device memory copy. */
-int ocl_copy_H2D_async(cl_mem           d_dest,
-                       const void*      h_src,
-                       size_t           offset,
-                       size_t           bytes,
-                       cl_command_queue command_queue,
-                       cl_event*        copy_event);
-
-/*! \brief Launches synchronous host to device memory copy. */
-int ocl_copy_H2D_sync(cl_mem d_dest, const void* h_src, size_t offset, size_t bytes, cl_command_queue command_queue);
-
 /*! \brief Allocate host memory in malloc style */
 void pmalloc(void** h_ptr, size_t nbytes);
 

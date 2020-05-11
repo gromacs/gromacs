@@ -164,28 +164,28 @@ typedef struct cl_atomdata
     int nalloc;
 
     //! float4 buffer with atom coordinates + charges, size natoms
-    cl_mem xq;
+    DeviceBuffer<float> xq;
 
     //! float3 buffer with force output array, size natoms
-    cl_mem f;
+    DeviceBuffer<float> f;
 
     //! LJ energy output, size 1
-    cl_mem e_lj;
+    DeviceBuffer<float> e_lj;
     //! Electrostatics energy input, size 1
-    cl_mem e_el;
+    DeviceBuffer<float> e_el;
 
     //! float3 buffer with shift forces
-    cl_mem fshift;
+    DeviceBuffer<float> fshift;
 
     //! number of atom types
     int ntypes;
     //! int buffer with atom type indices, size natoms
-    cl_mem atom_types;
+    DeviceBuffer<int> atom_types;
     //! float2 buffer with sqrt(c6),sqrt(c12), size natoms
-    cl_mem lj_comb;
+    DeviceBuffer<float> lj_comb;
 
     //! float3 buffer with shifts values
-    cl_mem shift_vec;
+    DeviceBuffer<float> shift_vec;
 
     //! true if the shift vector has been uploaded
     bool bShiftVecUploaded;
