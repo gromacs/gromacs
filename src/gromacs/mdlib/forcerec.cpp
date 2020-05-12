@@ -100,6 +100,20 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 
+ForceHelperBuffers::ForceHelperBuffers(bool haveDirectVirialContributions) :
+    haveDirectVirialContributions_(haveDirectVirialContributions)
+{
+    shiftForces_.resize(SHIFTS);
+}
+
+void ForceHelperBuffers::resize(int numAtoms)
+{
+    if (haveDirectVirialContributions_)
+    {
+        forceBufferForDirectVirialContributions_.resize(numAtoms);
+    }
+}
+
 static std::vector<real> mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
 {
     std::vector<real> nbfp;
@@ -602,10 +616,7 @@ void forcerec_set_ranges(t_forcerec* fr, int natoms_force, int natoms_force_cons
     fr->natoms_force        = natoms_force;
     fr->natoms_force_constr = natoms_force_constr;
 
-    if (fr->haveDirectVirialContributions)
-    {
-        fr->forceBufferForDirectVirialContributions.resize(natoms_f_novirsum);
-    }
+    fr->forceHelperBuffers->resize(natoms_f_novirsum);
 }
 
 static real cutoff_inf(real cutoff)
@@ -1185,17 +1196,16 @@ void init_forcerec(FILE*                            fp,
     /* 1-4 interaction electrostatics */
     fr->fudgeQQ = mtop->ffparams.fudgeQQ;
 
-    fr->haveDirectVirialContributions =
+    const bool haveDirectVirialContributions =
             (EEL_FULL(ic->eeltype) || EVDW_PME(ic->vdwtype) || fr->forceProviders->hasForceProvider()
              || gmx_mtop_ftype_count(mtop, F_POSRES) > 0 || gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0
              || ir->nwall > 0 || ir->bPull || ir->bRot || ir->bIMD);
+    fr->forceHelperBuffers = std::make_unique<ForceHelperBuffers>(haveDirectVirialContributions);
 
     if (fr->shift_vec == nullptr)
     {
         snew(fr->shift_vec, SHIFTS);
     }
-
-    fr->shiftForces.resize(SHIFTS);
 
     if (fr->nbfp.empty())
     {

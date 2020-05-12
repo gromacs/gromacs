@@ -293,7 +293,7 @@ static void post_process_forces(const t_commrec*          cr,
 {
     rvec* f = as_rvec_array(forceOutputs->forceWithShiftForces().force().data());
 
-    if (fr->haveDirectVirialContributions)
+    if (forceOutputs->haveForceWithVirial())
     {
         auto& forceWithVirial = forceOutputs->forceWithVirial();
 
@@ -378,25 +378,25 @@ static void do_nb_verlet(t_forcerec*                fr,
     nbv->dispatchNonbondedKernel(ilocality, *ic, stepWork, clearF, *fr, enerd, nrnb);
 }
 
-static inline void clear_rvecs_omp(int n, rvec v[])
+static inline void clearRVecs(ArrayRef<RVec> v, const bool useOpenmpThreading)
 {
-    int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, n);
+    int nth = gmx_omp_nthreads_get_simple_rvec_task(emntDefault, v.ssize());
 
     /* Note that we would like to avoid this conditional by putting it
      * into the omp pragma instead, but then we still take the full
      * omp parallel for overhead (at least with gcc5).
      */
-    if (nth == 1)
+    if (!useOpenmpThreading || nth == 1)
     {
-        for (int i = 0; i < n; i++)
+        for (RVec& elem : v)
         {
-            clear_rvec(v[i]);
+            clear_rvec(elem);
         }
     }
     else
     {
 #pragma omp parallel for num_threads(nth) schedule(static)
-        for (int i = 0; i < n; i++)
+        for (gmx::index i = 0; i < v.ssize(); i++)
         {
             clear_rvec(v[i]);
         }
@@ -706,7 +706,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
 
 /*! \brief Set up the different force buffers; also does clearing.
  *
- * \param[in] fr        force record pointer
+ * \param[in] forceHelperBuffers  Helper force buffers
  * \param[in] pull_work The pull work object.
  * \param[in] inputrec  input record
  * \param[in] force     force array
@@ -715,7 +715,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
  *
  * \returns             Cleared force output structure
  */
-static ForceOutputs setupForceOutputs(t_forcerec*                         fr,
+static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceHelperBuffers,
                                       pull_t*                             pull_work,
                                       const t_inputrec&                   inputrec,
                                       gmx::ArrayRefWithPadding<gmx::RVec> force,
@@ -725,12 +725,16 @@ static ForceOutputs setupForceOutputs(t_forcerec*                         fr,
     wallcycle_sub_start(wcycle, ewcsCLEAR_FORCE_BUFFER);
 
     /* NOTE: We assume fr->shiftForces is all zeros here */
-    gmx::ForceWithShiftForces forceWithShiftForces(force, stepWork.computeVirial, fr->shiftForces);
+    gmx::ForceWithShiftForces forceWithShiftForces(force, stepWork.computeVirial,
+                                                   forceHelperBuffers->shiftForces());
 
     if (stepWork.computeForces)
     {
         /* Clear the short- and long-range forces */
-        clear_rvecs_omp(fr->natoms_force_constr, as_rvec_array(forceWithShiftForces.force().data()));
+        clearRVecs(forceWithShiftForces.force(), true);
+
+        /* Clear the shift forces */
+        clearRVecs(forceWithShiftForces.shiftForces(), false);
     }
 
     /* If we need to compute the virial, we might need a separate
@@ -739,11 +743,13 @@ static ForceOutputs setupForceOutputs(t_forcerec*                         fr,
      * the same force (f in legacy calls) buffer as other algorithms.
      */
     const bool useSeparateForceWithVirialBuffer =
-            (stepWork.computeForces && (stepWork.computeVirial && fr->haveDirectVirialContributions));
+            (stepWork.computeForces
+             && (stepWork.computeVirial && forceHelperBuffers->haveDirectVirialContributions()));
     /* forceWithVirial uses the local atom range only */
-    gmx::ForceWithVirial forceWithVirial(useSeparateForceWithVirialBuffer ? fr->forceBufferForDirectVirialContributions
-                                                                          : force.unpaddedArrayRef(),
-                                         stepWork.computeVirial);
+    gmx::ForceWithVirial forceWithVirial(
+            useSeparateForceWithVirialBuffer ? forceHelperBuffers->forceBufferForDirectVirialContributions()
+                                             : force.unpaddedArrayRef(),
+            stepWork.computeVirial);
 
     if (useSeparateForceWithVirialBuffer)
     {
@@ -752,7 +758,7 @@ static ForceOutputs setupForceOutputs(t_forcerec*                         fr,
          * spread to non-local atoms, but that part of the buffer is
          * cleared separately in the vsite spreading code.
          */
-        clear_rvecs_omp(forceWithVirial.force_.size(), as_rvec_array(forceWithVirial.force_.data()));
+        clearRVecs(forceWithVirial.force_, true);
     }
 
     if (inputrec.bPull && pull_have_constraint(pull_work))
@@ -762,7 +768,8 @@ static ForceOutputs setupForceOutputs(t_forcerec*                         fr,
 
     wallcycle_sub_stop(wcycle, ewcsCLEAR_FORCE_BUFFER);
 
-    return ForceOutputs(forceWithShiftForces, forceWithVirial);
+    return ForceOutputs(forceWithShiftForces, forceHelperBuffers->haveDirectVirialContributions(),
+                        forceWithVirial);
 }
 
 
@@ -1409,12 +1416,6 @@ void do_force(FILE*                               fplog,
 
     /* Reset energies */
     reset_enerdata(enerd);
-    /* Clear the shift forces */
-    // TODO: This should be linked to the shift force buffer in use, or cleared before use instead
-    for (gmx::RVec& elem : fr->shiftForces)
-    {
-        elem = { 0.0_real, 0.0_real, 0.0_real };
-    }
 
     if (DOMAINDECOMP(cr) && !thisRankHasDuty(cr, DUTY_PME))
     {
@@ -1445,8 +1446,8 @@ void do_force(FILE*                               fplog,
 
     // Set up and clear force outputs.
     // We use std::move to keep the compiler happy, it has no effect.
-    ForceOutputs forceOut =
-            setupForceOutputs(fr, pull_work, *inputrec, std::move(force), stepWork, wcycle);
+    ForceOutputs forceOut = setupForceOutputs(fr->forceHelperBuffers.get(), pull_work, *inputrec,
+                                              std::move(force), stepWork, wcycle);
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
      * We do this before calling do_force_lowlevel, because in that
@@ -1789,7 +1790,7 @@ void do_force(FILE*                               fplog,
         /* If we have NoVirSum forces, but we do not calculate the virial,
          * we sum fr->f_novirsum=forceOut.f later.
          */
-        if (vsite && !(fr->haveDirectVirialContributions && !stepWork.computeVirial))
+        if (vsite && !(fr->forceHelperBuffers->haveDirectVirialContributions() && !stepWork.computeVirial))
         {
             auto f      = forceOut.forceWithShiftForces().force();
             auto fshift = forceOut.forceWithShiftForces().shiftForces();

@@ -292,9 +292,9 @@ static inline void clear_rvec(rvec a)
     /* The ibm compiler has problems with inlining this
      * when we use a const real variable
      */
-    a[XX] = 0.0;
-    a[YY] = 0.0;
-    a[ZZ] = 0.0;
+    a[XX] = 0.0_real;
+    a[YY] = 0.0_real;
+    a[ZZ] = 0.0_real;
 }
 
 static inline void clear_dvec(dvec a)

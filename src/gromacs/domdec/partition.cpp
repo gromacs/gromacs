@@ -3117,7 +3117,7 @@ void dd_partition_system(FILE*                        fplog,
 
     state_change_natoms(state_local, state_local->natoms);
 
-    if (fr->haveDirectVirialContributions)
+    if (fr->forceHelperBuffers->haveDirectVirialContributions())
     {
         if (vsite && vsite->numInterUpdategroupVirtualSites())
         {
