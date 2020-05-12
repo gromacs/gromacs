@@ -259,6 +259,8 @@ void init_disres(FILE*                 fplog,
             }
             fprintf(fplog, "\n");
         }
+#else
+        GMX_UNUSED_VALUE(communicator);
 #endif
     }
     else

@@ -1264,8 +1264,9 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbnxn_atomdata_t* nbat, in
                     /* wait on partner thread - replaces full barrier */
                     int sync_th, sync_group_size;
 
-#    if defined(__clang__)
+#    if defined(__clang__) && __clang_major__ >= 8
                     // Suppress warnings that the use of memory_barrier may be excessive
+                    // Only exists beginning with clang-8
 #        pragma clang diagnostic push
 #        pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
 #    endif
@@ -1290,7 +1291,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbnxn_atomdata_t* nbat, in
                         /* guarantee that no later load happens before wait loop is finisehd */
                         tMPI_Atomic_memory_barrier();
                     }
-#    if defined(__clang__)
+#    if defined(__clang__) && __clang_major__ >= 8
 #        pragma clang diagnostic pop
 #    endif
 #else /* TMPI_ATOMICS */
