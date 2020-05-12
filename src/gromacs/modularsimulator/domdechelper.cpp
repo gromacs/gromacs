@@ -70,7 +70,7 @@ DomDecHelper::DomDecHelper(bool                               isVerbose,
                            t_nrnb*                            nrnb,
                            gmx_wallcycle*                     wcycle,
                            t_forcerec*                        fr,
-                           gmx_vsite_t*                       vsite,
+                           VirtualSitesHandler*               vsite,
                            ImdSession*                        imdSession,
                            pull_t*                            pull_work) :
     nextNSStep_(-1),

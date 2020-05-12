@@ -65,7 +65,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-void dd_move_f_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rvec* f, rvec* fshift)
+void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rvec* f, rvec* fshift)
 {
     gmx_specatsend_t* spas;
     rvec*             vbuf;
@@ -173,7 +173,12 @@ void dd_move_f_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rvec* f,
     }
 }
 
-void dd_move_x_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, const matrix box, rvec* x0, rvec* x1, gmx_bool bX1IsCoord)
+void dd_move_x_specat(const gmx_domdec_t*       dd,
+                      gmx_domdec_specat_comm_t* spac,
+                      const matrix              box,
+                      rvec*                     x0,
+                      rvec*                     x1,
+                      gmx_bool                  bX1IsCoord)
 {
     gmx_specatsend_t* spas;
     int               nvec, v, n, nn, ns0, ns1, nr0, nr1, nr, d, dim, dir, i;

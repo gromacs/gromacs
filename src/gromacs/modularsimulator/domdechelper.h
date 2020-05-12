@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,6 @@
 #include "modularsimulatorinterfaces.h"
 
 struct gmx_localtop_t;
-struct gmx_vsite_t;
 struct gmx_wallcycle;
 struct pull_t;
 struct t_commrec;
@@ -61,6 +60,7 @@ class MDAtoms;
 class MDLogger;
 class StatePropagatorData;
 class TopologyHolder;
+class VirtualSitesHandler;
 
 //! \addtogroup module_modularsimulator
 //! \{
@@ -102,7 +102,7 @@ public:
                  t_nrnb*                            nrnb,
                  gmx_wallcycle*                     wcycle,
                  t_forcerec*                        fr,
-                 gmx_vsite_t*                       vsite,
+                 VirtualSitesHandler*               vsite,
                  ImdSession*                        imdSession,
                  pull_t*                            pull_work);
 
@@ -160,7 +160,7 @@ private:
     //! Parameters for force calculations.
     t_forcerec* fr_;
     //! Handles virtual sites.
-    gmx_vsite_t* vsite_;
+    VirtualSitesHandler* vsite_;
     //! The Interactive Molecular Dynamics session.
     ImdSession* imdSession_;
     //! The pull work object.

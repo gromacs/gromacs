@@ -66,32 +66,30 @@
 
 #include "domdec_specatomcomm.h"
 
-void dd_move_f_vsites(gmx_domdec_t* dd, rvec* f, rvec* fshift)
+void dd_move_f_vsites(const gmx_domdec_t& dd, gmx::ArrayRef<gmx::RVec> f, gmx::ArrayRef<gmx::RVec> fshift)
 {
-    if (dd->vsite_comm)
+    if (dd.vsite_comm)
     {
-        dd_move_f_specat(dd, dd->vsite_comm, f, fshift);
+        dd_move_f_specat(&dd, dd.vsite_comm, as_rvec_array(f.data()), as_rvec_array(fshift.data()));
     }
 }
 
-void dd_clear_f_vsites(gmx_domdec_t* dd, rvec* f)
+void dd_clear_f_vsites(const gmx_domdec_t& dd, gmx::ArrayRef<gmx::RVec> f)
 {
-    int i;
-
-    if (dd->vsite_comm)
+    if (dd.vsite_comm)
     {
-        for (i = dd->vsite_comm->at_start; i < dd->vsite_comm->at_end; i++)
+        for (int i = dd.vsite_comm->at_start; i < dd.vsite_comm->at_end; i++)
         {
             clear_rvec(f[i]);
         }
     }
 }
 
-void dd_move_x_vsites(gmx_domdec_t* dd, const matrix box, rvec* x)
+void dd_move_x_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x)
 {
-    if (dd->vsite_comm)
+    if (dd.vsite_comm)
     {
-        dd_move_x_specat(dd, dd->vsite_comm, box, x, nullptr, FALSE);
+        dd_move_x_specat(&dd, dd.vsite_comm, box, x, nullptr, FALSE);
     }
 }
 

@@ -49,7 +49,6 @@
 
 struct gmx_localtop_t;
 struct gmx_mtop_t;
-struct gmx_vsite_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
@@ -58,6 +57,7 @@ namespace gmx
 {
 class Constraints;
 class MDAtoms;
+class VirtualSitesHandler;
 
 /*! \libinternal
  * \ingroup module_modularsimulator
@@ -70,13 +70,13 @@ class TopologyHolder final
 {
 public:
     //! Constructor
-    TopologyHolder(const gmx_mtop_t& globalTopology,
-                   const t_commrec*  cr,
-                   const t_inputrec* inputrec,
-                   t_forcerec*       fr,
-                   MDAtoms*          mdAtoms,
-                   Constraints*      constr,
-                   gmx_vsite_t*      vsite);
+    TopologyHolder(const gmx_mtop_t&    globalTopology,
+                   const t_commrec*     cr,
+                   const t_inputrec*    inputrec,
+                   t_forcerec*          fr,
+                   MDAtoms*             mdAtoms,
+                   Constraints*         constr,
+                   VirtualSitesHandler* vsite);
 
     //! Get global topology
     const gmx_mtop_t& globalTopology() const;

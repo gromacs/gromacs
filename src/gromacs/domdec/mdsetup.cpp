@@ -70,7 +70,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
                                PaddedHostVector<RVec>* force,
                                MDAtoms*                mdAtoms,
                                Constraints*            constr,
-                               gmx_vsite_t*            vsite,
+                               VirtualSitesHandler*    vsite,
                                gmx_shellfc_t*          shellfc)
 {
     bool usingDomDec = DOMAINDECOMP(cr);
@@ -117,17 +117,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
 
     if (vsite)
     {
-        if (usingDomDec)
-        {
-            /* The vsites were already assigned by the domdec topology code.
-             * We only need to do the thread division here.
-             */
-            split_vsites_over_threads(top->idef.il, top->idef.iparams, mdatoms, vsite);
-        }
-        else
-        {
-            set_vsite_top(vsite, top, mdatoms);
-        }
+        vsite->setVirtualSites(top->idef.il, *mdatoms);
     }
 
     /* Note that with DD only flexible constraints, not shells, are supported

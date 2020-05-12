@@ -114,6 +114,7 @@
 using gmx::ArrayRef;
 using gmx::MdrunScheduleWorkload;
 using gmx::RVec;
+using gmx::VirtualSitesHandler;
 
 //! Utility structure for manipulating states during EM
 typedef struct
@@ -372,7 +373,7 @@ static void init_em(FILE*                fplog,
                     t_forcerec*          fr,
                     gmx::MDAtoms*        mdAtoms,
                     gmx_global_stat_t*   gstat,
-                    gmx_vsite_t*         vsite,
+                    VirtualSitesHandler* vsite,
                     gmx::Constraints*    constr,
                     gmx_shellfc_t**      shellfc)
 {
@@ -411,7 +412,6 @@ static void init_em(FILE*                fplog,
         }
     }
 
-    auto mdatoms = mdAtoms->mdatoms();
     if (DOMAINDECOMP(cr))
     {
         dd_init_local_state(cr->dd, state_global, &ems->s);
@@ -431,11 +431,6 @@ static void init_em(FILE*                fplog,
 
         mdAlgorithmsSetupAtomData(cr, ir, *top_global, top, fr, &ems->f, mdAtoms, constr, vsite,
                                   shellfc ? *shellfc : nullptr);
-
-        if (vsite)
-        {
-            set_vsite_top(vsite, top, mdatoms);
-        }
     }
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[efptMASS]);
@@ -721,7 +716,7 @@ static void em_dd_partition_system(FILE*                fplog,
                                    gmx_localtop_t*      top,
                                    gmx::MDAtoms*        mdAtoms,
                                    t_forcerec*          fr,
-                                   gmx_vsite_t*         vsite,
+                                   VirtualSitesHandler* vsite,
                                    gmx::Constraints*    constr,
                                    t_nrnb*              nrnb,
                                    gmx_wallcycle_t      wcycle)
@@ -784,7 +779,7 @@ public:
     //! Coordinates global reduction.
     gmx_global_stat_t gstat;
     //! Handles virtual sites.
-    gmx_vsite_t* vsite;
+    VirtualSitesHandler* vsite;
     //! Handles constraints.
     gmx::Constraints* constr;
     //! Handles strange things.
@@ -826,8 +821,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 
     if (vsite)
     {
-        construct_vsites(vsite, ems->s.x.rvec_array(), 1, nullptr, top->idef.iparams, top->idef.il,
-                         fr->pbcType, fr->bMolPBC, cr, ems->s.box);
+        vsite->construct(ems->s.x, 1, {}, ems->s.box);
     }
 
     if (DOMAINDECOMP(cr) && bNS)
@@ -1748,8 +1742,7 @@ void LegacySimulator::do_lbfgs()
 
     if (vsite)
     {
-        construct_vsites(vsite, state_global->x.rvec_array(), 1, nullptr, top.idef.iparams,
-                         top.idef.il, fr->pbcType, fr->bMolPBC, cr, state_global->box);
+        vsite->construct(state_global->x, 1, {}, state_global->box);
     }
 
     /* Call the force routine and some auxiliary (neighboursearching etc.) */

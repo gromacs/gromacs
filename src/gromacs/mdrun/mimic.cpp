@@ -454,9 +454,7 @@ void gmx::LegacySimulator::do_mimic()
         if (vsite != nullptr)
         {
             wallcycle_start(wcycle, ewcVSITECONSTR);
-            construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t,
-                             as_rvec_array(state->v.data()), top.idef.iparams, top.idef.il,
-                             fr->pbcType, fr->bMolPBC, cr, state->box);
+            vsite->construct(state->x, ir->delta_t, state->v, state->box);
             wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
 

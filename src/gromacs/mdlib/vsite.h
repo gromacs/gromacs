@@ -35,142 +35,159 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief Declares the VirtualSitesHandler class and vsite standalone functions
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_mdlib
+ * \inlibraryapi
+ */
+
 #ifndef GMX_MDLIB_VSITE_H
 #define GMX_MDLIB_VSITE_H
 
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_localtop_t;
+struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct t_commrec;
 struct InteractionList;
 struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
-struct VsiteThread;
 enum class PbcType : int;
 
 namespace gmx
 {
 class RangePartitioning;
-}
 
-/* The start and end values of for the vsite indices in the ftype enum.
- * The validity of these values is checked in init_vsite.
+/*! \brief The start value of the vsite indices in the ftype enum
+ *
+ * The validity of the start and end values is checked in makeVirtualSitesHandler().
  * This is used to avoid loops over all ftypes just to get the vsite entries.
  * (We should replace the fixed ilist array by only the used entries.)
  */
 static constexpr int c_ftypeVsiteStart = F_VSITE2;
-static constexpr int c_ftypeVsiteEnd   = F_VSITEN + 1;
+//! The start and end value of the vsite indices in the ftype enum
+static constexpr int c_ftypeVsiteEnd = F_VSITEN + 1;
 
-/* Type for storing PBC atom information for all vsite types in the system */
+//! Type for storing PBC atom information for all vsite types in the system
 typedef std::array<std::vector<int>, c_ftypeVsiteEnd - c_ftypeVsiteStart> VsitePbc;
 
-/* Data for handling vsites, needed with OpenMP threading or with charge-groups and PBC */
-struct gmx_vsite_t
+/*! \libinternal
+ * \brief Class that handles construction of vsites and spreading of vsite forces
+ */
+class VirtualSitesHandler
 {
-    gmx_vsite_t();
+public:
+    //! Constructor, used only be the makeVirtualSitesHandler() factory function
+    VirtualSitesHandler(const gmx_mtop_t& mtop, gmx_domdec_t* domdec, PbcType pbcType);
 
-    ~gmx_vsite_t();
+    ~VirtualSitesHandler();
 
-    /* The number of vsites that cross update groups, when =0 no PBC treatment is needed */
-    int numInterUpdategroupVsites;
-    int nthreads;                                    /* Number of threads used for vsites       */
-    std::vector<std::unique_ptr<VsiteThread>> tData; /* Thread local vsites and work structs    */
-    std::vector<int> taskIndex;                      /* Work array                              */
-    bool useDomdec; /* Tells whether we use domain decomposition with more than 1 DD rank */
+    //! Returns the number of virtual sites acting over multiple update groups
+    int numInterUpdategroupVirtualSites() const;
+
+    //! Set VSites and distribute VSite work over threads, should be called after each DD partitioning
+    void setVirtualSites(ArrayRef<const InteractionList> ilist, const t_mdatoms& mdatoms);
+
+    /*! \brief Create positions of vsite atoms based for the local system
+     *
+     * \param[in,out] x        The coordinates
+     * \param[in]     dt       The time step
+     * \param[in,out] v        When not empty, velocities for vsites are set as displacement/dt
+     * \param[in]     box      The box
+     */
+    void construct(ArrayRef<RVec> x, real dt, ArrayRef<RVec> v, const matrix box) const;
+
+    //! Tells how to handle virial contributions due to virtual sites
+    enum class VirialHandling : int
+    {
+        None,     //!< Do not compute virial contributions
+        Pbc,      //!< Add contributions working over PBC to shift forces
+        NonLinear //!< Compute contributions due to non-linear virtual sites
+    };
+
+    /*! \brief Spread the force operating on the vsite atoms on the surrounding atoms.
+     *
+     * vsite should point to a valid object.
+     * The virialHandling parameter determines how virial contributions are handled.
+     * If this is set to Linear, shift forces are accumulated into fshift.
+     * If this is set to NonLinear, non-linear contributions are added to virial.
+     * This non-linear correction is required when the virial is not calculated
+     * afterwards from the particle position and forces, but in a different way,
+     * as for instance for the PME mesh contribution.
+     */
+    void spreadForces(ArrayRef<const RVec> x,
+                      ArrayRef<RVec>       f,
+                      VirialHandling       virialHandling,
+                      ArrayRef<RVec>       fshift,
+                      matrix               virial,
+                      t_nrnb*              nrnb,
+                      const matrix         box,
+                      gmx_wallcycle*       wcycle);
+
+private:
+    //! Implementation type.
+    class Impl;
+    //! Implementation object.
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \brief Create positions of vsite atoms based for the local system
  *
- * \param[in]     vsite    The vsite struct, when nullptr is passed, no MPI and no multi-threading
- *                         is used
  * \param[in,out] x        The coordinates
- * \param[in]     dt       The time step
- * \param[in,out] v        When != nullptr, velocities for vsites are set as displacement/dt
  * \param[in]     ip       Interaction parameters
  * \param[in]     ilist    The interaction list
- * \param[in]     pbcType  The type of periodic boundary conditions
- * \param[in]     bMolPBC  When true, molecules are broken over PBC
- * \param[in]     cr       The communication record
- * \param[in]     box      The box
  */
-void construct_vsites(const gmx_vsite_t*                   vsite,
-                      rvec                                 x[],
-                      real                                 dt,
-                      rvec                                 v[],
-                      gmx::ArrayRef<const t_iparams>       ip,
-                      gmx::ArrayRef<const InteractionList> ilist,
-                      PbcType                              pbcType,
-                      gmx_bool                             bMolPBC,
-                      const t_commrec*                     cr,
-                      const matrix                         box);
+void constructVirtualSites(ArrayRef<RVec>                  x,
+                           ArrayRef<const t_iparams>       ip,
+                           ArrayRef<const InteractionList> ilist);
 
 /*! \brief Create positions of vsite atoms for the whole system assuming all molecules are wholex
  *
  * \param[in]     mtop  The global topology
  * \param[in,out] x     The global coordinates
  */
-void constructVsitesGlobal(const gmx_mtop_t& mtop, gmx::ArrayRef<gmx::RVec> x);
+void constructVirtualSitesGlobal(const gmx_mtop_t& mtop, ArrayRef<RVec> x);
 
-void spread_vsite_f(const gmx_vsite_t*            vsite,
-                    const rvec                    x[],
-                    rvec                          f[],
-                    rvec*                         fshift,
-                    gmx_bool                      VirCorr,
-                    matrix                        vir,
-                    t_nrnb*                       nrnb,
-                    const InteractionDefinitions& idef,
-                    PbcType                       pbcType,
-                    gmx_bool                      bMolPBC,
-                    const matrix                  box,
-                    const t_commrec*              cr,
-                    gmx_wallcycle*                wcycle);
-/* Spread the force operating on the vsite atoms on the surrounding atoms.
- * If fshift!=NULL also update the shift forces.
- * If VirCorr=TRUE add the virial correction for non-linear vsite constructs
- * to vir. This correction is required when the virial is not calculated
- * afterwards from the particle position and forces, but in a different way,
- * as for instance for the PME mesh contribution.
- */
+//! Tells how to handle virial contributions due to virtual sites
+enum class VirtualSiteVirialHandling : int
+{
+    None,     //!< Do not compute virial contributions
+    Pbc,      //!< Add contributions working over PBC to shift forces
+    NonLinear //!< Compute contributions due to non-linear virtual sites
+};
 
-/* Return the number of non-linear virtual site constructions in the system */
+//! Return the number of non-linear virtual site constructions in the system
 int countNonlinearVsites(const gmx_mtop_t& mtop);
 
-/* Return the number of virtual sites that cross update groups
+/*! \brief Return the number of virtual sites that cross update groups
  *
  * \param[in] mtop                           The global topology
  * \param[in] updateGroupingPerMoleculetype  Update grouping per molecule type, pass empty when not using update groups
  */
-int countInterUpdategroupVsites(const gmx_mtop_t&                           mtop,
-                                gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingPerMoleculetype);
+int countInterUpdategroupVsites(const gmx_mtop_t&                 mtop,
+                                ArrayRef<const RangePartitioning> updateGroupingPerMoleculetype);
 
-/* Initialize the virtual site struct,
+/*! \brief Create the virtual site handler
  *
- * \param[in] mtop  The global topology
- * \param[in] cr    The communication record
- * \returns A valid vsite struct or nullptr when there are no virtual sites
+ * \param[in] mtop      The global topology
+ * \param[in] cr        The communication record
+ * \param[in] pbcType   The type of PBC
+ * \returns A valid vsite handler object or nullptr when there are no virtual sites
  */
-std::unique_ptr<gmx_vsite_t> initVsite(const gmx_mtop_t& mtop, const t_commrec* cr);
+std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& mtop,
+                                                             const t_commrec*  cr,
+                                                             PbcType           pbcType);
 
-void split_vsites_over_threads(gmx::ArrayRef<const InteractionList> ilist,
-                               gmx::ArrayRef<const t_iparams>       ip,
-                               const t_mdatoms*                     mdatoms,
-                               gmx_vsite_t*                         vsite);
-/* Divide the vsite work-load over the threads.
- * Should be called at the end of the domain decomposition.
- */
-
-void set_vsite_top(gmx_vsite_t* vsite, const gmx_localtop_t* top, const t_mdatoms* md);
-/* Set some vsite data for runs without domain decomposition.
- * Should be called once after init_vsite, before calling other routines.
- */
+} // namespace gmx
 
 #endif

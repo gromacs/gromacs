@@ -54,7 +54,6 @@ struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
-struct gmx_vsite_t;
 struct gmx_wallcycle;
 struct pull_t;
 struct t_commrec;
@@ -69,6 +68,7 @@ class Constraints;
 class ImdSession;
 class MDAtoms;
 class MDLogger;
+class VirtualSitesHandler;
 } // namespace gmx
 
 //! Check whether the DD grid has moved too far for correctness.
@@ -100,7 +100,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec* ir, FILE* fplog)
  * \param[in] mdatoms       MD atoms
  * \param[in] top_local     Local topology
  * \param[in] fr            Force record
- * \param[in] vsite         Virtual sites
+ * \param[in] vsite         Virtual sites handler
  * \param[in] constr        Constraints
  * \param[in] nrnb          Cycle counters
  * \param[in] wcycle        Timers
@@ -122,7 +122,7 @@ void dd_partition_system(FILE*                             fplog,
                          gmx::MDAtoms*                     mdatoms,
                          gmx_localtop_t*                   top_local,
                          t_forcerec*                       fr,
-                         gmx_vsite_t*                      vsite,
+                         gmx::VirtualSitesHandler*         vsite,
                          gmx::Constraints*                 constr,
                          t_nrnb*                           nrnb,
                          gmx_wallcycle*                    wcycle,

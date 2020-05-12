@@ -1623,7 +1623,7 @@ static void set_verlet_buffer(const gmx_mtop_t*    mtop,
     ir->rlist = calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1,
                                      buffer_temp, listSetup4x4);
 
-    const int n_nonlin_vsite = countNonlinearVsites(*mtop);
+    const int n_nonlin_vsite = gmx::countNonlinearVsites(*mtop);
     if (n_nonlin_vsite > 0)
     {
         std::string warningMessage = gmx::formatString(

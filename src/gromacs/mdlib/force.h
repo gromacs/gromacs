@@ -49,7 +49,6 @@ struct gmx_enfrot;
 struct SimulationGroups;
 struct gmx_localtop_t;
 struct gmx_multisim_t;
-struct gmx_vsite_t;
 struct gmx_wallcycle;
 class history_t;
 class InteractionDefinitions;
@@ -71,6 +70,7 @@ class ImdSession;
 class MdrunScheduleWorkload;
 class MDLogger;
 class StepWorkload;
+class VirtualSitesHandler;
 } // namespace gmx
 
 void do_force(FILE*                               log,
@@ -96,7 +96,7 @@ void do_force(FILE*                               log,
               gmx::ArrayRef<real>                 lambda,
               t_forcerec*                         fr,
               gmx::MdrunScheduleWorkload*         runScheduleWork,
-              const gmx_vsite_t*                  vsite,
+              gmx::VirtualSitesHandler*           vsite,
               rvec                                mu_tot,
               double                              t,
               gmx_edsam*                          ed,

@@ -50,7 +50,6 @@ struct bonded_threading_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_shellfc_t;
-struct gmx_vsite_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
@@ -60,6 +59,7 @@ namespace gmx
 {
 class Constraints;
 class MDAtoms;
+class VirtualSitesHandler;
 
 /*! \brief Gets the local shell with domain decomposition
  *
@@ -95,7 +95,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
                                PaddedHostVector<RVec>* force,
                                MDAtoms*                mdAtoms,
                                Constraints*            constr,
-                               gmx_vsite_t*            vsite,
+                               VirtualSitesHandler*    vsite,
                                gmx_shellfc_t*          shellfc);
 
 } // namespace gmx

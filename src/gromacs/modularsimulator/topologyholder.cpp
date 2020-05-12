@@ -50,13 +50,13 @@
 
 namespace gmx
 {
-TopologyHolder::TopologyHolder(const gmx_mtop_t& globalTopology,
-                               const t_commrec*  cr,
-                               const t_inputrec* inputrec,
-                               t_forcerec*       fr,
-                               MDAtoms*          mdAtoms,
-                               Constraints*      constr,
-                               gmx_vsite_t*      vsite) :
+TopologyHolder::TopologyHolder(const gmx_mtop_t&    globalTopology,
+                               const t_commrec*     cr,
+                               const t_inputrec*    inputrec,
+                               t_forcerec*          fr,
+                               MDAtoms*             mdAtoms,
+                               Constraints*         constr,
+                               VirtualSitesHandler* vsite) :
     globalTopology_(globalTopology),
     localTopology_(std::make_unique<gmx_localtop_t>(globalTopology.ffparams))
 {

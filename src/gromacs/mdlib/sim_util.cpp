@@ -119,10 +119,12 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/sysinfo.h"
 
+using gmx::ArrayRef;
 using gmx::AtomLocality;
 using gmx::DomainLifetimeWorkload;
 using gmx::ForceOutputs;
 using gmx::InteractionLocality;
+using gmx::RVec;
 using gmx::SimulationWorkload;
 using gmx::StepWorkload;
 
@@ -242,13 +244,13 @@ static void pme_receive_force_ener(t_forcerec*           fr,
     wallcycle_stop(wcycle, ewcPP_PMEWAITRECVF);
 }
 
-static void print_large_forces(FILE*            fp,
-                               const t_mdatoms* md,
-                               const t_commrec* cr,
-                               int64_t          step,
-                               real             forceTolerance,
-                               const rvec*      x,
-                               const rvec*      f)
+static void print_large_forces(FILE*                fp,
+                               const t_mdatoms*     md,
+                               const t_commrec*     cr,
+                               int64_t              step,
+                               real                 forceTolerance,
+                               ArrayRef<const RVec> x,
+                               const rvec*          f)
 {
     real       force2Tolerance = gmx::square(forceTolerance);
     gmx::index numNonFinite    = 0;
@@ -276,26 +278,24 @@ static void print_large_forces(FILE*            fp,
     }
 }
 
-static void post_process_forces(const t_commrec*      cr,
-                                int64_t               step,
-                                t_nrnb*               nrnb,
-                                gmx_wallcycle_t       wcycle,
-                                const gmx_localtop_t* top,
-                                const matrix          box,
-                                const rvec            x[],
-                                ForceOutputs*         forceOutputs,
-                                tensor                vir_force,
-                                const t_mdatoms*      mdatoms,
-                                const t_forcerec*     fr,
-                                const gmx_vsite_t*    vsite,
-                                const StepWorkload&   stepWork)
+static void post_process_forces(const t_commrec*          cr,
+                                int64_t                   step,
+                                t_nrnb*                   nrnb,
+                                gmx_wallcycle_t           wcycle,
+                                const matrix              box,
+                                ArrayRef<const RVec>      x,
+                                ForceOutputs*             forceOutputs,
+                                tensor                    vir_force,
+                                const t_mdatoms*          mdatoms,
+                                const t_forcerec*         fr,
+                                gmx::VirtualSitesHandler* vsite,
+                                const StepWorkload&       stepWork)
 {
     rvec* f = as_rvec_array(forceOutputs->forceWithShiftForces().force().data());
 
     if (fr->haveDirectVirialContributions)
     {
         auto& forceWithVirial = forceOutputs->forceWithVirial();
-        rvec* fDirectVir      = as_rvec_array(forceWithVirial.force_.data());
 
         if (vsite)
         {
@@ -303,9 +303,11 @@ static void post_process_forces(const t_commrec*      cr,
              * This is parallellized. MPI communication is performed
              * if the constructing atoms aren't local.
              */
+            const gmx::VirtualSitesHandler::VirialHandling virialHandling =
+                    (stepWork.computeVirial ? gmx::VirtualSitesHandler::VirialHandling::NonLinear
+                                            : gmx::VirtualSitesHandler::VirialHandling::None);
             matrix virial = { { 0 } };
-            spread_vsite_f(vsite, x, fDirectVir, nullptr, stepWork.computeVirial, virial, nrnb,
-                           top->idef, fr->pbcType, fr->bMolPBC, box, cr, wcycle);
+            vsite->spreadForces(x, forceWithVirial.force_, virialHandling, {}, virial, nrnb, box, wcycle);
             forceWithVirial.addVirialContribution(virial);
         }
 
@@ -953,7 +955,7 @@ void do_force(FILE*                               fplog,
               gmx::ArrayRef<real>                 lambda,
               t_forcerec*                         fr,
               gmx::MdrunScheduleWorkload*         runScheduleWork,
-              const gmx_vsite_t*                  vsite,
+              gmx::VirtualSitesHandler*           vsite,
               rvec                                muTotal,
               double                              t,
               gmx_edsam*                          ed,
@@ -1784,16 +1786,17 @@ void do_force(FILE*                               fplog,
 
     if (stepWork.computeForces)
     {
-        rvec* f = as_rvec_array(forceOut.forceWithShiftForces().force().data());
-
         /* If we have NoVirSum forces, but we do not calculate the virial,
          * we sum fr->f_novirsum=forceOut.f later.
          */
         if (vsite && !(fr->haveDirectVirialContributions && !stepWork.computeVirial))
         {
-            rvec* fshift = as_rvec_array(forceOut.forceWithShiftForces().shiftForces().data());
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE,
-                           nullptr, nrnb, top->idef, fr->pbcType, fr->bMolPBC, box, cr, wcycle);
+            auto f      = forceOut.forceWithShiftForces().force();
+            auto fshift = forceOut.forceWithShiftForces().shiftForces();
+            const gmx::VirtualSitesHandler::VirialHandling virialHandling =
+                    (stepWork.computeVirial ? gmx::VirtualSitesHandler::VirialHandling::Pbc
+                                            : gmx::VirtualSitesHandler::VirialHandling::None);
+            vsite->spreadForces(x.unpaddedArrayRef(), f, virialHandling, fshift, nullptr, nrnb, box, wcycle);
         }
 
         if (stepWork.computeVirial)
@@ -1817,8 +1820,8 @@ void do_force(FILE*                               fplog,
 
     if (stepWork.computeForces)
     {
-        post_process_forces(cr, step, nrnb, wcycle, top, box, as_rvec_array(x.unpaddedArrayRef().data()),
-                            &forceOut, vir_force, mdatoms, fr, vsite, stepWork);
+        post_process_forces(cr, step, nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOut, vir_force,
+                            mdatoms, fr, vsite, stepWork);
     }
 
     if (stepWork.computeEnergy)

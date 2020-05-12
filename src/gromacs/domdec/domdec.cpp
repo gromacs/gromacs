@@ -2158,7 +2158,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
 
             if (MASTER(cr))
             {
-                dd_bonded_cg_distance(mdlog, &mtop, &ir, as_rvec_array(xGlobal.data()), box,
+                dd_bonded_cg_distance(mdlog, &mtop, &ir, xGlobal, box,
                                       options.checkBondedInteractions, &r_2b, &r_mb);
             }
             gmx_bcast(sizeof(r_2b), &r_2b, cr->mpi_comm_mygroup);
@@ -2492,13 +2492,13 @@ static void set_dd_limits(const gmx::MDLogger& mdlog,
     }
 }
 
-void dd_init_bondeds(FILE*                      fplog,
-                     gmx_domdec_t*              dd,
-                     const gmx_mtop_t&          mtop,
-                     const gmx_vsite_t*         vsite,
-                     const t_inputrec*          ir,
-                     gmx_bool                   bBCheck,
-                     gmx::ArrayRef<cginfo_mb_t> cginfo_mb)
+void dd_init_bondeds(FILE*                           fplog,
+                     gmx_domdec_t*                   dd,
+                     const gmx_mtop_t&               mtop,
+                     const gmx::VirtualSitesHandler* vsite,
+                     const t_inputrec*               ir,
+                     gmx_bool                        bBCheck,
+                     gmx::ArrayRef<cginfo_mb_t>      cginfo_mb)
 {
     gmx_domdec_comm_t* comm;
 

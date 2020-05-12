@@ -70,6 +70,7 @@ class ImdSession;
 class MDAtoms;
 class MdrunScheduleWorkload;
 class StatePropagatorData;
+class VirtualSitesHandler;
 
 /*! \libinternal
  * \ingroup module_modularsimulator
@@ -100,7 +101,7 @@ public:
                  t_fcdata*                      fcd,
                  gmx_wallcycle*                 wcycle,
                  MdrunScheduleWorkload*         runScheduleWork,
-                 gmx_vsite_t*                   vsite,
+                 VirtualSitesHandler*           vsite,
                  ImdSession*                    imdSession,
                  pull_t*                        pull_work,
                  Constraints*                   constr,
@@ -188,7 +189,7 @@ private:
     //! Parameters for force calculations.
     t_forcerec* fr_;
     //! Handles virtual sites.
-    gmx_vsite_t* vsite_;
+    VirtualSitesHandler* vsite_;
     //! The Interactive Molecular Dynamics session.
     ImdSession* imdSession_;
     //! The pull work object.

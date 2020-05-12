@@ -51,7 +51,6 @@ struct gmx_mtop_t;
 struct gmx_membed_t;
 struct gmx_multisim_t;
 struct gmx_output_env_t;
-struct gmx_vsite_t;
 struct gmx_wallcycle;
 struct gmx_walltime_accounting;
 struct ObservablesHistory;
@@ -79,6 +78,7 @@ class MDLogger;
 class MDAtoms;
 class StopHandlerBuilder;
 struct MdrunOptions;
+class VirtualSitesHandler;
 
 /*! \internal
  * \brief The Simulator interface
@@ -108,7 +108,7 @@ public:
                const gmx_output_env_t*             oenv,
                const MdrunOptions&                 mdrunOptions,
                StartingBehavior                    startingBehavior,
-               gmx_vsite_t*                        vsite,
+               VirtualSitesHandler*                vsite,
                Constraints*                        constr,
                gmx_enfrot*                         enforcedRotation,
                BoxDeformation*                     deform,
@@ -192,7 +192,7 @@ protected:
     //! Whether the simulation will start afresh, or restart with/without appending.
     const StartingBehavior startingBehavior;
     //! Handles virtual sites.
-    gmx_vsite_t* vsite;
+    VirtualSitesHandler* vsite;
     //! Handles constraints.
     Constraints* constr;
     //! Handles enforced rotation.

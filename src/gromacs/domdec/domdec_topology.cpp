@@ -90,7 +90,9 @@
 #include "domdec_vsite.h"
 #include "dump.h"
 
+using gmx::ArrayRef;
 using gmx::ListOfLists;
+using gmx::RVec;
 
 /*! \brief The number of integer item in the local state, used for broadcasting of the state */
 #define NITEM_DD_INIT_LOCAL_STATE 5
@@ -119,11 +121,11 @@ struct thread_work_t
      */
     thread_work_t(const gmx_ffparams_t& ffparams) : idef(ffparams) {}
 
-    InteractionDefinitions    idef;       /**< Partial local topology */
-    std::unique_ptr<VsitePbc> vsitePbc;   /**< vsite PBC structure */
-    int                       nbonded;    /**< The number of bondeds in this struct */
-    ListOfLists<int>          excl;       /**< List of exclusions */
-    int                       excl_count; /**< The total exclusion count for \p excl */
+    InteractionDefinitions         idef;       /**< Partial local topology */
+    std::unique_ptr<gmx::VsitePbc> vsitePbc;   /**< vsite PBC structure */
+    int                            nbonded;    /**< The number of bondeds in this struct */
+    ListOfLists<int>               excl;       /**< List of exclusions */
+    int                            excl_count; /**< The total exclusion count for \p excl */
 };
 
 /*! \brief Struct for the reverse topology: links bonded interactions to atomsx */
@@ -710,12 +712,12 @@ static gmx_reverse_top_t make_reverse_top(const gmx_mtop_t* mtop,
     return rt;
 }
 
-void dd_make_reverse_top(FILE*              fplog,
-                         gmx_domdec_t*      dd,
-                         const gmx_mtop_t*  mtop,
-                         const gmx_vsite_t* vsite,
-                         const t_inputrec*  ir,
-                         gmx_bool           bBCheck)
+void dd_make_reverse_top(FILE*                           fplog,
+                         gmx_domdec_t*                   dd,
+                         const gmx_mtop_t*               mtop,
+                         const gmx::VirtualSitesHandler* vsite,
+                         const t_inputrec*               ir,
+                         gmx_bool                        bBCheck)
 {
     if (fplog)
     {
@@ -744,16 +746,16 @@ void dd_make_reverse_top(FILE*              fplog,
         }
     }
 
-    if (vsite && vsite->numInterUpdategroupVsites > 0)
+    if (vsite && vsite->numInterUpdategroupVirtualSites() > 0)
     {
         if (fplog)
         {
             fprintf(fplog,
                     "There are %d inter update-group virtual sites,\n"
                     "will an extra communication step for selected coordinates and forces\n",
-                    vsite->numInterUpdategroupVsites);
+                    vsite->numInterUpdategroupVirtualSites());
         }
-        init_domdec_vsites(dd, vsite->numInterUpdategroupVsites);
+        init_domdec_vsites(dd, vsite->numInterUpdategroupVirtualSites());
     }
 
     if (dd->comm->systemInfo.haveSplitConstraints || dd->comm->systemInfo.haveSplitSettles)
@@ -1805,11 +1807,11 @@ static void update_max_bonded_distance(real r2, int ftype, int a1, int a2, bonde
     }
 }
 
-/*! \brief Set the distance, function type and atom indices for the longest distance between charge-groups of molecule type \p molt for two-body and multi-body bonded interactions */
+/*! \brief Set the distance, function type and atom indices for the longest distance between atoms of molecule type \p molt for two-body and multi-body bonded interactions */
 static void bonded_cg_distance_mol(const gmx_moltype_t* molt,
                                    gmx_bool             bBCheck,
                                    gmx_bool             bExcl,
-                                   rvec*                cg_cm,
+                                   ArrayRef<const RVec> x,
                                    bonded_distance_t*   bd_2b,
                                    bonded_distance_t*   bd_mb)
 {
@@ -1831,7 +1833,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t* molt,
                             int atomJ = il.iatoms[i + 1 + aj];
                             if (atomI != atomJ)
                             {
-                                real rij2 = distance2(cg_cm[atomI], cg_cm[atomJ]);
+                                real rij2 = distance2(x[atomI], x[atomJ]);
 
                                 update_max_bonded_distance(rij2, ftype, atomI, atomJ,
                                                            (nral == 2) ? bd_2b : bd_mb);
@@ -1851,7 +1853,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t* molt,
             {
                 if (ai != aj)
                 {
-                    real rij2 = distance2(cg_cm[ai], cg_cm[aj]);
+                    real rij2 = distance2(x[ai], x[aj]);
 
                     /* There is no function type for exclusions, use -1 */
                     update_max_bonded_distance(rij2, -1, ai, aj, bd_2b);
@@ -1864,7 +1866,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t* molt,
 /*! \brief Set the distance, function type and atom indices for the longest atom distance involved in intermolecular interactions for two-body and multi-body bonded interactions */
 static void bonded_distance_intermol(const InteractionLists& ilists_intermol,
                                      gmx_bool                bBCheck,
-                                     const rvec*             x,
+                                     ArrayRef<const RVec>    x,
                                      PbcType                 pbcType,
                                      const matrix            box,
                                      bonded_distance_t*      bd_2b,
@@ -1930,22 +1932,22 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
                                         PbcType               pbcType,
                                         t_graph*              graph,
                                         const matrix          box,
-                                        const rvec*           x,
-                                        rvec*                 xs)
+                                        ArrayRef<const RVec>  x,
+                                        ArrayRef<RVec>        xs)
 {
     int n, i;
 
     if (pbcType != PbcType::No)
     {
-        mk_mshift(nullptr, graph, pbcType, box, x);
+        mk_mshift(nullptr, graph, pbcType, box, as_rvec_array(x.data()));
 
-        shift_x(graph, box, x, xs);
+        shift_x(graph, box, as_rvec_array(x.data()), as_rvec_array(xs.data()));
         /* By doing an extra mk_mshift the molecules that are broken
          * because they were e.g. imported from another software
          * will be made whole again. Such are the healing powers
          * of GROMACS.
          */
-        mk_mshift(nullptr, graph, pbcType, box, xs);
+        mk_mshift(nullptr, graph, pbcType, box, as_rvec_array(xs.data()));
     }
     else
     {
@@ -1962,15 +1964,14 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
 
     if (moltypeHasVsite(*molt))
     {
-        construct_vsites(nullptr, xs, 0.0, nullptr, ffparams->iparams, molt->ilist, PbcType::No,
-                         TRUE, nullptr, nullptr);
+        gmx::constructVirtualSites(xs, ffparams->iparams, molt->ilist);
     }
 }
 
 void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
                            const gmx_mtop_t*    mtop,
                            const t_inputrec*    ir,
-                           const rvec*          x,
+                           ArrayRef<const RVec> x,
                            const matrix         box,
                            gmx_bool             bBCheck,
                            real*                r_2b,
@@ -1978,7 +1979,6 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
 {
     gmx_bool          bExclRequired;
     int               at_offset;
-    rvec*             xs;
     bonded_distance_t bd_2b = { 0, -1, -1, -1 };
     bonded_distance_t bd_mb = { 0, -1, -1, -1 };
 
@@ -2002,11 +2002,11 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
                 graph = mk_graph_moltype(molt);
             }
 
-            snew(xs, molt.atoms.nr);
+            std::vector<RVec> xs(molt.atoms.nr);
             for (int mol = 0; mol < molb.nmol; mol++)
             {
                 getWholeMoleculeCoordinates(&molt, &mtop->ffparams, ir->pbcType, &graph, box,
-                                            x + at_offset, xs);
+                                            x.subArray(at_offset, molt.atoms.nr), xs);
 
                 bonded_distance_t bd_mol_2b = { 0, -1, -1, -1 };
                 bonded_distance_t bd_mol_mb = { 0, -1, -1, -1 };
@@ -2021,7 +2021,6 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
 
                 at_offset += molt.atoms.nr;
             }
-            sfree(xs);
         }
     }
 

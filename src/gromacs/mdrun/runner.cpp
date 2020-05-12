@@ -1349,10 +1349,10 @@ int Mdrunner::mdrunner()
                              globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
     }
 
-    const bool                   thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
-    std::unique_ptr<MDAtoms>     mdAtoms;
-    std::unique_ptr<gmx_vsite_t> vsite;
-    std::unique_ptr<GpuBonded>   gpuBonded;
+    const bool               thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
+    std::unique_ptr<MDAtoms> mdAtoms;
+    std::unique_ptr<VirtualSitesHandler> vsite;
+    std::unique_ptr<GpuBonded>           gpuBonded;
 
     t_nrnb nrnb;
     if (thisRankHasDuty(cr, DUTY_PP))
@@ -1418,7 +1418,7 @@ int Mdrunner::mdrunner()
         }
 
         /* Initialize the virtual site communication */
-        vsite = initVsite(mtop, cr);
+        vsite = makeVirtualSitesHandler(mtop, cr, fr->pbcType);
 
         calc_shifts(box, fr->shift_vec);
 
@@ -1439,7 +1439,7 @@ int Mdrunner::mdrunner()
                  * for the initial distribution in the domain decomposition
                  * and for the initial shell prediction.
                  */
-                constructVsitesGlobal(mtop, globalState->x);
+                constructVirtualSitesGlobal(mtop, globalState->x);
             }
         }
 

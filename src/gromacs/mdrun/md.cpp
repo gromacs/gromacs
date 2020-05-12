@@ -507,8 +507,7 @@ void gmx::LegacySimulator::do_md()
         if (vsite)
         {
             /* Construct the virtual sites for the initial configuration */
-            construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, nullptr, top.idef.iparams,
-                             top.idef.il, fr->pbcType, fr->bMolPBC, cr, state->box);
+            vsite->construct(state->x, ir->delta_t, {}, state->box);
         }
     }
 
@@ -1391,8 +1390,7 @@ void gmx::LegacySimulator::do_md()
         if (vsite != nullptr)
         {
             wallcycle_start(wcycle, ewcVSITECONSTR);
-            construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, state->v.rvec_array(),
-                             top.idef.iparams, top.idef.il, fr->pbcType, fr->bMolPBC, cr, state->box);
+            vsite->construct(state->x, ir->delta_t, state->v, state->box);
             wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
 
