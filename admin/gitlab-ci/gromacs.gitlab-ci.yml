@@ -9,7 +9,6 @@ simple-build:
     - .rules:basic-push
   stage: pre-build
   image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-  tags: []
   variables:
     KUBERNETES_CPU_LIMIT: 8
     KUBERNETES_CPU_REQUEST: 4
@@ -259,7 +258,7 @@ gromacs:clang-8:configure:
   variables:
     COMPILER_MAJOR_VERSION: 8
 
-gromacs:clang-9:configure:
+gromacs:clang-9-mpi:configure:
   extends:
    - .gromacs:base:configure
    - .use-clang:base
@@ -431,6 +430,8 @@ gromacs:clang-ASAN:build:
     - .use-ccache
     - .rules:merge-requests
   image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:configure
 
@@ -442,6 +443,8 @@ gromacs:clang-static-analyzer:build:
     - .use-ccache
     - .rules:merge-requests
   image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-static-analyzer:configure
 
@@ -456,7 +459,7 @@ gromacs:clang-8:build:
   needs:
     - job: gromacs:clang-8:configure
 
-gromacs:clang-9:build:
+gromacs:clang-9-mpi:build:
   extends:
     - .variables:default
     - .gromacs:base:build
@@ -465,7 +468,7 @@ gromacs:clang-9:build:
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
   needs:
-    - job: gromacs:clang-9:configure
+    - job: gromacs:clang-9-mpi:configure
 
 gromacs:gcc-8-cuda-10.1:release:build:
   extends:
@@ -595,6 +598,8 @@ gromacs:gcc-7:test:
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:build
 
@@ -606,6 +611,8 @@ gromacs:gcc-8-cuda-10.1:test:
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-8-cuda-10.1:build
 
@@ -633,16 +640,20 @@ gromacs:clang-ASAN:test:
   image: gromacs/cmake-3.13.0-llvm-8-tsan:master
   variables:
     CTEST_RUN_MODE: "ExperimentalMemCheck"
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:build
 
-gromacs:clang-9:test:
+gromacs:clang-9-mpi:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  tags:
+    - k8s-scilifelab
   needs:
-    - job: gromacs:clang-9:build
+    - job: gromacs:clang-9-mpi:build
 
 gromacs:gcc-7:regressiontest:
   extends:
@@ -655,6 +666,8 @@ gromacs:gcc-7:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:build
     - job: regressiontests:prepare
@@ -670,6 +683,8 @@ gromacs:gcc-8-cuda-10.1:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-8-cuda-10.1:build
     - job: regressiontests:prepare
@@ -679,6 +694,8 @@ gromacs:clang-8:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-8:build
     - job: regressiontests:prepare
@@ -688,6 +705,8 @@ gromacs:clang-TSAN:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
   image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-TSAN:build
     - job: regressiontests:prepare
@@ -698,6 +717,8 @@ gromacs:clang-ASAN:regressiontest:
     - .use-clang:base
     - .rules:merge-requests
   image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:build
     - job: regressiontests:prepare
@@ -710,8 +731,10 @@ gromacs:clang-9:regressiontest:
   variables:
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
+  tags:
+    - k8s-scilifelab
   needs:
-    - job: gromacs:clang-9:build
+    - job: gromacs:clang-9-mpi:build
     - job: regressiontests:prepare
 
 gromacs:gcc-8-cuda-10.1:release:test:
@@ -721,7 +744,11 @@ gromacs:gcc-8-cuda-10.1:release:test:
   stage: release-tests
   image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi:master
   variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-gcc
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-8-cuda-10.1:release:configure
     - job: gromacs:gcc-8-cuda-10.1:release:build
@@ -757,7 +784,11 @@ gromacs:clang-8-cuda-10.1:release:test:
   stage: release-tests
   image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi:master
   variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-clang
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-8-cuda-10.1:release:configure
     - job: gromacs:clang-8-cuda-10.1:release:build
@@ -770,6 +801,8 @@ gromacs:gcc-7:release:regressiontest:
   image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi:master
   variables:
     BUILD_DIR: release-builds-gcc
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:release:build
     - job: regressiontests:package
@@ -784,6 +817,8 @@ gromacs:clang-9:release:regressiontest:
     BUILD_DIR: release-builds-clang
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-9:release:build
     - job: regressiontests:package
@@ -801,7 +836,8 @@ gromacs:clang-8-cuda-10.1:release:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-8-cuda-10.1:release:build
     - job: regressiontests:package

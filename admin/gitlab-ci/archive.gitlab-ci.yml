@@ -9,14 +9,12 @@ prepare-release-version:
   # TODO: Get DockerFile for admin/dockerfiles
   image: biophysics/gcc-gromacs
   stage: configure-build
-
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_LIMIT: 2Gi
   script:
     - cmake -P cmake/gmxVersionInfo.cmake &> version.json
-
   artifacts:
     paths:
       - version.json
@@ -31,7 +29,6 @@ regressiontests:prepare:
   cache: {}
   image: biophysics/gcc-gromacs
   stage: configure-build
-
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -67,7 +64,6 @@ regressiontests:package:
   # TODO: Get DockerFile for admin/dockerfiles
   image: biophysics/gcc-gromacs
   stage: release-package
-
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1

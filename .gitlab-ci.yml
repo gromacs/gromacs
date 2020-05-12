@@ -37,10 +37,6 @@ stages:
   # Deploy stage for release builds
   - release-deploy
 
-default:
-  tags:
-    - k8s-scilifelab
-
 include:
   # Mix-in helper job definitions of general utility.
   - local: '/admin/gitlab-ci/global.gitlab-ci.yml'

@@ -91,11 +91,16 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         to regular job definitions (don't use in "hidden" or parent jobs).
 
     tags
-        By `default <https://docs.gitlab.com/ee/ci/yaml/#setting-default-parameters>`__,
-        jobs require the ``k8s-scilifelab`` tag, which identifies Runners in the
-        |Gromacs| infrastructure. A small number of jobs in the first pipeline
-        stage override the default with an empty tag list so that all GitLab
-        users can run basic tests in their forked project.
+        Jobs that can only run in the |Gromacs| GitLab CI Runner infrastructure
+        should require the ``k8s-scilifelab`` tag.
+        These include jobs that specify Kubernetes configuration variables or
+        require special facilities, such as GPUs or MPI.
+        Note that the *tag* controls which Runners are eligible to take a job.
+        It does not affect whether the job is eligible for addition to a particular pipeline.
+        Additional *rules* logic should be used to make sure that jobs with the
+        ``k8s-scilifelab`` do not become eligible for pipelines launched outside
+        of the |Gromacs| project environment.
+        See, for instance, :term:`CI_PROJECT_NAMESPACE`
 
     variables
         Many job definitions will add or override keys in *variables*.

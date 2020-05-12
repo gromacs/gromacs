@@ -27,6 +27,9 @@
         - $PY_MPI_ACCEPTANCE_TEST_XML
     when: always
     expire_in: 1 week
+  tags:
+    - k8s-scilifelab
+  # The dependency means we need to use the same tag restriction as upstream.
   needs:
     - job: gromacs:clang-8:build
       artifacts: true
@@ -79,6 +82,9 @@ gmxapi-0.1:clang-8:py-3.8.2:
         - $PY_MPI_ACCEPTANCE_TEST_XML
     when: always
     expire_in: 1 week
+  tags:
+    - k8s-scilifelab
+  # The dependency means we need to use the same tag restriction as upstream.
   needs:
     - job: gromacs:clang-8:build
       artifacts: true

@@ -178,7 +178,6 @@ docs:configure:
   extends:
     - .docs:configure
     - .rules:basic-push
-  tags: []
   variables:
     BUILD_DIR: build-docs
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
@@ -206,7 +205,6 @@ docs:build:
     - .before_script:default
     - .rules:basic-push
   stage: documentation
-  tags: []
   needs:
     - job: docs:configure
   variables:
@@ -263,7 +261,6 @@ webpage:build:
     - .webpage:build
     - .rules:basic-push
   stage: post-test
-  tags: []
   needs:
     - job: docs:build
     - job: check-source
@@ -276,6 +273,8 @@ webpage:configure:
     - .docs:configure:release
     - .rules:nightly-only-for-release
   cache: {}
+  tags:
+    - k8s-scilifelab
   dependencies:
     - archive:package
     - regressiontests:package
@@ -293,6 +292,8 @@ webpage:dependencies:
     - .before_script:default
     - .rules:nightly-only-for-release
   stage: release-build
+  tags:
+    - k8s-scilifelab
   needs:
     - job: webpage:configure
   variables:
@@ -302,9 +303,11 @@ webpage:build:release:
   extends:
     - .webpage:build
     - .rules:nightly-only-for-release
+  stage: release-prepare-deploy
+  tags:
+    - k8s-scilifelab
   dependencies:
     - webpage:dependencies
     - webpage:configure
-  stage: release-prepare-deploy
   variables:
     BUILD_DIR: release-doc-builds
