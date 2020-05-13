@@ -2,11 +2,6 @@
 # "moduleA -> moduleB" means that moduleA should not depend on moduleB, and is
 # a problem to be addressed at some point.
 
-# Compat wants assertions and string code from utility, and other string code
-# in utility wants to use string_view from compat. If we fix this, it might be
-# best to implement the compat namespace within the utility module.
-compat -> utility
-
 domdec -> imd
 domdec -> ewald
 domdec -> mdlib

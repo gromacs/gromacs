@@ -47,8 +47,6 @@
 
 #include "gromacs/gmxpreprocess/readir.h"
 
-#include "config.h"
-
 #include <string>
 
 #include <gtest/gtest.h>
