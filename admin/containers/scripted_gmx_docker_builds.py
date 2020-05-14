@@ -133,8 +133,7 @@ _docs_extra_packages = ['autoconf',
                         'texlive-fonts-extra']
 
 # Supported Python versions for maintained branches.
-# TODO: Remove '3.5.9' from defaults in master once script in release-2020 diverges.
-_python_versions = ['3.5.9', '3.6.10', '3.7.7', '3.8.2']
+_python_versions = ['3.6.10', '3.7.7', '3.8.2']
 
 # Parse command line arguments
 parser = argparse.ArgumentParser(description='GROMACS CI image creation script', parents=[utility.parser])
@@ -320,15 +319,15 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
     # WARNING: Please keep this list synchronized with python_packaging/requirements-test.txt
     # TODO: Get requirements.txt from an input argument.
     commands.append("""{path}/bin/python -m pip install --upgrade \
-            'cmake>=3.9.6' \
+            'cmake>=3.13' \
             'flake8>=3.7.7' \
-            'mpi4py>=2' \
+            'mpi4py>=3.0.3' \
             'networkx>=2.0' \
             'numpy>=1' \
             'pip>=10.1' \
             'pytest>=3.9' \
-            'setuptools>=28.0.0' \
-            'scikit-build>=0.7'""".format(path=venv_path))
+            'setuptools>=42' \
+            'scikit-build>=0.10'""".format(path=venv_path))
 
     return commands
 
