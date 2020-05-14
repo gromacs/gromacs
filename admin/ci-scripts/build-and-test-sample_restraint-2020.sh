@@ -10,9 +10,7 @@
 # MPIRUNNER from the environment, or something.
 
 # Make sure the script errors if any commands error.
-set -ev
-
-source $VENVPATH/bin/activate
+set -e
 
 # TODO: We should be able to just use a $GMXAPI_0_1_SDIST or venv artifact...
 pushd python_packaging/src

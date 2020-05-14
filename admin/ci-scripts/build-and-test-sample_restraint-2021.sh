@@ -10,9 +10,7 @@
 # MPIRUNNER from the environment, or something.
 
 # Make sure the script errors if any commands error.
-set -ev
-
-source $VENVPATH/bin/activate
+set -e
 
 # Create "sdist" source distribution archive.
 pushd python_packaging/src

@@ -20,7 +20,7 @@
     EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
   script:
     - source $INSTALL_DIR/bin/GMXRC
-    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash -x admin/ci-scripts/build-and-test-py-gmxapi-0.1.sh
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash admin/ci-scripts/build-and-test-py-gmxapi-0.1.sh
   artifacts:
     reports:
       junit:
@@ -80,7 +80,7 @@ gmxapi-0.1:clang-8:py-3.8.2:
     PY_MPI_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-mpi-JUnitTestResults.xml
   script:
     - source $INSTALL_DIR/bin/GMXRC
-    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash -x admin/ci-scripts/build-and-test-py-gmxapi-0.2.sh
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash admin/ci-scripts/build-and-test-py-gmxapi-0.2.sh
   artifacts:
     reports:
       junit:

@@ -16,7 +16,6 @@ from gmxapi import version as gmx_version
 import pytest
 from gmxapi.testsupport import withmpi_only
 
-logging.getLogger().setLevel(logging.DEBUG)
 # create console handler
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)

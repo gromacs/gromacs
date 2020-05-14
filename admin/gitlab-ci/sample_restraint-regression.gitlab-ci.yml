@@ -16,7 +16,7 @@
     EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
   script:
     - source $INSTALL_DIR/bin/GMXRC
-    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash -x admin/ci-scripts/build-and-test-sample_restraint-2020.sh
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash admin/ci-scripts/build-and-test-sample_restraint-2020.sh
   artifacts:
     reports:
       junit:
