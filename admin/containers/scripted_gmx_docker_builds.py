@@ -487,6 +487,11 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
         # stages['main'] += hpccm.primitives.copy(_from='pyenv', src=['/root/.bashrc'],
         #                                         dest='/root/')
 
+    # Make sure that `python` resolves to something.
+    stages['main'] += hpccm.primitives.shell(commands=['test -x /usr/bin/python || '
+                                                       'update-alternatives --install /usr/bin/python python /usr/bin/python3 1 && '
+                                                       '/usr/bin/python --version'])
+
     # Note that the list of stages should be sorted in dependency order.
     for build_stage in stages.values():
         if build_stage is not None:
