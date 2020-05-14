@@ -67,7 +67,7 @@ compiler_group.add_argument('--gcc', type=int, nargs='?', const=7, default=7,
                             help='Select GNU compiler tool chain. (Default) '
                                  'Some checking is implemented to avoid incompatible combinations')
 compiler_group.add_argument('--llvm', type=str, nargs='?', const='7', default=None,
-                            choices=['3.6', '6', '7', '8'],
+                            choices=['3.6', '6', '7', '8', '9'],
                             help='Select LLVM compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
 compiler_group.add_argument('--icc', type=int, nargs='?', const=19, default=None,
