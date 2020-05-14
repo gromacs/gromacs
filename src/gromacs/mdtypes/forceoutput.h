@@ -102,6 +102,9 @@ public:
     //! Returns a const shift forces buffer
     gmx::ArrayRef<const gmx::RVec> shiftForces() const { return shiftForces_; }
 
+    //! Returns a reference to the boolean which tells whether we have spread forces on vsites
+    bool& haveSpreadVsiteForces() { return haveSpreadVsiteForces_; }
+
 private:
     //! The force buffer
     gmx::ArrayRefWithPadding<gmx::RVec> force_;
@@ -109,6 +112,8 @@ private:
     bool computeVirial_;
     //! A buffer for storing the shift forces, size SHIFTS
     gmx::ArrayRef<gmx::RVec> shiftForces_;
+    //! Tells whether we have spread the vsite forces
+    bool haveSpreadVsiteForces_ = false;
 };
 
 /*! \libinternal \brief Container for force and virial for algorithms that provide their own virial tensor contribution
