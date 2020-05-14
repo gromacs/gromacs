@@ -52,6 +52,8 @@ clang-tidy:test:
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
+    # Make sure that a Python interpreter can be found for `/bin/env python`
+    - test -x /usr/bin/python || update-alternatives --install /usr/bin/python python /usr/bin/python3 1
     # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
     - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
     - HEAD_REV=$(git show -s --pretty=format:"%h" HEAD)
