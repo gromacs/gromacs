@@ -15,7 +15,6 @@ from gmxapi.simulation.workflow import WorkElement, from_tpr
 from gmxapi import version as gmx_version
 import pytest
 
-logging.getLogger().setLevel(logging.DEBUG)
 # create console handler
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
