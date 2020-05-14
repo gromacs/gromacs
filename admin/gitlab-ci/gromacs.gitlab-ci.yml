@@ -12,7 +12,7 @@ simple-build:
   variables:
     KUBERNETES_CPU_LIMIT: 8
     KUBERNETES_CPU_REQUEST: 4
-    KUBERNETES_MEMORY_LIMIT: 8Gi
+    KUBERNETES_MEMORY_REQUEST: 8Gi
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
     CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
@@ -52,8 +52,8 @@ simple-build:
       2>&1 | tee cmakeLog.log
     - awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
     - if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; cat cmakeErrors.log ; exit 1; fi
-    - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
-    - cmake --build . --target tests -- -j8 2>&1 | tee testBuildLogFile.log
+    - cmake --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
+    - cmake --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
       | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
@@ -86,7 +86,7 @@ simple-build:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     CMAKE_COMPILER_SCRIPT: ""
     CMAKE_EXTRA_OPTIONS: ""
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AUTO"
@@ -138,7 +138,7 @@ simple-build:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     CMAKE_COMPILER_SCRIPT: ""
     CMAKE_EXTRA_OPTIONS: ""
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AUTO"
@@ -359,8 +359,8 @@ gromacs:clang-8-cuda-10.1:release:configure:
   stage: build
   script:
     - cd $BUILD_DIR
-    - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
-    - cmake --build . --target tests -- -j8 2>&1 | tee testBuildLogFile.log
+    - cmake --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
+    - cmake --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
       | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
@@ -564,6 +564,9 @@ gromacs:clang-8-cuda-10.1:release:build:
   extends:
     - .variables:default
   variables:
+    KUBERNETES_CPU_LIMIT: 4
+    KUBERNETES_CPU_REQUEST: 4
+    KUBERNETES_MEMORY_REQUEST: 4Gi
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 1

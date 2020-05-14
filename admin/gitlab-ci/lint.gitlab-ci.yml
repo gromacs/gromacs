@@ -50,7 +50,7 @@ clang-tidy:test:
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
-    KUBERNETES_MEMORY_LIMIT: 4Gi
+    KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
     # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
     - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
@@ -80,7 +80,7 @@ clang-format:
     COMPILER_MAJOR_VERSION: 7
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     EXTRA_INSTALLS: clang-format-$COMPILER_MAJOR_VERSION
   script:
     # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
@@ -110,7 +110,7 @@ copyright-check:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
   script:
     # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
     - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
@@ -148,7 +148,7 @@ check-source:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     BUILD_DIR: build-docs
   script:
     - cd $BUILD_DIR
@@ -177,7 +177,7 @@ linkchecker:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     BUILD_DIR: build-docs
   script:
     - cd $BUILD_DIR

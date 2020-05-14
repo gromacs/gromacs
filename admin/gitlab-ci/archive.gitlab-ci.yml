@@ -12,7 +12,7 @@ prepare-release-version:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
   script:
     - cmake -P cmake/gmxVersionInfo.cmake &> version.json
   artifacts:
@@ -32,7 +32,7 @@ regressiontests:prepare:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
   # Always clone the default version for this branch, master in this case
   script:
     - export REGTESTBRANCH=master
@@ -67,7 +67,7 @@ regressiontests:package:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
   needs:
     - job: prepare-release-version
   script:
@@ -140,7 +140,7 @@ archive:configure:release:
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
-    KUBERNETES_MEMORY_LIMIT: 4Gi
+    KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
     - rm -rf gromacs*tar.gz
     - cd $BUILD_DIR
@@ -209,7 +209,7 @@ release-verify:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
   script:
     - VERSION=`cat version.json |
       python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
