@@ -90,8 +90,8 @@ tag=gromacs/ci-docs-gcc:master
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --gcc --doxygen | docker build -t $tag -
 
-docker login
+echo "Run the following to upload the updated images."
+echo docker login
 for tag in "${tags[@]}"; do
-  echo "Pushing $tag"
-  #docker push $tag
+  echo docker push $tag
 done
