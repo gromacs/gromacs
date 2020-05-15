@@ -186,95 +186,115 @@ static gmx_bool dd_check_ftype(int ftype, gmx_bool bBCheck, gmx_bool bConstr, gm
             || (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) || (bSettle && ftype == F_SETTLE));
 }
 
-/*! \brief Help print error output when interactions are missing
+/*! \brief Checks whether interactions have been assigned for one function type
  *
- * \note This function needs to be called on all ranks (contains a global summation)
+ * Loops over a list of interactions in the local topology of one function type
+ * and flags each of the interactions as assigned in the global \p isAssigned list.
+ * Exits with an inconsistency error when an interaction is assigned more than once.
  */
-static std::string print_missing_interactions_mb(t_commrec*                    cr,
-                                                 const gmx_reverse_top_t*      rt,
-                                                 const char*                   moltypename,
-                                                 const reverse_ilist_t*        ril,
-                                                 int                           a_start,
-                                                 int                           a_end,
-                                                 int                           nat_mol,
-                                                 int                           nmol,
-                                                 const InteractionDefinitions* idef)
+static void flagInteractionsForType(const int                ftype,
+                                    const InteractionList&   il,
+                                    const reverse_ilist_t&   ril,
+                                    const gmx::Range<int>&   atomRange,
+                                    const int                numAtomsPerMolecule,
+                                    gmx::ArrayRef<const int> globalAtomIndices,
+                                    gmx::ArrayRef<int>       isAssigned)
 {
-    int* assigned;
-    int  nril_mol = ril->index[nat_mol];
-    snew(assigned, nmol * nril_mol);
-    gmx::StringOutputStream stream;
-    gmx::TextWriter         log(&stream);
+    const int nril_mol = ril.index[numAtomsPerMolecule];
+    const int nral     = NRAL(ftype);
 
-    gmx::ArrayRef<const int> gatindex = cr->dd->globalAtomIndices;
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (int i = 0; i < il.size(); i += 1 + nral)
     {
-        if (dd_check_ftype(ftype, rt->bBCheck, rt->bConstr, rt->bSettle))
+        // ia[0] is the interaction type, ia[1, ...] the atom indices
+        const int* ia = il.iatoms.data() + i;
+        // Extract the global atom index of the first atom in this interaction
+        const int a0 = globalAtomIndices[ia[1]];
+        /* Check if this interaction is in
+         * the currently checked molblock.
+         */
+        if (atomRange.isInRange(a0))
         {
-            int                    nral = NRAL(ftype);
-            const InteractionList* il   = &idef->il[ftype];
-            const int*             ia   = il->iatoms.data();
-            for (int i = 0; i < il->size(); i += 1 + nral)
+            // The molecule index in the list of this molecule type
+            const int moleculeIndex = (a0 - atomRange.begin()) / numAtomsPerMolecule;
+            const int atomOffset = (a0 - atomRange.begin()) - moleculeIndex * numAtomsPerMolecule;
+            const int globalAtomStartInMolecule = atomRange.begin() + moleculeIndex * numAtomsPerMolecule;
+            int       j_mol                     = ril.index[atomOffset];
+            bool found                          = false;
+            while (j_mol < ril.index[atomOffset + 1] && !found)
             {
-                int a0 = gatindex[ia[1]];
-                /* Check if this interaction is in
-                 * the currently checked molblock.
+                const int j       = moleculeIndex * nril_mol + j_mol;
+                const int ftype_j = ril.il[j_mol];
+                /* Here we need to check if this interaction has
+                 * not already been assigned, since we could have
+                 * multiply defined interactions.
                  */
-                if (a0 >= a_start && a0 < a_end)
+                if (ftype == ftype_j && ia[0] == ril.il[j_mol + 1] && isAssigned[j] == 0)
                 {
-                    int  mol    = (a0 - a_start) / nat_mol;
-                    int  a0_mol = (a0 - a_start) - mol * nat_mol;
-                    int  j_mol  = ril->index[a0_mol];
-                    bool found  = false;
-                    while (j_mol < ril->index[a0_mol + 1] && !found)
+                    /* Check the atoms */
+                    found = true;
+                    for (int a = 0; a < nral; a++)
                     {
-                        int j       = mol * nril_mol + j_mol;
-                        int ftype_j = ril->il[j_mol];
-                        /* Here we need to check if this interaction has
-                         * not already been assigned, since we could have
-                         * multiply defined interactions.
-                         */
-                        if (ftype == ftype_j && ia[0] == ril->il[j_mol + 1] && assigned[j] == 0)
+                        if (globalAtomIndices[ia[1 + a]]
+                            != globalAtomStartInMolecule + ril.il[j_mol + 2 + a])
                         {
-                            /* Check the atoms */
-                            found = true;
-                            for (int a = 0; a < nral; a++)
-                            {
-                                if (gatindex[ia[1 + a]] != a_start + mol * nat_mol + ril->il[j_mol + 2 + a])
-                                {
-                                    found = false;
-                                }
-                            }
-                            if (found)
-                            {
-                                assigned[j] = 1;
-                            }
+                            found = false;
                         }
-                        j_mol += 2 + nral_rt(ftype_j);
                     }
-                    if (!found)
+                    if (found)
                     {
-                        gmx_incons("Some interactions seem to be assigned multiple times");
+                        isAssigned[j] = 1;
                     }
                 }
-                ia += 1 + nral;
+                j_mol += 2 + nral_rt(ftype_j);
+            }
+            if (!found)
+            {
+                gmx_incons("Some interactions seem to be assigned multiple times");
             }
         }
     }
+}
 
-    gmx_sumi(nmol * nril_mol, assigned, cr);
+/*! \brief Help print error output when interactions are missing in a molblock
+ *
+ * \note This function needs to be called on all ranks (contains a global summation)
+ */
+static std::string printMissingInteractionsMolblock(t_commrec*               cr,
+                                                    const gmx_reverse_top_t& rt,
+                                                    const char*              moltypename,
+                                                    const reverse_ilist_t&   ril,
+                                                    const gmx::Range<int>&   atomRange,
+                                                    const int                numAtomsPerMolecule,
+                                                    const int                numMolecules,
+                                                    const InteractionDefinitions& idef)
+{
+    const int               nril_mol = ril.index[numAtomsPerMolecule];
+    std::vector<int>        isAssigned(numMolecules * nril_mol, 0);
+    gmx::StringOutputStream stream;
+    gmx::TextWriter         log(&stream);
 
-    int nprint = 10;
-    int i      = 0;
-    for (int mol = 0; mol < nmol; mol++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
+    {
+        if (dd_check_ftype(ftype, rt.bBCheck, rt.bConstr, rt.bSettle))
+        {
+            flagInteractionsForType(ftype, idef.il[ftype], ril, atomRange, numAtomsPerMolecule,
+                                    cr->dd->globalAtomIndices, isAssigned);
+        }
+    }
+
+    gmx_sumi(isAssigned.size(), isAssigned.data(), cr);
+
+    const int numMissingToPrint = 10;
+    int       i                 = 0;
+    for (int mol = 0; mol < numMolecules; mol++)
     {
         int j_mol = 0;
         while (j_mol < nril_mol)
         {
-            int ftype = ril->il[j_mol];
+            int ftype = ril.il[j_mol];
             int nral  = NRAL(ftype);
             int j     = mol * nril_mol + j_mol;
-            if (assigned[j] == 0 && !(interaction_function[ftype].flags & IF_VSITE))
+            if (isAssigned[j] == 0 && !(interaction_function[ftype].flags & IF_VSITE))
             {
                 if (DDMASTER(cr->dd))
                 {
@@ -282,13 +302,14 @@ static std::string print_missing_interactions_mb(t_commrec*                    c
                     {
                         log.writeLineFormatted("Molecule type '%s'", moltypename);
                         log.writeLineFormatted(
-                                "the first %d missing interactions, except for exclusions:", nprint);
+                                "the first %d missing interactions, except for exclusions:",
+                                numMissingToPrint);
                     }
                     log.writeStringFormatted("%20s atoms", interaction_function[ftype].longname);
                     int a;
                     for (a = 0; a < nral; a++)
                     {
-                        log.writeStringFormatted("%5d", ril->il[j_mol + 2 + a] + 1);
+                        log.writeStringFormatted("%5d", ril.il[j_mol + 2 + a] + 1);
                     }
                     while (a < 4)
                     {
@@ -298,13 +319,13 @@ static std::string print_missing_interactions_mb(t_commrec*                    c
                     log.writeString(" global");
                     for (a = 0; a < nral; a++)
                     {
-                        log.writeStringFormatted(
-                                "%6d", a_start + mol * nat_mol + ril->il[j_mol + 2 + a] + 1);
+                        log.writeStringFormatted("%6d", atomRange.begin() + mol * numAtomsPerMolecule
+                                                                + ril.il[j_mol + 2 + a] + 1);
                     }
                     log.ensureLineBreak();
                 }
                 i++;
-                if (i >= nprint)
+                if (i >= numMissingToPrint)
                 {
                     break;
                 }
@@ -313,28 +334,28 @@ static std::string print_missing_interactions_mb(t_commrec*                    c
         }
     }
 
-    sfree(assigned);
     return stream.toString();
 }
 
 /*! \brief Help print error output when interactions are missing */
-static void print_missing_interactions_atoms(const gmx::MDLogger&          mdlog,
-                                             t_commrec*                    cr,
-                                             const gmx_mtop_t*             mtop,
-                                             const InteractionDefinitions* idef)
+static void printMissingInteractionsAtoms(const gmx::MDLogger&          mdlog,
+                                          t_commrec*                    cr,
+                                          const gmx_mtop_t&             mtop,
+                                          const InteractionDefinitions& idef)
 {
-    const gmx_reverse_top_t* rt = cr->dd->reverse_top;
+    const gmx_reverse_top_t& rt = *cr->dd->reverse_top;
 
     /* Print the atoms in the missing interactions per molblock */
     int a_end = 0;
-    for (const gmx_molblock_t& molb : mtop->molblock)
+    for (const gmx_molblock_t& molb : mtop.molblock)
     {
-        const gmx_moltype_t& moltype = mtop->moltype[molb.type];
-        int                  a_start = a_end;
+        const gmx_moltype_t& moltype = mtop.moltype[molb.type];
+        const int            a_start = a_end;
         a_end                        = a_start + molb.nmol * moltype.atoms.nr;
+        const gmx::Range<int> atomRange(a_start, a_end);
 
-        auto warning = print_missing_interactions_mb(cr, rt, *(moltype.name), &rt->ril_mt[molb.type],
-                                                     a_start, a_end, moltype.atoms.nr, molb.nmol, idef);
+        auto warning = printMissingInteractionsMolblock(cr, rt, *(moltype.name), rt.ril_mt[molb.type],
+                                                        atomRange, moltype.atoms.nr, molb.nmol, idef);
 
         GMX_LOG(mdlog.warning).appendText(warning);
     }
@@ -409,7 +430,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
         }
     }
 
-    print_missing_interactions_atoms(mdlog, cr, top_global, &top_local->idef);
+    printMissingInteractionsAtoms(mdlog, cr, *top_global, top_local->idef);
     write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr, -1, as_rvec_array(x.data()), box);
 
     std::string errorMessage;
