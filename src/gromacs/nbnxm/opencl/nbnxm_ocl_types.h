@@ -248,7 +248,7 @@ typedef struct cl_nbparam
     //! table scale/spacing
     float coulomb_tab_scale;
     //! pointer to the table in the device memory
-    cl_mem coulomb_tab_climg2d;
+    DeviceBuffer<float> coulomb_tab_climg2d;
 } cl_nbparam_t;
 
 /*! \internal

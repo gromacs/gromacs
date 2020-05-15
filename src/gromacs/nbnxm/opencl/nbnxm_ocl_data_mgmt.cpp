@@ -137,30 +137,14 @@ static void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
  */
 static void init_atomdata_first(cl_atomdata_t* ad, int ntypes, const DeviceContext& deviceContext)
 {
-    cl_int cl_error;
-
     ad->ntypes = ntypes;
 
-    ad->shift_vec = clCreateBuffer(deviceContext.context(), CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
-                                   SHIFTS * sizeof(nbnxn_atomdata_t::shift_vec[0]), nullptr, &cl_error);
-    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+    allocateDeviceBuffer(&ad->shift_vec, SHIFTS * DIM, deviceContext);
     ad->bShiftVecUploaded = CL_FALSE;
 
-    ad->fshift = clCreateBuffer(deviceContext.context(), CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
-                                SHIFTS * sizeof(nb_staging_t::fshift[0]), nullptr, &cl_error);
-    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
-
-    ad->e_lj = clCreateBuffer(deviceContext.context(), CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
-                              sizeof(float), nullptr, &cl_error);
-    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
-
-    ad->e_el = clCreateBuffer(deviceContext.context(), CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
-                              sizeof(float), nullptr, &cl_error);
-    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                       ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+    allocateDeviceBuffer(&ad->fshift, SHIFTS * DIM, deviceContext);
+    allocateDeviceBuffer(&ad->e_lj, 1, deviceContext);
+    allocateDeviceBuffer(&ad->e_el, 1, deviceContext);
 
     /* initialize to nullptr pointers to data that is not allocated here and will
        need reallocation in nbnxn_gpu_init_atomdata */
@@ -276,8 +260,6 @@ static void init_nbparam(cl_nbparam_t*                   nbp,
                          const nbnxn_atomdata_t::Params& nbatParams,
                          const DeviceContext&            deviceContext)
 {
-    cl_int cl_error;
-
     set_cutoff_parameters(nbp, ic, listParams);
 
     map_interaction_types_to_gpu_kernel_flavors(ic, nbatParams.comb_rule, &(nbp->eeltype), &(nbp->vdwtype));
@@ -302,10 +284,7 @@ static void init_nbparam(cl_nbparam_t*                   nbp,
     }
     else
     {
-        nbp->coulomb_tab_climg2d = clCreateBuffer(deviceContext.context(), CL_MEM_READ_ONLY,
-                                                  sizeof(cl_float), nullptr, &cl_error);
-        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                           ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+        allocateDeviceBuffer(&nbp->coulomb_tab_climg2d, 1, deviceContext);
     }
 
     const int nnbfp      = 2 * nbatParams.numTypes * nbatParams.numTypes;
@@ -582,16 +561,10 @@ static void nbnxn_ocl_clear_f(NbnxmGpu* nb, int natoms_clear)
         return;
     }
 
-    cl_int gmx_used_in_debug cl_error;
+    cl_atomdata_t*      atomData    = nb->atdat;
+    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
 
-    cl_atomdata_t*   atomData = nb->atdat;
-    cl_command_queue ls       = nb->deviceStreams[InteractionLocality::Local]->stream();
-    cl_float         value    = 0.0F;
-
-    cl_error = clEnqueueFillBuffer(ls, atomData->f, &value, sizeof(cl_float), 0,
-                                   natoms_clear * sizeof(rvec), 0, nullptr, nullptr);
-    GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                       ("clEnqueueFillBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+    clearDeviceBufferAsync(&atomData->f, 0, natoms_clear * DIM, localStream);
 }
 
 //! This function is documented in the header file
@@ -694,13 +667,14 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 //! This function is documented in the header file
 void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 {
-    cl_int              cl_error;
-    int                 nalloc, natoms;
-    bool                realloced;
-    bool                bDoTime      = nb->bDoTime;
-    cl_timers_t*        timers       = nb->timers;
-    cl_atomdata_t*      d_atdat      = nb->atdat;
-    const DeviceStream& deviceStream = *nb->deviceStreams[InteractionLocality::Local];
+    cl_int               cl_error;
+    int                  nalloc, natoms;
+    bool                 realloced;
+    bool                 bDoTime       = nb->bDoTime;
+    cl_timers_t*         timers        = nb->timers;
+    cl_atomdata_t*       d_atdat       = nb->atdat;
+    const DeviceContext& deviceContext = *nb->deviceContext_;
+    const DeviceStream&  deviceStream  = *nb->deviceStreams[InteractionLocality::Local];
 
     natoms    = nbat->numAtoms();
     realloced = false;
@@ -726,31 +700,18 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
             freeDeviceBuffer(&d_atdat->atom_types);
         }
 
-        d_atdat->f = clCreateBuffer(nb->deviceContext_->context(), CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
-                                    nalloc * DIM * sizeof(nbat->out[0].f[0]), nullptr, &cl_error);
-        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                           ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
-        d_atdat->xq = clCreateBuffer(nb->deviceContext_->context(), CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
-                                     nalloc * sizeof(cl_float4), nullptr, &cl_error);
-        GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                           ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+        allocateDeviceBuffer(&d_atdat->f, nalloc * DIM, deviceContext);
+        allocateDeviceBuffer(&d_atdat->xq, nalloc * (DIM + 1), deviceContext);
 
         if (useLjCombRule(nb->nbparam->vdwtype))
         {
-            d_atdat->lj_comb = clCreateBuffer(nb->deviceContext_->context(),
-                                              CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
-                                              nalloc * sizeof(cl_float2), nullptr, &cl_error);
-            GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                               ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+            // Two Lennard-Jones parameters per atom
+            allocateDeviceBuffer(&d_atdat->lj_comb, nalloc * 2, deviceContext);
         }
         else
         {
-            d_atdat->atom_types = clCreateBuffer(nb->deviceContext_->context(),
-                                                 CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
-                                                 nalloc * sizeof(int), nullptr, &cl_error);
-            GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
-                               ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
+            allocateDeviceBuffer(&d_atdat->atom_types, nalloc, deviceContext);
         }
 
         d_atdat->nalloc = nalloc;

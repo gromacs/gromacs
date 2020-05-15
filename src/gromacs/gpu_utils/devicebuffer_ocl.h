@@ -187,7 +187,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
 {
     if (numValues == 0)
     {
-        return; // such calls are actually made with empty domains
+        return;
     }
     GMX_ASSERT(buffer, "needs a buffer pointer");
     GMX_ASSERT(hostBuffer, "needs a host buffer pointer");

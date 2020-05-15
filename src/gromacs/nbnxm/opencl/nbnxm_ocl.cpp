@@ -898,7 +898,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 
     /* DtoH f */
     GMX_ASSERT(sizeof(*nbatom->out[0].f.data()) == sizeof(float),
-               "The size of the force buffer element should be equal to the size of float3.");
+               "The host force buffer should be in single precision to match device data size.");
     copyFromDeviceBuffer(&nbatom->out[0].f.data()[adat_begin * DIM], &adat->f, adat_begin * DIM,
                          adat_len * DIM, deviceStream, GpuApiCallBehavior::Async,
                          bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
@@ -926,7 +926,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         if (stepWork.computeVirial)
         {
             GMX_ASSERT(sizeof(*nb->nbst.fshift) == DIM * sizeof(float),
-                       "Sizes of host- and device-side shift vectors should be the same.");
+                       "Sizes of host- and device-side shift vector elements should be the same.");
             copyFromDeviceBuffer(reinterpret_cast<float*>(nb->nbst.fshift), &adat->fshift, 0,
                                  SHIFTS * DIM, deviceStream, GpuApiCallBehavior::Async,
                                  bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
