@@ -40,7 +40,6 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -50,6 +49,11 @@ struct gmx_tng_trajectory;
 typedef struct gmx_tng_trajectory* gmx_tng_trajectory_t;
 struct t_trxframe;
 
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 /*! \brief Open a TNG trajectory file
  *
  * \param filename   Name of file to open

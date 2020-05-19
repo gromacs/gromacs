@@ -41,8 +41,13 @@
 #include <stdio.h>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 
 void calc_mu(int                            start,
              int                            homenr,

@@ -38,8 +38,6 @@
 #ifndef GMX_GMXPREPROCESS_VSITE_PARM_H
 #define GMX_GMXPREPROCESS_VSITE_PARM_H
 
-#include "gromacs/utility/arrayref.h"
-
 class PreprocessingAtomTypes;
 struct gmx_moltype_t;
 struct t_atoms;
@@ -47,8 +45,10 @@ struct InteractionsOfType;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class MDLogger;
-}
+} // namespace gmx
 
 int set_vsites(bool                              bVerbose,
                t_atoms*                          atoms,

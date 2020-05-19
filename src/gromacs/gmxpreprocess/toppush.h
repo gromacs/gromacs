@@ -41,7 +41,6 @@
 
 #include <vector>
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 enum class Directive : int;
@@ -58,6 +57,8 @@ struct warninp;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 struct ExclusionBlock;
 } // namespace gmx
 

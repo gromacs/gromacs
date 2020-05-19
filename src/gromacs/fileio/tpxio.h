@@ -44,7 +44,6 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -55,6 +54,11 @@ struct t_inputrec;
 class t_state;
 struct t_topology;
 
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 /*! \libinternal
  * \brief
  * First part of the TPR file structure containing information about

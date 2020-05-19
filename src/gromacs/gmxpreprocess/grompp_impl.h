@@ -45,11 +45,16 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 
 /*! \libinternal \brief
  * Describes an interaction of a given type, plus its parameters.

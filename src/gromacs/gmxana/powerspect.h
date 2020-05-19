@@ -41,8 +41,13 @@
 #include <vector>
 
 #include "gromacs/gmxana/interf.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 
 extern void powerspectavg(real*** interface, int t, int xbins, int ybins, gmx::ArrayRef<const std::string> outfiles);
 

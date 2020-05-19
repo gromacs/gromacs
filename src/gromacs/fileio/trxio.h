@@ -40,7 +40,6 @@
 #define GMX_FILEIO_TRXIO_H
 
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/utility/arrayref.h"
 
 struct gmx_mtop_t;
 struct gmx_output_env_t;
@@ -49,6 +48,11 @@ struct t_fileio;
 struct t_topology;
 struct t_trxframe;
 
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 /* a dedicated status type contains fp, etc. */
 typedef struct t_trxstatus t_trxstatus;
 

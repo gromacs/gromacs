@@ -37,7 +37,6 @@
 #ifndef GMX_MDLIB_CALC_VERLETBUF_H
 #define GMX_MDLIB_CALC_VERLETBUF_H
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -46,6 +45,8 @@ struct t_inputrec;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class RangePartitioning;
 } // namespace gmx
 

@@ -50,12 +50,17 @@
 #include <vector>
 
 #include "gromacs/fileio/filetypes.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 
 //! \addtogroup module_commandline
 //! \{
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+} // namespace gmx
 
 /*! \brief
  * File name option definition for C code.

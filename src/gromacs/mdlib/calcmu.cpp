@@ -47,6 +47,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/utility/arrayref.h"
 
 void calc_mu(int                            start,
              int                            homenr,

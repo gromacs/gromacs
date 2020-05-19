@@ -54,13 +54,13 @@
 
 #include <vector>
 
-#include "gromacs/utility/arrayref.h"
-
 #include "dimparams.h"
 
 namespace gmx
 {
 
+template<typename>
+class ArrayRef;
 struct AwhBiasParams;
 struct AwhBiasStateHistory;
 class BiasParams;

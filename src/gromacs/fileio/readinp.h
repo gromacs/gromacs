@@ -44,7 +44,6 @@
 #include <utility>
 #include <vector>
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct warninp;
@@ -52,6 +51,8 @@ typedef warninp* warninp_t;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class KeyValueTreeObject;
 class TextInputStream;
 class TextOutputStream;

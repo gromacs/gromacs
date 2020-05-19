@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,8 +47,12 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct t_commrec;

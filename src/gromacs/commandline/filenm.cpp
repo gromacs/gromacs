@@ -46,6 +46,7 @@
 #include <string_view>
 
 #include "gromacs/fileio/filetypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"

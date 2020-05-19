@@ -44,8 +44,8 @@
 
 #include <map>
 #include <memory>
+#include <vector>
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
@@ -53,6 +53,9 @@ struct t_mdatoms;
 
 namespace gmx
 {
+
+template<typename>
+class ArrayRef;
 
 /*! \brief
  * The methods that determine how amplitudes are spread on a grid in density guided simulations.

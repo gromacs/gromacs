@@ -45,6 +45,7 @@
 #include <algorithm>
 
 #include "gromacs/fileio/warninp.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"

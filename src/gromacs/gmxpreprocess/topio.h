@@ -42,7 +42,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_molblock_t;
@@ -58,8 +57,10 @@ typedef warninp* warninp_t;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class MDLogger;
-}
+} // namespace gmx
 
 double check_mol(const gmx_mtop_t* mtop, warninp_t wi);
 /* Check mass and charge */

@@ -49,7 +49,6 @@
 #include "gromacs/fft/fft.h" // for the gmx_fft_direction enum
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h" // for the GPU_FUNC_ macros
-#include "gromacs/utility/arrayref.h"
 
 #include "pme_gpu_types_host.h"
 #include "pme_output.h"
@@ -72,6 +71,8 @@ struct t_complex;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class MDLogger;
 } // namespace gmx
 

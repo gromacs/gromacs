@@ -46,7 +46,6 @@
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -58,6 +57,8 @@ enum class NumRanks;
 namespace gmx
 {
 
+template<typename>
+class ArrayRef;
 class BoxDeformation
 {
 public:

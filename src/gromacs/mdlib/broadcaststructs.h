@@ -48,12 +48,19 @@
 #include <vector>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/utility/arrayref.h"
+#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/smalloc.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;
 struct PartialDeserializedTprFile;
 class t_state;
+
+namespace gmx
+{
+template<typename>
+class ArrayRef;
+}
 
 //! Convenience wrapper for gmx_bcast to communicator of a single value.
 template<typename T>

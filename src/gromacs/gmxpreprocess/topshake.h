@@ -38,15 +38,15 @@
 #ifndef GMX_GMXPREPROCESS_TOPSHAKE_H
 #define GMX_GMXPREPROCESS_TOPSHAKE_H
 
-#include "gromacs/utility/arrayref.h"
-
 struct t_atoms;
 struct InteractionsOfType;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class MDLogger;
-}
+} // namespace gmx
 
 void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nshake, const gmx::MDLogger& logger);
 

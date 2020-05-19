@@ -40,6 +40,7 @@
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/gmxana/interf.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
