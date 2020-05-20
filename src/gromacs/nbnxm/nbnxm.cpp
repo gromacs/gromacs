@@ -119,9 +119,11 @@ void nonbonded_verlet_t::setLocalAtomOrder()
     pairSearch_->setLocalAtomOrder();
 }
 
-void nonbonded_verlet_t::setAtomProperties(const t_mdatoms& mdatoms, gmx::ArrayRef<const int> atomInfo)
+void nonbonded_verlet_t::setAtomProperties(gmx::ArrayRef<const int>  atomTypes,
+                                           gmx::ArrayRef<const real> atomCharges,
+                                           gmx::ArrayRef<const int>  atomInfo)
 {
-    nbnxn_atomdata_set(nbat.get(), pairSearch_->gridSet(), &mdatoms, atomInfo.data());
+    nbnxn_atomdata_set(nbat.get(), pairSearch_->gridSet(), atomTypes, atomCharges, atomInfo);
 }
 
 void nonbonded_verlet_t::convertCoordinates(const gmx::AtomLocality        locality,

@@ -1213,7 +1213,8 @@ void do_force(FILE*                               fplog,
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_NONLOCAL);
         }
 
-        nbv->setAtomProperties(*mdatoms, fr->cginfo);
+        nbv->setAtomProperties(gmx::constArrayRefFromArray(mdatoms->typeA, mdatoms->nr),
+                               gmx::constArrayRefFromArray(mdatoms->chargeA, mdatoms->nr), fr->cginfo);
 
         wallcycle_stop(wcycle, ewcNS);
 

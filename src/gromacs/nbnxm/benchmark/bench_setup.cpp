@@ -227,11 +227,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
 
     nbv->constructPairlist(gmx::InteractionLocality::Local, system.excls, 0, &nrnb);
 
-    t_mdatoms mdatoms;
-    // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA   = const_cast<int*>(system.atomTypes.data());
-    mdatoms.chargeA = const_cast<real*>(system.charges.data());
-    nbv->setAtomProperties(mdatoms, atomInfo);
+    nbv->setAtomProperties(system.atomTypes, system.charges, atomInfo);
 
     return nbv;
 }

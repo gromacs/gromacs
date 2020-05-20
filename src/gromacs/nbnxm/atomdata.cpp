@@ -52,7 +52,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
@@ -724,7 +723,7 @@ static void copy_lj_to_nbat_lj_comb(gmx::ArrayRef<const real> ljparam_type, cons
 /* Sets the atom type in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
                                          const Nbnxm::GridSet&     gridSet,
-                                         const int*                type)
+                                         ArrayRef<const int>       atomTypes)
 {
     params->type.resize(gridSet.numGridAtomsTotal());
 
@@ -736,8 +735,9 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
             const int numAtoms   = grid.paddedNumAtomsInColumn(i);
             const int atomOffset = grid.firstAtomInColumn(i);
 
-            copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset, grid.numAtomsInColumn(i),
-                                 numAtoms, type, params->numTypes - 1, params->type.data() + atomOffset);
+            copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
+                                 grid.numAtomsInColumn(i), numAtoms, atomTypes.data(),
+                                 params->numTypes - 1, params->type.data() + atomOffset);
         }
     }
 }
@@ -782,7 +782,9 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
 }
 
 /* Sets the charges in nbnxn_atomdata_t *nbat */
-static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t* nbat, const Nbnxm::GridSet& gridSet, const real* charge)
+static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t*     nbat,
+                                       const Nbnxm::GridSet& gridSet,
+                                       ArrayRef<const real>  charges)
 {
     if (nbat->XFormat != nbatXYZQ)
     {
@@ -804,7 +806,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t* nbat, const Nbnxm::Grid
                 int   i;
                 for (i = 0; i < numAtoms; i++)
                 {
-                    *q = charge[gridSet.atomIndices()[atomOffset + i]];
+                    *q = charges[gridSet.atomIndices()[atomOffset + i]];
                     q += STRIDE_XYZQ;
                 }
                 /* Complete the partially filled last cell with zeros */
@@ -820,7 +822,7 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t* nbat, const Nbnxm::Grid
                 int   i;
                 for (i = 0; i < numAtoms; i++)
                 {
-                    *q = charge[gridSet.atomIndices()[atomOffset + i]];
+                    *q = charges[gridSet.atomIndices()[atomOffset + i]];
                     q++;
                 }
                 /* Complete the partially filled last cell with zeros */
@@ -926,7 +928,7 @@ copy_egp_to_nbat_egps(const int* a, int na, int na_round, int na_c, int bit_shif
 /* Set the energy group indices for atoms in nbnxn_atomdata_t */
 static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params* params,
                                             const Nbnxm::GridSet&     gridSet,
-                                            const int*                atinfo)
+                                            ArrayRef<const int>       atomInfo)
 {
     if (params->nenergrp == 1)
     {
@@ -944,7 +946,7 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params* params,
             const int atomOffset = grid.firstAtomInColumn(i);
 
             copy_egp_to_nbat_egps(gridSet.atomIndices().data() + atomOffset, grid.numAtomsInColumn(i),
-                                  numAtoms, c_nbnxnCpuIClusterSize, params->neg_2log, atinfo,
+                                  numAtoms, c_nbnxnCpuIClusterSize, params->neg_2log, atomInfo.data(),
                                   params->energrp.data() + grid.atomToCluster(atomOffset));
         }
     }
@@ -953,14 +955,15 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params* params,
 /* Sets all required atom parameter data in nbnxn_atomdata_t */
 void nbnxn_atomdata_set(nbnxn_atomdata_t*     nbat,
                         const Nbnxm::GridSet& gridSet,
-                        const t_mdatoms*      mdatoms,
-                        const int*            atinfo)
+                        ArrayRef<const int>   atomTypes,
+                        ArrayRef<const real>  atomCharges,
+                        ArrayRef<const int>   atomInfo)
 {
     nbnxn_atomdata_t::Params& params = nbat->paramsDeprecated();
 
-    nbnxn_atomdata_set_atomtypes(&params, gridSet, mdatoms->typeA);
+    nbnxn_atomdata_set_atomtypes(&params, gridSet, atomTypes);
 
-    nbnxn_atomdata_set_charges(nbat, gridSet, mdatoms->chargeA);
+    nbnxn_atomdata_set_charges(nbat, gridSet, atomCharges);
 
     if (gridSet.haveFep())
     {
@@ -970,7 +973,7 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t*     nbat,
     /* This must be done after masking types for FEP */
     nbnxn_atomdata_set_ljcombparams(&params, nbat->XFormat, gridSet);
 
-    nbnxn_atomdata_set_energygroups(&params, gridSet, atinfo);
+    nbnxn_atomdata_set_energygroups(&params, gridSet, atomInfo);
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */

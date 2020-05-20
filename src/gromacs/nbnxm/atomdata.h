@@ -64,7 +64,6 @@ class MDLogger;
 struct NbnxmGpu;
 struct nbnxn_atomdata_t;
 struct nonbonded_verlet_t;
-struct t_mdatoms;
 struct tMPI_Atomic;
 
 class GpuEventSynchronizer;
@@ -340,10 +339,11 @@ void nbnxn_atomdata_init(const gmx::MDLogger&      mdlog,
                          int                       nout);
 
 //! Sets the atomdata after pair search
-void nbnxn_atomdata_set(nbnxn_atomdata_t*     nbat,
-                        const Nbnxm::GridSet& gridSet,
-                        const t_mdatoms*      mdatoms,
-                        const int*            atinfo);
+void nbnxn_atomdata_set(nbnxn_atomdata_t*         nbat,
+                        const Nbnxm::GridSet&     gridSet,
+                        gmx::ArrayRef<const int>  atomTypes,
+                        gmx::ArrayRef<const real> atomCharges,
+                        gmx::ArrayRef<const int>  atomInfo);
 
 //! Copy the shift vectors to nbat
 void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box, rvec* shift_vec, nbnxn_atomdata_t* nbat);

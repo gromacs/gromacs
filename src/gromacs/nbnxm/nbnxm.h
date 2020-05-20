@@ -266,7 +266,9 @@ public:
                            t_nrnb*                      nrnb);
 
     //! Updates all the atom properties in Nbnxm
-    void setAtomProperties(const t_mdatoms& mdatoms, gmx::ArrayRef<const int> atomInfo);
+    void setAtomProperties(gmx::ArrayRef<const int>  atomTypes,
+                           gmx::ArrayRef<const real> atomCharges,
+                           gmx::ArrayRef<const int>  atomInfo);
 
     /*!\brief Convert the coordinates to NBNXM format for the given locality.
      *

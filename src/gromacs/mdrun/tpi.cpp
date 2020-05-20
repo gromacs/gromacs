@@ -677,7 +677,9 @@ void LegacySimulator::do_tpi()
                                   -1, fr->cginfo, x, 0, nullptr);
 
                 /* TODO: Avoid updating all atoms at every bNS step */
-                fr->nbv->setAtomProperties(*mdatoms, fr->cginfo);
+                fr->nbv->setAtomProperties(gmx::constArrayRefFromArray(mdatoms->typeA, mdatoms->nr),
+                                           gmx::constArrayRefFromArray(mdatoms->chargeA, mdatoms->nr),
+                                           fr->cginfo);
 
                 fr->nbv->constructPairlist(InteractionLocality::Local, top.excls, step, nrnb);
 
