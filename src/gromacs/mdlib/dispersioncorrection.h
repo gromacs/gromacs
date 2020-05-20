@@ -37,6 +37,7 @@
 
 #include <cstdio>
 
+#include <array>
 #include <memory>
 
 #include "gromacs/math/vectypes.h"
