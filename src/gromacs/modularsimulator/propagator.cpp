@@ -163,12 +163,12 @@ void Propagator<IntegrationStep::VelocitiesOnly>::run()
     if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
     {
         // TODO: Could we know in advance whether the matrix is diagonal?
-        doDiagonalScaling = (matrixPR[YY][XX] == 0 && matrixPR[ZZ][XX] == 0 && matrixPR[ZZ][YY] == 0);
+        doDiagonalScaling = (matrixPR_[YY][XX] == 0 && matrixPR_[ZZ][XX] == 0 && matrixPR_[ZZ][YY] == 0);
         if (doDiagonalScaling)
         {
-            diagPR[XX] = matrixPR[XX][XX];
-            diagPR[YY] = matrixPR[YY][YY];
-            diagPR[ZZ] = matrixPR[ZZ][ZZ];
+            diagPR_[XX] = matrixPR_[XX][XX];
+            diagPR_[YY] = matrixPR_[YY][YY];
+            diagPR_[ZZ] = matrixPR_[ZZ][ZZ];
         }
     }
 
@@ -194,12 +194,12 @@ void Propagator<IntegrationStep::VelocitiesOnly>::run()
                     {
                         updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No>(
                                 a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                invMassPerDim, v, f, diagPR, matrixPR);
+                                invMassPerDim, v, f, diagPR_, matrixPR_);
                     }
                     else
                     {
                         updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::No>(
-                                a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                a, timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                     }
                 }
                 else
@@ -210,12 +210,12 @@ void Propagator<IntegrationStep::VelocitiesOnly>::run()
                         {
                             updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Diagonal>(
                                     a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                    invMassPerDim, v, f, diagPR, matrixPR);
+                                    invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                         else
                         {
                             updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal>(
-                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                     }
                     else
@@ -224,12 +224,12 @@ void Propagator<IntegrationStep::VelocitiesOnly>::run()
                         {
                             updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full>(
                                     a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                    invMassPerDim, v, f, diagPR, matrixPR);
+                                    invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                         else
                         {
                             updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Full>(
-                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                     }
                 }
@@ -260,12 +260,12 @@ void Propagator<IntegrationStep::LeapFrog>::run()
     if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
     {
         // TODO: Could we know in advance whether the matrix is diagonal?
-        doDiagonalScaling = (matrixPR[YY][XX] == 0 && matrixPR[ZZ][XX] == 0 && matrixPR[ZZ][YY] == 0);
+        doDiagonalScaling = (matrixPR_[YY][XX] == 0 && matrixPR_[ZZ][XX] == 0 && matrixPR_[ZZ][YY] == 0);
         if (doDiagonalScaling)
         {
-            diagPR[XX] = matrixPR[XX][XX];
-            diagPR[YY] = matrixPR[YY][YY];
-            diagPR[ZZ] = matrixPR[ZZ][ZZ];
+            diagPR_[XX] = matrixPR_[XX][XX];
+            diagPR_[YY] = matrixPR_[YY][YY];
+            diagPR_[ZZ] = matrixPR_[ZZ][ZZ];
         }
     }
 
@@ -291,12 +291,12 @@ void Propagator<IntegrationStep::LeapFrog>::run()
                     {
                         updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No>(
                                 a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                invMassPerDim, v, f, diagPR, matrixPR);
+                                invMassPerDim, v, f, diagPR_, matrixPR_);
                     }
                     else
                     {
                         updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::No>(
-                                a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                a, timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                     }
                 }
                 else
@@ -307,12 +307,12 @@ void Propagator<IntegrationStep::LeapFrog>::run()
                         {
                             updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Diagonal>(
                                     a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                    invMassPerDim, v, f, diagPR, matrixPR);
+                                    invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                         else
                         {
                             updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal>(
-                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                     }
                     else
@@ -321,12 +321,12 @@ void Propagator<IntegrationStep::LeapFrog>::run()
                         {
                             updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full>(
                                     a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                    invMassPerDim, v, f, diagPR, matrixPR);
+                                    invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                         else
                         {
                             updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Full>(
-                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                     }
                 }
@@ -361,12 +361,12 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
     if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
     {
         // TODO: Could we know in advance whether the matrix is diagonal?
-        doDiagonalScaling = (matrixPR[YY][XX] == 0 && matrixPR[ZZ][XX] == 0 && matrixPR[ZZ][YY] == 0);
+        doDiagonalScaling = (matrixPR_[YY][XX] == 0 && matrixPR_[ZZ][XX] == 0 && matrixPR_[ZZ][YY] == 0);
         if (doDiagonalScaling)
         {
-            diagPR[XX] = matrixPR[XX][XX];
-            diagPR[YY] = matrixPR[YY][YY];
-            diagPR[ZZ] = matrixPR[ZZ][ZZ];
+            diagPR_[XX] = matrixPR_[XX][XX];
+            diagPR_[YY] = matrixPR_[YY][YY];
+            diagPR_[ZZ] = matrixPR_[ZZ][ZZ];
         }
     }
 
@@ -389,12 +389,12 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
                     {
                         updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No>(
                                 a, 0.5 * timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                invMassPerDim, v, f, diagPR, matrixPR);
+                                invMassPerDim, v, f, diagPR_, matrixPR_);
                     }
                     else
                     {
                         updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::No>(
-                                a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                     }
                 }
                 else
@@ -405,12 +405,12 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
                         {
                             updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Diagonal>(
                                     a, 0.5 * timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                    invMassPerDim, v, f, diagPR, matrixPR);
+                                    invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                         else
                         {
                             updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal>(
-                                    a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                    a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                     }
                     else
@@ -419,12 +419,12 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
                         {
                             updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full>(
                                     a, 0.5 * timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                    invMassPerDim, v, f, diagPR, matrixPR);
+                                    invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                         else
                         {
                             updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Full>(
-                                    a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                                    a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR_, matrixPR_);
                         }
                     }
                 }
@@ -443,15 +443,15 @@ Propagator<algorithm>::Propagator(double               timestep,
                                   gmx_wallcycle*       wcycle) :
     timestep_(timestep),
     statePropagatorData_(statePropagatorData),
-    doSingleVelocityScaling(false),
-    doGroupVelocityScaling(false),
+    doSingleVelocityScaling_(false),
+    doGroupVelocityScaling_(false),
     scalingStepVelocity_(-1),
+    diagPR_{ 0 },
+    matrixPR_{ { 0 } },
     scalingStepPR_(-1),
     mdAtoms_(mdAtoms),
     wcycle_(wcycle)
 {
-    clear_rvec(diagPR);
-    clear_mat(matrixPR);
 }
 
 template<IntegrationStep algorithm>
@@ -459,8 +459,8 @@ void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
                                          Time gmx_unused               time,
                                          const RegisterRunFunctionPtr& registerRunFunction)
 {
-    const bool doSingleVScalingThisStep = (doSingleVelocityScaling && (step == scalingStepVelocity_));
-    const bool doGroupVScalingThisStep = (doGroupVelocityScaling && (step == scalingStepVelocity_));
+    const bool doSingleVScalingThisStep = (doSingleVelocityScaling_ && (step == scalingStepVelocity_));
+    const bool doGroupVScalingThisStep = (doGroupVelocityScaling_ && (step == scalingStepVelocity_));
 
     const bool doParrinelloRahmanThisStep = (step == scalingStepPR_);
 
@@ -522,8 +522,8 @@ void Propagator<algorithm>::setNumVelocityScalingVariables(int numVelocityScalin
                "Number of velocity scaling variables cannot be changed once set.");
 
     velocityScaling_.resize(numVelocityScalingVariables, 1.);
-    doSingleVelocityScaling = numVelocityScalingVariables == 1;
-    doGroupVelocityScaling  = numVelocityScalingVariables > 1;
+    doSingleVelocityScaling_ = numVelocityScalingVariables == 1;
+    doGroupVelocityScaling_  = numVelocityScalingVariables > 1;
 }
 
 template<IntegrationStep algorithm>
@@ -556,10 +556,10 @@ ArrayRef<rvec> Propagator<algorithm>::viewOnPRScalingMatrix()
             algorithm != IntegrationStep::PositionsOnly,
             "Parrinello-Rahman scaling not implemented for IntegrationStep::PositionsOnly.");
 
-    clear_mat(matrixPR);
+    clear_mat(matrixPR_);
     // gcc-5 needs this to be explicit (all other tested compilers would be ok
     // with simply returning matrixPR)
-    return ArrayRef<rvec>(matrixPR);
+    return ArrayRef<rvec>(matrixPR_);
 }
 
 template<IntegrationStep algorithm>
