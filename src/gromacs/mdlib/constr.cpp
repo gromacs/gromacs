@@ -663,7 +663,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                 t = ir.init_t;
             }
             set_pbc(&pbc, ir.pbcType, box);
-            pull_constraint(pull_work, &md, &pbc, cr, ir.delta_t, t,
+            pull_constraint(pull_work, md.massT, &pbc, cr, ir.delta_t, t,
                             as_rvec_array(x.unpaddedArrayRef().data()),
                             as_rvec_array(xprime.unpaddedArrayRef().data()),
                             as_rvec_array(v.unpaddedArrayRef().data()), *vir);

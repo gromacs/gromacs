@@ -79,7 +79,6 @@ class t_state;
 struct t_commrec;
 struct t_enxframe;
 struct t_inputrec;
-struct t_mdatoms;
 enum class PbcType : int;
 
 namespace gmx
@@ -153,7 +152,7 @@ public:
      * since AWH needs the current coordinate values (the pull code checks
      * for this).
      *
-     * \param[in]     mdatoms          Atom properties.
+     * \param[in]     masses           Atoms masses.
      * \param[in]     pbcType          Type of periodic boundary conditions.
      * \param[in]     box              Box vectors.
      * \param[in,out] forceWithVirial  Force and virial buffers, should cover at least the local atoms.
@@ -164,7 +163,7 @@ public:
      * \returns the potential energy for the bias.
      */
     real applyBiasForcesAndUpdateBias(PbcType               pbcType,
-                                      const t_mdatoms&      mdatoms,
+                                      const real*           masses,
                                       const matrix          box,
                                       gmx::ForceWithVirial* forceWithVirial,
                                       double                t,

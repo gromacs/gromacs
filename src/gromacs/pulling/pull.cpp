@@ -64,7 +64,6 @@
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -175,7 +174,7 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord* pcrd)
 static void apply_forces_grp_part(const pull_group_work_t* pgrp,
                                   int                      ind_start,
                                   int                      ind_end,
-                                  const t_mdatoms*         md,
+                                  const real*              masses,
                                   const dvec               f_pull,
                                   int                      sign,
                                   rvec*                    f)
@@ -186,7 +185,7 @@ static void apply_forces_grp_part(const pull_group_work_t* pgrp,
     for (int i = ind_start; i < ind_end; i++)
     {
         int    ii    = localAtomIndices[i];
-        double wmass = md->massT[ii];
+        double wmass = masses[ii];
         if (!pgrp->localWeights.empty())
         {
             wmass *= pgrp->localWeights[i];
@@ -201,7 +200,7 @@ static void apply_forces_grp_part(const pull_group_work_t* pgrp,
 
 /* Apply forces in a mass weighted fashion */
 static void apply_forces_grp(const pull_group_work_t* pgrp,
-                             const t_mdatoms*         md,
+                             const real*              masses,
                              const dvec               f_pull,
                              int                      sign,
                              rvec*                    f,
@@ -224,7 +223,7 @@ static void apply_forces_grp(const pull_group_work_t* pgrp,
     {
         if (localAtomIndices.size() <= c_pullMaxNumLocalAtomsSingleThreaded)
         {
-            apply_forces_grp_part(pgrp, 0, localAtomIndices.size(), md, f_pull, sign, f);
+            apply_forces_grp_part(pgrp, 0, localAtomIndices.size(), masses, f_pull, sign, f);
         }
         else
         {
@@ -233,7 +232,7 @@ static void apply_forces_grp(const pull_group_work_t* pgrp,
             {
                 int ind_start = (localAtomIndices.size() * (th + 0)) / nthreads;
                 int ind_end   = (localAtomIndices.size() * (th + 1)) / nthreads;
-                apply_forces_grp_part(pgrp, ind_start, ind_end, md, f_pull, sign, f);
+                apply_forces_grp_part(pgrp, ind_start, ind_end, masses, f_pull, sign, f);
             }
         }
     }
@@ -242,7 +241,7 @@ static void apply_forces_grp(const pull_group_work_t* pgrp,
 /* Apply forces in a mass weighted fashion to a cylinder group */
 static void apply_forces_cyl_grp(const pull_group_work_t* pgrp,
                                  const double             dv_corr,
-                                 const t_mdatoms*         md,
+                                 const real*              masses,
                                  const dvec               f_pull,
                                  double                   f_scal,
                                  int                      sign,
@@ -266,7 +265,7 @@ static void apply_forces_cyl_grp(const pull_group_work_t* pgrp,
             continue;
         }
         int    ii   = localAtomIndices[i];
-        double mass = md->massT[ii];
+        double mass = masses[ii];
         /* The stored axial distance from the cylinder center (dv) needs
          * to be corrected for an offset (dv_corr), which was unknown when
          * we calculated dv.
@@ -289,7 +288,7 @@ static void apply_forces_cyl_grp(const pull_group_work_t* pgrp,
  */
 static void apply_forces_vec_torque(const struct pull_t*     pull,
                                     const pull_coord_work_t* pcrd,
-                                    const t_mdatoms*         md,
+                                    const real*              masses,
                                     rvec*                    f)
 {
     const PullCoordSpatialData& spatialData = pcrd->spatialData;
@@ -315,15 +314,15 @@ static void apply_forces_vec_torque(const struct pull_t*     pull,
     }
 
     /* Apply the force to the groups defining the vector using opposite signs */
-    apply_forces_grp(&pull->group[pcrd->params.group[2]], md, f_perp, -1, f, pull->nthreads);
-    apply_forces_grp(&pull->group[pcrd->params.group[3]], md, f_perp, 1, f, pull->nthreads);
+    apply_forces_grp(&pull->group[pcrd->params.group[2]], masses, f_perp, -1, f, pull->nthreads);
+    apply_forces_grp(&pull->group[pcrd->params.group[3]], masses, f_perp, 1, f, pull->nthreads);
 }
 
 /* Apply forces in a mass weighted fashion */
 static void apply_forces_coord(struct pull_t*               pull,
                                int                          coord,
                                const PullCoordVectorForces& forces,
-                               const t_mdatoms*             md,
+                               const real*                  masses,
                                rvec*                        f)
 {
     /* Here it would be more efficient to use one large thread-parallel
@@ -336,7 +335,7 @@ static void apply_forces_coord(struct pull_t*               pull,
 
     if (pcrd.params.eGeom == epullgCYL)
     {
-        apply_forces_cyl_grp(&pull->dyna[coord], pcrd.spatialData.cyl_dev, md, forces.force01,
+        apply_forces_cyl_grp(&pull->dyna[coord], pcrd.spatialData.cyl_dev, masses, forces.force01,
                              pcrd.scalarForce, -1, f, pull->nthreads);
 
         /* Sum the force along the vector and the radial force */
@@ -345,7 +344,7 @@ static void apply_forces_coord(struct pull_t*               pull,
         {
             f_tot[m] = forces.force01[m] + pcrd.scalarForce * pcrd.spatialData.ffrad[m];
         }
-        apply_forces_grp(&pull->group[pcrd.params.group[1]], md, f_tot, 1, f, pull->nthreads);
+        apply_forces_grp(&pull->group[pcrd.params.group[1]], masses, f_tot, 1, f, pull->nthreads);
     }
     else
     {
@@ -354,24 +353,29 @@ static void apply_forces_coord(struct pull_t*               pull,
             /* We need to apply the torque forces to the pull groups
              * that define the pull vector.
              */
-            apply_forces_vec_torque(pull, &pcrd, md, f);
+            apply_forces_vec_torque(pull, &pcrd, masses, f);
         }
 
         if (pull->group[pcrd.params.group[0]].params.nat > 0)
         {
-            apply_forces_grp(&pull->group[pcrd.params.group[0]], md, forces.force01, -1, f, pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd.params.group[0]], masses, forces.force01, -1, f,
+                             pull->nthreads);
         }
-        apply_forces_grp(&pull->group[pcrd.params.group[1]], md, forces.force01, 1, f, pull->nthreads);
+        apply_forces_grp(&pull->group[pcrd.params.group[1]], masses, forces.force01, 1, f, pull->nthreads);
 
         if (pcrd.params.ngroup >= 4)
         {
-            apply_forces_grp(&pull->group[pcrd.params.group[2]], md, forces.force23, -1, f, pull->nthreads);
-            apply_forces_grp(&pull->group[pcrd.params.group[3]], md, forces.force23, 1, f, pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd.params.group[2]], masses, forces.force23, -1, f,
+                             pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd.params.group[3]], masses, forces.force23, 1, f,
+                             pull->nthreads);
         }
         if (pcrd.params.ngroup >= 6)
         {
-            apply_forces_grp(&pull->group[pcrd.params.group[4]], md, forces.force45, -1, f, pull->nthreads);
-            apply_forces_grp(&pull->group[pcrd.params.group[5]], md, forces.force45, 1, f, pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd.params.group[4]], masses, forces.force45, -1, f,
+                             pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd.params.group[5]], masses, forces.force45, 1, f,
+                             pull->nthreads);
         }
     }
 }
@@ -1444,7 +1448,7 @@ static void check_external_potential_registration(const struct pull_t* pull)
 void apply_external_pull_coord_force(struct pull_t*        pull,
                                      int                   coord_index,
                                      double                coord_force,
-                                     const t_mdatoms*      mdatoms,
+                                     const real*           masses,
                                      gmx::ForceWithVirial* forceWithVirial)
 {
     pull_coord_work_t* pcrd;
@@ -1477,7 +1481,7 @@ void apply_external_pull_coord_force(struct pull_t*        pull,
             forceWithVirial->addVirialContribution(virial);
         }
 
-        apply_forces_coord(pull, coord_index, pullCoordForces, mdatoms,
+        apply_forces_coord(pull, coord_index, pullCoordForces, masses,
                            as_rvec_array(forceWithVirial->force_.data()));
     }
 
@@ -1512,7 +1516,7 @@ static PullCoordVectorForces do_pull_pot_coord(struct pull_t* pull,
 }
 
 real pull_potential(struct pull_t*        pull,
-                    const t_mdatoms*      md,
+                    const real*           masses,
                     t_pbc*                pbc,
                     const t_commrec*      cr,
                     double                t,
@@ -1535,7 +1539,7 @@ real pull_potential(struct pull_t*        pull,
     {
         real dVdl = 0;
 
-        pull_calc_coms(cr, pull, md, pbc, t, x, nullptr);
+        pull_calc_coms(cr, pull, masses, pbc, t, x, nullptr);
 
         rvec*      f             = as_rvec_array(force->force_.data());
         matrix     virial        = { { 0 } };
@@ -1556,7 +1560,7 @@ real pull_potential(struct pull_t*        pull,
                     pull, c, pbc, t, lambda, &V, computeVirial ? virial : nullptr, &dVdl);
 
             /* Distribute the force over the atoms in the pulled groups */
-            apply_forces_coord(pull, c, pullCoordForces, md, f);
+            apply_forces_coord(pull, c, pullCoordForces, masses, f);
         }
 
         if (MASTER(cr))
@@ -1575,7 +1579,7 @@ real pull_potential(struct pull_t*        pull,
 }
 
 void pull_constraint(struct pull_t*   pull,
-                     const t_mdatoms* md,
+                     const real*      masses,
                      t_pbc*           pbc,
                      const t_commrec* cr,
                      double           dt,
@@ -1589,7 +1593,7 @@ void pull_constraint(struct pull_t*   pull,
 
     if (pull->comm.bParticipate)
     {
-        pull_calc_coms(cr, pull, md, pbc, t, x, xp);
+        pull_calc_coms(cr, pull, masses, pbc, t, x, xp);
 
         do_constraint(pull, pbc, xp, v, MASTER(cr), vir, dt, t);
     }
@@ -2294,7 +2298,7 @@ static void destroy_pull(struct pull_t* pull)
 
 void preparePrevStepPullCom(const t_inputrec* ir,
                             pull_t*           pull_work,
-                            const t_mdatoms*  md,
+                            const real*       masses,
                             t_state*          state,
                             const t_state*    state_global,
                             const t_commrec*  cr,
@@ -2323,7 +2327,7 @@ void preparePrevStepPullCom(const t_inputrec* ir,
     {
         t_pbc pbc;
         set_pbc(&pbc, ir->pbcType, state->box);
-        initPullComFromPrevStep(cr, pull_work, md, &pbc, state->x.rvec_array());
+        initPullComFromPrevStep(cr, pull_work, masses, &pbc, state->x.rvec_array());
         updatePrevStepPullCom(pull_work, state);
     }
 }

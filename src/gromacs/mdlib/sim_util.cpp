@@ -197,8 +197,9 @@ static void pull_potential_wrapper(const t_commrec*               cr,
     wallcycle_start(wcycle, ewcPULLPOT);
     set_pbc(&pbc, ir->pbcType, box);
     dvdl = 0;
-    enerd->term[F_COM_PULL] += pull_potential(pull_work, mdatoms, &pbc, cr, t, lambda[efptRESTRAINT],
-                                              as_rvec_array(x.data()), force, &dvdl);
+    enerd->term[F_COM_PULL] +=
+            pull_potential(pull_work, mdatoms->massT, &pbc, cr, t, lambda[efptRESTRAINT],
+                           as_rvec_array(x.data()), force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
     for (auto& dhdl : enerd->dhdlLambda)
     {
@@ -636,7 +637,7 @@ static void computeSpecialForces(FILE*                          fplog,
         if (awh)
         {
             enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
-                    inputrec->pbcType, *mdatoms, box, forceWithVirial, t, step, wcycle, fplog);
+                    inputrec->pbcType, mdatoms->massT, box, forceWithVirial, t, step, wcycle, fplog);
         }
     }
 
