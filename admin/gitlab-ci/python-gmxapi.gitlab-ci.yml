@@ -10,6 +10,9 @@
   stage: test
   image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
   variables:
+    KUBERNETES_CPU_LIMIT: 2
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_LIMIT: 2Gi
     PY_UNIT_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PY_MPI_UNIT_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
     PY_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-JUnitTestResults.xml

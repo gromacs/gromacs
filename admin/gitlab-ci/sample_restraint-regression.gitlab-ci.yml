@@ -8,6 +8,9 @@
   image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
   stage: test
   variables:
+    KUBERNETES_CPU_LIMIT: 2
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_LIMIT: 2Gi
     PLUGIN_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PLUGIN_MPI_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
     EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"

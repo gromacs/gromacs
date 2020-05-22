@@ -40,16 +40,15 @@ pushd python_packaging/sample_restraint
   popd
 
   python -m pytest $PWD/tests --junitxml=$PLUGIN_TEST_XML
-# TODO: enable MPI tests
-#  if [ -x `which mpiexec` ]; then
-#      PYTHONDONTWRITEBYTECODE=1 \
-#      mpiexec --allow-run-as-root \
-#        --mca opal_warn_on_missing_libcuda 0 \
-#        --mca orte_base_help_aggregate 0 \
-#        -n 2 \
-#        `which python` -m pytest \
-#          -p no:cacheprovider \
-#          $PWD/tests \
-#          --junitxml=$PLUGIN_MPI_TEST_XML
-#  fi
+  if [ -x `which mpiexec` ]; then
+      PYTHONDONTWRITEBYTECODE=1 \
+      mpiexec --allow-run-as-root \
+        --mca opal_warn_on_missing_libcuda 0 \
+        --mca orte_base_help_aggregate 0 \
+        -n 2 \
+        `which python` -m pytest \
+          -p no:cacheprovider \
+          $PWD/tests \
+          --junitxml=$PLUGIN_MPI_TEST_XML
+  fi
 popd
