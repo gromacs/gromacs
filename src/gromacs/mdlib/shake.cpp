@@ -58,7 +58,6 @@
 #include "gromacs/mdlib/splitter.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/invblock.h"
 #include "gromacs/utility/fatalerror.h"
@@ -122,7 +121,7 @@ static void resizeLagrangianData(shakedata* shaked, int ncons)
     shaked->scaled_lagrange_multiplier.resize(ncons);
 }
 
-void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, const t_mdatoms& md)
+void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, const int numAtoms)
 {
     int          i, m, ncons;
     int          bstart, bnr;
@@ -137,7 +136,7 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
 
     init_blocka(&sblocks);
     sfree(sblocks.index); // To solve memory leak
-    gen_sblocks(nullptr, md.homenr, *idef, &sblocks, FALSE);
+    gen_sblocks(nullptr, numAtoms, *idef, &sblocks, FALSE);
 
     /*
        bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
@@ -150,7 +149,7 @@ void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, c
     }
 
     /* Calculate block number for each atom */
-    inv_sblock = make_invblocka(&sblocks, md.nr);
+    inv_sblock = make_invblocka(&sblocks, numAtoms);
 
     done_blocka(&sblocks);
 

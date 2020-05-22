@@ -66,7 +66,6 @@
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
@@ -90,10 +89,10 @@ namespace test
 void applyShake(ConstraintsTestData* testData, t_pbc gmx_unused pbc)
 {
     shakedata shaked;
-    make_shake_sblock_serial(&shaked, testData->idef_.get(), testData->md_);
+    make_shake_sblock_serial(&shaked, testData->idef_.get(), testData->numAtoms_);
     bool success = constrain_shake(
             nullptr, &shaked, testData->invmass_.data(), *testData->idef_, testData->ir_, testData->x_,
-            testData->xPrime_, testData->xPrime2_, nullptr, &testData->nrnb_, testData->md_.lambda,
+            testData->xPrime_, testData->xPrime2_, nullptr, &testData->nrnb_, testData->lambda_,
             &testData->dHdLambda_, testData->invdt_, testData->v_, testData->computeVirial_,
             testData->virialScaled_, false, gmx::ConstraintVariable::Positions);
     EXPECT_TRUE(success) << "Test failed with a false return value in SHAKE.";
@@ -133,14 +132,15 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
     // Initialize LINCS
     lincsd = init_lincs(nullptr, testData->mtop_, testData->nflexcon_, at2con_mt, false,
                         testData->ir_.nLincsIter, testData->ir_.nProjOrder);
-    set_lincs(*testData->idef_, testData->md_, EI_DYNAMICS(testData->ir_.eI), &cr, lincsd);
+    set_lincs(*testData->idef_, testData->numAtoms_, testData->invmass_.data(), testData->lambda_,
+              EI_DYNAMICS(testData->ir_.eI), &cr, lincsd);
 
     // Evaluate constraints
     bool success = constrain_lincs(
-            false, testData->ir_, 0, lincsd, testData->md_, &cr, &ms,
+            false, testData->ir_, 0, lincsd, testData->invmass_.data(), &cr, &ms,
             testData->x_.arrayRefWithPadding(), testData->xPrime_.arrayRefWithPadding(),
             testData->xPrime2_.arrayRefWithPadding().unpaddedArrayRef(), pbc.box, &pbc,
-            testData->md_.lambda, &testData->dHdLambda_, testData->invdt_,
+            testData->hasMassPerturbed_, testData->lambda_, &testData->dHdLambda_, testData->invdt_,
             testData->v_.arrayRefWithPadding().unpaddedArrayRef(), testData->computeVirial_,
             testData->virialScaled_, gmx::ConstraintVariable::Positions, &testData->nrnb_, maxwarn,
             &warncount_lincs);

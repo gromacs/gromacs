@@ -47,7 +47,6 @@
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdlib/constr.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -155,13 +154,12 @@ public:
      * Information about constraints is taken from:
      *     idef.il[F_CONSTR].iatoms  --- type (T) of constraint and two atom indexes (i1, i2)
      *     idef.iparams[T].constr.dA --- target length for constraint of type T
-     * From t_mdatom, the code takes:
-     *     md.invmass  --- array of inverse square root of masses for each atom in the system.
      *
-     * \param[in] idef  Local topology data to get information on constraints from.
-     * \param[in] md    Atoms data to get atom masses from.
+     * \param[in] idef      Local topology data to get information on constraints from.
+     * \param[in] numAtoms  Number of atoms.
+     * \param[in] invmass   Inverse masses of atoms.
      */
-    void set(const InteractionDefinitions& idef, const t_mdatoms& md);
+    void set(const InteractionDefinitions& idef, int numAtoms, const real* invmass);
 
     /*! \brief
      * Returns whether the maximum number of coupled constraints is supported

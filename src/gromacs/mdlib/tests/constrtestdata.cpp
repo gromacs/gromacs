@@ -101,13 +101,6 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
     ir_.delta_t = timestep;
     ir_.eI      = 0;
 
-    // MD atoms data
-    md_.nMassPerturbed = 0;
-    md_.lambda         = 0.0;
-    md_.invmass        = invmass_.data();
-    md_.nr             = numAtoms;
-    md_.homenr         = numAtoms;
-
     // Virial evaluation
     computeVirial_ = computeVirial;
     if (computeVirial)
@@ -122,8 +115,9 @@ ConstraintsTestData::ConstraintsTestData(const std::string&       title,
         }
     }
 
-
     // Free energy evaluation
+    hasMassPerturbed_  = false;
+    lambda_            = 0.0;
     compute_dHdLambda_ = compute_dHdLambda;
     dHdLambda_         = 0;
     if (compute_dHdLambda_)

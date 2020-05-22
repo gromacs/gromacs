@@ -68,7 +68,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_simd.h"
 #include "gromacs/simd/simd.h"
@@ -575,7 +574,7 @@ static void do_lincsp(ArrayRefWithPadding<const RVec> xPadded,
                       t_pbc*                          pbc,
                       Lincs*                          lincsd,
                       int                             th,
-                      real*                           invmass,
+                      const real*                     invmass,
                       ConstraintVariable              econq,
                       bool                            bCalcDHDL,
                       bool                            bCalcVir,
@@ -1302,7 +1301,7 @@ static void set_lincs_matrix_task(Lincs* li, Task* li_task, const real* invmass,
 }
 
 /*! \brief Sets the elements in the LINCS matrix. */
-static void set_lincs_matrix(Lincs* li, real* invmass, real lambda)
+static void set_lincs_matrix(Lincs* li, const real* invmass, real lambda)
 {
     const real invsqrt2 = 0.7071067811865475244;
 
@@ -1850,7 +1849,13 @@ static void set_matrix_indices(Lincs* li, const Task& li_task, const ListOfLists
     }
 }
 
-void set_lincs(const InteractionDefinitions& idef, const t_mdatoms& md, bool bDynamics, const t_commrec* cr, Lincs* li)
+void set_lincs(const InteractionDefinitions& idef,
+               const int                     numAtoms,
+               const real*                   invmass,
+               const real                    lambda,
+               bool                          bDynamics,
+               const t_commrec*              cr,
+               Lincs*                        li)
 {
     li->nc_real = 0;
     li->nc      = 0;
@@ -1899,7 +1904,7 @@ void set_lincs(const InteractionDefinitions& idef, const t_mdatoms& md, bool bDy
     }
     else
     {
-        natoms = md.homenr;
+        natoms = numAtoms;
     }
 
     const ListOfLists<int> at2con =
@@ -2123,10 +2128,10 @@ void set_lincs(const InteractionDefinitions& idef, const t_mdatoms& md, bool bDy
 
     if (li->ntask > 1)
     {
-        lincs_thread_setup(li, md.nr);
+        lincs_thread_setup(li, numAtoms);
     }
 
-    set_lincs_matrix(li, md.invmass, md.lambda);
+    set_lincs_matrix(li, invmass, lambda);
 }
 
 //! Issues a warning when LINCS constraints cannot be satisfied.
@@ -2252,7 +2257,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      const t_inputrec&               ir,
                      int64_t                         step,
                      Lincs*                          lincsd,
-                     const t_mdatoms&                md,
+                     const real*                     invmass,
                      const t_commrec*                cr,
                      const gmx_multisim_t*           ms,
                      ArrayRefWithPadding<const RVec> xPadded,
@@ -2260,6 +2265,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      ArrayRef<RVec>                  min_proj,
                      const matrix                    box,
                      t_pbc*                          pbc,
+                     const bool                      hasMassPerturbed,
                      real                            lambda,
                      real*                           dvdlambda,
                      real                            invdt,
@@ -2299,9 +2305,9 @@ bool constrain_lincs(bool                            computeRmsd,
          */
         if (ir.efep != efepNO)
         {
-            if (md.nMassPerturbed && lincsd->matlam != md.lambda)
+            if (hasMassPerturbed && lincsd->matlam != lambda)
             {
-                set_lincs_matrix(lincsd, md.invmass, md.lambda);
+                set_lincs_matrix(lincsd, invmass, lambda);
             }
 
             for (int i = 0; i < lincsd->nc; i++)
@@ -2365,7 +2371,7 @@ bool constrain_lincs(bool                            computeRmsd,
 
                 clear_mat(lincsd->task[th].vir_r_m_dr);
 
-                do_lincs(xPadded, xprimePadded, box, pbc, lincsd, th, md.invmass, cr, bCalcDHDL,
+                do_lincs(xPadded, xprimePadded, box, pbc, lincsd, th, invmass, cr, bCalcDHDL,
                          ir.LincsWarnAngle, &bWarn, invdt, v, bCalcVir,
                          th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
             }
@@ -2444,7 +2450,7 @@ bool constrain_lincs(bool                            computeRmsd,
             {
                 int th = gmx_omp_get_thread_num();
 
-                do_lincsp(xPadded, xprimePadded, min_proj, pbc, lincsd, th, md.invmass, econq,
+                do_lincsp(xPadded, xprimePadded, min_proj, pbc, lincsd, th, invmass, econq,
                           bCalcDHDL, bCalcVir, th == 0 ? vir_r_m_dr : lincsd->task[th].vir_r_m_dr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

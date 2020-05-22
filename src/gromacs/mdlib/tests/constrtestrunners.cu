@@ -81,7 +81,7 @@ void applyLincsGpu(ConstraintsTestData* testData, t_pbc pbc)
     int     numAtoms         = testData->numAtoms_;
     float3 *d_x, *d_xp, *d_v;
 
-    lincsGpu->set(*testData->idef_, testData->md_);
+    lincsGpu->set(*testData->idef_, testData->numAtoms_, testData->invmass_.data());
     PbcAiuc pbcAiuc;
     setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 

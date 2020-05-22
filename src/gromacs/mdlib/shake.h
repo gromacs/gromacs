@@ -52,7 +52,6 @@
 struct InteractionList;
 class InteractionDefinitions;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
 
@@ -96,7 +95,7 @@ struct shakedata
 };
 
 //! Make SHAKE blocks when not using DD.
-void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, const t_mdatoms& md);
+void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, int numAtoms);
 
 //! Make SHAKE blocks when using DD.
 void make_shake_sblock_dd(shakedata* shaked, const InteractionList& ilcon);

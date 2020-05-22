@@ -56,7 +56,6 @@ struct gmx_multisim_t;
 class InteractionDefinitions;
 struct t_commrec;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
 
@@ -91,7 +90,9 @@ void done_lincs(Lincs* li);
 
 /*! \brief Initialize lincs stuff */
 void set_lincs(const InteractionDefinitions& idef,
-               const t_mdatoms&              md,
+               int                           numAtoms,
+               const real*                   invmass,
+               real                          lambda,
                bool                          bDynamics,
                const t_commrec*              cr,
                Lincs*                        li);
@@ -103,7 +104,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      const t_inputrec&               ir,
                      int64_t                         step,
                      Lincs*                          lincsd,
-                     const t_mdatoms&                md,
+                     const real*                     invmass,
                      const t_commrec*                cr,
                      const gmx_multisim_t*           ms,
                      ArrayRefWithPadding<const RVec> x,
@@ -111,6 +112,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      ArrayRef<RVec>                  min_proj,
                      const matrix                    box,
                      t_pbc*                          pbc,
+                     bool                            hasMassPerturbed,
                      real                            lambda,
                      real*                           dvdlambda,
                      real                            invdt,
