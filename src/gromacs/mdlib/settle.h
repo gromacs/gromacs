@@ -49,7 +49,6 @@
 struct gmx_mtop_t;
 struct InteractionList;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_pbc;
 
 namespace gmx
@@ -71,7 +70,11 @@ settledata* settle_init(const gmx_mtop_t& mtop);
 void settle_free(settledata* settled);
 
 /*! \brief Set up the indices for the settle constraints */
-void settle_set_constraints(settledata* settled, const InteractionList& il_settle, const t_mdatoms& mdatoms);
+void settle_set_constraints(settledata*            settled,
+                            const InteractionList& il_settle,
+                            int                    numHomeAtoms,
+                            const real*            masses,
+                            const real*            inverseMasses);
 
 /*! \brief Constrain coordinates using SETTLE.
  * Can be called on any number of threads.

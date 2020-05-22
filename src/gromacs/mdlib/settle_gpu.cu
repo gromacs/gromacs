@@ -605,7 +605,7 @@ SettleGpu::~SettleGpu()
     }
 }
 
-void SettleGpu::set(const InteractionDefinitions& idef, const t_mdatoms gmx_unused& md)
+void SettleGpu::set(const InteractionDefinitions& idef)
 {
     const int              nral1     = 1 + NRAL(F_SETTLE);
     const InteractionList& il_settle = idef.il[F_SETTLE];

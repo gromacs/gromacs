@@ -50,7 +50,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdlib/settle.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 #include "gromacs/topology/topology.h"
@@ -247,9 +247,8 @@ public:
      * SETTLEs atom ID's is taken from idef.il[F_SETTLE].iatoms.
      *
      * \param[in] idef    System topology
-     * \param[in] md      Atoms data. Can be used to update masses if needed (not used now).
      */
-    void set(const InteractionDefinitions& idef, const t_mdatoms& md);
+    void set(const InteractionDefinitions& idef);
 
 private:
     //! GPU context object

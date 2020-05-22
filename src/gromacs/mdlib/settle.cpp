@@ -242,7 +242,11 @@ void settle_free(settledata* settled)
     sfree(settled);
 }
 
-void settle_set_constraints(settledata* settled, const InteractionList& il_settle, const t_mdatoms& mdatoms)
+void settle_set_constraints(settledata*            settled,
+                            const InteractionList& il_settle,
+                            const int              numHomeAtoms,
+                            const real*            masses,
+                            const real*            inverseMasses)
 {
 #if GMX_SIMD_HAVE_REAL
     const int pack_size = GMX_SIMD_REAL_WIDTH;
@@ -263,9 +267,8 @@ void settle_set_constraints(settledata* settled, const InteractionList& il_settl
         {
             int firstO = iatoms[1];
             int firstH = iatoms[2];
-            settleparam_init(&settled->massw, mdatoms.massT[firstO], mdatoms.massT[firstH],
-                             mdatoms.invmass[firstO], mdatoms.invmass[firstH], settled->mass1.dOH,
-                             settled->mass1.dHH);
+            settleparam_init(&settled->massw, masses[firstO], masses[firstH], inverseMasses[firstO],
+                             inverseMasses[firstH], settled->mass1.dOH, settled->mass1.dHH);
         }
 
         if (nsettle + pack_size > settled->nalloc)
@@ -290,7 +293,7 @@ void settle_set_constraints(settledata* settled, const InteractionList& il_settl
              * SETTLEs that appear in multiple DD domains, so we only count
              * the contribution on the home range of the oxygen atom.
              */
-            settled->virfac[i] = (iatoms[i * nral1 + 1] < mdatoms.homenr ? 1 : 0);
+            settled->virfac[i] = (iatoms[i * nral1 + 1] < numHomeAtoms ? 1 : 0);
         }
 
         /* Pack the index array to the full SIMD width with copies from

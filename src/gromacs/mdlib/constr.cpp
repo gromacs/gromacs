@@ -904,7 +904,7 @@ void Constraints::Impl::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
 
     if (settled)
     {
-        settle_set_constraints(settled, idef->il[F_SETTLE], md);
+        settle_set_constraints(settled, idef->il[F_SETTLE], md.homenr, md.massT, md.invmass);
     }
 
     /* Make a selection of the local atoms for essential dynamics */

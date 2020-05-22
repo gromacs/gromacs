@@ -215,7 +215,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
     // Integrator should also update something, but it does not even have a method yet
     integrator_->set(md, numTempScaleValues, md.cTC);
     lincsGpu_->set(idef, md.nr, md.invmass);
-    settleGpu_->set(idef, md);
+    settleGpu_->set(idef);
 
     coordinateScalingKernelLaunchConfig_.gridSize[0] =
             (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;

@@ -120,18 +120,18 @@ SettleTestData::SettleTestData(int numSettles) :
     // Set up the masses.
     mtop_.moltype[0].atoms.atom =
             static_cast<t_atom*>(calloc(numSettles * atomsPerSettle_, sizeof(t_atom)));
-    mdatoms_.homenr  = numSettles * atomsPerSettle_;
-    mdatoms_.massT   = static_cast<real*>(calloc(mdatoms_.homenr, sizeof(real)));
-    mdatoms_.invmass = static_cast<real*>(calloc(mdatoms_.homenr, sizeof(real)));
+    numAtoms_ = numSettles * atomsPerSettle_;
+    masses_.resize(numAtoms_);
+    inverseMasses_.resize(numAtoms_);
     for (int i = 0; i < numSettles; ++i)
     {
-        mdatoms_.massT[i * atomsPerSettle_ + 0] = oxygenMass_;
-        mdatoms_.massT[i * atomsPerSettle_ + 1] = hydrogenMass_;
-        mdatoms_.massT[i * atomsPerSettle_ + 2] = hydrogenMass_;
+        masses_[i * atomsPerSettle_ + 0] = oxygenMass_;
+        masses_[i * atomsPerSettle_ + 1] = hydrogenMass_;
+        masses_[i * atomsPerSettle_ + 2] = hydrogenMass_;
 
-        mdatoms_.invmass[i * atomsPerSettle_ + 0] = 1.0 / oxygenMass_;
-        mdatoms_.invmass[i * atomsPerSettle_ + 1] = 1.0 / hydrogenMass_;
-        mdatoms_.invmass[i * atomsPerSettle_ + 2] = 1.0 / hydrogenMass_;
+        inverseMasses_[i * atomsPerSettle_ + 0] = 1.0 / oxygenMass_;
+        inverseMasses_[i * atomsPerSettle_ + 1] = 1.0 / hydrogenMass_;
+        inverseMasses_[i * atomsPerSettle_ + 2] = 1.0 / hydrogenMass_;
 
         mtop_.moltype[0].atoms.atom[i * atomsPerSettle_ + 0].m = oxygenMass_;
         mtop_.moltype[0].atoms.atom[i * atomsPerSettle_ + 1].m = hydrogenMass_;
@@ -142,11 +142,7 @@ SettleTestData::SettleTestData(int numSettles) :
     idef_->il[F_SETTLE] = mtop_.moltype[0].ilist[F_SETTLE];
 }
 
-SettleTestData::~SettleTestData()
-{
-    free(mdatoms_.massT);
-    free(mdatoms_.invmass);
-}
+SettleTestData::~SettleTestData() {}
 
 } // namespace test
 } // namespace gmx
