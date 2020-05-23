@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="HelpOutput"><![CDATA[
+SYNOPSIS
+
+test dump [-s <.tpr>] [-f <.xtc/.trr/...>] [-e <.edr>] [-cp <.cpt>]
+          [-p <.top>] [-mtx <.mtx>] [-om <.mdp>] [-[no]nr] [-[no]param]
+          [-[no]sys] [-[no]orgir]
+
+DESCRIPTION
+
+test dump reads a run input file (.tpr), a trajectory (.trr/.xtc/tng), an
+energy file (.edr), a checkpoint file (.cpt) or topology file (.top) and
+prints that to standard output in a readable format. This program is essential
+for checking your run input file in case of problems.
+
+OPTIONS
+
+Options to specify input files:
+
+ -s      <.tpr>                              (Opt.)
+           Run input file to dump
+ -f      <.xtc/.trr/...>                     (Opt.)
+           Trajectory file to dump: xtc trr cpt gro g96 pdb tng
+ -e      <.edr>                              (Opt.)
+           Energy file to dump
+ -cp     <.cpt>                              (Opt.)
+           Checkpoint file to dump
+ -p      <.top>                              (Opt.)
+           Topology file to dump
+ -mtx    <.mtx>                              (Opt.)
+           Hessian matrix to dump
+
+Options to specify output files:
+
+ -om     <.mdp>                              (Opt.)
+           grompp input file from run input file
+
+Other options:
+
+ -[no]nr                    (yes)
+           Show index numbers in output (leaving them out makes comparison
+           easier, but creates a useless topology)
+ -[no]param                 (no)
+           Show parameters for each bonded interaction (for comparing dumps,
+           it is useful to combine this with -nonr)
+ -[no]sys                   (no)
+           List the atoms and bonded interactions for the whole system instead
+           of for each molecule type
+ -[no]orgir                 (no)
+           Show input parameters from tpr as they were written by the version
+           that produced the file, instead of how the current version reads
+           them
+
+KNOWN ISSUES
+
+* The .mdp file produced by -om can not be read by grompp.
+]]></String>
+</ReferenceData>

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="HelpOutput"><![CDATA[
+SYNOPSIS
+
+test report-methods [-s [<.tpr/.gro/...>]] [-m [<.tex>]] [-o [<.out>]]
+
+DESCRIPTION
+
+test report-methods reports basic system information for the run input file
+specfied with -s either to the terminal, to a LaTeX formatted output file if
+run with the -m option or to an unformatted file with the -o option. The
+functionality has been moved here from its previous place in [gmx-check].
+
+OPTIONS
+
+Options to specify input files:
+
+ -s      [<.tpr/.gro/...>]  (topol.tpr)
+           Run input file for report: tpr gro g96 pdb brk ent
+
+Options to specify output files:
+
+ -m      [<.tex>]           (report.tex)     (Opt.)
+           LaTeX formatted report output
+ -o      [<.out>]           (report.out)     (Opt.)
+           Unformatted report output to file
+]]></String>
+</ReferenceData>

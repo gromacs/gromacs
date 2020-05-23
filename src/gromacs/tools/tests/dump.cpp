@@ -36,7 +36,7 @@
  * \brief
  * Tests for functionality of the "dump" tool.
  *
- * \author
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
  */
 #include "gmxpre.h"
 
