@@ -103,7 +103,7 @@ public:
     }
 
 private:
-    void printMessage() const
+    static void printMessage()
     {
         std::fprintf(stderr,
                      "This tool is no longer present in GROMACS. Please see\n"
@@ -176,7 +176,9 @@ void registerLegacyModules(gmx::CommandLineModuleManager* manager)
     gmx::ICommandLineOptionsModule::registerModuleFactory(
             manager, gmx::DumpInfo::name, gmx::DumpInfo::shortDescription, &gmx::DumpInfo::create);
     registerModule(manager, &gmx_grompp, "grompp", "Make a run input file");
-    registerModule(manager, &gmx_convert_tpr, "convert-tpr", "Make a modifed run-input file");
+    gmx::ICommandLineOptionsModule::registerModuleFactory(manager, gmx::ConvertTprInfo::name,
+                                                          gmx::ConvertTprInfo::shortDescription,
+                                                          &gmx::ConvertTprInfo::create);
     registerObsoleteTool(manager, "tpbconv");
     registerModule(manager, &gmx_x2top, "x2top", "Generate a primitive topology from coordinates");
 

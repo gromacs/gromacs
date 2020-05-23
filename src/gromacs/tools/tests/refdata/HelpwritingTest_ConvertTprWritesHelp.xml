@@ -1,14 +1,15 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="Help string">SYNOPSIS
+  <String Name="HelpOutput"><![CDATA[
+SYNOPSIS
 
-gmx [-s [&lt;.tpr&gt;]] [-n [&lt;.ndx&gt;]] [-o [&lt;.tpr&gt;]] [-extend &lt;real&gt;]
-    [-until &lt;real&gt;] [-nsteps &lt;int&gt;] [-[no]zeroq]
+test convert-tpr [-s [<.tpr/.gro/...>]] [-n [<.ndx>]] [-o [<.tpr/.gro/...>]]
+             [-extend <time>] [-until <time>] [-nsteps <int>] [-[no]zeroq]
 
 DESCRIPTION
 
-[THISMODULE] can edit run input files in three ways.
+test convert-tpr can edit run input files in three ways.
 
 1. by modifying the number of steps in a run input file with options -extend,
 -until or -nsteps (nsteps=-1 means unlimited number of steps)
@@ -26,25 +27,25 @@ OPTIONS
 
 Options to specify input files:
 
- -s      [&lt;.tpr&gt;]           (topol.tpr)
-           Portable xdr run input file
- -n      [&lt;.ndx&gt;]           (index.ndx)      (Opt.)
-           Index file
+ -s      [<.tpr/.gro/...>]  (topol.tpr)
+           Run input file to modify: tpr gro g96 pdb brk ent
+ -n      [<.ndx>]           (index.ndx)      (Opt.)
+           File containing additional index groups
 
 Options to specify output files:
 
- -o      [&lt;.tpr&gt;]           (tprout.tpr)
-           Portable xdr run input file
+ -o      [<.tpr/.gro/...>]  (tprout.tpr)     (Opt.)
+           Generated modified run input file: tpr gro g96 pdb brk ent
 
 Other options:
 
- -extend &lt;real&gt;             (0)
+ -extend <time>             (0)
            Extend runtime by this amount (ps)
- -until  &lt;real&gt;             (0)
+ -until  <time>             (0)
            Extend runtime until this ending time (ps)
- -nsteps &lt;int&gt;              (0)
+ -nsteps <int>              (0)
            Change the number of steps
  -[no]zeroq                 (no)
            Set the charges of a group (from the index) to zero
-</String>
+]]></String>
 </ReferenceData>

@@ -220,7 +220,7 @@ int SimulationRunner::changeTprNsteps(int nsteps)
     caller.addOption("-s", tprFileName_);
     caller.addOption("-o", tprFileName_);
 
-    return gmx_convert_tpr(caller.argc(), caller.argv());
+    return gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &caller);
 }
 
 int SimulationRunner::callNmeig()

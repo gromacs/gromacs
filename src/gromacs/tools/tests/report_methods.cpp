@@ -44,7 +44,9 @@
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"

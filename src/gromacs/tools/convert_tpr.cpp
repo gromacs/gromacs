@@ -41,7 +41,7 @@
 
 #include <cmath>
 
-#include "gromacs/commandline/pargs.h"
+#include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/tpxio.h"
@@ -50,6 +50,9 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/filenameoption.h"
+#include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/index.h"
@@ -63,12 +66,16 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#define RANGECHK(i, n)                                                                           \
-    if ((i) >= (n))                                                                              \
-    gmx_fatal(FARGS,                                                                             \
-              "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number " \
-              "of atoms in the tpr file (%d)",                                                   \
-              (i), (n))
+static void rangeCheck(int numberInIndexFile, int maxAtomNumber)
+{
+    if ((numberInIndexFile) >= (maxAtomNumber))
+    {
+        gmx_fatal(FARGS,
+                  "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number "
+                  "of atoms in the tpr file (%d)",
+                  (numberInIndexFile), (maxAtomNumber));
+    }
+}
 
 static std::vector<bool> bKeepIt(int gnx, int natoms, int index[])
 {
@@ -76,8 +83,8 @@ static std::vector<bool> bKeepIt(int gnx, int natoms, int index[])
 
     for (int i = 0; (i < gnx); i++)
     {
-        RANGECHK(index[i], natoms);
-        b[index[i]] = true;
+        rangeCheck(index[i], natoms);
+        b[index[i]] = TRUE;
     }
 
     return b;
@@ -89,7 +96,7 @@ static std::vector<int> invind(int gnx, int natoms, int index[])
 
     for (int i = 0; (i < gnx); i++)
     {
-        RANGECHK(index[i], natoms);
+        rangeCheck(index[i], natoms);
         inv[index[i]] = i;
     }
 
@@ -264,9 +271,51 @@ static void zeroq(const int index[], gmx_mtop_t* mtop)
     }
 }
 
-int gmx_convert_tpr(int argc, char* argv[])
+namespace gmx
 {
-    const char* desc[] = {
+
+namespace
+{
+
+class ConvertTpr : public ICommandLineOptionsModule
+{
+public:
+    ConvertTpr() {}
+
+    // From ICommandLineOptionsModule
+    void init(CommandLineModuleSettings* /*settings*/) override {}
+    void initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings) override;
+    void optionsFinished() override;
+    int  run() override;
+
+private:
+    //! Name of input tpr file.
+    std::string inputTprFileName_;
+    //! Name of input index file.
+    std::string inputIndexFileName_;
+    //! Name of output tpr file.
+    std::string outputTprFileName_;
+    //! If we have read in an index file.
+    bool haveReadIndexFile_ = false;
+    //! Time to extend simulation by.
+    real extendTime_ = 0;
+    //! If the option to extend simulation time is set.
+    bool extendTimeIsSet_ = false;
+    //! Final run time value.
+    real runToMaxTime_ = 0;
+    //! If the option to run simulation until specified time is set.
+    bool runToMaxTimeIsSet_ = false;
+    //! Maximum number of steps to run.
+    int64_t maxSteps_ = 0;
+    //! If the option to use maximumstep number is set.
+    bool maxStepsIsSet_ = false;
+    //! If the option to zero charge is set.
+    bool zeroQIsSet_ = false;
+};
+
+void ConvertTpr::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
+{
+    std::vector<const char*> desc = {
         "[THISMODULE] can edit run input files in three ways.[PAR]",
         "[BB]1.[bb] by modifying the number of steps in a run input file",
         "with options [TT]-extend[tt], [TT]-until[tt] or [TT]-nsteps[tt]",
@@ -283,111 +332,118 @@ int gmx_convert_tpr(int argc, char* argv[])
         "using the LIE (Linear Interaction Energy) method."
     };
 
-    const char*       top_fn;
-    int               i;
-    int64_t           nsteps_req, run_step;
-    double            run_t, state_t;
-    gmx_bool          bSel;
-    gmx_bool          bNsteps, bExtend, bUntil;
-    gmx_mtop_t        mtop;
-    t_atoms           atoms;
-    t_state           state;
-    int               gnx;
-    char*             grpname;
-    int*              index = nullptr;
-    char              buf[200], buf2[200];
-    gmx_output_env_t* oenv;
-    t_filenm          fnm[] = { { efTPR, nullptr, nullptr, ffREAD },
-                       { efNDX, nullptr, nullptr, ffOPTRD },
-                       { efTPR, "-o", "tprout", ffWRITE } };
-#define NFILE asize(fnm)
+    settings->setHelpText(desc);
 
-    /* Command line options */
-    static int      nsteps_req_int = 0;
-    static real     extend_t = 0.0, until_t = 0.0;
-    static gmx_bool bZeroQ = FALSE;
-    static t_pargs  pa[]   = {
-        { "-extend", FALSE, etREAL, { &extend_t }, "Extend runtime by this amount (ps)" },
-        { "-until", FALSE, etREAL, { &until_t }, "Extend runtime until this ending time (ps)" },
-        { "-nsteps", FALSE, etINT, { &nsteps_req_int }, "Change the number of steps" },
-        { "-zeroq",
-          FALSE,
-          etBOOL,
-          { &bZeroQ },
-          "Set the charges of a group (from the index) to zero" }
-    };
+    options->addOption(FileNameOption("s")
+                               .filetype(eftTopology)
+                               .inputFile()
+                               .required()
+                               .store(&inputTprFileName_)
+                               .defaultBasename("topol")
+                               .description("Run input file to modify"));
+    options->addOption(FileNameOption("n")
+                               .filetype(eftIndex)
+                               .inputFile()
+                               .store(&inputIndexFileName_)
+                               .storeIsSet(&haveReadIndexFile_)
+                               .defaultBasename("index")
+                               .description("File containing additional index groups"));
+    options->addOption(FileNameOption("o")
+                               .filetype(eftTopology)
+                               .outputFile()
+                               .store(&outputTprFileName_)
+                               .defaultBasename("tprout")
+                               .description("Generated modified run input file"));
+    options->addOption(RealOption("extend")
+                               .store(&extendTime_)
+                               .storeIsSet(&extendTimeIsSet_)
+                               .timeValue()
+                               .description("Extend runtime by this amount (ps)"));
+    options->addOption(RealOption("until")
+                               .store(&runToMaxTime_)
+                               .storeIsSet(&runToMaxTimeIsSet_)
+                               .timeValue()
+                               .description("Extend runtime until this ending time (ps)"));
+    options->addOption(
+            Int64Option("nsteps").store(&maxSteps_).storeIsSet(&maxStepsIsSet_).description("Change the number of steps"));
+    options->addOption(
+            BooleanOption("zeroq").store(&zeroQIsSet_).description("Set the charges of a group (from the index) to zero"));
+}
 
-    /* Parse the command line */
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
-    {
-        return 0;
-    }
+void ConvertTpr::optionsFinished() {}
 
-    /* Convert int to int64_t */
-    nsteps_req = nsteps_req_int;
-    bNsteps    = opt2parg_bSet("-nsteps", asize(pa), pa);
-    bExtend    = opt2parg_bSet("-extend", asize(pa), pa);
-    bUntil     = opt2parg_bSet("-until", asize(pa), pa);
+int ConvertTpr::run()
+{
+    gmx_mtop_t mtop;
+    t_atoms    atoms;
+    t_state    state;
+    char       buf[200], buf2[200];
 
-    top_fn = ftp2fn(efTPR, NFILE, fnm);
-    fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
+    fprintf(stderr, "Reading toplogy and stuff from %s\n", inputTprFileName_.c_str());
 
     t_inputrec  irInstance;
     t_inputrec* ir = &irInstance;
-    read_tpx_state(top_fn, ir, &state, &mtop);
-    run_step = ir->init_step;
-    run_t    = ir->init_step * ir->delta_t + ir->init_t;
+    read_tpx_state(inputTprFileName_.c_str(), ir, &state, &mtop);
+    int64_t currentMaxStep    = ir->init_step;
+    double  currentRunTime    = ir->init_step * ir->delta_t + ir->init_t;
+    real    currentMaxRunTime = 0.0;
 
-    if (bNsteps)
+    if (maxStepsIsSet_)
     {
-        fprintf(stderr, "Setting nsteps to %s\n", gmx_step_str(nsteps_req, buf));
-        ir->nsteps = nsteps_req;
+        fprintf(stderr, "Setting nsteps to %s\n", gmx_step_str(maxSteps_, buf));
+        ir->nsteps = maxSteps_;
     }
     else
     {
         /* Determine total number of steps remaining */
-        if (bExtend)
+        if (extendTimeIsSet_)
         {
-            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + gmx::roundToInt64(extend_t / ir->delta_t);
-            printf("Extending remaining runtime of by %g ps (now %s steps)\n", extend_t,
+            ir->nsteps = ir->nsteps - (currentMaxStep - ir->init_step)
+                         + gmx::roundToInt64(extendTime_ / ir->delta_t);
+            printf("Extending remaining runtime of by %g ps (now %s steps)\n", extendTime_,
                    gmx_step_str(ir->nsteps, buf));
         }
-        else if (bUntil)
+        else if (runToMaxTimeIsSet_)
         {
             printf("nsteps = %s, run_step = %s, current_t = %g, until = %g\n",
-                   gmx_step_str(ir->nsteps, buf), gmx_step_str(run_step, buf2), run_t, until_t);
-            ir->nsteps = gmx::roundToInt64((until_t - run_t) / ir->delta_t);
-            printf("Extending remaining runtime until %g ps (now %s steps)\n", until_t,
+                   gmx_step_str(ir->nsteps, buf), gmx_step_str(currentMaxStep, buf2),
+                   currentRunTime, runToMaxTime_);
+            ir->nsteps = gmx::roundToInt64((currentMaxRunTime - currentRunTime) / ir->delta_t);
+            printf("Extending remaining runtime until %g ps (now %s steps)\n", currentMaxRunTime,
                    gmx_step_str(ir->nsteps, buf));
         }
         else
         {
-            ir->nsteps -= run_step - ir->init_step;
+            ir->nsteps -= currentMaxStep - ir->init_step;
             /* Print message */
             printf("%s steps (%g ps) remaining from first run.\n", gmx_step_str(ir->nsteps, buf),
                    ir->nsteps * ir->delta_t);
         }
     }
 
-    if (bNsteps || bZeroQ || (ir->nsteps > 0))
+    if (maxStepsIsSet_ || zeroQIsSet_ || (ir->nsteps > 0))
     {
-        ir->init_step = run_step;
+        ir->init_step = currentMaxStep;
 
-        if (ftp2bSet(efNDX, NFILE, fnm) || !(bNsteps || bExtend || bUntil))
+        if (haveReadIndexFile_ || !(maxStepsIsSet_ || extendTimeIsSet_ || runToMaxTimeIsSet_))
         {
-            atoms = gmx_mtop_global_atoms(&mtop);
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
-            if (!bZeroQ)
+            atoms         = gmx_mtop_global_atoms(&mtop);
+            int   gnx     = 0;
+            int*  index   = nullptr;
+            char* grpname = nullptr;
+            get_index(&atoms, inputIndexFileName_.c_str(), 1, &gnx, &index, &grpname);
+            bool bSel = false;
+            if (!zeroQIsSet_)
             {
                 bSel = (gnx != state.natoms);
-                for (i = 0; ((i < gnx) && (!bSel)); i++)
+                for (int i = 0; ((i < gnx) && (!bSel)); i++)
                 {
                     bSel = (i != index[i]);
                 }
             }
             else
             {
-                bSel = FALSE;
+                bSel = false;
             }
             if (bSel)
             {
@@ -398,7 +454,7 @@ int gmx_convert_tpr(int argc, char* argv[])
                 reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
                 state.natoms = gnx;
             }
-            else if (bZeroQ)
+            else if (zeroQIsSet_)
             {
                 zeroq(index, &mtop);
                 fprintf(stderr, "Zero-ing charges for group %s\n", grpname);
@@ -409,13 +465,13 @@ int gmx_convert_tpr(int argc, char* argv[])
             }
         }
 
-        state_t = ir->init_t + ir->init_step * ir->delta_t;
+        double stateTime = ir->init_t + ir->init_step * ir->delta_t;
         sprintf(buf, "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10",
                 PRId64, "%10", PRId64);
         fprintf(stderr, buf, ir->init_step, ir->nsteps);
         fprintf(stderr, "                                 time %10.3f and length %10.3f ps\n",
-                state_t, ir->nsteps * ir->delta_t);
-        write_tpx_state(opt2fn("-o", NFILE, fnm), ir, &state, &mtop);
+                stateTime, ir->nsteps * ir->delta_t);
+        write_tpx_state(outputTprFileName_.c_str(), ir, &state, &mtop);
     }
     else
     {
@@ -424,3 +480,14 @@ int gmx_convert_tpr(int argc, char* argv[])
 
     return 0;
 }
+
+} // namespace
+
+const char ConvertTprInfo::name[]             = "convert-tpr";
+const char ConvertTprInfo::shortDescription[] = "Make a modifed run-input file";
+ICommandLineOptionsModulePointer ConvertTprInfo::create()
+{
+    return ICommandLineOptionsModulePointer(std::make_unique<ConvertTpr>());
+}
+
+} // namespace gmx

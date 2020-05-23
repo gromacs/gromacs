@@ -62,38 +62,19 @@ namespace test
 namespace
 {
 
-TEST(LegacyHelpwritingTest, ConvertTprWritesHelp)
-{
-    // Make a stream to which we want gmx convert-tpr -h to write the help.
-    StringOutputStream outputStream;
-    TextWriter         writer(&outputStream);
-
-    // Use that stream to set up a global help context. Legacy tools
-    // like convert-tpr call parse_common_args, which recognizes the
-    // existence of a global help context. That context triggers the
-    // writing of help and a fast exit of the tool.
-    HelpLinks*                   links = nullptr;
-    CommandLineHelpContext       context(&writer, eHelpOutputFormat_Console, links, "dummy");
-    GlobalCommandLineHelpContext global(context);
-
-    // Call convert-tpr to get the help printed to the stream
-    CommandLine caller;
-    caller.append("convert-tpr");
-    caller.append("-h");
-    ASSERT_EQ(0, gmx_convert_tpr(caller.argc(), caller.argv()));
-
-    // Check whether the stream matches the reference copy.
-    TestReferenceData    refData;
-    TestReferenceChecker checker(refData.rootChecker());
-    checker.checkString(outputStream.toString(), "Help string");
-};
-
-
 class HelpwritingTest : public gmx::test::CommandLineTestBase
 {
 public:
     void runTest(gmx::ICommandLineModule* module) { testWriteHelp(module); }
 };
+
+TEST_F(HelpwritingTest, ConvertTprWritesHelp)
+{
+    const std::unique_ptr<gmx::ICommandLineModule> module(gmx::ICommandLineOptionsModule::createModule(
+            "convert-tpr", "Dummy Info", ConvertTprInfo::create()));
+    runTest(module.get());
+};
+
 
 TEST_F(HelpwritingTest, DumpWritesHelp)
 {
