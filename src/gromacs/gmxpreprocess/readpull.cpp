@@ -54,6 +54,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -285,13 +286,12 @@ static void init_pull_coord(t_pull_coord* pcrd,
     }
 }
 
-char** read_pullparams(std::vector<t_inpfile>* inp, pull_params_t* pull, warninp_t wi)
+std::vector<std::string> read_pullparams(std::vector<t_inpfile>* inp, pull_params_t* pull, warninp_t wi)
 {
-    int    nscan, idum;
-    char** grpbuf;
-    char   buf[STRLEN];
-    char   provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
-    char   wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
+    int  nscan, idum;
+    char buf[STRLEN];
+    char provider[STRLEN], groups[STRLEN], dim_buf[STRLEN];
+    char wbuf[STRLEN], origin_buf[STRLEN], vec_buf[STRLEN];
 
     t_pull_group* pgrp;
     t_pull_coord* pcrd;
@@ -333,14 +333,15 @@ char** read_pullparams(std::vector<t_inpfile>* inp, pull_params_t* pull, warninp
     printStringNoNewline(inp, "Group and coordinate parameters");
 
     /* Read the pull groups */
-    snew(grpbuf, pull->ngroup);
+    std::vector<std::string> pullGroups(pull->ngroup);
+    char                     readBuffer[STRLEN];
     /* Group 0 is the absolute reference, we don't read anything for 0 */
     for (int groupNum = 1; groupNum < pull->ngroup; groupNum++)
     {
         pgrp = &pull->group[groupNum];
-        snew(grpbuf[groupNum], STRLEN);
         sprintf(buf, "pull-group%d-name", groupNum);
-        setStringEntry(inp, buf, grpbuf[groupNum], "");
+        setStringEntry(inp, buf, readBuffer, "");
+        pullGroups[groupNum] = readBuffer;
         sprintf(buf, "pull-group%d-weights", groupNum);
         setStringEntry(inp, buf, wbuf, "");
         sprintf(buf, "pull-group%d-pbcatom", groupNum);
@@ -414,10 +415,13 @@ char** read_pullparams(std::vector<t_inpfile>* inp, pull_params_t* pull, warninp
         init_pull_coord(pcrd, coordNum, dim_buf, origin_buf, vec_buf, wi);
     }
 
-    return grpbuf;
+    return pullGroups;
 }
 
-void make_pull_groups(pull_params_t* pull, char** pgnames, const t_blocka* grps, char** gnames)
+void make_pull_groups(pull_params_t*                   pull,
+                      gmx::ArrayRef<const std::string> pullGroupNames,
+                      const t_blocka*                  grps,
+                      char**                           gnames)
 {
     int           g, ig = -1, i;
     t_pull_group* pgrp;
@@ -433,19 +437,19 @@ void make_pull_groups(pull_params_t* pull, char** pgnames, const t_blocka* grps,
         pgrp                = &pull->group[g];
         pgrp->pbcatom_input = pgrp->pbcatom;
 
-        if (strcmp(pgnames[g], "") == 0)
+        if (pullGroupNames[g].empty())
         {
             gmx_fatal(FARGS, "Pull option pull_group%d required by grompp has not been set.", g);
         }
 
-        ig        = search_string(pgnames[g], grps->nr, gnames);
+        ig        = search_string(pullGroupNames[g].c_str(), grps->nr, gnames);
         pgrp->nat = grps->index[ig + 1] - grps->index[ig];
 
-        fprintf(stderr, "Pull group %d '%s' has %d atoms\n", g, pgnames[g], pgrp->nat);
+        fprintf(stderr, "Pull group %d '%s' has %d atoms\n", g, pullGroupNames[g].c_str(), pgrp->nat);
 
         if (pgrp->nat == 0)
         {
-            gmx_fatal(FARGS, "Pull group %d '%s' is empty", g, pgnames[g]);
+            gmx_fatal(FARGS, "Pull group %d '%s' is empty", g, pullGroupNames[g].c_str());
         }
 
         snew(pgrp->ind, pgrp->nat);
@@ -459,7 +463,7 @@ void make_pull_groups(pull_params_t* pull, char** pgnames, const t_blocka* grps,
             gmx_fatal(FARGS,
                       "Number of weights (%d) for pull group %d '%s' does not match the number of "
                       "atoms (%d)",
-                      pgrp->nweight, g, pgnames[g], pgrp->nat);
+                      pgrp->nweight, g, pullGroupNames[g].c_str(), pgrp->nat);
         }
 
         if (pgrp->nat == 1)

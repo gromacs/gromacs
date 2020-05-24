@@ -48,6 +48,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -70,10 +71,9 @@ static void string2dvec(char buf[], dvec nums)
 }
 
 
-extern char** read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, warninp_t wi)
+extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, warninp_t wi)
 {
     int       g, m;
-    char**    grpbuf;
     char      buf[STRLEN];
     char      warn_buf[STRLEN];
     dvec      vec;
@@ -98,15 +98,15 @@ extern char** read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, warninp_t 
     snew(rot->grp, rot->ngrp);
 
     /* Read the rotation groups */
-    snew(grpbuf, rot->ngrp);
+    std::vector<std::string> rotateGroups(rot->ngrp);
+    char                     readBuffer[STRLEN];
     for (g = 0; g < rot->ngrp; g++)
     {
         rotg = &rot->grp[g];
-        snew(grpbuf[g], STRLEN);
         printStringNoNewline(inp, "Rotation group name");
         sprintf(buf, "rot-group%d", g);
-        setStringEntry(inp, buf, grpbuf[g], "");
-
+        setStringEntry(inp, buf, readBuffer, "");
+        rotateGroups[g] = readBuffer;
         printStringNoNewline(inp,
                              "Rotation potential. Can be iso, iso-pf, pm, pm-pf, rm, rm-pf, rm2, "
                              "rm2-pf, flex, flex-t, flex2, flex2-t");
@@ -216,7 +216,7 @@ extern char** read_rotparams(std::vector<t_inpfile>* inp, t_rot* rot, warninp_t 
         rotg->PotAngle_step = get_ereal(inp, buf, 0.25, wi);
     }
 
-    return grpbuf;
+    return rotateGroups;
 }
 
 
@@ -308,7 +308,10 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
 }
 
 
-extern void make_rotation_groups(t_rot* rot, char** rotgnames, t_blocka* grps, char** gnames)
+extern void make_rotation_groups(t_rot*                           rot,
+                                 gmx::ArrayRef<const std::string> rotateGroupNames,
+                                 t_blocka*                        grps,
+                                 char**                           gnames)
 {
     int       g, ig = -1, i;
     t_rotgrp* rotg;
@@ -317,12 +320,13 @@ extern void make_rotation_groups(t_rot* rot, char** rotgnames, t_blocka* grps, c
     for (g = 0; g < rot->ngrp; g++)
     {
         rotg      = &rot->grp[g];
-        ig        = search_string(rotgnames[g], grps->nr, gnames);
+        ig        = search_string(rotateGroupNames[g].c_str(), grps->nr, gnames);
         rotg->nat = grps->index[ig + 1] - grps->index[ig];
 
         if (rotg->nat > 0)
         {
-            fprintf(stderr, "Rotation group %d '%s' has %d atoms\n", g, rotgnames[g], rotg->nat);
+            fprintf(stderr, "Rotation group %d '%s' has %d atoms\n", g, rotateGroupNames[g].c_str(),
+                    rotg->nat);
             snew(rotg->ind, rotg->nat);
             for (i = 0; i < rotg->nat; i++)
             {
@@ -331,7 +335,7 @@ extern void make_rotation_groups(t_rot* rot, char** rotgnames, t_blocka* grps, c
         }
         else
         {
-            gmx_fatal(FARGS, "Rotation group %d '%s' is empty", g, rotgnames[g]);
+            gmx_fatal(FARGS, "Rotation group %d '%s' is empty", g, rotateGroupNames[g].c_str());
         }
     }
 }

@@ -281,6 +281,24 @@ static void done_lambdas(t_lambda* fep)
     sfree(fep->all_lambda);
 }
 
+static void done_t_rot(t_rot* rot)
+{
+    if (rot == nullptr)
+    {
+        return;
+    }
+    if (rot->grp != nullptr)
+    {
+        for (int i = 0; i < rot->ngrp; i++)
+        {
+            sfree(rot->grp[i].ind);
+            sfree(rot->grp[i].x_ref);
+        }
+        sfree(rot->grp);
+    }
+    sfree(rot);
+}
+
 void done_inputrec(t_inputrec* ir)
 {
     sfree(ir->opts.nrdf);
@@ -308,6 +326,7 @@ void done_inputrec(t_inputrec* ir)
         done_pull_params(ir->pull);
         sfree(ir->pull);
     }
+    done_t_rot(ir->rot);
     delete ir->params;
 }
 

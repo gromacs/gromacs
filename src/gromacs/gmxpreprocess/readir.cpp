@@ -97,40 +97,39 @@
  * message.
  */
 
-typedef struct t_inputrec_strings
+struct gmx_inputrec_strings
 {
     char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN], acc[STRLEN], accgrps[STRLEN], freeze[STRLEN],
             frdim[STRLEN], energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN],
             x_compressed_groups[STRLEN], couple_moltype[STRLEN], orirefitgrp[STRLEN],
             egptable[STRLEN], egpexcl[STRLEN], wall_atomtype[STRLEN], wall_density[STRLEN],
             deform[STRLEN], QMMM[STRLEN], imd_grp[STRLEN];
-    char   fep_lambda[efptNR][STRLEN];
-    char   lambda_weights[STRLEN];
-    char** pull_grp;
-    char** rot_grp;
-    char   anneal[STRLEN], anneal_npoints[STRLEN], anneal_time[STRLEN], anneal_temp[STRLEN];
-    char   QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN], bSH[STRLEN],
+    char                     fep_lambda[efptNR][STRLEN];
+    char                     lambda_weights[STRLEN];
+    std::vector<std::string> pullGroupNames;
+    std::vector<std::string> rotateGroupNames;
+    char anneal[STRLEN], anneal_npoints[STRLEN], anneal_time[STRLEN], anneal_temp[STRLEN];
+    char QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN], bSH[STRLEN],
             CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN], SAoff[STRLEN], SAsteps[STRLEN];
+};
 
-} gmx_inputrec_strings;
-
-static gmx_inputrec_strings* is = nullptr;
+static gmx_inputrec_strings* inputrecStrings = nullptr;
 
 void init_inputrec_strings()
 {
-    if (is)
+    if (inputrecStrings)
     {
         gmx_incons(
                 "Attempted to call init_inputrec_strings before calling done_inputrec_strings. "
                 "Only one inputrec (i.e. .mdp file) can be parsed at a time.");
     }
-    snew(is, 1);
+    inputrecStrings = new gmx_inputrec_strings();
 }
 
 void done_inputrec_strings()
 {
-    sfree(is);
-    is = nullptr;
+    delete inputrecStrings;
+    inputrecStrings = nullptr;
 }
 
 
@@ -1888,7 +1887,7 @@ void get_ir(const char*     mdparin,
     printStringNoNewline(&inp, "number of steps for center of mass motion removal");
     ir->nstcomm = get_eint(&inp, "nstcomm", 100, wi);
     printStringNoNewline(&inp, "group(s) for center of mass motion removal");
-    setStringEntry(&inp, "comm-grps", is->vcm, nullptr);
+    setStringEntry(&inp, "comm-grps", inputrecStrings->vcm, nullptr);
 
     printStringNewline(&inp, "LANGEVIN DYNAMICS OPTIONS");
     printStringNoNewline(&inp, "Friction coefficient (amu/ps) and random seed");
@@ -1927,9 +1926,9 @@ void get_ir(const char*     mdparin,
     printStringNoNewline(&inp, "This selects the subset of atoms for the compressed");
     printStringNoNewline(&inp, "trajectory file. You can select multiple groups. By");
     printStringNoNewline(&inp, "default, all atoms will be written.");
-    setStringEntry(&inp, "compressed-x-grps", is->x_compressed_groups, nullptr);
+    setStringEntry(&inp, "compressed-x-grps", inputrecStrings->x_compressed_groups, nullptr);
     printStringNoNewline(&inp, "Selection of energy groups");
-    setStringEntry(&inp, "energygrps", is->energy, nullptr);
+    setStringEntry(&inp, "energygrps", inputrecStrings->energy, nullptr);
 
     /* Neighbor searching */
     printStringNewline(&inp, "NEIGHBORSEARCHING PARAMETERS");
@@ -1977,7 +1976,7 @@ void get_ir(const char*     mdparin,
     printStringNoNewline(&inp, "Extension of the potential lookup tables beyond the cut-off");
     ir->tabext = get_ereal(&inp, "table-extension", 1.0, wi);
     printStringNoNewline(&inp, "Separate tables between energy group pairs");
-    setStringEntry(&inp, "energygrp-table", is->egptable, nullptr);
+    setStringEntry(&inp, "energygrp-table", inputrecStrings->egptable, nullptr);
     printStringNoNewline(&inp, "Spacing for the PME/PPPM FFT grid");
     ir->fourier_spacing = get_ereal(&inp, "fourierspacing", 0.12, wi);
     printStringNoNewline(&inp, "FFT grid size, when a value is 0 fourierspacing will be used");
@@ -2005,10 +2004,10 @@ void get_ir(const char*     mdparin,
     ir->opts.nhchainlength = get_eint(&inp, "nh-chain-length", 10, wi);
     ir->bPrintNHChains = (get_eeenum(&inp, "print-nose-hoover-chain-variables", yesno_names, wi) != 0);
     printStringNoNewline(&inp, "Groups to couple separately");
-    setStringEntry(&inp, "tc-grps", is->tcgrps, nullptr);
+    setStringEntry(&inp, "tc-grps", inputrecStrings->tcgrps, nullptr);
     printStringNoNewline(&inp, "Time constant (ps) and reference temperature (K)");
-    setStringEntry(&inp, "tau-t", is->tau_t, nullptr);
-    setStringEntry(&inp, "ref-t", is->ref_t, nullptr);
+    setStringEntry(&inp, "tau-t", inputrecStrings->tau_t, nullptr);
+    setStringEntry(&inp, "ref-t", inputrecStrings->ref_t, nullptr);
     printStringNoNewline(&inp, "pressure coupling");
     ir->epc        = get_eeenum(&inp, "pcoupl", epcoupl_names, wi);
     ir->epct       = get_eeenum(&inp, "pcoupltype", epcoupltype_names, wi);
@@ -2024,40 +2023,40 @@ void get_ir(const char*     mdparin,
     printStringNewline(&inp, "OPTIONS FOR QMMM calculations");
     ir->bQMMM = (get_eeenum(&inp, "QMMM", yesno_names, wi) != 0);
     printStringNoNewline(&inp, "Groups treated Quantum Mechanically");
-    setStringEntry(&inp, "QMMM-grps", is->QMMM, nullptr);
+    setStringEntry(&inp, "QMMM-grps", inputrecStrings->QMMM, nullptr);
     printStringNoNewline(&inp, "QM method");
-    setStringEntry(&inp, "QMmethod", is->QMmethod, nullptr);
+    setStringEntry(&inp, "QMmethod", inputrecStrings->QMmethod, nullptr);
     printStringNoNewline(&inp, "QMMM scheme");
     const char* noQMMMSchemeName = "normal";
     get_eeenum(&inp, "QMMMscheme", &noQMMMSchemeName, wi);
     printStringNoNewline(&inp, "QM basisset");
-    setStringEntry(&inp, "QMbasis", is->QMbasis, nullptr);
+    setStringEntry(&inp, "QMbasis", inputrecStrings->QMbasis, nullptr);
     printStringNoNewline(&inp, "QM charge");
-    setStringEntry(&inp, "QMcharge", is->QMcharge, nullptr);
+    setStringEntry(&inp, "QMcharge", inputrecStrings->QMcharge, nullptr);
     printStringNoNewline(&inp, "QM multiplicity");
-    setStringEntry(&inp, "QMmult", is->QMmult, nullptr);
+    setStringEntry(&inp, "QMmult", inputrecStrings->QMmult, nullptr);
     printStringNoNewline(&inp, "Surface Hopping");
-    setStringEntry(&inp, "SH", is->bSH, nullptr);
+    setStringEntry(&inp, "SH", inputrecStrings->bSH, nullptr);
     printStringNoNewline(&inp, "CAS space options");
-    setStringEntry(&inp, "CASorbitals", is->CASorbitals, nullptr);
-    setStringEntry(&inp, "CASelectrons", is->CASelectrons, nullptr);
-    setStringEntry(&inp, "SAon", is->SAon, nullptr);
-    setStringEntry(&inp, "SAoff", is->SAoff, nullptr);
-    setStringEntry(&inp, "SAsteps", is->SAsteps, nullptr);
+    setStringEntry(&inp, "CASorbitals", inputrecStrings->CASorbitals, nullptr);
+    setStringEntry(&inp, "CASelectrons", inputrecStrings->CASelectrons, nullptr);
+    setStringEntry(&inp, "SAon", inputrecStrings->SAon, nullptr);
+    setStringEntry(&inp, "SAoff", inputrecStrings->SAoff, nullptr);
+    setStringEntry(&inp, "SAsteps", inputrecStrings->SAsteps, nullptr);
     printStringNoNewline(&inp, "Scale factor for MM charges");
     get_ereal(&inp, "MMChargeScaleFactor", 1.0, wi);
 
     /* Simulated annealing */
     printStringNewline(&inp, "SIMULATED ANNEALING");
     printStringNoNewline(&inp, "Type of annealing for each temperature group (no/single/periodic)");
-    setStringEntry(&inp, "annealing", is->anneal, nullptr);
+    setStringEntry(&inp, "annealing", inputrecStrings->anneal, nullptr);
     printStringNoNewline(&inp,
                          "Number of time points to use for specifying annealing in each group");
-    setStringEntry(&inp, "annealing-npoints", is->anneal_npoints, nullptr);
+    setStringEntry(&inp, "annealing-npoints", inputrecStrings->anneal_npoints, nullptr);
     printStringNoNewline(&inp, "List of times at the annealing points for each group");
-    setStringEntry(&inp, "annealing-time", is->anneal_time, nullptr);
+    setStringEntry(&inp, "annealing-time", inputrecStrings->anneal_time, nullptr);
     printStringNoNewline(&inp, "Temp. at each annealing point, for each group.");
-    setStringEntry(&inp, "annealing-temp", is->anneal_temp, nullptr);
+    setStringEntry(&inp, "annealing-temp", inputrecStrings->anneal_temp, nullptr);
 
     /* Startup run */
     printStringNewline(&inp, "GENERATE VELOCITIES FOR STARTUP RUN");
@@ -2093,7 +2092,7 @@ void get_ir(const char*     mdparin,
     printStringNewline(&inp, "ENERGY GROUP EXCLUSIONS");
     printStringNoNewline(
             &inp, "Pairs of energy groups for which all non-bonded interactions are excluded");
-    setStringEntry(&inp, "energygrp-excl", is->egpexcl, nullptr);
+    setStringEntry(&inp, "energygrp-excl", inputrecStrings->egpexcl, nullptr);
 
     /* Walls */
     printStringNewline(&inp, "WALLS");
@@ -2102,8 +2101,8 @@ void get_ir(const char*     mdparin,
     ir->nwall         = get_eint(&inp, "nwall", 0, wi);
     ir->wall_type     = get_eeenum(&inp, "wall-type", ewt_names, wi);
     ir->wall_r_linpot = get_ereal(&inp, "wall-r-linpot", -1, wi);
-    setStringEntry(&inp, "wall-atomtype", is->wall_atomtype, nullptr);
-    setStringEntry(&inp, "wall-density", is->wall_density, nullptr);
+    setStringEntry(&inp, "wall-atomtype", inputrecStrings->wall_atomtype, nullptr);
+    setStringEntry(&inp, "wall-density", inputrecStrings->wall_density, nullptr);
     ir->wall_ewald_zfac = get_ereal(&inp, "wall-ewald-zfac", 3, wi);
 
     /* COM pulling */
@@ -2112,7 +2111,7 @@ void get_ir(const char*     mdparin,
     if (ir->bPull)
     {
         snew(ir->pull, 1);
-        is->pull_grp = read_pullparams(&inp, ir->pull, wi);
+        inputrecStrings->pullGroupNames = read_pullparams(&inp, ir->pull, wi);
     }
 
     /* AWH biasing
@@ -2131,14 +2130,14 @@ void get_ir(const char*     mdparin,
     if (ir->bRot)
     {
         snew(ir->rot, 1);
-        is->rot_grp = read_rotparams(&inp, ir->rot, wi);
+        inputrecStrings->rotateGroupNames = read_rotparams(&inp, ir->rot, wi);
     }
 
     /* Interactive MD */
     ir->bIMD = FALSE;
     printStringNewline(&inp, "Group to display and/or manipulate in interactive MD session");
-    setStringEntry(&inp, "IMD-group", is->imd_grp, nullptr);
-    if (is->imd_grp[0] != '\0')
+    setStringEntry(&inp, "IMD-group", inputrecStrings->imd_grp, nullptr);
+    if (inputrecStrings->imd_grp[0] != '\0')
     {
         snew(ir->imd, 1);
         ir->bIMD = TRUE;
@@ -2162,14 +2161,14 @@ void get_ir(const char*     mdparin,
     printStringNoNewline(&inp, "Orientation restraints force constant and tau for time averaging");
     ir->orires_fc  = get_ereal(&inp, "orire-fc", 0.0, wi);
     ir->orires_tau = get_ereal(&inp, "orire-tau", 0.0, wi);
-    setStringEntry(&inp, "orire-fitgrp", is->orirefitgrp, nullptr);
+    setStringEntry(&inp, "orire-fitgrp", inputrecStrings->orirefitgrp, nullptr);
     printStringNoNewline(&inp, "Output frequency for trace(SD) and S to energy file");
     ir->nstorireout = get_eint(&inp, "nstorireout", 100, wi);
 
     /* free energy variables */
     printStringNewline(&inp, "Free energy variables");
     ir->efep = get_eeenum(&inp, "free-energy", efep_names, wi);
-    setStringEntry(&inp, "couple-moltype", is->couple_moltype, nullptr);
+    setStringEntry(&inp, "couple-moltype", inputrecStrings->couple_moltype, nullptr);
     opts->couple_lam0  = get_eeenum(&inp, "couple-lambda0", couple_lam, wi);
     opts->couple_lam1  = get_eeenum(&inp, "couple-lambda1", couple_lam, wi);
     opts->bCoupleIntra = (get_eeenum(&inp, "couple-intramol", yesno_names, wi) != 0);
@@ -2180,15 +2179,15 @@ void get_ir(const char*     mdparin,
     fep->init_fep_state = get_eint(&inp, "init-lambda-state", -1, wi);
     fep->delta_lambda   = get_ereal(&inp, "delta-lambda", 0.0, wi);
     fep->nstdhdl        = get_eint(&inp, "nstdhdl", 50, wi);
-    setStringEntry(&inp, "fep-lambdas", is->fep_lambda[efptFEP], nullptr);
-    setStringEntry(&inp, "mass-lambdas", is->fep_lambda[efptMASS], nullptr);
-    setStringEntry(&inp, "coul-lambdas", is->fep_lambda[efptCOUL], nullptr);
-    setStringEntry(&inp, "vdw-lambdas", is->fep_lambda[efptVDW], nullptr);
-    setStringEntry(&inp, "bonded-lambdas", is->fep_lambda[efptBONDED], nullptr);
-    setStringEntry(&inp, "restraint-lambdas", is->fep_lambda[efptRESTRAINT], nullptr);
-    setStringEntry(&inp, "temperature-lambdas", is->fep_lambda[efptTEMPERATURE], nullptr);
+    setStringEntry(&inp, "fep-lambdas", inputrecStrings->fep_lambda[efptFEP], nullptr);
+    setStringEntry(&inp, "mass-lambdas", inputrecStrings->fep_lambda[efptMASS], nullptr);
+    setStringEntry(&inp, "coul-lambdas", inputrecStrings->fep_lambda[efptCOUL], nullptr);
+    setStringEntry(&inp, "vdw-lambdas", inputrecStrings->fep_lambda[efptVDW], nullptr);
+    setStringEntry(&inp, "bonded-lambdas", inputrecStrings->fep_lambda[efptBONDED], nullptr);
+    setStringEntry(&inp, "restraint-lambdas", inputrecStrings->fep_lambda[efptRESTRAINT], nullptr);
+    setStringEntry(&inp, "temperature-lambdas", inputrecStrings->fep_lambda[efptTEMPERATURE], nullptr);
     fep->lambda_neighbors = get_eint(&inp, "calc-lambda-neighbors", 1, wi);
-    setStringEntry(&inp, "init-lambda-weights", is->lambda_weights, nullptr);
+    setStringEntry(&inp, "init-lambda-weights", inputrecStrings->lambda_weights, nullptr);
     fep->edHdLPrintEnergy   = get_eeenum(&inp, "dhdl-print-energy", edHdLPrintEnergy_names, wi);
     fep->sc_alpha           = get_ereal(&inp, "sc-alpha", 0.0, wi);
     fep->sc_power           = get_eint(&inp, "sc-power", 1, wi);
@@ -2204,12 +2203,12 @@ void get_ir(const char*     mdparin,
 
     /* Non-equilibrium MD stuff */
     printStringNewline(&inp, "Non-equilibrium MD stuff");
-    setStringEntry(&inp, "acc-grps", is->accgrps, nullptr);
-    setStringEntry(&inp, "accelerate", is->acc, nullptr);
-    setStringEntry(&inp, "freezegrps", is->freeze, nullptr);
-    setStringEntry(&inp, "freezedim", is->frdim, nullptr);
+    setStringEntry(&inp, "acc-grps", inputrecStrings->accgrps, nullptr);
+    setStringEntry(&inp, "accelerate", inputrecStrings->acc, nullptr);
+    setStringEntry(&inp, "freezegrps", inputrecStrings->freeze, nullptr);
+    setStringEntry(&inp, "freezedim", inputrecStrings->frdim, nullptr);
     ir->cos_accel = get_ereal(&inp, "cos-acceleration", 0, wi);
-    setStringEntry(&inp, "deform", is->deform, nullptr);
+    setStringEntry(&inp, "deform", inputrecStrings->deform, nullptr);
 
     /* simulated tempering variables */
     printStringNewline(&inp, "simulated tempering variables");
@@ -2350,8 +2349,8 @@ void get_ir(const char*     mdparin,
 
     /* User defined thingies */
     printStringNewline(&inp, "User defined thingies");
-    setStringEntry(&inp, "user1-grps", is->user1, nullptr);
-    setStringEntry(&inp, "user2-grps", is->user2, nullptr);
+    setStringEntry(&inp, "user1-grps", inputrecStrings->user1, nullptr);
+    setStringEntry(&inp, "user2-grps", inputrecStrings->user2, nullptr);
     ir->userint1  = get_eint(&inp, "userint1", 0, wi);
     ir->userint2  = get_eint(&inp, "userint2", 0, wi);
     ir->userint3  = get_eint(&inp, "userint3", 0, wi);
@@ -2460,11 +2459,11 @@ void get_ir(const char*     mdparin,
     }
 
     opts->couple_moltype = nullptr;
-    if (strlen(is->couple_moltype) > 0)
+    if (strlen(inputrecStrings->couple_moltype) > 0)
     {
         if (ir->efep != efepNO)
         {
-            opts->couple_moltype = gmx_strdup(is->couple_moltype);
+            opts->couple_moltype = gmx_strdup(inputrecStrings->couple_moltype);
             if (opts->couple_lam0 == opts->couple_lam1)
             {
                 warning(wi, "The lambda=0 and lambda=1 states for coupling are identical");
@@ -2520,7 +2519,7 @@ void get_ir(const char*     mdparin,
         {
             ir->bExpanded = TRUE;
         }
-        do_fep_params(ir, is->fep_lambda, is->lambda_weights, wi);
+        do_fep_params(ir, inputrecStrings->fep_lambda, inputrecStrings->lambda_weights, wi);
         if (ir->bSimTemp) /* done after fep params */
         {
             do_simtemp_params(ir);
@@ -2551,11 +2550,11 @@ void get_ir(const char*     mdparin,
 
     /* WALL PARAMETERS */
 
-    do_wall_params(ir, is->wall_atomtype, is->wall_density, opts, wi);
+    do_wall_params(ir, inputrecStrings->wall_atomtype, inputrecStrings->wall_density, opts, wi);
 
     /* ORIENTATION RESTRAINT PARAMETERS */
 
-    if (opts->bOrire && gmx::splitString(is->orirefitgrp).size() != 1)
+    if (opts->bOrire && gmx::splitString(inputrecStrings->orirefitgrp).size() != 1)
     {
         warning_error(wi, "ERROR: Need one orientation restraint fit group\n");
     }
@@ -2569,15 +2568,17 @@ void get_ir(const char*     mdparin,
     }
 
     double gmx_unused canary;
-    int ndeform = sscanf(is->deform, "%lf %lf %lf %lf %lf %lf %lf", &(dumdub[0][0]), &(dumdub[0][1]),
-                         &(dumdub[0][2]), &(dumdub[0][3]), &(dumdub[0][4]), &(dumdub[0][5]), &canary);
+    int ndeform = sscanf(inputrecStrings->deform, "%lf %lf %lf %lf %lf %lf %lf", &(dumdub[0][0]),
+                         &(dumdub[0][1]), &(dumdub[0][2]), &(dumdub[0][3]), &(dumdub[0][4]),
+                         &(dumdub[0][5]), &canary);
 
-    if (strlen(is->deform) > 0 && ndeform != 6)
+    if (strlen(inputrecStrings->deform) > 0 && ndeform != 6)
     {
-        warning_error(
-                wi, gmx::formatString(
-                            "Cannot parse exactly 6 box deformation velocities from string '%s'", is->deform)
-                            .c_str());
+        warning_error(wi,
+                      gmx::formatString(
+                              "Cannot parse exactly 6 box deformation velocities from string '%s'",
+                              inputrecStrings->deform)
+                              .c_str());
     }
     for (i = 0; i < 3; i++)
     {
@@ -3333,9 +3334,9 @@ void do_index(const char*                   mdparin,
 
     set_warning_line(wi, mdparin, -1);
 
-    auto temperatureCouplingTauValues       = gmx::splitString(is->tau_t);
-    auto temperatureCouplingReferenceValues = gmx::splitString(is->ref_t);
-    auto temperatureCouplingGroupNames      = gmx::splitString(is->tcgrps);
+    auto temperatureCouplingTauValues       = gmx::splitString(inputrecStrings->tau_t);
+    auto temperatureCouplingReferenceValues = gmx::splitString(inputrecStrings->ref_t);
+    auto temperatureCouplingGroupNames      = gmx::splitString(inputrecStrings->tcgrps);
     if (temperatureCouplingTauValues.size() != temperatureCouplingGroupNames.size()
         || temperatureCouplingReferenceValues.size() != temperatureCouplingGroupNames.size())
     {
@@ -3472,7 +3473,7 @@ void do_index(const char*                   mdparin,
     }
 
     /* Simulated annealing for each group. There are nr groups */
-    auto simulatedAnnealingGroupNames = gmx::splitString(is->anneal);
+    auto simulatedAnnealingGroupNames = gmx::splitString(inputrecStrings->anneal);
     if (simulatedAnnealingGroupNames.size() == 1
         && gmx::equalCaseInsensitive(simulatedAnnealingGroupNames[0], "N", 1))
     {
@@ -3519,7 +3520,7 @@ void do_index(const char*                   mdparin,
             if (bAnneal)
             {
                 /* Read the other fields too */
-                auto simulatedAnnealingPoints = gmx::splitString(is->anneal_npoints);
+                auto simulatedAnnealingPoints = gmx::splitString(inputrecStrings->anneal_npoints);
                 if (simulatedAnnealingPoints.size() != simulatedAnnealingGroupNames.size())
                 {
                     gmx_fatal(FARGS, "Found %zu annealing-npoints values for %zu groups\n",
@@ -3540,14 +3541,14 @@ void do_index(const char*                   mdparin,
                     numSimulatedAnnealingFields += ir->opts.anneal_npoints[i];
                 }
 
-                auto simulatedAnnealingTimes = gmx::splitString(is->anneal_time);
+                auto simulatedAnnealingTimes = gmx::splitString(inputrecStrings->anneal_time);
 
                 if (simulatedAnnealingTimes.size() != numSimulatedAnnealingFields)
                 {
                     gmx_fatal(FARGS, "Found %zu annealing-time values, wanted %zu\n",
                               simulatedAnnealingTimes.size(), numSimulatedAnnealingFields);
                 }
-                auto simulatedAnnealingTemperatures = gmx::splitString(is->anneal_temp);
+                auto simulatedAnnealingTemperatures = gmx::splitString(inputrecStrings->anneal_temp);
                 if (simulatedAnnealingTemperatures.size() != numSimulatedAnnealingFields)
                 {
                     gmx_fatal(FARGS, "Found %zu annealing-temp values, wanted %zu\n",
@@ -3635,14 +3636,14 @@ void do_index(const char*                   mdparin,
 
     if (ir->bPull)
     {
-        make_pull_groups(ir->pull, is->pull_grp, defaultIndexGroups, gnames);
+        make_pull_groups(ir->pull, inputrecStrings->pullGroupNames, defaultIndexGroups, gnames);
 
         make_pull_coords(ir->pull);
     }
 
     if (ir->bRot)
     {
-        make_rotation_groups(ir->rot, is->rot_grp, defaultIndexGroups, gnames);
+        make_rotation_groups(ir->rot, inputrecStrings->rotateGroupNames, defaultIndexGroups, gnames);
     }
 
     if (ir->eSwapCoords != eswapNO)
@@ -3653,15 +3654,15 @@ void do_index(const char*                   mdparin,
     /* Make indices for IMD session */
     if (ir->bIMD)
     {
-        make_IMD_group(ir->imd, is->imd_grp, defaultIndexGroups, gnames);
+        make_IMD_group(ir->imd, inputrecStrings->imd_grp, defaultIndexGroups, gnames);
     }
 
     gmx::IndexGroupsAndNames defaultIndexGroupsAndNames(
             *defaultIndexGroups, gmx::arrayRefFromArray(gnames, defaultIndexGroups->nr));
     notifier.preProcessingNotifications_.notify(defaultIndexGroupsAndNames);
 
-    auto accelerations          = gmx::splitString(is->acc);
-    auto accelerationGroupNames = gmx::splitString(is->accgrps);
+    auto accelerations          = gmx::splitString(inputrecStrings->acc);
+    auto accelerationGroupNames = gmx::splitString(inputrecStrings->accgrps);
     if (accelerationGroupNames.size() * DIM != accelerations.size())
     {
         gmx_fatal(FARGS, "Invalid Acceleration input: %zu groups and %zu acc. values",
@@ -3675,8 +3676,8 @@ void do_index(const char*                   mdparin,
 
     convertRvecs(wi, accelerations, "anneal-time", ir->opts.acc);
 
-    auto freezeDims       = gmx::splitString(is->frdim);
-    auto freezeGroupNames = gmx::splitString(is->freeze);
+    auto freezeDims       = gmx::splitString(inputrecStrings->frdim);
+    auto freezeGroupNames = gmx::splitString(inputrecStrings->freeze);
     if (freezeDims.size() != DIM * freezeGroupNames.size())
     {
         gmx_fatal(FARGS, "Invalid Freezing input: %zu groups and %zu freeze values",
@@ -3713,12 +3714,12 @@ void do_index(const char*                   mdparin,
         }
     }
 
-    auto energyGroupNames = gmx::splitString(is->energy);
+    auto energyGroupNames = gmx::splitString(inputrecStrings->energy);
     do_numbering(natoms, groups, energyGroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::EnergyOutput, restnm, egrptpALL_GENREST, bVerbose, wi);
     add_wall_energrps(groups, ir->nwall, symtab);
     ir->opts.ngener    = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
-    auto vcmGroupNames = gmx::splitString(is->vcm);
+    auto vcmGroupNames = gmx::splitString(inputrecStrings->vcm);
     do_numbering(natoms, groups, vcmGroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::MassCenterVelocityRemoval, restnm,
                  vcmGroupNames.empty() ? egrptpALL_GENREST : egrptpPART, bVerbose, wi);
@@ -3731,22 +3732,22 @@ void do_index(const char*                   mdparin,
     /* Now we have filled the freeze struct, so we can calculate NRDF */
     calc_nrdf(mtop, ir, gnames);
 
-    auto user1GroupNames = gmx::splitString(is->user1);
+    auto user1GroupNames = gmx::splitString(inputrecStrings->user1);
     do_numbering(natoms, groups, user1GroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::User1, restnm, egrptpALL_GENREST, bVerbose, wi);
-    auto user2GroupNames = gmx::splitString(is->user2);
+    auto user2GroupNames = gmx::splitString(inputrecStrings->user2);
     do_numbering(natoms, groups, user2GroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::User2, restnm, egrptpALL_GENREST, bVerbose, wi);
-    auto compressedXGroupNames = gmx::splitString(is->x_compressed_groups);
+    auto compressedXGroupNames = gmx::splitString(inputrecStrings->x_compressed_groups);
     do_numbering(natoms, groups, compressedXGroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::CompressedPositionOutput, restnm, egrptpONE, bVerbose, wi);
-    auto orirefFitGroupNames = gmx::splitString(is->orirefitgrp);
+    auto orirefFitGroupNames = gmx::splitString(inputrecStrings->orirefitgrp);
     do_numbering(natoms, groups, orirefFitGroupNames, defaultIndexGroups, gnames,
                  SimulationAtomGroupType::OrientationRestraintsFit, restnm, egrptpALL_GENREST,
                  bVerbose, wi);
 
     /* MiMiC QMMM input processing */
-    auto qmGroupNames = gmx::splitString(is->QMMM);
+    auto qmGroupNames = gmx::splitString(inputrecStrings->QMMM);
     if (qmGroupNames.size() > 1)
     {
         gmx_fatal(FARGS, "Currently, having more than one QM group in MiMiC is not supported");
@@ -3774,7 +3775,7 @@ void do_index(const char*                   mdparin,
     nr = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
     snew(ir->opts.egp_flags, nr * nr);
 
-    bExcl = do_egp_flag(ir, groups, "energygrp-excl", is->egpexcl, EGP_EXCL);
+    bExcl = do_egp_flag(ir, groups, "energygrp-excl", inputrecStrings->egpexcl, EGP_EXCL);
     if (bExcl && ir->cutoff_scheme == ecutsVERLET)
     {
         warning_error(wi, "Energy group exclusions are currently not supported");
@@ -3784,7 +3785,7 @@ void do_index(const char*                   mdparin,
         warning(wi, "Can not exclude the lattice Coulomb energy between energy groups");
     }
 
-    bTable = do_egp_flag(ir, groups, "energygrp-table", is->egptable, EGP_TABLE);
+    bTable = do_egp_flag(ir, groups, "energygrp-table", inputrecStrings->egptable, EGP_TABLE);
     if (bTable && !(ir->vdwtype == evdwUSER) && !(ir->coulombtype == eelUSER)
         && !(ir->coulombtype == eelPMEUSER) && !(ir->coulombtype == eelPMEUSERSWITCH))
     {
