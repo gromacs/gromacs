@@ -185,7 +185,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     t_atomtypes atomtypes;
     //! Groups of atoms for different purposes
     SimulationGroups groups;
-    //! The symbol table
+    //! The legacy symbol table
     t_symtab symtab;
     //! Tells whether we have valid molecule indices
     bool haveMoleculeIndices = false;

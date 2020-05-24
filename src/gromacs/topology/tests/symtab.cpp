@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Tests for legacy symbol table
+ * Tests for legacy symbol table and replacement.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  */
@@ -320,6 +320,7 @@ TEST_F(StringTableTest, NoDuplicatesInLargeTable)
     checkTable(table);
 }
 
+
 TEST_F(StringTableTest, CanWriteToBuffer)
 {
     builder().addString("foo");
@@ -385,6 +386,22 @@ TEST_F(StringTableTest, RoundtripWithCorrectStringIndices)
     EXPECT_EQ(*(finalTable.at(2)), *(deserializedEntries[2]));
 }
 
+TEST_F(StringTableTest, CanCopyToLegacyTable)
+{
+    auto fooSymbol = builder().addString("foo");
+    auto barSymbol = builder().addString("Bar");
+
+    StringTable finalTable = builder().build();
+
+    t_symtab legacySymtab;
+    open_symtab(&legacySymtab);
+    finalTable.copyToLegacySymtab(&legacySymtab);
+    int fooEntryIndex = readIndexFromSerializer(fooSymbol);
+    int barEntryIndex = readIndexFromSerializer(barSymbol);
+    EXPECT_STREQ(finalTable.at(fooEntryIndex)->c_str(), *get_symtab_handle(&legacySymtab, fooEntryIndex));
+    EXPECT_STREQ(finalTable.at(barEntryIndex)->c_str(), *get_symtab_handle(&legacySymtab, barEntryIndex));
+    done_symtab(&legacySymtab);
+}
 
 namespace
 {

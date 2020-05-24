@@ -114,6 +114,15 @@ public:
     //! Print human readable format of storage.
     void printStringTableStorageToFile(FILE* fp, int indent, const char* title) const;
 
+    /*! \brief
+     * Copy data in new datastructure to legacy version.
+     *
+     * The legacy datastructures need to be already initialized.
+     *
+     * \param[in] symtab Legacy symbol table to add entries to.
+     */
+    void copyToLegacySymtab(struct t_symtab* symtab) const;
+
     friend class StringTableBuilder;
 
 private:

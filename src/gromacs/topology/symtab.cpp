@@ -163,6 +163,14 @@ StringTableEntry readStringTableEntry(gmx::ISerializer* serializer, const String
     return table.at(entry);
 }
 
+void StringTable::copyToLegacySymtab(struct t_symtab* symtab) const
+{
+    for (const auto& entry : table_)
+    {
+        put_symtab(symtab, entry.c_str());
+    }
+}
+
 // Old code for legacy data structure starts below.
 //! Maximum size of character string in table.
 constexpr int c_trimSize = 1024;
