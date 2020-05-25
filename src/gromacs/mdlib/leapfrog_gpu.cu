@@ -59,6 +59,7 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/group.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 #include "gromacs/utility/arrayref.h"
@@ -335,16 +336,19 @@ LeapFrogGpu::~LeapFrogGpu()
     freeDeviceBuffer(&d_inverseMasses_);
 }
 
-void LeapFrogGpu::set(const t_mdatoms& md, const int numTempScaleValues, const unsigned short* tempScaleGroups)
+void LeapFrogGpu::set(const int             numAtoms,
+                      const real*           inverseMasses,
+                      const int             numTempScaleValues,
+                      const unsigned short* tempScaleGroups)
 {
-    numAtoms_                       = md.nr;
+    numAtoms_                       = numAtoms;
     kernelLaunchConfig_.gridSize[0] = (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
 
     numTempScaleValues_ = numTempScaleValues;
 
     reallocateDeviceBuffer(&d_inverseMasses_, numAtoms_, &numInverseMasses_,
                            &numInverseMassesAlloc_, deviceContext_);
-    copyToDeviceBuffer(&d_inverseMasses_, (float*)md.invmass, 0, numAtoms_, deviceStream_,
+    copyToDeviceBuffer(&d_inverseMasses_, (float*)inverseMasses, 0, numAtoms_, deviceStream_,
                        GpuApiCallBehavior::Sync, nullptr);
 
     // Temperature scale group map only used if there are more then one group

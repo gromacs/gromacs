@@ -44,15 +44,16 @@
 #ifndef GMX_MDLIB_LEAPFROG_GPU_CUH
 #define GMX_MDLIB_LEAPFROG_GPU_CUH
 
-#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/mdtypes/group.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
+
+class DeviceContext;
+class DeviceStream;
+struct t_grp_tcstat;
 
 namespace gmx
 {
@@ -102,11 +103,15 @@ public:
      * and temperature coupling groups. Copies inverse masses and temperature coupling groups
      * to the GPU.
      *
-     * \param[in] md                  MD atoms, from which inverse masses are taken.
+     * \param[in] numAtoms            Number of atoms in the system.
+     * \param[in] inverseMasses       Inverse masses of atoms.
      * \param[in] numTempScaleValues  Number of temperature scale groups.
      * \param[in] tempScaleGroups     Maps the atom index to temperature scale value.
      */
-    void set(const t_mdatoms& md, int numTempScaleValues, const unsigned short* tempScaleGroups);
+    void set(const int             numAtoms,
+             const real*           inverseMasses,
+             int                   numTempScaleValues,
+             const unsigned short* tempScaleGroups);
 
     /*! \brief Class with hardware-specific interfaces and implementations.*/
     class Impl;

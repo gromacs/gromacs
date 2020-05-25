@@ -66,6 +66,7 @@
 #include "gromacs/mdlib/lincs_gpu.cuh"
 #include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/mdlib/update_constrain_gpu.h"
+#include "gromacs/mdtypes/mdatom.h"
 
 namespace gmx
 {
@@ -213,8 +214,8 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
                            &numInverseMassesAlloc_, deviceContext_);
 
     // Integrator should also update something, but it does not even have a method yet
-    integrator_->set(md, numTempScaleValues, md.cTC);
-    lincsGpu_->set(idef, md.nr, md.invmass);
+    integrator_->set(numAtoms_, md.invmass, numTempScaleValues, md.cTC);
+    lincsGpu_->set(idef, numAtoms_, md.invmass);
     settleGpu_->set(idef);
 
     coordinateScalingKernelLaunchConfig_.gridSize[0] =
