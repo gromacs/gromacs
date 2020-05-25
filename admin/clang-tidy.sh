@@ -174,7 +174,7 @@ cd $tmpdir/new
 if [[ $tidy_mode != "off" &&  -s $tmpdir/filelist_clangtidy ]] ; then
     $RUN_CLANG_TIDY `cat $tmpdir/filelist_clangtidy` -header-filter=.* -j $concurrency -fix -quiet -extra-arg=--cuda-host-only -extra-arg=-nocudainc>$tmpdir/clang-tidy.out 2>&1
     awk '/warning/,/clang-tidy|^$/' $tmpdir/clang-tidy.out | grep -v "warnings generated." | grep -v "Suppressed .* warnings" | grep -v "clang-analyzer"  | grep -v "to display errors from all non" | sed '/^\s*$/d' > $tmpdir/clang-tidy-warnings.out
-    awk '/.*\berror\b.(' $tmpdir/clang-tidy.out > $tmpdir/clang-tidy-errors.out || true
+    awk '/.*\berror\b.(/' $tmpdir/clang-tidy.out > $tmpdir/clang-tidy-errors.out || true
     if [ -s $tmpdir/clang-tidy-errors.out ]; then
         echo "Running of clang-tidy failed. Check output below for errors:"
         cat $tmpdir/clang-tidy-errors.out
