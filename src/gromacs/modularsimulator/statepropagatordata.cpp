@@ -113,7 +113,7 @@ StatePropagatorData::StatePropagatorData(int                            numAtoms
     {
         auto localState = std::make_unique<t_state>();
         dd_init_local_state(cr->dd, globalState, localState.get());
-        stateHasVelocities = ((static_cast<unsigned int>(localState->flags) & (1U << estV)) != 0u);
+        stateHasVelocities = ((static_cast<unsigned int>(localState->flags) & (1U << estV)) != 0U);
         setLocalState(std::move(localState));
     }
     else
@@ -124,7 +124,7 @@ StatePropagatorData::StatePropagatorData(int                            numAtoms
         x_           = globalState->x;
         v_           = globalState->v;
         copy_mat(globalState->box, box_);
-        stateHasVelocities = ((static_cast<unsigned int>(globalState->flags) & (1U << estV)) != 0u);
+        stateHasVelocities = ((static_cast<unsigned int>(globalState->flags) & (1U << estV)) != 0U);
         previousX_.resizeWithPadding(localNAtoms_);
         ddpCount_ = globalState->ddp_count;
         copyPosition();
@@ -489,7 +489,7 @@ void StatePropagatorData::trajectoryWriterTeardown(gmx_mdoutf* gmx_unused outf)
 
 SignallerCallbackPtr StatePropagatorData::registerLastStepCallback()
 {
-    return std::make_unique<SignallerCallback>([this](Step step, Time) {
+    return std::make_unique<SignallerCallback>([this](Step step, Time /*time*/) {
         lastStep_               = step;
         isRegularSimulationEnd_ = (step == lastPlannedStep_);
     });
