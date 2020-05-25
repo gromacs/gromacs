@@ -99,7 +99,7 @@ struct DDPairInteractionRanges
     gmx::IVec shift1 = { 0, 0, 0 };
 };
 
-typedef struct
+typedef struct gmx_domdec_zone_size
 {
     /* Zone lower corner in triclinic coordinates         */
     gmx::RVec x0 = { 0, 0, 0 };

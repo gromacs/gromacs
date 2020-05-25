@@ -164,7 +164,7 @@ typedef struct
  *
  * \ingroup module_selection
  */
-typedef struct
+typedef struct partition
 {
     /** Number of partition items (\p p contains \p n+1 items). */
     int n;
@@ -182,7 +182,7 @@ typedef struct
  *
  * \ingroup module_selection
  */
-typedef struct
+typedef struct spheresurfacebin
 {
     /** Number of points in the array \p x, -1 if whole bin covered. */
     int n;
@@ -200,7 +200,7 @@ typedef struct
  *
  * \ingroup module_selection
  */
-typedef struct
+typedef struct methoddata_insolidangle
 {
     /** Center of the solid angle. */
     gmx_ana_pos_t center;

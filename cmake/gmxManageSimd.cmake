@@ -397,7 +397,7 @@ if(NOT DEFINED GMX_SIMD_CALLING_CONVENTION)
         # ignored (e.g. clang on ARM), and in such cases we want this
         # check to lead to using no attribute in subsequent GROMACS
         # compilation, to avoid issuing the warning for lots of files.
-        check_c_source_compiles("
+        check_cxx_source_compiles("
 #pragma GCC diagnostic error \"-Wignored-attributes\"
 int ${callconv} f(int i) {return i;} int main(void) {return f(0);}
 " ${callconv_compile_var})

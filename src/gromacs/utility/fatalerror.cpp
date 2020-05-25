@@ -65,8 +65,7 @@
 
 #include "errorformat.h"
 
-static bool       bDebug = false;
-static gmx::Mutex where_mutex;
+static bool bDebug = false;
 
 FILE*    debug        = nullptr;
 gmx_bool gmx_debug_at = FALSE;

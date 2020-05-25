@@ -56,7 +56,7 @@
 /*! \internal \brief
  * Data structure for the \p permute selection modifier.
  */
-typedef struct
+typedef struct methoddata_permute
 {
     /** Positions to permute. */
     gmx_ana_pos_t p;

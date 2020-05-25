@@ -56,7 +56,7 @@
 /*! \internal \brief
  * Data structure for the merging selection modifiers.
  */
-typedef struct
+typedef struct methoddata_merge
 {
     /** Input positions. */
     gmx_ana_pos_t p1;

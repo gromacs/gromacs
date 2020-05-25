@@ -171,7 +171,7 @@ struct nbnxn_ci_t
 };
 
 //! Grouped pair-list i-unit
-typedef struct
+typedef struct nbnxn_sci
 {
     //! Returns the number of j-cluster groups in this entry
     int numJClusterGroups() const { return cj4_ind_end - cj4_ind_start; }

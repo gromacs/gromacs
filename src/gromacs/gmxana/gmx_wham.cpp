@@ -224,7 +224,7 @@ typedef struct
 } t_coordselection;
 
 //! Parameters of WHAM
-typedef struct // NOLINT(clang-analyzer-optin.performance.Padding)
+typedef struct UmbrellaOptions // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     /*!
      * \name Input stuff

@@ -117,7 +117,7 @@ using gmx::RVec;
 using gmx::VirtualSitesHandler;
 
 //! Utility structure for manipulating states during EM
-typedef struct
+typedef struct em_state
 {
     //! Copy of the global state
     t_state s;
