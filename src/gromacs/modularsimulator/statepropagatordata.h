@@ -151,6 +151,8 @@ public:
     const rvec* constPreviousBox() const;
     //! Get the local number of atoms
     int localNumAtoms();
+    //! Get the total number of atoms
+    int totalNumAtoms();
 
     /*! \brief Register run function for step / time
      *

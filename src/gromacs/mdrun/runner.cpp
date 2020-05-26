@@ -1579,8 +1579,8 @@ int Mdrunner::mdrunner()
         }
 
         /* Let makeConstraints know whether we have essential dynamics constraints. */
-        auto constr = makeConstraints(mtop, *inputrec, pull_work, doEssentialDynamics, fplog,
-                                      *mdAtoms->mdatoms(), cr, ms, &nrnb, wcycle, fr->bMolPBC);
+        auto constr = makeConstraints(mtop, *inputrec, pull_work, doEssentialDynamics, fplog, cr,
+                                      ms, &nrnb, wcycle, fr->bMolPBC);
 
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),

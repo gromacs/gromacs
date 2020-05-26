@@ -67,7 +67,6 @@ struct pull_t;
 struct t_commrec;
 struct t_ilist;
 struct t_inputrec;
-struct t_mdatoms;
 struct t_nrnb;
 struct t_pbc;
 class t_state;
@@ -107,7 +106,6 @@ private:
                 const t_inputrec&     ir,
                 pull_t*               pull_work,
                 FILE*                 log,
-                const t_mdatoms&      md,
                 const t_commrec*      cr,
                 const gmx_multisim_t* ms,
                 t_nrnb*               nrnb,
@@ -134,7 +132,14 @@ public:
      *
      * \todo Make this a callback that is called automatically
      * once a new domain has been made. */
-    void setConstraints(gmx_localtop_t* top, const t_mdatoms& md);
+    void setConstraints(gmx_localtop_t* top,
+                        int             numAtoms,
+                        int             numHomeAtoms,
+                        real*           masses,
+                        real*           inverseMasses,
+                        bool            hasMassPerturbedAtoms,
+                        real            lambda,
+                        unsigned short* cFREEZE);
 
     /*! \brief Applies constraints to coordinates.
      *
@@ -304,8 +309,8 @@ bool inter_charge_group_settles(const gmx_mtop_t& mtop);
 void do_constrain_first(FILE*                     log,
                         gmx::Constraints*         constr,
                         const t_inputrec*         inputrec,
-                        const t_mdatoms*          md,
-                        int                       natoms,
+                        int                       numAtoms,
+                        int                       numHomeAtoms,
                         ArrayRefWithPadding<RVec> x,
                         ArrayRefWithPadding<RVec> v,
                         const matrix              box,

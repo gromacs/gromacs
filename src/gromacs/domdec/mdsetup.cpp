@@ -144,7 +144,8 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
 
     if (constr)
     {
-        constr->setConstraints(top, *mdatoms);
+        constr->setConstraints(top, mdatoms->nr, mdatoms->homenr, mdatoms->massT, mdatoms->invmass,
+                               mdatoms->nMassPerturbed != 0, mdatoms->lambda, mdatoms->cFREEZE);
     }
 }
 

@@ -68,7 +68,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -102,7 +101,6 @@ public:
          const t_inputrec&     ir_p,
          pull_t*               pull_work,
          FILE*                 log_p,
-         const t_mdatoms&      md_p,
          const t_commrec*      cr_p,
          const gmx_multisim_t* ms,
          t_nrnb*               nrnb,
@@ -111,7 +109,14 @@ public:
          int                   numConstraints,
          int                   numSettles);
     ~Impl();
-    void setConstraints(gmx_localtop_t* top, const t_mdatoms& md);
+    void setConstraints(gmx_localtop_t* top,
+                        int             numAtoms,
+                        int             numHomeAtoms,
+                        real*           masses,
+                        real*           inverseMasses,
+                        bool            hasMassPerturbedAtoms,
+                        real            lambda,
+                        unsigned short* cFREEZE);
     bool apply(bool                      bLog,
                bool                      bEner,
                int64_t                   step,
@@ -158,8 +163,20 @@ public:
     const gmx_mtop_t& mtop;
     //! Parameters for the interactions in this domain.
     const InteractionDefinitions* idef = nullptr;
-    //! Data about atoms in this domain.
-    const t_mdatoms& md;
+    //! Total number of atoms.
+    int numAtoms_ = 0;
+    //! Number of local atoms.
+    int numHomeAtoms_ = 0;
+    //! Atoms masses.
+    real* masses_;
+    //! Inverse masses.
+    real* inverseMasses_;
+    //! If there are atoms with perturbed mass (for FEP).
+    bool hasMassPerturbedAtoms_;
+    //! FEP lambda value.
+    real lambda_;
+    //! Freeze groups data
+    unsigned short* cFREEZE_;
     //! Whether we need to do pbc for handling bonds.
     bool pbcHandlingRequired_ = false;
 
@@ -356,7 +373,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                               ConstraintVariable        econq)
 {
     bool   bOK, bDump;
-    int    start, homenr;
+    int    start;
     tensor vir_r_m_dr;
     real   scaled_delta_t;
     real   invdt, vir_fac = 0, t;
@@ -378,8 +395,7 @@ bool Constraints::Impl::apply(bool                      bLog,
     bOK   = TRUE;
     bDump = FALSE;
 
-    start  = 0;
-    homenr = md.homenr;
+    start = 0;
 
     scaled_delta_t = step_scaling * ir.delta_t;
 
@@ -457,8 +473,8 @@ bool Constraints::Impl::apply(bool                      bLog,
 
     if (lincsd != nullptr)
     {
-        bOK = constrain_lincs(bLog || bEner, ir, step, lincsd, md.invmass, cr, ms, x, xprime,
-                              min_proj, box, pbc_null, md.nMassPerturbed != 0, lambda, dvdlambda,
+        bOK = constrain_lincs(bLog || bEner, ir, step, lincsd, inverseMasses_, cr, ms, x, xprime,
+                              min_proj, box, pbc_null, hasMassPerturbedAtoms_, lambda, dvdlambda,
                               invdt, v.unpaddedArrayRef(), vir != nullptr, vir_r_m_dr, econq, nrnb,
                               maxwarn, &warncount_lincs);
         if (!bOK && maxwarn < INT_MAX)
@@ -474,7 +490,7 @@ bool Constraints::Impl::apply(bool                      bLog,
 
     if (shaked != nullptr)
     {
-        bOK = constrain_shake(log, shaked.get(), md.invmass, *idef, ir, x.unpaddedArrayRef(),
+        bOK = constrain_shake(log, shaked.get(), inverseMasses_, *idef, ir, x.unpaddedArrayRef(),
                               xprime.unpaddedArrayRef(), min_proj, pbc_null, nrnb, lambda,
                               dvdlambda, invdt, v.unpaddedArrayRef(), vir != nullptr, vir_r_m_dr,
                               maxwarn < INT_MAX, econq);
@@ -540,7 +556,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                         }
                         else
                         {
-                            calcvir_atom_end = md.homenr;
+                            calcvir_atom_end = numHomeAtoms_;
                         }
 
                         if (th > 0)
@@ -646,7 +662,7 @@ bool Constraints::Impl::apply(bool                      bLog,
 
     if (bDump)
     {
-        dump_confs(log, step, mtop, start, homenr, cr, x.unpaddedArrayRef(),
+        dump_confs(log, step, mtop, start, numHomeAtoms_, cr, x.unpaddedArrayRef(),
                    xprime.unpaddedArrayRef(), box);
     }
 
@@ -663,7 +679,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                 t = ir.init_t;
             }
             set_pbc(&pbc, ir.pbcType, box);
-            pull_constraint(pull_work, md.massT, &pbc, cr, ir.delta_t, t,
+            pull_constraint(pull_work, masses_, &pbc, cr, ir.delta_t, t,
                             as_rvec_array(x.unpaddedArrayRef().data()),
                             as_rvec_array(xprime.unpaddedArrayRef().data()),
                             as_rvec_array(v.unpaddedArrayRef().data()), *vir);
@@ -677,7 +693,7 @@ bool Constraints::Impl::apply(bool                      bLog,
     }
     wallcycle_stop(wcycle, ewcCONSTR);
 
-    if (!v.empty() && md.cFREEZE)
+    if (!v.empty() && cFREEZE_)
     {
         /* Set the velocities of frozen dimensions to zero */
         ArrayRef<RVec> vRef = v.unpaddedArrayRef();
@@ -685,9 +701,9 @@ bool Constraints::Impl::apply(bool                      bLog,
         int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (int i = 0; i < md.homenr; i++)
+        for (int i = 0; i < numHomeAtoms_; i++)
         {
-            int freezeGroup = md.cFREEZE[i];
+            int freezeGroup = cFREEZE_[i];
 
             for (int d = 0; d < DIM; d++)
             {
@@ -874,8 +890,23 @@ static std::vector<int> make_at2settle(int natoms, const InteractionList& ilist)
     return at2s;
 }
 
-void Constraints::Impl::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
+void Constraints::Impl::setConstraints(gmx_localtop_t* top,
+                                       int             numAtoms,
+                                       int             numHomeAtoms,
+                                       real*           masses,
+                                       real*           inverseMasses,
+                                       const bool      hasMassPerturbedAtoms,
+                                       const real      lambda,
+                                       unsigned short* cFREEZE)
 {
+    numAtoms_              = numAtoms;
+    numHomeAtoms_          = numHomeAtoms;
+    masses_                = masses;
+    inverseMasses_         = inverseMasses;
+    hasMassPerturbedAtoms_ = hasMassPerturbedAtoms;
+    lambda_                = lambda;
+    cFREEZE_               = cFREEZE;
+
     idef = &top->idef;
 
     if (ncon_tot > 0)
@@ -885,7 +916,7 @@ void Constraints::Impl::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
          */
         if (ir.eConstrAlg == econtLINCS)
         {
-            set_lincs(*idef, md.nr, md.invmass, md.lambda, EI_DYNAMICS(ir.eI), cr, lincsd);
+            set_lincs(*idef, numAtoms_, inverseMasses_, lambda_, EI_DYNAMICS(ir.eI), cr, lincsd);
         }
         if (ir.eConstrAlg == econtSHAKE)
         {
@@ -897,14 +928,14 @@ void Constraints::Impl::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
             }
             else
             {
-                make_shake_sblock_serial(shaked.get(), &top->idef, md.nr);
+                make_shake_sblock_serial(shaked.get(), &top->idef, numAtoms_);
             }
         }
     }
 
     if (settled)
     {
-        settle_set_constraints(settled, idef->il[F_SETTLE], md.homenr, md.massT, md.invmass);
+        settle_set_constraints(settled, idef->il[F_SETTLE], numHomeAtoms_, masses_, inverseMasses_);
     }
 
     /* Make a selection of the local atoms for essential dynamics */
@@ -914,9 +945,17 @@ void Constraints::Impl::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
     }
 }
 
-void Constraints::setConstraints(gmx_localtop_t* top, const t_mdatoms& md)
+void Constraints::setConstraints(gmx_localtop_t* top,
+                                 const int       numAtoms,
+                                 const int       numHomeAtoms,
+                                 real*           masses,
+                                 real*           inverseMasses,
+                                 const bool      hasMassPerturbedAtoms,
+                                 const real      lambda,
+                                 unsigned short* cFREEZE)
 {
-    impl_->setConstraints(top, md);
+    impl_->setConstraints(top, numAtoms, numHomeAtoms, masses, inverseMasses, hasMassPerturbedAtoms,
+                          lambda, cFREEZE);
 }
 
 /*! \brief Makes a per-moleculetype container of mappings from atom
@@ -939,7 +978,6 @@ Constraints::Constraints(const gmx_mtop_t&     mtop,
                          const t_inputrec&     ir,
                          pull_t*               pull_work,
                          FILE*                 log,
-                         const t_mdatoms&      md,
                          const t_commrec*      cr,
                          const gmx_multisim_t* ms,
                          t_nrnb*               nrnb,
@@ -947,7 +985,7 @@ Constraints::Constraints(const gmx_mtop_t&     mtop,
                          bool                  pbcHandlingRequired,
                          int                   numConstraints,
                          int                   numSettles) :
-    impl_(new Impl(mtop, ir, pull_work, log, md, cr, ms, nrnb, wcycle, pbcHandlingRequired, numConstraints, numSettles))
+    impl_(new Impl(mtop, ir, pull_work, log, cr, ms, nrnb, wcycle, pbcHandlingRequired, numConstraints, numSettles))
 {
 }
 
@@ -955,7 +993,6 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
                         const t_inputrec&     ir_p,
                         pull_t*               pull_work,
                         FILE*                 log_p,
-                        const t_mdatoms&      md_p,
                         const t_commrec*      cr_p,
                         const gmx_multisim_t* ms_p,
                         t_nrnb*               nrnb_p,
@@ -965,7 +1002,6 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
                         int                   numSettles) :
     ncon_tot(numConstraints),
     mtop(mtop_p),
-    md(md_p),
     pbcHandlingRequired_(pbcHandlingRequired),
     log(log_p),
     cr(cr_p),
@@ -1125,8 +1161,8 @@ ArrayRef<const std::vector<int>> Constraints::atom2settle_moltype() const
 void do_constrain_first(FILE*                     fplog,
                         gmx::Constraints*         constr,
                         const t_inputrec*         ir,
-                        const t_mdatoms*          md,
-                        int                       natoms,
+                        int                       numAtoms,
+                        int                       numHomeAtoms,
                         ArrayRefWithPadding<RVec> x,
                         ArrayRefWithPadding<RVec> v,
                         const matrix              box,
@@ -1137,14 +1173,14 @@ void do_constrain_first(FILE*                     fplog,
     real    dt = ir->delta_t;
     real    dvdl_dum;
 
-    PaddedVector<RVec> savex(natoms);
+    PaddedVector<RVec> savex(numAtoms);
 
     start = 0;
-    end   = md->homenr;
+    end   = numHomeAtoms;
 
     if (debug)
     {
-        fprintf(debug, "vcm: start=%d, homenr=%d, end=%d\n", start, md->homenr, end);
+        fprintf(debug, "vcm: start=%d, homenr=%d, end=%d\n", start, numHomeAtoms, end);
     }
     /* Do a first constrain to reset particles... */
     step = ir->init_step;

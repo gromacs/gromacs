@@ -90,9 +90,10 @@ void ConstraintsElement<variable>::elementSetup()
                                           ? freeEnergyPerturbationElement_->constLambdaView()[efptBONDED]
                                           : 0;
         // Constrain the initial coordinates and velocities
-        do_constrain_first(fplog_, constr_, inputrec_, mdAtoms_, statePropagatorData_->localNumAtoms(),
-                           statePropagatorData_->positionsView(), statePropagatorData_->velocitiesView(),
-                           statePropagatorData_->box(), lambdaBonded);
+        do_constrain_first(
+                fplog_, constr_, inputrec_, statePropagatorData_->totalNumAtoms(),
+                statePropagatorData_->localNumAtoms(), statePropagatorData_->positionsView(),
+                statePropagatorData_->velocitiesView(), statePropagatorData_->box(), lambdaBonded);
 
         if (isMasterRank_)
         {

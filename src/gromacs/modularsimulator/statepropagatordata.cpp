@@ -230,6 +230,11 @@ int StatePropagatorData::localNumAtoms()
     return localNAtoms_;
 }
 
+int StatePropagatorData::totalNumAtoms()
+{
+    return totalNumAtoms_;
+}
+
 std::unique_ptr<t_state> StatePropagatorData::localState()
 {
     auto state   = std::make_unique<t_state>();

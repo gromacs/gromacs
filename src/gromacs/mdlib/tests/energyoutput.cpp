@@ -145,8 +145,6 @@ public:
     t_inputrec inputrec_;
     //! Topology
     gmx_mtop_t mtop_;
-    //! MD atoms
-    t_mdatoms mdatoms_;
     //! Simulation time
     double time_;
     //! Total mass
@@ -378,8 +376,8 @@ public:
         // TODO EnergyOutput should not take Constraints object
         // TODO This object will always return zero as RMSD value.
         //      It is more relevant to have non-zero value for testing.
-        constraints_ = makeConstraints(mtop_, inputrec_, nullptr, false, nullptr, mdatoms_, &cr_,
-                                       nullptr, nullptr, nullptr, false);
+        constraints_ = makeConstraints(mtop_, inputrec_, nullptr, false, nullptr, &cr_, nullptr,
+                                       nullptr, nullptr, false);
 
         // No position/orientation restraints
         fcd_.disres.npair = 0;
