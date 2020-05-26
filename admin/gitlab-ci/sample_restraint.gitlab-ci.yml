@@ -29,7 +29,7 @@
 sample_restraint:clang-8:gmx2021:py-3.6.10:
   extends:
     - .sample_restraint:clang-8:gmx2021
-    - .rules:merge-requests
+    - .rules:merge-requests:master
   variables:
     VENVPATH: "/root/venv/py3.6"
     PY_VER: "3.6.10"
@@ -37,7 +37,7 @@ sample_restraint:clang-8:gmx2021:py-3.6.10:
 sample_restraint:clang-8:gmx2021:py-3.7.7:
   extends:
     - .sample_restraint:clang-8:gmx2021
-    - .rules:merge-requests
+    - .rules:merge-requests:master
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
@@ -45,7 +45,7 @@ sample_restraint:clang-8:gmx2021:py-3.7.7:
 sample_restraint:clang-8:gmx2021:py-3.8.2:
   extends:
     - .sample_restraint:clang-8:gmx2021
-    - .rules:merge-requests
+    - .rules:merge-requests:master
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
