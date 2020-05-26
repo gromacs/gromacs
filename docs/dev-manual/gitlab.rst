@@ -83,12 +83,14 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         intended to apply.)
         Instead of setting any of these directly in a job definition, try to use
         one of the pre-defined behaviors (defined as ``.rules:<something>`` in
-        :file:`admin/gitlab-ci/global.gitlab-ci.yml`).
+        :file:`admin/gitlab-ci/rules.gitlab-ci.yml`).
         Errors or unexpected behavior will occur if you specify more than one
         *.rules:...* template, or if you use these parameters in combination
         with a *.rules...* template.
         To reduce errors and unexpected behavior, restrict usage of these controls
         to regular job definitions (don't use in "hidden" or parent jobs).
+        Note that *rules* is not compatible with the older *only* and *except*
+        parameters. We have standardized on the (newer) *rules* mechanism.
 
     tags
         Jobs that can only run in the |Gromacs| GitLab CI Runner infrastructure
@@ -125,6 +127,8 @@ Global templates
 In addition to the templates in the main job definition files,
 common "mix-in" functionality and behavioral templates are defined in
 :file:`admin/gitlab-ci/global.gitlab-ci.yml`.
+For readability, some parameters may be separated into their own files, named
+according to the parameter (e.g. :file:`rules.gitlab-ci.yml`).
 
 Jobs beginning with ``.use-`` provide mix-in behavior, such as boilerplate for
 jobs using a particular tool chain.
