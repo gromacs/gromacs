@@ -40,30 +40,28 @@ popd
 
 # Run Python unit tests.
 python -m pytest python_packaging/src/test --junitxml=$PY_UNIT_TEST_XML
-# TODO: enable MPI tests
-#if [ -x `which mpiexec` ]; then
-#    PYTHONDONTWRITEBYTECODE=1 \
-#    mpiexec --allow-run-as-root \
-#      --mca opal_warn_on_missing_libcuda 0 \
-#      --mca orte_base_help_aggregate 0 \
-#      -n 2 \
-#      `which python` -m pytest \
-#        -p no:cacheprovider \
-#        $PWD/python_packaging/src/test \
-#        --junitxml=$PY_MPI_UNIT_TEST_XML
-#fi
+if [ -x `which mpiexec` ]; then
+    PYTHONDONTWRITEBYTECODE=1 \
+    mpiexec --allow-run-as-root \
+      --mca opal_warn_on_missing_libcuda 0 \
+      --mca orte_base_help_aggregate 0 \
+      -n 2 \
+      `which python` -m pytest \
+        -p no:cacheprovider \
+        $PWD/python_packaging/src/test \
+        --junitxml=$PY_MPI_UNIT_TEST_XML
+fi
 
 # Run Python acceptance tests.
 python -m pytest python_packaging/test --junitxml=$PY_ACCEPTANCE_TEST_XML
-# TODO: enable MPI tests
-#if [ -x `which mpiexec` ]; then
-#    PYTHONDONTWRITEBYTECODE=1 \
-#    mpiexec --allow-run-as-root \
-#      --mca opal_warn_on_missing_libcuda 0 \
-#      --mca orte_base_help_aggregate 0 \
-#      -n 2 \
-#      `which python` -m pytest \
-#        -p no:cacheprovider \
-#        $PWD/python_packaging/test \
-#        --junitxml=$PY_MPI_ACCEPTANCE_TEST_XML
-#fi
+if [ -x `which mpiexec` ]; then
+    PYTHONDONTWRITEBYTECODE=1 \
+    mpiexec --allow-run-as-root \
+      --mca opal_warn_on_missing_libcuda 0 \
+      --mca orte_base_help_aggregate 0 \
+      -n 2 \
+      `which python` -m pytest \
+        -p no:cacheprovider \
+        $PWD/python_packaging/test \
+        --junitxml=$PY_MPI_ACCEPTANCE_TEST_XML
+fi
