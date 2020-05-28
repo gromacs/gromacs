@@ -46,10 +46,6 @@ tag=gromacs/ci-docs-llvm:master
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.17.2 --llvm --doxygen | docker build -t $tag -
 
-tag=gromacs/ci-docs-gcc:master
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --gcc --doxygen | docker build -t $tag -
-
 echo "Run the following to upload the updated images."
 echo docker login
 for tag in "${tags[@]}"; do
