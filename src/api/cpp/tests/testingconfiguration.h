@@ -43,8 +43,6 @@
 
 #include "config.h"
 
-#include <gtest/gtest.h>
-
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/stringutil.h"

@@ -29,5 +29,10 @@ Updated required CMake version to 3.13.
 C++ standard
 """"""""""""
 
-GROMACS has updated the required C++ standards compliance from C++14 to C++17,
+|Gromacs| has updated the required C++ standards compliance from C++14 to C++17,
 and requires 2017 standard library features. See the install guide for details.
+
+Cygwin
+""""""
+
+|Gromacs| now builds on Cygwin with both gcc and clang compilers.

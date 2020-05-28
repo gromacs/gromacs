@@ -45,7 +45,6 @@
 
 #if HAVE_SCHED_AFFINITY
 #    include <sched.h>
-#    include <sys/syscall.h>
 #endif
 
 #include "thread_mpi/threads.h"

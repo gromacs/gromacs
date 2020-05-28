@@ -170,14 +170,14 @@ static void push_ps(FILE* fp)
 #        undef gmx_ffclose
 #    endif
 #    if (!HAVE_PIPES && !defined(__native_client__))
-static FILE* popen(const char* nm, const char* mode)
+static FILE* popen(const char* /* nm */, const char* /* mode */)
 {
     gmx_impl("Sorry no pipes...");
 
     return NULL;
 }
 
-static int pclose(FILE* fp)
+static int pclose(FILE* /* fp */)
 {
     gmx_impl("Sorry no pipes...");
 
@@ -697,6 +697,7 @@ int gmx_fsync(FILE* fp)
 #    elif HAVE__FILENO
         fn = _fileno(fp);
 #    else
+        GMX_UNUSED_VALUE(fp);
         fn = -1;
 #    endif
 

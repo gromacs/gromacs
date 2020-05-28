@@ -157,6 +157,10 @@ function (gmx_add_gtest_executable EXENAME)
         # use for gmx::compat::optional. These are included as system
         # headers so that no warnings are issued from them.
         target_include_directories(${EXENAME} SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+        if(CYGWIN)
+            # Ensure GoogleTest headers can find POSIX things needed
+            target_compile_definitions(${EXENAME} PRIVATE _POSIX_C_SOURCE=200809L)
+        endif()
 
         target_link_libraries(${EXENAME} PRIVATE
             testutils libgromacs gmock

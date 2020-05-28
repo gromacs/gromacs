@@ -139,6 +139,10 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 tmpi_get_source_list(THREAD_MPI_SOURCES ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/src)
 add_library(thread_mpi OBJECT ${THREAD_MPI_SOURCES})
 target_compile_definitions(thread_mpi PRIVATE HAVE_CONFIG_H)
+if(CYGWIN)
+    # Needs POSIX-isms for strdup, not just std-isms
+    target_compile_definitions(thread_mpi PRIVATE _POSIX_C_SOURCE=200809L)
+endif()
 gmx_target_compile_options(thread_mpi)
 if (WIN32)
     gmx_target_warning_suppression(thread_mpi /wd4996 HAS_NO_MSVC_UNSAFE_FUNCTION)

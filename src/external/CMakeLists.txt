@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2011,2012,2013,2014,2015 by the GROMACS development team.
-# Copyright (c) 2016,2019, by the GROMACS development team, led by
+# Copyright (c) 2016,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,10 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
         target_compile_definitions(gmock PRIVATE _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
         target_compile_definitions(gtest PRIVATE _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
         target_compile_definitions(gtest_main PRIVATE _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
+    endif()
+    if (CYGWIN)
+        # Ensure GoogleTest can find POSIX things it needs
+        target_compile_definitions(gtest PRIVATE _POSIX_C_SOURCE=200809L)
     endif()
     gmx_target_warning_suppression(gmock -Wno-deprecated-copy HAVE_NO_DEPRECATED_COPY)
 
