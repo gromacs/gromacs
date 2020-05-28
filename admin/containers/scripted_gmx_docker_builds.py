@@ -407,26 +407,26 @@ def add_doxygen_stages(input_args,
     """Add appropriate stages according to doxygen input arguments."""
     if input_args.doxygen is None:
         return
-    if (input_args.doxygen == '1.8.5'):
+    if input_args.doxygen == '1.8.5':
         doxygen_commit = 'ed4ed873ab0e7f15116e2052119a6729d4589f7a'
+        output_stages['main'] += hpccm.building_blocks.generic_autotools(
+            repository='https://github.com/westes/flex.git',
+            commit='f7788a9a0ecccdc953ed12043ccb59ca25714018',
+            prefix='/tmp/install-of-flex',
+            configure_opts=['--disable-shared'],
+            preconfigure=['./autogen.sh'])
+        output_stages['main'] += hpccm.building_blocks.generic_autotools(
+            repository='https://github.com/doxygen/doxygen.git',
+            commit=doxygen_commit,
+            prefix='',
+            configure_opts=[
+                '--flex /tmp/install-of-flex/bin/flex',
+                '--static'],
+            postinstall=[
+                'sed -i \'/\"XPS\"/d;/\"PDF\"/d;/\"PS\"/d;/\"EPS\"/d;/disable ghostscript format types/d\' /etc/ImageMagick-6/policy.xml'])
+        output_stages['main'] += hpccm.building_blocks.pip(pip='pip3', packages=['sphinx==1.6.1'])
     else:
-        doxygen_commit = 'a6d4f4df45febe588c38de37641513fd576b998f'
-    output_stages['main'] += hpccm.building_blocks.generic_autotools(
-        repository='https://github.com/westes/flex.git',
-        commit='f7788a9a0ecccdc953ed12043ccb59ca25714018',
-        prefix='/tmp/install-of-flex',
-        configure_opts=['--disable-shared'],
-        preconfigure=['./autogen.sh'])
-    output_stages['main'] += hpccm.building_blocks.generic_autotools(
-        repository='https://github.com/doxygen/doxygen.git',
-        commit=doxygen_commit,
-        prefix='',
-        configure_opts=[
-            '--flex /tmp/install-of-flex/bin/flex',
-            '--static'],
-        postinstall=[
-            'sed -i \'/\"XPS\"/d;/\"PDF\"/d;/\"PS\"/d;/\"EPS\"/d;/disable ghostscript format types/d\' /etc/ImageMagick-6/policy.xml'])
-    output_stages['main'] += hpccm.building_blocks.pip(pip='pip3', packages=['sphinx==1.6.1'])
+        raise RuntimeError('Unhandled doxygen version: {}'.format(input_args.doxygen))
 
 
 def build_stages(args) -> typing.Iterable[hpccm.Stage]:
