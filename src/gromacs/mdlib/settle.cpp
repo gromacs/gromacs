@@ -73,29 +73,10 @@
 namespace gmx
 {
 
-struct settleparam_t
-{
-    real mO;
-    real mH;
-    real wh;
-    real dOH;
-    real dHH;
-    real ra;
-    real rb;
-    real rc;
-    real irc2;
-    /* For projection */
-    real   imO;
-    real   imH;
-    real   invdOH;
-    real   invdHH;
-    matrix invmat;
-};
-
 struct settledata
 {
-    settleparam_t massw; /* Parameters for SETTLE for coordinates */
-    settleparam_t mass1; /* Parameters with all masses 1, for forces */
+    SettleParameters massw; /* Parameters for SETTLE for coordinates */
+    SettleParameters mass1; /* Parameters with all masses 1, for forces */
 
     int   nsettle; /* The number of settles on our rank */
     int*  ow1;     /* Index to OW1 atoms, size nsettle + SIMD padding */
@@ -107,14 +88,23 @@ struct settledata
     bool bUseSimd; /* Use SIMD intrinsics code, if possible */
 };
 
-
-//! Initializes a projection matrix.
-static void init_proj_matrix(real invmO, real invmH, real dOH, real dHH, matrix inverseCouplingMatrix)
+/*! \brief Initializes a projection matrix.
+ *
+ * \param[in]  invmO                  Reciprocal oxygen mass
+ * \param[in]  invmH                  Reciprocal hydrogen mass
+ * \param[in]  dOH                    Target O-H bond length
+ * \param[in]  dHH                    Target H-H bond length
+ * \param[out] inverseCouplingMatrix  Inverse bond coupling matrix for the projection version of SETTLE
+ */
+static void initializeProjectionMatrix(const real invmO,
+                                       const real invmH,
+                                       const real dOH,
+                                       const real dHH,
+                                       matrix     inverseCouplingMatrix)
 {
-    /* We normalize the inverse masses with invmO for the matrix inversion.
-     * so we can keep using masses of almost zero for frozen particles,
-     * without running out of the float range in invertMatrix.
-     */
+    // We normalize the inverse masses with invmO for the matrix inversion.
+    // so we can keep using masses of almost zero for frozen particles,
+    // without running out of the float range in invertMatrix.
     double invmORelative = 1.0;
     double invmHRelative = invmH / static_cast<double>(invmO);
     double distanceRatio = dHH / static_cast<double>(dOH);
@@ -136,14 +126,18 @@ static void init_proj_matrix(real invmO, real invmH, real dOH, real dHH, matrix 
     msmul(inverseCouplingMatrix, 1 / invmO, inverseCouplingMatrix);
 }
 
-//! Initializes settle parameters.
-static void settleparam_init(settleparam_t* p, real mO, real mH, real invmO, real invmH, real dOH, real dHH)
+void initSettleParameters(SettleParameters* p,
+                          const real        mO,
+                          const real        mH,
+                          const real        invmO,
+                          const real        invmH,
+                          const real        dOH,
+                          const real        dHH)
 {
-    /* We calculate parameters in double precision to minimize errors.
-     * The velocity correction applied during SETTLE coordinate constraining
-     * introduces a systematic error of approximately 1 bit per atom,
-     * depending on what the compiler does with the code.
-     */
+    // We calculate parameters in double precision to minimize errors.
+    // The velocity correction applied during SETTLE coordinate constraining
+    // introduces a systematic error of approximately 1 bit per atom,
+    // depending on what the compiler does with the code.
     double wohh;
 
     p->mO     = mO;
@@ -159,14 +153,14 @@ static void settleparam_init(settleparam_t* p, real mO, real mH, real invmO, rea
     p->ra     = ra;
     p->irc2   = 1.0 / dHH;
 
-    /* For projection: inverse masses and coupling matrix inversion */
+    // For projection: inverse masses and coupling matrix inversion
     p->imO = invmO;
     p->imH = invmH;
 
     p->invdOH = 1.0 / dOH;
     p->invdHH = 1.0 / dHH;
 
-    init_proj_matrix(invmO, invmH, dOH, dHH, p->invmat);
+    initializeProjectionMatrix(invmO, invmH, dOH, dHH, p->invmat);
 
     if (debug)
     {
@@ -219,7 +213,7 @@ settledata* settle_init(const gmx_mtop_t& mtop)
 
     real dOH = mtop.ffparams.iparams[settle_type].settle.doh;
     real dHH = mtop.ffparams.iparams[settle_type].settle.dhh;
-    settleparam_init(&settled->mass1, 1.0, 1.0, 1.0, 1.0, dOH, dHH);
+    initSettleParameters(&settled->mass1, 1.0, 1.0, 1.0, 1.0, dOH, dHH);
 
     settled->ow1    = nullptr;
     settled->hw2    = nullptr;
@@ -267,8 +261,8 @@ void settle_set_constraints(settledata*            settled,
         {
             int firstO = iatoms[1];
             int firstH = iatoms[2];
-            settleparam_init(&settled->massw, masses[firstO], masses[firstH], inverseMasses[firstO],
-                             inverseMasses[firstH], settled->mass1.dOH, settled->mass1.dHH);
+            initSettleParameters(&settled->massw, masses[firstO], masses[firstH], inverseMasses[firstO],
+                                 inverseMasses[firstH], settled->mass1.dOH, settled->mass1.dHH);
         }
 
         if (nsettle + pack_size > settled->nalloc)
@@ -326,11 +320,11 @@ void settle_proj(settledata*          settled,
      * Berk Hess 2008-1-10
      */
 
-    settleparam_t* p;
-    real           imO, imH, dOH, dHH, invdOH, invdHH;
-    matrix         invmat;
-    int            i, m, m2, ow1, hw2, hw3;
-    rvec           roh2, roh3, rhh, dc, fc;
+    SettleParameters* p;
+    real              imO, imH, dOH, dHH, invdOH, invdHH;
+    matrix            invmat;
+    int               i, m, m2, ow1, hw2, hw3;
+    rvec              roh2, roh3, rhh, dc, fc;
 
     calcvir_atom_end *= DIM;
 
@@ -452,14 +446,14 @@ static void settleTemplate(const settledata* settled,
 
     TypeBool bError = TypeBool(false);
 
-    const settleparam_t* p    = &settled->massw;
-    T                    wh   = T(p->wh);
-    T                    rc   = T(p->rc);
-    T                    ra   = T(p->ra);
-    T                    rb   = T(p->rb);
-    T                    irc2 = T(p->irc2);
-    T                    mO   = T(p->mO);
-    T                    mH   = T(p->mH);
+    const SettleParameters* p    = &settled->massw;
+    T                       wh   = T(p->wh);
+    T                       rc   = T(p->rc);
+    T                       ra   = T(p->ra);
+    T                       rb   = T(p->rb);
+    T                       irc2 = T(p->irc2);
+    T                       mO   = T(p->mO);
+    T                       mH   = T(p->mH);
 
     T almost_zero = T(1e-12);
 

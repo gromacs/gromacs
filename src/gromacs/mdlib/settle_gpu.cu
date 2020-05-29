@@ -585,7 +585,7 @@ SettleGpu::SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext,
     real dOH = mtop.ffparams.iparams[settle_type].settle.doh;
     real dHH = mtop.ffparams.iparams[settle_type].settle.dhh;
 
-    initSettleParameters(&settleParameters_, mO, mH, dOH, dHH);
+    initSettleParameters(&settleParameters_, mO, mH, 1.0 / mO, 1.0 / mH, dOH, dHH);
 
     allocateDeviceBuffer(&d_virialScaled_, 6, deviceContext_);
     h_virialScaled_.resize(6);

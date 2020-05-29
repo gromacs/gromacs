@@ -63,6 +63,57 @@ enum class ConstraintVariable : int;
 /* Abstract type for SETTLE that is defined only in the file that uses it */
 struct settledata;
 
+/* \brief Parameters for SETTLE algorithm.
+ *
+ * \todo Remove duplicates, check if recomputing makes more sense in some cases.
+ * \todo Move the projection parameters into separate structure.
+ */
+struct SettleParameters
+{
+    //! Mass of oxygen atom
+    real mO;
+    //! Mass of hydrogen atom
+    real mH;
+    //! Relative hydrogen mass (i.e. mH/(mO+2*mH))
+    real wh;
+    //! Target distance between oxygen and hydrogen
+    real dOH;
+    //! Target distance between hydrogen atoms
+    real dHH;
+    //! Double relative H mass times height of the H-O-H triangle.
+    real ra;
+    //! Height of the H-O-H triangle minus ra.
+    real rb;
+    //! Half the H-H distance.
+    real rc;
+    //! Reciprocal H-H distance
+    real irc2;
+
+    /* Parameters below are used for projection */
+    //! Reciprocal oxygen mass
+    real imO;
+    //! Reciprocal hydrogen mass
+    real imH;
+    //! Reciprocal O-H distance
+    real invdOH;
+    //! Reciprocal H-H distance (again)
+    real invdHH;
+    //! Reciprocal projection matrix
+    matrix invmat;
+};
+
+/*! \brief Initializes settle parameters.
+ *
+ * \param[out] p      SettleParameters structure to initialize
+ * \param[in]  mO     Mass of oxygen atom
+ * \param[in]  mH     Mass of hydrogen atom
+ * \param[in]  invmO  Reciprocal mass of oxygen atom
+ * \param[in]  invmH  Reciprocal mass of hydrogen atom
+ * \param[in]  dOH    Target O-H bond length
+ * \param[in]  dHH    Target H-H bond length
+ */
+void initSettleParameters(SettleParameters* p, real mO, real mH, real dOH, real invmO, real invmH, real dHH);
+
 /*! \brief Initializes and returns a structure with SETTLE parameters */
 settledata* settle_init(const gmx_mtop_t& mtop);
 
