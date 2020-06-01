@@ -36,3 +36,9 @@ Cygwin
 """"""
 
 |Gromacs| now builds on Cygwin with both gcc and clang compilers.
+
+Windows
+"""""""
+
+|Gromacs| now builds correctly on Windows with MSVC even when the path
+to the source or build directory has a space in it.

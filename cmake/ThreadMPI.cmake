@@ -39,13 +39,51 @@ include(CheckCXXSourceCompiles)
 
 # sets TMPI_ATOMICS to 1 if atomic operations are found, unset otherwise
 # Options:
-# include directory for thread_mpi/atomic.h
-MACRO(TMPI_TEST_ATOMICS INCDIR)
+# include path for thread_mpi/atomic.h
+function(TMPI_TEST_ATOMICS INCDIR)
 
     if (NOT DEFINED TMPI_ATOMICS)
-        try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
-                "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.cpp"
-                COMPILE_DEFINITIONS "-I${INCDIR} -DTMPI_ATOMICS")
+        set(CMAKE_REQUIRED_INCLUDES ${INCDIR})
+        check_cxx_source_compiles("
+// Set a define that forces a compilation error if this platform
+// is not yet supported.
+#define TMPI_CHECK_ATOMICS
+
+// Include the portable atomics implementation to test
+#include \"thread_mpi/atomic.h\"
+
+int main(void)
+{
+    int i;
+    void *ptr;
+    tMPI_Atomic_t some_atomic;
+    tMPI_Atomic_ptr_t *some_atomic_ptr = NULL;
+    tMPI_Spinlock_t some_spinlock;
+
+    /* Make the compiler actually emit code for these functions, so
+       that things like inability to emit inline assembly get
+       tested. It is not expected that the code below can run. */
+    tMPI_Atomic_memory_barrier();
+    tMPI_Atomic_memory_barrier_acq();
+    tMPI_Atomic_memory_barrier_rel();
+    tMPI_Atomic_set(&some_atomic, 0);
+    i   = tMPI_Atomic_get(&some_atomic);
+    ptr = tMPI_Atomic_ptr_get(some_atomic_ptr);
+    tMPI_Atomic_ptr_set(some_atomic_ptr, ptr);
+    tMPI_Atomic_add_return(&some_atomic, 0);
+    tMPI_Atomic_fetch_add(&some_atomic, 0);
+    tMPI_Atomic_cas(&some_atomic, 0, 1);
+    tMPI_Atomic_ptr_cas(some_atomic_ptr, ptr, ptr);
+    tMPI_Atomic_swap(&some_atomic, 0);
+    tMPI_Atomic_ptr_swap(some_atomic_ptr, ptr);
+    tMPI_Spinlock_init(&some_spinlock);
+    tMPI_Spinlock_lock(&some_spinlock);
+    tMPI_Spinlock_trylock(&some_spinlock);
+    tMPI_Spinlock_unlock(&some_spinlock);
+    tMPI_Spinlock_islocked(&some_spinlock);
+    tMPI_Spinlock_wait(&some_spinlock);
+    return 0;
+}" TEST_ATOMICS)
         if (TEST_ATOMICS)
             message(STATUS "Atomic operations found")
             # If the check fails, we want to be able to check again,
@@ -56,11 +94,11 @@ MACRO(TMPI_TEST_ATOMICS INCDIR)
             set(TMPI_ATOMICS_INCDIR ${INCDIR} CACHE INTERNAL "Atomic operations check include dir")
         else ()
             message(STATUS "Atomic operations not found")
-            unset(TEST_ATOMICS)
+            unset(TEST_ATOMICS CACHE)
         endif()
     endif()
 
-ENDMACRO(TMPI_TEST_ATOMICS VARIABLE)
+endfunction()
 
 try_compile(HAVE_PROCESSOR_NUMBER ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake/TestWinProcNum.cpp")
 
@@ -125,7 +163,6 @@ set(TMPI_CXX_LIB 1)
 
 # Turns on thread_mpi MPI functions.
 MACRO(TMPI_ENABLE)
-    TMPI_TEST_ATOMICS(TMPI_ATOMICS_INCDIR)
     if(NOT DEFINED TMPI_ATOMICS)
         message(WARNING "Atomic operations not found for this CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
     endif()
