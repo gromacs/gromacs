@@ -375,10 +375,6 @@ void bench(const int sizeFactor, const KernelBenchOptions& options)
                 gmx::EnumerationWrapper<BenchMarkCombRule> combRuleIter;
                 for (auto combRule : combRuleIter)
                 {
-                    if (combRule == BenchMarkCombRule::RuleNone)
-                    {
-                        continue;
-                    }
                     opt.ljCombinationRule = combRule;
 
                     expandSimdOptionAndPushBack(opt, &optionsList);
