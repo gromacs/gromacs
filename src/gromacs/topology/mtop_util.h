@@ -254,6 +254,17 @@ void gmx_mtop_generate_local_top(const gmx_mtop_t& mtop, gmx_localtop_t* top, bo
  */
 gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t& mtop);
 
+/*! \brief
+ * Returns the index range from residue begin to end for each residue in a molecule block.
+ *
+ * Note that residues will always have consecutive atoms numbers internally.
+ *
+ * \param[in] molblock Molecule block to parse for start and end.
+ * \param[in] mtop     The topology to use.
+ * \returns Vector of ranges for all residues.
+ * \todo use individual fields instead taking complete mtop.
+ */
+std::vector<gmx::Range<int>> atomRangeOfEachResidue(const gmx_molblock_t& molblock, const gmx_mtop_t& mtop);
 
 /* Converts a gmx_mtop_t struct to t_topology.
  *
