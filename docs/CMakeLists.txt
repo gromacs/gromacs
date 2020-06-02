@@ -305,6 +305,7 @@ if (SPHINX_FOUND)
         reference-manual/special/plots/equipotential.pdf
         reference-manual/special/plots/field.pdf
         reference-manual/special/plots/gaussians.pdf
+        reference-manual/special/plots/lambda-values.pdf
         reference-manual/special/plots/pulldirrel.pdf
         reference-manual/special/plots/pull.pdf
         reference-manual/special/plots/pullref.pdf
