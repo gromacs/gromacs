@@ -30,3 +30,7 @@ substituting the version number placeholders with version 2.14.0
 
 To compile everything as C++ the src/library/md5sum.c is renamed to cpp and
 the extern "C" is removed from src/library/fft_binary_lookup.cpp.
+
+To be compatible with ISO C++17, we have removed the "register" storage
+class in src/statTimer/statisticalTimer.CPU.cpp and
+src/statTimer/statisticalTimer.GPU.cpp

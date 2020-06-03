@@ -41,7 +41,7 @@ std::basic_string<TCHAR> commatize (T number)
 {
 	static TCHAR scratch [8*sizeof(T)];
 
-	register TCHAR * ptr = scratch + countOf( scratch );
+	TCHAR * ptr = scratch + countOf( scratch );
 	*(--ptr) = 0;
 
 	for (int digits = 3; ; )
