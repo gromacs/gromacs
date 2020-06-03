@@ -204,7 +204,9 @@ bool pme_gpu_supports_input(const t_inputrec& ir, const gmx_mtop_t& mtop, std::s
     }
     if (!EI_DYNAMICS(ir.eI))
     {
-        errorReasons.emplace_back("not a dynamical integrator");
+        errorReasons.emplace_back(
+                "Cannot compute PME interactions on a GPU, because PME GPU requires a dynamical "
+                "integrator (md, sd, etc).");
     }
     return addMessageIfNotSupported(errorReasons, error);
 }
