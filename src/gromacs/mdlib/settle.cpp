@@ -68,25 +68,9 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 namespace gmx
 {
-
-struct settledata
-{
-    SettleParameters massw; /* Parameters for SETTLE for coordinates */
-    SettleParameters mass1; /* Parameters with all masses 1, for forces */
-
-    int   nsettle; /* The number of settles on our rank */
-    int*  ow1;     /* Index to OW1 atoms, size nsettle + SIMD padding */
-    int*  hw2;     /* Index to HW2 atoms, size nsettle + SIMD padding */
-    int*  hw3;     /* Index to HW3 atoms, size nsettle + SIMD padding */
-    real* virfac;  /* Virial factor 0 or 1, size nsettle + SIMD pad. */
-    int   nalloc;  /* Allocation size of ow1, hw2, hw3, virfac */
-
-    bool bUseSimd; /* Use SIMD intrinsics code, if possible */
-};
 
 /*! \brief Initializes a projection matrix.
  *
@@ -126,50 +110,51 @@ static void initializeProjectionMatrix(const real invmO,
     msmul(inverseCouplingMatrix, 1 / invmO, inverseCouplingMatrix);
 }
 
-void initSettleParameters(SettleParameters* p,
-                          const real        mO,
-                          const real        mH,
-                          const real        invmO,
-                          const real        invmH,
-                          const real        dOH,
-                          const real        dHH)
+SettleParameters
+settleParameters(const real mO, const real mH, const real invmO, const real invmH, const real dOH, const real dHH)
 {
+    SettleParameters params;
+
     // We calculate parameters in double precision to minimize errors.
     // The velocity correction applied during SETTLE coordinate constraining
     // introduces a systematic error of approximately 1 bit per atom,
     // depending on what the compiler does with the code.
     double wohh;
 
-    p->mO     = mO;
-    p->mH     = mH;
-    wohh      = mO + 2.0 * mH;
-    p->wh     = mH / wohh;
-    p->dOH    = dOH;
-    p->dHH    = dHH;
-    double rc = dHH / 2.0;
-    double ra = 2.0 * mH * std::sqrt(dOH * dOH - rc * rc) / wohh;
-    p->rb     = std::sqrt(dOH * dOH - rc * rc) - ra;
-    p->rc     = rc;
-    p->ra     = ra;
-    p->irc2   = 1.0 / dHH;
+    params.mO   = mO;
+    params.mH   = mH;
+    wohh        = mO + 2.0 * mH;
+    params.wh   = mH / wohh;
+    params.dOH  = dOH;
+    params.dHH  = dHH;
+    double rc   = dHH / 2.0;
+    double ra   = 2.0 * mH * std::sqrt(dOH * dOH - rc * rc) / wohh;
+    params.rb   = std::sqrt(dOH * dOH - rc * rc) - ra;
+    params.rc   = rc;
+    params.ra   = ra;
+    params.irc2 = 1.0 / dHH;
 
     // For projection: inverse masses and coupling matrix inversion
-    p->imO = invmO;
-    p->imH = invmH;
+    params.imO = invmO;
+    params.imH = invmH;
 
-    p->invdOH = 1.0 / dOH;
-    p->invdHH = 1.0 / dHH;
+    params.invdOH = 1.0 / dOH;
+    params.invdHH = 1.0 / dHH;
 
-    initializeProjectionMatrix(invmO, invmH, dOH, dHH, p->invmat);
+    initializeProjectionMatrix(invmO, invmH, dOH, dHH, params.invmat);
 
     if (debug)
     {
-        fprintf(debug, "wh =%g, rc = %g, ra = %g\n", p->wh, p->rc, p->ra);
-        fprintf(debug, "rb = %g, irc2 = %g, dHH = %g, dOH = %g\n", p->rb, p->irc2, p->dHH, p->dOH);
+        fprintf(debug, "wh =%g, rc = %g, ra = %g\n", params.wh, params.rc, params.ra);
+        fprintf(debug, "rb = %g, irc2 = %g, dHH = %g, dOH = %g\n", params.rb, params.irc2,
+                params.dHH, params.dOH);
     }
+
+    return params;
 }
 
-settledata* settle_init(const gmx_mtop_t& mtop)
+SettleData::SettleData(const gmx_mtop_t& mtop) :
+    useSimd_(getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
 {
     /* Check that we have only one settle type */
     int                  settle_type = -1;
@@ -201,46 +186,21 @@ settledata* settle_init(const gmx_mtop_t& mtop)
     }
     GMX_RELEASE_ASSERT(settle_type >= 0, "settle_init called without settles");
 
-    settledata* settled;
-
-    snew(settled, 1);
-
     /* We will not initialize the normal SETTLE parameters here yet,
      * since the atom (inv)masses can depend on the integrator and
      * free-energy perturbation. We set mO=-1 to trigger later initialization.
      */
-    settled->massw.mO = -1;
+    parametersMassWeighted_.mO = -1;
 
-    real dOH = mtop.ffparams.iparams[settle_type].settle.doh;
-    real dHH = mtop.ffparams.iparams[settle_type].settle.dhh;
-    initSettleParameters(&settled->mass1, 1.0, 1.0, 1.0, 1.0, dOH, dHH);
-
-    settled->ow1    = nullptr;
-    settled->hw2    = nullptr;
-    settled->hw3    = nullptr;
-    settled->virfac = nullptr;
-    settled->nalloc = 0;
-
-    /* Without SIMD configured, this bool is not used */
-    settled->bUseSimd = (getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr);
-
-    return settled;
+    real dOH              = mtop.ffparams.iparams[settle_type].settle.doh;
+    real dHH              = mtop.ffparams.iparams[settle_type].settle.dhh;
+    parametersAllMasses1_ = settleParameters(1.0, 1.0, 1.0, 1.0, dOH, dHH);
 }
 
-void settle_free(settledata* settled)
-{
-    sfree_aligned(settled->ow1);
-    sfree_aligned(settled->hw2);
-    sfree_aligned(settled->hw3);
-    sfree_aligned(settled->virfac);
-    sfree(settled);
-}
-
-void settle_set_constraints(settledata*            settled,
-                            const InteractionList& il_settle,
-                            const int              numHomeAtoms,
-                            const real*            masses,
-                            const real*            inverseMasses)
+void SettleData::setConstraints(const InteractionList& il_settle,
+                                const int              numHomeAtoms,
+                                const real*            masses,
+                                const real*            inverseMasses)
 {
 #if GMX_SIMD_HAVE_REAL
     const int pack_size = GMX_SIMD_REAL_WIDTH;
@@ -250,61 +210,54 @@ void settle_set_constraints(settledata*            settled,
 
     const int nral1   = 1 + NRAL(F_SETTLE);
     int       nsettle = il_settle.size() / nral1;
-    settled->nsettle  = nsettle;
+    numSettles_       = nsettle;
 
     if (nsettle > 0)
     {
         ArrayRef<const int> iatoms = il_settle.iatoms;
 
         /* Here we initialize the normal SETTLE parameters */
-        if (settled->massw.mO < 0)
+        if (parametersMassWeighted_.mO < 0)
         {
-            int firstO = iatoms[1];
-            int firstH = iatoms[2];
-            initSettleParameters(&settled->massw, masses[firstO], masses[firstH], inverseMasses[firstO],
-                                 inverseMasses[firstH], settled->mass1.dOH, settled->mass1.dHH);
+            int firstO              = iatoms[1];
+            int firstH              = iatoms[2];
+            parametersMassWeighted_ = settleParameters(
+                    masses[firstO], masses[firstH], inverseMasses[firstO], inverseMasses[firstH],
+                    parametersAllMasses1_.dOH, parametersAllMasses1_.dHH);
         }
 
-        if (nsettle + pack_size > settled->nalloc)
-        {
-            settled->nalloc = over_alloc_dd(nsettle + pack_size);
-            sfree_aligned(settled->ow1);
-            sfree_aligned(settled->hw2);
-            sfree_aligned(settled->hw3);
-            sfree_aligned(settled->virfac);
-            snew_aligned(settled->ow1, settled->nalloc, 64);
-            snew_aligned(settled->hw2, settled->nalloc, 64);
-            snew_aligned(settled->hw3, settled->nalloc, 64);
-            snew_aligned(settled->virfac, settled->nalloc, 64);
-        }
+        const int paddedSize = ((nsettle + pack_size - 1) / pack_size) * pack_size;
+        ow1_.resize(paddedSize);
+        hw2_.resize(paddedSize);
+        hw3_.resize(paddedSize);
+        virfac_.resize(paddedSize);
 
         for (int i = 0; i < nsettle; i++)
         {
-            settled->ow1[i] = iatoms[i * nral1 + 1];
-            settled->hw2[i] = iatoms[i * nral1 + 2];
-            settled->hw3[i] = iatoms[i * nral1 + 3];
+            ow1_[i] = iatoms[i * nral1 + 1];
+            hw2_[i] = iatoms[i * nral1 + 2];
+            hw3_[i] = iatoms[i * nral1 + 3];
             /* We should avoid double counting of virial contributions for
              * SETTLEs that appear in multiple DD domains, so we only count
              * the contribution on the home range of the oxygen atom.
              */
-            settled->virfac[i] = (iatoms[i * nral1 + 1] < numHomeAtoms ? 1 : 0);
+            virfac_[i] = (iatoms[i * nral1 + 1] < numHomeAtoms ? 1 : 0);
         }
 
-        /* Pack the index array to the full SIMD width with copies from
+        /* Pad the index array to the full SIMD width with copies from
          * the last normal entry, but with no virial contribution.
          */
-        int end_packed = ((nsettle + pack_size - 1) / pack_size) * pack_size;
-        for (int i = nsettle; i < end_packed; i++)
+        for (int i = nsettle; i < paddedSize; i++)
         {
-            settled->ow1[i]    = settled->ow1[nsettle - 1];
-            settled->hw2[i]    = settled->hw2[nsettle - 1];
-            settled->hw3[i]    = settled->hw3[nsettle - 1];
-            settled->virfac[i] = 0;
+            ow1_[i]    = ow1_[nsettle - 1];
+            hw2_[i]    = hw2_[nsettle - 1];
+            hw3_[i]    = hw3_[nsettle - 1];
+            virfac_[i] = 0;
         }
     }
 }
 
-void settle_proj(settledata*          settled,
+void settle_proj(const SettleData&    settled,
                  ConstraintVariable   econq,
                  int                  nsettle,
                  const t_iatom        iatoms[],
@@ -320,21 +273,21 @@ void settle_proj(settledata*          settled,
      * Berk Hess 2008-1-10
      */
 
-    SettleParameters* p;
-    real              imO, imH, dOH, dHH, invdOH, invdHH;
-    matrix            invmat;
-    int               i, m, m2, ow1, hw2, hw3;
-    rvec              roh2, roh3, rhh, dc, fc;
+    const SettleParameters* p;
+    real                    imO, imH, dOH, dHH, invdOH, invdHH;
+    matrix                  invmat;
+    int                     i, m, m2, ow1, hw2, hw3;
+    rvec                    roh2, roh3, rhh, dc, fc;
 
     calcvir_atom_end *= DIM;
 
     if (econq == ConstraintVariable::Force)
     {
-        p = &settled->mass1;
+        p = &settled.parametersAllMasses1();
     }
     else
     {
-        p = &settled->massw;
+        p = &settled.parametersMassWeighted();
     }
     imO = p->imO;
     imH = p->imH;
@@ -415,7 +368,7 @@ void settle_proj(settledata*          settled,
 
 /*! \brief The actual settle code, templated for real/SimdReal and for optimization */
 template<typename T, typename TypeBool, int packSize, typename TypePbc, bool bCorrectVelocity, bool bCalcVirial>
-static void settleTemplate(const settledata* settled,
+static void settleTemplate(const SettleData& settled,
                            int               settleStart,
                            int               settleEnd,
                            const TypePbc     pbc,
@@ -446,7 +399,7 @@ static void settleTemplate(const settledata* settled,
 
     TypeBool bError = TypeBool(false);
 
-    const SettleParameters* p    = &settled->massw;
+    const SettleParameters* p    = &settled.parametersMassWeighted();
     T                       wh   = T(p->wh);
     T                       rc   = T(p->rc);
     T                       ra   = T(p->ra);
@@ -476,9 +429,9 @@ static void settleTemplate(const settledata* settled,
          * This gives correct results, since we store (not increment) all
          * output, so we store the same output multiple times.
          */
-        const int* ow1 = settled->ow1 + i;
-        const int* hw2 = settled->hw2 + i;
-        const int* hw3 = settled->hw3 + i;
+        const int* ow1 = settled.ow1() + i;
+        const int* hw2 = settled.hw2() + i;
+        const int* hw3 = settled.hw3() + i;
 
         T x_ow1[DIM], x_hw2[DIM], x_hw3[DIM];
 
@@ -719,7 +672,7 @@ static void settleTemplate(const settledata* settled,
             if (bCalcVirial)
             {
                 /* Filter out the non-local settles */
-                T filter = load<T>(settled->virfac + i);
+                T filter = load<T>(settled.virfac() + i);
                 T mOf    = filter * mO;
                 T mHf    = filter * mH;
 
@@ -764,20 +717,20 @@ static void settleTemplate(const settledata* settled,
  * and instantiates the core template with instantiated booleans.
  */
 template<typename T, typename TypeBool, int packSize, typename TypePbc>
-static void settleTemplateWrapper(settledata* settled,
-                                  int         nthread,
-                                  int         thread,
-                                  TypePbc     pbc,
-                                  const real  x[],
-                                  real        xprime[],
-                                  real        invdt,
-                                  real*       v,
-                                  bool        bCalcVirial,
-                                  tensor      vir_r_m_dr,
-                                  bool*       bErrorHasOccurred)
+static void settleTemplateWrapper(const SettleData& settled,
+                                  int               nthread,
+                                  int               thread,
+                                  TypePbc           pbc,
+                                  const real        x[],
+                                  real              xprime[],
+                                  real              invdt,
+                                  real*             v,
+                                  bool              bCalcVirial,
+                                  tensor            vir_r_m_dr,
+                                  bool*             bErrorHasOccurred)
 {
     /* We need to assign settles to threads in groups of pack_size */
-    int numSettlePacks = (settled->nsettle + packSize - 1) / packSize;
+    int numSettlePacks = (settled.numSettles() + packSize - 1) / packSize;
     /* Round the end value up to give thread 0 more work */
     int settleStart = ((numSettlePacks * thread + nthread - 1) / nthread) * packSize;
     int settleEnd   = ((numSettlePacks * (thread + 1) + nthread - 1) / nthread) * packSize;
@@ -810,7 +763,7 @@ static void settleTemplateWrapper(settledata* settled,
     }
 }
 
-void csettle(settledata*                     settled,
+void csettle(const SettleData&               settled,
              int                             nthread,
              int                             thread,
              const t_pbc*                    pbc,
@@ -827,7 +780,7 @@ void csettle(settledata*                     settled,
     real*       vPtr      = as_rvec_array(v.paddedArrayRef().data())[0];
 
 #if GMX_SIMD_HAVE_REAL
-    if (settled->bUseSimd)
+    if (settled.useSimd())
     {
         /* Convert the pbc struct for SIMD */
         alignas(GMX_SIMD_ALIGNMENT) real pbcSimd[9 * GMX_SIMD_REAL_WIDTH];

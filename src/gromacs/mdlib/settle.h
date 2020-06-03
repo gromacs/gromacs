@@ -45,6 +45,7 @@
 #define GMX_MDLIB_SETTLE_H
 
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/alignedallocator.h"
 
 struct gmx_mtop_t;
 struct InteractionList;
@@ -59,9 +60,6 @@ class ArrayRef;
 template<typename>
 class ArrayRefWithPadding;
 enum class ConstraintVariable : int;
-
-/* Abstract type for SETTLE that is defined only in the file that uses it */
-struct settledata;
 
 /* \brief Parameters for SETTLE algorithm.
  *
@@ -102,9 +100,8 @@ struct SettleParameters
     matrix invmat;
 };
 
-/*! \brief Initializes settle parameters.
+/*! \brief Computes and returns settle parameters.
  *
- * \param[out] p      SettleParameters structure to initialize
  * \param[in]  mO     Mass of oxygen atom
  * \param[in]  mH     Mass of hydrogen atom
  * \param[in]  invmO  Reciprocal mass of oxygen atom
@@ -112,25 +109,70 @@ struct SettleParameters
  * \param[in]  dOH    Target O-H bond length
  * \param[in]  dHH    Target H-H bond length
  */
-void initSettleParameters(SettleParameters* p, real mO, real mH, real dOH, real invmO, real invmH, real dHH);
+SettleParameters settleParameters(real mO, real mH, real dOH, real invmO, real invmH, real dHH);
 
-/*! \brief Initializes and returns a structure with SETTLE parameters */
-settledata* settle_init(const gmx_mtop_t& mtop);
+/*! \libinternal
+ * \brief Data for executing SETTLE constraining
+ */
+class SettleData
+{
+public:
+    //! Constructor
+    SettleData(const gmx_mtop_t& mtop);
 
-//! Cleans up.
-void settle_free(settledata* settled);
+    //! Sets the constraints from the interaction list and the masses
+    void setConstraints(const InteractionList& il_settle,
+                        int                    numHomeAtoms,
+                        const real*            masses,
+                        const real*            inverseMasses);
 
-/*! \brief Set up the indices for the settle constraints */
-void settle_set_constraints(settledata*            settled,
-                            const InteractionList& il_settle,
-                            int                    numHomeAtoms,
-                            const real*            masses,
-                            const real*            inverseMasses);
+    //! Returns settle parameters for constraining coordinates and forces
+    const SettleParameters& parametersMassWeighted() const { return parametersMassWeighted_; }
+
+    //! Returns settle parameters for constraining forces: all masses are set to 1
+    const SettleParameters& parametersAllMasses1() const { return parametersAllMasses1_; }
+
+    //! Returns the number of SETTLEs
+    int numSettles() const { return numSettles_; }
+
+    //! Returns a pointer to the indices of oxygens for each SETTLE
+    const int* ow1() const { return ow1_.data(); }
+    //! Returns a pointer to the indices of the first hydrogen for each SETTLE
+    const int* hw2() const { return hw2_.data(); }
+    //! Returns a pointer to the indices of the second hydrogen for each SETTLE
+    const int* hw3() const { return hw3_.data(); }
+    //! Returns a pointer to the virial contribution factor (either 1 or 0) for each SETTLE
+    const real* virfac() const { return virfac_.data(); }
+
+    //! Returns whether we should use SIMD intrinsics code
+    bool useSimd() const { return useSimd_; }
+
+private:
+    //! Parameters for SETTLE for coordinates
+    SettleParameters parametersMassWeighted_;
+    //! Parameters with all masses 1, for forces
+    SettleParameters parametersAllMasses1_;
+
+    //! The number of settles on our rank
+    int numSettles_;
+
+    //! Index to OW1 atoms, size numSettles_ + SIMD padding
+    std::vector<int, gmx::AlignedAllocator<int>> ow1_;
+    //! Index to HW2 atoms, size numSettles_ + SIMD padding
+    std::vector<int, gmx::AlignedAllocator<int>> hw2_;
+    //! Index to HW3 atoms, size numSettles_ + SIMD padding
+    std::vector<int, gmx::AlignedAllocator<int>> hw3_;
+    //! Virial factor 0 or 1, size numSettles_ + SIMD padding
+    std::vector<real, gmx::AlignedAllocator<real>> virfac_;
+
+    //! Tells whether we will use SIMD intrinsics code
+    bool useSimd_;
+};
 
 /*! \brief Constrain coordinates using SETTLE.
  * Can be called on any number of threads.
  */
-void csettle(settledata*                     settled,     /* The SETTLE structure */
+void csettle(const SettleData&               settled,     /* The SETTLE structure */
              int                             nthread,     /* The number of threads used */
              int                             thread,      /* Our thread index */
              const t_pbc*                    pbc,         /* PBC data pointer, can be NULL */
@@ -146,7 +188,7 @@ void csettle(settledata*                     settled,     /* The SETTLE structur
 /*! \brief Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
-void settle_proj(settledata*          settled,
+void settle_proj(const SettleData&    settled,
                  ConstraintVariable   econq,
                  int                  nsettle,
                  const int            iatoms[],

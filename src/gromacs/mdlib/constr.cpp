@@ -144,7 +144,7 @@ public:
     //! SHAKE data.
     std::unique_ptr<shakedata> shaked;
     //! SETTLE data.
-    settledata* settled = nullptr;
+    std::unique_ptr<SettleData> settled;
     //! The maximum number of warnings.
     int maxwarn = 0;
     //! The number of warnings for LINCS.
@@ -523,7 +523,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                             clear_mat(vir_r_m_dr_th[th]);
                         }
 
-                        csettle(settled, nth, th, pbc_null, x, xprime, invdt, v, vir != nullptr,
+                        csettle(*settled, nth, th, pbc_null, x, xprime, invdt, v, vir != nullptr,
                                 th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th],
                                 th == 0 ? &bSettleErrorHasOccurred0 : &bSettleErrorHasOccurred[th]);
                     }
@@ -569,7 +569,7 @@ bool Constraints::Impl::apply(bool                      bLog,
 
                         if (start_th >= 0 && end_th - start_th > 0)
                         {
-                            settle_proj(settled, econq, end_th - start_th,
+                            settle_proj(*settled, econq, end_th - start_th,
                                         settle.iatoms.data() + start_th * (1 + NRAL(F_SETTLE)), pbc_null,
                                         x.unpaddedArrayRef(), xprime.unpaddedArrayRef(), min_proj,
                                         calcvir_atom_end, th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th]);
@@ -935,7 +935,7 @@ void Constraints::Impl::setConstraints(gmx_localtop_t* top,
 
     if (settled)
     {
-        settle_set_constraints(settled, idef->il[F_SETTLE], numHomeAtoms_, masses_, inverseMasses_);
+        settled->setConstraints(idef->il[F_SETTLE], numHomeAtoms_, masses_, inverseMasses_);
     }
 
     /* Make a selection of the local atoms for essential dynamics */
@@ -1085,7 +1085,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
     {
         please_cite(log, "Miyamoto92a");
 
-        settled = settle_init(mtop);
+        settled = std::make_unique<SettleData>(mtop);
 
         /* Make an atom to settle index for use in domain decomposition */
         for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
@@ -1135,10 +1135,6 @@ Constraints::Impl::~Impl()
     if (vir_r_m_dr_th != nullptr)
     {
         sfree(vir_r_m_dr_th);
-    }
-    if (settled != nullptr)
-    {
-        settle_free(settled);
     }
     done_lincs(lincsd);
 }
