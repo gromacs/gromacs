@@ -284,30 +284,22 @@ void cshake(const int            iatom[],
     /* default should be increased! MRS 8/4/2009 */
     const real mytol = 1e-10;
 
-    int  ll, i, j, l3;
-    real r_dot_r_prime;
-    real constraint_distance_squared_ll;
-    real scaled_lagrange_multiplier_ll;
-    real diff, im, jm;
-    real xh, yh, zh, rijx, rijy, rijz;
-    int  nit, error, nconv;
-    real iconvf;
-
     // TODO nconv is used solely as a boolean, so we should write the
     // code like that
-    error = 0;
-    nconv = 1;
+    int error = 0;
+    int nconv = 1;
+    int nit;
     for (nit = 0; (nit < maxnit) && (nconv != 0) && (error == 0); nit++)
     {
         nconv = 0;
-        for (ll = 0; (ll < ncon) && (error == 0); ll++)
+        for (int ll = 0; (ll < ncon) && (error == 0); ll++)
         {
-            l3   = 3 * ll;
-            rijx = initial_displacements[ll][XX];
-            rijy = initial_displacements[ll][YY];
-            rijz = initial_displacements[ll][ZZ];
-            i    = iatom[l3 + 1];
-            j    = iatom[l3 + 2];
+            const int  l3   = 3 * ll;
+            const real rijx = initial_displacements[ll][XX];
+            const real rijy = initial_displacements[ll][YY];
+            const real rijz = initial_displacements[ll][ZZ];
+            const int  i    = iatom[l3 + 1];
+            const int  j    = iatom[l3 + 2];
 
             /* Compute r prime between atoms i and j, which is the
                displacement *before* this update stage */
@@ -320,17 +312,18 @@ void cshake(const int            iatom[],
             {
                 rvec_sub(positions[i], positions[j], r_prime);
             }
-            const real r_prime_squared     = norm2(r_prime);
-            constraint_distance_squared_ll = constraint_distance_squared[ll];
-            diff                           = constraint_distance_squared_ll - r_prime_squared;
+            const real r_prime_squared                = norm2(r_prime);
+            const real constraint_distance_squared_ll = constraint_distance_squared[ll];
+            const real diff = constraint_distance_squared_ll - r_prime_squared;
 
             /* iconvf is less than 1 when the error is smaller than a bound */
-            iconvf = fabs(diff) * distance_squared_tolerance[ll];
+            const real iconvf = std::abs(diff) * distance_squared_tolerance[ll];
 
-            if (iconvf > 1.0)
+            if (iconvf > 1.0_real)
             {
-                nconv         = static_cast<int>(iconvf);
-                r_dot_r_prime = (rijx * r_prime[XX] + rijy * r_prime[YY] + rijz * r_prime[ZZ]);
+                nconv = static_cast<int>(iconvf);
+                const real r_dot_r_prime =
+                        (rijx * r_prime[XX] + rijy * r_prime[YY] + rijz * r_prime[ZZ]);
 
                 if (r_dot_r_prime < constraint_distance_squared_ll * mytol)
                 {
@@ -340,13 +333,14 @@ void cshake(const int            iatom[],
                 {
                     /* The next line solves equation 5.6 (neglecting
                        the term in g^2), for g */
-                    scaled_lagrange_multiplier_ll = omega * diff * half_of_reduced_mass[ll] / r_dot_r_prime;
+                    real scaled_lagrange_multiplier_ll =
+                            omega * diff * half_of_reduced_mass[ll] / r_dot_r_prime;
                     scaled_lagrange_multiplier[ll] += scaled_lagrange_multiplier_ll;
-                    xh = rijx * scaled_lagrange_multiplier_ll;
-                    yh = rijy * scaled_lagrange_multiplier_ll;
-                    zh = rijz * scaled_lagrange_multiplier_ll;
-                    im = invmass[i];
-                    jm = invmass[j];
+                    const real xh = rijx * scaled_lagrange_multiplier_ll;
+                    const real yh = rijy * scaled_lagrange_multiplier_ll;
+                    const real zh = rijz * scaled_lagrange_multiplier_ll;
+                    const real im = invmass[i];
+                    const real jm = invmass[j];
                     positions[i][XX] += xh * im;
                     positions[i][YY] += yh * im;
                     positions[i][ZZ] += zh * im;
@@ -386,49 +380,43 @@ static void crattle(const int            iatom[],
      *     second part of rattle algorithm
      */
 
-    int  ll, i, j, l3;
-    real constraint_distance_squared_ll;
-    real vpijd, acor, fac, im, jm;
-    real xh, yh, zh, rijx, rijy, rijz;
-    int  nit, error, nconv;
-    real iconvf;
-
     // TODO nconv is used solely as a boolean, so we should write the
     // code like that
-    error = 0;
-    nconv = 1;
+    int error = 0;
+    int nconv = 1;
+    int nit;
     for (nit = 0; (nit < maxnit) && (nconv != 0) && (error == 0); nit++)
     {
         nconv = 0;
-        for (ll = 0; (ll < ncon) && (error == 0); ll++)
+        for (int ll = 0; (ll < ncon) && (error == 0); ll++)
         {
-            l3   = 3 * ll;
-            rijx = rij[ll][XX];
-            rijy = rij[ll][YY];
-            rijz = rij[ll][ZZ];
-            i    = iatom[l3 + 1];
-            j    = iatom[l3 + 2];
-            rvec v;
+            const int  l3   = 3 * ll;
+            const real rijx = rij[ll][XX];
+            const real rijy = rij[ll][YY];
+            const real rijz = rij[ll][ZZ];
+            const int  i    = iatom[l3 + 1];
+            const int  j    = iatom[l3 + 2];
+            rvec       v;
             rvec_sub(vp[i], vp[j], v);
 
-            vpijd                          = v[XX] * rijx + v[YY] * rijy + v[ZZ] * rijz;
-            constraint_distance_squared_ll = constraint_distance_squared[ll];
+            const real vpijd                          = v[XX] * rijx + v[YY] * rijy + v[ZZ] * rijz;
+            const real constraint_distance_squared_ll = constraint_distance_squared[ll];
 
             /* iconv is zero when the error is smaller than a bound */
-            iconvf = fabs(vpijd) * (distance_squared_tolerance[ll] / invdt);
+            const real iconvf = fabs(vpijd) * (distance_squared_tolerance[ll] / invdt);
 
-            if (iconvf > 1)
+            if (iconvf > 1.0_real)
             {
-                nconv = static_cast<int>(iconvf);
-                fac   = omega * 2.0 * m2[ll] / constraint_distance_squared_ll;
-                acor  = -fac * vpijd;
+                nconv           = static_cast<int>(iconvf);
+                const real fac  = omega * 2.0_real * m2[ll] / constraint_distance_squared_ll;
+                const real acor = -fac * vpijd;
                 scaled_lagrange_multiplier[ll] += acor;
-                xh = rijx * acor;
-                yh = rijy * acor;
-                zh = rijz * acor;
+                const real xh = rijx * acor;
+                const real yh = rijy * acor;
+                const real zh = rijz * acor;
 
-                im = invmass[i];
-                jm = invmass[j];
+                const real im = invmass[i];
+                const real jm = invmass[j];
 
                 vp[i][XX] += xh * im;
                 vp[i][YY] += yh * im;
@@ -467,7 +455,6 @@ static int vec_shakef(FILE*                     fplog,
     int  maxnit = 1000;
     int  nit    = 0, ll, i, j, d, d2, type;
     real L1;
-    real mm    = 0., tmp;
     int  error = 0;
     real constraint_distance;
 
@@ -481,7 +468,7 @@ static int vec_shakef(FILE*                     fplog,
     ArrayRef<real> distance_squared_tolerance  = shaked->distance_squared_tolerance;
     ArrayRef<real> constraint_distance_squared = shaked->constraint_distance_squared;
 
-    L1            = 1.0 - lambda;
+    L1            = 1.0_real - lambda;
     const int* ia = iatom;
     for (ll = 0; (ll < ncon); ll++, ia += 3)
     {
@@ -489,11 +476,16 @@ static int vec_shakef(FILE*                     fplog,
         i    = ia[1];
         j    = ia[2];
 
-        mm                       = 2.0 * (invmass[i] + invmass[j]);
-        rij[ll][XX]              = x[i][XX] - x[j][XX];
-        rij[ll][YY]              = x[i][YY] - x[j][YY];
-        rij[ll][ZZ]              = x[i][ZZ] - x[j][ZZ];
-        half_of_reduced_mass[ll] = 1.0 / mm;
+        if (pbc)
+        {
+            pbc_dx(pbc, x[i], x[j], rij[ll]);
+        }
+        else
+        {
+            rvec_sub(x[i], x[j], rij[ll]);
+        }
+        const real mm            = 2.0_real * (invmass[i] + invmass[j]);
+        half_of_reduced_mass[ll] = 1.0_real / mm;
         if (bFEP)
         {
             constraint_distance = L1 * ip[type].constr.dA + lambda * ip[type].constr.dB;
@@ -559,7 +551,7 @@ static int vec_shakef(FILE*                     fplog,
         if ((econq == ConstraintVariable::Positions) && !v.empty())
         {
             /* Correct the velocities */
-            mm = scaled_lagrange_multiplier[ll] * invmass[i] * invdt;
+            real mm = scaled_lagrange_multiplier[ll] * invmass[i] * invdt;
             for (d = 0; d < DIM; d++)
             {
                 v[ia[1]][d] += mm * rij[ll][d];
@@ -575,10 +567,10 @@ static int vec_shakef(FILE*                     fplog,
         /* constraint virial */
         if (bCalcVir)
         {
-            mm = scaled_lagrange_multiplier[ll];
+            const real mm = scaled_lagrange_multiplier[ll];
             for (d = 0; d < DIM; d++)
             {
-                tmp = mm * rij[ll][d];
+                const real tmp = mm * rij[ll][d];
                 for (d2 = 0; d2 < DIM; d2++)
                 {
                     vir_r_m_dr[d][d2] -= tmp * rij[ll][d2];
