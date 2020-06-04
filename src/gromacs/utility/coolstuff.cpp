@@ -1525,6 +1525,9 @@ std::string getCoolQuote()
         { "\"What are the biological implications of your research?\" - \"Well, I simulate "
           "water.\" ",
           "Petter Johansson" },
+        { "Everything what mathematicians were saying for the last 50 years is slowly catching up "
+          "with us.",
+          "David van der Spoel" },
     };
 
     if (beCool())
