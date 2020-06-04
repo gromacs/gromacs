@@ -156,6 +156,21 @@ basic job name from qualifiers or details. Also consider
 
 .. _variables:
 
+Updating regression tests
+~~~~~~~~~
+
+Changes in |GROMACS| that require changes in regression-tests are notoriously hard,
+because a merge request that tests against the non-updated version of the
+regression tests will necessarily fail, while updating regression tests while
+the current change is not integrated into master, might cause other
+merge request pipelines to fail.
+
+The solution is a new regression-test branch or commit, uploaded to gitlab.
+Then set that regression test branch with REGRESSIONTESTBRANCH or
+the specific commit with REGRESSIONTESTCOMMIT when
+running the specific pipeline that requires the regressiontest-update. 
+See below on how to set variables for specific pipelines.
+
 Variables
 ~~~~~~~~~
 
@@ -209,5 +224,23 @@ Other important variable keys are as follows.
         patch to the base Docker images to include the dependency to reduce
         pipeline execution time.
 
+    REGRESSIONTESTBRANCH
+        Use this branch of the regressiontests rather than master to allow for 
+        merge requests that require updated regression tests with valid CI tests.
+
+    REGRESSIONTESTCOMMIT
+        Use this commit to the regressiontests rather than the head on master to 
+        allow for merge requests that require updated regression tests with 
+        valid CI tests.
+
+
 .. todo:: Define common variables.
     ``BUILD_DIR``, ``INSTALL_DIR``, ``CACHE_FALLBACK_KEY``, ...
+
+Setting variables
+~~~~~~~~~
+
+Variables for individual piplelines are set in the gitlab interface under 
+``CI/CD``&rarr;``Pipelines``. Then chose in the top right corner ``Run Piplelines``.
+Under ``Run for``, the desired branch may be selected, and variables may be set
+in the fields below.
