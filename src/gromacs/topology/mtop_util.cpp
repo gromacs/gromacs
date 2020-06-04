@@ -1033,15 +1033,15 @@ gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t& mtop)
     return mols;
 }
 
-std::vector<gmx::Range<int>> atomRangeOfEachResidue(const gmx_molblock_t& molblock, const gmx_mtop_t& mtop)
+std::vector<gmx::Range<int>> atomRangeOfEachResidue(const gmx_moltype_t& moltype)
 {
     std::vector<gmx::Range<int>> atomRanges;
-    int currentResidueNumber = mtop.moltype[molblock.type].atoms.atom[0].resind;
-    int startAtom            = 0;
+    int                          currentResidueNumber = moltype.atoms.atom[0].resind;
+    int                          startAtom            = 0;
     // Go through all atoms in a molecule to store first and last atoms in each residue.
-    for (int i = 0; i < mtop.moltype[molblock.type].atoms.nr; i++)
+    for (int i = 0; i < moltype.atoms.nr; i++)
     {
-        int residueOfThisAtom = mtop.moltype[molblock.type].atoms.atom[i].resind;
+        int residueOfThisAtom = moltype.atoms.atom[i].resind;
         if (residueOfThisAtom != currentResidueNumber)
         {
             // This atom belongs to the next residue, so record the range for the previous residue,
@@ -1054,7 +1054,7 @@ std::vector<gmx::Range<int>> atomRangeOfEachResidue(const gmx_molblock_t& molblo
         }
     }
     // special treatment for last residue in this molecule.
-    atomRanges.emplace_back(startAtom, mtop.moltype[molblock.type].atoms.nr);
+    atomRanges.emplace_back(startAtom, moltype.atoms.nr);
 
     return atomRanges;
 }

@@ -259,12 +259,10 @@ gmx::RangePartitioning gmx_mtop_molecules(const gmx_mtop_t& mtop);
  *
  * Note that residues will always have consecutive atoms numbers internally.
  *
- * \param[in] molblock Molecule block to parse for start and end.
- * \param[in] mtop     The topology to use.
+ * \param[in] moltype  Molecule Type to parse for start and end.
  * \returns Vector of ranges for all residues.
- * \todo use individual fields instead taking complete mtop.
  */
-std::vector<gmx::Range<int>> atomRangeOfEachResidue(const gmx_molblock_t& molblock, const gmx_mtop_t& mtop);
+std::vector<gmx::Range<int>> atomRangeOfEachResidue(const gmx_moltype_t& moltype);
 
 /* Converts a gmx_mtop_t struct to t_topology.
  *

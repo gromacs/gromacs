@@ -142,7 +142,7 @@ TEST(MtopTest, CanFindResidueStartAndEndAtoms)
     gmx_mtop_t mtop;
     auto       expectedResidueRange = createTwoResidueTopology(&mtop);
 
-    auto atomRanges = atomRangeOfEachResidue(mtop.molblock[0], mtop);
+    auto atomRanges = atomRangeOfEachResidue(mtop.moltype[0]);
     ASSERT_EQ(atomRanges.size(), expectedResidueRange.size());
     for (gmx::index i = 0; i < gmx::ssize(atomRanges); i++)
     {
