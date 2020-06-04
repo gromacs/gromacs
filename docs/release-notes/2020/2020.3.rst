@@ -22,8 +22,12 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Update MSVC SIMD flags
+""""""""""""""""""""""
+Newly supported SIMD flags may improve performance on recent x86 running Windows.
+
 Fix error with tinyxml2 linking
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""
 The signature for linking the external library was wrong.
 
 Miscellaneous
