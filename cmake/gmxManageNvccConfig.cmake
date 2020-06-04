@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -135,23 +135,6 @@ if (GMX_CUDA_TARGET_COMPUTE)
     set_property(CACHE GMX_CUDA_TARGET_COMPUTE PROPERTY HELPSTRING "List of CUDA virtual architecture codes to compile for (without the compute_ prefix)")
     set_property(CACHE GMX_CUDA_TARGET_COMPUTE PROPERTY TYPE STRING)
 endif()
-
-# FindCUDA.cmake is unaware of the mechanism used by cmake to embed
-# the compiler flag for the required C++ standard in the generated
-# build files, so we have to pass it ourselves
-if (MSVC)
-    # We use C++14 on MSVC, but cmake does not understand the
-    # necessary compilation option for that until version 3.10, so we
-    # can remove this after we require that version.
-    if (NOT CMAKE_CXX14_STANDARD_COMPILE_OPTION)
-        set(GMX_CXX_STANDARD_COMPILE_OPTION "-std:c++14")
-    else()
-        set(GMX_CXX_STANDARD_COMPILE_OPTION "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
-    endif()
-else()
-    set(GMX_CXX_STANDARD_COMPILE_OPTION "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
-endif()
-list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CXX_STANDARD_COMPILE_OPTION}")
 
 # assemble the CUDA flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
