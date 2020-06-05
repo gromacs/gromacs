@@ -19,6 +19,13 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix segmentation fault with gmx lie
+"""""""""""""""""""""""""""""""""""
+
+The tool would crash due to mismatching sizes of energy terms in the file and F_NRE.
+
+:issue:`3547`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
