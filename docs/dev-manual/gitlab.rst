@@ -157,9 +157,9 @@ basic job name from qualifiers or details. Also consider
 .. _variables:
 
 Updating regression tests
-~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Changes in |GROMACS| that require changes in regression-tests are notoriously hard,
+Changes in |Gromacs| that require changes in regression-tests are notoriously hard,
 because a merge request that tests against the non-updated version of the
 regression tests will necessarily fail, while updating regression tests while
 the current change is not integrated into master, might cause other
@@ -238,9 +238,9 @@ Other important variable keys are as follows.
     ``BUILD_DIR``, ``INSTALL_DIR``, ``CACHE_FALLBACK_KEY``, ...
 
 Setting variables
-~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 Variables for individual piplelines are set in the gitlab interface under 
-``CI/CD``&rarr;``Pipelines``. Then chose in the top right corner ``Run Piplelines``.
+``CI/CD``; ``Pipelines``. Then chose in the top right corner ``Run Piplelines``.
 Under ``Run for``, the desired branch may be selected, and variables may be set
 in the fields below.

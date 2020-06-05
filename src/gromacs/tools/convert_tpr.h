@@ -44,8 +44,11 @@ namespace gmx
 class ConvertTprInfo
 {
 public:
-    static const char                       name[];
-    static const char                       shortDescription[];
+    //! Name of the module.
+    static const char name[];
+    //! Short description what the module does.
+    static const char shortDescription[];
+    //! Instantiatiates the module.
     static ICommandLineOptionsModulePointer create();
 };
 

@@ -277,15 +277,15 @@ public:
                       gmx_wallcycle*       wcycle);
 
 private:
-    // The number of vsites that cross update groups, when =0 no PBC treatment is needed
+    //! The number of vsites that cross update groups, when =0 no PBC treatment is needed
     const int numInterUpdategroupVirtualSites_;
-    // PBC and DD information
+    //! PBC and DD information
     const DomainInfo domainInfo_;
-    // The interaction parameters
+    //! The interaction parameters
     const ArrayRef<const t_iparams> iparams_;
-    // The interaction lists
+    //! The interaction lists
     ArrayRef<const InteractionList> ilists_;
-    // Information for handling vsite threading
+    //! Information for handling vsite threading
     ThreadingInfo threadingInfo_;
 };
 
