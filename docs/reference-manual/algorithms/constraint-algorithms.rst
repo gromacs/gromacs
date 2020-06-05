@@ -60,7 +60,17 @@ SETTLE
 For the special case of rigid
 water molecules, that often make up more than 80% of the simulation
 system we have implemented the SETTLE algorithm \ :ref:`47 <refMiyamoto92>`
-(sec. :ref:`constraintalg`).
+(sec. :ref:`constraintalg`). The implementation of SETTLE in |Gromacs|
+is a slight modification of the original algorithm, in that it completely
+avoids the calculation of the center of mass of the water molecule.
+Apart from saving a few operations, the main gain of this is a reduction
+in rouding errors. For large coordinates, the floating pointing precision of constrained
+distances is reduced, which leads to an energy drift which usually depends
+quadratically on the coordinate. For SETTLE this dependence is now linear, which enables
+accurate integration of systems in single precision up to 1000 nm in size.
+But note that the drift due to SHAKE and LINCS still has a quadratic
+dependence, which limits the size of systems with normal constraints
+in single precision to 100 to 200 nm.
 
 For velocity Verlet, an additional round of constraining must be done,
 to constrain the velocities of the second velocity half step, removing

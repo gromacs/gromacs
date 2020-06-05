@@ -112,6 +112,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     /*    2006-10-16 Changed velocity update to use differences         ** */
     /*    2012-09-24 Use oxygen as reference instead of COM             ** */
     /*    2016-02    Complete rewrite of the code for SIMD              ** */
+    /*    2020-06    Completely remove use of COM to minimize drift     ** */
     /*                                                                  ** */
     /*    Reference for the SETTLE algorithm                            ** */
     /*           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992).    ** */
@@ -142,20 +143,13 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         float3 dist31 = pbcDxAiuc(pbcAiuc, x_hw3, x_ow1);
         float3 doh2   = pbcDxAiuc(pbcAiuc, xprime_hw2, xprime_ow1);
 
-        float3 sh_hw2 = xprime_hw2 - (xprime_ow1 + doh2);
-        xprime_hw2    = xprime_hw2 - sh_hw2;
-
         float3 doh3 = pbcDxAiuc(pbcAiuc, xprime_hw3, xprime_ow1);
 
-        float3 sh_hw3 = xprime_hw3 - (xprime_ow1 + doh3);
-        xprime_hw3    = xprime_hw3 - sh_hw3;
+        float3 a1 = (-doh2 - doh3) * pars.wh;
 
-        float3 a1  = (-doh2 - doh3) * pars.wh;
-        float3 com = xprime_ow1 - a1;
+        float3 b1 = doh2 + a1;
 
-        float3 b1 = xprime_hw2 - com;
-
-        float3 c1 = xprime_hw3 - com;
+        float3 c1 = doh3 + a1;
 
         float xakszd = dist21.y * dist31.z - dist21.z * dist31.y;
         float yakszd = dist21.z * dist31.x - dist21.x * dist31.z;
@@ -274,59 +268,48 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
 
 
         /* Compute and store the corrected new coordinate */
-        xprime_ow1 = com + a3;
-        xprime_hw2 = com + b3 + sh_hw2;
-        xprime_hw3 = com + c3 + sh_hw3;
+        const float3 dxOw1 = a3 - a1;
+        const float3 dxHw2 = b3 - b1;
+        const float3 dxHw3 = c3 - c1;
 
-        gm_xprime[indices.x] = xprime_ow1;
-        gm_xprime[indices.y] = xprime_hw2;
-        gm_xprime[indices.z] = xprime_hw3;
+        gm_xprime[indices.x] = xprime_ow1 + dxOw1;
+        gm_xprime[indices.y] = xprime_hw2 + dxHw2;
+        gm_xprime[indices.z] = xprime_hw3 + dxHw3;
 
-
-        if (updateVelocities || computeVirial)
+        if (updateVelocities)
         {
+            float3 v_ow1 = gm_v[indices.x];
+            float3 v_hw2 = gm_v[indices.y];
+            float3 v_hw3 = gm_v[indices.z];
 
-            float3 da = a3 - a1;
-            float3 db = b3 - b1;
-            float3 dc = c3 - c1;
+            /* Add the position correction divided by dt to the velocity */
+            v_ow1 = dxOw1 * invdt + v_ow1;
+            v_hw2 = dxHw2 * invdt + v_hw2;
+            v_hw3 = dxHw3 * invdt + v_hw3;
 
-            if (updateVelocities)
-            {
+            gm_v[indices.x] = v_ow1;
+            gm_v[indices.y] = v_hw2;
+            gm_v[indices.z] = v_hw3;
+        }
 
-                float3 v_ow1 = gm_v[indices.x];
-                float3 v_hw2 = gm_v[indices.y];
-                float3 v_hw3 = gm_v[indices.z];
+        if (computeVirial)
+        {
+            float3 mdb = pars.mH * dxHw2;
+            float3 mdc = pars.mH * dxHw3;
+            float3 mdo = pars.mO * dxOw1 + mdb + mdc;
 
-                /* Add the position correction divided by dt to the velocity */
-                v_ow1 = da * invdt + v_ow1;
-                v_hw2 = db * invdt + v_hw2;
-                v_hw3 = dc * invdt + v_hw3;
-
-                gm_v[indices.x] = v_ow1;
-                gm_v[indices.y] = v_hw2;
-                gm_v[indices.z] = v_hw3;
-            }
-
-            if (computeVirial)
-            {
-
-                float3 mdb = pars.mH * db;
-                float3 mdc = pars.mH * dc;
-                float3 mdo = pars.mO * da + mdb + mdc;
-
-                sm_threadVirial[0 * blockDim.x + threadIdx.x] =
-                        -(x_ow1.x * mdo.x + dist21.x * mdb.x + dist31.x * mdc.x);
-                sm_threadVirial[1 * blockDim.x + threadIdx.x] =
-                        -(x_ow1.x * mdo.y + dist21.x * mdb.y + dist31.x * mdc.y);
-                sm_threadVirial[2 * blockDim.x + threadIdx.x] =
-                        -(x_ow1.x * mdo.z + dist21.x * mdb.z + dist31.x * mdc.z);
-                sm_threadVirial[3 * blockDim.x + threadIdx.x] =
-                        -(x_ow1.y * mdo.y + dist21.y * mdb.y + dist31.y * mdc.y);
-                sm_threadVirial[4 * blockDim.x + threadIdx.x] =
-                        -(x_ow1.y * mdo.z + dist21.y * mdb.z + dist31.y * mdc.z);
-                sm_threadVirial[5 * blockDim.x + threadIdx.x] =
-                        -(x_ow1.z * mdo.z + dist21.z * mdb.z + dist31.z * mdc.z);
-            }
+            sm_threadVirial[0 * blockDim.x + threadIdx.x] =
+                    -(x_ow1.x * mdo.x + dist21.x * mdb.x + dist31.x * mdc.x);
+            sm_threadVirial[1 * blockDim.x + threadIdx.x] =
+                    -(x_ow1.x * mdo.y + dist21.x * mdb.y + dist31.x * mdc.y);
+            sm_threadVirial[2 * blockDim.x + threadIdx.x] =
+                    -(x_ow1.x * mdo.z + dist21.x * mdb.z + dist31.x * mdc.z);
+            sm_threadVirial[3 * blockDim.x + threadIdx.x] =
+                    -(x_ow1.y * mdo.y + dist21.y * mdb.y + dist31.y * mdc.y);
+            sm_threadVirial[4 * blockDim.x + threadIdx.x] =
+                    -(x_ow1.y * mdo.z + dist21.y * mdb.z + dist31.y * mdc.z);
+            sm_threadVirial[5 * blockDim.x + threadIdx.x] =
+                    -(x_ow1.z * mdo.z + dist21.z * mdb.z + dist31.z * mdc.z);
         }
     }
     else

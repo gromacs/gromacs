@@ -388,6 +388,7 @@ static void settleTemplate(const SettleData& settled,
     /*    2006-10-16 Changed velocity update to use differences         ** */
     /*    2012-09-24 Use oxygen as reference instead of COM             ** */
     /*    2016-02    Complete rewrite of the code for SIMD              ** */
+    /*    2020-06    Completely remove use of COM to minimize drift     ** */
     /*                                                                  ** */
     /*    Reference for the SETTLE algorithm                            ** */
     /*           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992).    ** */
@@ -447,49 +448,43 @@ static void settleTemplate(const SettleData& settled,
 
         T dist21[DIM], dist31[DIM];
         T doh2[DIM], doh3[DIM];
-        T sh_hw2[DIM], sh_hw3[DIM];
 
         pbc_dx_aiuc(pbc, x_hw2, x_ow1, dist21);
 
         pbc_dx_aiuc(pbc, x_hw3, x_ow1, dist31);
 
-        /* Tedious way of doing pbc */
         pbc_dx_aiuc(pbc, xprime_hw2, xprime_ow1, doh2);
-        for (int d = 0; d < DIM; d++)
-        {
-            sh_hw2[d]     = xprime_hw2[d] - (xprime_ow1[d] + doh2[d]);
-            xprime_hw2[d] = xprime_hw2[d] - sh_hw2[d];
-        }
-        pbc_dx_aiuc(pbc, xprime_hw3, xprime_ow1, doh3);
-        for (int d = 0; d < DIM; d++)
-        {
-            sh_hw3[d]     = xprime_hw3[d] - (xprime_ow1[d] + doh3[d]);
-            xprime_hw3[d] = xprime_hw3[d] - sh_hw3[d];
-        }
 
-        /* Not calculating the center of mass using the oxygen position
-         * and the O-H distances, as done below, will make SETTLE
-         * the largest source of energy drift for simulations of water,
+        pbc_dx_aiuc(pbc, xprime_hw3, xprime_ow1, doh3);
+        /* 4 * 18 flops (would be 4 * 3 without PBC) */
+
+        /* Note that we completely avoid computing the center of mass and
+         * only use distances. This minimizes energy drift and also makes
+         * the computation slightly cheaper.
+         * Straightforward computation of the COM, as in the original algorithm,
+         * makes SETTLE the largest source of energy drift for simulations of water,
          * as then the oxygen coordinate is multiplied by 0.89 at every step,
          * which can then transfer a systematic rounding to the oxygen velocity.
+         * For some time we computed the COM using offsets from the oxygen, this
+         * significantly reduces the energy drift, but not using the COM at all,
+         * as we do now, is optimal.
          */
-        T a1[DIM], com[DIM];
+        T a1[DIM];
         for (int d = 0; d < DIM; d++)
         {
-            a1[d]  = -(doh2[d] + doh3[d]) * wh;
-            com[d] = xprime_ow1[d] - a1[d];
+            a1[d] = -(doh2[d] + doh3[d]) * wh;
         }
         T b1[DIM];
         for (int d = 0; d < DIM; d++)
         {
-            b1[d] = xprime_hw2[d] - com[d];
+            b1[d] = doh2[d] + a1[d];
         }
         T c1[DIM];
         for (int d = 0; d < DIM; d++)
         {
-            c1[d] = xprime_hw3[d] - com[d];
+            c1[d] = doh3[d] + a1[d];
         }
-        /* 15 flops */
+        /* 12 flops */
 
         T xakszd = dist21[YY] * dist31[ZZ] - dist21[ZZ] * dist31[YY];
         T yakszd = dist21[ZZ] * dist31[XX] - dist21[XX] * dist31[ZZ];
@@ -606,96 +601,84 @@ static void settleTemplate(const SettleData& settled,
         /* 45 flops */
 
         /* Compute and store the corrected new coordinate */
+        T dxOw1[DIM];
         for (int d = 0; d < DIM; d++)
         {
-            xprime_ow1[d] = com[d] + a3[d];
+            dxOw1[d]      = a3[d] - a1[d];
+            xprime_ow1[d] = xprime_ow1[d] + dxOw1[d];
         }
+        T dxHw2[DIM];
         for (int d = 0; d < DIM; d++)
         {
-            xprime_hw2[d] = com[d] + b3[d] + sh_hw2[d];
+            dxHw2[d]      = b3[d] - b1[d];
+            xprime_hw2[d] = xprime_hw2[d] + dxHw2[d];
         }
+        T dxHw3[DIM];
         for (int d = 0; d < DIM; d++)
         {
-            xprime_hw3[d] = com[d] + c3[d] + sh_hw3[d];
+            dxHw3[d]      = c3[d] - c1[d];
+            xprime_hw3[d] = xprime_hw3[d] + dxHw3[d];
         }
-        /* 9 flops + 6 pbc flops */
+        /* 9 + 9 flops */
 
         transposeScatterStoreU<3>(xprime, ow1, xprime_ow1[XX], xprime_ow1[YY], xprime_ow1[ZZ]);
         transposeScatterStoreU<3>(xprime, hw2, xprime_hw2[XX], xprime_hw2[YY], xprime_hw2[ZZ]);
         transposeScatterStoreU<3>(xprime, hw3, xprime_hw3[XX], xprime_hw3[YY], xprime_hw3[ZZ]);
 
-        if (bCorrectVelocity || bCalcVirial)
+        if (bCorrectVelocity)
         {
-            T da[DIM], db[DIM], dc[DIM];
+            T v_ow1[DIM], v_hw2[DIM], v_hw3[DIM];
+
+            gatherLoadUTranspose<3>(v, ow1, &v_ow1[XX], &v_ow1[YY], &v_ow1[ZZ]);
+            gatherLoadUTranspose<3>(v, hw2, &v_hw2[XX], &v_hw2[YY], &v_hw2[ZZ]);
+            gatherLoadUTranspose<3>(v, hw3, &v_hw3[XX], &v_hw3[YY], &v_hw3[ZZ]);
+
+            /* Add the position correction divided by dt to the velocity */
             for (int d = 0; d < DIM; d++)
             {
-                da[d] = a3[d] - a1[d];
+                v_ow1[d] = gmx::fma(dxOw1[d], invdt, v_ow1[d]);
             }
             for (int d = 0; d < DIM; d++)
             {
-                db[d] = b3[d] - b1[d];
+                v_hw2[d] = gmx::fma(dxHw2[d], invdt, v_hw2[d]);
             }
             for (int d = 0; d < DIM; d++)
             {
-                dc[d] = c3[d] - c1[d];
+                v_hw3[d] = gmx::fma(dxHw3[d], invdt, v_hw3[d]);
             }
-            /* 9 flops */
+            /* 3*6 flops */
 
-            if (bCorrectVelocity)
+            transposeScatterStoreU<3>(v, ow1, v_ow1[XX], v_ow1[YY], v_ow1[ZZ]);
+            transposeScatterStoreU<3>(v, hw2, v_hw2[XX], v_hw2[YY], v_hw2[ZZ]);
+            transposeScatterStoreU<3>(v, hw3, v_hw3[XX], v_hw3[YY], v_hw3[ZZ]);
+        }
+
+        if (bCalcVirial)
+        {
+            /* Filter out the non-local settles */
+            T filter = load<T>(settled.virfac() + i);
+            T mOf    = filter * mO;
+            T mHf    = filter * mH;
+
+            T mdo[DIM], mdb[DIM], mdc[DIM];
+
+            for (int d = 0; d < DIM; d++)
             {
-                T v_ow1[DIM], v_hw2[DIM], v_hw3[DIM];
-
-                gatherLoadUTranspose<3>(v, ow1, &v_ow1[XX], &v_ow1[YY], &v_ow1[ZZ]);
-                gatherLoadUTranspose<3>(v, hw2, &v_hw2[XX], &v_hw2[YY], &v_hw2[ZZ]);
-                gatherLoadUTranspose<3>(v, hw3, &v_hw3[XX], &v_hw3[YY], &v_hw3[ZZ]);
-
-                /* Add the position correction divided by dt to the velocity */
-                for (int d = 0; d < DIM; d++)
-                {
-                    v_ow1[d] = gmx::fma(da[d], invdt, v_ow1[d]);
-                }
-                for (int d = 0; d < DIM; d++)
-                {
-                    v_hw2[d] = gmx::fma(db[d], invdt, v_hw2[d]);
-                }
-                for (int d = 0; d < DIM; d++)
-                {
-                    v_hw3[d] = gmx::fma(dc[d], invdt, v_hw3[d]);
-                }
-                /* 3*6 flops */
-
-                transposeScatterStoreU<3>(v, ow1, v_ow1[XX], v_ow1[YY], v_ow1[ZZ]);
-                transposeScatterStoreU<3>(v, hw2, v_hw2[XX], v_hw2[YY], v_hw2[ZZ]);
-                transposeScatterStoreU<3>(v, hw3, v_hw3[XX], v_hw3[YY], v_hw3[ZZ]);
+                mdb[d] = mHf * dxHw2[d];
+                mdc[d] = mHf * dxHw3[d];
+                mdo[d] = mOf * dxOw1[d] + mdb[d] + mdc[d];
             }
 
-            if (bCalcVirial)
+            for (int d2 = 0; d2 < DIM; d2++)
             {
-                /* Filter out the non-local settles */
-                T filter = load<T>(settled.virfac() + i);
-                T mOf    = filter * mO;
-                T mHf    = filter * mH;
-
-                T mdo[DIM], mdb[DIM], mdc[DIM];
-
                 for (int d = 0; d < DIM; d++)
                 {
-                    mdb[d] = mHf * db[d];
-                    mdc[d] = mHf * dc[d];
-                    mdo[d] = mOf * da[d] + mdb[d] + mdc[d];
+                    sum_r_m_dr[d2][d] =
+                            sum_r_m_dr[d2][d]
+                            - (x_ow1[d2] * mdo[d] + dist21[d2] * mdb[d] + dist31[d2] * mdc[d]);
                 }
-
-                for (int d2 = 0; d2 < DIM; d2++)
-                {
-                    for (int d = 0; d < DIM; d++)
-                    {
-                        sum_r_m_dr[d2][d] =
-                                sum_r_m_dr[d2][d]
-                                - (x_ow1[d2] * mdo[d] + dist21[d2] * mdb[d] + dist31[d2] * mdc[d]);
-                    }
-                }
-                /* 71 flops */
             }
+            /* 71 flops */
         }
     }
 
