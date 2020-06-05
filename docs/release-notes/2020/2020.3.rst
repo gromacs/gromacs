@@ -33,3 +33,9 @@ The signature for linking the external library was wrong.
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Updated message on using GPU with non-dynamical integrator
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The GPU implementation of PME and bonded forces requires dynamical integrator.
+The message that informs user why using GPU for PME or bonded forces is not
+supported with non-dynamical integrator was made more clear.
+

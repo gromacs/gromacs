@@ -141,7 +141,9 @@ bool inputSupportsGpuBondeds(const t_inputrec& ir, const gmx_mtop_t& mtop, std::
     }
     if (!EI_DYNAMICS(ir.eI))
     {
-        errorReasons.emplace_back("not a dynamical integrator");
+        errorReasons.emplace_back(
+                "Cannot compute bonded interactions on a GPU, because GPU implementation requires "
+                "a dynamical integrator (md, sd, etc).");
     }
     if (EI_MIMIC(ir.eI))
     {
