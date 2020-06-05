@@ -50,6 +50,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
@@ -150,6 +151,218 @@ int multisim_min(const gmx_multisim_t* ms, int nmin, int n)
     sfree(buf);
 
     return nmin;
+}
+
+static void calc_ke_part_normal(gmx::ArrayRef<const gmx::RVec> v,
+                                const t_grpopts*               opts,
+                                const t_mdatoms*               md,
+                                gmx_ekindata_t*                ekind,
+                                t_nrnb*                        nrnb,
+                                gmx_bool                       bEkinAveVel)
+{
+    int                         g;
+    gmx::ArrayRef<t_grp_tcstat> tcstat  = ekind->tcstat;
+    gmx::ArrayRef<t_grp_acc>    grpstat = ekind->grpstat;
+
+    /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
+       an option, but not supported now.
+       bEkinAveVel: If TRUE, we sum into ekin, if FALSE, into ekinh.
+     */
+
+    /* group velocities are calculated in update_ekindata and
+     * accumulated in acumulate_groups.
+     * Now the partial global and groups ekin.
+     */
+    for (g = 0; (g < opts->ngtc); g++)
+    {
+        copy_mat(tcstat[g].ekinh, tcstat[g].ekinh_old);
+        if (bEkinAveVel)
+        {
+            clear_mat(tcstat[g].ekinf);
+            tcstat[g].ekinscalef_nhc = 1.0; /* need to clear this -- logic is complicated! */
+        }
+        else
+        {
+            clear_mat(tcstat[g].ekinh);
+        }
+    }
+    ekind->dekindl_old = ekind->dekindl;
+    int nthread        = gmx_omp_nthreads_get(emntUpdate);
+
+#pragma omp parallel for num_threads(nthread) schedule(static)
+    for (int thread = 0; thread < nthread; thread++)
+    {
+        // This OpenMP only loops over arrays and does not call any functions
+        // or memory allocation. It should not be able to throw, so for now
+        // we do not need a try/catch wrapper.
+        int     start_t, end_t, n;
+        int     ga, gt;
+        rvec    v_corrt;
+        real    hm;
+        int     d, m;
+        matrix* ekin_sum;
+        real*   dekindl_sum;
+
+        start_t = ((thread + 0) * md->homenr) / nthread;
+        end_t   = ((thread + 1) * md->homenr) / nthread;
+
+        ekin_sum    = ekind->ekin_work[thread];
+        dekindl_sum = ekind->dekindl_work[thread];
+
+        for (gt = 0; gt < opts->ngtc; gt++)
+        {
+            clear_mat(ekin_sum[gt]);
+        }
+        *dekindl_sum = 0.0;
+
+        ga = 0;
+        gt = 0;
+        for (n = start_t; n < end_t; n++)
+        {
+            if (md->cACC)
+            {
+                ga = md->cACC[n];
+            }
+            if (md->cTC)
+            {
+                gt = md->cTC[n];
+            }
+            hm = 0.5 * md->massT[n];
+
+            for (d = 0; (d < DIM); d++)
+            {
+                v_corrt[d] = v[n][d] - grpstat[ga].u[d];
+            }
+            for (d = 0; (d < DIM); d++)
+            {
+                for (m = 0; (m < DIM); m++)
+                {
+                    /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
+                    ekin_sum[gt][m][d] += hm * v_corrt[m] * v_corrt[d];
+                }
+            }
+            if (md->nMassPerturbed && md->bPerturbed[n])
+            {
+                *dekindl_sum += 0.5 * (md->massB[n] - md->massA[n]) * iprod(v_corrt, v_corrt);
+            }
+        }
+    }
+
+    ekind->dekindl = 0;
+    for (int thread = 0; thread < nthread; thread++)
+    {
+        for (g = 0; g < opts->ngtc; g++)
+        {
+            if (bEkinAveVel)
+            {
+                m_add(tcstat[g].ekinf, ekind->ekin_work[thread][g], tcstat[g].ekinf);
+            }
+            else
+            {
+                m_add(tcstat[g].ekinh, ekind->ekin_work[thread][g], tcstat[g].ekinh);
+            }
+        }
+
+        ekind->dekindl += *ekind->dekindl_work[thread];
+    }
+
+    inc_nrnb(nrnb, eNR_EKIN, md->homenr);
+}
+
+static void calc_ke_part_visc(const matrix                   box,
+                              gmx::ArrayRef<const gmx::RVec> x,
+                              gmx::ArrayRef<const gmx::RVec> v,
+                              const t_grpopts*               opts,
+                              const t_mdatoms*               md,
+                              gmx_ekindata_t*                ekind,
+                              t_nrnb*                        nrnb,
+                              gmx_bool                       bEkinAveVel)
+{
+    int                         start = 0, homenr = md->homenr;
+    int                         g, d, n, m, gt = 0;
+    rvec                        v_corrt;
+    real                        hm;
+    gmx::ArrayRef<t_grp_tcstat> tcstat = ekind->tcstat;
+    t_cos_acc*                  cosacc = &(ekind->cosacc);
+    real                        dekindl;
+    real                        fac, cosz;
+    double                      mvcos;
+
+    for (g = 0; g < opts->ngtc; g++)
+    {
+        copy_mat(ekind->tcstat[g].ekinh, ekind->tcstat[g].ekinh_old);
+        clear_mat(ekind->tcstat[g].ekinh);
+    }
+    ekind->dekindl_old = ekind->dekindl;
+
+    fac     = 2 * M_PI / box[ZZ][ZZ];
+    mvcos   = 0;
+    dekindl = 0;
+    for (n = start; n < start + homenr; n++)
+    {
+        if (md->cTC)
+        {
+            gt = md->cTC[n];
+        }
+        hm = 0.5 * md->massT[n];
+
+        /* Note that the times of x and v differ by half a step */
+        /* MRS -- would have to be changed for VV */
+        cosz = std::cos(fac * x[n][ZZ]);
+        /* Calculate the amplitude of the new velocity profile */
+        mvcos += 2 * cosz * md->massT[n] * v[n][XX];
+
+        copy_rvec(v[n], v_corrt);
+        /* Subtract the profile for the kinetic energy */
+        v_corrt[XX] -= cosz * cosacc->vcos;
+        for (d = 0; (d < DIM); d++)
+        {
+            for (m = 0; (m < DIM); m++)
+            {
+                /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
+                if (bEkinAveVel)
+                {
+                    tcstat[gt].ekinf[m][d] += hm * v_corrt[m] * v_corrt[d];
+                }
+                else
+                {
+                    tcstat[gt].ekinh[m][d] += hm * v_corrt[m] * v_corrt[d];
+                }
+            }
+        }
+        if (md->nPerturbed && md->bPerturbed[n])
+        {
+            /* The minus sign here might be confusing.
+             * The kinetic contribution from dH/dl doesn't come from
+             * d m(l)/2 v^2 / dl, but rather from d p^2/2m(l) / dl,
+             * where p are the momenta. The difference is only a minus sign.
+             */
+            dekindl -= 0.5 * (md->massB[n] - md->massA[n]) * iprod(v_corrt, v_corrt);
+        }
+    }
+    ekind->dekindl = dekindl;
+    cosacc->mvcos  = mvcos;
+
+    inc_nrnb(nrnb, eNR_EKIN, homenr);
+}
+
+static void calc_ke_part(gmx::ArrayRef<const gmx::RVec> x,
+                         gmx::ArrayRef<const gmx::RVec> v,
+                         const matrix                   box,
+                         const t_grpopts*               opts,
+                         const t_mdatoms*               md,
+                         gmx_ekindata_t*                ekind,
+                         t_nrnb*                        nrnb,
+                         gmx_bool                       bEkinAveVel)
+{
+    if (ekind->cosacc.cos_accel == 0)
+    {
+        calc_ke_part_normal(v, opts, md, ekind, nrnb, bEkinAveVel);
+    }
+    else
+    {
+        calc_ke_part_visc(box, x, v, opts, md, ekind, nrnb, bEkinAveVel);
+    }
 }
 
 /* TODO Specialize this routine into init-time and loop-time versions?
