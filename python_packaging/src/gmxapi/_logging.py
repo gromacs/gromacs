@@ -34,10 +34,25 @@
 
 """Python logging facilities use the built-in logging module.
 
-Upon import, the gmxapi package configures the root Python logger with a
-placeholder "NullHandler" to reduce default output. If logging has already been
-imported when gmxapi is imported, this has no effect. However, we set the root
-log level to DEBUG, which could increase the output from other modules.
+Upon import, the gmxapi package sets a placeholder "NullHandler" to block
+propagation of log messages to the root logger (and sys.stderr, if not handled).
+
+If you want to see gmxapi logging output on sys.stderr, attach a
+logging.StreamHandler to the 'gmxapi' logger.
+
+Example::
+
+    ch = logging.StreamHandler()
+    # Optional: Set log level.
+    ch.setLevel(logging.DEBUG)
+    # Optional: create formatter and add to character stream handler
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    # add handler to logger
+    logging.getLogger('gmxapi').addHandler(ch)
+
+To handle log messages that are issued while importing :py:mod:`gmxapi` and its submodules,
+attach the handler before importing :py:mod:`gmxapi`
 
 Each module in the gmxapi package uses its own hierarchical logger to allow
 granular control of log handling (e.g. ``logging.getLogger('gmxapi.operation')``).
@@ -51,9 +66,8 @@ __all__ = ['logger']
 from logging import getLogger, DEBUG, NullHandler
 
 # Define `logger` attribute that is used by submodules to create sub-loggers.
-getLogger().addHandler(NullHandler(level=DEBUG))
-getLogger().setLevel(DEBUG)
-getLogger().info("Setting up logging for gmxapi package.")
 logger = getLogger('gmxapi')
-logger.setLevel(DEBUG)
+# Prevent gmxapi logs from propagating to the root logger (and to sys.stderr)
+# if the user does not take action to handle logging.
+logger.addHandler(NullHandler(level=DEBUG))
 logger.info("Importing gmxapi.")
