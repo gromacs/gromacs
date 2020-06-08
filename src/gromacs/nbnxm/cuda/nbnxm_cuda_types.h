@@ -76,52 +76,6 @@ const int c_cudaPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
 /*! \brief cluster size = number of atoms per cluster. */
 static constexpr int c_clSize = c_nbnxnGpuClusterSize;
 
-/*! \brief Electrostatic CUDA kernel flavors.
- *
- *  Types of electrostatics implementations available in the CUDA non-bonded
- *  force kernels. These represent both the electrostatics types implemented
- *  by the kernels (cut-off, RF, and Ewald - a subset of what's defined in
- *  enums.h) as well as encode implementation details analytical/tabulated
- *  and single or twin cut-off (for Ewald kernels).
- *  Note that the cut-off and RF kernels have only analytical flavor and unlike
- *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
- *
- *  The row-order of pointers to different electrostatic kernels defined in
- *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
- *  should match the order of enumerated types below.
- */
-enum eelCu
-{
-    eelCuCUT,
-    eelCuRF,
-    eelCuEWALD_TAB,
-    eelCuEWALD_TAB_TWIN,
-    eelCuEWALD_ANA,
-    eelCuEWALD_ANA_TWIN,
-    eelCuNR
-};
-
-/*! \brief VdW CUDA kernel flavors.
- *
- * The enumerates values correspond to the LJ implementations in the CUDA non-bonded
- * kernels.
- *
- * The column-order of pointers to different electrostatic kernels defined in
- * nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
- * should match the order of enumerated types below.
- */
-enum evdwCu
-{
-    evdwCuCUT,
-    evdwCuCUTCOMBGEOM,
-    evdwCuCUTCOMBLB,
-    evdwCuFSWITCH,
-    evdwCuPSWITCH,
-    evdwCuEWALDGEOM,
-    evdwCuEWALDLB,
-    evdwCuNR
-};
-
 /* All structs prefixed with "cu_" hold data used in GPU calculations and
  * are passed to the kernels, except cu_timers_t. */
 /*! \cond */
@@ -190,9 +144,9 @@ struct cu_atomdata
 struct cu_nbparam
 {
 
-    //! type of electrostatics, takes values from #eelCu
+    //! type of electrostatics, takes values from #eelType
     int eeltype;
-    //! type of VdW impl., takes values from #evdwCu
+    //! type of VdW impl., takes values from #evdwType
     int vdwtype;
 
     //! charge multiplication factor

@@ -88,7 +88,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "nbnxm_ocl_internal.h"
 #include "nbnxm_ocl_types.h"
 
 namespace Nbnxm
@@ -162,7 +161,7 @@ static inline void validate_global_work_size(const KernelLaunchConfig& config,
  */
 
 /*! \brief Force-only kernel function names. */
-static const char* nb_kfunc_noener_noprune_ptr[eelOclNR][evdwOclNR] = {
+static const char* nb_kfunc_noener_noprune_ptr[eelTypeNR][evdwTypeNR] = {
     { "nbnxn_kernel_ElecCut_VdwLJ_F_opencl", "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_opencl",
       "nbnxn_kernel_ElecCut_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecCut_VdwLJFsw_F_opencl",
       "nbnxn_kernel_ElecCut_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_opencl",
@@ -196,7 +195,7 @@ static const char* nb_kfunc_noener_noprune_ptr[eelOclNR][evdwOclNR] = {
 };
 
 /*! \brief Force + energy kernel function pointers. */
-static const char* nb_kfunc_ener_noprune_ptr[eelOclNR][evdwOclNR] = {
+static const char* nb_kfunc_ener_noprune_ptr[eelTypeNR][evdwTypeNR] = {
     { "nbnxn_kernel_ElecCut_VdwLJ_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_opencl",
       "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJFsw_VF_opencl",
       "nbnxn_kernel_ElecCut_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_opencl",
@@ -231,7 +230,7 @@ static const char* nb_kfunc_ener_noprune_ptr[eelOclNR][evdwOclNR] = {
 };
 
 /*! \brief Force + pruning kernel function pointers. */
-static const char* nb_kfunc_noener_prune_ptr[eelOclNR][evdwOclNR] = {
+static const char* nb_kfunc_noener_prune_ptr[eelTypeNR][evdwTypeNR] = {
     { "nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl",
       "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_prune_opencl",
       "nbnxn_kernel_ElecCut_VdwLJCombLB_F_prune_opencl",
@@ -272,7 +271,7 @@ static const char* nb_kfunc_noener_prune_ptr[eelOclNR][evdwOclNR] = {
 };
 
 /*! \brief Force + energy + pruning kernel function pointers. */
-static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] = {
+static const char* nb_kfunc_ener_prune_ptr[eelTypeNR][evdwTypeNR] = {
     { "nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl",
       "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_prune_opencl",
       "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_prune_opencl",
@@ -347,9 +346,9 @@ static inline cl_kernel select_nbnxn_kernel(NbnxmGpu* nb, int eeltype, int evdwt
     cl_kernel*  kernel_ptr;
     cl_int      cl_error;
 
-    GMX_ASSERT(eeltype < eelOclNR,
+    GMX_ASSERT(eeltype < eelTypeNR,
                "The electrostatics type requested is not implemented in the OpenCL kernels.");
-    GMX_ASSERT(evdwtype < evdwOclNR,
+    GMX_ASSERT(evdwtype < evdwTypeNR,
                "The VdW type requested is not implemented in the OpenCL kernels.");
 
     if (bDoEne)
@@ -1000,11 +999,11 @@ int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
        forces it (use it for debugging/benchmarking only). */
     if (!bTwinCut && (getenv("GMX_OCL_NB_EWALD_TWINCUT") == nullptr))
     {
-        kernel_type = bUseAnalyticalEwald ? eelOclEWALD_ANA : eelOclEWALD_TAB;
+        kernel_type = bUseAnalyticalEwald ? eelTypeEWALD_ANA : eelTypeEWALD_TAB;
     }
     else
     {
-        kernel_type = bUseAnalyticalEwald ? eelOclEWALD_ANA_TWIN : eelOclEWALD_TAB_TWIN;
+        kernel_type = bUseAnalyticalEwald ? eelTypeEWALD_ANA_TWIN : eelTypeEWALD_TAB_TWIN;
     }
 
     return kernel_type;

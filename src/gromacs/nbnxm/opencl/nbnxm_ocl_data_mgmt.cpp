@@ -74,7 +74,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "nbnxm_ocl_internal.h"
 #include "nbnxm_ocl_types.h"
 
 namespace Nbnxm
@@ -98,15 +97,6 @@ namespace Nbnxm
  * value of this parameter.
  */
 static unsigned int gpu_min_ci_balanced_factor = 50;
-
-
-/*! \brief Returns true if LJ combination rules are used in the non-bonded kernels.
- *
- * Full doc in nbnxn_ocl_internal.h */
-bool useLjCombRule(int vdwType)
-{
-    return (vdwType == evdwOclCUTCOMBGEOM || vdwType == evdwOclCUTCOMBLB);
-}
 
 /*! \brief Tabulates the Ewald Coulomb force and initializes the size/scale
  * and the table GPU array.
@@ -198,17 +188,17 @@ static void map_interaction_types_to_gpu_kernel_flavors(const interaction_const_
             case eintmodPOTSHIFT:
                 switch (combRule)
                 {
-                    case ljcrNONE: *gpu_vdwtype = evdwOclCUT; break;
-                    case ljcrGEOM: *gpu_vdwtype = evdwOclCUTCOMBGEOM; break;
-                    case ljcrLB: *gpu_vdwtype = evdwOclCUTCOMBLB; break;
+                    case ljcrNONE: *gpu_vdwtype = evdwTypeCUT; break;
+                    case ljcrGEOM: *gpu_vdwtype = evdwTypeCUTCOMBGEOM; break;
+                    case ljcrLB: *gpu_vdwtype = evdwTypeCUTCOMBLB; break;
                     default:
                         gmx_incons(
                                 "The requested LJ combination rule is not implemented in the "
                                 "OpenCL GPU accelerated kernels!");
                 }
                 break;
-            case eintmodFORCESWITCH: *gpu_vdwtype = evdwOclFSWITCH; break;
-            case eintmodPOTSWITCH: *gpu_vdwtype = evdwOclPSWITCH; break;
+            case eintmodFORCESWITCH: *gpu_vdwtype = evdwTypeFSWITCH; break;
+            case eintmodPOTSWITCH: *gpu_vdwtype = evdwTypePSWITCH; break;
             default:
                 gmx_incons(
                         "The requested VdW interaction modifier is not implemented in the GPU "
@@ -219,11 +209,11 @@ static void map_interaction_types_to_gpu_kernel_flavors(const interaction_const_
     {
         if (ic->ljpme_comb_rule == ljcrGEOM)
         {
-            *gpu_vdwtype = evdwOclEWALDGEOM;
+            *gpu_vdwtype = evdwTypeEWALDGEOM;
         }
         else
         {
-            *gpu_vdwtype = evdwOclEWALDLB;
+            *gpu_vdwtype = evdwTypeEWALDLB;
         }
     }
     else
@@ -233,11 +223,11 @@ static void map_interaction_types_to_gpu_kernel_flavors(const interaction_const_
 
     if (ic->eeltype == eelCUT)
     {
-        *gpu_eeltype = eelOclCUT;
+        *gpu_eeltype = eelTypeCUT;
     }
     else if (EEL_RF(ic->eeltype))
     {
-        *gpu_eeltype = eelOclRF;
+        *gpu_eeltype = eelTypeRF;
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
     {
@@ -277,7 +267,7 @@ static void init_nbparam(cl_nbparam_t*                   nbp,
     }
     /* generate table for PME */
     nbp->coulomb_tab_climg2d = nullptr;
-    if (nbp->eeltype == eelOclEWALD_TAB || nbp->eeltype == eelOclEWALD_TAB_TWIN)
+    if (nbp->eeltype == eelTypeEWALD_TAB || nbp->eeltype == eelTypeEWALD_TAB_TWIN)
     {
         GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
         init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, deviceContext);
@@ -917,7 +907,7 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
 //! This function is documented in the header file
 gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
 {
-    return ((nb->nbparam->eeltype == eelOclEWALD_ANA) || (nb->nbparam->eeltype == eelOclEWALD_ANA_TWIN));
+    return ((nb->nbparam->eeltype == eelTypeEWALD_ANA) || (nb->nbparam->eeltype == eelTypeEWALD_ANA_TWIN));
 }
 
 } // namespace Nbnxm

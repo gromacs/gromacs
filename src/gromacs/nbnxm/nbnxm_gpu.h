@@ -62,10 +62,68 @@ class GpuBonded;
 class StepWorkload;
 } // namespace gmx
 
+/*! \brief Nbnxm electrostatic GPU kernel flavors.
+ *
+ *  Types of electrostatics implementations available in the GPU non-bonded
+ *  force kernels. These represent both the electrostatics types implemented
+ *  by the kernels (cut-off, RF, and Ewald - a subset of what's defined in
+ *  enums.h) as well as encode implementation details analytical/tabulated
+ *  and single or twin cut-off (for Ewald kernels).
+ *  Note that the cut-off and RF kernels have only analytical flavor and unlike
+ *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
+ *
+ *  The row-order of pointers to different electrostatic kernels defined in
+ *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
+ *  should match the order of enumerated types below.
+ */
+enum eelType
+{
+    eelTypeCUT,
+    eelTypeRF,
+    eelTypeEWALD_TAB,
+    eelTypeEWALD_TAB_TWIN,
+    eelTypeEWALD_ANA,
+    eelTypeEWALD_ANA_TWIN,
+    eelTypeNR
+};
+
+/*! \brief Nbnxm VdW GPU kernel flavors.
+ *
+ * The enumerates values correspond to the LJ implementations in the GPU non-bonded
+ * kernels.
+ *
+ * The column-order of pointers to different electrostatic kernels defined in
+ * nbnxn_cuda_ocl.cpp/.cu by the nb_*_kfunc_ptr function pointer table
+ * should match the order of enumerated types below.
+ */
+enum evdwType
+{
+    evdwTypeCUT,
+    evdwTypeCUTCOMBGEOM,
+    evdwTypeCUTCOMBLB,
+    evdwTypeFSWITCH,
+    evdwTypePSWITCH,
+    evdwTypeEWALDGEOM,
+    evdwTypeEWALDLB,
+    evdwTypeNR
+};
+
 namespace Nbnxm
 {
 
 class Grid;
+
+/*! \brief Returns true if LJ combination rules are used in the non-bonded kernels.
+ *
+ *  \param[in] vdwType  The VdW interaction/implementation type as defined by evdwType
+ *                      enumeration.
+ *
+ * \returns Whether combination rules are used by the run.
+ */
+static inline bool useLjCombRule(const int vdwType)
+{
+    return (vdwType == evdwTypeCUTCOMBGEOM || vdwType == evdwTypeCUTCOMBLB);
+}
 
 /*! \brief
  * Launch asynchronously the xq buffer host to device copy.

@@ -99,12 +99,12 @@ static const char* kernel_VdW_family_definitions[] = {
 
 /*! \brief Returns a string with the compiler defines required to avoid all flavour generation
  *
- * For example if flavour eelOclRF with evdwOclFSWITCH, the output will be such that the corresponding
+ * For example if flavour eelTypeRF with evdwTypeFSWITCH, the output will be such that the corresponding
  * kernel flavour is generated:
  * -DGMX_OCL_FASTGEN          (will replace flavour generator nbnxn_ocl_kernels.clh with nbnxn_ocl_kernels_fastgen.clh)
- * -DEL_RF                    (The eelOclRF flavour)
+ * -DEL_RF                    (The eelTypeRF flavour)
  * -DEELNAME=_ElecRF          (The first part of the generated kernel name )
- * -DLJ_EWALD_COMB_GEOM       (The evdwOclFSWITCH flavour)
+ * -DLJ_EWALD_COMB_GEOM       (The evdwTypeFSWITCH flavour)
  * -DVDWNAME=_VdwLJEwCombGeom (The second part of the generated kernel name )
  *
  * prune/energy are still generated as originally. It is only the flavour-level that has changed, so that
@@ -134,7 +134,7 @@ static std::string makeDefinesForKernelTypes(bool bFastGen, int eeltype, int vdw
 
     if (bFastGen)
     {
-        bool bIsEwaldSingleCutoff = (eeltype == eelOclEWALD_TAB || eeltype == eelOclEWALD_ANA);
+        bool bIsEwaldSingleCutoff = (eeltype == eelTypeEWALD_TAB || eeltype == eelTypeEWALD_ANA);
 
         if (bIsEwaldSingleCutoff)
         {

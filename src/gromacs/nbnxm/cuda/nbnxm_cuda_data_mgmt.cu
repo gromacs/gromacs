@@ -95,16 +95,6 @@ static void nbnxn_cuda_clear_e_fshift(NbnxmGpu* nb);
 /* Fw. decl, */
 static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t* nbparam);
 
-/*! \brief Return whether combination rules are used.
- *
- * \param[in]   pointer to nonbonded paramter struct
- * \return      true if combination rules are used in this run, false otherwise
- */
-static inline bool useLjCombRule(const cu_nbparam_t* nbparam)
-{
-    return (nbparam->vdwtype == evdwCuCUTCOMBGEOM || nbparam->vdwtype == evdwCuCUTCOMBLB);
-}
-
 /*! \brief Initialized the Ewald Coulomb correction GPU table.
 
     Tabulates the Ewald Coulomb force and initializes the size/scale
@@ -191,11 +181,11 @@ static int pick_ewald_kernel_type(const interaction_const_t& ic)
        forces it (use it for debugging/benchmarking only). */
     if (!bTwinCut && (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == nullptr))
     {
-        kernel_type = bUseAnalyticalEwald ? eelCuEWALD_ANA : eelCuEWALD_TAB;
+        kernel_type = bUseAnalyticalEwald ? eelTypeEWALD_ANA : eelTypeEWALD_TAB;
     }
     else
     {
-        kernel_type = bUseAnalyticalEwald ? eelCuEWALD_ANA_TWIN : eelCuEWALD_TAB_TWIN;
+        kernel_type = bUseAnalyticalEwald ? eelTypeEWALD_ANA_TWIN : eelTypeEWALD_TAB_TWIN;
     }
 
     return kernel_type;
@@ -254,17 +244,17 @@ static void init_nbparam(cu_nbparam_t*                   nbp,
             case eintmodPOTSHIFT:
                 switch (nbatParams.comb_rule)
                 {
-                    case ljcrNONE: nbp->vdwtype = evdwCuCUT; break;
-                    case ljcrGEOM: nbp->vdwtype = evdwCuCUTCOMBGEOM; break;
-                    case ljcrLB: nbp->vdwtype = evdwCuCUTCOMBLB; break;
+                    case ljcrNONE: nbp->vdwtype = evdwTypeCUT; break;
+                    case ljcrGEOM: nbp->vdwtype = evdwTypeCUTCOMBGEOM; break;
+                    case ljcrLB: nbp->vdwtype = evdwTypeCUTCOMBLB; break;
                     default:
                         gmx_incons(
                                 "The requested LJ combination rule is not implemented in the CUDA "
                                 "GPU accelerated kernels!");
                 }
                 break;
-            case eintmodFORCESWITCH: nbp->vdwtype = evdwCuFSWITCH; break;
-            case eintmodPOTSWITCH: nbp->vdwtype = evdwCuPSWITCH; break;
+            case eintmodFORCESWITCH: nbp->vdwtype = evdwTypeFSWITCH; break;
+            case eintmodPOTSWITCH: nbp->vdwtype = evdwTypePSWITCH; break;
             default:
                 gmx_incons(
                         "The requested VdW interaction modifier is not implemented in the CUDA GPU "
@@ -276,12 +266,12 @@ static void init_nbparam(cu_nbparam_t*                   nbp,
         if (ic->ljpme_comb_rule == ljcrGEOM)
         {
             assert(nbatParams.comb_rule == ljcrGEOM);
-            nbp->vdwtype = evdwCuEWALDGEOM;
+            nbp->vdwtype = evdwTypeEWALDGEOM;
         }
         else
         {
             assert(nbatParams.comb_rule == ljcrLB);
-            nbp->vdwtype = evdwCuEWALDLB;
+            nbp->vdwtype = evdwTypeEWALDLB;
         }
     }
     else
@@ -292,11 +282,11 @@ static void init_nbparam(cu_nbparam_t*                   nbp,
 
     if (ic->eeltype == eelCUT)
     {
-        nbp->eeltype = eelCuCUT;
+        nbp->eeltype = eelTypeCUT;
     }
     else if (EEL_RF(ic->eeltype))
     {
-        nbp->eeltype = eelCuRF;
+        nbp->eeltype = eelTypeRF;
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
     {
@@ -312,14 +302,14 @@ static void init_nbparam(cu_nbparam_t*                   nbp,
 
     /* generate table for PME */
     nbp->coulomb_tab = nullptr;
-    if (nbp->eeltype == eelCuEWALD_TAB || nbp->eeltype == eelCuEWALD_TAB_TWIN)
+    if (nbp->eeltype == eelTypeEWALD_TAB || nbp->eeltype == eelTypeEWALD_TAB_TWIN)
     {
         GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
         init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, deviceContext);
     }
 
     /* set up LJ parameter lookup table */
-    if (!useLjCombRule(nbp))
+    if (!useLjCombRule(nbp->vdwtype))
     {
         initParamLookupTable(&nbp->nbfp, &nbp->nbfp_texobj, nbatParams.nbfp.data(),
                              2 * ntypes * ntypes, deviceContext);
@@ -645,7 +635,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
         allocateDeviceBuffer(&d_atdat->f, nalloc, deviceContext);
         allocateDeviceBuffer(&d_atdat->xq, nalloc, deviceContext);
-        if (useLjCombRule(nb->nbparam))
+        if (useLjCombRule(nb->nbparam->vdwtype))
         {
             allocateDeviceBuffer(&d_atdat->lj_comb, nalloc, deviceContext);
         }
@@ -667,7 +657,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         nbnxn_cuda_clear_f(nb, nalloc);
     }
 
-    if (useLjCombRule(nb->nbparam))
+    if (useLjCombRule(nb->nbparam->vdwtype))
     {
         static_assert(sizeof(d_atdat->lj_comb[0]) == sizeof(float2),
                       "Size of the LJ parameters element should be equal to the size of float2.");
@@ -691,7 +681,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
 static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t* nbparam)
 {
-    if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
+    if (nbparam->eeltype == eelTypeEWALD_TAB || nbparam->eeltype == eelTypeEWALD_TAB_TWIN)
     {
         destroyParamLookupTable(&nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
     }
@@ -720,12 +710,12 @@ void gpu_free(NbnxmGpu* nb)
 
     delete nb->timers;
 
-    if (!useLjCombRule(nb->nbparam))
+    if (!useLjCombRule(nb->nbparam->vdwtype))
     {
         destroyParamLookupTable(&nbparam->nbfp, nbparam->nbfp_texobj);
     }
 
-    if (nbparam->vdwtype == evdwCuEWALDGEOM || nbparam->vdwtype == evdwCuEWALDLB)
+    if (nbparam->vdwtype == evdwTypeEWALDGEOM || nbparam->vdwtype == evdwTypeEWALDLB)
     {
         destroyParamLookupTable(&nbparam->nbfp_comb, nbparam->nbfp_comb_texobj);
     }
@@ -801,7 +791,7 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
 
 gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
 {
-    return ((nb->nbparam->eeltype == eelCuEWALD_ANA) || (nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
+    return ((nb->nbparam->eeltype == eelTypeEWALD_ANA) || (nb->nbparam->eeltype == eelTypeEWALD_ANA_TWIN));
 }
 
 void* gpu_get_xq(NbnxmGpu* nb)

@@ -163,7 +163,7 @@ static inline int calc_nb_kernel_nblock(int nwork_units, const DeviceInformation
  */
 
 /*! Force-only kernel function pointers. */
-static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[eelCuNR][evdwCuNR] = {
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[eelTypeNR][evdwTypeNR] = {
     { nbnxn_kernel_ElecCut_VdwLJ_F_cuda, nbnxn_kernel_ElecCut_VdwLJCombGeom_F_cuda,
       nbnxn_kernel_ElecCut_VdwLJCombLB_F_cuda, nbnxn_kernel_ElecCut_VdwLJFsw_F_cuda,
       nbnxn_kernel_ElecCut_VdwLJPsw_F_cuda, nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_cuda,
@@ -191,7 +191,7 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[eelCuNR][evdwCuNR]
 };
 
 /*! Force + energy kernel function pointers. */
-static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[eelCuNR][evdwCuNR] = {
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[eelTypeNR][evdwTypeNR] = {
     { nbnxn_kernel_ElecCut_VdwLJ_VF_cuda, nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_cuda,
       nbnxn_kernel_ElecCut_VdwLJCombLB_VF_cuda, nbnxn_kernel_ElecCut_VdwLJFsw_VF_cuda,
       nbnxn_kernel_ElecCut_VdwLJPsw_VF_cuda, nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_cuda,
@@ -219,7 +219,7 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[eelCuNR][evdwCuNR] =
 };
 
 /*! Force + pruning kernel function pointers. */
-static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[eelCuNR][evdwCuNR] = {
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[eelTypeNR][evdwTypeNR] = {
     { nbnxn_kernel_ElecCut_VdwLJ_F_prune_cuda, nbnxn_kernel_ElecCut_VdwLJCombGeom_F_prune_cuda,
       nbnxn_kernel_ElecCut_VdwLJCombLB_F_prune_cuda, nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_cuda,
       nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_cuda, nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_cuda,
@@ -249,7 +249,7 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[eelCuNR][evdwCuNR] =
 };
 
 /*! Force + energy + pruning kernel function pointers. */
-static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelCuNR][evdwCuNR] = {
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelTypeNR][evdwTypeNR] = {
     { nbnxn_kernel_ElecCut_VdwLJ_VF_prune_cuda, nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_prune_cuda,
       nbnxn_kernel_ElecCut_VdwLJCombLB_VF_prune_cuda, nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_cuda,
       nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_cuda, nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_cuda,
@@ -289,9 +289,9 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     e
 {
     nbnxn_cu_kfunc_ptr_t res;
 
-    GMX_ASSERT(eeltype < eelCuNR,
+    GMX_ASSERT(eeltype < eelTypeNR,
                "The electrostatics type requested is not implemented in the CUDA kernels.");
-    GMX_ASSERT(evdwtype < evdwCuNR,
+    GMX_ASSERT(evdwtype < evdwTypeNR,
                "The VdW type requested is not implemented in the CUDA kernels.");
 
     /* assert assumptions made by the kernels */
@@ -343,7 +343,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
 
-    if (nbp->vdwtype == evdwCuCUTCOMBGEOM || nbp->vdwtype == evdwCuCUTCOMBLB)
+    if (nbp->vdwtype == evdwTypeCUTCOMBGEOM || nbp->vdwtype == evdwTypeCUTCOMBLB)
     {
         /* i-atom LJ combination parameters in shared memory */
         shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float2);
@@ -816,9 +816,9 @@ void cuda_set_cacheconfig()
 {
     cudaError_t stat;
 
-    for (int i = 0; i < eelCuNR; i++)
+    for (int i = 0; i < eelTypeNR; i++)
     {
-        for (int j = 0; j < evdwCuNR; j++)
+        for (int j = 0; j < evdwTypeNR; j++)
         {
             /* Default kernel 32/32 kB Shared/L1 */
             cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferEqual);
