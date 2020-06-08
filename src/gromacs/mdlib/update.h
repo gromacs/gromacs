@@ -162,25 +162,6 @@ extern gmx_bool update_randomize_velocities(const t_inputrec*        ir,
                                             const gmx::Update*       upd,
                                             const gmx::Constraints*  constr);
 
-void constrain_velocities(int64_t step,
-                          real* dvdlambda, /* the contribution to be added to the bonded interactions */
-                          t_state*          state,
-                          tensor            vir_part,
-                          gmx::Constraints* constr,
-                          gmx_bool          bCalcVir,
-                          bool              do_log,
-                          bool              do_ene);
-
-void constrain_coordinates(int64_t step,
-                           real* dvdlambda, /* the contribution to be added to the bonded interactions */
-                           t_state*          state,
-                           tensor            vir_part,
-                           gmx::Update*      upd,
-                           gmx::Constraints* constr,
-                           gmx_bool          bCalcVir,
-                           bool              do_log,
-                           bool              do_ene);
-
 void update_sd_second_half(int64_t step,
                            real* dvdlambda, /* the contribution to be added to the bonded interactions */
                            const t_inputrec* inputrec, /* input record and box stuff */

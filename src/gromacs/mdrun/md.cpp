@@ -169,11 +169,10 @@ void gmx::LegacySimulator::do_md()
     gmx_bool     do_ene, do_log, do_verbose;
     gmx_bool     bMasterState;
     unsigned int force_flags;
-    tensor force_vir = { { 0 } }, shake_vir = { { 0 } }, total_vir = { { 0 } }, tmp_vir = { { 0 } },
-           pres = { { 0 } };
-    int                         i, m;
-    rvec                        mu_tot;
-    matrix                      pressureCouplingMu, M;
+    tensor force_vir = { { 0 } }, shake_vir = { { 0 } }, total_vir = { { 0 } }, pres = { { 0 } };
+    int    i, m;
+    rvec   mu_tot;
+    matrix pressureCouplingMu, M;
     gmx_repl_ex_t               repl_ex = nullptr;
     PaddedHostVector<gmx::RVec> f{};
     gmx_global_stat_t           gstat;
@@ -1010,7 +1009,7 @@ void gmx::LegacySimulator::do_md()
                           etrtVELOCITY1, cr, constr);
 
             wallcycle_stop(wcycle, ewcUPDATE);
-            constrain_velocities(step, nullptr, state, shake_vir, constr, bCalcVir, do_log, do_ene);
+            constrain_velocities(constr, do_log, do_ene, step, state, nullptr, bCalcVir, shake_vir);
             wallcycle_start(wcycle, ewcUPDATE);
             /* if VV, compute the pressure and constraints */
             /* For VV2, we strictly only need this if using pressure
@@ -1224,7 +1223,7 @@ void gmx::LegacySimulator::do_md()
             /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
             if (constr && bIfRandomize)
             {
-                constrain_velocities(step, nullptr, state, tmp_vir, constr, bCalcVir, do_log, do_ene);
+                constrain_velocities(constr, do_log, do_ene, step, state, nullptr, false, nullptr);
             }
         }
         /* Box is changed in update() when we do pressure coupling,
@@ -1327,8 +1326,8 @@ void gmx::LegacySimulator::do_md()
 
             wallcycle_stop(wcycle, ewcUPDATE);
 
-            constrain_coordinates(step, &dvdl_constr, state, shake_vir, &upd, constr, bCalcVir,
-                                  do_log, do_ene);
+            constrain_coordinates(constr, do_log, do_ene, step, state,
+                                  upd.xp()->arrayRefWithPadding(), &dvdl_constr, bCalcVir, shake_vir);
 
             update_sd_second_half(step, &dvdl_constr, ir, mdatoms, state, cr, nrnb, wcycle, &upd,
                                   constr, do_log, do_ene);

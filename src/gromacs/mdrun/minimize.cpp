@@ -447,11 +447,14 @@ static void init_em(FILE*                fplog,
         if (!ir->bContinuation)
         {
             /* Constrain the starting coordinates */
-            dvdl_constr = 0;
-            constr->apply(TRUE, TRUE, -1, 0, 1.0, ems->s.x.arrayRefWithPadding(),
+            bool needsLogging  = true;
+            bool computeEnergy = true;
+            bool computeVirial = false;
+            dvdl_constr        = 0;
+            constr->apply(needsLogging, computeEnergy, -1, 0, 1.0, ems->s.x.arrayRefWithPadding(),
                           ems->s.x.arrayRefWithPadding(), ArrayRef<RVec>(), ems->s.box,
                           ems->s.lambda[efptFEP], &dvdl_constr, gmx::ArrayRefWithPadding<RVec>(),
-                          nullptr, gmx::ConstraintVariable::Positions);
+                          computeVirial, nullptr, gmx::ConstraintVariable::Positions);
         }
     }
 
@@ -677,7 +680,7 @@ static bool do_em_step(const t_commrec*                   cr,
         validStep   = constr->apply(
                 TRUE, TRUE, count, 0, 1.0, s1->x.arrayRefWithPadding(), s2->x.arrayRefWithPadding(),
                 ArrayRef<RVec>(), s2->box, s2->lambda[efptBONDED], &dvdl_constr,
-                gmx::ArrayRefWithPadding<RVec>(), nullptr, gmx::ConstraintVariable::Positions);
+                gmx::ArrayRefWithPadding<RVec>(), false, nullptr, gmx::ConstraintVariable::Positions);
 
         if (cr->nnodes > 1)
         {
@@ -879,11 +882,15 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     if (constr)
     {
         /* Project out the constraint components of the force */
-        dvdl_constr = 0;
-        auto f      = ems->f.arrayRefWithPadding();
-        constr->apply(FALSE, FALSE, count, 0, 1.0, ems->s.x.arrayRefWithPadding(), f,
+        bool needsLogging  = false;
+        bool computeEnergy = false;
+        bool computeVirial = true;
+        dvdl_constr        = 0;
+        auto f             = ems->f.arrayRefWithPadding();
+        constr->apply(needsLogging, computeEnergy, count, 0, 1.0, ems->s.x.arrayRefWithPadding(), f,
                       f.unpaddedArrayRef(), ems->s.box, ems->s.lambda[efptBONDED], &dvdl_constr,
-                      gmx::ArrayRefWithPadding<RVec>(), &shake_vir, gmx::ConstraintVariable::ForceDispl);
+                      gmx::ArrayRefWithPadding<RVec>(), computeVirial, shake_vir,
+                      gmx::ConstraintVariable::ForceDispl);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
     }

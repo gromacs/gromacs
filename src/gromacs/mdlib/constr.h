@@ -169,7 +169,7 @@ public:
      *
      * If v!=NULL also constrain v by adding the constraint corrections / dt.
      *
-     * If vir!=NULL calculate the constraint virial.
+     * If computeVirial is true, calculate the constraint virial.
      *
      * Return whether the application of constraints succeeded without error.
      *
@@ -187,7 +187,8 @@ public:
                real                      lambda,
                real*                     dvdlambda,
                ArrayRefWithPadding<RVec> v,
-               tensor*                   vir,
+               bool                      computeVirial,
+               tensor                    constraintsVirial,
                ConstraintVariable        econq);
     //! Links the essentialdynamics and constraint code.
     void saveEdsamPointer(gmx_edsam* ed);
@@ -315,6 +316,27 @@ void do_constrain_first(FILE*                     log,
                         ArrayRefWithPadding<RVec> v,
                         const matrix              box,
                         real                      lambda);
+
+/* the dvdlambda contribution to be added to the bonded interactions */
+void constrain_velocities(gmx::Constraints* constr,
+                          bool              do_log,
+                          bool              do_ene,
+                          int64_t           step,
+                          t_state*          state,
+                          real*             dvdlambda,
+                          gmx_bool          computeVirial,
+                          tensor            constraintsVirial);
+
+/* the dvdlambda contribution to be added to the bonded interactions */
+void constrain_coordinates(gmx::Constraints*         constr,
+                           bool                      do_log,
+                           bool                      do_ene,
+                           int64_t                   step,
+                           t_state*                  state,
+                           ArrayRefWithPadding<RVec> xp,
+                           real*                     dvdlambda,
+                           gmx_bool                  computeVirial,
+                           tensor                    constraintsVirial);
 
 } // namespace gmx
 

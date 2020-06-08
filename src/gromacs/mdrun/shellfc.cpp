@@ -868,11 +868,16 @@ static void init_adir(gmx_shellfc_t*            shfc,
             }
         }
     }
-    constr->apply(FALSE, FALSE, step, 0, 1.0, xCurrent, shfc->adir_xnold.arrayRefWithPadding(), {},
-                  box, lambda[efptBONDED], &(dvdlambda[efptBONDED]), {}, nullptr,
+    bool needsLogging  = false;
+    bool computeEnergy = false;
+    bool computeVirial = false;
+    constr->apply(needsLogging, computeEnergy, step, 0, 1.0, xCurrent,
+                  shfc->adir_xnold.arrayRefWithPadding(), {}, box, lambda[efptBONDED],
+                  &(dvdlambda[efptBONDED]), {}, computeVirial, nullptr,
                   gmx::ConstraintVariable::Positions);
-    constr->apply(FALSE, FALSE, step, 0, 1.0, xCurrent, shfc->adir_xnew.arrayRefWithPadding(), {},
-                  box, lambda[efptBONDED], &(dvdlambda[efptBONDED]), {}, nullptr,
+    constr->apply(needsLogging, computeEnergy, step, 0, 1.0, xCurrent,
+                  shfc->adir_xnew.arrayRefWithPadding(), {}, box, lambda[efptBONDED],
+                  &(dvdlambda[efptBONDED]), {}, computeVirial, nullptr,
                   gmx::ConstraintVariable::Positions);
 
     for (n = 0; n < end; n++)
@@ -886,9 +891,9 @@ static void init_adir(gmx_shellfc_t*            shfc,
     }
 
     /* Project the acceleration on the old bond directions */
-    constr->apply(FALSE, FALSE, step, 0, 1.0, xOld, shfc->adir_xnew.arrayRefWithPadding(), acc_dir,
-                  box, lambda[efptBONDED], &(dvdlambda[efptBONDED]), {}, nullptr,
-                  gmx::ConstraintVariable::Deriv_FlexCon);
+    constr->apply(needsLogging, computeEnergy, step, 0, 1.0, xOld, shfc->adir_xnew.arrayRefWithPadding(),
+                  acc_dir, box, lambda[efptBONDED], &(dvdlambda[efptBONDED]), {}, computeVirial,
+                  nullptr, gmx::ConstraintVariable::Deriv_FlexCon);
 }
 
 void relax_shell_flexcon(FILE*                         fplog,

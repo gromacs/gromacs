@@ -129,7 +129,8 @@ public:
                real                      lambda,
                real*                     dvdlambda,
                ArrayRefWithPadding<RVec> v,
-               tensor*                   vir,
+               bool                      computeVirial,
+               tensor                    constraintsVirial,
                ConstraintVariable        econq);
     //! The total number of constraints.
     int ncon_tot = 0;
@@ -155,7 +156,7 @@ public:
     gmx_edsam* ed = nullptr;
 
     //! Thread-local virial contribution.
-    tensor* vir_r_m_dr_th = { nullptr };
+    tensor* threadConstraintsVirial = { nullptr };
     //! Did a settle error occur?
     bool* bSettleErrorHasOccurred = nullptr;
 
@@ -350,11 +351,13 @@ bool Constraints::apply(bool                      bLog,
                         real                      lambda,
                         real*                     dvdlambda,
                         ArrayRefWithPadding<RVec> v,
-                        tensor*                   vir,
+                        bool                      computeVirial,
+                        tensor                    constraintsVirial,
                         ConstraintVariable        econq)
 {
-    return impl_->apply(bLog, bEner, step, delta_step, step_scaling, std::move(x), std::move(xprime),
-                        min_proj, box, lambda, dvdlambda, std::move(v), vir, econq);
+    return impl_->apply(bLog, bEner, step, delta_step, step_scaling, std::move(x),
+                        std::move(xprime), min_proj, box, lambda, dvdlambda, std::move(v),
+                        computeVirial, constraintsVirial, econq);
 }
 
 bool Constraints::Impl::apply(bool                      bLog,
@@ -369,18 +372,18 @@ bool Constraints::Impl::apply(bool                      bLog,
                               real                      lambda,
                               real*                     dvdlambda,
                               ArrayRefWithPadding<RVec> v,
-                              tensor*                   vir,
+                              bool                      computeVirial,
+                              tensor                    constraintsVirial,
                               ConstraintVariable        econq)
 {
-    bool   bOK, bDump;
-    int    start;
-    tensor vir_r_m_dr;
-    real   scaled_delta_t;
-    real   invdt, vir_fac = 0, t;
-    int    nsettle;
-    t_pbc  pbc, *pbc_null;
-    char   buf[22];
-    int    nth;
+    bool  bOK, bDump;
+    int   start;
+    real  scaled_delta_t;
+    real  invdt, vir_fac = 0, t;
+    int   nsettle;
+    t_pbc pbc, *pbc_null;
+    char  buf[22];
+    int   nth;
 
     wallcycle_start(wcycle, ewcCONSTR);
 
@@ -418,9 +421,9 @@ bool Constraints::Impl::apply(bool                      bLog,
         lambda += delta_step * ir.fepvals->delta_lambda;
     }
 
-    if (vir != nullptr)
+    if (computeVirial)
     {
-        clear_mat(vir_r_m_dr);
+        clear_mat(constraintsVirial);
     }
     const InteractionList& settle = idef->il[F_SETTLE];
     nsettle                       = settle.size() / (1 + NRAL(F_SETTLE));
@@ -475,8 +478,8 @@ bool Constraints::Impl::apply(bool                      bLog,
     {
         bOK = constrain_lincs(bLog || bEner, ir, step, lincsd, inverseMasses_, cr, ms, x, xprime,
                               min_proj, box, pbc_null, hasMassPerturbedAtoms_, lambda, dvdlambda,
-                              invdt, v.unpaddedArrayRef(), vir != nullptr, vir_r_m_dr, econq, nrnb,
-                              maxwarn, &warncount_lincs);
+                              invdt, v.unpaddedArrayRef(), computeVirial, constraintsVirial, econq,
+                              nrnb, maxwarn, &warncount_lincs);
         if (!bOK && maxwarn < INT_MAX)
         {
             if (log != nullptr)
@@ -492,8 +495,8 @@ bool Constraints::Impl::apply(bool                      bLog,
     {
         bOK = constrain_shake(log, shaked.get(), inverseMasses_, *idef, ir, x.unpaddedArrayRef(),
                               xprime.unpaddedArrayRef(), min_proj, pbc_null, nrnb, lambda,
-                              dvdlambda, invdt, v.unpaddedArrayRef(), vir != nullptr, vir_r_m_dr,
-                              maxwarn < INT_MAX, econq);
+                              dvdlambda, invdt, v.unpaddedArrayRef(), computeVirial,
+                              constraintsVirial, maxwarn < INT_MAX, econq);
 
         if (!bOK && maxwarn < INT_MAX)
         {
@@ -520,11 +523,11 @@ bool Constraints::Impl::apply(bool                      bLog,
                     {
                         if (th > 0)
                         {
-                            clear_mat(vir_r_m_dr_th[th]);
+                            clear_mat(threadConstraintsVirial[th]);
                         }
 
-                        csettle(*settled, nth, th, pbc_null, x, xprime, invdt, v, vir != nullptr,
-                                th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th],
+                        csettle(*settled, nth, th, pbc_null, x, xprime, invdt, v, computeVirial,
+                                th == 0 ? constraintsVirial : threadConstraintsVirial[th],
                                 th == 0 ? &bSettleErrorHasOccurred0 : &bSettleErrorHasOccurred[th]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -534,7 +537,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                 {
                     inc_nrnb(nrnb, eNR_CONSTR_V, nsettle * 3);
                 }
-                if (vir != nullptr)
+                if (computeVirial)
                 {
                     inc_nrnb(nrnb, eNR_CONSTR_VIR, nsettle * 3);
                 }
@@ -550,7 +553,7 @@ bool Constraints::Impl::apply(bool                      bLog,
                     {
                         int calcvir_atom_end;
 
-                        if (vir == nullptr)
+                        if (!computeVirial)
                         {
                             calcvir_atom_end = 0;
                         }
@@ -561,7 +564,7 @@ bool Constraints::Impl::apply(bool                      bLog,
 
                         if (th > 0)
                         {
-                            clear_mat(vir_r_m_dr_th[th]);
+                            clear_mat(threadConstraintsVirial[th]);
                         }
 
                         int start_th = (nsettle * th) / nth;
@@ -570,9 +573,10 @@ bool Constraints::Impl::apply(bool                      bLog,
                         if (start_th >= 0 && end_th - start_th > 0)
                         {
                             settle_proj(*settled, econq, end_th - start_th,
-                                        settle.iatoms.data() + start_th * (1 + NRAL(F_SETTLE)), pbc_null,
-                                        x.unpaddedArrayRef(), xprime.unpaddedArrayRef(), min_proj,
-                                        calcvir_atom_end, th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th]);
+                                        settle.iatoms.data() + start_th * (1 + NRAL(F_SETTLE)),
+                                        pbc_null, x.unpaddedArrayRef(), xprime.unpaddedArrayRef(),
+                                        min_proj, calcvir_atom_end,
+                                        th == 0 ? constraintsVirial : threadConstraintsVirial[th]);
                         }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -586,12 +590,12 @@ bool Constraints::Impl::apply(bool                      bLog,
             default: gmx_incons("Unknown constraint quantity for settle");
         }
 
-        if (vir != nullptr)
+        if (computeVirial)
         {
             /* Reduce the virial contributions over the threads */
             for (int th = 1; th < nth; th++)
             {
-                m_add(vir_r_m_dr, vir_r_m_dr_th[th], vir_r_m_dr);
+                m_add(constraintsVirial, threadConstraintsVirial[th], constraintsVirial);
             }
         }
 
@@ -628,7 +632,7 @@ bool Constraints::Impl::apply(bool                      bLog,
         }
     }
 
-    if (vir != nullptr)
+    if (computeVirial)
     {
         /* The normal uses of constrain() pass step_scaling = 1.0.
          * The call to constrain() for SD1 that passes step_scaling =
@@ -655,7 +659,7 @@ bool Constraints::Impl::apply(bool                      bLog,
         {
             for (int j = 0; j < DIM; j++)
             {
-                (*vir)[i][j] = vir_fac * vir_r_m_dr[i][j];
+                constraintsVirial[i][j] *= vir_fac;
             }
         }
     }
@@ -682,7 +686,7 @@ bool Constraints::Impl::apply(bool                      bLog,
             pull_constraint(pull_work, masses_, &pbc, cr, ir.delta_t, t,
                             as_rvec_array(x.unpaddedArrayRef().data()),
                             as_rvec_array(xprime.unpaddedArrayRef().data()),
-                            as_rvec_array(v.unpaddedArrayRef().data()), *vir);
+                            as_rvec_array(v.unpaddedArrayRef().data()), constraintsVirial);
         }
         if (ed && delta_step > 0)
         {
@@ -1096,9 +1100,9 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
 
         /* Allocate thread-local work arrays */
         int nthreads = gmx_omp_nthreads_get(emntSETTLE);
-        if (nthreads > 1 && vir_r_m_dr_th == nullptr)
+        if (nthreads > 1 && threadConstraintsVirial == nullptr)
         {
-            snew(vir_r_m_dr_th, nthreads);
+            snew(threadConstraintsVirial, nthreads);
             snew(bSettleErrorHasOccurred, nthreads);
         }
     }
@@ -1132,9 +1136,9 @@ Constraints::Impl::~Impl()
     {
         sfree(bSettleErrorHasOccurred);
     }
-    if (vir_r_m_dr_th != nullptr)
+    if (threadConstraintsVirial != nullptr)
     {
-        sfree(vir_r_m_dr_th);
+        sfree(threadConstraintsVirial);
     }
     done_lincs(lincsd);
 }
@@ -1187,15 +1191,18 @@ void do_constrain_first(FILE*                     fplog,
     }
     dvdl_dum = 0;
 
+    bool needsLogging  = true;
+    bool computeEnergy = false;
+    bool computeVirial = false;
     /* constrain the current position */
-    constr->apply(TRUE, FALSE, step, 0, 1.0, x, x, {}, box, lambda, &dvdl_dum, {}, nullptr,
-                  gmx::ConstraintVariable::Positions);
+    constr->apply(needsLogging, computeEnergy, step, 0, 1.0, x, x, {}, box, lambda, &dvdl_dum, {},
+                  computeVirial, nullptr, gmx::ConstraintVariable::Positions);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
-        constr->apply(TRUE, FALSE, step, 0, 1.0, x, v, v.unpaddedArrayRef(), box, lambda, &dvdl_dum,
-                      {}, nullptr, gmx::ConstraintVariable::Velocities);
+        constr->apply(needsLogging, computeEnergy, step, 0, 1.0, x, v, v.unpaddedArrayRef(), box, lambda,
+                      &dvdl_dum, {}, computeVirial, nullptr, gmx::ConstraintVariable::Velocities);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -1221,8 +1228,9 @@ void do_constrain_first(FILE*                     fplog,
             fprintf(fplog, "\nConstraining the coordinates at t0-dt (step %s)\n", gmx_step_str(step, buf));
         }
         dvdl_dum = 0;
-        constr->apply(TRUE, FALSE, step, -1, 1.0, x, savex.arrayRefWithPadding(), {}, box, lambda,
-                      &dvdl_dum, v, nullptr, gmx::ConstraintVariable::Positions);
+        constr->apply(needsLogging, computeEnergy, step, -1, 1.0, x, savex.arrayRefWithPadding(),
+                      {}, box, lambda, &dvdl_dum, v, computeVirial, nullptr,
+                      gmx::ConstraintVariable::Positions);
 
         for (i = start; i < end; i++)
         {
@@ -1232,6 +1240,43 @@ void do_constrain_first(FILE*                     fplog,
                 subV[i][m] = -subV[i][m];
             }
         }
+    }
+}
+
+void constrain_velocities(gmx::Constraints* constr,
+                          bool              do_log,
+                          bool              do_ene,
+                          int64_t           step,
+                          t_state*          state,
+                          real*             dvdlambda,
+                          gmx_bool          computeVirial,
+                          tensor            constraintsVirial)
+{
+    if (constr != nullptr)
+    {
+        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.arrayRefWithPadding(),
+                      state->v.arrayRefWithPadding(), state->v.arrayRefWithPadding().unpaddedArrayRef(),
+                      state->box, state->lambda[efptBONDED], dvdlambda, ArrayRefWithPadding<RVec>(),
+                      computeVirial, constraintsVirial, ConstraintVariable::Velocities);
+    }
+}
+
+void constrain_coordinates(gmx::Constraints*         constr,
+                           bool                      do_log,
+                           bool                      do_ene,
+                           int64_t                   step,
+                           t_state*                  state,
+                           ArrayRefWithPadding<RVec> xp,
+                           real*                     dvdlambda,
+                           gmx_bool                  computeVirial,
+                           tensor                    constraintsVirial)
+{
+    if (constr != nullptr)
+    {
+        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.arrayRefWithPadding(), std::move(xp),
+                      ArrayRef<RVec>(), state->box, state->lambda[efptBONDED], dvdlambda,
+                      state->v.arrayRefWithPadding(), computeVirial, constraintsVirial,
+                      ConstraintVariable::Positions);
     }
 }
 

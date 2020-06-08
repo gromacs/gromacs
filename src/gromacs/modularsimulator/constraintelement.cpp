@@ -153,7 +153,7 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
     }
 
     constr_->apply(writeLog, writeEnergy, step, 1, 1.0, x, xprime, min_proj, statePropagatorData_->box(),
-                   lambdaBonded, &dvdlambda, v, calculateVirial ? &vir_con : nullptr, variable);
+                   lambdaBonded, &dvdlambda, v, calculateVirial, vir_con, variable);
 
     if (calculateVirial)
     {
