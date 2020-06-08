@@ -259,15 +259,13 @@ static void do_update_vv_vel(int start, int nrend, double dt,
             ga   = cACC[n];
         }
 
-/* TODO: REMOVE, just testing... */
-#if 0
+        /* TODO: REMOVE, just testing... */
         fprintf(stderr, "VV VEL: v[%d(%d)] b4 update: %f %f %f\n", 
                 (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)), 
                 v[n][XX], v[n][YY], v[n][ZZ]);
         fprintf(stderr, "VV VEL: f[%d(%d)] b4 update: %f %f %f\n", 
                 (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)), 
                 f[n][XX], f[n][YY], f[n][ZZ]);
-#endif
 
         for (d = 0; d < DIM; d++)
         {
@@ -287,12 +285,10 @@ static void do_update_vv_vel(int start, int nrend, double dt,
             }
         }
 
-/* TODO: REMOVE, just testing... */
-#if 0
+        /* TODO: REMOVE, just testing... */
         fprintf(stderr, "VV VEL: v[%d(%d)] after update: %f %f %f\n",
                 (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)),
                 v[n][XX], v[n][YY], v[n][ZZ]);
-#endif
 
         if (debug)
         {
@@ -302,11 +298,12 @@ static void do_update_vv_vel(int start, int nrend, double dt,
     }
 } /* do_update_vv_vel */
 
+/* TODO: REMOVE cr */
 static void do_update_vv_pos(int start, int nrend, double dt,
                              ivec nFreeze[],
                              unsigned short ptype[], unsigned short cFREEZE[],
                              rvec x[], rvec xprime[], real m[], rvec v[],
-                             gmx_bool bExtended, real veta)
+                             gmx_bool bExtended, real veta, t_commrec *cr)
 {
     int    gf = 0;
     int    n, d;
@@ -333,6 +330,14 @@ static void do_update_vv_pos(int start, int nrend, double dt,
             gf   = cFREEZE[n];
         }
 
+        /* TODO: REMOVE, just testing... */
+        fprintf(stderr, "VV POS: x[%d(%d)] b4 update: %f %f %f\n",
+                (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)),
+                x[n][XX], x[n][YY], x[n][ZZ]);
+        fprintf(stderr, "VV POS: v[%d(%d)] b4 update: %f %f %f\n",
+                (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)),
+                v[n][XX], v[n][YY], v[n][ZZ]);
+
         for (d = 0; d < DIM; d++)
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
@@ -349,6 +354,12 @@ static void do_update_vv_pos(int start, int nrend, double dt,
                 xprime[n][d]   = x[n][d];
             }
         }
+
+        /* TODO: REMOVE, just testing... */
+        fprintf(stderr, "VV POS: x[%d(%d)] after update: %f %f %f\n",
+                (n+1), (DOMAINDECOMP(cr) ? ddglatnr(cr->dd, n) : (n+1)),
+                xprime[n][XX], xprime[n][YY], xprime[n][ZZ]);
+
     }
 } /* do_update_vv_pos */
 
@@ -1720,34 +1731,25 @@ void update_coords(FILE             *fplog,
                     {
                         case etrtVELOCITY1:
                         case etrtVELOCITY2:
-                            /* jal - TESTING */
-                            if ((inputrec->bDrude) && (inputrec->drude->drudemode == edrudeLagrangian))
-                            {
-                                if (DOMAINDECOMP(cr))
-                                {
-                                    dd_move_v_shells(cr->dd, state->v);
-                                }
-                            }
                             do_update_vv_vel(start_th, end_th, dt,
                                              inputrec->opts.acc, inputrec->opts.nFreeze,
                                              md->invmass, md->ptype,
                                              md->cFREEZE, md->cACC,
                                              md->massT, state->v, f,
                                              (bNH || bPR), state->veta, alpha, cr); /* TESTING: REMOVE cr */
+                            /* jal - no communication of v for Drude systems, all updates here local */
                             break;
                         case etrtPOSITION:
-                            if ((inputrec->bDrude) && (inputrec->drude->drudemode == edrudeLagrangian))
-                            {
-                                if (DOMAINDECOMP(cr))
-                                {
-                                    dd_move_x_shells(cr->dd, state->box, state->x);
-                                }
-                            }
                             do_update_vv_pos(start_th, end_th, dt,
                                              inputrec->opts.nFreeze,
                                              md->ptype, md->cFREEZE,
                                              state->x, xprime, md->massT, state->v,
-                                             (bNH || bPR), state->veta);
+                                             (bNH || bPR), state->veta, cr);    /* TESTING: REMOVE cr */
+                            /* jal - communicate updated positions with Drude, needed for hardwall */
+                            if (inputrec->bDrude && (inputrec->drude->drudemode == edrudeLagrangian) && (DOMAINDECOMP(cr)))
+                            {
+                                dd_move_x_shells(cr->dd, state->box, xprime);
+                            }
                             break;
                     }
                     break;

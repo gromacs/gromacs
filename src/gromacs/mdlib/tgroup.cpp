@@ -255,6 +255,10 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
 
     clear_mat(ekind->ekin);
 
+    /* TODO: fix this calculation for Drude systems */
+    /* Drudes with mass are techincally DOF but their temperature/KE
+     * is in a relative thermostat and should NOT contribute to the global
+     * system temperature */
     for (i = 0; (i < ngtc); i++)
     {
 
