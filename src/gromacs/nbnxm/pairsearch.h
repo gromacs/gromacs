@@ -158,7 +158,7 @@ struct PairsearchWork
     std::vector<int> sortBuffer;
 
     //! Flags for force buffer access
-    nbnxn_buffer_flags_t buffer_flags;
+    std::vector<gmx_bitmask_t> buffer_flags;
 
     //! Number of distance checks for flop counting
     int ndistc;

@@ -154,17 +154,6 @@ struct nbnxn_atomdata_output_t
  */
 #define NBNXN_BUFFERFLAG_MAX_THREADS (BITMASK_SIZE)
 
-/*! \internal
- * \brief Flags for telling if threads write to force output buffers */
-typedef struct
-{
-    //! The number of flag blocks
-    int nflag;
-    //! Bit i is set when thread i writes to a cell-block
-    gmx_bitmask_t* flag;
-    //! Allocation size of cxy_flag
-    int flag_nalloc;
-} nbnxn_buffer_flags_t;
 
 /*! \brief LJ combination rules: geometric, Lorentz-Berthelot, none */
 enum
@@ -300,7 +289,7 @@ public:
     //! Use the flags or operate on all atoms
     gmx_bool bUseBufferFlags;
     //! Flags for buffer zeroing+reduc.
-    nbnxn_buffer_flags_t buffer_flags;
+    std::vector<gmx_bitmask_t> buffer_flags;
     //! Use tree for force reduction
     gmx_bool bUseTreeReduce;
     //! Synchronization step for tree reduce

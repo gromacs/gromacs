@@ -67,15 +67,15 @@ static void clearBufferAll(gmx::ArrayRef<real> buffer)
 template<int numComponentsPerElement>
 static void clearBufferFlagged(const nbnxn_atomdata_t& nbat, int outputIndex, gmx::ArrayRef<real> buffer)
 {
-    const nbnxn_buffer_flags_t& flags = nbat.buffer_flags;
-    gmx_bitmask_t               our_flag;
+    gmx::ArrayRef<const gmx_bitmask_t> flags = nbat.buffer_flags;
+    gmx_bitmask_t                      our_flag;
     bitmask_init_bit(&our_flag, outputIndex);
 
     constexpr size_t numComponentsPerBlock = NBNXN_BUFFERFLAG_SIZE * numComponentsPerElement;
 
-    for (int b = 0; b < flags.nflag; b++)
+    for (size_t b = 0; b < flags.size(); b++)
     {
-        if (!bitmask_is_disjoint(flags.flag[b], our_flag))
+        if (!bitmask_is_disjoint(flags[b], our_flag))
         {
             clearBufferAll(buffer.subArray(b * numComponentsPerBlock, numComponentsPerBlock));
         }

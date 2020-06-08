@@ -675,8 +675,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
                                pinningPolicy);
     }
 
-    nbat->buffer_flags.flag        = nullptr;
-    nbat->buffer_flags.flag_nalloc = 0;
+    nbat->buffer_flags.clear();
 
     const int nth = gmx_omp_nthreads_get(emntNonbonded);
 
@@ -1236,7 +1235,7 @@ static inline unsigned char reverse_bits(unsigned char b)
 
 static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbnxn_atomdata_t* nbat, int nth)
 {
-    const nbnxn_buffer_flags_t* flags = &nbat->buffer_flags;
+    gmx::ArrayRef<const gmx_bitmask_t> flags = nbat->buffer_flags;
 
     int next_pow2 = 1 << (gmx::log2I(nth - 1) + 1);
 
@@ -1340,15 +1339,15 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbnxn_atomdata_t* nbat, in
                     }
 
                     /* Calculate the cell-block range for our thread */
-                    b0 = (flags->nflag * group_pos) / group_size;
-                    b1 = (flags->nflag * (group_pos + 1)) / group_size;
+                    b0 = (flags.size() * group_pos) / group_size;
+                    b1 = (flags.size() * (group_pos + 1)) / group_size;
 
                     for (b = b0; b < b1; b++)
                     {
                         i0 = b * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
                         i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
 
-                        if (bitmask_is_set(flags->flag[b], index[1]) || group_size > 2)
+                        if (bitmask_is_set(flags[b], index[1]) || group_size > 2)
                         {
                             const real* fIndex1 = nbat->out[index[1]].f.data();
 #if GMX_SIMD
@@ -1357,10 +1356,10 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbnxn_atomdata_t* nbat, in
                             nbnxn_atomdata_reduce_reals
 #endif
                                     (nbat->out[index[0]].f.data(),
-                                     bitmask_is_set(flags->flag[b], index[0]) || group_size > 2,
-                                     &fIndex1, 1, i0, i1);
+                                     bitmask_is_set(flags[b], index[0]) || group_size > 2, &fIndex1,
+                                     1, i0, i1);
                         }
-                        else if (!bitmask_is_set(flags->flag[b], index[0]))
+                        else if (!bitmask_is_set(flags[b], index[0]))
                         {
                             nbnxn_atomdata_clear_reals(nbat->out[index[0]].f, i0, i1);
                         }
@@ -1380,15 +1379,14 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t* nbat, int
     {
         try
         {
-            const nbnxn_buffer_flags_t* flags;
-            int                         nfptr;
-            const real*                 fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
+            int         nfptr;
+            const real* fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
 
-            flags = &nbat->buffer_flags;
+            gmx::ArrayRef<const gmx_bitmask_t> flags = nbat->buffer_flags;
 
             /* Calculate the cell-block range for our thread */
-            int b0 = (flags->nflag * th) / nth;
-            int b1 = (flags->nflag * (th + 1)) / nth;
+            int b0 = (flags.size() * th) / nth;
+            int b1 = (flags.size() * (th + 1)) / nth;
 
             for (int b = b0; b < b1; b++)
             {
@@ -1398,7 +1396,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t* nbat, int
                 nfptr = 0;
                 for (gmx::index out = 1; out < gmx::ssize(nbat->out); out++)
                 {
-                    if (bitmask_is_set(flags->flag[b], out))
+                    if (bitmask_is_set(flags[b], out))
                     {
                         fptr[nfptr++] = nbat->out[out].f.data();
                     }
@@ -1410,9 +1408,9 @@ static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t* nbat, int
 #else
                     nbnxn_atomdata_reduce_reals
 #endif
-                            (nbat->out[0].f.data(), bitmask_is_set(flags->flag[b], 0), fptr, nfptr, i0, i1);
+                            (nbat->out[0].f.data(), bitmask_is_set(flags[b], 0), fptr, nfptr, i0, i1);
                 }
-                else if (!bitmask_is_set(flags->flag[b], 0))
+                else if (!bitmask_is_set(flags[b], 0))
                 {
                     nbnxn_atomdata_clear_reals(nbat->out[0].f, i0, i1);
                 }

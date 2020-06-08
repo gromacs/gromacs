@@ -1675,6 +1675,7 @@ static void do_wall_params(t_inputrec* ir, char* wall_atomtype, char* wall_densi
             gmx_fatal(FARGS, "Expected %d elements for wall_atomtype, found %zu", ir->nwall,
                       wallAtomTypes.size());
         }
+        GMX_RELEASE_ASSERT(ir->nwall < 3, "Invalid number of walls");
         for (int i = 0; i < ir->nwall; i++)
         {
             opts->wall_atomtype[i] = gmx_strdup(wallAtomTypes[i].c_str());

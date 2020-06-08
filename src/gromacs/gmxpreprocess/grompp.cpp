@@ -2384,6 +2384,8 @@ int gmx_grompp(int argc, char* argv[])
     gmx::write_IMDgroup_to_file(ir->bIMD, ir, &state, &sys, NFILE, fnm);
 
     sfree(opts->define);
+    sfree(opts->wall_atomtype[0]);
+    sfree(opts->wall_atomtype[1]);
     sfree(opts->include);
     sfree(opts);
     for (auto& mol : mi)
