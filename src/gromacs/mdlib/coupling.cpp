@@ -1743,7 +1743,7 @@ void update_annealing_target_temp(t_inputrec* ir, real t, gmx::Update* upd)
         }
     }
 
-    update_temperature_constants(upd->sd(), ir);
+    upd->update_temperature_constants(*ir);
 }
 
 void pleaseCiteCouplingAlgorithms(FILE* fplog, const t_inputrec& ir)
