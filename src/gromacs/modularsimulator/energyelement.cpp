@@ -45,6 +45,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/compute_io.h"
+#include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdatoms.h"

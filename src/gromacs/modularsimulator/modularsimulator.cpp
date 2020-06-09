@@ -53,6 +53,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"

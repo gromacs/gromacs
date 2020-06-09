@@ -78,6 +78,7 @@
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"

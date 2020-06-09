@@ -37,6 +37,8 @@
  */
 #include "gmxpre.h"
 
+#include "coupling.h"
+
 #include <cassert>
 #include <cmath>
 
@@ -49,6 +51,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vecdump.h"
+#include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/expanded.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/stat.h"
@@ -88,6 +91,228 @@ static const double sy_const_5[] = { 0.2967324292201065, 0.2967324292201065, -0.
                                      0.2967324292201065, 0.2967324292201065 };
 
 static const double* sy_const[] = { nullptr, sy_const_1, nullptr, sy_const_3, nullptr, sy_const_5 };
+
+
+void update_tcouple(int64_t           step,
+                    const t_inputrec* inputrec,
+                    t_state*          state,
+                    gmx_ekindata_t*   ekind,
+                    const t_extmass*  MassQ,
+                    const t_mdatoms*  md)
+
+{
+    // This condition was explicitly checked in previous version, but should have never been satisfied
+    GMX_ASSERT(!(EI_VV(inputrec->eI)
+                 && (inputrecNvtTrotter(inputrec) || inputrecNptTrotter(inputrec)
+                     || inputrecNphTrotter(inputrec))),
+               "Temperature coupling was requested with velocity verlet and trotter");
+
+    bool doTemperatureCoupling = false;
+
+    // For VV temperature coupling parameters are updated on the current
+    // step, for the others - one step before.
+    if (inputrec->etc == etcNO)
+    {
+        doTemperatureCoupling = false;
+    }
+    else if (EI_VV(inputrec->eI))
+    {
+        doTemperatureCoupling = do_per_step(step, inputrec->nsttcouple);
+    }
+    else
+    {
+        doTemperatureCoupling = do_per_step(step + inputrec->nsttcouple - 1, inputrec->nsttcouple);
+    }
+
+    if (doTemperatureCoupling)
+    {
+        real dttc = inputrec->nsttcouple * inputrec->delta_t;
+
+        // TODO: berendsen_tcoupl(...), nosehoover_tcoupl(...) and vrescale_tcoupl(...) update
+        //      temperature coupling parameters, which should be reflected in the name of these
+        //      subroutines
+        switch (inputrec->etc)
+        {
+            case etcNO: break;
+            case etcBERENDSEN:
+                berendsen_tcoupl(inputrec, ekind, dttc, state->therm_integral);
+                break;
+            case etcNOSEHOOVER:
+                nosehoover_tcoupl(&(inputrec->opts), ekind, dttc, state->nosehoover_xi.data(),
+                                  state->nosehoover_vxi.data(), MassQ);
+                break;
+            case etcVRESCALE:
+                vrescale_tcoupl(inputrec, step, ekind, dttc, state->therm_integral.data());
+                break;
+        }
+        /* rescale in place here */
+        if (EI_VV(inputrec->eI))
+        {
+            rescale_velocities(ekind, md, 0, md->homenr, state->v.rvec_array());
+        }
+    }
+    else
+    {
+        // Set the T scaling lambda to 1 to have no scaling
+        // TODO: Do we have to do it on every non-t-couple step?
+        for (int i = 0; (i < inputrec->opts.ngtc); i++)
+        {
+            ekind->tcstat[i].lambda = 1.0;
+        }
+    }
+}
+
+void update_pcouple_before_coordinates(FILE*             fplog,
+                                       int64_t           step,
+                                       const t_inputrec* inputrec,
+                                       t_state*          state,
+                                       matrix            parrinellorahmanMu,
+                                       matrix            M,
+                                       gmx_bool          bInitStep)
+{
+    /* Berendsen P-coupling is completely handled after the coordinate update.
+     * Trotter P-coupling is handled by separate calls to trotter_update().
+     */
+    if (inputrec->epc == epcPARRINELLORAHMAN
+        && do_per_step(step + inputrec->nstpcouple - 1, inputrec->nstpcouple))
+    {
+        real dtpc = inputrec->nstpcouple * inputrec->delta_t;
+
+        parrinellorahman_pcoupl(fplog, step, inputrec, dtpc, state->pres_prev, state->box,
+                                state->box_rel, state->boxv, M, parrinellorahmanMu, bInitStep);
+    }
+}
+
+void update_pcouple_after_coordinates(FILE*                fplog,
+                                      int64_t              step,
+                                      const t_inputrec*    inputrec,
+                                      const t_mdatoms*     md,
+                                      const matrix         pressure,
+                                      const matrix         forceVirial,
+                                      const matrix         constraintVirial,
+                                      matrix               pressureCouplingMu,
+                                      t_state*             state,
+                                      t_nrnb*              nrnb,
+                                      gmx::BoxDeformation* boxDeformation,
+                                      const bool           scaleCoordinates)
+{
+    int start  = 0;
+    int homenr = md->homenr;
+
+    /* Cast to real for faster code, no loss in precision (see comment above) */
+    real dt = inputrec->delta_t;
+
+
+    /* now update boxes */
+    switch (inputrec->epc)
+    {
+        case (epcNO): break;
+        case (epcBERENDSEN):
+            if (do_per_step(step, inputrec->nstpcouple))
+            {
+                real dtpc = inputrec->nstpcouple * dt;
+                berendsen_pcoupl(fplog, step, inputrec, dtpc, pressure, state->box, forceVirial,
+                                 constraintVirial, pressureCouplingMu, &state->baros_integral);
+                berendsen_pscale(inputrec, pressureCouplingMu, state->box, state->box_rel, start,
+                                 homenr, state->x.rvec_array(), md->cFREEZE, nrnb, scaleCoordinates);
+            }
+            break;
+        case (epcPARRINELLORAHMAN):
+            if (do_per_step(step + inputrec->nstpcouple - 1, inputrec->nstpcouple))
+            {
+                /* The box velocities were updated in do_pr_pcoupl,
+                 * but we dont change the box vectors until we get here
+                 * since we need to be able to shift/unshift above.
+                 */
+                real dtpc = inputrec->nstpcouple * dt;
+                for (int i = 0; i < DIM; i++)
+                {
+                    for (int m = 0; m <= i; m++)
+                    {
+                        state->box[i][m] += dtpc * state->boxv[i][m];
+                    }
+                }
+                preserve_box_shape(inputrec, state->box_rel, state->box);
+
+                /* Scale the coordinates */
+                if (scaleCoordinates)
+                {
+                    auto x = state->x.rvec_array();
+                    for (int n = start; n < start + homenr; n++)
+                    {
+                        tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
+                    }
+                }
+            }
+            break;
+        case (epcMTTK):
+            switch (inputrec->epct)
+            {
+                case (epctISOTROPIC):
+                    /* DIM * eta = ln V.  so DIM*eta_new = DIM*eta_old + DIM*dt*veta =>
+                       ln V_new = ln V_old + 3*dt*veta => V_new = V_old*exp(3*dt*veta) =>
+                       Side length scales as exp(veta*dt) */
+
+                    msmul(state->box, std::exp(state->veta * dt), state->box);
+
+                    /* Relate veta to boxv.  veta = d(eta)/dT = (1/DIM)*1/V dV/dT.
+                       o               If we assume isotropic scaling, and box length scaling
+                       factor L, then V = L^DIM (det(M)).  So dV/dt = DIM
+                       L^(DIM-1) dL/dt det(M), and veta = (1/L) dL/dt.  The
+                       determinant of B is L^DIM det(M), and the determinant
+                       of dB/dt is (dL/dT)^DIM det (M).  veta will be
+                       (det(dB/dT)/det(B))^(1/3).  Then since M =
+                       B_new*(vol_new)^(1/3), dB/dT_new = (veta_new)*B(new). */
+
+                    msmul(state->box, state->veta, state->boxv);
+                    break;
+                default: break;
+            }
+            break;
+        default: break;
+    }
+
+    if (boxDeformation)
+    {
+        auto localX = makeArrayRef(state->x).subArray(start, homenr);
+        boxDeformation->apply(localX, state->box, step);
+    }
+}
+
+extern gmx_bool update_randomize_velocities(const t_inputrec*        ir,
+                                            int64_t                  step,
+                                            const t_commrec*         cr,
+                                            const t_mdatoms*         md,
+                                            gmx::ArrayRef<gmx::RVec> v,
+                                            const gmx::Update*       upd,
+                                            const gmx::Constraints*  constr)
+{
+
+    real rate = (ir->delta_t) / ir->opts.tau_t[0];
+
+    if (ir->etc == etcANDERSEN && constr != nullptr)
+    {
+        /* Currently, Andersen thermostat does not support constrained
+           systems. Functionality exists in the andersen_tcoupl
+           function in GROMACS 4.5.7 to allow this combination. That
+           code could be ported to the current random-number
+           generation approach, but has not yet been done because of
+           lack of time and resources. */
+        gmx_fatal(FARGS,
+                  "Normal Andersen is currently not supported with constraints, use massive "
+                  "Andersen instead");
+    }
+
+    /* proceed with andersen if 1) it's fixed probability per
+       particle andersen or 2) it's massive andersen and it's tau_t/dt */
+    if ((ir->etc == etcANDERSEN) || do_per_step(step, gmx::roundToInt(1.0 / rate)))
+    {
+        andersen_tcoupl(ir, step, cr, md, v, rate, upd->getAndersenRandomizeGroup(),
+                        upd->getBoltzmanFactor());
+        return TRUE;
+    }
+    return FALSE;
+}
 
 /*
    static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
