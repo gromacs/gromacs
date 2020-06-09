@@ -34,53 +34,69 @@
  */
 /*! \file
  * \brief
- * Defines enum classes for centering and unit cell types.
+ * Helper methods to place particle COM in boxes.
  *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \libinternal
+ * \inlibraryapi
  * \ingroup module_pbcutil
  */
-#ifndef GMX_PBCUTIL_PBCENUMS_H
-#define GMX_PBCUTIL_PBCENUMS_H
+#ifndef GMX_PBCUTIL_COM_H
+#define GMX_PBCUTIL_COM_H
 
+#include <algorithm>
+
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
+
+#include "pbcenums.h"
+
+struct gmx_mtop_t;
+enum class PbcType : int;
 namespace gmx
 {
 
-/*! \brief
- * Helper enum class to define centering types.
- */
-enum class CenteringType : int
+//! How COM shifting should be applied.
+enum class COMShiftType : int
 {
-    Triclinic,
-    Rectangular,
-    Zero,
+    Residue,
+    Molecule,
     Count
 };
 
 /*! \brief
- * Helper enum class to define Unit cell representation types.
+ * Shift all coordinates.
+ *
+ * Shift coordinates by a previously calculated value.
+ *
+ * Can be used to e.g. place particles in a box.
+ *
+ * \param[in] shift Translation that should be applied.
+ * \param[in] x Coordinates to translate.
  */
-enum class UnitCellType : int
-{
-    Triclinic,
-    Rectangular,
-    Compact,
-    Count
-};
+void shiftAtoms(const RVec& shift, ArrayRef<RVec> x);
 
 /*! \brief
- * Get names for the different centering types.
+ * Moves collection of atoms along the center of mass into a box.
  *
- * \param[in] type What name needs to be provided.
- */
-const char* centerTypeNames(CenteringType type);
-
-/*! \brief
- * Get names for the different unit cell representation types.
+ * This ensures that the centre of mass (COM) of a molecule is placed
+ * within a predefined coordinate space (usually a simulation box).
  *
- * \param[in] type What name needs to be provided.
+ * \param[in]      pbcType      What kind of PBC are we handling today.
+ * \param[in]      unitCellType Kind of unitcell used for the box.
+ * \param[in]      centerType   How atoms should be centered.
+ * \param[in]      box          The currently available box to place things into.
+ * \param[in, out] x            View in coordinates to shift.
+ * \param[in]      mtop         Topology with residue and molecule information.
+ * \param[in]      comShiftType Whether residues or molecules are shifted.
  */
-const char* unitCellTypeNames(UnitCellType type);
+void placeCoordinatesWithCOMInBox(const PbcType&    pbcType,
+                                  UnitCellType      unitCellType,
+                                  CenteringType     centerType,
+                                  const matrix      box,
+                                  ArrayRef<RVec>    x,
+                                  const gmx_mtop_t& mtop,
+                                  COMShiftType      comShiftType);
 
 } // namespace gmx
 

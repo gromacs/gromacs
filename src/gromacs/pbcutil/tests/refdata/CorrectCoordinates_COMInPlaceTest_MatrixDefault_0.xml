@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Molecule CompactRectangularnoxyz">
+    <Int Name="Length">10</Int>
+    <Vector>
+      <Real Name="X">-0.99999994</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">3</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.6000001</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.6000001</Real>
+      <Real Name="Y">1.7</Real>
+      <Real Name="Z">4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1</Real>
+      <Real Name="Y">4</Real>
+      <Real Name="Z">2</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.99999994</Real>
+      <Real Name="Y">-1.1920929e-07</Real>
+      <Real Name="Z">-2.9999998</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.5</Real>
+      <Real Name="Y">-1.5000001</Real>
+      <Real Name="Z">-4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.6000001</Real>
+      <Real Name="Y">-1.5000001</Real>
+      <Real Name="Z">-4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.6000001</Real>
+      <Real Name="Y">-1.7000002</Real>
+      <Real Name="Z">-4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1</Real>
+      <Real Name="Y">-4</Real>
+      <Real Name="Z">-1.9999998</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Residue CompactRectangularnoxyz">
+    <Int Name="Length">10</Int>
+    <Vector>
+      <Real Name="X">-1</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">3</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.6000001</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.6000001</Real>
+      <Real Name="Y">1.7</Real>
+      <Real Name="Z">4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1</Real>
+      <Real Name="Y">4</Real>
+      <Real Name="Z">2</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.99999994</Real>
+      <Real Name="Y">-1.1920929e-07</Real>
+      <Real Name="Z">-3</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.5</Real>
+      <Real Name="Y">-1.5000002</Real>
+      <Real Name="Z">-4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.6000001</Real>
+      <Real Name="Y">-1.5000002</Real>
+      <Real Name="Z">-4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1.6000001</Real>
+      <Real Name="Y">-1.7000003</Real>
+      <Real Name="Z">-4.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-1</Real>
+      <Real Name="Y">-4</Real>
+      <Real Name="Z">-1.9999998</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

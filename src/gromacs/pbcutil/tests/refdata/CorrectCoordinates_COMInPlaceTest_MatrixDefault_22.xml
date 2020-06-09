@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Molecule TriclinicTriclinicxyzxyz">
+    <Int Name="Length">10</Int>
+    <Vector>
+      <Real Name="X">-1</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.6</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.6</Real>
+      <Real Name="Y">1.7</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1</Real>
+      <Real Name="Y">4</Real>
+      <Real Name="Z">-1</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">4</Real>
+      <Real Name="Y">3</Real>
+      <Real Name="Z">3</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.4</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.4</Real>
+      <Real Name="Y">1.3</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">2</Real>
+      <Real Name="Y">-1</Real>
+      <Real Name="Z">4</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="Residue TriclinicTriclinicxyzxyz">
+    <Int Name="Length">10</Int>
+    <Vector>
+      <Real Name="X">2</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.6</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.6</Real>
+      <Real Name="Y">1.7</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1</Real>
+      <Real Name="Y">1</Real>
+      <Real Name="Z">2</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.4</Real>
+      <Real Name="Y">1.5</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.4</Real>
+      <Real Name="Y">1.3</Real>
+      <Real Name="Z">1.5</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">2</Real>
+      <Real Name="Y">2</Real>
+      <Real Name="Z">1</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

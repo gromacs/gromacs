@@ -34,6 +34,7 @@
 
 gmx_add_unit_test(PbcutilUnitTest pbcutil-test
     CPP_SOURCE_FILES
+        com.cpp
         mshift.cpp
         pbc.cpp
         pbcenums.cpp
