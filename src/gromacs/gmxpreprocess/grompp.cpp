@@ -1575,6 +1575,32 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     }
 }
 
+#if 0
+/* TODO: jal */
+static void check_drude_tc_grps(t_inputrec *ir)
+{
+    int i, j;   /* i: loop over tc-grps, j: loop over nrdf */
+    t_grpopts   *opts;
+
+    opts = ir->opts;
+
+    /* Loop over all groups and check the mass of the first particle.
+     * Drudes have a mass of 0.4 amu (hard-coded, ugly, sorry!)
+     * If the first mass in the group is not 0.4 and any subsequent atoms
+     * in the group have mass = 0.4, there is a mismatch (mixing of Drudes
+     * and atoms) that triggers a fatal error, and vice versa */
+    for (i=0; i<opts->ngtc; i++)
+    {
+        for (j=0; j<opts->nrdf[i]; j++)
+        {
+            
+        }        
+    }
+
+    return;
+}
+#endif
+
 int gmx_grompp(int argc, char *argv[])
 {
     static const char *desc[] = {
@@ -1895,6 +1921,12 @@ int gmx_grompp(int argc, char *argv[])
                                  "Reset drude_mode to SCF.");
             }
         }
+
+        /* TODO: add check for tc-grps to make sure atoms and Drudes are not mixed? */
+        /* Needs atom indices and mtop */
+#if 0
+        check_drude_tc_grps(ir);
+#endif
 
         /* TODO: not implemented */
 #if 0

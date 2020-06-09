@@ -1005,6 +1005,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xpr
     t_ilist    *ilist;
     t_iatom    *iatoms;
     int         nral;
+    int         nhw = 0;
     char        buf[22];
 
     snew(pbc, 1);
@@ -1094,6 +1095,7 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xpr
         /* impose hardwall if the Drude has strayed too far */
         if (rab2 > rwall2)
         {
+            nhw++;
             rab = std::sqrt(rab2);
 
             /* allow diagnostic info to be printed to stderr instead of debug
@@ -1279,6 +1281,13 @@ void apply_drude_hardwall(t_commrec *cr, t_idef *idef, t_inputrec *ir, rvec *xpr
         } /* end of hard wall conditions */
 
     } /* end loop over j within iatoms */
+
+    /* communicate new positions and velocities if we have made any changes */
+    if (DOMAINDECOMP(cr) && (nhw > 0))
+    {
+        dd_move_x_shells(cr->dd, box, xprime);
+        dd_move_v_shells(cr->dd, v);
+    }
 
     sfree(pbc);
 

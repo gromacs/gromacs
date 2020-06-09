@@ -351,77 +351,101 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
     }
 }
 
-void dd_move_v_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac, rvec *x0)
+void dd_move_v_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac, rvec *v)
 {
     gmx_specatsend_t *spas;
-    rvec             *x, *vbuf;
-    int               nvec, v, n, ns0, ns1, nr0, nr1, d, dim, dir, i;
+    rvec             *vbuf;
+    int               n, n0, n1, d, dim, dir, i;
+    gmx_bool          bPBC, bScrew;
 
-    nvec = 1;
-
-    n = spac->at_start;
-    for (d = 0; d < dd->ndim; d++)
+    n = spac->at_end;
+    for (d = dd->ndim-1; d >= 0; d--)
     {
         dim = dd->dim[d];
         if (dd->nc[dim] > 2)
         {
             /* Pulse the grid forward and backward */
+            spas = spac->spas[d];
+            n0   = spas[0].nrecv;
+            n1   = spas[1].nrecv;
+            n   -= n1 + n0;
             vbuf = spac->vbuf;
+            /* Send and receive the velocities */
+            dd_sendrecv2_rvec(dd, d,
+                              v+n+n1, n0, vbuf, spas[0].nsend,
+                              v+n, n1, vbuf+spas[0].nsend, spas[1].nsend);
             for (dir = 0; dir < 2; dir++)
             {
+                bPBC   = ((dir == 0 && dd->ci[dim] == 0) ||
+                          (dir == 1 && dd->ci[dim] == dd->nc[dim]-1));
+                bScrew = (bPBC && dd->bScrewPBC && dim == XX);
+
                 spas = &spac->spas[d][dir];
-                for (v = 0; v < nvec; v++)
+                if (!bScrew)
                 {
-                    x = x0;
-                    /* Copy the required velocities to the send buffer */
+                    /* Sum and add to shift forces */
                     for (i = 0; i < spas->nsend; i++)
                     {
-/* TODO: REMOVE, for debugging */
+                        if (dir == 0)
+                        {
+                            copy_rvec(*vbuf, v[spas->a[i]]);
+                            /* TODO: REMOVE */
 #if 0
-                        fprintf(stderr, "SPECAT V atom %d: %f %f %f\n", 
-                                ddglatnr(dd, spas->a[i]),
-                                x[spas->a[i]][XX], x[spas->a[i]][YY], x[spas->a[i]][ZZ]);
+                            if (debug)
+                            {
 #endif
-                        copy_rvec(x[spas->a[i]], *vbuf);
+                                fprintf(stderr, "DD MOVE V SPECAT: dir = %d v[spas->a[%d]] (%d) = %f %f %f vbuf = %f %f %f\n",
+                                        dir, i, ddglatnr(dd, spas->a[i]), v[spas->a[i]][XX], v[spas->a[i]][YY], v[spas->a[i]][ZZ],
+                                        (*vbuf)[XX], (*vbuf)[YY], (*vbuf)[ZZ]);
+#if 0
+                            }
+#endif
+                            vbuf++;
+                        }
+                    }
+                }
+                else
+                {
+                    /* Rotate */
+                    for (i = 0; i < spas->nsend; i++)
+                    {
+                        v[spas->a[i]][XX] = (*vbuf)[XX];
+                        v[spas->a[i]][YY] = (*vbuf)[YY];
+                        v[spas->a[i]][ZZ] = (*vbuf)[ZZ];
                         vbuf++;
                     }
                 }
             }
-            /* Send and receive the velocities */
-            spas = spac->spas[d];
-            ns0  = spas[0].nsend;
-            nr0  = spas[0].nrecv;
-            ns1  = spas[1].nsend;
-            nr1  = spas[1].nrecv;
-            dd_sendrecv2_rvec(dd, d,
-                              spac->vbuf+ns0, ns1, x0+n, nr1,
-                              spac->vbuf, ns0, x0+n+nr1, nr0);
-            n += nr0 + nr1;
         }
         else
         {
+            /* Two cells, so we only need to communicate one way */
             spas = &spac->spas[d][0];
-            /* Copy the required velocities to the send buffer */
-            vbuf = spac->vbuf;
-            for (v = 0; v < nvec; v++)
+            n   -= spas->nrecv;
+            /* Send and receive the velocities */
+            dd_sendrecv_rvec(dd, d, dddirForward,
+                             v+n, spas->nrecv, spac->vbuf, spas->nsend);
+            /* Sum the buffer into the required velocities */
+            /* jal - is this right? summation for velocities seems wrong... */
+            if (dd->bScrewPBC && dim == XX &&
+                (dd->ci[dim] == 0 ||
+                 dd->ci[dim] == dd->nc[dim]-1))
             {
-                x = x0; 
                 for (i = 0; i < spas->nsend; i++)
                 {
-/* TODO: REMOVE, for debugging */
-#if 0
-                    fprintf(stderr, "SPECAT V atom %d: %f %f %f\n",
-                            ddglatnr(dd, spas->a[i]),
-                            x[spas->a[i]][XX], x[spas->a[i]][YY], x[spas->a[i]][ZZ]); 
-#endif
-                    copy_rvec(x[spas->a[i]], *vbuf);
-                    vbuf++;
+                    /* Rotate */
+                    v[spas->a[i]][XX] = spac->vbuf[i][XX];
+                    v[spas->a[i]][YY] = spac->vbuf[i][YY];
+                    v[spas->a[i]][ZZ] = spac->vbuf[i][ZZ];
                 }
             }
-            /* Send and receive the velocities */
-            dd_sendrecv_rvec(dd, d, dddirBackward,
-                             spac->vbuf, spas->nsend, x0+n, spas->nrecv);
-            n += spas->nrecv;
+            else
+            {
+                for (i = 0; i < spas->nsend; i++)
+                {
+                    copy_rvec(v[spas->a[i]], spac->vbuf[i]);
+                }
+            }
         }
     }
 }

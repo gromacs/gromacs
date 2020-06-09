@@ -795,6 +795,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     bUseGPU       = fr->nbv->bUseGPU;
     bUseOrEmulGPU = bUseGPU || (nbv->grp[0].kernel_type == nbnxnk8x8x8_PlainC);
 
+    /* TODO: REMOVE */
+    for (i=0; i<mdatoms->homenr; i++)
+    {
+        if (mdatoms->ptype[i] == eptShell)
+        {
+            fprintf(stderr, "DO FORCE: top f[%d] = %f %f %f\n",
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                    f[i][XX], f[i][YY], f[i][ZZ]);
+        }
+    }
+
     if (bStateChanged)
     {
         update_forcerec(fr, box);
@@ -1193,6 +1204,16 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* Maybe we should move this into do_force_lowlevel */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
                      nrnb, wcycle);
+        /* TODO: REMOVE */
+        for (i=0; i<mdatoms->homenr; i++)
+        {
+            if (mdatoms->ptype[i] == eptShell)
+            {
+                fprintf(stderr, "DO FORCE: after do_nb_verlet #1 f[%d] = %f %f %f\n",
+                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                        f[i][XX], f[i][YY], f[i][ZZ]);
+            }
+        }
     }
 
     if (fr->efep != efepNO)
@@ -1229,6 +1250,16 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          nrnb, wcycle);
         }
 
+        /* TODO: REMOVE */
+        for (i=0; i<mdatoms->homenr; i++)
+        {
+            if (mdatoms->ptype[i] == eptShell)
+            {
+                fprintf(stderr, "DO FORCE: after do_nb_verlet #2 f[%d] = %f %f %f\n",
+                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                        f[i][XX], f[i][YY], f[i][ZZ]);
+            }
+        }
         if (!bUseOrEmulGPU)
         {
             aloc = eintLocal;
@@ -1250,6 +1281,18 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         cycles_force += wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         wallcycle_start_nocount(wcycle, ewcFORCE);
 
+        /* HERE WE HAVE A DIFFERENCE BETWEEN OPENMP/DD-NOCOMM AND DD W/COMM - but maybe that is reasonable? */
+        /* TODO: REMOVE */
+        for (i=0; i<mdatoms->homenr; i++)
+        {
+            if (mdatoms->ptype[i] == eptShell)
+            {
+                fprintf(stderr, "DO FORCE: after nbnxn_atomdata_add_nbat_f_to_f f[%d] = %f %f %f\n",
+                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                        f[i][XX], f[i][YY], f[i][ZZ]);
+            }
+        }
+
         /* if there are multiple fshift output buffers reduce them */
         if ((flags & GMX_FORCE_VIRIAL) &&
             nbv->grp[aloc].nbl_lists.nnbl > 1)
@@ -1258,6 +1301,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                negligible and constant-sized amount of time */
             nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
                                                      fr->fshift);
+
+            /* TODO: REMOVE */
+            for (i=0; i<mdatoms->homenr; i++)
+            {
+                if (mdatoms->ptype[i] == eptShell)
+                {
+                    fprintf(stderr, "DO FORCE: after nbnxn_atomdata_add_nbat_fshift_to_fshift f[%d] = %f %f %f\n",
+                            DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                            f[i][XX], f[i][YY], f[i][ZZ]);
+                }
+            }
         }
     }
 
@@ -1267,6 +1321,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         update_QMMMrec(cr, fr, x, mdatoms, box, top);
     }
 
+    /* jal - PROBLEM FOUND! Non-local forces are polluted here in do_force_lowlevel, therefore
+     * creating problems later on. */
+
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef),
                       cr, nrnb, wcycle, mdatoms,
@@ -1274,6 +1331,24 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                       bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
+
+    /* TODO: REMOVE */
+    /* NON-LOCAL FORCES ARE BAD HERE */
+    if (DOMAINDECOMP(cr) && shellfc)
+    {
+        dd_print_f_shells(cr->dd, f, "after do_force_lowlevel");
+    }
+
+    /* TODO: REMOVE */
+    for (i=0; i<mdatoms->homenr; i++)
+    {
+        if (mdatoms->ptype[i] == eptShell)
+        {
+            fprintf(stderr, "DO FORCE: after do_force_lowlevel f[%d] = %f %f %f\n",
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                    f[i][XX], f[i][YY], f[i][ZZ]);
+        }
+    }
 
     cycles_force += wallcycle_stop(wcycle, ewcFORCE);
 
@@ -1320,6 +1395,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
+    /* TODO: REMOVE */
+    for (i=0; i<mdatoms->homenr; i++)
+    {
+        if (mdatoms->ptype[i] == eptShell)
+        {
+            fprintf(stderr, "DO FORCE: b4 move_f f[%d] = %f %f %f\n",
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                    f[i][XX], f[i][YY], f[i][ZZ]);
+        }
+    }
+
     if (bDoForces && DOMAINDECOMP(cr))
     {
         if (bUseGPU && useCuda)
@@ -1335,12 +1421,24 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         /* Communicate the forces */
         wallcycle_start(wcycle, ewcMOVEF);
         dd_move_f(cr->dd, f, fr->fshift);
-        /* jal - immediate seg fault w/o this, not sure why I need it... */
+        /* jal: do not move this, needed here */
         if (shellfc)
         {
             dd_move_f_shells(cr->dd, f, fr->fshift);
+            dd_clear_f_shells(cr->dd, f);
         }
         wallcycle_stop(wcycle, ewcMOVEF);
+    }
+
+    /* TODO: REMOVE */
+    for (i=0; i<mdatoms->homenr; i++)
+    {
+        if (mdatoms->ptype[i] == eptShell)
+        {
+            fprintf(stderr, "DO FORCE: after move_f f[%d] = %f %f %f\n",
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                    f[i][XX], f[i][YY], f[i][ZZ]);
+        }
     }
 
     if (bUseOrEmulGPU)
@@ -1419,6 +1517,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
 
+    /* TODO: REMOVE */
+    for (i=0; i<mdatoms->homenr; i++)
+    {
+        if (mdatoms->ptype[i] == eptShell)
+        {
+            fprintf(stderr, "DO FORCE: after GPU use/emulate f[%d] = %f %f %f\n",
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                    f[i][XX], f[i][YY], f[i][ZZ]);
+        }
+    }
+
     if (DOMAINDECOMP(cr))
     {
         dd_force_flop_stop(cr->dd, nrnb);
@@ -1451,6 +1560,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
+        }
+
+        /* TODO: REMOVE */
+        for (i=0; i<mdatoms->homenr; i++)
+        {
+            if (mdatoms->ptype[i] == eptShell)
+            {
+                fprintf(stderr, "DO FORCE: after vsite_spread f[%d] = %f %f %f\n",
+                        DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                        f[i][XX], f[i][YY], f[i][ZZ]);
+            }
         }
 
         if (flags & GMX_FORCE_VIRIAL)
@@ -1490,21 +1610,37 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         pme_receive_force_ener(cr, wcycle, enerd, fr);
     }
 
+    /* TODO: REMOVE */
+    for (i=0; i<mdatoms->homenr; i++)
+    {
+        if (mdatoms->ptype[i] == eptShell)
+        {
+            fprintf(stderr, "DO FORCE: b4 post f[%d] = %f %f %f\n",
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                    f[i][XX], f[i][YY], f[i][ZZ]);
+        }
+    }
+
     if (bDoForces)
     {
         post_process_forces(cr, step, nrnb, wcycle,
                             top, box, x, f, vir_force, mdatoms, graph, fr, vsite,
                             flags);
-
-        /* Note: clearing forces here or above does not make a difference */
-        if (shellfc && (DOMAINDECOMP(cr)))
-        {
-            dd_clear_f_shells(cr->dd, f);
-        }
     }
 
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(enerd->grpp), enerd->term);
+
+    /* TODO: REMOVE */
+    for (i=0; i<mdatoms->homenr; i++)
+    {
+        if (mdatoms->ptype[i] == eptShell)
+        {
+            fprintf(stderr, "DO FORCE: end f[%d] = %f %f %f\n",
+                    DOMAINDECOMP(cr) ? ddglatnr(cr->dd,i) : (i+1),
+                    f[i][XX], f[i][YY], f[i][ZZ]);
+        }
+    }
 }
 
 void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,

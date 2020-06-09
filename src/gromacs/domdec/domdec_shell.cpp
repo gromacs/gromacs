@@ -144,8 +144,8 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                 {
                     if (debug)
                     {
-                        fprintf(debug, "DD LOCAL SHELLS: non-local iatoms[%d] = %d in %s (i = %d)\n",
-                                j, iatoms[j], interaction_function[ftype].longname, i);
+                        fprintf(debug, "DD LOCAL SHELLS: non-local iatoms[%d] = %d in %s\n",
+                                j, iatoms[j], interaction_function[ftype].longname);
                     }
                     /* not a home atom */
                     a = -iatoms[j] - 1;
@@ -185,8 +185,8 @@ int dd_make_local_shells(gmx_domdec_t *dd, int at_start, t_ilist *lil)
                     iatoms[j] = gmx_hash_get_minone(ga2la_specat, -iatoms[j]-1);
                     if (debug)
                     {
-                        fprintf(debug, "DD LOCAL SHELLS: after gmx_hash_get_minone iatoms[%d] = %d\n",
-                                j, iatoms[j]);
+                        fprintf(debug, "DD LOCAL SHELLS: after gmx_hash_get_minone iatoms[%d] = %d in %s\n",
+                                j, iatoms[j], interaction_function[ftype].longname);
                     }
                 }
                 /* TODO: fill in shellfc data here. May need to assume order of atoms,

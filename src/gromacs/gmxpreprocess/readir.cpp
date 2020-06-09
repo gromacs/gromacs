@@ -2721,6 +2721,7 @@ static gmx_bool do_numbering(int natoms, gmx_groups_t *groups, int ng, char *ptr
     return (bRest && grptp == egrptpPART);
 }
 
+/* TODO: revisit this for Drude systems to get global temperature right */
 static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
 {
     t_grpopts              *opts;
@@ -2770,6 +2771,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
     {
         nrdf2[i] = 0;
+        /* TODO: this may be unnecessary */
         /* special accommodation for Shell particle that has mass, i.e.
          * it is a Drude with extended Lagrangian (SCF does not add to nrdf) */
         if (atom->ptype == eptAtom || atom->ptype == eptNucleus || 
