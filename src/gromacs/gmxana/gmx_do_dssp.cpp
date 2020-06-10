@@ -192,8 +192,7 @@ static int strip_dssp(FILE*                   tapeout,
         bFirst = false;
     }
     mat->axis_x.push_back(t);
-    mat->matrix.resize(mat->matrix.extent(0), nr);
-    mat->nx          = mat->matrix.extent(0);
+    mat->matrix.resize(++(mat->nx), nr);
     auto columnIndex = mat->nx - 1;
     for (int i = 0; i < nr; i++)
     {

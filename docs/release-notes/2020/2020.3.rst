@@ -26,6 +26,13 @@ The tool would crash due to mismatching sizes of energy terms in the file and F_
 
 :issue:`3547`
 
+Actually fix gmx do_dssp
+""""""""""""""""""""""""
+
+The tool was still broken and gave incorrect results after the previous fix.
+
+:issue:`3444`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
