@@ -479,10 +479,7 @@ include(gmxManageSharedLibraries)
 #    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 #endif()
 
-gmx_option_trivalue(
-    GMX_HWLOC
-    "Use hwloc portable hardware locality library"
-    "AUTO")
+option(GMX_HWLOC "Use hwloc portable hardware locality library" OFF)
 
 if (GMX_HWLOC)
     # Find quietly the second time.
@@ -689,13 +686,7 @@ if(GMX_FAHCORE)
   include_directories(${COREWRAP_INCLUDE_DIR})
 endif()
 
-# Value of GMX_BUILD_HELP=AUTO tries to generate things, but will only
-# produce warnings if that fails.
-set(build_help_default AUTO)
-if (SOURCE_IS_SOURCE_DISTRIBUTION OR CMAKE_CROSSCOMPILING)
-    set(build_help_default OFF)
-endif()
-gmx_option_trivalue(GMX_BUILD_HELP "Build completions automatically (requires that compiled binaries can be executed on the build host) and install man pages if built (requires building the 'man' target manually)" ${build_help_default})
+option(GMX_BUILD_HELP "Build completions (requires that compiled binaries can be executed on build host) and install man pages if built (requires building the 'man' target manually)" OFF)
 mark_as_advanced(GMX_BUILD_HELP)
 if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
     message(FATAL_ERROR

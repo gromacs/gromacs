@@ -348,7 +348,9 @@ Other optional build components
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * Run-time detection of hardware capabilities can be improved by
-  linking with hwloc, which is automatically enabled if detected.
+  linking with hwloc. By default this is turned off since it might
+  not be supported everywhere, but if you have hwloc installed it
+  should work by just setting ``-DGMX_HWLOC=ON``
 * Hardware-optimized BLAS and LAPACK libraries are useful
   for a few of the |Gromacs| utilities focused on normal modes and
   matrix manipulation, but they do not provide any benefits for normal

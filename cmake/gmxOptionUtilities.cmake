@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2017,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -86,39 +86,6 @@ endfunction()
 # Convenience function for reporting a fatal error for an invalid input value
 function(GMX_INVALID_OPTION_VALUE NAME)
     message(FATAL_ERROR "Invalid value for ${NAME}: ${${NAME}}")
-endfunction()
-
-# Declares a cache variable with ON/OFF/AUTO values
-#
-# Usage:
-#   gmx_option_trivalue(VAR "Description" DEFAULT)
-#
-# Output:
-#   VAR is created in the cache, and the caller can assume that the value is
-#   always one of ON/OFF/AUTO.  Additionally, VAR_AUTO is set if value is AUTO,
-#   and VAR_FORCE is set if value is ON.
-#   These make it convenient to check for any combination of states with simple
-#   if() statements (simple if(VAR) matches AUTO and ON).
-function(GMX_OPTION_TRIVALUE NAME DESCRIPTION DEFAULT)
-    set(_description "${DESCRIPTION}. ON/OFF/AUTO")
-    set(${NAME} ${DEFAULT} CACHE STRING "${_description}")
-    set_property(CACHE ${NAME} PROPERTY STRINGS ON OFF AUTO)
-
-    set(${NAME}_AUTO OFF)
-    set(${NAME}_FORCE OFF)
-    string(TOUPPER "${${NAME}}" ${NAME})
-    if ("${${NAME}}" STREQUAL "AUTO")
-        set(${NAME}_AUTO ON)
-    elseif (${NAME})
-        set(${NAME}_FORCE ON)
-        set(${NAME} ON)
-    else()
-        set(${NAME} OFF)
-    endif()
-    # Always provide the sanitized value to the caller
-    set(${NAME}       "${${NAME}}"       PARENT_SCOPE)
-    set(${NAME}_AUTO  "${${NAME}_AUTO}"  PARENT_SCOPE)
-    set(${NAME}_FORCE "${${NAME}_FORCE}" PARENT_SCOPE)
 endfunction()
 
 # Hides or shows a cache value based on conditions

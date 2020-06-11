@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016,2017, by the GROMACS development team, led by
+# Copyright (c) 2016,2017,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,7 @@ include(gmxOptionUtilities)
 # Sets GMX_USE_PLUGINS=ON in the parent scope if the toolchain and
 # user selections permit the build to support plugin loading.
 function(gmx_manage_plugin_support)
-    gmx_option_trivalue(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" AUTO)
+    option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
     mark_as_advanced(GMX_LOAD_PLUGINS)
 
     # Find out if non-Windows builds can support plugins. Native Windows
