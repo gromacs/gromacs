@@ -26,6 +26,13 @@ The tool would crash due to mismatching sizes of energy terms in the file and F_
 
 :issue:`3547`
 
+Fix uninitialized variable warnings in gmx hbond
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Tool would produce garbage due to using uninitialized memory.
+
+:issue:`3550`
+
 Actually fix gmx do_dssp
 """"""""""""""""""""""""
 
