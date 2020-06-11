@@ -66,7 +66,7 @@ namespace gmx
 {
 class Awh;
 class EnergyData;
-class FreeEnergyPerturbationElement;
+class FreeEnergyPerturbationData;
 class ImdSession;
 class MDAtoms;
 class MdrunScheduleWorkload;
@@ -88,25 +88,26 @@ class ForceElement final :
 {
 public:
     //! Constructor
-    ForceElement(StatePropagatorData*           statePropagatorData,
-                 EnergyData*                    energyData,
-                 FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                 bool                           isVerbose,
-                 bool                           isDynamicBox,
-                 FILE*                          fplog,
-                 const t_commrec*               cr,
-                 const t_inputrec*              inputrec,
-                 const MDAtoms*                 mdAtoms,
-                 t_nrnb*                        nrnb,
-                 t_forcerec*                    fr,
-                 gmx_wallcycle*                 wcycle,
-                 MdrunScheduleWorkload*         runScheduleWork,
-                 VirtualSitesHandler*           vsite,
-                 ImdSession*                    imdSession,
-                 pull_t*                        pull_work,
-                 Constraints*                   constr,
-                 const gmx_mtop_t*              globalTopology,
-                 gmx_enfrot*                    enforcedRotation);
+    ForceElement(StatePropagatorData*        statePropagatorData,
+                 EnergyData*                 energyData,
+                 FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                 bool                        isVerbose,
+                 bool                        isDynamicBox,
+                 FILE*                       fplog,
+                 const t_commrec*            cr,
+                 const t_inputrec*           inputrec,
+                 const MDAtoms*              mdAtoms,
+                 t_nrnb*                     nrnb,
+                 t_forcerec*                 fr,
+
+                 gmx_wallcycle*         wcycle,
+                 MdrunScheduleWorkload* runScheduleWork,
+                 VirtualSitesHandler*   vsite,
+                 ImdSession*            imdSession,
+                 pull_t*                pull_work,
+                 Constraints*           constr,
+                 const gmx_mtop_t*      globalTopology,
+                 gmx_enfrot*            enforcedRotation);
 
     /*! \brief Register force calculation for step / time
      *
@@ -151,8 +152,8 @@ private:
     StatePropagatorData* statePropagatorData_;
     //! Pointer to the energy data
     EnergyData* energyData_;
-    //! Pointer to the free energy perturbation element
-    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
+    //! Pointer to the free energy perturbation data
+    FreeEnergyPerturbationData* freeEnergyPerturbationData_;
 
     //! The local topology - updated by Topology via Client system
     const gmx_localtop_t* localTopology_;

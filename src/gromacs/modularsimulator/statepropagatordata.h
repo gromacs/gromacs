@@ -61,7 +61,7 @@ struct t_mdatoms;
 namespace gmx
 {
 enum class ConstraintVariable;
-class FreeEnergyPerturbationElement;
+class FreeEnergyPerturbationData;
 
 /*! \internal
  * \ingroup module_modularsimulator
@@ -131,18 +131,18 @@ public:
     //! The element taking part in the simulator loop
     class Element;
     //! Get pointer to element (whose lifetime is managed by this)
-    Element* element(FILE*                          fplog,
-                     const t_commrec*               cr,
-                     int                            nstxout,
-                     int                            nstvout,
-                     int                            nstfout,
-                     int                            nstxout_compressed,
-                     FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                     bool                           canMoleculesBeDistributedOverPBC,
-                     bool                           writeFinalConfiguration,
-                     std::string                    finalConfigurationFilename,
-                     const t_inputrec*              inputrec,
-                     const gmx_mtop_t*              globalTop);
+    Element* element(FILE*                       fplog,
+                     const t_commrec*            cr,
+                     int                         nstxout,
+                     int                         nstvout,
+                     int                         nstfout,
+                     int                         nstxout_compressed,
+                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                     bool                        canMoleculesBeDistributedOverPBC,
+                     bool                        writeFinalConfiguration,
+                     std::string                 finalConfigurationFilename,
+                     const t_inputrec*           inputrec,
+                     const gmx_mtop_t*           globalTop);
     //! Initial set up for the associated element
     void setup();
 
@@ -236,19 +236,19 @@ class StatePropagatorData::Element final :
 {
 public:
     //! Constructor
-    Element(StatePropagatorData*           statePropagatorData,
-            FILE*                          fplog,
-            const t_commrec*               cr,
-            int                            nstxout,
-            int                            nstvout,
-            int                            nstfout,
-            int                            nstxout_compressed,
-            FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-            bool                           canMoleculesBeDistributedOverPBC,
-            bool                           writeFinalConfiguration,
-            std::string                    finalConfigurationFilename,
-            const t_inputrec*              inputrec,
-            const gmx_mtop_t*              globalTop);
+    Element(StatePropagatorData*        statePropagatorData,
+            FILE*                       fplog,
+            const t_commrec*            cr,
+            int                         nstxout,
+            int                         nstvout,
+            int                         nstfout,
+            int                         nstxout_compressed,
+            FreeEnergyPerturbationData* freeEnergyPerturbationData,
+            bool                        canMoleculesBeDistributedOverPBC,
+            bool                        writeFinalConfiguration,
+            std::string                 finalConfigurationFilename,
+            const t_inputrec*           inputrec,
+            const gmx_mtop_t*           globalTop);
 
     /*! \brief Register run function for step / time
      *
@@ -315,8 +315,8 @@ private:
     void write(gmx_mdoutf* outf, Step step, Time time);
 
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
-    //! Pointer to the free energy perturbation element (for trajectory writing only)
-    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
+    //! Pointer to the free energy perturbation data (for trajectory writing only)
+    FreeEnergyPerturbationData* freeEnergyPerturbationData_;
 
     //! No trajectory writer setup needed
     void trajectoryWriterSetup(gmx_mdoutf gmx_unused* outf) override {}

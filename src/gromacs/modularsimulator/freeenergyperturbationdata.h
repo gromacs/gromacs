@@ -58,20 +58,18 @@ class MDAtoms;
 
 /*! \internal
  * \ingroup module_modularsimulator
- * \brief The free energy perturbation element
+ * \brief The free energy perturbation data
  *
  * The lambda vector and the current FEP state are held by the
- * FreeEnergyPerturbationElement, offering access to its values via getter
- * functions. The FreeEnergyPerturbationElement does update the lambda
- * values during the simulation run if lambda is non-static. It does
- * implement the checkpointing client interface to save its current
- * state for restart.
+ * FreeEnergyPerturbationData, offering access to its values via getter
+ * functions. The FreeEnergyPerturbationData::Element is responsible for
+ * lambda update (if applicable) and checkpointing.
  */
-class FreeEnergyPerturbationElement final : public ISimulatorElement, public ICheckpointHelperClient
+class FreeEnergyPerturbationData final
 {
 public:
     //! Constructor
-    FreeEnergyPerturbationElement(FILE* fplog, const t_inputrec* inputrec, MDAtoms* mdAtoms);
+    FreeEnergyPerturbationData(FILE* fplog, const t_inputrec* inputrec, MDAtoms* mdAtoms);
 
     //! Get a view of the current lambda vector
     ArrayRef<real> lambdaView();
@@ -79,6 +77,49 @@ public:
     ArrayRef<const real> constLambdaView();
     //! Get the current FEP state
     int currentFEPState();
+
+    //! The element taking part in the simulator loop
+    class Element;
+    //! Get pointer to element (whose lifetime is managed by this)
+    Element* element();
+
+private:
+    //! Update the lambda values
+    void updateLambdas(Step step);
+
+    //! The element
+    std::unique_ptr<Element> element_;
+
+    //! The lambda vector
+    std::array<real, efptNR> lambda_;
+    //! The starting lambda vector
+    std::array<double, efptNR> lambda0_;
+    //! The current free energy state
+    int currentFEPState_;
+
+    //! Handles logging.
+    FILE* fplog_;
+    //! Contains user input mdp options.
+    const t_inputrec* inputrec_;
+    //! Atom parameters for this domain.
+    MDAtoms* mdAtoms_;
+};
+
+
+/*! \internal
+ * \ingroup module_modularsimulator
+ * \brief The free energy perturbation data element
+ *
+ * The FreeEnergyPerturbationData::Element does update the lambda
+ * values during the simulation run if lambda is non-static. It does
+ * implement the checkpointing client interface to save its current
+ * state for restart.
+ */
+class FreeEnergyPerturbationData::Element final : public ISimulatorElement, public ICheckpointHelperClient
+{
+public:
+    //! Constructor
+    explicit Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement, double deltaLambda);
 
     //! Update lambda and mdatoms
     void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
@@ -90,27 +131,13 @@ public:
     void elementTeardown() override{};
 
 private:
-    //! ICheckpointHelperClient implementation
-    void writeCheckpoint(t_state* localState, t_state* globalState) override;
-    //! Update the lambda values
-    void updateLambdas(Step step);
-
-    //! The lambda vector
-    std::array<real, efptNR> lambda_;
-    //! The starting lambda vector
-    std::array<double, efptNR> lambda0_;
-    //! The current free energy state
-    int currentFEPState_;
-
+    //! The free energy data
+    FreeEnergyPerturbationData* freeEnergyPerturbationData_;
     //! Whether lambda values are non-static
     const bool lambdasChange_;
 
-    //! Handles logging.
-    FILE* fplog_;
-    //! Contains user input mdp options.
-    const t_inputrec* inputrec_;
-    //! Atom parameters for this domain.
-    MDAtoms* mdAtoms_;
+    //! ICheckpointHelperClient implementation
+    void writeCheckpoint(t_state* localState, t_state* globalState) override;
 };
 
 } // namespace gmx

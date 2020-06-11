@@ -58,7 +58,7 @@ struct t_nrnb;
 
 namespace gmx
 {
-class FreeEnergyPerturbationElement;
+class FreeEnergyPerturbationData;
 class MDAtoms;
 class MDLogger;
 
@@ -106,22 +106,22 @@ class ComputeGlobalsElement final :
 {
 public:
     //! Constructor
-    ComputeGlobalsElement(StatePropagatorData*           statePropagatorData,
-                          EnergyData*                    energyData,
-                          FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                          SimulationSignals*             signals,
-                          int                            nstglobalcomm,
-                          FILE*                          fplog,
-                          const MDLogger&                mdlog,
-                          t_commrec*                     cr,
-                          const t_inputrec*              inputrec,
-                          const MDAtoms*                 mdAtoms,
-                          t_nrnb*                        nrnb,
-                          gmx_wallcycle*                 wcycle,
-                          t_forcerec*                    fr,
-                          const gmx_mtop_t*              global_top,
-                          Constraints*                   constr,
-                          bool                           hasReadEkinState);
+    ComputeGlobalsElement(StatePropagatorData*        statePropagatorData,
+                          EnergyData*                 energyData,
+                          FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                          SimulationSignals*          signals,
+                          int                         nstglobalcomm,
+                          FILE*                       fplog,
+                          const MDLogger&             mdlog,
+                          t_commrec*                  cr,
+                          const t_inputrec*           inputrec,
+                          const MDAtoms*              mdAtoms,
+                          t_nrnb*                     nrnb,
+                          gmx_wallcycle*              wcycle,
+                          t_forcerec*                 fr,
+                          const gmx_mtop_t*           global_top,
+                          Constraints*                constr,
+                          bool                        hasReadEkinState);
 
     //! Destructor
     ~ComputeGlobalsElement() override;
@@ -217,8 +217,8 @@ private:
     EnergyData* energyData_;
     //! Pointer to the local topology (only needed for checkNumberOfBondedInteractions)
     const gmx_localtop_t* localTopology_;
-    //! Pointer to the free energy perturbation element
-    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
+    //! Pointer to the free energy perturbation data
+    FreeEnergyPerturbationData* freeEnergyPerturbationData_;
 
     //! Center of mass motion removal
     t_vcm vcm_;

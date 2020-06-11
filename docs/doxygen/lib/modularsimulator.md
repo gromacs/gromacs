@@ -459,13 +459,12 @@ It integrates the Parrinello-Rahman box velocity equations, takes a
 callback to the propagator to update the velocity scaling factor, and
 scales the box and the positions of the system.
 
-#### `FreeEnergyPerturbationElement`
-The `FreeEnergyPerturbationElement` holds the lambda vector and the
-current FEP state, offering access to its values via getter
-functions. The FreeEnergyPerturbationElement does update the lambda
+#### `FreeEnergyPerturbationData::Element`
+The `FreeEnergyPerturbationData::Element` is a member class of
+`FreeEnergyPerturbationData` that updates the lambda
 values during the simulation run if lambda is non-static. It
-implements the checkpointing client interface to save its current
-state for restart.
+implements the checkpointing client interface to save the current
+state of `FreeEnergyPerturbationData` for restart.
 
 ## Data structures
 
@@ -506,6 +505,11 @@ responsible to write energy data to trajectory.
 The EnergyData offers an interface to add virial contributions,
 but also allows access to the raw pointers to tensor data, the
 dipole vector, and the legacy energy data structures.
+
+### `FreeEnergyPerturbationData`
+The `FreeEnergyPerturbationData` holds the lambda vector and the
+current FEP state, offering access to its values via getter
+functions.
 
 ### `TopologyHolder`
 The topology object owns the local topology and holds a constant reference

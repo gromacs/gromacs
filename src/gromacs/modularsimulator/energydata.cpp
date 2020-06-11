@@ -62,7 +62,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/topology.h"
 
-#include "freeenergyperturbationelement.h"
+#include "freeenergyperturbationdata.h"
 #include "parrinellorahmanbarostat.h"
 #include "statepropagatordata.h"
 #include "vrescalethermostat.h"
@@ -74,20 +74,20 @@ namespace gmx
 {
 class Awh;
 
-EnergyData::EnergyData(StatePropagatorData*           statePropagatorData,
-                       FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                       const gmx_mtop_t*              globalTopology,
-                       const t_inputrec*              inputrec,
-                       const MDAtoms*                 mdAtoms,
-                       gmx_enerdata_t*                enerd,
-                       gmx_ekindata_t*                ekind,
-                       const Constraints*             constr,
-                       FILE*                          fplog,
-                       t_fcdata*                      fcd,
-                       const MdModulesNotifier&       mdModulesNotifier,
-                       bool                           isMasterRank,
-                       ObservablesHistory*            observablesHistory,
-                       StartingBehavior               startingBehavior) :
+EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
+                       FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                       const gmx_mtop_t*           globalTopology,
+                       const t_inputrec*           inputrec,
+                       const MDAtoms*              mdAtoms,
+                       gmx_enerdata_t*             enerd,
+                       gmx_ekindata_t*             ekind,
+                       const Constraints*          constr,
+                       FILE*                       fplog,
+                       t_fcdata*                   fcd,
+                       const MdModulesNotifier&    mdModulesNotifier,
+                       bool                        isMasterRank,
+                       ObservablesHistory*         observablesHistory,
+                       StartingBehavior            startingBehavior) :
     element_(std::make_unique<Element>(this, isMasterRank)),
     isMasterRank_(isMasterRank),
     forceVirialStep_(-1),
@@ -97,7 +97,7 @@ EnergyData::EnergyData(StatePropagatorData*           statePropagatorData,
     needToSumEkinhOld_(false),
     startingBehavior_(startingBehavior),
     statePropagatorData_(statePropagatorData),
-    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
+    freeEnergyPerturbationData_(freeEnergyPerturbationData),
     vRescaleThermostat_(nullptr),
     parrinelloRahmanBarostat_(nullptr),
     inputrec_(inputrec),
@@ -118,7 +118,7 @@ EnergyData::EnergyData(StatePropagatorData*           statePropagatorData,
     clear_mat(pressure_);
     clear_rvec(muTot_);
 
-    if (freeEnergyPerturbationElement_)
+    if (freeEnergyPerturbationData_)
     {
         dummyLegacyState_.flags = (1U << estFEPSTATE);
     }
@@ -240,11 +240,11 @@ void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEner
     {
         dummyLegacyState_.therm_integral = vRescaleThermostat_->thermostatIntegral();
     }
-    if (freeEnergyPerturbationElement_)
+    if (freeEnergyPerturbationData_)
     {
-        accumulateKineticLambdaComponents(enerd_, freeEnergyPerturbationElement_->constLambdaView(),
+        accumulateKineticLambdaComponents(enerd_, freeEnergyPerturbationData_->constLambdaView(),
                                           *inputrec_->fepvals);
-        dummyLegacyState_.fep_state = freeEnergyPerturbationElement_->currentFEPState();
+        dummyLegacyState_.fep_state = freeEnergyPerturbationData_->currentFEPState();
     }
     if (parrinelloRahmanBarostat_)
     {

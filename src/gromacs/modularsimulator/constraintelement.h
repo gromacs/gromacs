@@ -52,7 +52,7 @@ namespace gmx
 {
 class Constraints;
 class EnergyData;
-class FreeEnergyPerturbationElement;
+class FreeEnergyPerturbationData;
 class StatePropagatorData;
 
 /*! \internal
@@ -75,14 +75,14 @@ class ConstraintsElement final :
 {
 public:
     //! Constructor
-    ConstraintsElement(Constraints*                   constr,
-                       StatePropagatorData*           statePropagatorData,
-                       EnergyData*                    energyData,
-                       FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                       bool                           isMaster,
-                       FILE*                          fplog,
-                       const t_inputrec*              inputrec,
-                       const t_mdatoms*               mdAtoms);
+    ConstraintsElement(Constraints*                constr,
+                       StatePropagatorData*        statePropagatorData,
+                       EnergyData*                 energyData,
+                       FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                       bool                        isMaster,
+                       FILE*                       fplog,
+                       const t_inputrec*           inputrec,
+                       const t_mdatoms*            mdAtoms);
 
     /*! \brief Register constraining function for step / time
      *
@@ -131,8 +131,8 @@ private:
     StatePropagatorData* statePropagatorData_;
     //! Pointer to the energy data
     EnergyData* energyData_;
-    //! Pointer to the free energy perturbation element
-    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
+    //! Pointer to the free energy perturbation data
+    FreeEnergyPerturbationData* freeEnergyPerturbationData_;
 
     // Access to ISimulator data
     //! Handles constraints.

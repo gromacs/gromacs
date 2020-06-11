@@ -59,7 +59,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 
-#include "freeenergyperturbationelement.h"
+#include "freeenergyperturbationdata.h"
 
 namespace gmx
 {
@@ -146,7 +146,7 @@ StatePropagatorData::Element* StatePropagatorData::element(FILE*            fplo
                                                            int              nstvout,
                                                            int              nstfout,
                                                            int              nstxout_compressed,
-                                                           FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                                                           FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                            bool canMoleculesBeDistributedOverPBC,
                                                            bool writeFinalConfiguration,
                                                            std::string finalConfigurationFilename,
@@ -157,12 +157,13 @@ StatePropagatorData::Element* StatePropagatorData::element(FILE*            fplo
     {
         element_ = std::make_unique<Element>(
                 this, fplog, cr, nstxout, nstvout, nstfout, nstxout_compressed,
-                freeEnergyPerturbationElement, canMoleculesBeDistributedOverPBC,
+                freeEnergyPerturbationData, canMoleculesBeDistributedOverPBC,
                 writeFinalConfiguration, std::move(finalConfigurationFilename), inputrec, globalTop);
     }
     else
     {
-        GMX_THROW(InconsistentInputError("Attempted to build StatePropagatorData::Element more than once."));
+        GMX_THROW(InconsistentInputError(
+                "Attempted to build StatePropagatorData::Element more than once."));
     }
     return element_.get();
 }
@@ -344,12 +345,12 @@ void StatePropagatorData::Element::saveState()
 {
     GMX_ASSERT(!localStateBackup_, "Save state called again before previous state was written.");
     localStateBackup_ = statePropagatorData_->localState();
-    if (freeEnergyPerturbationElement_)
+    if (freeEnergyPerturbationData_)
     {
-        localStateBackup_->fep_state = freeEnergyPerturbationElement_->currentFEPState();
+        localStateBackup_->fep_state = freeEnergyPerturbationData_->currentFEPState();
         for (unsigned long i = 0; i < localStateBackup_->lambda.size(); ++i)
         {
-            localStateBackup_->lambda[i] = freeEnergyPerturbationElement_->constLambdaView()[i];
+            localStateBackup_->lambda[i] = freeEnergyPerturbationData_->constLambdaView()[i];
         }
         localStateBackup_->flags |= (1U << estLAMBDA) | (1U << estFEPSTATE);
     }
@@ -518,26 +519,26 @@ SignallerCallbackPtr StatePropagatorData::Element::registerLastStepCallback()
     });
 }
 
-StatePropagatorData::Element::Element(StatePropagatorData*           statePropagatorData,
-                                      FILE*                          fplog,
-                                      const t_commrec*               cr,
-                                      int                            nstxout,
-                                      int                            nstvout,
-                                      int                            nstfout,
-                                      int                            nstxout_compressed,
-                                      FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                                      bool              canMoleculesBeDistributedOverPBC,
-                                      bool              writeFinalConfiguration,
-                                      std::string       finalConfigurationFilename,
-                                      const t_inputrec* inputrec,
-                                      const gmx_mtop_t* globalTop) :
+StatePropagatorData::Element::Element(StatePropagatorData*        statePropagatorData,
+                                      FILE*                       fplog,
+                                      const t_commrec*            cr,
+                                      int                         nstxout,
+                                      int                         nstvout,
+                                      int                         nstfout,
+                                      int                         nstxout_compressed,
+                                      FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                                      bool                        canMoleculesBeDistributedOverPBC,
+                                      bool                        writeFinalConfiguration,
+                                      std::string                 finalConfigurationFilename,
+                                      const t_inputrec*           inputrec,
+                                      const gmx_mtop_t*           globalTop) :
     statePropagatorData_(statePropagatorData),
     nstxout_(nstxout),
     nstvout_(nstvout),
     nstfout_(nstfout),
     nstxout_compressed_(nstxout_compressed),
     writeOutStep_(-1),
-    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
+    freeEnergyPerturbationData_(freeEnergyPerturbationData),
     isRegularSimulationEnd_(false),
     lastStep_(-1),
     canMoleculesBeDistributedOverPBC_(canMoleculesBeDistributedOverPBC),

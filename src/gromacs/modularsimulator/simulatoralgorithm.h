@@ -55,6 +55,7 @@
 #include "checkpointhelper.h"
 #include "computeglobalselement.h"
 #include "domdechelper.h"
+#include "freeenergyperturbationdata.h"
 #include "modularsimulatorinterfaces.h"
 #include "pmeloadbalancehelper.h"
 
@@ -62,7 +63,6 @@ namespace gmx
 {
 class EnergyData;
 class EnergySignaller;
-class FreeEnergyPerturbationElement;
 class LoggingSignaller;
 class ModularSimulator;
 class NeighborSearchSignaller;
@@ -201,6 +201,8 @@ private:
     std::unique_ptr<StatePropagatorData> statePropagatorData_;
     //! The energy data
     std::unique_ptr<EnergyData> energyData_;
+    //! The free energy data
+    std::unique_ptr<FreeEnergyPerturbationData> freeEnergyPerturbationData_;
 
     //! The current step
     Step step_;
@@ -309,7 +311,7 @@ private:
                     CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
                     compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
                     compat::not_null<EnergyData*>              energyDataPtr,
-                    FreeEnergyPerturbationElement*             freeEnergyPerturbationElementPtr,
+                    FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
                     bool                                       hasReadEkinState,
                     TopologyHolder*                            topologyHolder,
                     SimulationSignals*                         signals);
@@ -320,7 +322,7 @@ private:
                 SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
                 StatePropagatorData*                       statePropagatorDataPtr,
                 EnergyData*                                energyDataPtr,
-                FreeEnergyPerturbationElement*             freeEnergyPerturbationElement,
+                FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
                 TopologyHolder*                            topologyHolder);
 
     //! \cond

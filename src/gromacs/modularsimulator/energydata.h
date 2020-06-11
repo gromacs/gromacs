@@ -62,7 +62,7 @@ namespace gmx
 enum class StartingBehavior;
 class Constraints;
 class EnergyOutput;
-class FreeEnergyPerturbationElement;
+class FreeEnergyPerturbationData;
 class MDAtoms;
 class ParrinelloRahmanBarostat;
 class StatePropagatorData;
@@ -91,20 +91,20 @@ class EnergyData final
 {
 public:
     //! Constructor
-    EnergyData(StatePropagatorData*           statePropagatorData,
-               FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-               const gmx_mtop_t*              globalTopology,
-               const t_inputrec*              inputrec,
-               const MDAtoms*                 mdAtoms,
-               gmx_enerdata_t*                enerd,
-               gmx_ekindata_t*                ekind,
-               const Constraints*             constr,
-               FILE*                          fplog,
-               t_fcdata*                      fcd,
-               const MdModulesNotifier&       mdModulesNotifier,
-               bool                           isMasterRank,
-               ObservablesHistory*            observablesHistory,
-               StartingBehavior               startingBehavior);
+    EnergyData(StatePropagatorData*        statePropagatorData,
+               FreeEnergyPerturbationData* freeEnergyPerturbationData,
+               const gmx_mtop_t*           globalTopology,
+               const t_inputrec*           inputrec,
+               const MDAtoms*              mdAtoms,
+               gmx_enerdata_t*             enerd,
+               gmx_ekindata_t*             ekind,
+               const Constraints*          constr,
+               FILE*                       fplog,
+               t_fcdata*                   fcd,
+               const MdModulesNotifier&    mdModulesNotifier,
+               bool                        isMasterRank,
+               ObservablesHistory*         observablesHistory,
+               StartingBehavior            startingBehavior);
 
     /*! \brief Final output
      *
@@ -276,8 +276,8 @@ private:
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the state propagator data
     StatePropagatorData* statePropagatorData_;
-    //! Pointer to the free energy perturbation element
-    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
+    //! Pointer to the free energy perturbation data
+    FreeEnergyPerturbationData* freeEnergyPerturbationData_;
     //! Pointer to the vrescale thermostat
     const VRescaleThermostat* vRescaleThermostat_;
     //! Pointer to the Parrinello-Rahman barostat

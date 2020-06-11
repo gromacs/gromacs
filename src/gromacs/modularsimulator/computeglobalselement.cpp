@@ -55,14 +55,14 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/topology/topology.h"
 
-#include "freeenergyperturbationelement.h"
+#include "freeenergyperturbationdata.h"
 
 namespace gmx
 {
 template<ComputeGlobalsAlgorithm algorithm>
 ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* statePropagatorData,
                                                         EnergyData*          energyData,
-                                                        FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                                                        FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                         SimulationSignals* signals,
                                                         int                nstglobalcomm,
                                                         FILE*              fplog,
@@ -91,7 +91,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
     localTopology_(nullptr),
-    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
+    freeEnergyPerturbationData_(freeEnergyPerturbationData),
     vcm_(global_top->groups, *inputrec),
     signals_(signals),
     fplog_(fplog),

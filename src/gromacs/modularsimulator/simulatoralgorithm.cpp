@@ -77,7 +77,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "domdechelper.h"
-#include "freeenergyperturbationelement.h"
+#include "freeenergyperturbationdata.h"
 #include "modularsimulator.h"
 #include "parrinellorahmanbarostat.h"
 #include "signallers.h"
@@ -99,6 +99,7 @@ ModularSimulatorAlgorithm::ModularSimulatorAlgorithm(std::string              to
     taskIterator_(taskQueue_.end()),
     statePropagatorData_(nullptr),
     energyData_(nullptr),
+    freeEnergyPerturbationData_(nullptr),
     step_(-1),
     runFinished_(false),
     topologyName_(std::move(topologyName)),
@@ -417,21 +418,20 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     algorithm.topologyHolder_ =
             std::make_unique<TopologyHolder>(*top_global, cr, inputrec, fr, mdAtoms, constr, vsite);
 
-    std::unique_ptr<FreeEnergyPerturbationElement> freeEnergyPerturbationElement    = nullptr;
-    FreeEnergyPerturbationElement*                 freeEnergyPerturbationElementPtr = nullptr;
     if (inputrec->efep != efepNO)
     {
-        freeEnergyPerturbationElement =
-                std::make_unique<FreeEnergyPerturbationElement>(fplog, inputrec, mdAtoms);
-        freeEnergyPerturbationElementPtr = freeEnergyPerturbationElement.get();
+        algorithm.freeEnergyPerturbationData_ =
+                std::make_unique<FreeEnergyPerturbationData>(fplog, inputrec, mdAtoms);
     }
+    FreeEnergyPerturbationData* freeEnergyPerturbationDataPtr =
+            algorithm.freeEnergyPerturbationData_.get();
 
     algorithm.statePropagatorData_ = std::make_unique<StatePropagatorData>(
             top_global->natoms, cr, state_global, fr->nbv->useGpu(), inputrec, mdAtoms->mdatoms());
     auto statePropagatorDataPtr = compat::make_not_null(algorithm.statePropagatorData_.get());
 
     algorithm.energyData_ = std::make_unique<EnergyData>(
-            statePropagatorDataPtr, freeEnergyPerturbationElementPtr, top_global, inputrec, mdAtoms,
+            statePropagatorDataPtr, freeEnergyPerturbationDataPtr, top_global, inputrec, mdAtoms,
             enerd, ekind, constr, fplog, &fr->listedForces->fcdata(), mdModulesNotifier, MASTER(cr),
             observablesHistory, startingBehavior);
     auto energyDataPtr = compat::make_not_null(algorithm.energyData_.get());
@@ -467,14 +467,21 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
      * have a full timestep state.
      */
     // TODO: Make a CheckpointHelperBuilder
-    std::vector<ICheckpointHelperClient*> checkpointClients = { freeEnergyPerturbationElementPtr };
+    std::vector<ICheckpointHelperClient*> checkpointClients;
     CheckBondedInteractionsCallbackPtr    checkBondedInteractionsCallback = nullptr;
     auto                                  integrator                      = buildIntegrator(
             &neighborSearchSignallerBuilder, &lastStepSignallerBuilder, &energySignallerBuilder,
             &loggingSignallerBuilder, &trajectorySignallerBuilder, &trajectoryElementBuilder,
             &checkpointClients, &checkBondedInteractionsCallback, statePropagatorDataPtr,
-            energyDataPtr, freeEnergyPerturbationElementPtr, hasReadEkinState,
+            energyDataPtr, freeEnergyPerturbationDataPtr, hasReadEkinState,
             algorithm.topologyHolder_.get(), &algorithm.signals_);
+
+    FreeEnergyPerturbationData::Element* freeEnergyPerturbationElement = nullptr;
+    if (algorithm.freeEnergyPerturbationData_)
+    {
+        freeEnergyPerturbationElement = algorithm.freeEnergyPerturbationData_->element();
+        checkpointClients.emplace_back(freeEnergyPerturbationElement);
+    }
 
     /*
      * Build infrastructure elements
@@ -572,8 +579,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     addToCallList(algorithm.checkpointHelper_, algorithm.elementCallList_);
     if (freeEnergyPerturbationElement)
     {
-        addToCallListAndMove(std::move(freeEnergyPerturbationElement), algorithm.elementCallList_,
-                             algorithm.elementsOwnershipList_);
+        addToCallList(freeEnergyPerturbationElement, algorithm.elementCallList_);
     }
     addToCallListAndMove(std::move(integrator), algorithm.elementCallList_, algorithm.elementsOwnershipList_);
     addToCallListAndMove(std::move(trajectoryElement), algorithm.elementCallList_,

@@ -79,7 +79,7 @@
 #include "constraintelement.h"
 #include "energydata.h"
 #include "forceelement.h"
-#include "freeenergyperturbationelement.h"
+#include "freeenergyperturbationdata.h"
 #include "parrinellorahmanbarostat.h"
 #include "propagator.h"
 #include "signallers.h"
@@ -109,14 +109,14 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildForces
         SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
         StatePropagatorData*                       statePropagatorDataPtr,
         EnergyData*                                energyDataPtr,
-        FreeEnergyPerturbationElement*             freeEnergyPerturbationElement,
+        FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
         TopologyHolder*                            topologyHolder)
 {
     const bool isVerbose    = mdrunOptions.verbose;
     const bool isDynamicBox = inputrecDynamicBox(inputrec);
 
     auto forceElement = std::make_unique<ForceElement>(
-            statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElement, isVerbose,
+            statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr, isVerbose,
             isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, wcycle, runScheduleWork, vsite,
             imdSession, pull_work, constr, top_global, enforcedRotation);
     topologyHolder->registerClient(forceElement.get());
@@ -138,14 +138,14 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
         compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
         compat::not_null<EnergyData*>              energyDataPtr,
-        FreeEnergyPerturbationElement*             freeEnergyPerturbationElementPtr,
+        FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
         bool                                       hasReadEkinState,
         TopologyHolder*                            topologyHolder,
         SimulationSignals*                         signals)
 {
     auto forceElement = buildForces(neighborSearchSignallerBuilder, energySignallerBuilder,
                                     statePropagatorDataPtr, energyDataPtr,
-                                    freeEnergyPerturbationElementPtr, topologyHolder);
+                                    freeEnergyPerturbationDataPtr, topologyHolder);
 
     // list of elements owned by the simulator composite object
     std::vector<std::unique_ptr<ISimulatorElement>> elementsOwnershipList;
@@ -157,7 +157,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
     {
         auto computeGlobalsElement =
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
-                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
+                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
                         signals, nstglobalcomm_, fplog, mdlog, cr, inputrec, mdAtoms, nrnb, wcycle,
                         fr, top_global, constr, hasReadEkinState);
         topologyHolder->registerClient(computeGlobalsElement.get());
@@ -174,7 +174,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         addToCallListAndMove(std::move(forceElement), elementCallList, elementsOwnershipList);
         auto stateElement = compat::make_not_null(statePropagatorDataPtr->element(
                 fplog, cr, inputrec->nstxout, inputrec->nstvout, inputrec->nstfout,
-                inputrec->nstxout_compressed, freeEnergyPerturbationElementPtr, fr->bMolPBC,
+                inputrec->nstxout_compressed, freeEnergyPerturbationDataPtr, fr->bMolPBC,
                 mdrunOptions.writeConfout, opt2fn("-c", nfile, fnm), inputrec, top_global));
         trajectoryElementBuilder->registerWriterClient(stateElement);
         trajectorySignallerBuilder->registerSignallerClient(stateElement);
@@ -214,7 +214,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         if (constr)
         {
             auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Positions>>(
-                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
+                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             auto constraintElementPtr = compat::make_not_null(constraintElement.get());
             energySignallerBuilder->registerSignallerClient(constraintElementPtr);
@@ -241,7 +241,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
     {
         auto computeGlobalsElement =
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>(
-                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
+                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
                         signals, nstglobalcomm_, fplog, mdlog, cr, inputrec, mdAtoms, nrnb, wcycle,
                         fr, &topologyHolder->globalTopology(), constr, hasReadEkinState);
         topologyHolder->registerClient(computeGlobalsElement.get());
@@ -277,7 +277,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         if (constr)
         {
             auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Velocities>>(
-                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
+                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             energySignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
             trajectorySignallerBuilder->registerSignallerClient(
@@ -290,7 +290,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         addToCallList(compat::make_not_null(computeGlobalsElement.get()), elementCallList);
         auto stateElement = compat::make_not_null(statePropagatorDataPtr->element(
                 fplog, cr, inputrec->nstxout, inputrec->nstvout, inputrec->nstfout,
-                inputrec->nstxout_compressed, freeEnergyPerturbationElementPtr, fr->bMolPBC,
+                inputrec->nstxout_compressed, freeEnergyPerturbationDataPtr, fr->bMolPBC,
                 mdrunOptions.writeConfout, opt2fn("-c", nfile, fnm), inputrec, top_global));
         trajectoryElementBuilder->registerWriterClient(stateElement);
         trajectorySignallerBuilder->registerSignallerClient(stateElement);
@@ -319,7 +319,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         if (constr)
         {
             auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Positions>>(
-                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
+                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             energySignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
             trajectorySignallerBuilder->registerSignallerClient(

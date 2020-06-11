@@ -41,7 +41,7 @@
 
 #include "gmxpre.h"
 
-#include "freeenergyperturbationelement.h"
+#include "freeenergyperturbationdata.h"
 
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -52,13 +52,11 @@
 namespace gmx
 {
 
-FreeEnergyPerturbationElement::FreeEnergyPerturbationElement(FILE*             fplog,
-                                                             const t_inputrec* inputrec,
-                                                             MDAtoms*          mdAtoms) :
+FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inputrec* inputrec, MDAtoms* mdAtoms) :
+    element_(std::make_unique<Element>(this, inputrec->fepvals->delta_lambda)),
     lambda_(),
     lambda0_(),
     currentFEPState_(0),
-    lambdasChange_(inputrec->fepvals->delta_lambda != 0),
     fplog_(fplog),
     inputrec_(inputrec),
     mdAtoms_(mdAtoms)
@@ -69,44 +67,56 @@ FreeEnergyPerturbationElement::FreeEnergyPerturbationElement(FILE*             f
     update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 
-void FreeEnergyPerturbationElement::scheduleTask(Step step,
-                                                 Time gmx_unused               time,
-                                                 const RegisterRunFunctionPtr& registerRunFunction)
+void FreeEnergyPerturbationData::Element::scheduleTask(Step step,
+                                                       Time gmx_unused               time,
+                                                       const RegisterRunFunctionPtr& registerRunFunction)
 {
     if (lambdasChange_)
     {
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>([this, step]() { updateLambdas(step); }));
+        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+                [this, step]() { freeEnergyPerturbationData_->updateLambdas(step); }));
     }
 }
 
-void FreeEnergyPerturbationElement::updateLambdas(Step step)
+void FreeEnergyPerturbationData::updateLambdas(Step step)
 {
     // at beginning of step (if lambdas change...)
     setCurrentLambdasLocal(step, inputrec_->fepvals, lambda0_.data(), lambda_, currentFEPState_);
     update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 
-ArrayRef<real> FreeEnergyPerturbationElement::lambdaView()
+ArrayRef<real> FreeEnergyPerturbationData::lambdaView()
 {
     return lambda_;
 }
 
-ArrayRef<const real> FreeEnergyPerturbationElement::constLambdaView()
+ArrayRef<const real> FreeEnergyPerturbationData::constLambdaView()
 {
     return lambda_;
 }
 
-int FreeEnergyPerturbationElement::currentFEPState()
+int FreeEnergyPerturbationData::currentFEPState()
 {
     return currentFEPState_;
 }
 
-void FreeEnergyPerturbationElement::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
+void FreeEnergyPerturbationData::Element::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
 {
-    localState->fep_state = currentFEPState_;
-    localState->lambda    = lambda_;
+    localState->fep_state = freeEnergyPerturbationData_->currentFEPState_;
+    localState->lambda    = freeEnergyPerturbationData_->lambda_;
     localState->flags |= (1U << estLAMBDA) | (1U << estFEPSTATE);
+}
+
+FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement,
+                                             double                      deltaLambda) :
+    freeEnergyPerturbationData_(freeEnergyPerturbationElement),
+    lambdasChange_(deltaLambda != 0)
+{
+}
+
+FreeEnergyPerturbationData::Element* FreeEnergyPerturbationData::element()
+{
+    return element_.get();
 }
 
 } // namespace gmx

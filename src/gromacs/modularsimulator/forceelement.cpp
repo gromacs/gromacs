@@ -55,7 +55,7 @@
 #include "gromacs/pbcutil/pbc.h"
 
 #include "energydata.h"
-#include "freeenergyperturbationelement.h"
+#include "freeenergyperturbationdata.h"
 #include "statepropagatordata.h"
 
 struct gmx_edsam;
@@ -65,25 +65,26 @@ class history_t;
 
 namespace gmx
 {
-ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
-                           EnergyData*                    energyData,
-                           FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                           bool                           isVerbose,
-                           bool                           isDynamicBox,
-                           FILE*                          fplog,
-                           const t_commrec*               cr,
-                           const t_inputrec*              inputrec,
-                           const MDAtoms*                 mdAtoms,
-                           t_nrnb*                        nrnb,
-                           t_forcerec*                    fr,
-                           gmx_wallcycle*                 wcycle,
-                           MdrunScheduleWorkload*         runScheduleWork,
-                           VirtualSitesHandler*           vsite,
-                           ImdSession*                    imdSession,
-                           pull_t*                        pull_work,
-                           Constraints*                   constr,
-                           const gmx_mtop_t*              globalTopology,
-                           gmx_enfrot*                    enforcedRotation) :
+ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
+                           EnergyData*                 energyData,
+                           FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                           bool                        isVerbose,
+                           bool                        isDynamicBox,
+                           FILE*                       fplog,
+                           const t_commrec*            cr,
+                           const t_inputrec*           inputrec,
+                           const MDAtoms*              mdAtoms,
+                           t_nrnb*                     nrnb,
+                           t_forcerec*                 fr,
+
+                           gmx_wallcycle*         wcycle,
+                           MdrunScheduleWorkload* runScheduleWork,
+                           VirtualSitesHandler*   vsite,
+                           ImdSession*            imdSession,
+                           pull_t*                pull_work,
+                           Constraints*           constr,
+                           const gmx_mtop_t*      globalTopology,
+                           gmx_enfrot*            enforcedRotation) :
     shellfc_(init_shell_flexcon(fplog,
                                 globalTopology,
                                 constr ? constr->numFlexibleConstraints() : 0,
@@ -96,7 +97,7 @@ ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
     nextFreeEnergyCalculationStep_(-1),
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
-    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
+    freeEnergyPerturbationData_(freeEnergyPerturbationData),
     localTopology_(nullptr),
     isDynamicBox_(isDynamicBox),
     isVerbose_(isVerbose),
@@ -181,7 +182,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     tensor force_vir = { { 0 } };
     // TODO: Make lambda const (needs some adjustments in lower force routines)
     ArrayRef<real> lambda =
-            freeEnergyPerturbationElement_ ? freeEnergyPerturbationElement_->lambdaView() : lambda_;
+            freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->lambdaView() : lambda_;
 
     if (doShellFC)
     {

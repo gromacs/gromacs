@@ -50,27 +50,27 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "energydata.h"
-#include "freeenergyperturbationelement.h"
+#include "freeenergyperturbationdata.h"
 #include "statepropagatordata.h"
 
 namespace gmx
 {
 template<ConstraintVariable variable>
-ConstraintsElement<variable>::ConstraintsElement(Constraints*                   constr,
-                                                 StatePropagatorData*           statePropagatorData,
-                                                 EnergyData*                    energyData,
-                                                 FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                                                 bool                           isMaster,
-                                                 FILE*                          fplog,
-                                                 const t_inputrec*              inputrec,
-                                                 const t_mdatoms*               mdAtoms) :
+ConstraintsElement<variable>::ConstraintsElement(Constraints*                constr,
+                                                 StatePropagatorData*        statePropagatorData,
+                                                 EnergyData*                 energyData,
+                                                 FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                                                 bool                        isMaster,
+                                                 FILE*                       fplog,
+                                                 const t_inputrec*           inputrec,
+                                                 const t_mdatoms*            mdAtoms) :
     nextVirialCalculationStep_(-1),
     nextEnergyWritingStep_(-1),
     nextLogWritingStep_(-1),
     isMasterRank_(isMaster),
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
-    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
+    freeEnergyPerturbationData_(freeEnergyPerturbationData),
     constr_(constr),
     fplog_(fplog),
     inputrec_(inputrec),
@@ -86,8 +86,8 @@ void ConstraintsElement<variable>::elementSetup()
         && ((variable == ConstraintVariable::Positions && inputrec_->eI == eiMD)
             || (variable == ConstraintVariable::Velocities && inputrec_->eI == eiVV)))
     {
-        const real lambdaBonded = freeEnergyPerturbationElement_
-                                          ? freeEnergyPerturbationElement_->constLambdaView()[efptBONDED]
+        const real lambdaBonded = freeEnergyPerturbationData_
+                                          ? freeEnergyPerturbationData_->constLambdaView()[efptBONDED]
                                           : 0;
         // Constrain the initial coordinates and velocities
         do_constrain_first(
@@ -132,9 +132,8 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
     ArrayRef<RVec>            min_proj;
     ArrayRefWithPadding<RVec> v;
 
-    const real lambdaBonded = freeEnergyPerturbationElement_
-                                      ? freeEnergyPerturbationElement_->constLambdaView()[efptBONDED]
-                                      : 0;
+    const real lambdaBonded =
+            freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->constLambdaView()[efptBONDED] : 0;
     real dvdlambda = 0;
 
     switch (variable)
