@@ -40,28 +40,40 @@ popd
 
 # Run Python unit tests.
 python -m pytest python_packaging/src/test --junitxml=$PY_UNIT_TEST_XML
+
+# Note: Multiple pytest processes getting --junitxml output file argument
+# may cause problems, so we set the option on only one of the launched processes.
+# See also Multiple Instruction Multiple Data Model for OpenMPI mpirun:
+# https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php
+PROGRAM=(`which python` -m mpi4py -m pytest \
+        -p no:cacheprovider \
+        $PWD/python_packaging/src/test)
+# shellcheck disable=SC2068
 if [ -x `which mpiexec` ]; then
     PYTHONDONTWRITEBYTECODE=1 \
     mpiexec --allow-run-as-root \
       --mca opal_warn_on_missing_libcuda 0 \
       --mca orte_base_help_aggregate 0 \
-      -n 2 \
-      `which python` -m pytest \
-        -p no:cacheprovider \
-        $PWD/python_packaging/src/test \
-        --junitxml=$PY_MPI_UNIT_TEST_XML
+      -n 1 ${PROGRAM[@]} --junitxml=$PLUGIN_MPI_TEST_XML : \
+      -n 1 ${PROGRAM[@]}
 fi
 
 # Run Python acceptance tests.
 python -m pytest python_packaging/test --junitxml=$PY_ACCEPTANCE_TEST_XML
+
+# Note: Multiple pytest processes getting --junitxml output file argument
+# may cause problems, so we set the option on only one of the launched processes.
+# See also Multiple Instruction Multiple Data Model for OpenMPI mpirun:
+# https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php
+PROGRAM=(`which python` -m mpi4py -m pytest \
+        -p no:cacheprovider \
+        $PWD/python_packaging/test)
+# shellcheck disable=SC2068
 if [ -x `which mpiexec` ]; then
     PYTHONDONTWRITEBYTECODE=1 \
     mpiexec --allow-run-as-root \
       --mca opal_warn_on_missing_libcuda 0 \
       --mca orte_base_help_aggregate 0 \
-      -n 2 \
-      `which python` -m pytest \
-        -p no:cacheprovider \
-        $PWD/python_packaging/test \
-        --junitxml=$PY_MPI_ACCEPTANCE_TEST_XML
+      -n 1 ${PROGRAM[@]} --junitxml=$PLUGIN_MPI_TEST_XML : \
+      -n 1 ${PROGRAM[@]}
 fi

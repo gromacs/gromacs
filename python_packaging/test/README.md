@@ -36,3 +36,10 @@ where `$LOCAL_REPO_DIR` is the path to the local copy of the GROMACS source repo
 For multi-process tests, run with an MPI execution wrapper and the `mpi4py` module.
 
 `mpiexec -n 2 python -m mpi4py -m pytest $LOCAL_REPO_DIR/python_packaging/test`
+
+## Controlling output
+
+Refer to pytest documentation for command line options to control the type and detail of output.
+Some high level overview and basic tasks are online at https://docs.pytest.org/en/3.9.3/usage.html
+but you should run `pytest -h` in a terminal to get the complete set of available options
+(in particular, note *log_cli* and *log_level*).
