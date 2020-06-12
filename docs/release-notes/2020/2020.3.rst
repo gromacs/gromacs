@@ -26,6 +26,13 @@ The tool would crash due to mismatching sizes of energy terms in the file and F_
 
 :issue:`3547`
 
+Fix matrix reading in gmx xpm2ps
+""""""""""""""""""""""""""""""""
+
+The tool would fail to read a matrix if no second matrix was provided.
+
+:issue:`3551`
+
 Fix uninitialized variable warnings in gmx hbond
 """"""""""""""""""""""""""""""""""""""""""""""""
 
