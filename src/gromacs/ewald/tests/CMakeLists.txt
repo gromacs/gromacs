@@ -46,8 +46,3 @@ gmx_add_unit_test(EwaldUnitTests ewald-test HARDWARE_DETECTION
 gmx_add_libgromacs_sources(
     testhardwarecontext.cpp
 )
-if (GMX_USE_CUDA)
-gmx_compile_cpp_as_cuda(
-    testhardwarecontext.cpp
-)
-endif()

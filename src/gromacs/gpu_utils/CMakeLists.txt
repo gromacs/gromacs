@@ -59,9 +59,6 @@ elseif(GMX_USE_CUDA)
         pinning.cu
         pmalloc_cuda.cu
         )
-    gmx_compile_cpp_as_cuda(
-        device_stream_manager.cpp
-        )
 else()
     gmx_add_libgromacs_sources(
         device_stream.cpp

@@ -70,11 +70,6 @@ if (GMX_USE_CUDA)
         pme_gpu_internal.cpp
         pme_gpu_timings.cpp
         )
-    gmx_compile_cpp_as_cuda(
-        pme_gpu_internal.cpp
-        pme_gpu_program.cpp
-        pme_gpu_timings.cpp
-        )
 elseif (GMX_USE_OPENCL)
     gmx_add_libgromacs_sources(
         # OpenCL-specific sources
