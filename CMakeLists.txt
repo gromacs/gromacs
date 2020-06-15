@@ -652,8 +652,9 @@ include(gmxManageFFTLibraries)
 include(gmxManageLinearAlgebraLibraries)
 
 include(gmxManagePluginSupport)
+gmx_manage_plugin_support()
 
-if (GMX_USE_PLUGINS)
+if(GMX_USE_PLUGINS)
     if(NOT GMX_VMD_PLUGIN_PATH)
         find_package(VMD)
     endif()

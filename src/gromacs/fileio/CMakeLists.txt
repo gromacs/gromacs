@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2016,2019, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,8 +34,6 @@
 
 file(GLOB FILEIO_SOURCES *.cpp)
 
-target_sources(libgromacs PRIVATE ${FILEIO_SOURCES})
-
 if(GMX_USE_PLUGINS)
     add_library(vmddlopen OBJECT ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.cpp)
     gmx_target_compile_options(vmddlopen)
@@ -44,7 +42,12 @@ if(GMX_USE_PLUGINS)
     endif()
     list(APPEND libgromacs_object_library_dependencies vmddlopen)
     set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
+else()
+    # Remove vmdio.cpp from sources since we do not have plugin support
+    list(FILTER FILEIO_SOURCES EXCLUDE REGEX ".*vmdio.cpp$")
 endif()
+
+target_sources(libgromacs PRIVATE ${FILEIO_SOURCES})
 
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
