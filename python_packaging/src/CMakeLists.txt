@@ -208,16 +208,9 @@ else()
 
     # However, we can still produce an importable package for documentation builds and
     # basic testing in ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging
-    if(CMAKE_VERSION VERSION_LESS 3.12)
-        file(GLOB_RECURSE _py_sources
-             ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/*.py)
-    else()
-        # CONFIGURE_DEPENDS appears in CMake 3.12 and can help to more robustly detect
-        # the need to update anything depending on the staged package.
-        file(GLOB_RECURSE _py_sources
-             CONFIGURE_DEPENDS
-             ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/*.py)
-    endif()
+    file(GLOB_RECURSE _py_sources
+         CONFIGURE_DEPENDS
+         ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/*.py)
     foreach(_package_file IN LISTS _py_sources)
         get_filename_component(_absolute_dir ${_package_file} DIRECTORY)
         file(RELATIVE_PATH _relative_dir ${CMAKE_CURRENT_SOURCE_DIR} ${_absolute_dir})
