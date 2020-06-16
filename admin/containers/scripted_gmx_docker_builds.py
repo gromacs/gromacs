@@ -300,7 +300,7 @@ def add_tsan_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
 def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
     """Get shell commands to set up the venv for the requested Python version."""
     major = version.version[0]
-    minor = version.version[1]
+    minor = version.version[1]  # type: int
 
     pyenv = '$HOME/.pyenv/bin/pyenv'
 
@@ -328,6 +328,11 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
             'pytest>=3.9' \
             'setuptools>=42' \
             'scikit-build>=0.10'""".format(path=venv_path))
+
+    # TODO: Remove 'importlib_resources' dependency when Python >=3.7 is required.
+    if minor == 6:
+        commands.append("""{path}/bin/python -m pip install --upgrade \
+                'importlib_resources'""".format(path=venv_path))
 
     return commands
 
