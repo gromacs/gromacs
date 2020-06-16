@@ -1,0 +1,4 @@
+{
+    "gmx_executable": "@_gmx_executable@",
+    "gmx_bindir": "@_gmx_bindir@"
+}

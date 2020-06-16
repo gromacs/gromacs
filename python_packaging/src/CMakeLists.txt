@@ -147,6 +147,33 @@ set(GMXAPI_PYTHON_STAGING_DIR ${CMAKE_CURRENT_BINARY_DIR}/gmxapi_staging)
 set_target_properties(_gmxapi PROPERTIES
                       LIBRARY_OUTPUT_DIRECTORY ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi)
 
+if(GMXAPI_MASTER_PROJECT)
+    find_package(GROMACS 2021 REQUIRED
+                 HINTS "$ENV{GROMACS_DIR}"
+                 )
+endif()
+if (NOT TARGET Gromacs::gmx)
+    message(FATAL_ERROR "GROMACS command line tool not found.")
+endif ()
+get_target_property(_gmx_executable_imported Gromacs::gmx IMPORTED)
+if (_gmx_executable_imported)
+    get_target_property(_gmx_executable Gromacs::gmx LOCATION)
+    get_filename_component(_gmx_bindir ${_gmx_executable} DIRECTORY)
+    message(STATUS "Imported ${_gmx_bindir} executable.")
+    unset(_gmx_executable_imported)
+else()
+    get_target_property(_gmx_bindir Gromacs::gmx RUNTIME_OUTPUT_DIRECTORY)
+    get_target_property(_gmx_executable Gromacs::gmx OUTPUT_NAME)
+    set(_gmx_executable "${_gmx_bindir}/${_gmx_executable}")
+    message(STATUS "Using ${_gmx_executable} from build tree.")
+endif ()
+if (NOT _gmx_bindir OR NOT _gmx_executable)
+    message(FATAL_ERROR "Could not get path for gmx wrapper binary.")
+endif ()
+configure_file(gmxapi/gmxconfig.json.in ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi/gmxconfig.json)
+unset(_gmx_executable)
+unset(_gmx_bindir)
+
 # scikit-build sets SKBUILD when running Python packaging tools through setup.py
 # (e.g. with pip)
 if(SKBUILD)
@@ -157,6 +184,7 @@ if(SKBUILD)
     # By default, scikit-build expects the library to be installed into a directory
     # named for the Python package as in setup.py.
     install(TARGETS _gmxapi LIBRARY DESTINATION gmxapi)
+    install(FILES ${GMXAPI_PYTHON_STAGING_DIR}/gmxapi/gmxconfig.json DESTINATION gmxapi)
 else()
     # The Python module is being built against GROMACS in its build tree.
     # Note: we do not have plans to install the staged package when SKBUILD != TRUE
@@ -193,7 +221,7 @@ else()
     foreach(_package_file IN LISTS _py_sources)
         get_filename_component(_absolute_dir ${_package_file} DIRECTORY)
         file(RELATIVE_PATH _relative_dir ${CMAKE_CURRENT_SOURCE_DIR} ${_absolute_dir})
-        file(COPY ${_package_file} DESTINATION gmxapi_staging/${_relative_dir})
+        file(COPY ${_package_file} DESTINATION ${GMXAPI_PYTHON_STAGING_DIR}/${_relative_dir})
     endforeach()
     file(COPY setup.py CMakeLists.txt DESTINATION ${GMXAPI_PYTHON_STAGING_DIR})
     # Set CMake variable pybind11_DIR to ${CMAKE_CURRENT_SOURCE_DIR}/external/pybind/tools

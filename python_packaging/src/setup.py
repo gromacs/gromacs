@@ -161,6 +161,7 @@ setup(
                       'numpy>=1'],
 
     packages=['gmxapi', 'gmxapi.simulation'],
+    package_data={'gmxapi': ['gmxconfig.json']},
 
     cmake_args=cmake_args,
 

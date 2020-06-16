@@ -210,30 +210,68 @@ def cleandir(remove_tempdir: RmOption):
         yield newdir
 
 
+class GmxBin:
+    """Represent the detected GROMACS installation."""
+    def __init__(self):
+        # Try to use package resources to locate the "gmx" binary wrapper.
+        try:
+            from importlib.resources import open_text
+            with open_text('gmxapi', 'gmxconfig.json') as textfile:
+                config = json.load(textfile)
+                gmxbindir = config.get('gmx_bindir', None)
+                command = config.get('gmx_executable', None)
+        except ImportError:
+            try:
+                # A backport of importlib.resources is available as importlib_resources
+                # with a somewhat different interface.
+                from importlib_resources import files, as_file
+
+                source = files('gmxapi').joinpath('gmxconfig.json')
+                with as_file(source) as gmxconfig:
+                    with open(gmxconfig, 'r') as fp:
+                        config = json.load(fp)
+                        gmxbindir = config.get('gmx_bindir', None)
+                        command = config.get('gmx_executable', None)
+            except ImportError:
+                gmxbindir = None
+                command = None
+
+        # TODO: Remove fall-back when we can rely on gmxconfig.json via importlib.resources in Py 3.7+.
+        allowed_command_names = ['gmx', 'gmx_mpi']
+        for command_name in allowed_command_names:
+            if command is not None:
+                break
+            command = shutil.which(command_name)
+            if command is None:
+                gmxbindir = os.getenv('GMXBIN')
+                if gmxbindir is None:
+                    gromacsdir = os.getenv('GROMACS_DIR')
+                    if gromacsdir is not None and gromacsdir != '':
+                        gmxbindir = os.path.join(gromacsdir, 'bin')
+                if gmxbindir is None:
+                    gmxapidir = os.getenv('gmxapi_DIR')
+                    if gmxapidir is not None and gmxapidir != '':
+                        gmxbindir = os.path.join(gmxapidir, 'bin')
+                if gmxbindir is not None:
+                    gmxbindir = os.path.abspath(gmxbindir)
+                    command = shutil.which(command_name, path=gmxbindir)
+
+        self._command = command
+        self._bindir = gmxbindir
+
+    def command(self):
+        return self._command
+
+    def bindir(self):
+        return self._bindir
+
+
+_gmx = GmxBin()
+
+
 @pytest.fixture(scope='session')
 def gmxcli():
-    # TODO: (#2896) Find a more canonical way to identify the GROMACS commandline wrapper binary.
-    #  We should be able to get the GMXRC contents and related hints from a gmxapi
-    #  package resource or from module attributes of a ``gromacs`` stub package.
-    allowed_command_names = ['gmx', 'gmx_mpi']
-    command = None
-    for command_name in allowed_command_names:
-        if command is not None:
-            break
-        command = shutil.which(command_name)
-        if command is None:
-            gmxbindir = os.getenv('GMXBIN')
-            if gmxbindir is None:
-                gromacsdir = os.getenv('GROMACS_DIR')
-                if gromacsdir is not None and gromacsdir != '':
-                    gmxbindir = os.path.join(gromacsdir, 'bin')
-            if gmxbindir is None:
-                gmxapidir = os.getenv('gmxapi_DIR')
-                if gmxapidir is not None and gmxapidir != '':
-                    gmxbindir = os.path.join(gmxapidir, 'bin')
-            if gmxbindir is not None:
-                gmxbindir = os.path.abspath(gmxbindir)
-                command = shutil.which(command_name, path=gmxbindir)
+    command = _gmx.command()
     if command is None:
         message = "Tests need 'gmx' command line tool, but could not find it on the path."
         raise RuntimeError(message)
