@@ -669,7 +669,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
     // does not support it, the actual CUDA LINCS code does support it
     if (gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0)
     {
-        errorMessage += "Non-connecting constraints are not supported";
+        errorMessage += "Non-connecting constraints are not supported\n";
     }
     if (!UpdateConstrainCuda::isNumCoupledConstraintsSupported(mtop))
     {
