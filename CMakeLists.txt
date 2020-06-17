@@ -198,37 +198,13 @@ option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
-option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
-
 option(GMX_INSTALL_LEGACY_API "Install legacy headers" OFF)
 
-# The earliest version of the CUDA toolkit that supports c++14 is 9.0
-set(REQUIRED_CUDA_VERSION 9.0)
-set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.0)
-
-# OpenCL required version: 1.2 or newer
-set(REQUIRED_OPENCL_MIN_VERSION_MAJOR 1)
-set(REQUIRED_OPENCL_MIN_VERSION_MINOR 2)
-set(REQUIRED_OPENCL_MIN_VERSION ${REQUIRED_OPENCL_MIN_VERSION_MAJOR}.${REQUIRED_OPENCL_MIN_VERSION_MINOR})
-
-if(NOT GMX_USE_OPENCL)
-    # CUDA detection is done only if GMX_USE_OPENCL is OFF.
-    include(gmxManageGPU)
-    set(GMX_USE_CUDA ${GMX_GPU})
-    if(GMX_GPU)
-        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_CUDA")
-    else()
-        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
-    endif()
-else()
-    #Now the OpenCL path (for both AMD and NVIDIA)
-    if(GMX_GPU)
-        include(gmxManageOpenCL)
-        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_OPENCL")
-    else()
-        message(FATAL_ERROR "OpenCL requested but GPU option is not enabled (try -DGMX_GPU=on) ")
-    endif()
-endif()
+gmx_option_multichoice(
+    GMX_GPU
+    "Framework for GPU acceleration"
+    None
+    None CUDA OpenCL)
 
 gmx_option_multichoice(
     GMX_SIMD
@@ -566,14 +542,23 @@ include(gmxManageTNG)
 
 include(gmxManageLmfit)
 
-if(GMX_GPU)
-    # now that we have detected the dependencies, do the second configure pass
-    gmx_gpu_setup()
-    if (GMX_CLANG_CUDA)
-        list(APPEND GMX_EXTRA_LIBRARIES ${GMX_CUDA_CLANG_LINK_LIBS})
-        link_directories("${GMX_CUDA_CLANG_LINK_DIRS}")
+string(TOUPPER "${GMX_GPU}" _gmx_gpu_uppercase)
+if(NOT ${_gmx_gpu_uppercase} STREQUAL "NONE")
+
+    if(${_gmx_gpu_uppercase} STREQUAL "CUDA")
+        include(gmxManageCuda)
+    elseif(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
+        include(gmxManageOpenCL)
     endif()
+    if(NOT GMX_OPENMP)
+        message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading, which is currently not enabled.")
+    endif()
+
 endif()
+
+# Not ideal to set this without the GPU acceleration, but the source presently requires GMX_GPU
+# to be set to GMX_GPU_None for a non-GPU build to work.
+set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_${_gmx_gpu_uppercase}")
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)
@@ -735,7 +720,6 @@ set(GMX_INSTALL_CMAKEDIR  ${CMAKE_INSTALL_DATAROOTDIR}/cmake)
 
 # TODO: Make GMXRC adapt if this is changed
 set(GMX_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-set(GMX_INSTALL_OCLDIR       ${GMX_INSTALL_GMXDATADIR}/opencl)
 
 list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${CMAKE_INSTALL_INCLUDEDIR})
 
@@ -813,13 +797,6 @@ if(GMX_PYTHON_PACKAGE AND NOT GMX_BUILD_MDRUN_ONLY)
 endif()
 
 gmx_cpack_write_config()
-
-# Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
-# Don't bother the user after the first configure pass.
-if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
-    message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
-endif()
-set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
 
 #######################
 ## uninstall target

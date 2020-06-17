@@ -40,7 +40,7 @@
 .use-cuda:
   variables:
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
-    CMAKE_GPU_OPTIONS: -DGMX_GPU=ON -DGMX_USE_CUDA=ON
+    CMAKE_GPU_OPTIONS: -DGMX_GPU=CUDA
 
 .use-mpi:
   variables:
@@ -49,7 +49,7 @@
 .use-opencl:
   variables:
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
-    CMAKE_GPU_OPTIONS: -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+    CMAKE_GPU_OPTIONS: -DGMX_GPU=OpenCL
 
 # Base definition for using gcc.
 .use-gcc:base:

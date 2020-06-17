@@ -33,8 +33,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# OpenCL required version: 1.2 or newer
+set(REQUIRED_OPENCL_MIN_VERSION_MAJOR 1)
+set(REQUIRED_OPENCL_MIN_VERSION_MINOR 2)
+set(REQUIRED_OPENCL_MIN_VERSION ${REQUIRED_OPENCL_MIN_VERSION_MAJOR}.${REQUIRED_OPENCL_MIN_VERSION_MINOR})
+
+set(GMX_USE_OPENCL ON)
+
 if(GMX_DOUBLE)
-    message(FATAL_ERROR "OpenCL not available in double precision - Yet!")
+    message(FATAL_ERROR "OpenCL acceleration is not available in double precision")
 endif()
 
 # for some reason FindOpenCL checks CUDA_PATH but not CUDA_HOME
@@ -75,9 +82,4 @@ endif()
 set(GMX_OPENCL_NB_CLUSTER_SIZE 8 CACHE STRING "Cluster size used by nonbonded OpenCL kernel. Set to 4 for Intel GPUs.")
 mark_as_advanced(GMX_OPENCL_NB_CLUSTER_SIZE)
 
-macro(gmx_gpu_setup)
-    # no OpenMP is no good!
-    if(NOT GMX_OPENMP)
-        message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading. Without OpenMP a single CPU core can be used with a GPU which is not optimal. Note that with MPI multiple processes can be forced to use a single GPU, but this is typically inefficient. You need to set both C and C++ compilers that support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")
-    endif()
-endmacro()
+set(GMX_INSTALL_OCLDIR       ${GMX_INSTALL_GMXDATADIR}/opencl)

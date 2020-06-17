@@ -1359,7 +1359,7 @@ of 2. So it can be useful go through the checklist.
 * Make sure your compiler supports OpenMP (some versions of Clang don't).
 * If you have GPUs that support either CUDA or OpenCL, use them.
 
-  * Configure with ``-DGMX_GPU=ON`` (add ``-DGMX_USE_OPENCL=ON`` for OpenCL).
+  * Configure with ``-DGMX_GPU=CUDA `` or ``-DGMX_GPU=OpenCL``.
   * For CUDA, use the newest CUDA available for your GPU to take advantage of the
     latest performance enhancements.
   * Use a recent GPU driver.

@@ -72,8 +72,8 @@ appropriate value instead of ``xxx`` :
 * ``-DCMAKE_C_COMPILER=xxx`` equal to the name of the C99 `Compiler`_ you wish to use (or the environment variable ``CC``)
 * ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
 * ``-DGMX_MPI=on`` to build using `MPI support`_ (generally good to combine with `building only mdrun`_)
-* ``-DGMX_GPU=on`` to build using nvcc to run using NVIDIA `CUDA GPU acceleration`_ or an OpenCL_ GPU
-* ``-DGMX_USE_OPENCL=on`` to build with OpenCL_ support enabled. ``GMX_GPU`` must also be set.
+* ``-DGMX_GPU=CUDA`` to build with NVIDIA CUDA support enabled.
+* ``-DGMX_GPU=OpenCL`` to build with OpenCL_ support enabled.
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which |Gromacs| will run
 * ``-DGMX_BUILD_MDRUN_ONLY=on`` for `building only mdrun`_, e.g. for compute cluster back-end nodes
 * ``-DGMX_DOUBLE=on`` to build |Gromacs| in double precision (slower, and not normally useful)
@@ -502,7 +502,7 @@ For example, the following command line
 
 ::
 
-    cmake .. -DGMX_GPU=ON -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=/home/marydoe/programs
+    cmake .. -DGMX_GPU=CUDA -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=/home/marydoe/programs
 
 can be used to build with CUDA GPUs, MPI and install in a custom
 location. You can even save that in a shell script to make it even
@@ -650,7 +650,7 @@ If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 ::
 
-    cmake .. -DGMX_GPU=ON -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
+    cmake .. -DGMX_GPU=CUDA -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
 
 (or whichever path has your installation). In some cases, you might
 need to specify manually which of your C++ compilers should be used,
@@ -725,7 +725,7 @@ To trigger an OpenCL_ build the following CMake flags must be set
 
 ::
 
-    cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON
+    cmake .. -DGMX_GPU=OpenCL
 
 To build with support for Intel integrated GPUs, it is required
 to add ``-DGMX_OPENCL_NB_CLUSTER_SIZE=4`` to the cmake command line,
@@ -743,7 +743,7 @@ external library, use
 
 ::
 
-    cmake .. -DGMX_GPU=ON -DGMX_USE_OPENCL=ON -DclFFT_ROOT_DIR=/path/to/your/clFFT -DGMX_EXTERNAL_CLFFT=TRUE
+    cmake .. -DGMX_GPU=OpenCL -DclFFT_ROOT_DIR=/path/to/your/clFFT -DGMX_EXTERNAL_CLFFT=TRUE
 
 Static linking
 ~~~~~~~~~~~~~~
@@ -1073,7 +1073,7 @@ directory:
     cd ..
     mkdir build-mdrun-only
     cd build-mdrun-only
-    cmake .. -DGMX_MPI=ON -DGMX_GPU=ON -DGMX_BUILD_MDRUN_ONLY=ON -DCMAKE_INSTALL_PREFIX=/your/installation/prefix/here
+    cmake .. -DGMX_MPI=ON -DGMX_GPU=CUDA -DGMX_BUILD_MDRUN_ONLY=ON -DCMAKE_INSTALL_PREFIX=/your/installation/prefix/here
     make -j 4
     make install
     cd /to/your/unpacked/regressiontests
