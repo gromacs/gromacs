@@ -54,6 +54,7 @@
 
 #include <cstdio>
 
+#include <string>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
