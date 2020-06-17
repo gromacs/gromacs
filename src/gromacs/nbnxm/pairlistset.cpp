@@ -46,6 +46,8 @@
 
 #include "pairlistset.h"
 
+#include "gromacs/mdtypes/nblist.h"
+
 #include "pairlistwork.h"
 
 PairlistSet::~PairlistSet() = default;

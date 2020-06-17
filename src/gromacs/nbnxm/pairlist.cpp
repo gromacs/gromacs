@@ -54,6 +54,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"

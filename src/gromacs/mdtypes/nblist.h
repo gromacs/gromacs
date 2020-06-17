@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,9 @@
 #ifndef GMX_MDTYPES_NBLIST_H
 #define GMX_MDTYPES_NBLIST_H
 
+#include <vector>
+
+#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -170,15 +173,13 @@ struct t_forcetable
 {
     t_forcetable(enum gmx_table_interaction interaction, enum gmx_table_format format);
 
-    ~t_forcetable();
-
     enum gmx_table_interaction interaction; /* Types of interactions stored in this table */
     enum gmx_table_format      format;      /* Interpolation type and data format */
 
-    real  r;     /* range of the table */
-    int   n;     /* n+1 is the number of table points */
-    real  scale; /* distance (nm) between two table points */
-    real* data;  /* the actual table data */
+    real r;     /* range of the table */
+    int  n;     /* n+1 is the number of table points */
+    real scale; /* distance (nm) between two table points */
+    std::vector<real, gmx::AlignedAllocator<real>> data; /* the actual table data */
 
     /* Some information about the table layout. This can also be derived from the interpolation
      * type and the table interactions, but it is convenient to have here for sanity checks, and it
@@ -188,19 +189,6 @@ struct t_forcetable
     int formatsize; /* Number of fp variables for each table point (1 for F, 2 for VF, 4 for YFGH, etc.) */
     int ninteractions; /* Number of interactions in table, 1 for coul-only, 3 for coul+rep+disp. */
     int stride; /* Distance to next table point (number of fp variables per table point in total) */
-};
-
-struct t_nblists
-{
-    struct t_forcetable* table_elec;
-    struct t_forcetable* table_vdw;
-    struct t_forcetable* table_elec_vdw;
-
-    /* The actual neighbor lists, short and long range, see enum above
-     * for definition of neighborlist indices.
-     */
-    struct t_nblist nlist_sr[eNL_NR];
-    struct t_nblist nlist_lr[eNL_NR];
 };
 
 struct gmx_ns_t

@@ -42,7 +42,6 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -52,6 +51,7 @@
 
 struct NbnxnPairlistCpuWork;
 struct NbnxnPairlistGpuWork;
+struct t_nblist;
 
 
 //! Convenience type for vector with aligned memory

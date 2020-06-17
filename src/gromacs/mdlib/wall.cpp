@@ -117,7 +117,7 @@ void make_wall_tables(FILE*                   fplog,
 static void tableForce(real r, const t_forcetable& tab, real Cd, real Cr, real* V, real* F)
 {
     const real  tabscale = tab.scale;
-    const real* VFtab    = tab.data;
+    const real* VFtab    = tab.data.data();
 
     real rt = r * tabscale;
     int  n0 = static_cast<int>(rt);

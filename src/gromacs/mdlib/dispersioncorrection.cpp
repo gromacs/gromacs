@@ -407,7 +407,7 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
                    "Dispersion-correction code needs a table with both repulsion and dispersion "
                    "terms");
         const real  scale  = iParams->dispersionCorrectionTable_->scale;
-        const real* vdwtab = iParams->dispersionCorrectionTable_->data;
+        const real* vdwtab = iParams->dispersionCorrectionTable_->data.data();
 
         /* Round the cut-offs to exact table values for precision */
         int ri0 = static_cast<int>(std::floor(ic.rvdw_switch * scale));

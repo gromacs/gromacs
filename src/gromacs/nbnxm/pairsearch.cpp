@@ -45,6 +45,7 @@
 
 #include "pairsearch.h"
 
+#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "pairlist.h"

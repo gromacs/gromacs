@@ -1319,9 +1319,9 @@ t_forcetable* make_tables(FILE* out, const interaction_const_t* ic, const char* 
 
     /* Each table type (e.g. coul,lj6,lj12) requires four
      * numbers per table->n+1 data points. For performance reasons we want
-     * the table data to be aligned to a 32-byte boundary.
+     * the table data to be aligned to (at least) a 32-byte boundary.
      */
-    snew_aligned(table->data, table->stride * (table->n + 1) * sizeof(real), 32);
+    table->data.resize(table->stride * (table->n + 1) * sizeof(real));
 
     for (int k = 0; (k < etiNR); k++)
     {
@@ -1367,7 +1367,7 @@ t_forcetable* make_tables(FILE* out, const interaction_const_t* ic, const char* 
         }
 
         copy2table(table->n, k * table->formatsize, table->stride, td[k].x, td[k].v, td[k].f,
-                   scalefactor, table->data);
+                   scalefactor, table->data.data());
 
         done_tabledata(&(td[k]));
     }
@@ -1428,8 +1428,8 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
     dispersionCorrectionTable->ninteractions = 2;
     dispersionCorrectionTable->stride =
             dispersionCorrectionTable->formatsize * dispersionCorrectionTable->ninteractions;
-    snew_aligned(dispersionCorrectionTable->data,
-                 dispersionCorrectionTable->stride * (dispersionCorrectionTable->n + 1), 32);
+    dispersionCorrectionTable->data.resize(dispersionCorrectionTable->stride
+                                           * (dispersionCorrectionTable->n + 1));
 
     for (int i = 0; i <= fullTable->n; i++)
     {
@@ -1449,14 +1449,8 @@ t_forcetable::t_forcetable(enum gmx_table_interaction interaction, enum gmx_tabl
     r(0),
     n(0),
     scale(0),
-    data(nullptr),
     formatsize(0),
     ninteractions(0),
     stride(0)
 {
-}
-
-t_forcetable::~t_forcetable()
-{
-    sfree_aligned(data);
 }

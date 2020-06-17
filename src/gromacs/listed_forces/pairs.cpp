@@ -522,14 +522,14 @@ static real do_pairs_general(int                 ftype,
 
             fscal = free_energy_evaluate_single(
                     r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw, fr->pairsTable->scale,
-                    fr->pairsTable->data, fr->pairsTable->stride, qq, c6, c12, qqB, c6B, c12B, LFC,
-                    LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw, fr->sc_sigma6_def,
+                    fr->pairsTable->data.data(), fr->pairsTable->stride, qq, c6, c12, qqB, c6B, c12B,
+                    LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw, fr->sc_sigma6_def,
                     fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
         }
         else
         {
             /* Evaluate tabulated interaction without free energy */
-            fscal = evaluate_single(r2, fr->pairsTable->scale, fr->pairsTable->data,
+            fscal = evaluate_single(r2, fr->pairsTable->scale, fr->pairsTable->data.data(),
                                     fr->pairsTable->stride, qq, c6, c12, &velec, &vvdw);
         }
 
