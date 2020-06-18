@@ -49,9 +49,7 @@
 
 namespace gmx
 {
-TrajectoryElement::TrajectoryElement(std::vector<SignallerCallbackPtr>     signalEnergyCallbacks,
-                                     std::vector<SignallerCallbackPtr>     signalStateCallbacks,
-                                     std::vector<ITrajectoryWriterClient*> writerClients,
+TrajectoryElement::TrajectoryElement(std::vector<ITrajectoryWriterClient*> writerClients,
                                      FILE*                                 fplog,
                                      int                                   nfile,
                                      const t_filenm                        fnm[],
@@ -81,51 +79,25 @@ TrajectoryElement::TrajectoryElement(std::vector<SignallerCallbackPtr>     signa
                       startingBehavior,
                       simulationsShareState,
                       nullptr)),
-    nstxout_(inputrec->nstxout),
-    nstvout_(inputrec->nstvout),
-    nstfout_(inputrec->nstfout),
-    nstxoutCompressed_(inputrec->nstxout_compressed),
-    tngBoxOut_(mdoutf_get_tng_box_output_interval(outf_)),
-    tngLambdaOut_(mdoutf_get_tng_lambda_output_interval(outf_)),
-    tngBoxOutCompressed_(mdoutf_get_tng_compressed_box_output_interval(outf_)),
-    tngLambdaOutCompressed_(mdoutf_get_tng_compressed_lambda_output_interval(outf_)),
-    nstenergy_(inputrec->nstenergy),
-    signalEnergyCallbacks_(std::move(signalEnergyCallbacks)),
-    signalStateCallbacks_(std::move(signalStateCallbacks)),
-    lastStep_(-1),
-    lastStepRegistrationDone_(false),
     writerClients_(std::move(writerClients))
 {
 }
 
-void TrajectoryElement::signallerSetup()
+int TrajectoryElement::tngBoxOut() const
 {
-    GMX_ASSERT(lastStepRegistrationDone_,
-               "TrajectoryElement needs to be registered to LastStepSignaller.");
+    return mdoutf_get_tng_box_output_interval(outf_);
 }
-
-void TrajectoryElement::signal(Step step, Time time)
+int TrajectoryElement::tngLambdaOut() const
 {
-    if (do_per_step(step, nstxout_) || do_per_step(step, nstvout_) || do_per_step(step, nstfout_)
-        || do_per_step(step, nstxoutCompressed_) || do_per_step(step, tngBoxOut_)
-        || do_per_step(step, tngLambdaOut_) || do_per_step(step, tngBoxOutCompressed_)
-        || do_per_step(step, tngLambdaOutCompressed_))
-    {
-        writeStateStep_ = step;
-        for (const auto& callback : signalStateCallbacks_)
-        {
-            (*callback)(step, time);
-        }
-    }
-
-    if (do_per_step(step, nstenergy_) || step == lastStep_)
-    {
-        writeEnergyStep_ = step;
-        for (const auto& callback : signalEnergyCallbacks_)
-        {
-            (*callback)(step, time);
-        }
-    }
+    return mdoutf_get_tng_lambda_output_interval(outf_);
+}
+int TrajectoryElement::tngBoxOutCompressed() const
+{
+    return mdoutf_get_tng_compressed_box_output_interval(outf_);
+}
+int TrajectoryElement::tngLambdaOutCompressed() const
+{
+    return mdoutf_get_tng_compressed_lambda_output_interval(outf_);
 }
 
 void TrajectoryElement::elementSetup()
@@ -188,22 +160,25 @@ void TrajectoryElement::write(Step step, Time time, bool writeState, bool writeE
     }
 }
 
-SignallerCallbackPtr TrajectoryElement::registerLastStepCallback()
-{
-    lastStepRegistrationDone_ = true;
-    return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time) { this->lastStep_ = step; });
-}
-
 SignallerCallbackPtr TrajectoryElement::registerLoggingCallback()
 {
     return std::make_unique<SignallerCallback>(
             [this](Step step, Time /*unused*/) { logWritingStep_ = step; });
 }
 
-void TrajectoryElementBuilder::registerSignallerClient(compat::not_null<ITrajectorySignallerClient*> client)
+SignallerCallbackPtr TrajectoryElement::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
-    signallerClients_.emplace_back(client);
+    if (event == TrajectoryEvent::StateWritingStep)
+    {
+        return std::make_unique<SignallerCallback>(
+                [this](Step step, Time /*unused*/) { this->writeStateStep_ = step; });
+    }
+    if (event == TrajectoryEvent::EnergyWritingStep)
+    {
+        return std::make_unique<SignallerCallback>(
+                [this](Step step, Time /*unused*/) { this->writeEnergyStep_ = step; });
+    }
+    return nullptr;
 }
 
 void TrajectoryElementBuilder::registerWriterClient(compat::not_null<ITrajectoryWriterClient*> client)

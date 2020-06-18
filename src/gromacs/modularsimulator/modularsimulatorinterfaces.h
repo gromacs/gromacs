@@ -70,6 +70,7 @@ class SignallerBuilder;
 class NeighborSearchSignaller;
 class LastStepSignaller;
 class LoggingSignaller;
+class TrajectorySignaller;
 class EnergySignaller;
 
 //! \addtogroup module_modularsimulator
@@ -142,7 +143,7 @@ public:
     //! Function run before every step of scheduling
     virtual void signal(Step, Time) = 0;
     //! Method guaranteed to be called after construction, before simulator run
-    virtual void signallerSetup() = 0;
+    virtual void setup() = 0;
     //! Standard virtual destructor
     virtual ~ISignaller() = default;
 };
@@ -266,8 +267,8 @@ class ITrajectorySignallerClient
 public:
     //! @cond
     // (doxygen doesn't like these...)
-    //! Allow builder of TrajectoryElement to ask for callback registration
-    friend class TrajectoryElementBuilder;
+    //! Allow builder of TrajectorySignaller to ask for callback registration
+    friend class SignallerBuilder<TrajectorySignaller>;
     //! @endcond
     //! Standard virtual destructor
     virtual ~ITrajectorySignallerClient() = default;

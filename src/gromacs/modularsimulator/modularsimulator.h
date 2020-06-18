@@ -152,7 +152,7 @@ private:
     buildIntegrator(SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
                     SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
                     SignallerBuilder<LoggingSignaller>*        loggingSignallerBuilder,
-                    TrajectoryElementBuilder*                  trajectoryElementBuilder,
+                    SignallerBuilder<TrajectorySignaller>*     trajectorySignallerBuilder,
                     std::vector<ICheckpointHelperClient*>*     checkpointClients,
                     CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
                     compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
@@ -193,27 +193,17 @@ private:
     std::queue<SimulatorRunFunctionPtr> taskQueue_;
 
     /* Note that the Simulator is owning the signallers and elements.
-     * The ownership list and the call list are kept separate, however,
-     * to allow to have elements more than once in the call lists -
-     * either as signaller AND element (such as the TrajectoryElement),
-     * or to have an element twice in the scheduling sequence (currently
-     * not used).
+     * The ownership list and the call list of the elements are kept
+     * separate, to allow to have elements more than once in the call
+     * lists - for example, using velocity verlet, the compute globals
+     * element needs to be scheduled more than once per step. For the
+     * signallers, no distinction between ownership and call list is
+     * made, all signallers are called exactly once per scheduling step.
      *
-     * For the elements, the setup and teardown is applied on the
-     * elementsOwnershipList_, to ensure that it is called only once per
-     * element. For the signallers, the setup is applied on the
-     * signallerCallList_ - this makes sure that both the elementSetup()
-     * and signallerSetup() of an object being both an element and a
-     * signaller is called. It is also not expected to run have a signaller
-     * more than once in the signallerCallList_, so we don't have to worry
-     * about calling the setup method twice. Consequently, this means that
-     * objects being both a signaller and an element should be stored in
-     * the elementsOwnershipList_.
+     * Objects being both a signaller and an element are not supported.
      */
-    //! List of signalers (ownership)
-    std::vector<std::unique_ptr<ISignaller>> signallersOwnershipList_;
-    //! List of signalers (calling sequence)
-    std::vector<compat::not_null<ISignaller*>> signallerCallList_;
+    //! List of signalers (ownership and calling sequence)
+    std::vector<std::unique_ptr<ISignaller>> signallerList_;
     //! List of schedulerElements (ownership)
     std::vector<std::unique_ptr<ISimulatorElement>> elementsOwnershipList_;
     //! List of schedulerElements (calling sequence)

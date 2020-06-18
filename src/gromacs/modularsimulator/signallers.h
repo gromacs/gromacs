@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,7 +110,7 @@ public:
     void signal(Step step, Time time) override;
 
     //! Do nothing at setup time
-    void signallerSetup() override{};
+    void setup() override{};
 
     //! Allow builder to construct
     friend class SignallerBuilder<NeighborSearchSignaller>;
@@ -158,7 +158,7 @@ public:
     void signal(Step step, Time time) override;
 
     //! Check that necessary registration was done
-    void signallerSetup() override;
+    void setup() override;
 
     //! Allow builder to construct
     friend class SignallerBuilder<LastStepSignaller>;
@@ -216,7 +216,7 @@ public:
     void signal(Step step, Time time) override;
 
     //! Check that necessary registration was done
-    void signallerSetup() override;
+    void setup() override;
 
     //! Allow builder to construct
     friend class SignallerBuilder<LoggingSignaller>;
@@ -253,6 +253,82 @@ private:
 
 /*! \libinternal
  * \ingroup module_modularsimulator
+ * \brief Element signalling trajectory writing
+ *
+ * During signalling phase, it checks whether the current step is a writing
+ * step for either the energy or the state (position, velocity, forces)
+ * trajectory. It then notifies the signaller clients of the upcoming step.
+ *
+ * The TrajectorySignaller works in close collaboration with the TrajectoryElement
+ * which does the actual trajectory writing during the simulation step.
+ */
+class TrajectorySignaller final : public ISignaller, public ILastStepSignallerClient
+{
+public:
+    /*! \brief Prepare signaller
+     *
+     * Check that necessary registration was done
+     */
+    void setup() override;
+
+    /*! \brief Run the signaller at a specific step / time
+     *
+     * Informs clients when energy or state will be written.
+     *
+     * @param step           The current time step
+     * @param time           The current time
+     */
+    void signal(Step step, Time time) override;
+
+    //! Allow builder to construct
+    friend class SignallerBuilder<TrajectorySignaller>;
+    //! Define client type
+    typedef ITrajectorySignallerClient Client;
+
+private:
+    //! Constructor
+    TrajectorySignaller(std::vector<SignallerCallbackPtr> signalEnergyCallbacks,
+                        std::vector<SignallerCallbackPtr> signalStateCallbacks,
+                        int                               nstxout,
+                        int                               nstvout,
+                        int                               nstfout,
+                        int                               nstxoutCompressed,
+                        int                               tngBoxOut,
+                        int                               tngLambdaOut,
+                        int                               tngBoxOutCompressed,
+                        int                               tngLambdaOutCompressed,
+                        int                               nstenergy);
+
+    //! Output frequencies
+    //! {
+    const int nstxout_;
+    const int nstvout_;
+    const int nstfout_;
+    const int nstxoutCompressed_;
+    const int tngBoxOut_;
+    const int tngLambdaOut_;
+    const int tngBoxOutCompressed_;
+    const int tngLambdaOutCompressed_;
+    const int nstenergy_;
+    //! }
+
+    //! Callbacks to signal events
+    //! {
+    std::vector<SignallerCallbackPtr> signalEnergyCallbacks_;
+    std::vector<SignallerCallbackPtr> signalStateCallbacks_;
+    //! }
+
+    /*
+     * Last step client
+     */
+    Step lastStep_;
+    bool lastStepRegistrationDone_;
+    //! ILastStepSignallerClient implementation
+    SignallerCallbackPtr registerLastStepCallback() override;
+};
+
+/*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Element signalling energy related special steps
  *
  * This element informs its clients via callbacks
@@ -274,7 +350,7 @@ public:
     void signal(Step step, Time time) override;
 
     //! Check that necessary registration was done
-    void signallerSetup() override;
+    void setup() override;
 
     //! Allow builder to construct
     friend class SignallerBuilder<EnergySignaller>;
@@ -349,6 +425,21 @@ std::unique_ptr<Signaller> SignallerBuilder<Signaller>::build(Args&&... args)
 
 /*! \brief Build the signaller
  *
+ * Specialized version - TrajectorySignaller has a different build process
+ */
+template<>
+template<typename... Args>
+std::unique_ptr<TrajectorySignaller> SignallerBuilder<TrajectorySignaller>::build(Args&&... args)
+{
+    auto signalEnergyCallbacks = buildCallbackVector(TrajectoryEvent::EnergyWritingStep);
+    auto signalStateCallbacks  = buildCallbackVector(TrajectoryEvent::StateWritingStep);
+    // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
+    return std::unique_ptr<TrajectorySignaller>(new TrajectorySignaller(
+            std::move(signalEnergyCallbacks), std::move(signalStateCallbacks), std::forward<Args>(args)...));
+}
+
+/*! \brief Build the signaller
+ *
  * Specialized version - EnergySignaller has a significantly different build process
  */
 template<>
@@ -410,6 +501,16 @@ SignallerBuilder<LoggingSignaller>::getSignallerCallback(typename LoggingSignall
                                                          Args&&... args)
 {
     return client->registerLoggingCallback(std::forward<Args>(args)...);
+}
+
+//! Get a callback from a single client - TrajectorySignaller
+template<>
+template<typename... Args>
+SignallerCallbackPtr
+SignallerBuilder<TrajectorySignaller>::getSignallerCallback(typename TrajectorySignaller::Client* client,
+                                                            Args&&... args)
+{
+    return client->registerTrajectorySignallerCallback(std::forward<Args>(args)...);
 }
 
 //! Get a callback from a single client - EnergySignaller

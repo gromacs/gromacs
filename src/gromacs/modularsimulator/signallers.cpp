@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,7 +107,7 @@ void LastStepSignaller::signal(Step step, Time time)
     }
 }
 
-void LastStepSignaller::signallerSetup()
+void LastStepSignaller::setup()
 {
     GMX_ASSERT(nsStepRegistrationDone_,
                "LastStepSignaller needs to be registered to NeighborSearchSignaller.");
@@ -141,13 +141,75 @@ void LoggingSignaller::signal(Step step, Time time)
     }
 }
 
-void LoggingSignaller::signallerSetup()
+void LoggingSignaller::setup()
 {
     GMX_ASSERT(lastStepRegistrationDone_,
                "LoggingSignaller needs to be registered to LastStepSignaller.");
 }
 
 SignallerCallbackPtr LoggingSignaller::registerLastStepCallback()
+{
+    lastStepRegistrationDone_ = true;
+    return std::make_unique<SignallerCallback>(
+            [this](Step step, Time gmx_unused time) { this->lastStep_ = step; });
+}
+
+TrajectorySignaller::TrajectorySignaller(std::vector<SignallerCallbackPtr> signalEnergyCallbacks,
+                                         std::vector<SignallerCallbackPtr> signalStateCallbacks,
+                                         int                               nstxout,
+                                         int                               nstvout,
+                                         int                               nstfout,
+                                         int                               nstxoutCompressed,
+                                         int                               tngBoxOut,
+                                         int                               tngLambdaOut,
+                                         int                               tngBoxOutCompressed,
+                                         int                               tngLambdaOutCompressed,
+                                         int                               nstenergy) :
+    nstxout_(nstxout),
+    nstvout_(nstvout),
+    nstfout_(nstfout),
+    nstxoutCompressed_(nstxoutCompressed),
+    tngBoxOut_(tngBoxOut),
+    tngLambdaOut_(tngLambdaOut),
+    tngBoxOutCompressed_(tngBoxOutCompressed),
+    tngLambdaOutCompressed_(tngLambdaOutCompressed),
+    nstenergy_(nstenergy),
+    signalEnergyCallbacks_(std::move(signalEnergyCallbacks)),
+    signalStateCallbacks_(std::move(signalStateCallbacks)),
+    lastStep_(-1),
+    lastStepRegistrationDone_(false)
+{
+}
+
+void TrajectorySignaller::setup()
+{
+    GMX_ASSERT(lastStepRegistrationDone_,
+               "TrajectoryElement needs to be registered to LastStepSignaller.");
+}
+
+void TrajectorySignaller::signal(Step step, Time time)
+{
+    if (do_per_step(step, nstxout_) || do_per_step(step, nstvout_) || do_per_step(step, nstfout_)
+        || do_per_step(step, nstxoutCompressed_) || do_per_step(step, tngBoxOut_)
+        || do_per_step(step, tngLambdaOut_) || do_per_step(step, tngBoxOutCompressed_)
+        || do_per_step(step, tngLambdaOutCompressed_))
+    {
+        for (const auto& callback : signalStateCallbacks_)
+        {
+            (*callback)(step, time);
+        }
+    }
+
+    if (do_per_step(step, nstenergy_) || step == lastStep_)
+    {
+        for (const auto& callback : signalEnergyCallbacks_)
+        {
+            (*callback)(step, time);
+        }
+    }
+}
+
+SignallerCallbackPtr TrajectorySignaller::registerLastStepCallback()
 {
     lastStepRegistrationDone_ = true;
     return std::make_unique<SignallerCallback>(
@@ -194,7 +256,7 @@ void EnergySignaller::signal(Step step, Time time)
     }
 }
 
-void EnergySignaller::signallerSetup()
+void EnergySignaller::setup()
 {
     GMX_ASSERT(loggingRegistrationDone_,
                "EnergySignaller needs to be registered to LoggingSignaller.");

@@ -77,33 +77,18 @@ enum class StartingBehavior;
  * element only prepares the output struct, and passes it to the clients who
  * write their part of the trajectory.
  */
-class TrajectoryElement final :
-    public ISimulatorElement,
-    public ISignaller,
-    public ILastStepSignallerClient,
-    public ILoggingSignallerClient
+class TrajectoryElement final : public ISimulatorElement, public ILoggingSignallerClient, public ITrajectorySignallerClient
 {
 public:
     friend class TrajectoryElementBuilder;
-
-    /*
-     * Methods for the signaller part of the element
-     */
-
-    /*! \brief Prepare signaller
-     *
-     * Check that necessary registration was done
-     */
-    void signallerSetup() override;
-
-    /*! \brief Run the signaller at a specific step / time
-     *
-     * Informs clients when energy or state will be written.
-     *
-     * @param step           The current time step
-     * @param time           The current time
-     */
-    void signal(Step step, Time time) override;
+    //! Get the box writeout frequency for TNG
+    [[nodiscard]] int tngBoxOut() const;
+    //! Get the lambda writeout frequency for TNG
+    [[nodiscard]] int tngLambdaOut() const;
+    //! Get the compressed box writeout frequency for TNG
+    [[nodiscard]] int tngBoxOutCompressed() const;
+    //! Get the compressed lambda writeout frequency for TNG
+    [[nodiscard]] int tngLambdaOutCompressed() const;
 
     /*
      * Methods for the trajectory writing part of the element
@@ -145,9 +130,7 @@ public:
 
 private:
     //! Constructor
-    TrajectoryElement(std::vector<SignallerCallbackPtr>     signalEnergyCallbacks,
-                      std::vector<SignallerCallbackPtr>     signalStateCallbacks,
-                      std::vector<ITrajectoryWriterClient*> writerClients,
+    TrajectoryElement(std::vector<ITrajectoryWriterClient*> writerClients,
                       FILE*                                 fplog,
                       int                                   nfile,
                       const t_filenm                        fnm[],
@@ -174,36 +157,8 @@ private:
 
     //! ILoggingSignallerClient implementation
     SignallerCallbackPtr registerLoggingCallback() override;
-
-    /*
-     * Signaller
-     */
-    //! Output frequencies
-    //! {
-    const int nstxout_;
-    const int nstvout_;
-    const int nstfout_;
-    const int nstxoutCompressed_;
-    const int tngBoxOut_;
-    const int tngLambdaOut_;
-    const int tngBoxOutCompressed_;
-    const int tngLambdaOutCompressed_;
-    const int nstenergy_;
-    //! }
-
-    //! Callbacks to signal events
-    //! {
-    std::vector<SignallerCallbackPtr> signalEnergyCallbacks_;
-    std::vector<SignallerCallbackPtr> signalStateCallbacks_;
-    //! }
-
-    /*
-     * Last step client
-     */
-    Step lastStep_;
-    bool lastStepRegistrationDone_;
-    //! ILastStepSignallerClient implementation
-    SignallerCallbackPtr registerLastStepCallback() override;
+    //! ITrajectorySignallerClient implementation
+    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
 
     /*
      * Trajectory writing
@@ -225,16 +180,12 @@ private:
  * \ingroup module_modularsimulator
  * \brief Build the `TrajectoryElement`
  *
- * This builder allows clients to register with the trajectory element, either
- * as signaller clients or as writer clients. The builder then builds the
- * element.
+ * This builder allows clients to register with the trajectory element
+ * as writer clients. The builder then builds the trajectory element.
  */
 class TrajectoryElementBuilder final
 {
 public:
-    //! Allows clients to register to the signaller
-    void registerSignallerClient(compat::not_null<ITrajectorySignallerClient*> client);
-
     //! Allows clients to register as trajectory writers
     void registerWriterClient(compat::not_null<ITrajectoryWriterClient*> client);
 
@@ -243,8 +194,6 @@ public:
     std::unique_ptr<TrajectoryElement> build(Args&&... args);
 
 private:
-    //! List of signaller clients
-    std::vector<ITrajectorySignallerClient*> signallerClients_;
     //! List of writer clients
     std::vector<ITrajectoryWriterClient*> writerClients_;
 };
@@ -252,27 +201,9 @@ private:
 template<typename... Args>
 std::unique_ptr<TrajectoryElement> TrajectoryElementBuilder::build(Args&&... args)
 {
-    std::vector<SignallerCallbackPtr> signalEnergyCallbacks;
-    std::vector<SignallerCallbackPtr> signalStateCallbacks;
-    // Allow clients to register their callbacks
-    for (auto& client : signallerClients_)
-    {
-        // don't register nullptr
-        if (auto energyCallback =
-                    client->registerTrajectorySignallerCallback(TrajectoryEvent::EnergyWritingStep))
-        {
-            signalEnergyCallbacks.emplace_back(std::move(energyCallback));
-        }
-        if (auto stateCallback =
-                    client->registerTrajectorySignallerCallback(TrajectoryEvent::StateWritingStep))
-        {
-            signalStateCallbacks.emplace_back(std::move(stateCallback));
-        }
-    }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<TrajectoryElement>(
-            new TrajectoryElement(std::move(signalEnergyCallbacks), std::move(signalStateCallbacks),
-                                  std::move(writerClients_), std::forward<Args>(args)...));
+            new TrajectoryElement(std::move(writerClients_), std::forward<Args>(args)...));
 }
 
 } // namespace gmx

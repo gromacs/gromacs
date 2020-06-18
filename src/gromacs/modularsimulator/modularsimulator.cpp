@@ -99,9 +99,9 @@ void ModularSimulator::run()
     GMX_LOG(mdlog.info).asParagraph().appendText("Using the modular simulator.");
     constructElementsAndSignallers();
     simulatorSetup();
-    for (auto& signaller : signallerCallList_)
+    for (auto& signaller : signallerList_)
     {
-        signaller->signallerSetup();
+        signaller->setup();
     }
     if (domDecHelper_)
     {
@@ -281,7 +281,7 @@ void ModularSimulator::populateTaskQueue()
     Time time      = startTime + step_ * timeStep;
 
     // Run an initial call to the signallers
-    for (auto& signaller : signallerCallList_)
+    for (auto& signaller : signallerList_)
     {
         signaller->signal(step_, time);
     }
@@ -321,7 +321,7 @@ void ModularSimulator::populateTaskQueue()
         // prepare next step
         step_++;
         time = startTime + step_ * timeStep;
-        for (auto& signaller : signallerCallList_)
+        for (auto& signaller : signallerList_)
         {
             signaller->signal(step_, time);
         }
@@ -402,17 +402,18 @@ void ModularSimulator::constructElementsAndSignallers()
     SignallerBuilder<LastStepSignaller>       lastStepSignallerBuilder;
     SignallerBuilder<LoggingSignaller>        loggingSignallerBuilder;
     SignallerBuilder<EnergySignaller>         energySignallerBuilder;
+    SignallerBuilder<TrajectorySignaller>     trajectorySignallerBuilder;
     TrajectoryElementBuilder                  trajectoryElementBuilder;
 
     /*
      * Register data structures to signallers
      */
     trajectoryElementBuilder.registerWriterClient(statePropagatorDataPtr);
-    trajectoryElementBuilder.registerSignallerClient(statePropagatorDataPtr);
+    trajectorySignallerBuilder.registerSignallerClient(statePropagatorDataPtr);
     lastStepSignallerBuilder.registerSignallerClient(statePropagatorDataPtr);
 
     trajectoryElementBuilder.registerWriterClient(energyElementPtr);
-    trajectoryElementBuilder.registerSignallerClient(energyElementPtr);
+    trajectorySignallerBuilder.registerSignallerClient(energyElementPtr);
     energySignallerBuilder.registerSignallerClient(energyElementPtr);
 
     // Register the simulator itself to the neighbor search / last step signaller
@@ -428,11 +429,11 @@ void ModularSimulator::constructElementsAndSignallers()
     std::vector<ICheckpointHelperClient*> checkpointClients = { statePropagatorDataPtr, energyElementPtr,
                                                                 freeEnergyPerturbationElementPtr };
     CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback = nullptr;
-    auto                               integrator =
-            buildIntegrator(&neighborSearchSignallerBuilder, &energySignallerBuilder,
-                            &loggingSignallerBuilder, &trajectoryElementBuilder, &checkpointClients,
-                            &checkBondedInteractionsCallback, statePropagatorDataPtr,
-                            energyElementPtr, freeEnergyPerturbationElementPtr, hasReadEkinState);
+    auto integrator = buildIntegrator(&neighborSearchSignallerBuilder, &energySignallerBuilder,
+                                      &loggingSignallerBuilder, &trajectorySignallerBuilder,
+                                      &checkpointClients, &checkBondedInteractionsCallback,
+                                      statePropagatorDataPtr, energyElementPtr,
+                                      freeEnergyPerturbationElementPtr, hasReadEkinState);
 
     /*
      * Build infrastructure elements
@@ -474,12 +475,18 @@ void ModularSimulator::constructElementsAndSignallers()
      */
     auto energySignaller = energySignallerBuilder.build(
             inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl, inputrec->nstpcouple);
-    trajectoryElementBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
+    trajectorySignallerBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
     loggingSignallerBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
     auto trajectoryElement = trajectoryElementBuilder.build(
             fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier, inputrec,
             top_global, oenv, wcycle, startingBehavior, simulationsShareState);
     loggingSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
+    trajectorySignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
+    auto trajectorySignaller = trajectorySignallerBuilder.build(
+            inputrec->nstxout, inputrec->nstvout, inputrec->nstfout, inputrec->nstxout_compressed,
+            trajectoryElement->tngBoxOut(), trajectoryElement->tngLambdaOut(),
+            trajectoryElement->tngBoxOutCompressed(), trajectoryElement->tngLambdaOutCompressed(),
+            inputrec->nstenergy);
 
     // Add checkpoint helper here since we need a pointer to the trajectory element and
     // need to register it with the lastStepSignallerBuilder
@@ -493,7 +500,7 @@ void ModularSimulator::constructElementsAndSignallers()
             walltime_accounting, state_global, mdrunOptions.writeConfout);
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(checkpointHelper_.get()));
 
-    lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
+    lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectorySignaller.get()));
     auto loggingSignaller =
             loggingSignallerBuilder.build(inputrec->nstlog, inputrec->init_step, inputrec->init_t);
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(loggingSignaller.get()));
@@ -503,11 +510,11 @@ void ModularSimulator::constructElementsAndSignallers()
     auto neighborSearchSignaller = neighborSearchSignallerBuilder.build(
             inputrec->nstlist, inputrec->init_step, inputrec->init_t);
 
-    addToCallListAndMove(std::move(neighborSearchSignaller), signallerCallList_, signallersOwnershipList_);
-    addToCallListAndMove(std::move(lastStepSignaller), signallerCallList_, signallersOwnershipList_);
-    addToCallListAndMove(std::move(loggingSignaller), signallerCallList_, signallersOwnershipList_);
-    addToCallList(trajectoryElement, signallerCallList_);
-    addToCallListAndMove(std::move(energySignaller), signallerCallList_, signallersOwnershipList_);
+    signallerList_.emplace_back(std::move(neighborSearchSignaller));
+    signallerList_.emplace_back(std::move(lastStepSignaller));
+    signallerList_.emplace_back(std::move(loggingSignaller));
+    signallerList_.emplace_back(std::move(trajectorySignaller));
+    signallerList_.emplace_back(std::move(energySignaller));
 
     /*
      * Build the element list
@@ -559,7 +566,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
         SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
         SignallerBuilder<LoggingSignaller>*        loggingSignallerBuilder,
-        TrajectoryElementBuilder*                  trajectoryElementBuilder,
+        SignallerBuilder<TrajectorySignaller>*     trajectorySignallerBuilder,
         std::vector<ICheckpointHelperClient*>*     checkpointClients,
         CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
         compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
@@ -586,7 +593,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
                         wcycle, fr, &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElement.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
-        trajectoryElementBuilder->registerSignallerClient(
+        trajectorySignallerBuilder->registerSignallerClient(
                 compat::make_not_null(computeGlobalsElement.get()));
 
         *checkBondedInteractionsCallback =
@@ -633,7 +640,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             auto constraintElementPtr = compat::make_not_null(constraintElement.get());
             energySignallerBuilder->registerSignallerClient(constraintElementPtr);
-            trajectoryElementBuilder->registerSignallerClient(constraintElementPtr);
+            trajectorySignallerBuilder->registerSignallerClient(constraintElementPtr);
             loggingSignallerBuilder->registerSignallerClient(constraintElementPtr);
 
             addToCallListAndMove(std::move(constraintElement), elementCallList, elementsOwnershipList);
@@ -655,7 +662,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
                         wcycle, fr, &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElement.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
-        trajectoryElementBuilder->registerSignallerClient(
+        trajectorySignallerBuilder->registerSignallerClient(
                 compat::make_not_null(computeGlobalsElement.get()));
 
         *checkBondedInteractionsCallback =
@@ -689,7 +696,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
                     constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             energySignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
-            trajectoryElementBuilder->registerSignallerClient(
+            trajectorySignallerBuilder->registerSignallerClient(
                     compat::make_not_null(constraintElement.get()));
             loggingSignallerBuilder->registerSignallerClient(
                     compat::make_not_null(constraintElement.get()));
@@ -722,7 +729,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
                     constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             energySignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
-            trajectoryElementBuilder->registerSignallerClient(
+            trajectorySignallerBuilder->registerSignallerClient(
                     compat::make_not_null(constraintElement.get()));
             loggingSignallerBuilder->registerSignallerClient(
                     compat::make_not_null(constraintElement.get()));
