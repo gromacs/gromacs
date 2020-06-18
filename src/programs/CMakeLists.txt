@@ -80,6 +80,7 @@ else()
         $<TARGET_OBJECTS:gmx_objlib>
         $<TARGET_OBJECTS:mdrun_objlib>
         $<TARGET_OBJECTS:view_objlib>)
+    add_executable(Gromacs::gmx ALIAS gmx)
     gmx_target_compile_options(gmx)
     target_compile_definitions(gmx PRIVATE HAVE_CONFIG_H)
     target_link_libraries(gmx libgromacs
@@ -91,7 +92,14 @@ else()
     set(BINARY_NAME "gmx${GMX_BINARY_SUFFIX}")
     set_target_properties(gmx PROPERTIES
         OUTPUT_NAME "${BINARY_NAME}")
+    # Add the executable to the INSTALL target and to the libgromacs EXPORT configuration.
+    # The GROMACS installation then provides an importable (e.g. find_package(GROMACS))
+    # Gromacs::gmx target, which may be used as the executable COMMAND argument for functions like
+    # add_custom_command() or add_test(). The full path to the installed binary may retrieved
+    # from the LOCATION property or with a $<TARGET_FILE:Gromacs:gmx> generator expression
+    # (where generator expressions are allowed).
     install(TARGETS gmx
+            EXPORT libgromacs
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
     ########################
