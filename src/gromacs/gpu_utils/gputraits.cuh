@@ -45,7 +45,7 @@
  * \ingroup module_gpu_utils
  */
 
-#include "gromacs/gpu_utils/device_stream.h"
+#include <cuda_runtime.h>
 
 /*! \brief CUDA device information.
  *

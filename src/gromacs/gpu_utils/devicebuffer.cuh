@@ -47,6 +47,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h" //only for GpuApiCallBehavior
 #include "gromacs/gpu_utils/gputraits.cuh"

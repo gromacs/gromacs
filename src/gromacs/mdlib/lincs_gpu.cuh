@@ -45,6 +45,7 @@
 #define GMX_MDLIB_LINCS_GPU_CUH
 
 #include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
