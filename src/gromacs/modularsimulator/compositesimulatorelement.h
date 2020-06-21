@@ -82,9 +82,9 @@ public:
      * Lets every member of the composite simulator register run functions
      * for the given step.
      *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
+     * \param step                 The step number
+     * \param time                 The time
+     * \param registerRunFunction  Function allowing to register a run function
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 

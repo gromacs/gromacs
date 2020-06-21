@@ -112,8 +112,8 @@ public:
      *
      * Sets signal and / or performs checkpointing at neighbor searching steps
      *
-     * @param step  The step number
-     * @param time  The time
+     * \param step  The step number
+     * \param time  The time
      */
     void run(Step step, Time time);
 
@@ -123,9 +123,9 @@ public:
      * list, as the checkpoint helper need to be able to react to the last step
      * being signalled.
      *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
+     * \param step                 The step number
+     * \param time                 The time
+     * \param registerRunFunction  Function allowing to register a run function
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 

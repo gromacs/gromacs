@@ -62,7 +62,7 @@ class TrajectoryElement;
  * This builder allows clients to register, and then builds the signaller
  * passing on the list of clients.
  *
- * @tparam Signaller  The signaller to be built
+ * \tparam Signaller  The signaller to be built
  */
 template<typename Signaller>
 class SignallerBuilder final
@@ -109,8 +109,8 @@ public:
      *
      * Informs callbacks if step % nstlist_ == 0
      *
-     * @param step  The current time step
-     * @param time  The current time
+     * \param step  The current time step
+     * \param time  The current time
      */
     void signal(Step step, Time time) override;
 
@@ -125,10 +125,10 @@ public:
 private:
     /*! \brief Constructor
      *
-     * @param callbacks  A vector of pointers to callbacks
-     * @param nstlist    The frequency at which neighbor search is performed
-     * @param initStep   The first step of the simulation
-     * @param initTime   The start time of the simulation
+     * \param callbacks  A vector of pointers to callbacks
+     * \param nstlist    The frequency at which neighbor search is performed
+     * \param initStep   The first step of the simulation
+     * \param initTime   The start time of the simulation
      */
     NeighborSearchSignaller(std::vector<SignallerCallback> callbacks, Step nstlist, Step initStep, Time initTime);
 
@@ -157,8 +157,8 @@ public:
      *
      * Informs callbacks if this is the last step
      *
-     * @param step  The current time step
-     * @param time  The current time
+     * \param step  The current time step
+     * \param time  The current time
      */
     void signal(Step step, Time time) override;
 
@@ -173,10 +173,10 @@ public:
 private:
     /*! \brief Constructor
      *
-     * @param callbacks    A vector of pointers to callbacks
-     * @param nsteps       The total number of steps for the simulation
-     * @param initStep     The first step of the simulation
-     * @param stopHandler  A pointer to the stop handler (LastStepSignaller takes ownership)
+     * \param callbacks    A vector of pointers to callbacks
+     * \param nsteps       The total number of steps for the simulation
+     * \param initStep     The first step of the simulation
+     * \param stopHandler  A pointer to the stop handler (LastStepSignaller takes ownership)
      */
     LastStepSignaller(std::vector<SignallerCallback> callbacks, Step nsteps, Step initStep, StopHandler* stopHandler);
 
@@ -212,8 +212,8 @@ public:
      *
      * Informs callbacks if step % nstlog_ == 0
      *
-     * @param step  The current time step
-     * @param time  The current time
+     * \param step  The current time step
+     * \param time  The current time
      */
     void signal(Step step, Time time) override;
 
@@ -228,10 +228,10 @@ public:
 private:
     /*! \brief Constructor
      *
-     * @param callbacks  A vector of pointers to callbacks
-     * @param nstlog     The logging frequency
-     * @param initStep   The first step of the simulation
-     * @param initTime   The start time of the simulation
+     * \param callbacks  A vector of pointers to callbacks
+     * \param nstlog     The logging frequency
+     * \param initStep   The first step of the simulation
+     * \param initTime   The start time of the simulation
      */
     LoggingSignaller(std::vector<SignallerCallback> callbacks, Step nstlog, Step initStep, Time initTime);
 
@@ -277,8 +277,8 @@ public:
      *
      * Informs clients when energy or state will be written.
      *
-     * @param step           The current time step
-     * @param time           The current time
+     * \param step           The current time step
+     * \param time           The current time
      */
     void signal(Step step, Time time) override;
 
@@ -346,8 +346,8 @@ public:
      *
      * Informs callbacks of energy / virial / free energy special steps
      *
-     * @param step  The current time step
-     * @param time  The current time
+     * \param step  The current time step
+     * \param time  The current time
      */
     void signal(Step step, Time time) override;
 
@@ -362,12 +362,12 @@ public:
 private:
     /*! \brief Constructor
      *
-     * @param calculateEnergyCallbacks      A vector of pointers to callbacks (energy steps)
-     * @param calculateVirialCallbacks      A vector of pointers to callbacks (virial steps)
-     * @param calculateFreeEnergyCallbacks  A vector of pointers to callbacks (free energy steps)
-     * @param nstcalcenergy                 The energy calculation frequency
-     * @param nstcalcfreeenergy             The free energy calculation frequency
-     * @param nstcalcvirial                 The free energy calculation frequency
+     * \param calculateEnergyCallbacks      A vector of pointers to callbacks (energy steps)
+     * \param calculateVirialCallbacks      A vector of pointers to callbacks (virial steps)
+     * \param calculateFreeEnergyCallbacks  A vector of pointers to callbacks (free energy steps)
+     * \param nstcalcenergy                 The energy calculation frequency
+     * \param nstcalcfreeenergy             The free energy calculation frequency
+     * \param nstcalcvirial                 The free energy calculation frequency
      */
     EnergySignaller(std::vector<SignallerCallback> calculateEnergyCallbacks,
                     std::vector<SignallerCallback> calculateVirialCallbacks,

@@ -342,10 +342,10 @@ ComputeGlobalsElement<algorithm>::registerTrajectorySignallerCallback(Trajectory
 }
 
 //! Explicit template instantiation
-//! @{
+//! \{
 template class ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>;
 template class ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>;
-//! @}
+//! \}
 
 template<>
 ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::getElementPointerImpl(

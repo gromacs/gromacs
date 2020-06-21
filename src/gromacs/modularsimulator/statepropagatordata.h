@@ -144,11 +144,11 @@ public:
     //! Initial set up for the associated element
     void setup();
 
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these)
     // Classes which need access to legacy state
     friend class DomDecHelper;
-    //! @endcond
+    //! \endcond
 
 private:
     //! The total number of atoms in the system
@@ -258,9 +258,9 @@ public:
      * This is also the place at which the current state becomes the previous
      * state.
      *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
+     * \param step                 The step number
+     * \param time                 The time
+     * \param registerRunFunction  Function allowing to register a run function
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 

@@ -67,7 +67,7 @@ class StatePropagatorData;
  * but uses the current constraints implementation and the data management
  * introduced with the modular simulator.
  *
- * @tparam variable  The constraining variable
+ * \tparam variable  The constraining variable
  */
 template<ConstraintVariable variable>
 class ConstraintsElement final :
@@ -93,9 +93,9 @@ public:
      * Under VV, this is expected to be run twice, once contraining velocities only,
      * a second time constraining positions and velocities.
      *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
+     * \param step                 The step number
+     * \param time                 The time
+     * \param registerRunFunction  Function allowing to register a run function
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 

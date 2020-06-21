@@ -129,7 +129,7 @@ enum class ParrinelloRahmanVelocityScaling
  * functions allows to have performance comparable to fused update elements
  * while keeping easily re-orderable single instructions.
  *
- * @tparam algorithm  The integration types
+ * \tparam algorithm  The integration types
  */
 template<IntegrationStep algorithm>
 class Propagator final : public ISimulatorElement
@@ -143,9 +143,9 @@ public:
 
     /*! \brief Register run function for step / time
      *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
+     * \param step                 The step number
+     * \param time                 The time
+     * \param registerRunFunction  Function allowing to register a run function
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 

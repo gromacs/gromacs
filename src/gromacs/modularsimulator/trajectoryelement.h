@@ -106,9 +106,9 @@ public:
      * Registers a trajectory writing function if the current step / time is
      * either a state or energy writing step, as defined by the signaller
      *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
+     * \param step                 The step number
+     * \param time                 The time
+     * \param registerRunFunction  Function allowing to register a run function
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
@@ -120,11 +120,11 @@ public:
      */
     void elementTeardown() override;
 
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow CheckpointHelper to use outf_ (TODO: Can we improve this?)
     friend class CheckpointHelper;
-    //! @endcond
+    //! \endcond
 
 private:
     //! Constructor

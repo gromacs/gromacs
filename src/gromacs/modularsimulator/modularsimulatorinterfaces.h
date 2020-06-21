@@ -163,11 +163,11 @@ typedef std::function<void(Step, Time)> SignallerCallback;
 class INeighborSearchSignallerClient
 {
 public:
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow builder of NeighborSearchSignaller to ask for callback registration
     friend class SignallerBuilder<NeighborSearchSignaller>;
-    //! @endcond
+    //! \endcond
     //! Standard virtual destructor
     virtual ~INeighborSearchSignallerClient() = default;
 
@@ -185,11 +185,11 @@ protected:
 class ILastStepSignallerClient
 {
 public:
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow builder of LastStepSignaller to ask for callback registration
     friend class SignallerBuilder<LastStepSignaller>;
-    //! @endcond
+    //! \endcond
     //! Standard virtual destructor
     virtual ~ILastStepSignallerClient() = default;
 
@@ -207,11 +207,11 @@ protected:
 class ILoggingSignallerClient
 {
 public:
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow builder of LoggingSignaller to ask for callback registration
     friend class SignallerBuilder<LoggingSignaller>;
-    //! @endcond
+    //! \endcond
     //! Standard virtual destructor
     virtual ~ILoggingSignallerClient() = default;
 
@@ -237,11 +237,11 @@ enum class EnergySignallerEvent
 class IEnergySignallerClient
 {
 public:
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow builder of EnergySignaller to ask for callback registration
     friend class SignallerBuilder<EnergySignaller>;
-    //! @endcond
+    //! \endcond
     //! Standard virtual destructor
     virtual ~IEnergySignallerClient() = default;
 
@@ -266,11 +266,11 @@ enum class TrajectoryEvent
 class ITrajectorySignallerClient
 {
 public:
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow builder of TrajectorySignaller to ask for callback registration
     friend class SignallerBuilder<TrajectorySignaller>;
-    //! @endcond
+    //! \endcond
     //! Standard virtual destructor
     virtual ~ITrajectorySignallerClient() = default;
 
@@ -300,11 +300,11 @@ typedef std::function<void(gmx_mdoutf*, Step, Time, bool, bool)> ITrajectoryWrit
 class ITrajectoryWriterClient
 {
 public:
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow TrajectoryElement to ask for callback registration
     friend class TrajectoryElement;
-    //! @endcond
+    //! \endcond
     //! Standard virtual destructor
     virtual ~ITrajectoryWriterClient() = default;
 
@@ -325,11 +325,11 @@ protected:
 class ITopologyHolderClient
 {
 public:
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow TopologyHolder to set new topology
     friend class TopologyHolder;
-    //! @endcond
+    //! \endcond
     //! Standard virtual destructor
     virtual ~ITopologyHolderClient() = default;
 
@@ -352,11 +352,11 @@ protected:
 class ICheckpointHelperClient
 {
 public:
-    //! @cond
+    //! \cond
     // (doxygen doesn't like these...)
     //! Allow CheckpointHelper to interact
     friend class CheckpointHelper;
-    //! @endcond
+    //! \endcond
     //! Standard virtual destructor
     virtual ~ICheckpointHelperClient() = default;
 

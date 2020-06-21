@@ -215,15 +215,15 @@ private:
      *
      * Initializes the EnergyOutput object, and does some logging output.
      *
-     * @param mdoutf  File pointer
+     * \param mdoutf  File pointer
      */
     void setup(gmx_mdoutf* mdoutf);
 
     /*! \brief Save data at energy steps
      *
-     * @param time  The current time
-     * @param isEnergyCalculationStep  Whether the current step is an energy calculation step
-     * @param isFreeEnergyCalculationStep  Whether the current step is a free energy calculation step
+     * \param time  The current time
+     * \param isEnergyCalculationStep  Whether the current step is an energy calculation step
+     * \param isFreeEnergyCalculationStep  Whether the current step is a free energy calculation step
      */
     void doStep(Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep);
 
@@ -343,9 +343,9 @@ public:
      * This is also the place at which the current state becomes the previous
      * state.
      *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
+     * \param step                 The step number
+     * \param time                 The time
+     * \param registerRunFunction  Function allowing to register a run function
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
@@ -382,7 +382,7 @@ private:
      *
      * Initializes the EnergyOutput object, and does some logging output.
      *
-     * @param mdoutf  File pointer
+     * \param mdoutf  File pointer
      */
     void trajectoryWriterSetup(gmx_mdoutf* mdoutf) override;
     //! No trajectory writer teardown needed

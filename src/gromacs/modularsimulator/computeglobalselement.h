@@ -94,7 +94,7 @@ typedef std::function<void()> CheckBondedInteractionsCallback;
  * constraint virial after the second propagation of velocities (+dt/2) and of
  * the positions (+dt).
  *
- * @tparam algorithm  The global reduction scheme
+ * \tparam algorithm  The global reduction scheme
  */
 template<ComputeGlobalsAlgorithm algorithm>
 class ComputeGlobalsElement final :
@@ -134,9 +134,9 @@ public:
      *
      * This registers the call to compute_globals when needed.
      *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
+     * \param step                 The step number
+     * \param time                 The time
+     * \param registerRunFunction  Function allowing to register a run function
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
@@ -206,10 +206,10 @@ private:
      * after a new DD is made. These variables handle whether the
      * check happens, and the result it returns.
      */
-    //! @{
+    //! \{
     int  totalNumberOfBondedInteractions_;
     bool shouldCheckNumberOfBondedInteractions_;
-    //! @}
+    //! \}
 
     /*! \brief Signal to ComputeGlobalsElement that it should check for DD errors
      *

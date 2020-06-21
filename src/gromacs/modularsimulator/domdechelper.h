@@ -110,8 +110,8 @@ public:
      *
      * Does domain decomposition partitioning at neighbor searching steps
      *
-     * @param step  The step number
-     * @param time  The time
+     * \param step  The step number
+     * \param time  The time
      */
     void run(Step step, Time time);
 
