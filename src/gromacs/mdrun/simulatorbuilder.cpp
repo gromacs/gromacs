@@ -89,9 +89,13 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
                                                     const ReplicaExchangeParameters& replExParams,
                                                     gmx_membed_t*                    membed,
                                                     gmx_walltime_accounting* walltime_accounting,
-                                                    std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder,
-                                                    bool                                doRerun)
+                                                    bool                     doRerun)
 {
+    if (!stopHandlerBuilder_)
+    {
+        throw APIError("You must add a StopHandlerBuilder before calling build().");
+    }
+
     if (useModularSimulator)
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
@@ -100,7 +104,7 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
                 constr, enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec,
                 imdSession, pull_work, swap, top_global, state_global, observablesHistory, mdAtoms,
                 nrnb, wcycle, fr, enerd, ekind, runScheduleWork, replExParams, membed,
-                walltime_accounting, std::move(stopHandlerBuilder), doRerun));
+                walltime_accounting, std::move(stopHandlerBuilder_), doRerun));
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<LegacySimulator>(new LegacySimulator(
@@ -108,7 +112,7 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
             enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec, imdSession,
             pull_work, swap, top_global, state_global, observablesHistory, mdAtoms, nrnb, wcycle,
             fr, enerd, ekind, runScheduleWork, replExParams, membed, walltime_accounting,
-            std::move(stopHandlerBuilder), doRerun));
+            std::move(stopHandlerBuilder_), doRerun));
 }
 
 } // namespace gmx
