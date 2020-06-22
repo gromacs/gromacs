@@ -874,7 +874,7 @@ void gmx::LegacySimulator::do_md()
                                        "GPU device manager has to be initialized to use GPU "
                                        "version of halo exchange.");
                     // TODO remove need to pass local stream into GPU halo exchange - Issue #3093
-                    constructGpuHaloExchange(mdlog, *cr, *fr->deviceStreamManager);
+                    constructGpuHaloExchange(mdlog, *cr, *fr->deviceStreamManager, wcycle);
                 }
             }
         }

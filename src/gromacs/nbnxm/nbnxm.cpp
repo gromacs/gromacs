@@ -145,13 +145,13 @@ void nonbonded_verlet_t::convertCoordinatesGpu(const gmx::AtomLocality locality,
                                                DeviceBuffer<gmx::RVec> d_x,
                                                GpuEventSynchronizer*   xReadyOnDevice)
 {
-    wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
-    wallcycle_sub_start(wcycle_, ewcsNB_X_BUF_OPS);
+    wallcycle_start(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_NB_X_BUF_OPS);
 
     nbnxn_atomdata_x_to_nbat_x_gpu(pairSearch_->gridSet(), locality, fillLocal, gpu_nbv, d_x, xReadyOnDevice);
 
-    wallcycle_sub_stop(wcycle_, ewcsNB_X_BUF_OPS);
-    wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_NB_X_BUF_OPS);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
@@ -198,14 +198,14 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const gmx::AtomLocality lo
         return;
     }
 
-    wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
-    wallcycle_sub_start(wcycle_, ewcsNB_F_BUF_OPS);
+    wallcycle_start(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_NB_F_BUF_OPS);
 
     reduceForcesGpu(locality, totalForcesDevice, pairSearch_->gridSet(), forcesPmeDevice,
                     dependencyList, gpu_nbv, useGpuFPmeReduction, accumulateForce);
 
-    wallcycle_sub_stop(wcycle_, ewcsNB_F_BUF_OPS);
-    wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_NB_F_BUF_OPS);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 void nonbonded_verlet_t::atomdata_init_add_nbat_f_to_f_gpu(GpuEventSynchronizer* const localReductionDone)

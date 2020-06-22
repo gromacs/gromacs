@@ -318,10 +318,12 @@ void dd_bonded_cg_distance(const gmx::MDLogger&           mdlog,
  * \param[in] mdlog               The logger object.
  * \param[in] cr                  The commrec object.
  * \param[in] deviceStreamManager Manager of the GPU context and streams.
+ * \param[in] wcycle              The wallclock counter.
  */
 void constructGpuHaloExchange(const gmx::MDLogger&            mdlog,
                               const t_commrec&                cr,
-                              const gmx::DeviceStreamManager& deviceStreamManager);
+                              const gmx::DeviceStreamManager& deviceStreamManager,
+                              gmx_wallcycle*                  wcycle);
 
 /*! \brief
  * (Re-) Initialization for GPU halo exchange

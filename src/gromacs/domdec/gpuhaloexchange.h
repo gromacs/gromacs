@@ -49,6 +49,7 @@
 #include "gromacs/utility/gmxmpi.h"
 
 struct gmx_domdec_t;
+struct gmx_wallcycle;
 class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;
@@ -86,13 +87,15 @@ public:
      * \param [in]    streamLocal              local NB CUDA stream.
      * \param [in]    streamNonLocal           non-local NB CUDA stream.
      * \param [in]    pulse                    the communication pulse for this instance
+     * \param [in]    wcycle                   The wallclock counter
      */
     GpuHaloExchange(gmx_domdec_t*        dd,
                     MPI_Comm             mpi_comm_mysim,
                     const DeviceContext& deviceContext,
                     const DeviceStream&  streamLocal,
                     const DeviceStream&  streamNonLocal,
-                    int                  pulse);
+                    int                  pulse,
+                    gmx_wallcycle*       wcycle);
     ~GpuHaloExchange();
 
     /*! \brief

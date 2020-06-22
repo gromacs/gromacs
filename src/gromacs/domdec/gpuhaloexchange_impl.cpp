@@ -65,7 +65,8 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
                                  const DeviceContext& /* deviceContext */,
                                  const DeviceStream& /*streamLocal */,
                                  const DeviceStream& /*streamNonLocal */,
-                                 int /*pulse */) :
+                                 int /*pulse */,
+                                 gmx_wallcycle* /*wcycle*/) :
     impl_(nullptr)
 {
     GMX_ASSERT(false,
