@@ -77,14 +77,10 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
                                                     pull_t*                  pull_work,
                                                     t_swap*                  swap,
                                                     gmx_mtop_t*              top_global,
-                                                    t_state*                 state_global,
-                                                    ObservablesHistory*      observablesHistory,
                                                     MDAtoms*                 mdAtoms,
                                                     t_nrnb*                  nrnb,
                                                     gmx_wallcycle*           wcycle,
                                                     t_forcerec*              fr,
-                                                    gmx_enerdata_t*          enerd,
-                                                    gmx_ekindata_t*          ekind,
                                                     MdrunScheduleWorkload*   runScheduleWork,
                                                     const ReplicaExchangeParameters& replExParams,
                                                     gmx_walltime_accounting* walltime_accounting,
@@ -98,24 +94,32 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool                     use
     {
         throw APIError("You must add a MembedHolder before calling build().");
     }
+    if (!simulatorStateData_)
+    {
+        throw APIError("Simulator State Data has not been added to the builder");
+    }
 
     if (useModularSimulator)
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
         return std::unique_ptr<ModularSimulator>(new ModularSimulator(
-                fplog, cr, ms, mdlog, nfile, fnm, oenv, mdrunOptions, startingBehavior, vsite, constr,
-                enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec, imdSession,
-                pull_work, swap, top_global, state_global, observablesHistory, mdAtoms, nrnb,
-                wcycle, fr, enerd, ekind, runScheduleWork, replExParams, membedHolder_->membed(),
-                walltime_accounting, std::move(stopHandlerBuilder_), doRerun));
+                fplog, cr, ms, mdlog, nfile, fnm, oenv, mdrunOptions, startingBehavior, vsite,
+                constr, enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec,
+                imdSession, pull_work, swap, top_global, simulatorStateData_->globalState_p,
+                simulatorStateData_->observablesHistory_p, mdAtoms, nrnb, wcycle, fr,
+                simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p, runScheduleWork,
+                replExParams, membedHolder_->membed(), walltime_accounting,
+                std::move(stopHandlerBuilder_), doRerun));
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<LegacySimulator>(new LegacySimulator(
             fplog, cr, ms, mdlog, nfile, fnm, oenv, mdrunOptions, startingBehavior, vsite, constr,
             enforcedRotation, deform, outputProvider, mdModulesNotifier, inputrec, imdSession,
-            pull_work, swap, top_global, state_global, observablesHistory, mdAtoms, nrnb, wcycle,
-            fr, enerd, ekind, runScheduleWork, replExParams, membedHolder_->membed(),
-            walltime_accounting, std::move(stopHandlerBuilder_), doRerun));
+            pull_work, swap, top_global, simulatorStateData_->globalState_p,
+            simulatorStateData_->observablesHistory_p, mdAtoms, nrnb, wcycle, fr,
+            simulatorStateData_->enerdata_p, simulatorStateData_->ekindata_p, runScheduleWork, replExParams,
+            membedHolder_->membed(), walltime_accounting, std::move(stopHandlerBuilder_), doRerun));
 }
+
 
 } // namespace gmx

@@ -44,6 +44,7 @@
 #include <memory>
 
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/mdmodulenotification.h"
 
 class energyhistory_t;
@@ -99,6 +100,28 @@ private:
     gmx_membed_t* membed_;
 };
 
+// TODO: Reconsider the name.
+struct SimulatorStateData
+{
+    t_state*            globalState_p;
+    ObservablesHistory* observablesHistory_p;
+    gmx_enerdata_t*     enerdata_p;
+    gmx_ekindata_t*     ekindata_p;
+
+    SimulatorStateData(t_state*            globalState,
+                       ObservablesHistory* observablesHistory,
+                       gmx_enerdata_t*     enerdata,
+                       gmx_ekindata_t*     ekindata) :
+        globalState_p(globalState),
+        observablesHistory_p(observablesHistory),
+        enerdata_p(enerdata),
+        ekindata_p(ekindata)
+    {
+    }
+
+    SimulatorStateData(const SimulatorStateData& simulatorStateData) = default;
+};
+
 /*! \libinternal
  * \brief Class preparing the creation of Simulator objects
  *
@@ -116,6 +139,11 @@ public:
     void add(std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder)
     {
         stopHandlerBuilder_ = std::move(stopHandlerBuilder);
+    }
+
+    void add(SimulatorStateData&& simulatorStateData)
+    {
+        simulatorStateData_ = std::make_unique<SimulatorStateData>(simulatorStateData);
     }
 
     /*! \brief Build a Simulator object based on input data
@@ -149,14 +177,10 @@ public:
                                       pull_t*                          pull_work,
                                       t_swap*                          swap,
                                       gmx_mtop_t*                      top_global,
-                                      t_state*                         state_global,
-                                      ObservablesHistory*              observablesHistory,
                                       MDAtoms*                         mdAtoms,
                                       t_nrnb*                          nrnb,
                                       gmx_wallcycle*                   wcycle,
                                       t_forcerec*                      fr,
-                                      gmx_enerdata_t*                  enerd,
-                                      gmx_ekindata_t*                  ekind,
                                       MdrunScheduleWorkload*           runScheduleWork,
                                       const ReplicaExchangeParameters& replExParams,
                                       gmx_walltime_accounting*         walltime_accounting,
@@ -165,6 +189,7 @@ public:
 private:
     std::unique_ptr<MembedHolder>       membedHolder_;
     std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_;
+    std::unique_ptr<SimulatorStateData> simulatorStateData_;
 };
 
 } // namespace gmx
