@@ -494,9 +494,9 @@ static real do_pairs_general(int                 ftype,
             c12B = iparams[itype].lj14.c12B * 12.0;
 
             fscal = free_energy_evaluate_single(
-                    r2, *fr->ic->softCoreParameters, fr->pairsTable->scale, fr->pairsTable->data.data(),
-                    fr->pairsTable->stride, qq, c6, c12, qqB, c6B, c12B, LFC, LFV, DLF, lfac_coul,
-                    lfac_vdw, dlfac_coul, dlfac_vdw, &velec, &vvdw, dvdl);
+                    r2, *fr->ic->softCoreParameters, fr->pairsTable->scale,
+                    fr->pairsTable->data.data(), fr->pairsTable->stride, qq, c6, c12, qqB, c6B, c12B,
+                    LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw, &velec, &vvdw, dvdl);
         }
         else
         {
