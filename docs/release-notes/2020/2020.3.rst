@@ -19,6 +19,12 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix incorrect reading of certain older tpr files
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Certain older tpr files could be read incorrectly, usually leading to an exit
+with a memory allocation error.
+
 Fix segmentation fault with gmx lie
 """""""""""""""""""""""""""""""""""
 
