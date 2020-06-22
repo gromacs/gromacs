@@ -229,13 +229,7 @@ struct t_forcerec
     t_forcetable* pairsTable = nullptr; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
-    int  efep          = 0;
-    real sc_alphavdw   = 0;
-    real sc_alphacoul  = 0;
-    int  sc_power      = 0;
-    real sc_r_power    = 0;
-    real sc_sigma6_def = 0;
-    real sc_sigma6_min = 0;
+    int efep = 0;
 
     /* Information about atom properties for the molecule blocks in the system */
     std::vector<cginfo_mb_t> cginfo_mb;

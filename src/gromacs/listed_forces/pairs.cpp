@@ -154,47 +154,44 @@ static real evaluate_single(real        r2,
     return fscal;
 }
 
-/*! \brief Compute the energy and force for a single pair interaction under FEP */
-static real free_energy_evaluate_single(real        r2,
-                                        real        sc_r_power,
-                                        real        alpha_coul,
-                                        real        alpha_vdw,
-                                        real        tabscale,
-                                        const real* vftab,
-                                        real        tableStride,
-                                        real        qqA,
-                                        real        c6A,
-                                        real        c12A,
-                                        real        qqB,
-                                        real        c6B,
-                                        real        c12B,
-                                        const real  LFC[2],
-                                        const real  LFV[2],
-                                        const real  DLF[2],
-                                        const real  lfac_coul[2],
-                                        const real  lfac_vdw[2],
-                                        const real  dlfac_coul[2],
-                                        const real  dlfac_vdw[2],
-                                        real        sigma6_def,
-                                        real        sigma6_min,
-                                        real        sigma2_def,
-                                        real        sigma2_min,
-                                        real*       velectot,
-                                        real*       vvdwtot,
-                                        real*       dvdl)
+static inline real sixthRoot(const real r)
 {
-    real       rp, rpm2, rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VV, FF, fscal;
-    real       qq[2], c6[2], c12[2], sigma6[2], sigma2[2], sigma_pow[2];
+    return gmx::invsqrt(std::cbrt(r));
+}
+
+/*! \brief Compute the energy and force for a single pair interaction under FEP */
+static real free_energy_evaluate_single(real                                           r2,
+                                        const interaction_const_t::SoftCoreParameters& scParams,
+                                        real                                           tabscale,
+                                        const real*                                    vftab,
+                                        real                                           tableStride,
+                                        real                                           qqA,
+                                        real                                           c6A,
+                                        real                                           c12A,
+                                        real                                           qqB,
+                                        real                                           c6B,
+                                        real                                           c12B,
+                                        const real                                     LFC[2],
+                                        const real                                     LFV[2],
+                                        const real                                     DLF[2],
+                                        const real                                     lfac_coul[2],
+                                        const real                                     lfac_vdw[2],
+                                        const real dlfac_coul[2],
+                                        const real dlfac_vdw[2],
+                                        real*      velectot,
+                                        real*      vvdwtot,
+                                        real*      dvdl)
+{
+    real       rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VV, FF, fscal;
+    real       qq[2], c6[2], c12[2], sigma6[2], sigma_pow[2];
     real       alpha_coul_eff, alpha_vdw_eff, dvdl_coul, dvdl_vdw;
     real       rpinv, r_coul, r_vdw, velecsum, vvdwsum;
     real       fscal_vdw[2], fscal_elec[2];
     real       velec[2], vvdw[2];
     int        i, ntab;
-    const real half     = 0.5;
-    const real minusOne = -1.0;
-    const real one      = 1.0;
-    const real two      = 2.0;
-    const real six      = 6.0;
+    const real half = 0.5_real;
+    const real one  = 1.0_real;
+    const real two  = 2.0_real;
 
     qq[0]  = qqA;
     qq[1]  = qqB;
@@ -203,16 +200,8 @@ static real free_energy_evaluate_single(real        r2,
     c12[0] = c12A;
     c12[1] = c12B;
 
-    if (sc_r_power == six)
-    {
-        rpm2 = r2 * r2;   /* r4 */
-        rp   = rpm2 * r2; /* r6 */
-    }
-    else
-    {
-        rp = std::pow(r2, half * sc_r_power); /* not currently supported as input, but can handle it */
-        rpm2 = rp / r2;
-    }
+    const real rpm2 = r2 * r2;   /* r4 */
+    const real rp   = rpm2 * r2; /* r6 */
 
     /* Loop over state A(0) and B(1) */
     for (i = 0; i < 2; i++)
@@ -223,28 +212,16 @@ static real free_energy_evaluate_single(real        r2,
              * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
              */
             sigma6[i] = half * c12[i] / c6[i];
-            sigma2[i] = std::cbrt(half * c12[i] / c6[i]);
-            /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
-               what data to store externally.  Can't be fixed without larger scale changes, so not 5.0 */
-            if (sigma6[i] < sigma6_min) /* for disappearing coul and vdw with soft core at the same time */
+            if (sigma6[i] < scParams.sigma6Minimum) /* for disappearing coul and vdw with soft core at the same time */
             {
-                sigma6[i] = sigma6_min;
-                sigma2[i] = sigma2_min;
+                sigma6[i] = scParams.sigma6Minimum;
             }
         }
         else
         {
-            sigma6[i] = sigma6_def;
-            sigma2[i] = sigma2_def;
+            sigma6[i] = scParams.sigma6WithInvalidSigma;
         }
-        if (sc_r_power == six)
-        {
-            sigma_pow[i] = sigma6[i];
-        }
-        else
-        { /* not really supported as input, but in here for testing the general case*/
-            sigma_pow[i] = std::pow(sigma2[i], sc_r_power / 2);
-        }
+        sigma_pow[i] = sigma6[i];
     }
 
     /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
@@ -255,8 +232,8 @@ static real free_energy_evaluate_single(real        r2,
     }
     else
     {
-        alpha_vdw_eff  = alpha_vdw;
-        alpha_coul_eff = alpha_coul;
+        alpha_vdw_eff  = scParams.alphaVdw;
+        alpha_coul_eff = scParams.alphaCoulomb;
     }
 
     /* Loop over A and B states again */
@@ -272,7 +249,7 @@ static real free_energy_evaluate_single(real        r2,
         {
             /* Coulomb */
             rpinv  = one / (alpha_coul_eff * lfac_coul[i] * sigma_pow[i] + rp);
-            r_coul = std::pow(rpinv, minusOne / sc_r_power);
+            r_coul = sixthRoot(rpinv);
 
             /* Electrostatics table lookup data */
             rtab = r_coul * tabscale;
@@ -293,7 +270,7 @@ static real free_energy_evaluate_single(real        r2,
 
             /* Vdw */
             rpinv = one / (alpha_vdw_eff * lfac_vdw[i] * sigma_pow[i] + rp);
-            r_vdw = std::pow(rpinv, minusOne / sc_r_power);
+            r_vdw = sixthRoot(rpinv);
             /* Vdw table lookup data */
             rtab = r_vdw * tabscale;
             ntab = static_cast<int>(rtab);
@@ -380,9 +357,10 @@ static real do_pairs_general(int                 ftype,
     real*           energygrp_vdw;
     static gmx_bool warned_rlimit = FALSE;
     /* Free energy stuff */
-    gmx_bool bFreeEnergy;
-    real     LFC[2], LFV[2], DLF[2], lfac_coul[2], lfac_vdw[2], dlfac_coul[2], dlfac_vdw[2];
-    real     qqB, c6B, c12B, sigma2_def, sigma2_min;
+    gmx_bool   bFreeEnergy;
+    real       LFC[2], LFV[2], DLF[2], lfac_coul[2], lfac_vdw[2], dlfac_coul[2], dlfac_vdw[2];
+    real       qqB, c6B, c12B;
+    const real oneSixth = 1.0_real / 6.0_real;
 
     switch (ftype)
     {
@@ -413,23 +391,18 @@ static real do_pairs_general(int                 ftype,
         DLF[0] = -1;
         DLF[1] = 1;
 
-        /* precalculate */
-        sigma2_def = std::cbrt(fr->sc_sigma6_def);
-        sigma2_min = std::cbrt(fr->sc_sigma6_min);
+        GMX_ASSERT(fr->ic->softCoreParameters, "We need soft-core parameters");
+        const auto& scParams = *fr->ic->softCoreParameters;
 
         for (i = 0; i < 2; i++)
         {
-            lfac_coul[i] = (fr->sc_power == 2 ? (1 - LFC[i]) * (1 - LFC[i]) : (1 - LFC[i]));
-            dlfac_coul[i] =
-                    DLF[i] * fr->sc_power / fr->sc_r_power * (fr->sc_power == 2 ? (1 - LFC[i]) : 1);
-            lfac_vdw[i] = (fr->sc_power == 2 ? (1 - LFV[i]) * (1 - LFV[i]) : (1 - LFV[i]));
-            dlfac_vdw[i] =
-                    DLF[i] * fr->sc_power / fr->sc_r_power * (fr->sc_power == 2 ? (1 - LFV[i]) : 1);
+            lfac_coul[i] = (scParams.lambdaPower == 2 ? (1 - LFC[i]) * (1 - LFC[i]) : (1 - LFC[i]));
+            dlfac_coul[i] = DLF[i] * scParams.lambdaPower * oneSixth
+                            * (scParams.lambdaPower == 2 ? (1 - LFC[i]) : 1);
+            lfac_vdw[i]  = (scParams.lambdaPower == 2 ? (1 - LFV[i]) * (1 - LFV[i]) : (1 - LFV[i]));
+            dlfac_vdw[i] = DLF[i] * scParams.lambdaPower * oneSixth
+                           * (scParams.lambdaPower == 2 ? (1 - LFV[i]) : 1);
         }
-    }
-    else
-    {
-        sigma2_min = sigma2_def = 0;
     }
 
     /* TODO This code depends on the logic in tables.c that constructs
@@ -521,10 +494,9 @@ static real do_pairs_general(int                 ftype,
             c12B = iparams[itype].lj14.c12B * 12.0;
 
             fscal = free_energy_evaluate_single(
-                    r2, fr->sc_r_power, fr->sc_alphacoul, fr->sc_alphavdw, fr->pairsTable->scale,
-                    fr->pairsTable->data.data(), fr->pairsTable->stride, qq, c6, c12, qqB, c6B, c12B,
-                    LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw, fr->sc_sigma6_def,
-                    fr->sc_sigma6_min, sigma2_def, sigma2_min, &velec, &vvdw, dvdl);
+                    r2, *fr->ic->softCoreParameters, fr->pairsTable->scale, fr->pairsTable->data.data(),
+                    fr->pairsTable->stride, qq, c6, c12, qqB, c6B, c12B, LFC, LFV, DLF, lfac_coul,
+                    lfac_vdw, dlfac_coul, dlfac_vdw, &velec, &vvdw, dvdl);
         }
         else
         {

@@ -37,6 +37,7 @@ file(GLOB MDTYPES_SOURCES
     group.cpp
     iforceprovider.cpp
     inputrec.cpp
+    interaction_const.cpp
     md_enums.cpp
     observableshistory.cpp
     state.cpp)

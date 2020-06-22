@@ -937,6 +937,12 @@ static void init_interaction_const(FILE*                 fp,
         fprintf(fp, "\n");
     }
 
+    if (ir->efep != efepNO)
+    {
+        GMX_RELEASE_ASSERT(ir->fepvals, "ir->fepvals should be set wth free-energy");
+        ic->softCoreParameters = std::make_unique<interaction_const_t::SoftCoreParameters>(*ir->fepvals);
+    }
+
     *interaction_const = ic;
 }
 
@@ -1000,33 +1006,7 @@ void init_forcerec(FILE*                            fp,
     fr->fc_stepsize = ir->fc_stepsize;
 
     /* Free energy */
-    fr->efep        = ir->efep;
-    fr->sc_alphavdw = ir->fepvals->sc_alpha;
-    if (ir->fepvals->bScCoul)
-    {
-        fr->sc_alphacoul  = ir->fepvals->sc_alpha;
-        fr->sc_sigma6_min = gmx::power6(ir->fepvals->sc_sigma_min);
-    }
-    else
-    {
-        fr->sc_alphacoul  = 0;
-        fr->sc_sigma6_min = 0; /* only needed when bScCoul is on */
-    }
-    fr->sc_power      = ir->fepvals->sc_power;
-    fr->sc_r_power    = ir->fepvals->sc_r_power;
-    fr->sc_sigma6_def = gmx::power6(ir->fepvals->sc_sigma);
-
-    char* env = getenv("GMX_SCSIGMA_MIN");
-    if (env != nullptr)
-    {
-        double dbl = 0;
-        sscanf(env, "%20lf", &dbl);
-        fr->sc_sigma6_min = gmx::power6(dbl);
-        if (fp)
-        {
-            fprintf(fp, "Setting the minimum soft core sigma to %g nm\n", dbl);
-        }
-    }
+    fr->efep = ir->efep;
 
     fr->bNonbonded = TRUE;
     if (getenv("GMX_NO_NONBONDED") != nullptr)

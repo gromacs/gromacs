@@ -7,3 +7,7 @@ Removed functionality
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+Removed GMX_SCSIGMA_MIN environment variable
+""""""""""""""""""""""""""""""""""""""""""""
+
+This was used to reproduce free-energy soft-core behavior of GROMACS versions before 4.5.

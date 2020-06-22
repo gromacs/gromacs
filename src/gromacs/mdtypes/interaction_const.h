@@ -44,6 +44,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct t_lambda;
+
 /* Used with force switching or a constant potential shift:
  * rsw       = max(r - r_switch, 0)
  * force/p   = r^-(p+1) + c2*rsw^2 + c3*rsw^3
@@ -104,6 +106,28 @@ struct EwaldCorrectionTables
  */
 struct interaction_const_t
 {
+    /* This struct contains the soft-core parameters from t_lambda,
+     * but processed for direct use in the kernels.
+     */
+    struct SoftCoreParameters
+    {
+        // Constructor
+        SoftCoreParameters(const t_lambda& fepvals);
+
+        // Alpha parameter for Van der Waals interactions
+        real alphaVdw;
+        // Alpha parameter for Coulomb interactions
+        real alphaCoulomb;
+        // Exponent for the dependence of the soft-core on lambda
+        int lambdaPower;
+        // Value for sigma^6 for LJ interaction with C6<=0 and/or C12<=0
+        real sigma6WithInvalidSigma;
+        // Minimum value for sigma^6, used when soft-core is applied to Coulomb interactions
+        real sigma6Minimum;
+    };
+
+    // Cut-off scheme, only present for reading and (not) running old tpr files
+    // which still supported the group cutoff-scheme
     int cutoff_scheme = ecutsVERLET;
 
     /* VdW */
@@ -146,6 +170,9 @@ struct interaction_const_t
     std::unique_ptr<EwaldCorrectionTables> coulombEwaldTables;
     // Van der Waals Ewald correction table
     std::unique_ptr<EwaldCorrectionTables> vdwEwaldTables;
+
+    // Free-energy parameters, only present when free-energy calculations are requested
+    std::unique_ptr<SoftCoreParameters> softCoreParameters;
 };
 
 #endif

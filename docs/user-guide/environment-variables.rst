@@ -352,11 +352,6 @@ Performance and Run Control
         require the use of tabulated Coulombic
         and van der Waals interactions.
 
-``GMX_SCSIGMA_MIN``
-        the minimum value for soft-core sigma. **Note** that this value is set
-        using the :mdp:`sc-sigma` keyword in the :ref:`mdp` file, but this environment variable can be used
-        to reproduce pre-4.5 behavior with respect to this parameter.
-
 ``GMX_TPIC_MASSES``
         should contain multiple masses used for test particle insertion into a cavity.
         The center of mass of the last atoms is used for insertion into the cavity.

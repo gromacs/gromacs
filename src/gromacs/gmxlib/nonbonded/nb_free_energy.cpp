@@ -246,11 +246,12 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     const real  lambda_coul   = kernel_data->lambda[efptCOUL];
     const real  lambda_vdw    = kernel_data->lambda[efptVDW];
     real*       dvdl          = kernel_data->dvdl;
-    const real  alpha_coul    = fr->sc_alphacoul;
-    const real  alpha_vdw     = fr->sc_alphavdw;
-    const real  lam_power     = fr->sc_power;
-    const real  sigma6_def    = fr->sc_sigma6_def;
-    const real  sigma6_min    = fr->sc_sigma6_min;
+    const auto& scParams      = *ic->softCoreParameters;
+    const real  alpha_coul    = scParams.alphaCoulomb;
+    const real  alpha_vdw     = scParams.alphaVdw;
+    const real  lam_power     = scParams.lambdaPower;
+    const real  sigma6_def    = scParams.sigma6WithInvalidSigma;
+    const real  sigma6_min    = scParams.sigma6Minimum;
     const bool  doForces      = ((kernel_data->flags & GMX_NONBONDED_DO_FORCE) != 0);
     const bool  doShiftForces = ((kernel_data->flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
     const bool  doPotential   = ((kernel_data->flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
@@ -938,14 +939,14 @@ static KernelFunction dispatchKernelOnScLambdasOrAlphasDifference(const bool scL
     }
 }
 
-static KernelFunction dispatchKernel(const bool        scLambdasOrAlphasDiffer,
-                                     const bool        vdwInteractionTypeIsEwald,
-                                     const bool        elecInteractionTypeIsEwald,
-                                     const bool        vdwModifierIsPotSwitch,
-                                     const bool        useSimd,
-                                     const t_forcerec* fr)
+static KernelFunction dispatchKernel(const bool                 scLambdasOrAlphasDiffer,
+                                     const bool                 vdwInteractionTypeIsEwald,
+                                     const bool                 elecInteractionTypeIsEwald,
+                                     const bool                 vdwModifierIsPotSwitch,
+                                     const bool                 useSimd,
+                                     const interaction_const_t& ic)
 {
-    if (fr->sc_alphacoul == 0 && fr->sc_alphavdw == 0)
+    if (ic.softCoreParameters->alphaCoulomb == 0 && ic.softCoreParameters->alphaVdw == 0)
     {
         return (dispatchKernelOnScLambdasOrAlphasDifference<false>(
                 scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald,
@@ -968,33 +969,33 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
                                nb_kernel_data_t*          kernel_data,
                                t_nrnb*                    nrnb)
 {
-    GMX_ASSERT(EEL_PME_EWALD(fr->ic->eeltype) || fr->ic->eeltype == eelCUT || EEL_RF(fr->ic->eeltype),
+    const interaction_const_t& ic = *fr->ic;
+    GMX_ASSERT(EEL_PME_EWALD(ic.eeltype) || ic.eeltype == eelCUT || EEL_RF(ic.eeltype),
                "Unsupported eeltype with free energy");
+    GMX_ASSERT(ic.softCoreParameters, "We need soft-core parameters");
 
-    const bool vdwInteractionTypeIsEwald  = (EVDW_PME(fr->ic->vdwtype));
-    const bool elecInteractionTypeIsEwald = (EEL_PME_EWALD(fr->ic->eeltype));
-    const bool vdwModifierIsPotSwitch     = (fr->ic->vdw_modifier == eintmodPOTSWITCH);
-    bool       scLambdasOrAlphasDiffer    = true;
-    const bool useSimd                    = fr->use_simd_kernels;
+    const auto& scParams                   = *ic.softCoreParameters;
+    const bool  vdwInteractionTypeIsEwald  = (EVDW_PME(ic.vdwtype));
+    const bool  elecInteractionTypeIsEwald = (EEL_PME_EWALD(ic.eeltype));
+    const bool  vdwModifierIsPotSwitch     = (ic.vdw_modifier == eintmodPOTSWITCH);
+    bool        scLambdasOrAlphasDiffer    = true;
+    const bool  useSimd                    = fr->use_simd_kernels;
 
-    if (fr->sc_alphacoul == 0 && fr->sc_alphavdw == 0)
+    if (scParams.alphaCoulomb == 0 && scParams.alphaVdw == 0)
     {
         scLambdasOrAlphasDiffer = false;
     }
-    else if (fr->sc_r_power == 6.0_real)
+    else
     {
-        if (kernel_data->lambda[efptCOUL] == kernel_data->lambda[efptVDW] && fr->sc_alphacoul == fr->sc_alphavdw)
+        if (kernel_data->lambda[efptCOUL] == kernel_data->lambda[efptVDW]
+            && scParams.alphaCoulomb == scParams.alphaVdw)
         {
             scLambdasOrAlphasDiffer = false;
         }
     }
-    else
-    {
-        GMX_RELEASE_ASSERT(false, "Unsupported soft-core r-power");
-    }
 
     KernelFunction kernelFunc;
     kernelFunc = dispatchKernel(scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald,
-                                elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, useSimd, fr);
+                                elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, useSimd, ic);
     kernelFunc(nlist, xx, ff, fr, mdatoms, kernel_data, nrnb);
 }
