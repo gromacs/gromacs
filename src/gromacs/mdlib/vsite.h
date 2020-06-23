@@ -74,7 +74,7 @@ class RangePartitioning;
  * This is used to avoid loops over all ftypes just to get the vsite entries.
  * (We should replace the fixed ilist array by only the used entries.)
  */
-static constexpr int c_ftypeVsiteStart = F_VSITE2;
+static constexpr int c_ftypeVsiteStart = F_VSITE1;
 //! The start and end value of the vsite indices in the ftype enum
 static constexpr int c_ftypeVsiteEnd = F_VSITEN + 1;
 

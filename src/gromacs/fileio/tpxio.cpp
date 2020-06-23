@@ -131,6 +131,7 @@ enum tpxv
     tpxv_VSite2FD,                  /**< Added 2FD type virtual site */
     tpxv_AddSizeField, /**< Added field with information about the size of the serialized tpr file in bytes, excluding the header */
     tpxv_StoreNonBondedInteractionExclusionGroup, /**< Store the non bonded interaction exclusion group in the topology */
+    tpxv_VSite1,                                  /**< Added 1 type virtual site */
     tpxv_Count                                    /**< the total number of tpxv versions */
 };
 
@@ -205,10 +206,13 @@ static const t_ftupd ftupd[] = {
     { 72, F_GBPOL_NOLONGERUSED },
     { 72, F_NPSOLVATION_NOLONGERUSED },
     { 93, F_LJ_RECIP },
+    { 76, F_ANHARM_POL },
     { 90, F_FBPOSRES },
+    { tpxv_VSite1, F_VSITE1 },
+    { tpxv_VSite2FD, F_VSITE2FD },
+    { tpxv_GenericInternalParameters, F_DENSITYFITTING },
     { 69, F_VTEMP_NOLONGERUSED },
     { 66, F_PDISPCORR },
-    { 76, F_ANHARM_POL },
     { 79, F_DVDL_COUL },
     {
             79,
@@ -220,8 +224,6 @@ static const t_ftupd ftupd[] = {
     },
     { 79, F_DVDL_RESTRAINT },
     { 79, F_DVDL_TEMPERATURE },
-    { tpxv_GenericInternalParameters, F_DENSITYFITTING },
-    { tpxv_VSite2FD, F_VSITE2FD },
 };
 #define NFTUPD asize(ftupd)
 
@@ -1940,6 +1942,7 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             serializer->doReal(&iparams->settle.doh);
             serializer->doReal(&iparams->settle.dhh);
             break;
+        case F_VSITE1: break; // VSite1 has 0 parameters
         case F_VSITE2:
         case F_VSITE2FD: serializer->doReal(&iparams->vsite.a); break;
         case F_VSITE3:

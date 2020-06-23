@@ -402,6 +402,7 @@ static int assign_param(t_functype ftype, t_iparams* newparam, gmx::ArrayRef<con
             newparam->settle.doh = old[0];
             newparam->settle.dhh = old[1];
             break;
+        case F_VSITE1:
         case F_VSITE2:
         case F_VSITE2FD:
         case F_VSITE3:

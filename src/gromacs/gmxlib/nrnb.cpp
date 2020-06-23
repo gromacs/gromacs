@@ -175,6 +175,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Shake-Init", 10 },
     { "Constraint-Vir", 24 },
     { "Settle", 370 },
+    { "Virtual Site 1", 1 },
     { "Virtual Site 2", 23 },
     { "Virtual Site 2fd", 63 },
     { "Virtual Site 3", 37 },

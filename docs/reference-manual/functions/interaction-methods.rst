@@ -197,6 +197,20 @@ below. Constructing atoms in virtual sites can be virtual sites
 themselves, but only if they are higher in the list, i.e. virtual sites
 can be constructed from “particles” that are simpler virtual sites.
 
+-  On top of an atom. This allows giving an atom multiple atom types and
+   with that also assigned multiple, different bonded interactions. This
+   can espically be of use in free-energy calculations.
+
+-  The coordinates of the virtual site equal that of the constructing atom:
+
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i
+             :label: eqnvsite1
+
+-  The force is moved to the constructing atom:
+
+   .. math:: \mathbf{F}_i ~=~ \mathbf{F}_{s}
+             :label: eqnvsite1force
+
 -  As a linear combination of two atoms
    (:numref:`Fig. %s <fig-vsites>` 2):
 

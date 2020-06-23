@@ -7,6 +7,12 @@ New and improved features
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+Virtual site with single constructing atom
+""""""""""""""""""""""""""""""""""""""""""
+
+Added a virtual site that is constructed on top if its single constructing
+atom. This can be useful for free-energy calculations.
+
 Lower energy drift due to SETTLE
 """"""""""""""""""""""""""""""""
 

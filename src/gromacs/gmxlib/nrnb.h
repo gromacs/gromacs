@@ -155,6 +155,7 @@ enum
     eNR_SHAKE_RIJ,
     eNR_CONSTR_VIR,
     eNR_SETTLE,
+    eNR_VSITE1,
     eNR_VSITE2,
     eNR_VSITE2FD,
     eNR_VSITE3,

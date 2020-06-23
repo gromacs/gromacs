@@ -334,6 +334,13 @@ static inline real inverseNorm(const rvec x)
 #ifndef DOXYGEN
 /* Vsite construction routines */
 
+static void constr_vsite1(const rvec xi, rvec x)
+{
+    copy_rvec(xi, x);
+
+    /* TOTAL: 0 flops */
+}
+
 static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_pbc* pbc)
 {
     real b = 1 - a;
@@ -675,6 +682,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                 real b1, c1;
                 switch (ftype)
                 {
+                    case F_VSITE1: constr_vsite1(x[ai], x[avsite]); break;
                     case F_VSITE2:
                         aj = ia[3];
                         constr_vsite2(x[ai], x[aj], x[avsite], a1, pbc_null2);
@@ -856,6 +864,14 @@ void constructVirtualSites(ArrayRef<RVec> x, ArrayRef<const t_iparams> ip, Array
 
 #ifndef DOXYGEN
 /* Force spreading routines */
+
+static void spread_vsite1(const t_iatom ia[], ArrayRef<RVec> f)
+{
+    const int av = ia[1];
+    const int ai = ia[2];
+
+    f[av] += f[ai];
+}
 
 template<VirialHandling virialHandling>
 static void spread_vsite2(const t_iatom        ia[],
@@ -1761,6 +1777,7 @@ static void spreadForceForThread(ArrayRef<const RVec>            x,
                 /* Construct the vsite depending on type */
                 switch (ftype)
                 {
+                    case F_VSITE1: spread_vsite1(ia, f); break;
                     case F_VSITE2:
                         spread_vsite2<virialHandling>(ia, a1, x, f, fshift, pbc_null2);
                         break;
@@ -2034,6 +2051,7 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
         dd_move_f_vsites(*domainInfo_.domdec_, f, fshift);
     }
 
+    inc_nrnb(nrnb, eNR_VSITE1, vsite_count(ilists_, F_VSITE1));
     inc_nrnb(nrnb, eNR_VSITE2, vsite_count(ilists_, F_VSITE2));
     inc_nrnb(nrnb, eNR_VSITE2FD, vsite_count(ilists_, F_VSITE2FD));
     inc_nrnb(nrnb, eNR_VSITE3, vsite_count(ilists_, F_VSITE3));
