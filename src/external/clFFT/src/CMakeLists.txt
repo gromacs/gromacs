@@ -18,8 +18,8 @@ endif()
 # Windows doesn't need anything special to load the dynamic libraries
 # that the AMD clFFT implementation uses, but *nix and BSD do.
 if (NOT WIN32)
-    include(CheckCXXSymbolExists)
-    check_cxx_symbol_exists(dlopen dlfcn.h HAVE_DLOPEN)
+    include(gmxTestdlopen)
+    gmx_test_dlopen(HAVE_DLOPEN)
     if (NOT HAVE_DLOPEN)
         message(FATAL_ERROR "Cannot use clFFT for OpenCL support unless dlopen is available")
     endif()

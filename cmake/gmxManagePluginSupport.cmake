@@ -53,9 +53,6 @@ macro(gmx_manage_plugin_support)
         # Plugins are supported natively on Windows, so nothing to check if WIN32 is set
 
         if (NOT WIN32)
-            # TODO Make a proper find_package for dlopen to find
-            # dlfcn.h. The CMake variable CMAKE_DL_LIBS works magically
-            # for the library, however.
             include(gmxTestdlopen)
             gmx_test_dlopen(HAVE_DLOPEN)
 	    if(NOT HAVE_DLOPEN)
