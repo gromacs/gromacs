@@ -50,12 +50,6 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test
         devicetransfers.cu
         typecasts_runner.cu
 
-    CUDA_CPP_SOURCE_FILES
-        device_stream_manager.cpp
-        pinnedmemorychecker.cpp
-        typecasts.cpp
-        typecasts_runner.cpp
-
     OPENCL_CPP_SOURCE_FILES
         devicetransfers_ocl.cpp
 

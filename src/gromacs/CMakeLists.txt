@@ -60,12 +60,6 @@ function (gmx_add_libgromacs_sources)
     _gmx_add_files_to_property(GMX_LIBGROMACS_SOURCES ${ARGN})
 endfunction ()
 
-# TODO Reconsider this, as the CUDA driver API is probably a simpler
-# approach, at least for the build system. See Issue #2530
-function (gmx_compile_cpp_as_cuda)
-    _gmx_add_files_to_property(GMX_LIBGROMACS_GPU_IMPL_SOURCES ${ARGN})
-endfunction ()
-
 # Permit the configuration to disable compiling the many nbnxm kernels
 # and others involved in force calculations. Currently only
 # short-ranged and bonded kernels are disabled this way, but in future
