@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2016,2018, by the GROMACS development team, led by
+# Copyright (c) 2014,2016,2018,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # Custom build type "ASAN", to be used to run the
-# AddressSanatizer memory checker.
+# AddressSanitizer memory checker.
 
 set(_flags "-O1 -g -fsanitize=address -fno-omit-frame-pointer")
 

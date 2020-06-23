@@ -1,0 +1,55 @@
+# Known leaks - leak keywords are the lowest-level function/method of the leak call stack that is not reused by other
+# routines.
+leak:add_to_list
+leak:atoms_to_constraints
+leak:atoms_to_settles
+leak:balance_fep_lists
+leak:cpp_opts
+leak:dd_init_bondeds
+leak:dd_make_local_constraints
+leak:dd_move_f
+leak:dd_partition_system
+leak:diagonalize_orires_tensors
+leak:do_cpte_matrices
+leak:do_edsam
+leak:do_inputrec
+leak:do_single_flood
+leak:get_ir
+leak:get_zone_pulse_cgs
+leak:gmx::DomainDecompositionBuilder::Impl::build
+leak:gmx_check
+leak:gmx_make_edi
+leak:gmx_mtop_ilistloop_init
+leak:gmx_pme_init
+leak:gmx_pme_receive_f
+leak:init_buffer_flags
+leak:init_disres
+leak:init_dfhist_state
+leak:init_df_history
+leak:init_edsam
+leak:init_ekinstate
+leak:init_interaction_const
+leak:init_orires
+leak:init_rot
+leak:init_swapcoords
+leak:make_bondeds_zone
+leak:make_dd_indices
+leak:make_exclusions_zone
+leak:make_fep_list
+leak:make_ljpme_c6grid
+leak:make_pull_groups
+leak:make_reverse_top
+leak:make_rotation_groups
+leak:make_swap_groups
+leak:make_tables
+leak:mdoutf_write_to_trajectory_files
+# Stack trace does not report a function beyond gmx_srenew_impl, so the file is suppressed instead.
+leak:pairlist.cpp
+leak:read_rotparams
+leak:set_ddgrid_parameters
+leak:set_reference_positions
+leak:set_state_entries
+leak:visitOption
+
+# External suppressions
+leak:xdr_string

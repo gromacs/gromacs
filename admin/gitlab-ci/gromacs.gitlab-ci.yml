@@ -578,8 +578,7 @@ gromacs:clang-8-cuda-10.1:release:build:
   retry:
     max: 1
   script:
-    # This should go away once we are able to run ASAN on mdrun
-    - export ASAN_OPTIONS="detect_leaks=0"
+    - export LSAN_OPTIONS="suppressions=$CI_PROJECT_DIR/admin/lsan-suppressions.txt:print_suppressions=0"
     # Needed to run MPI enabled code in the docker images, until we set up different users
     - export OMPI_ALLOW_RUN_AS_ROOT=1
     - export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
