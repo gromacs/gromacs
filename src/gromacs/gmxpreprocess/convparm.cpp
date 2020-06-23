@@ -451,7 +451,6 @@ static int enter_params(gmx_ffparams_t*           ffparams,
                         bool                      bAppend)
 {
     t_iparams newparam;
-    int       type;
     int       rc;
 
     if ((rc = assign_param(ftype, &newparam, forceparams, comb, reppow)) < 0)
@@ -462,21 +461,33 @@ static int enter_params(gmx_ffparams_t*           ffparams,
 
     if (!bAppend)
     {
-        for (type = start; (type < ffparams->numTypes()); type++)
+        if (ftype != F_DISRES)
         {
-            if (ffparams->functype[type] == ftype)
+            for (int type = start; type < ffparams->numTypes(); type++)
             {
-                if (memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam))) == 0)
+                // Note that the first condition is always met by starting the loop at start
+                if (ffparams->functype[type] == ftype
+                    && memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam))) == 0)
                 {
                     return type;
                 }
             }
         }
+        else
+        {
+            // Distance restraints should have unique labels and pairs with the same label
+            // should be consecutive, so we here we only need to check the last type in the list.
+            // This changes the complexity from quadratic to linear in the number of restraints.
+            const int type = ffparams->numTypes() - 1;
+            if (type >= 0 && ffparams->functype[type] == ftype
+                && memcmp(&newparam, &ffparams->iparams[type], static_cast<size_t>(sizeof(newparam))) == 0)
+            {
+                return type;
+            }
+        }
     }
-    else
-    {
-        type = ffparams->numTypes();
-    }
+
+    const int type = ffparams->numTypes();
 
     ffparams->iparams.push_back(newparam);
     ffparams->functype.push_back(ftype);
