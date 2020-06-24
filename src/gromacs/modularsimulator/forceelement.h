@@ -58,7 +58,6 @@ struct gmx_enfrot;
 struct gmx_shellfc_t;
 struct gmx_wallcycle;
 struct pull_t;
-struct t_fcdata;
 struct t_nrnb;
 
 namespace gmx
@@ -98,7 +97,6 @@ public:
                  const MDAtoms*                 mdAtoms,
                  t_nrnb*                        nrnb,
                  t_forcerec*                    fr,
-                 t_fcdata*                      fcd,
                  gmx_wallcycle*                 wcycle,
                  MdrunScheduleWorkload*         runScheduleWork,
                  VirtualSitesHandler*           vsite,
@@ -194,8 +192,6 @@ private:
     ImdSession* imdSession_;
     //! The pull work object.
     pull_t* pull_work_;
-    //! Helper struct for force calculations.
-    t_fcdata* fcd_;
     //! Schedule of work for each MD step for this task.
     MdrunScheduleWorkload* runScheduleWork_;
     //! Handles constraints.

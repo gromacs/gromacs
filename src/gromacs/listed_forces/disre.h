@@ -55,6 +55,8 @@ struct gmx_mtop_t;
 struct gmx_multisim_t;
 class history_t;
 struct t_commrec;
+struct t_disresdata;
+struct t_fcdata;
 struct t_inputrec;
 struct t_pbc;
 class t_state;
@@ -69,7 +71,7 @@ enum class DisResRunMode
 };
 
 /*! \brief
- * Initiates *fcd data.
+ * Initiates *disresdata.
  *
  * Must be called once, nbonds is the number
  * of iatoms in the ilist of the idef struct.
@@ -86,7 +88,7 @@ void init_disres(FILE*                 fplog,
                  NumRanks              numRanks,
                  MPI_Comm              communicator,
                  const gmx_multisim_t* ms,
-                 t_fcdata*             fcd,
+                 t_disresdata*         disresdata,
                  t_state*              state,
                  gmx_bool              bIsREMD);
 
@@ -100,7 +102,7 @@ void calc_disres_R_6(const t_commrec*      cr,
                      const t_iatom*        fa,
                      const rvec*           x,
                      const t_pbc*          pbc,
-                     t_fcdata*             fcd,
+                     t_disresdata*         disresdata,
                      history_t*            hist);
 
 //! Calculates the distance restraint forces, return the potential.
@@ -114,10 +116,10 @@ real ta_disres(int              nfa,
                real             lambda,
                real*            dvdlambda,
                const t_mdatoms* md,
-               t_fcdata*        fcd,
+               t_fcdata*        fcdata,
                int*             global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_disres_R_6.
-void update_disres_history(const t_fcdata* fcd, history_t* hist);
+void update_disres_history(const t_disresdata& disresdata, history_t* hist);
 
 #endif

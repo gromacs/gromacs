@@ -158,7 +158,7 @@ static void check_viol(FILE*                          log,
                        int                            isize,
                        const int                      index[],
                        real                           vvindex[],
-                       t_fcdata*                      fcd)
+                       t_disresdata*                  disresdata)
 {
     int             i, j, nat, n, type, nviol, ndr, label;
     real            rt, mviol, tviol, viol, lam, dvdl, drt;
@@ -201,6 +201,11 @@ static void check_viol(FILE*                          log,
                       i / nat, label, label_old, label_old + 1);
         }
     }
+
+    // Set up t_fcdata, only needed for calling ta_disres()
+    t_fcdata fcd;
+    fcd.disres = disresdata;
+
     // Get offset for label index
     label_old = forceparams[forceatoms[0]].disres.label;
     for (i = 0; (i < disres.size());)
@@ -218,25 +223,25 @@ static void check_viol(FILE*                          log,
         } while (((i + n) < disres.size())
                  && (forceparams[forceatoms[i + n]].disres.label == label + label_old));
 
-        calc_disres_R_6(nullptr, nullptr, n, &forceatoms[i], x, pbc, fcd, nullptr);
+        calc_disres_R_6(nullptr, nullptr, n, &forceatoms[i], x, pbc, disresdata, nullptr);
 
-        if (fcd->disres.Rt_6[label] <= 0)
+        if (disresdata->Rt_6[label] <= 0)
         {
-            gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, fcd->disres.Rt_6[label]);
+            gmx_fatal(FARGS, "ndr = %d, rt_6 = %f", ndr, disresdata->Rt_6[label]);
         }
 
-        rt = gmx::invsixthroot(fcd->disres.Rt_6[label]);
+        rt = gmx::invsixthroot(disresdata->Rt_6[label]);
         dr[clust_id].aver1[ndr] += rt;
         dr[clust_id].aver2[ndr] += gmx::square(rt);
         drt = 1.0 / gmx::power3(rt);
         dr[clust_id].aver_3[ndr] += drt;
-        dr[clust_id].aver_6[ndr] += fcd->disres.Rt_6[label];
+        dr[clust_id].aver_6[ndr] += disresdata->Rt_6[label];
 
         snew(fshift, SHIFTS);
         ta_disres(n, &forceatoms[i], forceparams.data(), x, f, fshift, pbc, lam, &dvdl, nullptr,
-                  fcd, nullptr);
+                  &fcd, nullptr);
         sfree(fshift);
-        viol = fcd->disres.sumviol;
+        viol = disresdata->sumviol;
 
         if (viol > 0)
         {
@@ -254,7 +259,7 @@ static void check_viol(FILE*                          log,
             {
                 if (index[j] == forceparams[type].disres.label)
                 {
-                    vvindex[j] = gmx::invsixthroot(fcd->disres.Rt_6[label]);
+                    vvindex[j] = gmx::invsixthroot(disresdata->Rt_6[label]);
                 }
             }
         }
@@ -699,7 +704,6 @@ int gmx_disre(int argc, char* argv[])
     };
 
     FILE *       out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;
-    t_fcdata     fcd;
     int          i, j, kkk;
     t_trxstatus* status;
     real         t;
@@ -771,6 +775,7 @@ int gmx_disre(int argc, char* argv[])
 
     gmx_localtop_t top(topInfo.mtop()->ffparams);
     gmx_mtop_generate_local_top(*topInfo.mtop(), &top, ir->efep != efepNO);
+    const InteractionDefinitions& idef = top.idef;
 
     pbc_null = nullptr;
     if (ir->pbcType != PbcType::No)
@@ -800,20 +805,21 @@ int gmx_disre(int argc, char* argv[])
     }
 
     ir->dr_tau = 0.0;
+    t_disresdata disresdata;
     init_disres(fplog, topInfo.mtop(), ir, DisResRunMode::AnalysisTool, DDRole::Master,
-                NumRanks::Single, MPI_COMM_NULL, nullptr, &fcd, nullptr, FALSE);
+                NumRanks::Single, MPI_COMM_NULL, nullptr, &disresdata, nullptr, FALSE);
 
     int natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5 * natoms);
 
-    init_dr_res(&dr, fcd.disres.nres);
+    init_dr_res(&dr, disresdata.nres);
     if (opt2bSet("-c", NFILE, fnm))
     {
         clust = cluster_index(fplog, opt2fn("-c", NFILE, fnm));
         snew(dr_clust, clust->clust->nr + 1);
         for (i = 0; (i <= clust->clust->nr); i++)
         {
-            init_dr_res(&dr_clust[i], fcd.disres.nres);
+            init_dr_res(&dr_clust[i], disresdata.nres);
         }
     }
     else
@@ -829,7 +835,7 @@ int gmx_disre(int argc, char* argv[])
     update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->init_lambda);
     if (ir->pbcType != PbcType::No)
     {
-        gpbc = gmx_rmpbc_init(top.idef, ir->pbcType, natoms);
+        gpbc = gmx_rmpbc_init(idef, ir->pbcType, natoms);
     }
 
     j = 0;
@@ -858,13 +864,13 @@ int gmx_disre(int argc, char* argv[])
             }
             my_clust = clust->inv_clust[j];
             range_check(my_clust, 0, clust->clust->nr);
-            check_viol(fplog, top.idef.il[F_DISRES], top.idef.iparams, x, f, pbc_null, dr_clust,
-                       my_clust, isize, index, vvindex, &fcd);
+            check_viol(fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, dr_clust, my_clust,
+                       isize, index, vvindex, &disresdata);
         }
         else
         {
-            check_viol(fplog, top.idef.il[F_DISRES], top.idef.iparams, x, f, pbc_null, &dr, 0,
-                       isize, index, vvindex, &fcd);
+            check_viol(fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, &dr, 0, isize, index,
+                       vvindex, &disresdata);
         }
         if (bPDB)
         {
@@ -907,19 +913,19 @@ int gmx_disre(int argc, char* argv[])
 
     if (clust)
     {
-        dump_clust_stats(fplog, fcd.disres, top.idef.il[F_DISRES], top.idef.iparams, clust->clust,
-                         dr_clust, clust->grpname, isize, index);
+        dump_clust_stats(fplog, disresdata, idef.il[F_DISRES], idef.iparams, clust->clust, dr_clust,
+                         clust->grpname, isize, index);
     }
     else
     {
-        dump_stats(fplog, j, fcd.disres, top.idef.il[F_DISRES], top.idef.iparams, &dr, isize, index,
+        dump_stats(fplog, j, disresdata, idef.il[F_DISRES], idef.iparams, &dr, isize, index,
                    bPDB ? atoms.get() : nullptr);
         if (bPDB)
         {
             write_sto_conf(opt2fn("-q", NFILE, fnm), "Coloured by average violation in Angstrom",
                            atoms.get(), xav, nullptr, ir->pbcType, box);
         }
-        dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres, j, top.idef,
+        dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, disresdata.nres, j, idef,
                           topInfo.mtop(), max_dr, nlevels, bThird);
         xvgrclose(out);
         xvgrclose(aver);

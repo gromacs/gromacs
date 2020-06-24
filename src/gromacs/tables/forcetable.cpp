@@ -1396,8 +1396,8 @@ bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle)
     }
     tab.n     = td.nx;
     tab.scale = td.tabscale;
-    snew(tab.data, tab.n * stride);
-    copy2table(tab.n, 0, stride, td.x, td.v, td.f, 1.0, tab.data);
+    tab.data.resize(tab.n * stride);
+    copy2table(tab.n, 0, stride, td.x, td.v, td.f, 1.0, tab.data.data());
     done_tabledata(&td);
 
     return tab;

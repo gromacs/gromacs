@@ -38,6 +38,8 @@
 #ifndef GMX_MDTYPES_FCDATA_H
 #define GMX_MDTYPES_FCDATA_H
 
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -112,12 +114,13 @@ typedef struct t_oriresdata
     double** v;
 } t_oriresdata;
 
-typedef struct bondedtable_t
+/* Cubic spline table for tabulated bonded interactions */
+struct bondedtable_t
 {
-    int   n;     /* n+1 is the number of points */
-    real  scale; /* distance between two points */
-    real* data;  /* the actual table data, per point there are 4 numbers */
-} bondedtable_t;
+    int               n;     /* n+1 is the number of points */
+    real              scale; /* distance between two points */
+    std::vector<real> data;  /* the actual table data, per point there are 4 numbers */
+};
 
 /*
  * Data struct used in the force calculation routines
@@ -126,14 +129,15 @@ typedef struct bondedtable_t
  * (for instance for time averaging in distance retraints)
  * or for storing output, since force routines only return the potential.
  */
-typedef struct t_fcdata
+struct t_fcdata
 {
-    bondedtable_t* bondtab;
-    bondedtable_t* angletab;
-    bondedtable_t* dihtab;
+    std::vector<bondedtable_t> bondtab;
+    std::vector<bondedtable_t> angletab;
+    std::vector<bondedtable_t> dihtab;
 
-    t_disresdata disres;
-    t_oriresdata orires;
-} t_fcdata;
+    // TODO: Convert to C++ and unique_ptr (currently this data is not freed)
+    t_disresdata* disres = nullptr;
+    t_oriresdata* orires = nullptr;
+};
 
 #endif

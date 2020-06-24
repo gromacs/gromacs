@@ -82,6 +82,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/listed_forces/gpubonded.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -704,7 +705,6 @@ int Mdrunner::mdrunner()
 {
     matrix                    box;
     t_forcerec*               fr               = nullptr;
-    t_fcdata*                 fcd              = nullptr;
     real                      ewaldcoeff_q     = 0;
     real                      ewaldcoeff_lj    = 0;
     int                       nChargePerturbed = -1, nTypePerturbed = 0;
@@ -1034,14 +1034,17 @@ int Mdrunner::mdrunner()
      * So the PME-only nodes (if present) will also initialize
      * the distance restraints.
      */
-    snew(fcd, 1);
 
     /* This needs to be called before read_checkpoint to extend the state */
+    t_disresdata* disresdata;
+    snew(disresdata, 1);
     init_disres(fplog, &mtop, inputrec, DisResRunMode::MDRun, MASTER(cr) ? DDRole::Master : DDRole::Agent,
-                PAR(cr) ? NumRanks::Multiple : NumRanks::Single, cr->mpi_comm_mysim, ms, fcd,
+                PAR(cr) ? NumRanks::Multiple : NumRanks::Single, cr->mpi_comm_mysim, ms, disresdata,
                 globalState.get(), replExParams.exchangeInterval > 0);
 
-    init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), &(fcd->orires));
+    t_oriresdata* oriresdata;
+    snew(oriresdata, 1);
+    init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), oriresdata);
 
     auto deform = prepareBoxDeformation(globalState->box, MASTER(cr) ? DDRole::Master : DDRole::Agent,
                                         PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
@@ -1364,10 +1367,13 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = new t_forcerec;
         fr->forceProviders = mdModules_->initForceProviders();
-        init_forcerec(fplog, mdlog, fr, fcd, inputrec, &mtop, cr, box,
+        init_forcerec(fplog, mdlog, fr, inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames.size(), filenames.data()),
                       opt2fn("-tablep", filenames.size(), filenames.data()),
                       opt2fns("-tableb", filenames.size(), filenames.data()), pforce);
+        // Dirty hack, for fixing disres and orires should be made mdmodules
+        fr->listedForces->fcdata().disres = disresdata;
+        fr->listedForces->fcdata().orires = oriresdata;
 
         // Save a handle to device stream manager to use elsewhere in the code
         // TODO: Forcerec is not a correct place to store it.
@@ -1640,7 +1646,7 @@ int Mdrunner::mdrunner()
                 filenames.data(), oenv, mdrunOptions, startingBehavior, vsite.get(), constr.get(),
                 enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr, deform.get(),
                 mdModules_->outputProvider(), mdModules_->notifier(), inputrec, imdSession.get(),
-                pull_work, swap, &mtop, fcd, globalState.get(), &observablesHistory, mdAtoms.get(),
+                pull_work, swap, &mtop, globalState.get(), &observablesHistory, mdAtoms.get(),
                 &nrnb, wcycle, fr, &enerd, &ekind, &runScheduleWork, replExParams, membed,
                 walltime_accounting, std::move(stopHandlerBuilder_), doRerun);
         simulator->run();
@@ -1696,6 +1702,9 @@ int Mdrunner::mdrunner()
     /* Free pinned buffers in *fr */
     delete fr;
     fr = nullptr;
+    // TODO convert to C++ so we can get rid of these frees
+    sfree(disresdata);
+    sfree(oriresdata);
 
     if (hwinfo->gpu_info.n_dev > 0)
     {
@@ -1725,7 +1734,6 @@ int Mdrunner::mdrunner()
     }
 
     free_gpu(deviceInfo);
-    sfree(fcd);
 
     if (doMembed)
     {

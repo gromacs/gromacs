@@ -61,7 +61,6 @@ struct ObservablesHistory;
 struct pull_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
-struct t_fcdata;
 struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;

@@ -70,7 +70,7 @@
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/imd/imd.h"
-#include "gromacs/listed_forces/manage_threading.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -258,13 +258,15 @@ void gmx::LegacySimulator::do_md()
     const bool doSimulatedAnnealing = initSimulatedAnnealing(ir, &upd);
     const bool useReplicaExchange   = (replExParams.exchangeInterval > 0);
 
+    const t_fcdata& fcdata = fr->listedForces->fcdata();
+
     bool simulationsShareState = false;
     int  nstSignalComm         = nstglobalcomm;
     {
         // TODO This implementation of ensemble orientation restraints is nasty because
         // a user can't just do multi-sim with single-sim orientation restraints.
         bool usingEnsembleRestraints =
-                (fcd->disres.nsystems > 1) || ((ms != nullptr) && (fcd->orires.nr != 0));
+                (fcdata.disres->nsystems > 1) || ((ms != nullptr) && (fcdata.orires->nr != 0));
         bool awhUsesMultiSim = (ir->bDoAwh && ir->awhParams->shareBiasMultisim && (ms != nullptr));
 
         // Replica exchange, ensemble restraints and AWH need all
@@ -380,7 +382,7 @@ void gmx::LegacySimulator::do_md()
                            "Essential dynamics is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!ir->bPull || !pull_have_constraint(ir->pull),
                            "Constraints pulling is not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(fcd->orires.nr == 0,
+        GMX_RELEASE_ASSERT(fcdata.orires->nr == 0,
                            "Orientation restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
                 ir->efep == efepNO
@@ -944,7 +946,7 @@ void gmx::LegacySimulator::do_md()
         {
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, enforcedRotation, step, ir,
-                                imdSession, pull_work, bNS, force_flags, &top, constr, enerd, fcd,
+                                imdSession, pull_work, bNS, force_flags, &top, constr, enerd,
                                 state->natoms, state->x.arrayRefWithPadding(),
                                 state->v.arrayRefWithPadding(), state->box, state->lambda, &state->hist,
                                 f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, shellfc,
@@ -972,7 +974,7 @@ void gmx::LegacySimulator::do_md()
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation, imdSession, pull_work, step,
                      nrnb, wcycle, &top, state->box, state->x.arrayRefWithPadding(), &state->hist,
-                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd, state->lambda, fr,
+                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, state->lambda, fr,
                      runScheduleWork, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags, ddBalanceRegionHandler);
         }
@@ -1006,7 +1008,7 @@ void gmx::LegacySimulator::do_md()
                                trotter_seq, ettTSEQ1);
             }
 
-            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcd, ekind, M,
+            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcdata, ekind, M,
                               etrtVELOCITY1, cr, constr != nullptr);
 
             wallcycle_stop(wcycle, ewcUPDATE);
@@ -1256,7 +1258,7 @@ void gmx::LegacySimulator::do_md()
         if (EI_VV(ir->eI))
         {
             /* velocity half-step update */
-            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcd, ekind, M,
+            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcdata, ekind, M,
                               etrtVELOCITY2, cr, constr != nullptr);
         }
 
@@ -1322,7 +1324,7 @@ void gmx::LegacySimulator::do_md()
         }
         else
         {
-            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcd, ekind, M,
+            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcdata, ekind, M,
                               etrtPOSITION, cr, constr != nullptr);
 
             wallcycle_stop(wcycle, ewcUPDATE);
@@ -1354,7 +1356,7 @@ void gmx::LegacySimulator::do_md()
             /* now we know the scaling, we can compute the positions again */
             std::copy(cbuf.begin(), cbuf.end(), state->x.begin());
 
-            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcd, ekind, M,
+            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcdata, ekind, M,
                               etrtPOSITION, cr, constr != nullptr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1555,7 +1557,8 @@ void gmx::LegacySimulator::do_md()
             if (do_log || do_ene || do_dr || do_or)
             {
                 energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
-                                                   do_log ? fplog : nullptr, step, t, fcd, awh.get());
+                                                   do_log ? fplog : nullptr, step, t,
+                                                   &fr->listedForces->fcdata(), awh.get());
             }
 
             if (ir->bPull)

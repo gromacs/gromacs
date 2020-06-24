@@ -3542,14 +3542,14 @@ real bonded_tab(const char*          type,
                 real*                V,
                 real*                F)
 {
-    real k, tabscale, *VFtab, rt, eps, eps2, Yt, Ft, Geps, Heps2, Fp, VV, FF;
+    real k, tabscale, rt, eps, eps2, Yt, Ft, Geps, Heps2, Fp, VV, FF;
     int  n0, nnn;
     real dvdlambda;
 
     k = (1.0 - lambda) * kA + lambda * kB;
 
-    tabscale = table->scale;
-    VFtab    = table->data;
+    tabscale          = table->scale;
+    const real* VFtab = table->data.data();
 
     rt = r * tabscale;
     n0 = static_cast<int>(rt);

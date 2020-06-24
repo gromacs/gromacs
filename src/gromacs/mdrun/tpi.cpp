@@ -754,7 +754,7 @@ void LegacySimulator::do_tpi()
             std::feholdexcept(&floatingPointEnvironment);
             do_force(fplog, cr, ms, inputrec, nullptr, nullptr, imdSession, pull_work, step, nrnb,
                      wcycle, &top, state_global->box, state_global->x.arrayRefWithPadding(),
-                     &state_global->hist, f.arrayRefWithPadding(), force_vir, mdatoms, enerd, fcd,
+                     &state_global->hist, f.arrayRefWithPadding(), force_vir, mdatoms, enerd,
                      state_global->lambda, fr, runScheduleWork, nullptr, mu_tot, t, nullptr,
                      GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY | (bStateChanged ? GMX_FORCE_STATECHANGED : 0),
                      DDBalanceRegionHandler(nullptr));

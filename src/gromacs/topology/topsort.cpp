@@ -187,6 +187,8 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real*
         qB = qA;
     }
 
+    bool havePerturbedInteractions = false;
+
     iabuf_nalloc = 0;
     iabuf        = nullptr;
 
@@ -215,6 +217,8 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real*
                     {
                         iabuf[ib++] = iatoms[i++];
                     }
+
+                    havePerturbedInteractions = true;
                 }
                 else
                 {
@@ -245,5 +249,5 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real*
 
     sfree(iabuf);
 
-    idef->ilsort = ilsortFE_SORTED;
+    idef->ilsort = (havePerturbedInteractions ? ilsortFE_SORTED : ilsortNO_FE);
 }

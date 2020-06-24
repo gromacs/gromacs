@@ -56,6 +56,8 @@
 #include "pmeloadbalancehelper.h"
 #include "topologyholder.h"
 
+struct t_fcdata;
+
 namespace gmx
 {
 class DomDecHelper;

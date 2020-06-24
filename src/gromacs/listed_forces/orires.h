@@ -55,7 +55,6 @@ class history_t;
 struct t_inputrec;
 struct t_pbc;
 struct t_commrec;
-struct t_fcdata;
 struct t_oriresdata;
 class t_state;
 
@@ -94,7 +93,7 @@ real calc_orires_dev(const gmx_multisim_t*          ms,
                      gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
                      const rvec                     x[],
                      const t_pbc*                   pbc,
-                     t_fcdata*                      fcd,
+                     t_oriresdata*                  oriresdata,
                      history_t*                     hist);
 
 /*! \brief
@@ -123,6 +122,6 @@ real orires(int              nfa,
             int*             global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_orires_dev.
-void update_orires_history(const t_fcdata* fcd, history_t* hist);
+void update_orires_history(const t_oriresdata& oriresdata, history_t* hist);
 
 #endif

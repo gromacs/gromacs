@@ -35,11 +35,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief Declares functions for managing threading of listed forces
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \inlibraryapi
  * \ingroup module_listed_forces
  */
 #ifndef GMX_LISTED_FORCES_MANAGE_THREADING_H
@@ -58,20 +57,8 @@ class InteractionDefinitions;
  * i.e. at start-up without domain decomposition and at DD.
  */
 void setup_bonded_threading(bonded_threading_t*           bt,
-                            int                           numAtoms,
-                            bool                          useGpuForBondes,
+                            int                           numAtomsForce,
+                            bool                          useGpuForBondeds,
                             const InteractionDefinitions& idef);
-
-//! Destructor.
-void tear_down_bonded_threading(bonded_threading_t* bt);
-
-/*! \brief Initialize the bonded threading data structures
- *
- * Allocates and initializes a bonded threading data structure.
- * A pointer to this struct is returned as \p *bb_ptr.
- *
- * \todo Avoid explicit pointers by using Impl
- */
-bonded_threading_t* init_bonded_threading(FILE* fplog, int nenergrp);
 
 #endif

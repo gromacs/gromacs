@@ -107,7 +107,7 @@ public:
      * \param[in]  md               MD atoms data.
      * \param[in]  state            System state object.
      * \param[in]  f                Buffer with atomic forces for home particles.
-     * \param[in]  fcd              Force calculation data to update distance and orientation restraints.
+     * \param[in]  fcdata           Force calculation data to update distance and orientation restraints.
      * \param[in]  ekind            Kinetic energy data (for temperature coupling, energy groups, etc.).
      * \param[in]  M                Parrinello-Rahman velocity scaling matrix.
      * \param[in]  updatePart       What should be updated, coordinates or velocities. This enum only used in VV integrator.
@@ -119,7 +119,7 @@ public:
                        const t_mdatoms*                                 md,
                        t_state*                                         state,
                        const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                       const t_fcdata*                                  fcd,
+                       const t_fcdata&                                  fcdata,
                        const gmx_ekindata_t*                            ekind,
                        const matrix                                     M,
                        int                                              updatePart,

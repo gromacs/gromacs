@@ -54,7 +54,6 @@ struct gmx_mtop_t;
 class history_t;
 struct pull_t;
 struct t_forcerec;
-struct t_fcdata;
 struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
@@ -96,7 +95,6 @@ void relax_shell_flexcon(FILE*                               log,
                          const gmx_localtop_t*               top,
                          gmx::Constraints*                   constr,
                          gmx_enerdata_t*                     enerd,
-                         t_fcdata*                           fcd,
                          int                                 natoms,
                          gmx::ArrayRefWithPadding<gmx::RVec> x,
                          gmx::ArrayRefWithPadding<gmx::RVec> v,

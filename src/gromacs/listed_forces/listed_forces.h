@@ -49,6 +49,7 @@
      and reduction of output data across threads.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Berk Hess <hess@kth.se>
  *
  */
 /*! \libinternal \file
@@ -60,6 +61,7 @@
  * should call functions declared here.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Berk Hess <hess@kth.se>
  *
  * \inlibraryapi
  * \ingroup module_listed_forces
@@ -67,12 +69,19 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/classhelpers.h"
 
+struct bonded_threading_t;
 struct gmx_enerdata_t;
+struct gmx_ffparams_t;
 struct gmx_grppairener_t;
+struct gmx_localtop_t;
 struct gmx_multisim_t;
 class history_t;
 class InteractionDefinitions;
@@ -109,43 +118,87 @@ using BondedFunction = real (*)(int              nbonds,
 //! Getter for finding a callable CPU function to compute an \c ftype interaction.
 BondedFunction bondedFunction(int ftype);
 
-/*! \brief Do all aspects of energy and force calculations for mdrun
- * on the set of listed interactions
- *
- * xWholeMolecules only needs to contain whole molecules when orientation
- * restraints need to be computed and can be empty otherwise.
+/*! \libinternal
+ * \brief Class for calculating listed interactions, uses OpenMP parallelization
  */
-void do_force_listed(struct gmx_wallcycle*          wcycle,
-                     const matrix                   box,
-                     const t_lambda*                fepvals,
-                     const t_commrec*               cr,
-                     const gmx_multisim_t*          ms,
-                     const InteractionDefinitions&  idef,
-                     const rvec                     x[],
-                     gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
-                     history_t*                     hist,
-                     gmx::ForceOutputs*             forceOutputs,
-                     const t_forcerec*              fr,
-                     const struct t_pbc*            pbc,
-                     gmx_enerdata_t*                enerd,
-                     t_nrnb*                        nrnb,
-                     const real*                    lambda,
-                     const t_mdatoms*               md,
-                     struct t_fcdata*               fcd,
-                     int*                           global_atom_index,
-                     const gmx::StepWorkload&       stepWork);
+class ListedForces
+{
+public:
+    /*! \brief Constructor
+     *
+     * \param[in] numEnergyGroups  The number of energy groups, used for storage of pair energies
+     * \param[in] numThreads       The number of threads used for computed listed interactions
+     * \param[in] fplog            Log file for printing env.var. override, can be nullptr
+     */
+    ListedForces(int numEnergyGroups, int numThreads, FILE* fplog);
 
-/*! \brief Returns true if there are position, distance or orientation restraints. */
-bool haveRestraints(const InteractionDefinitions& idef, const t_fcdata& fcd);
+    //! Destructor which is actually default but in the source file to hide implementation classes
+    ~ListedForces();
 
-/*! \brief Returns true if there are CPU (i.e. not GPU-offloaded) bonded interactions to compute. */
-bool haveCpuBondeds(const t_forcerec& fr);
+    /*! \brief Copy the listed interactions from \p idef and set up the thread parallelization
+     *
+     * \param[in] idef           The idef with all listed interactions to be computed on this rank
+     * \param[in] numAtomsForce  Force are, potentially, computed for atoms 0 to \p numAtomsForce
+     * \param[in] useGpu         Whether a GPU is used to compute (part of) the listed interactions
+     */
+    void setup(const InteractionDefinitions& idef, int numAtomsForce, bool useGpu);
 
-/*! \brief Returns true if there are listed interactions to compute.
- *
- * NOTE: the current implementation returns true if there are position restraints
- * or any bonded interactions computed on the CPU.
- */
-bool haveCpuListedForces(const t_forcerec& fr, const InteractionDefinitions& idef, const t_fcdata& fcd);
+    /*! \brief Do all aspects of energy and force calculations for mdrun
+     * on the set of listed interactions
+     *
+     * xWholeMolecules only needs to contain whole molecules when orientation
+     * restraints need to be computed and can be empty otherwise.
+     */
+    void calculate(struct gmx_wallcycle*          wcycle,
+                   const matrix                   box,
+                   const t_lambda*                fepvals,
+                   const t_commrec*               cr,
+                   const gmx_multisim_t*          ms,
+                   const rvec                     x[],
+                   gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
+                   history_t*                     hist,
+                   gmx::ForceOutputs*             forceOutputs,
+                   const t_forcerec*              fr,
+                   const struct t_pbc*            pbc,
+                   gmx_enerdata_t*                enerd,
+                   t_nrnb*                        nrnb,
+                   const real*                    lambda,
+                   const t_mdatoms*               md,
+                   int*                           global_atom_index,
+                   const gmx::StepWorkload&       stepWork);
+
+    //! Returns whether bonded interactions are assigned to the CPU
+    bool haveCpuBondeds() const;
+
+    /*! \brief Returns whether listed forces are computed on the CPU
+     *
+     * NOTE: the current implementation returns true if there are position restraints
+     * or any bonded interactions computed on the CPU.
+     */
+    bool haveCpuListedForces() const;
+
+    //! Returns true if there are position, distance or orientation restraints
+    bool haveRestraints() const;
+
+    //! Returns a reference to the force calculation data
+    const t_fcdata& fcdata() const { return *fcdata_; }
+
+    //! Returns a reference to the force calculation data
+    t_fcdata& fcdata() { return *fcdata_; }
+
+private:
+    //! The interaction definitions
+    InteractionDefinitions const* idef_ = nullptr;
+    //! Thread parallelization setup, unique_ptr to avoid declaring bonded_threading_t
+    std::unique_ptr<bonded_threading_t> threading_;
+    //! Data for bonded tables and NMR restraining, needs to be refactored
+    std::unique_ptr<t_fcdata> fcdata_;
+    //! Force buffer for free-energy forces
+    std::vector<real> forceBufferLambda_;
+    //! Shift force buffer for free-energy forces
+    std::vector<gmx::RVec> shiftForceBufferLambda_;
+
+    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(ListedForces);
+};
 
 #endif

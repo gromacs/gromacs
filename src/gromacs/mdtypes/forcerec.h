@@ -55,6 +55,7 @@ struct nonbonded_verlet_t;
 struct bonded_threading_t;
 class DeviceContext;
 class DispersionCorrection;
+class ListedForces;
 struct t_forcetable;
 struct t_QMMMrec;
 
@@ -297,8 +298,8 @@ struct t_forcerec
     real userreal3 = 0;
     real userreal4 = 0;
 
-    /* Pointer to struct for managing threading of bonded force calculation */
-    struct bonded_threading_t* bondedThreading = nullptr;
+    /* The listed forces calculation data */
+    std::unique_ptr<ListedForces> listedForces;
 
     /* TODO: Replace the pointer by an object once we got rid of C */
     gmx::GpuBonded* gpuBonded = nullptr;

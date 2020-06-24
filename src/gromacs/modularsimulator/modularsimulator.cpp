@@ -50,6 +50,7 @@
 #include "gromacs/ewald/pme_pp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
@@ -381,8 +382,8 @@ void ModularSimulator::constructElementsAndSignallers()
 
     auto energyElement = std::make_unique<EnergyElement>(
             statePropagatorDataPtr, freeEnergyPerturbationElementPtr, top_global, inputrec, mdAtoms,
-            enerd, ekind, constr, fplog, fcd, mdModulesNotifier, MASTER(cr), observablesHistory,
-            startingBehavior);
+            enerd, ekind, constr, fplog, &fr->listedForces->fcdata(), mdModulesNotifier, MASTER(cr),
+            observablesHistory, startingBehavior);
     auto energyElementPtr = compat::make_not_null(energyElement.get());
 
     /*
@@ -552,7 +553,7 @@ ModularSimulator::buildForces(SignallerBuilder<NeighborSearchSignaller>* neighbo
 
     auto forceElement = std::make_unique<ForceElement>(
             statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement, isVerbose,
-            isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork, vsite,
+            isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, wcycle, runScheduleWork, vsite,
             imdSession, pull_work, constr, &topologyHolder_->globalTopology(), enforcedRotation);
     topologyHolder_->registerClient(forceElement.get());
     neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
@@ -881,7 +882,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     int numEnsembleRestraintSystems;
     if (fcd)
     {
-        numEnsembleRestraintSystems = fcd->disres.nsystems;
+        numEnsembleRestraintSystems = fcd->disres->nsystems;
     }
     else
     {
@@ -944,8 +945,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
 
 void ModularSimulator::checkInputForDisabledFunctionality()
 {
-    isInputCompatible(true, inputrec, doRerun, *top_global, ms, replExParams, fcd,
-                      opt2bSet("-ei", nfile, fnm), membed != nullptr);
+    isInputCompatible(true, inputrec, doRerun, *top_global, ms, replExParams,
+                      &fr->listedForces->fcdata(), opt2bSet("-ei", nfile, fnm), membed != nullptr);
     if (observablesHistory->edsamHistory)
     {
         gmx_fatal(FARGS,

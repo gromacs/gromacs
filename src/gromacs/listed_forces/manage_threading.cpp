@@ -40,6 +40,7 @@
  * interactions.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Berk Hess <hess@kth.se>
  * \ingroup module_listed_forces
  */
 #include "gmxpre.h"
@@ -57,13 +58,11 @@
 #include <string>
 
 #include "gromacs/listed_forces/gpubonded.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "listed_internal.h"
 #include "utilities.h"
@@ -348,24 +347,20 @@ static void calc_bonded_reduction_mask(int                           natoms,
     GMX_ASSERT(bondedThreading.nthreads <= BITMASK_SIZE,
                "We need at least nthreads bits in the mask");
 
-    int nblock = (natoms + reduction_block_size - 1) >> reduction_block_bits;
+    const int nblock = (natoms + reduction_block_size - 1) >> reduction_block_bits;
 
-    if (nblock > f_thread->block_nalloc)
+    f_thread->mask.resize(nblock);
+    f_thread->block_index.resize(nblock);
+    // NOTE: It seems f_thread->f does not need to be aligned
+    f_thread->fBuffer.resize(nblock * reduction_block_size * sizeof(rvec4) / sizeof(real));
+    f_thread->f = reinterpret_cast<rvec4*>(f_thread->fBuffer.data());
+
+    for (gmx_bitmask_t& mask : f_thread->mask)
     {
-        f_thread->block_nalloc = over_alloc_large(nblock);
-        srenew(f_thread->mask, f_thread->block_nalloc);
-        srenew(f_thread->block_index, f_thread->block_nalloc);
-        // NOTE: It seems f_thread->f does not need to be aligned
-        sfree_aligned(f_thread->f);
-        snew_aligned(f_thread->f, f_thread->block_nalloc * reduction_block_size, 128);
+        bitmask_clear(&mask);
     }
 
-    gmx_bitmask_t* mask = f_thread->mask;
-
-    for (int b = 0; b < nblock; b++)
-    {
-        bitmask_clear(&mask[b]);
-    }
+    gmx::ArrayRef<gmx_bitmask_t> mask = f_thread->mask;
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -404,13 +399,15 @@ static void calc_bonded_reduction_mask(int                           natoms,
 }
 
 void setup_bonded_threading(bonded_threading_t*           bt,
-                            int                           numAtoms,
+                            int                           numAtomsForce,
                             bool                          useGpuForBondeds,
                             const InteractionDefinitions& idef)
 {
     int ctot = 0;
 
     assert(bt->nthreads >= 1);
+
+    bt->numAtomsForce = numAtomsForce;
 
     /* Divide the bonded interaction over the threads */
     divide_bondeds_over_threads(bt, useGpuForBondeds, idef);
@@ -429,7 +426,7 @@ void setup_bonded_threading(bonded_threading_t*           bt,
     {
         try
         {
-            calc_bonded_reduction_mask(numAtoms, bt->f_t[t].get(), idef, t, *bt);
+            calc_bonded_reduction_mask(numAtomsForce, bt->f_t[t].get(), idef, t, *bt);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
@@ -437,7 +434,7 @@ void setup_bonded_threading(bonded_threading_t*           bt,
     /* Reduce the masks over the threads and determine which blocks
      * we need to reduce over.
      */
-    int nblock_tot = (numAtoms + reduction_block_size - 1) >> reduction_block_bits;
+    int nblock_tot = (numAtomsForce + reduction_block_size - 1) >> reduction_block_bits;
     /* Ensure we have sufficient space for all blocks */
     if (static_cast<size_t>(nblock_tot) > bt->block_index.size())
     {
@@ -485,36 +482,29 @@ void setup_bonded_threading(bonded_threading_t*           bt,
     {
         fprintf(debug, "Number of %d atom blocks to reduce: %d\n", reduction_block_size, bt->nblock_used);
         fprintf(debug, "Reduction density %.2f for touched blocks only %.2f\n",
-                ctot * reduction_block_size / static_cast<double>(numAtoms),
+                ctot * reduction_block_size / static_cast<double>(numAtomsForce),
                 ctot / static_cast<double>(bt->nblock_used));
     }
 }
 
-void tear_down_bonded_threading(bonded_threading_t* bt)
-{
-    delete bt;
-}
+f_thread_t::f_thread_t(int numEnergyGroups) : fshift(SHIFTS), grpp(numEnergyGroups) {}
 
-f_thread_t::f_thread_t(int numEnergyGroups) : grpp(numEnergyGroups)
-{
-    snew(fshift, SHIFTS);
-}
-
-f_thread_t::~f_thread_t()
-{
-    sfree(mask);
-    sfree(fshift);
-    sfree(block_index);
-    sfree_aligned(f);
-}
-
-bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergyGroups) :
+bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergyGroups, FILE* fplog) :
     nthreads(numThreads),
     nblock_used(0),
     haveBondeds(false),
     workDivision(nthreads),
     foreignLambdaWorkDivision(1)
 {
+    /* These thread local data structures are used for bondeds only.
+     *
+     * Note that we also use there structures when running single-threaded.
+     * This is because the bonded force buffer uses type rvec4, whereas
+     * the normal force buffer is uses type rvec. This leads to a little
+     * reduction overhead, but the speed gain in the bonded calculations
+     * of doing transposeScatterIncr/DecrU with aligment 4 instead of 3
+     * is much larger than the reduction overhead.
+     */
     f_t.resize(numThreads);
 #pragma omp parallel for num_threads(nthreads) schedule(static)
     for (int t = 0; t < nthreads; t++)
@@ -528,41 +518,25 @@ bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergy
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-}
-
-bonded_threading_t* init_bonded_threading(FILE* fplog, const int nenergrp)
-{
-    /* These thread local data structures are used for bondeds only.
-     *
-     * Note that we also use there structures when running single-threaded.
-     * This is because the bonded force buffer uses type rvec4, whereas
-     * the normal force buffer is uses type rvec. This leads to a little
-     * reduction overhead, but the speed gain in the bonded calculations
-     * of doing transposeScatterIncr/DecrU with aligment 4 instead of 3
-     * is much larger than the reduction overhead.
-     */
-    bonded_threading_t* bt = new bonded_threading_t(gmx_omp_nthreads_get(emntBonded), nenergrp);
 
     /* The optimal value after which to switch from uniform to localized
      * bonded interaction distribution is 3, 4 or 5 depending on the system
      * and hardware.
      */
-    const int max_nthread_uniform = 4;
+    const int max_nthread_uniform_default = 4;
     char*     ptr;
 
     if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != nullptr)
     {
-        sscanf(ptr, "%d", &bt->max_nthread_uniform);
+        sscanf(ptr, "%d", &max_nthread_uniform);
         if (fplog != nullptr)
         {
             fprintf(fplog, "\nMax threads for uniform bonded distribution set to %d by env.var.\n",
-                    bt->max_nthread_uniform);
+                    max_nthread_uniform);
         }
     }
     else
     {
-        bt->max_nthread_uniform = max_nthread_uniform;
+        max_nthread_uniform = max_nthread_uniform_default;
     }
-
-    return bt;
 }

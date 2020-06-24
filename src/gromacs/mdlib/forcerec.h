@@ -44,7 +44,6 @@
 
 struct gmx_hw_info_t;
 struct t_commrec;
-struct t_fcdata;
 struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
@@ -93,7 +92,6 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real table
  * \param[in]  fplog              File for printing
  * \param[in]  mdlog              File for printing
  * \param[out] fr                 The forcerec
- * \param[in]  fcd                Force constant data
  * \param[in]  ir                 Inputrec structure
  * \param[in]  mtop               Molecular topology
  * \param[in]  cr                 Communication structures
@@ -106,7 +104,6 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real table
 void init_forcerec(FILE*                            fplog,
                    const gmx::MDLogger&             mdlog,
                    t_forcerec*                      fr,
-                   t_fcdata*                        fcd,
                    const t_inputrec*                ir,
                    const gmx_mtop_t*                mtop,
                    const t_commrec*                 cr,

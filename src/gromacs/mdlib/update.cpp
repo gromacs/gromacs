@@ -64,6 +64,7 @@
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -124,7 +125,7 @@ public:
                        const t_mdatoms*                                 md,
                        t_state*                                         state,
                        const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                       const t_fcdata*                                  fcd,
+                       const t_fcdata&                                  fcdata,
                        const gmx_ekindata_t*                            ekind,
                        const matrix                                     M,
                        int                                              UpdatePart,
@@ -198,14 +199,14 @@ void Update::update_coords(const t_inputrec&                                inpu
                            const t_mdatoms*                                 md,
                            t_state*                                         state,
                            const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                           const t_fcdata*                                  fcd,
+                           const t_fcdata&                                  fcdata,
                            const gmx_ekindata_t*                            ekind,
                            const matrix                                     M,
                            int                                              updatePart,
                            const t_commrec*                                 cr,
                            const bool                                       haveConstraints)
 {
-    return impl_->update_coords(inputRecord, step, md, state, f, fcd, ekind, M, updatePart, cr,
+    return impl_->update_coords(inputRecord, step, md, state, f, fcdata, ekind, M, updatePart, cr,
                                 haveConstraints);
 }
 
@@ -1399,7 +1400,7 @@ void Update::Impl::update_coords(const t_inputrec&                              
                                  const t_mdatoms*                                 md,
                                  t_state*                                         state,
                                  const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
-                                 const t_fcdata*                                  fcd,
+                                 const t_fcdata&                                  fcdata,
                                  const gmx_ekindata_t*                            ekind,
                                  const matrix                                     M,
                                  int                                              updatePart,
@@ -1420,11 +1421,11 @@ void Update::Impl::update_coords(const t_inputrec&                              
     /* We need to update the NMR restraint history when time averaging is used */
     if (state->flags & (1 << estDISRE_RM3TAV))
     {
-        update_disres_history(fcd, &state->hist);
+        update_disres_history(*fcdata.disres, &state->hist);
     }
     if (state->flags & (1 << estORIRE_DTAV))
     {
-        update_orires_history(fcd, &state->hist);
+        update_orires_history(*fcdata.orires, &state->hist);
     }
 
     /* ############# START The update of velocities and positions ######### */

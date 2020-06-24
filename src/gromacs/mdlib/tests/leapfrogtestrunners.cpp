@@ -86,7 +86,7 @@ void integrateLeapFrogSimple(LeapFrogTestData* testData, int numSteps)
     {
         testData->update_->update_coords(
                 testData->inputRecord_, step, &testData->mdAtoms_, &testData->state_, testData->f_,
-                &testData->forceCalculationData_, &testData->kineticEnergyData_,
+                testData->forceCalculationData_, &testData->kineticEnergyData_,
                 testData->velocityScalingMatrix_, etrtNONE, nullptr, false);
         testData->update_->finish_update(testData->inputRecord_, &testData->mdAtoms_,
                                          &testData->state_, nullptr, false);

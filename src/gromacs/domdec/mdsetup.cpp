@@ -39,7 +39,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
-#include "gromacs/listed_forces/manage_threading.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/vsite.h"
@@ -131,7 +131,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
         make_local_shells(cr, mdatoms, shellfc);
     }
 
-    setup_bonded_threading(fr->bondedThreading, fr->natoms_force, fr->gpuBonded != nullptr, top->idef);
+    fr->listedForces->setup(top->idef, fr->natoms_force, fr->gpuBonded != nullptr);
 
     if (EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME))
     {

@@ -388,20 +388,17 @@ real calc_orires_dev(const gmx_multisim_t* ms,
                      ArrayRef<const RVec>  xWholeMolecules,
                      const rvec            x[],
                      const t_pbc*          pbc,
-                     t_fcdata*             fcd,
+                     t_oriresdata*         od,
                      history_t*            hist)
 {
-    int           nref;
-    real          edt, edt_1, invn, pfac, r2, invr, corrfac, wsv2, sw, dev;
-    OriresMatEq*  matEq;
-    real*         mref;
-    double        mtot;
-    rvec *        xref, *xtmp, com, r_unrot, r;
-    t_oriresdata* od;
-    gmx_bool      bTAV;
-    const real    two_thr = 2.0 / 3.0;
-
-    od = &(fcd->orires);
+    int          nref;
+    real         edt, edt_1, invn, pfac, r2, invr, corrfac, wsv2, sw, dev;
+    OriresMatEq* matEq;
+    real*        mref;
+    double       mtot;
+    rvec *       xref, *xtmp, com, r_unrot, r;
+    gmx_bool     bTAV;
+    const real   two_thr = 2.0 / 3.0;
 
     if (od->nr == 0)
     {
@@ -666,7 +663,7 @@ real orires(int             nfa,
     gmx_bool            bTAV;
 
     vtot = 0;
-    od   = &(fcd->orires);
+    od   = fcd->orires;
 
     if (od->fc != 0)
     {
@@ -753,21 +750,19 @@ real orires(int             nfa,
     /* Approx. 80*nfa/3 flops */
 }
 
-void update_orires_history(const t_fcdata* fcd, history_t* hist)
+void update_orires_history(const t_oriresdata& od, history_t* hist)
 {
-    const t_oriresdata* od = &(fcd->orires);
-
-    if (od->edt != 0)
+    if (od.edt != 0)
     {
         /* Copy the new time averages that have been calculated
          *  in calc_orires_dev.
          */
-        hist->orire_initf = od->exp_min_t_tau;
-        for (int pair = 0; pair < od->nr; pair++)
+        hist->orire_initf = od.exp_min_t_tau;
+        for (int pair = 0; pair < od.nr; pair++)
         {
             for (int i = 0; i < 5; i++)
             {
-                hist->orire_Dtav[pair * 5 + i] = od->Dtav[pair][i];
+                hist->orire_Dtav[pair * 5 + i] = od.Dtav[pair][i];
             }
         }
     }

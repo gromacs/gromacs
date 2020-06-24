@@ -76,7 +76,6 @@ ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
                            const MDAtoms*                 mdAtoms,
                            t_nrnb*                        nrnb,
                            t_forcerec*                    fr,
-                           t_fcdata*                      fcd,
                            gmx_wallcycle*                 wcycle,
                            MdrunScheduleWorkload*         runScheduleWork,
                            VirtualSitesHandler*           vsite,
@@ -114,7 +113,6 @@ ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
     vsite_(vsite),
     imdSession_(imdSession),
     pull_work_(pull_work),
-    fcd_(fcd),
     runScheduleWork_(runScheduleWork),
     constr_(constr),
     enforcedRotation_(enforcedRotation)
@@ -192,7 +190,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
         relax_shell_flexcon(
                 fplog_, cr_, ms, isVerbose_, enforcedRotation_, step, inputrec_, imdSession_,
                 pull_work_, step == nextNSStep_, static_cast<int>(flags), localTopology_, constr_,
-                energyElement_->enerdata(), fcd_, statePropagatorData_->localNumAtoms(), x, v, box,
+                energyElement_->enerdata(), statePropagatorData_->localNumAtoms(), x, v, box,
                 lambda, hist, forces, force_vir, mdAtoms_->mdatoms(), nrnb_, wcycle_, shellfc_, fr_,
                 runScheduleWork_, time, energyElement_->muTot(), vsite_, ddBalanceRegionHandler_);
         nShellRelaxationSteps_++;
@@ -205,7 +203,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
 
         do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation_, imdSession_, pull_work_, step,
                  nrnb_, wcycle_, localTopology_, box, x, hist, forces, force_vir, mdAtoms_->mdatoms(),
-                 energyElement_->enerdata(), fcd_, lambda, fr_, runScheduleWork_, vsite_,
+                 energyElement_->enerdata(), lambda, fr_, runScheduleWork_, vsite_,
                  energyElement_->muTot(), time, ed, static_cast<int>(flags), ddBalanceRegionHandler_);
     }
     energyElement_->addToForceVirial(force_vir, step);

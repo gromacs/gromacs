@@ -60,7 +60,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed_forces/gpubonded.h"
-#include "gromacs/listed_forces/manage_threading.h"
+#include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/pairs.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -552,26 +552,23 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t* mtop, int* nc
  *
  * A fatal error occurs if no matching filename is found.
  */
-static bondedtable_t* make_bonded_tables(FILE*                            fplog,
-                                         int                              ftype1,
-                                         int                              ftype2,
-                                         const gmx_mtop_t*                mtop,
-                                         gmx::ArrayRef<const std::string> tabbfnm,
-                                         const char*                      tabext)
+static std::vector<bondedtable_t> make_bonded_tables(FILE*                            fplog,
+                                                     int                              ftype1,
+                                                     int                              ftype2,
+                                                     const gmx_mtop_t*                mtop,
+                                                     gmx::ArrayRef<const std::string> tabbfnm,
+                                                     const char*                      tabext)
 {
-    int            ncount, *count;
-    bondedtable_t* tab;
+    std::vector<bondedtable_t> tab;
 
-    tab = nullptr;
-
-    ncount = 0;
-    count  = nullptr;
+    int  ncount = 0;
+    int* count  = nullptr;
     count_tables(ftype1, ftype2, mtop, &ncount, &count);
 
     // Are there any relevant tabulated bond interactions?
     if (ncount > 0)
     {
-        snew(tab, ncount);
+        tab.resize(ncount);
         for (int i = 0; i < ncount; i++)
         {
             // Do any interactions exist that requires this table?
@@ -949,7 +946,6 @@ static void init_interaction_const(FILE*                 fp,
 void init_forcerec(FILE*                            fp,
                    const gmx::MDLogger&             mdlog,
                    t_forcerec*                      fr,
-                   t_fcdata*                        fcd,
                    const t_inputrec*                ir,
                    const gmx_mtop_t*                mtop,
                    const t_commrec*                 cr,
@@ -1263,15 +1259,21 @@ void init_forcerec(FILE*                            fp,
         make_wall_tables(fp, ir, tabfn, &mtop->groups, fr);
     }
 
-    if (fcd && !tabbfnm.empty())
+    /* Initialize the thread working data for bonded interactions */
+    fr->listedForces = std::make_unique<ListedForces>(
+            mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
+            gmx_omp_nthreads_get(emntBonded), fp);
+
+    if (!tabbfnm.empty())
     {
+        t_fcdata& fcdata = fr->listedForces->fcdata();
         // Need to catch std::bad_alloc
         // TODO Don't need to catch this here, when merging with master branch
         try
         {
-            fcd->bondtab  = make_bonded_tables(fp, F_TABBONDS, F_TABBONDSNC, mtop, tabbfnm, "b");
-            fcd->angletab = make_bonded_tables(fp, F_TABANGLES, -1, mtop, tabbfnm, "a");
-            fcd->dihtab   = make_bonded_tables(fp, F_TABDIHS, -1, mtop, tabbfnm, "d");
+            fcdata.bondtab  = make_bonded_tables(fp, F_TABBONDS, F_TABBONDSNC, mtop, tabbfnm, "b");
+            fcdata.angletab = make_bonded_tables(fp, F_TABANGLES, -1, mtop, tabbfnm, "a");
+            fcdata.dihtab   = make_bonded_tables(fp, F_TABDIHS, -1, mtop, tabbfnm, "d");
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
@@ -1305,10 +1307,6 @@ void init_forcerec(FILE*                            fp,
 
     fr->print_force = print_force;
 
-    /* Initialize the thread working data for bonded interactions */
-    fr->bondedThreading = init_bonded_threading(
-            fp, mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].size());
-
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
 
@@ -1336,5 +1334,4 @@ t_forcerec::~t_forcerec()
     /* Note: This code will disappear when types are converted to C++ */
     sfree(shift_vec);
     sfree(ewc_t);
-    tear_down_bonded_threading(bondedThreading);
 }

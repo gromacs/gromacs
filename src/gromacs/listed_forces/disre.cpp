@@ -75,18 +75,15 @@ void init_disres(FILE*                 fplog,
                  NumRanks              numRanks,
                  MPI_Comm              communicator,
                  const gmx_multisim_t* ms,
-                 t_fcdata*             fcd,
+                 t_disresdata*         dd,
                  t_state*              state,
                  gmx_bool              bIsREMD)
 {
     int                  fa, nmol, npair, np;
-    t_disresdata*        dd;
     history_t*           hist;
     gmx_mtop_ilistloop_t iloop;
     char*                ptr;
     int                  type_min, type_max;
-
-    dd = &(fcd->disres);
 
     if (gmx_mtop_ftype_count(mtop, F_DISRES) == 0)
     {
@@ -241,7 +238,7 @@ void init_disres(FILE*                 fplog,
 
         /* We use to allow any value of nsystems which was a divisor
          * of ms->nsim. But this required an extra communicator which
-         * was stored in t_fcdata. This pulled in mpi.h in nearly all C files.
+         * pulled in mpi.h in nearly all C files.
          */
         if (!(ms->nsim == 1 || ms->nsim == dd->nsystems))
         {
@@ -292,7 +289,7 @@ void init_disres(FILE*                 fplog,
          * succeed...) */
         if ((disResRunMode == DisResRunMode::MDRun) && ms && dd->nsystems > 1 && (ddRole == DDRole::Master))
         {
-            check_multi_int(fplog, ms, fcd->disres.nres, "the number of distance restraints", FALSE);
+            check_multi_int(fplog, ms, dd->nres, "the number of distance restraints", FALSE);
         }
         please_cite(fplog, "Tropp80a");
         please_cite(fplog, "Torda89a");
@@ -305,16 +302,14 @@ void calc_disres_R_6(const t_commrec*      cr,
                      const t_iatom         forceatoms[],
                      const rvec            x[],
                      const t_pbc*          pbc,
-                     t_fcdata*             fcd,
+                     t_disresdata*         dd,
                      history_t*            hist)
 {
-    rvec          dx;
-    real *        rt, *rm3tav, *Rtl_6, *Rt_6, *Rtav_6;
-    t_disresdata* dd;
-    real          ETerm, ETerm1, cf1 = 0, cf2 = 0;
-    gmx_bool      bTav;
+    rvec     dx;
+    real *   rt, *rm3tav, *Rtl_6, *Rt_6, *Rtav_6;
+    real     ETerm, ETerm1, cf1 = 0, cf2 = 0;
+    gmx_bool bTav;
 
-    dd     = &(fcd->disres);
     bTav   = (dd->dr_tau != 0);
     ETerm  = dd->ETerm;
     ETerm1 = dd->ETerm1;
@@ -365,7 +360,7 @@ void calc_disres_R_6(const t_commrec*      cr,
         rt[pair] = rt2 * rt_1;
         if (bTav)
         {
-            /* Here we update rm3tav in t_fcdata using the data
+            /* Here we update rm3tav in t_disresdata using the data
              * in history_t.
              * Thus the results stay correct when this routine
              * is called multiple times.
@@ -391,7 +386,7 @@ void calc_disres_R_6(const t_commrec*      cr,
         gmx_sum(2 * dd->nres, dd->Rt_6, cr);
     }
 
-    if (fcd->disres.nsystems > 1)
+    if (dd->nsystems > 1)
     {
         real invn = 1.0 / dd->nsystems;
 
@@ -447,7 +442,7 @@ real ta_disres(int             nfa,
     int           dr_weighting;
     gmx_bool      dr_bMixed;
 
-    dd           = &(fcd->disres);
+    dd           = fcd->disres;
     dr_weighting = dd->dr_weighting;
     dr_bMixed    = dd->dr_bMixed;
     Rtl_6        = dd->Rtl_6;
@@ -643,21 +638,17 @@ real ta_disres(int             nfa,
     return vtot;
 }
 
-void update_disres_history(const t_fcdata* fcd, history_t* hist)
+void update_disres_history(const t_disresdata& dd, history_t* hist)
 {
-    const t_disresdata* dd;
-    int                 pair;
-
-    dd = &(fcd->disres);
-    if (dd->dr_tau != 0)
+    if (dd.dr_tau != 0)
     {
         /* Copy the new time averages that have been calculated
          * in calc_disres_R_6.
          */
-        hist->disre_initf = dd->exp_min_t_tau;
-        for (pair = 0; pair < dd->npair; pair++)
+        hist->disre_initf = dd.exp_min_t_tau;
+        for (int pair = 0; pair < dd.npair; pair++)
         {
-            hist->disre_rm3tav[pair] = dd->rm3tav[pair];
+            hist->disre_rm3tav[pair] = dd.rm3tav[pair];
         }
     }
 }

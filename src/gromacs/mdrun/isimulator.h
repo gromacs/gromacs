@@ -57,7 +57,6 @@ struct ObservablesHistory;
 struct pull_t;
 struct ReplicaExchangeParameters;
 struct t_commrec;
-struct t_fcdata;
 struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
@@ -119,7 +118,6 @@ public:
                pull_t*                             pull_work,
                t_swap*                             swap,
                gmx_mtop_t*                         top_global,
-               t_fcdata*                           fcd,
                t_state*                            state_global,
                ObservablesHistory*                 observablesHistory,
                MDAtoms*                            mdAtoms,
@@ -154,7 +152,6 @@ public:
         pull_work(pull_work),
         swap(swap),
         top_global(top_global),
-        fcd(fcd),
         state_global(state_global),
         observablesHistory(observablesHistory),
         mdAtoms(mdAtoms),
@@ -213,8 +210,6 @@ protected:
     t_swap* swap;
     //! Full system topology.
     const gmx_mtop_t* top_global;
-    //! Helper struct for force calculations.
-    t_fcdata* fcd;
     //! Full simulation state (only non-nullptr on master rank).
     t_state* state_global;
     //! History of simulation observables.
