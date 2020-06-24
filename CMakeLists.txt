@@ -429,6 +429,31 @@ include(gmxManageSharedLibraries)
 
 
 ########################################################################
+# Specify install locations
+########################################################################
+# Use GNUInstallDirs to set paths on multiarch systems.
+include(GNUInstallDirs)
+
+set(GMX_INSTALL_DATASUBDIR "gromacs" CACHE STRING "Subdirectory for GROMACS data under CMAKE_INSTALL_DATADIR")
+mark_as_advanced(GMX_INSTALL_DATASUBDIR)
+
+# Internal convenience so we do not have to join two path segments in the code
+set(GMX_INSTALL_GMXDATADIR ${CMAKE_INSTALL_DATADIR}/${GMX_INSTALL_DATASUBDIR})
+
+# If the nesting level wrt. the installation root is changed,
+# gromacs-config.cmake.cmakein needs to be adapted.
+set(GMX_INSTALL_CMAKEDIR  ${CMAKE_INSTALL_DATAROOTDIR}/cmake)
+
+# TODO: Make GMXRC adapt if this is changed
+set(GMX_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+
+list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Binary and library suffix options
+include(gmxManageSuffixes)
+
+
+########################################################################
 # Find external packages                                               #
 ########################################################################
 
@@ -701,30 +726,6 @@ else()
 endif()
 # Allow `admin` directory to be easily conveyed to nested CMake commands.
 set(GMX_ADMIN_DIR ${CMAKE_SOURCE_DIR}/admin)
-
-########################################################################
-# Specify install locations
-########################################################################
-# Use GNUInstallDirs to set paths on multiarch systems.
-include(GNUInstallDirs)
-
-set(GMX_INSTALL_DATASUBDIR "gromacs" CACHE STRING "Subdirectory for GROMACS data under CMAKE_INSTALL_DATADIR")
-mark_as_advanced(GMX_INSTALL_DATASUBDIR)
-
-# Internal convenience so we do not have to join two path segments in the code
-set(GMX_INSTALL_GMXDATADIR ${CMAKE_INSTALL_DATADIR}/${GMX_INSTALL_DATASUBDIR})
-
-# If the nesting level wrt. the installation root is changed,
-# gromacs-config.cmake.cmakein needs to be adapted.
-set(GMX_INSTALL_CMAKEDIR  ${CMAKE_INSTALL_DATAROOTDIR}/cmake)
-
-# TODO: Make GMXRC adapt if this is changed
-set(GMX_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-
-list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${CMAKE_INSTALL_INCLUDEDIR})
-
-# Binary and library suffix options
-include(gmxManageSuffixes)
 
 ################################################################
 # Shared library load path settings
