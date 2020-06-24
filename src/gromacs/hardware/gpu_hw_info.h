@@ -68,7 +68,7 @@ enum class DeviceStatus : int
  */
 static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateString = {
     "compatible",     "nonexistent",
-    "incompatible",   "incompatible (please recompile with GMX_OPENCL_NB_CLUSTER_SIZE=4)",
+    "incompatible",   "incompatible (please recompile with correct NB_CLUSTER_SIZE of 4)",
     "non-functional", "unavailable"
 };
 
