@@ -46,6 +46,7 @@
  */
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/hardware/gpu_hw_info.h"
 
 //! OpenCL device vendors
 enum class DeviceVendor : int
@@ -73,7 +74,7 @@ struct DeviceInformation
     char           vendorName[256];     //!< Device vendor name.
     int            compute_units;       //!< Number of compute units.
     int            adress_bits;         //!< Number of address bits the device is capable of.
-    int            stat;                //!< Device status takes values of e_gpu_detect_res_t.
+    DeviceStatus   stat;                //!< Device status.
     DeviceVendor   deviceVendor;        //!< Device vendor.
     size_t         maxWorkItemSizes[3]; //!< Workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES).
     size_t maxWorkGroupSize; //!< Workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE).

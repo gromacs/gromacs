@@ -55,6 +55,7 @@
 #include "gromacs/utility/basedefinitions.h"
 
 struct DeviceInformation;
+enum class DeviceStatus : int;
 struct gmx_gpu_info_t;
 
 namespace gmx
@@ -224,7 +225,7 @@ GPU_FUNC_QUALIFIER
 size_t sizeof_gpu_dev_info() GPU_FUNC_TERM_WITH_RETURN(0);
 
 //! Get status of device with specified index
-int gpu_info_get_stat(const gmx_gpu_info_t& info, int index);
+DeviceStatus gpu_info_get_stat(const gmx_gpu_info_t& info, int index);
 
 /*! \brief Check if GROMACS has been built with GPU support.
  *

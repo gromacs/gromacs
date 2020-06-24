@@ -70,9 +70,9 @@ bool canPerformGpuDetection()
 }
 
 #if GMX_GPU == GMX_GPU_NONE
-int gpu_info_get_stat(const gmx_gpu_info_t& /*unused*/, int /*unused*/)
+DeviceStatus gpu_info_get_stat(const gmx_gpu_info_t& /*unused*/, int /*unused*/)
 {
-    return egpuNonexistent;
+    return DeviceStatus::Nonexistent;
 }
 #endif
 
@@ -89,7 +89,7 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t& gpu_info)
     for (int i = 0; i < gpu_info.n_dev; i++)
     {
         assert(gpu_info.deviceInfo);
-        if (gpu_info_get_stat(gpu_info, i) == egpuCompatible)
+        if (gpu_info_get_stat(gpu_info, i) == DeviceStatus::Compatible)
         {
             compatibleGpus.push_back(i);
         }
@@ -99,8 +99,8 @@ std::vector<int> getCompatibleGpus(const gmx_gpu_info_t& gpu_info)
 
 const char* getGpuCompatibilityDescription(const gmx_gpu_info_t& gpu_info, int index)
 {
-    return (index >= gpu_info.n_dev ? gpu_detect_res_str[egpuNonexistent]
-                                    : gpu_detect_res_str[gpu_info_get_stat(gpu_info, index)]);
+    return (index >= gpu_info.n_dev ? c_deviceStateString[DeviceStatus::Nonexistent]
+                                    : c_deviceStateString[gpu_info_get_stat(gpu_info, index)]);
 }
 /*! \brief Help build a descriptive message in \c error if there are
  * \c errorReasons why nonbondeds on a GPU are not supported.

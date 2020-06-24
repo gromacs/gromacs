@@ -140,7 +140,7 @@ static std::string makeOpenClInternalErrorString(const char* message, cl_int sta
  * \throws     std::bad_alloc  When out of memory.
  * \returns                    Whether the device passed sanity checks
  */
-static bool isDeviceSane(const DeviceInformation* deviceInfo, std::string* errorMessage)
+static bool isDeviceFunctional(const DeviceInformation* deviceInfo, std::string* errorMessage)
 {
     cl_context_properties properties[] = {
         CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(deviceInfo->oclPlatformId), 0
@@ -206,12 +206,12 @@ static bool isDeviceSane(const DeviceInformation* deviceInfo, std::string* error
  * \param[in]  deviceInfo  The device info pointer.
  * \returns                The result of the compatibility checks.
  */
-static int isDeviceSupported(const DeviceInformation* deviceInfo)
+static DeviceStatus isDeviceSupported(const DeviceInformation* deviceInfo)
 {
     if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
         // Assume the device is compatible because checking has been disabled.
-        return egpuCompatible;
+        return DeviceStatus::Compatible;
     }
 
     // OpenCL device version check, ensure >= REQUIRED_OPENCL_MIN_VERSION
@@ -230,18 +230,19 @@ static int isDeviceSupported(const DeviceInformation* deviceInfo)
                  || (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
     if (!versionLargeEnough)
     {
-        return egpuIncompatible;
+        return DeviceStatus::Incompatible;
     }
 
     /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
     switch (deviceInfo->deviceVendor)
     {
-        case DeviceVendor::Nvidia: return egpuCompatible;
+        case DeviceVendor::Nvidia: return DeviceStatus::Compatible;
         case DeviceVendor::Amd:
-            return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
+            return runningOnCompatibleOSForAmd() ? DeviceStatus::Compatible : DeviceStatus::Incompatible;
         case DeviceVendor::Intel:
-            return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
-        default: return egpuIncompatible;
+            return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? DeviceStatus::Compatible
+                                                   : DeviceStatus::IncompatibleClusterSize;
+        default: return DeviceStatus::Incompatible;
     }
 }
 
@@ -255,26 +256,26 @@ static int isDeviceSupported(const DeviceInformation* deviceInfo)
  *
  * \param[in]  deviceId      The runtime-reported numeric ID of the device.
  * \param[in]  deviceInfo    The device info pointer.
- * \returns  An e_gpu_detect_res_t to indicate how the GPU coped with
- *           the sanity and compatibility check.
+ * \returns  A DeviceStatus to indicate if the GPU device is supported and if it was able to run
+ *           basic functionality checks.
  */
-static int checkGpu(size_t deviceId, const DeviceInformation* deviceInfo)
+static DeviceStatus checkGpu(size_t deviceId, const DeviceInformation* deviceInfo)
 {
 
-    int supportStatus = isDeviceSupported(deviceInfo);
-    if (supportStatus != egpuCompatible)
+    DeviceStatus supportStatus = isDeviceSupported(deviceInfo);
+    if (supportStatus != DeviceStatus::Compatible)
     {
         return supportStatus;
     }
 
     std::string errorMessage;
-    if (!isDeviceSane(deviceInfo, &errorMessage))
+    if (!isDeviceFunctional(deviceInfo, &errorMessage))
     {
         gmx_warning("While sanity checking device #%zu, %s", deviceId, errorMessage.c_str());
-        return egpuInsane;
+        return DeviceStatus::NonFunctional;
     }
 
-    return egpuCompatible;
+    return DeviceStatus::Compatible;
 }
 
 } // namespace gmx
@@ -461,7 +462,7 @@ void findGpus(gmx_gpu_info_t* gpu_info)
                     gpu_info->deviceInfo[device_index].stat =
                             gmx::checkGpu(device_index, gpu_info->deviceInfo + device_index);
 
-                    if (egpuCompatible == gpu_info->deviceInfo[device_index].stat)
+                    if (DeviceStatus::Compatible == gpu_info->deviceInfo[device_index].stat)
                     {
                         gpu_info->n_dev_compatible++;
                     }
@@ -528,16 +529,17 @@ void get_gpu_device_info_string(char* s, const gmx_gpu_info_t& gpu_info, int ind
 
     DeviceInformation* dinfo = &gpu_info.deviceInfo[index];
 
-    bool bGpuExists = (dinfo->stat != egpuNonexistent && dinfo->stat != egpuInsane);
+    bool bGpuExists =
+            (dinfo->stat != DeviceStatus::Nonexistent && dinfo->stat != DeviceStatus::NonFunctional);
 
     if (!bGpuExists)
     {
-        sprintf(s, "#%d: %s, stat: %s", index, "N/A", gpu_detect_res_str[dinfo->stat]);
+        sprintf(s, "#%d: %s, stat: %s", index, "N/A", c_deviceStateString[dinfo->stat]);
     }
     else
     {
         sprintf(s, "#%d: name: %s, vendor: %s, device version: %s, stat: %s", index, dinfo->device_name,
-                dinfo->vendorName, dinfo->device_version, gpu_detect_res_str[dinfo->stat]);
+                dinfo->vendorName, dinfo->device_version, c_deviceStateString[dinfo->stat]);
     }
 }
 
@@ -578,7 +580,7 @@ size_t sizeof_gpu_dev_info()
     return sizeof(DeviceInformation);
 }
 
-int gpu_info_get_stat(const gmx_gpu_info_t& info, int index)
+DeviceStatus gpu_info_get_stat(const gmx_gpu_info_t& info, int index)
 {
     return info.deviceInfo[index].stat;
 }
