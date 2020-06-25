@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <vector>
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
@@ -816,8 +817,7 @@ static void lambda_data_list_insert_sample(lambda_data_t* head, samples_t* s)
 
 
 /* make a histogram out of a sample collection */
-static void
-sample_coll_make_hist(sample_coll_t* sc, int** bin, int* nbin_alloc, int* nbin, double* dx, double* xmin, int nbin_default)
+static void sample_coll_make_hist(sample_coll_t* sc, std::vector<int>* bin, double* dx, double* xmin, int nbin_default)
 {
     int      i, j, k;
     gmx_bool dx_set   = FALSE;
@@ -906,33 +906,24 @@ sample_coll_make_hist(sample_coll_t* sc, int** bin, int* nbin_alloc, int* nbin, 
 
     if (!xmax_set || !xmin_set)
     {
-        *nbin = 0;
+        bin->clear();
         return;
     }
 
 
     if (!dx_set)
     {
-        *nbin = nbin_default;
-        *dx   = (xmax - (*xmin)) / ((*nbin) - 2); /* -2 because we want the last bin to
-                                                     be 0, and we count from 0 */
+        bin->resize(nbin_default);
+        *dx = (xmax - (*xmin)) / ((bin->size()) - 2); /* -2 because we want the last bin to
+                                                   be 0, and we count from 0 */
     }
     else
     {
-        *nbin = static_cast<int>((xmax - (*xmin)) / (*dx));
-    }
-
-    if (*nbin > *nbin_alloc)
-    {
-        *nbin_alloc = *nbin;
-        srenew(*bin, *nbin_alloc);
+        bin->resize(static_cast<int>((xmax - (*xmin)) / (*dx)));
     }
 
     /* reset the histogram */
-    for (i = 0; i < (*nbin); i++)
-    {
-        (*bin)[i] = 0;
-    }
+    std::fill(bin->begin(), bin->end(), 0);
 
     /* now add the actual data */
     for (i = 0; i < sc->nsamples; i++)
@@ -951,9 +942,9 @@ sample_coll_make_hist(sample_coll_t* sc, int** bin, int* nbin_alloc, int* nbin, 
                     double x     = hdx * (j + 0.5) + xmin_hist;
                     int    binnr = static_cast<int>((x - (*xmin)) / (*dx));
 
-                    if (binnr >= *nbin || binnr < 0)
+                    if (binnr >= gmx::ssize(*bin) || binnr < 0)
                     {
-                        binnr = (*nbin) - 1;
+                        binnr = (bin->size()) - 1;
                     }
 
                     (*bin)[binnr] += hist->bin[k][j];
@@ -967,9 +958,9 @@ sample_coll_make_hist(sample_coll_t* sc, int** bin, int* nbin_alloc, int* nbin, 
             for (j = starti; j < endi; j++)
             {
                 int binnr = static_cast<int>((sc->s[i]->du[j] - (*xmin)) / (*dx));
-                if (binnr >= *nbin || binnr < 0)
+                if (binnr >= gmx::ssize(*bin) || binnr < 0)
                 {
-                    binnr = (*nbin) - 1;
+                    binnr = (bin->size()) - 1;
                 }
 
                 (*bin)[binnr]++;
@@ -991,13 +982,11 @@ static void sim_data_histogram(sim_data_t* sd, const char* filename, int nbin_de
     char**         setnames  = nullptr;
     gmx_bool       first_set = FALSE;
     /* histogram data: */
-    int*           hist       = nullptr;
-    int            nbin       = 0;
-    int            nbin_alloc = 0;
-    double         dx         = 0;
-    double         minval     = 0;
-    int            i;
-    lambda_data_t* bl_head = sd->lb;
+    std::vector<int> hist;
+    double           dx     = 0;
+    double           minval = 0;
+    int              i;
+    lambda_data_t*   bl_head = sd->lb;
 
     printf("\nWriting histogram to %s\n", filename);
     sprintf(label_x, "\\DeltaH (%s)", unit_energy);
@@ -1053,9 +1042,9 @@ static void sim_data_histogram(sim_data_t* sd, const char* filename, int nbin_de
                 xvgr_new_dataset(fp, 0, 0, nullptr, oenv);
             }
 
-            sample_coll_make_hist(sc, &hist, &nbin_alloc, &nbin, &dx, &minval, nbin_default);
+            sample_coll_make_hist(sc, &hist, &dx, &minval, nbin_default);
 
-            for (i = 0; i < nbin; i++)
+            for (i = 0; i < gmx::ssize(hist); i++)
             {
                 double xmin = i * dx + minval;
                 double xmax = (i + 1) * dx + minval;
@@ -1068,11 +1057,6 @@ static void sim_data_histogram(sim_data_t* sd, const char* filename, int nbin_de
         }
 
         bl = bl->next;
-    }
-
-    if (hist)
-    {
-        sfree(hist);
     }
 
     xvgrclose(fp);
