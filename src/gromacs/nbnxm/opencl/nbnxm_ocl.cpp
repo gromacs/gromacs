@@ -431,7 +431,7 @@ static inline int calc_shmem_required_nonbonded(int vdwType, bool bPrefetchLjPar
  *
  *  This function is called before the launch of both nbnxn and prune kernels.
  */
-static void fillin_ocl_structures(cl_nbparam_t* nbp, cl_nbparam_params_t* nbparams_params)
+static void fillin_ocl_structures(NBParamGpu* nbp, cl_nbparam_params_t* nbparams_params)
 {
     nbparams_params->coulomb_tab_scale = nbp->coulomb_tab_scale;
     nbparams_params->c_rf              = nbp->c_rf;
@@ -585,7 +585,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
 {
     cl_atomdata_t*      adat         = nb->atdat;
-    cl_nbparam_t*       nbp          = nb->nbparam;
+    NBParamGpu*         nbp          = nb->nbparam;
     cl_plist_t*         plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
@@ -669,8 +669,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
     {
         const auto kernelArgs = prepareGpuKernelArguments(
                 kernel, config, &nbparams_params, &adat->xq, &adat->f, &adat->e_lj, &adat->e_el,
-                &adat->fshift, &adat->lj_comb, &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d,
-                &nbp->coulomb_tab_climg2d, &plist->sci, &plist->cj4, &plist->excl, &computeFshift);
+                &adat->fshift, &adat->lj_comb, &adat->shift_vec, &nbp->nbfp, &nbp->nbfp_comb,
+                &nbp->coulomb_tab, &plist->sci, &plist->cj4, &plist->excl, &computeFshift);
 
         launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
     }
@@ -678,9 +678,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
     {
         const auto kernelArgs = prepareGpuKernelArguments(
                 kernel, config, &adat->ntypes, &nbparams_params, &adat->xq, &adat->f, &adat->e_lj,
-                &adat->e_el, &adat->fshift, &adat->atom_types, &adat->shift_vec, &nbp->nbfp_climg2d,
-                &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d, &plist->sci, &plist->cj4,
-                &plist->excl, &computeFshift);
+                &adat->e_el, &adat->fshift, &adat->atom_types, &adat->shift_vec, &nbp->nbfp, &nbp->nbfp_comb,
+                &nbp->coulomb_tab, &plist->sci, &plist->cj4, &plist->excl, &computeFshift);
         launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
     }
 
@@ -723,7 +722,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
     cl_atomdata_t*      adat         = nb->atdat;
-    cl_nbparam_t*       nbp          = nb->nbparam;
+    NBParamGpu*         nbp          = nb->nbparam;
     cl_plist_t*         plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];

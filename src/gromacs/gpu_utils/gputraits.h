@@ -57,6 +57,8 @@
 
 #else
 
+using DeviceTexture = void*;
+
 //! Stub for device information.
 struct DeviceInformation
 {

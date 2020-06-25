@@ -93,7 +93,7 @@ static unsigned int gpu_min_ci_balanced_factor = 44;
 static void nbnxn_cuda_clear_e_fshift(NbnxmGpu* nb);
 
 /* Fw. decl, */
-static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t* nbparam);
+static void nbnxn_cuda_free_nbparam_table(NBParamGpu* nbparam);
 
 /*! \brief Initialized the Ewald Coulomb correction GPU table.
 
@@ -102,7 +102,7 @@ static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t* nbparam);
     it just re-uploads the table.
  */
 static void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
-                                           cu_nbparam_t*                nbp,
+                                           NBParamGpu*                  nbp,
                                            const DeviceContext&         deviceContext)
 {
     if (nbp->coulomb_tab != nullptr)
@@ -192,7 +192,7 @@ static int pick_ewald_kernel_type(const interaction_const_t& ic)
 }
 
 /*! Copies all parameters related to the cut-off from ic to nbp */
-static void set_cutoff_parameters(cu_nbparam_t* nbp, const interaction_const_t* ic, const PairlistParams& listParams)
+static void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t* ic, const PairlistParams& listParams)
 {
     nbp->ewald_beta        = ic->ewaldcoeff_q;
     nbp->sh_ewald          = ic->sh_ewald;
@@ -215,7 +215,7 @@ static void set_cutoff_parameters(cu_nbparam_t* nbp, const interaction_const_t* 
 }
 
 /*! Initializes the nonbonded parameter data structure. */
-static void init_nbparam(cu_nbparam_t*                   nbp,
+static void init_nbparam(NBParamGpu*                     nbp,
                          const interaction_const_t*      ic,
                          const PairlistParams&           listParams,
                          const nbnxn_atomdata_t::Params& nbatParams,
@@ -331,8 +331,8 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interacti
     {
         return;
     }
-    NbnxmGpu*     nb  = nbv->gpu_nbv;
-    cu_nbparam_t* nbp = nbv->gpu_nbv->nbparam;
+    NbnxmGpu*   nb  = nbv->gpu_nbv;
+    NBParamGpu* nbp = nbv->gpu_nbv->nbparam;
 
     set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
@@ -679,7 +679,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     }
 }
 
-static void nbnxn_cuda_free_nbparam_table(cu_nbparam_t* nbparam)
+static void nbnxn_cuda_free_nbparam_table(NBParamGpu* nbparam)
 {
     if (nbparam->eeltype == eelTypeEWALD_TAB || nbparam->eeltype == eelTypeEWALD_TAB_TWIN)
     {
@@ -691,7 +691,7 @@ void gpu_free(NbnxmGpu* nb)
 {
     cudaError_t    stat;
     cu_atomdata_t* atdat;
-    cu_nbparam_t*  nbparam;
+    NBParamGpu*    nbparam;
 
     if (nb == nullptr)
     {

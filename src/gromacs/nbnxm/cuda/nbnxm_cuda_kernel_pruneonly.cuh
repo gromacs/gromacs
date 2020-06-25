@@ -104,7 +104,7 @@
 template<bool haveFreshList>
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
         void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
-                                     const cu_nbparam_t  nbparam,
+                                     const NBParamGpu    nbparam,
                                      const cu_plist_t    plist,
                                      int                 numParts,
                                      int                 part)
@@ -114,9 +114,9 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
 extern template __global__ void
-nbnxn_kernel_prune_cuda<true>(const cu_atomdata_t, const cu_nbparam_t, const cu_plist_t, int, int);
+nbnxn_kernel_prune_cuda<true>(const cu_atomdata_t, const NBParamGpu, const cu_plist_t, int, int);
 extern template __global__ void
-nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t, const cu_plist_t, int, int);
+nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const NBParamGpu, const cu_plist_t, int, int);
 #else
 {
 

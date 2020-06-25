@@ -80,7 +80,6 @@ static constexpr int c_clSize = c_nbnxnGpuClusterSize;
  * are passed to the kernels, except cu_timers_t. */
 /*! \cond */
 typedef struct cu_atomdata cu_atomdata_t;
-typedef struct cu_nbparam  cu_nbparam_t;
 /*! \endcond */
 
 
@@ -139,72 +138,6 @@ struct cu_atomdata
 };
 
 /** \internal
- * \brief Parameters required for the CUDA nonbonded calculations.
- */
-struct cu_nbparam
-{
-
-    //! type of electrostatics, takes values from #eelType
-    int eeltype;
-    //! type of VdW impl., takes values from #evdwType
-    int vdwtype;
-
-    //! charge multiplication factor
-    float epsfac;
-    //! Reaction-field/plain cutoff electrostatics const.
-    float c_rf;
-    //! Reaction-field electrostatics constant
-    float two_k_rf;
-    //! Ewald/PME parameter
-    float ewald_beta;
-    //! Ewald/PME correction term substracted from the direct-space potential
-    float sh_ewald;
-    //! LJ-Ewald/PME correction term added to the correction potential
-    float sh_lj_ewald;
-    //! LJ-Ewald/PME coefficient
-    float ewaldcoeff_lj;
-
-    //! Coulomb cut-off squared
-    float rcoulomb_sq;
-
-    //! VdW cut-off squared
-    float rvdw_sq;
-    //! VdW switched cut-off
-    float rvdw_switch;
-    //! Full, outer pair-list cut-off squared
-    float rlistOuter_sq;
-    //! Inner, dynamic pruned pair-list cut-off squared
-    float rlistInner_sq;
-    //! True if we use dynamic pair-list pruning
-    bool useDynamicPruning;
-
-    //! VdW shift dispersion constants
-    shift_consts_t dispersion_shift;
-    //! VdW shift repulsion constants
-    shift_consts_t repulsion_shift;
-    //! VdW switch constants
-    switch_consts_t vdw_switch;
-
-    /* LJ non-bonded parameters - accessed through texture memory */
-    //! nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements
-    float* nbfp;
-    //! texture object bound to nbfp
-    cudaTextureObject_t nbfp_texobj;
-    //! nonbonded parameter table per atom type, 2*ntype elements
-    float* nbfp_comb;
-    //! texture object bound to nbfp_texobj
-    cudaTextureObject_t nbfp_comb_texobj;
-
-    /* Ewald Coulomb force table data - accessed through texture memory */
-    //! table scale/spacing
-    float coulomb_tab_scale;
-    //! pointer to the table in the device memory
-    float* coulomb_tab;
-    //! texture object bound to coulomb_tab
-    cudaTextureObject_t coulomb_tab_texobj;
-};
-
-/** \internal
  * \brief Pair list data.
  */
 using cu_plist_t = Nbnxm::gpu_plist;
@@ -255,7 +188,7 @@ struct NbnxmGpu
     /*! \brief number of elements allocated allocated in device buffer */
     int ncxy_ind_alloc = 0;
     /*! \brief parameters required for the non-bonded calc. */
-    cu_nbparam_t* nbparam = nullptr;
+    NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, cu_plist_t*> plist = { { nullptr } };
     /*! \brief staging area where fshift/energies get downloaded */

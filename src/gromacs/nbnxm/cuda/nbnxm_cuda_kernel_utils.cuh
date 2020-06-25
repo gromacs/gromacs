@@ -90,7 +90,7 @@ static __forceinline__ __device__ void
 
 /*! Apply force switch,  force + energy version. */
 static __forceinline__ __device__ void
-                       calculate_force_switch_F(const cu_nbparam_t nbparam, float c6, float c12, float inv_r, float r2, float* F_invr)
+                       calculate_force_switch_F(const NBParamGpu nbparam, float c6, float c12, float inv_r, float r2, float* F_invr)
 {
     float r, r_switch;
 
@@ -109,13 +109,13 @@ static __forceinline__ __device__ void
 }
 
 /*! Apply force switch, force-only version. */
-static __forceinline__ __device__ void calculate_force_switch_F_E(const cu_nbparam_t nbparam,
-                                                                  float              c6,
-                                                                  float              c12,
-                                                                  float              inv_r,
-                                                                  float              r2,
-                                                                  float*             F_invr,
-                                                                  float*             E_lj)
+static __forceinline__ __device__ void calculate_force_switch_F_E(const NBParamGpu nbparam,
+                                                                  float            c6,
+                                                                  float            c12,
+                                                                  float            inv_r,
+                                                                  float            r2,
+                                                                  float*           F_invr,
+                                                                  float*           E_lj)
 {
     float r, r_switch;
 
@@ -142,7 +142,7 @@ static __forceinline__ __device__ void calculate_force_switch_F_E(const cu_nbpar
 
 /*! Apply potential switch, force-only version. */
 static __forceinline__ __device__ void
-                       calculate_potential_switch_F(const cu_nbparam_t nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
+                       calculate_potential_switch_F(const NBParamGpu nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -170,7 +170,7 @@ static __forceinline__ __device__ void
 
 /*! Apply potential switch, force + energy version. */
 static __forceinline__ __device__ void
-                       calculate_potential_switch_F_E(const cu_nbparam_t nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
+                       calculate_potential_switch_F_E(const NBParamGpu nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -201,7 +201,7 @@ static __forceinline__ __device__ void
  *  Depending on what is supported, it fetches parameters either
  *  using direct load, texture objects, or texrefs.
  */
-static __forceinline__ __device__ float calculate_lj_ewald_c6grid(const cu_nbparam_t nbparam, int typei, int typej)
+static __forceinline__ __device__ float calculate_lj_ewald_c6grid(const NBParamGpu nbparam, int typei, int typej)
 {
 #    if DISABLE_CUDA_TEXTURES
     return LDG(&nbparam.nbfp_comb[2 * typei]) * LDG(&nbparam.nbfp_comb[2 * typej]);
@@ -215,14 +215,14 @@ static __forceinline__ __device__ float calculate_lj_ewald_c6grid(const cu_nbpar
 /*! Calculate LJ-PME grid force contribution with
  *  geometric combination rule.
  */
-static __forceinline__ __device__ void calculate_lj_ewald_comb_geom_F(const cu_nbparam_t nbparam,
-                                                                      int                typei,
-                                                                      int                typej,
-                                                                      float              r2,
-                                                                      float              inv_r2,
-                                                                      float              lje_coeff2,
-                                                                      float  lje_coeff6_6,
-                                                                      float* F_invr)
+static __forceinline__ __device__ void calculate_lj_ewald_comb_geom_F(const NBParamGpu nbparam,
+                                                                      int              typei,
+                                                                      int              typej,
+                                                                      float            r2,
+                                                                      float            inv_r2,
+                                                                      float            lje_coeff2,
+                                                                      float            lje_coeff6_6,
+                                                                      float*           F_invr)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
 
@@ -242,12 +242,12 @@ static __forceinline__ __device__ void calculate_lj_ewald_comb_geom_F(const cu_n
 /*! Calculate LJ-PME grid force + energy contribution with
  *  geometric combination rule.
  */
-static __forceinline__ __device__ void calculate_lj_ewald_comb_geom_F_E(const cu_nbparam_t nbparam,
-                                                                        int                typei,
-                                                                        int                typej,
-                                                                        float              r2,
-                                                                        float              inv_r2,
-                                                                        float  lje_coeff2,
+static __forceinline__ __device__ void calculate_lj_ewald_comb_geom_F_E(const NBParamGpu nbparam,
+                                                                        int              typei,
+                                                                        int              typej,
+                                                                        float            r2,
+                                                                        float            inv_r2,
+                                                                        float            lje_coeff2,
                                                                         float  lje_coeff6_6,
                                                                         float  int_bit,
                                                                         float* F_invr,
@@ -276,7 +276,7 @@ static __forceinline__ __device__ void calculate_lj_ewald_comb_geom_F_E(const cu
  *  Depending on what is supported, it fetches parameters either
  *  using direct load, texture objects, or texrefs.
  */
-static __forceinline__ __device__ float2 fetch_nbfp_comb_c6_c12(const cu_nbparam_t nbparam, int type)
+static __forceinline__ __device__ float2 fetch_nbfp_comb_c6_c12(const NBParamGpu nbparam, int type)
 {
     float2 c6c12;
 #    if DISABLE_CUDA_TEXTURES
@@ -299,16 +299,16 @@ static __forceinline__ __device__ float2 fetch_nbfp_comb_c6_c12(const cu_nbparam
  *  We use a single F+E kernel with conditional because the performance impact
  *  of this is pretty small and LB on the CPU is anyway very slow.
  */
-static __forceinline__ __device__ void calculate_lj_ewald_comb_LB_F_E(const cu_nbparam_t nbparam,
-                                                                      int                typei,
-                                                                      int                typej,
-                                                                      float              r2,
-                                                                      float              inv_r2,
-                                                                      float              lje_coeff2,
-                                                                      float  lje_coeff6_6,
-                                                                      float  int_bit,
-                                                                      float* F_invr,
-                                                                      float* E_lj)
+static __forceinline__ __device__ void calculate_lj_ewald_comb_LB_F_E(const NBParamGpu nbparam,
+                                                                      int              typei,
+                                                                      int              typej,
+                                                                      float            r2,
+                                                                      float            inv_r2,
+                                                                      float            lje_coeff2,
+                                                                      float            lje_coeff6_6,
+                                                                      float            int_bit,
+                                                                      float*           F_invr,
+                                                                      float*           E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
     float sigma, sigma2, epsilon;
@@ -348,7 +348,7 @@ static __forceinline__ __device__ void calculate_lj_ewald_comb_LB_F_E(const cu_n
  *  Depending on what is supported, it fetches parameters either
  *  using direct load, texture objects, or texrefs.
  */
-static __forceinline__ __device__ float2 fetch_coulomb_force_r(const cu_nbparam_t nbparam, int index)
+static __forceinline__ __device__ float2 fetch_coulomb_force_r(const NBParamGpu nbparam, int index)
 {
     float2 d;
 
@@ -379,7 +379,7 @@ __forceinline__ __host__ __device__ T lerp(T d0, T d1, T t)
 
 /*! Interpolate Ewald coulomb force correction using the F*r table.
  */
-static __forceinline__ __device__ float interpolate_coulomb_force_r(const cu_nbparam_t nbparam, float r)
+static __forceinline__ __device__ float interpolate_coulomb_force_r(const NBParamGpu nbparam, float r)
 {
     float normalized = nbparam.coulomb_tab_scale * r;
     int   index      = (int)normalized;
@@ -395,7 +395,7 @@ static __forceinline__ __device__ float interpolate_coulomb_force_r(const cu_nbp
  *  Depending on what is supported, it fetches parameters either
  *  using direct load, texture objects, or texrefs.
  */
-static __forceinline__ __device__ void fetch_nbfp_c6_c12(float& c6, float& c12, const cu_nbparam_t nbparam, int baseIndex)
+static __forceinline__ __device__ void fetch_nbfp_c6_c12(float& c6, float& c12, const NBParamGpu nbparam, int baseIndex)
 {
 #    if DISABLE_CUDA_TEXTURES
     /* Force an 8-byte fetch to save a memory instruction. */

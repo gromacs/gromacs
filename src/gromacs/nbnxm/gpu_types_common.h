@@ -57,6 +57,72 @@
 #    include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #endif
 
+/** \internal
+ * \brief Parameters required for the GPU nonbonded calculations.
+ */
+struct NBParamGpu
+{
+
+    //! type of electrostatics, takes values from #eelType
+    int eeltype;
+    //! type of VdW impl., takes values from #evdwType
+    int vdwtype;
+
+    //! charge multiplication factor
+    float epsfac;
+    //! Reaction-field/plain cutoff electrostatics const.
+    float c_rf;
+    //! Reaction-field electrostatics constant
+    float two_k_rf;
+    //! Ewald/PME parameter
+    float ewald_beta;
+    //! Ewald/PME correction term substracted from the direct-space potential
+    float sh_ewald;
+    //! LJ-Ewald/PME correction term added to the correction potential
+    float sh_lj_ewald;
+    //! LJ-Ewald/PME coefficient
+    float ewaldcoeff_lj;
+
+    //! Coulomb cut-off squared
+    float rcoulomb_sq;
+
+    //! VdW cut-off squared
+    float rvdw_sq;
+    //! VdW switched cut-off
+    float rvdw_switch;
+    //! Full, outer pair-list cut-off squared
+    float rlistOuter_sq;
+    //! Inner, dynamic pruned pair-list cut-off squared
+    float rlistInner_sq;
+    //! True if we use dynamic pair-list pruning
+    bool useDynamicPruning;
+
+    //! VdW shift dispersion constants
+    shift_consts_t dispersion_shift;
+    //! VdW shift repulsion constants
+    shift_consts_t repulsion_shift;
+    //! VdW switch constants
+    switch_consts_t vdw_switch;
+
+    /* LJ non-bonded parameters - accessed through texture memory */
+    //! nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements
+    DeviceBuffer<float> nbfp;
+    //! texture object bound to nbfp
+    DeviceTexture nbfp_texobj;
+    //! nonbonded parameter table per atom type, 2*ntype elements
+    DeviceBuffer<float> nbfp_comb;
+    //! texture object bound to nbfp_comb
+    DeviceTexture nbfp_comb_texobj;
+
+    /* Ewald Coulomb force table data - accessed through texture memory */
+    //! table scale/spacing
+    float coulomb_tab_scale;
+    //! pointer to the table in the device memory
+    DeviceBuffer<float> coulomb_tab;
+    //! texture object bound to coulomb_tab
+    DeviceTexture coulomb_tab_texobj;
+};
+
 namespace Nbnxm
 {
 
