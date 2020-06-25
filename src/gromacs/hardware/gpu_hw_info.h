@@ -65,10 +65,18 @@ enum class DeviceStatus : int
 };
 
 /*! \brief Names of the GPU detection/check results
+ *
+ * Check-source wants to warn about the use of a symbol name that would
+ * require an inclusion of config.h. However the use is in a comment, so that
+ * is a false warning. So C-style string concatenation is used to fool the
+ * naive parser in check-source. In turn, that needs a clang-format suppression
+ * in order to look reasonable.
  */
 static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateString = {
-    "compatible",     "nonexistent",
-    "incompatible",   "incompatible (please recompile with correct NB_CLUSTER_SIZE of 4)",
+    "compatible", "nonexistent", "incompatible",
+    // clang-format off
+    "incompatible (please recompile with correct GMX" "_OPENCL_NB_CLUSTER_SIZE of 4)",
+    // clang-format on
     "non-functional", "unavailable"
 };
 
