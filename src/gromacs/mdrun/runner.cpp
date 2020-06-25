@@ -1655,8 +1655,7 @@ int Mdrunner::mdrunner()
         simulatorBuilder.add(TopologyData(&mtop, mdAtoms.get()));
 
         // build and run simulator object based on user-input
-        auto simulator =
-                simulatorBuilder.build(useModularSimulator, deform.get(), swap, &mtop, mdAtoms.get());
+        auto simulator = simulatorBuilder.build(useModularSimulator, deform.get(), &mtop, mdAtoms.get());
         simulator->run();
 
         if (fr->pmePpCommGpu)

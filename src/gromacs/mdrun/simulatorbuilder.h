@@ -229,10 +229,16 @@ public:
     pull_t* pull_work;
 };
 
+/*!
+ * \brief Parameter type for IonSwapping SimulatorBuilder component.
+ *
+ * Conveys a non-owning pointer to implementation details.
+ */
 class IonSwapping
 {
 public:
-    IonSwapping(t_swap gmx_unused* pSwap) {}
+    IonSwapping(t_swap* ionSwap) : ionSwap(ionSwap) {}
+    t_swap* ionSwap;
 };
 
 class TopologyData
@@ -329,7 +335,6 @@ public:
      */
     std::unique_ptr<ISimulator> build(bool            useModularSimulator,
                                       BoxDeformation* deform,
-                                      t_swap*         swap,
                                       gmx_mtop_t*     top_global,
                                       MDAtoms*        mdAtoms);
 
