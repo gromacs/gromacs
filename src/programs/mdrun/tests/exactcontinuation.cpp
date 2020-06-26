@@ -398,7 +398,7 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     {
         // Somehow, the bd integrator has never been as reproducible
         // as the others, either in continuations or reruns.
-        ulpToleranceInMixed = 128;
+        ulpToleranceInMixed = 200;
     }
     EnergyTermsToCompare energyTermsToCompare{
         { { interaction_function[F_EPOT].longname,
