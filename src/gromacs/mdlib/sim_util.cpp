@@ -73,6 +73,7 @@
 #include "gromacs/mdlib/calcmu.h"
 #include "gromacs/mdlib/calcvir.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -1841,6 +1842,25 @@ void do_force(FILE*                               fplog,
     {
         postProcessForceWithShiftForces(nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOut,
                                         vir_force, *mdatoms, *fr, vsite, stepWork);
+    }
+
+    // VdW dispersion correction, only computed on master rank to avoid double counting
+    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection && MASTER(cr))
+    {
+        // Calculate long range corrections to pressure and energy
+        const DispersionCorrection::Correction correction =
+                fr->dispersionCorrection->calculate(box, lambda[efptVDW]);
+
+        if (stepWork.computeEnergy)
+        {
+            enerd->term[F_DISPCORR] = correction.energy;
+            enerd->term[F_DVDL_VDW] += correction.dvdl;
+        }
+        if (stepWork.computeVirial)
+        {
+            correction.correctVirial(vir_force);
+            enerd->term[F_PDISPCORR] = correction.pressure;
+        }
     }
 
     // TODO refactor this and unify with above GPU PME-PP / GPU update path call to the same function

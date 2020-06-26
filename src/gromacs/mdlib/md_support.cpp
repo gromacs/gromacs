@@ -50,7 +50,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
-#include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/stat.h"
@@ -376,7 +375,6 @@ void compute_globals(gmx_global_stat*               gstat,
                      gmx::ArrayRef<const gmx::RVec> x,
                      gmx::ArrayRef<const gmx::RVec> v,
                      const matrix                   box,
-                     real                           vdwLambda,
                      const t_mdatoms*               mdatoms,
                      t_nrnb*                        nrnb,
                      t_vcm*                         vcm,
@@ -503,32 +501,6 @@ void compute_globals(gmx_global_stat*               gstat,
          */
 
         enerd->term[F_PRES] = calc_pres(fr->pbcType, ir->nwall, lastbox, ekind->ekin, total_vir, pres);
-    }
-
-    /* ##########  Long range energy information ###### */
-    if ((bEner || bPres) && fr->dispersionCorrection)
-    {
-        /* Calculate long range corrections to pressure and energy */
-        /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT],
-           and computes enerd->term[F_DISPCORR].  Also modifies the
-           total_vir and pres tensors */
-
-        const DispersionCorrection::Correction correction =
-                fr->dispersionCorrection->calculate(lastbox, vdwLambda);
-
-        if (bEner)
-        {
-            enerd->term[F_DISPCORR] = correction.energy;
-            enerd->term[F_EPOT] += correction.energy;
-            enerd->term[F_DVDL_VDW] += correction.dvdl;
-        }
-        if (bPres)
-        {
-            correction.correctVirial(total_vir);
-            correction.correctPressure(pres);
-            enerd->term[F_PDISPCORR] = correction.pressure;
-            enerd->term[F_PRES] += correction.pressure;
-        }
     }
 }
 

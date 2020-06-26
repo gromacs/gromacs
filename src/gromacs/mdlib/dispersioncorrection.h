@@ -109,18 +109,6 @@ public:
             }
         }
 
-        /*! \brief Correct the pressure tensor for the missing dispersion
-         *
-         * \param[in,out] pressureTensor  The pressure tensor to correct
-         */
-        void correctPressure(tensor pressureTensor) const
-        {
-            for (int m = 0; m < DIM; m++)
-            {
-                pressureTensor[m][m] += pressure;
-            }
-        }
-
         real virial   = 0; //!< Scalar correction to the virial
         real pressure = 0; //!< Scalar correction to the pressure
         real energy   = 0; //!< Correction to the energy

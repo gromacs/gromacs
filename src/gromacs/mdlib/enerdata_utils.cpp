@@ -232,21 +232,22 @@ void reset_enerdata(gmx_enerdata_t* enerd)
     {
         for (j = 0; (j < enerd->grpp.nener); j++)
         {
-            enerd->grpp.ener[i][j] = 0.0;
+            enerd->grpp.ener[i][j] = 0.0_real;
         }
     }
 
     /* Normal potential energy components */
     for (i = 0; (i <= F_EPOT); i++)
     {
-        enerd->term[i] = 0.0;
+        enerd->term[i] = 0.0_real;
     }
-    enerd->term[F_DVDL]           = 0.0;
-    enerd->term[F_DVDL_COUL]      = 0.0;
-    enerd->term[F_DVDL_VDW]       = 0.0;
-    enerd->term[F_DVDL_BONDED]    = 0.0;
-    enerd->term[F_DVDL_RESTRAINT] = 0.0;
-    enerd->term[F_DKDL]           = 0.0;
+    enerd->term[F_PDISPCORR]      = 0.0_real;
+    enerd->term[F_DVDL]           = 0.0_real;
+    enerd->term[F_DVDL_COUL]      = 0.0_real;
+    enerd->term[F_DVDL_VDW]       = 0.0_real;
+    enerd->term[F_DVDL_BONDED]    = 0.0_real;
+    enerd->term[F_DVDL_RESTRAINT] = 0.0_real;
+    enerd->term[F_DKDL]           = 0.0_real;
     std::fill(enerd->enerpart_lambda.begin(), enerd->enerpart_lambda.end(), 0);
     std::fill(enerd->dhdlLambda.begin(), enerd->dhdlLambda.end(), 0);
     /* reset foreign energy data and dvdl - separate functions since they are also called elsewhere */

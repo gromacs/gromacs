@@ -578,9 +578,9 @@ void gmx::LegacySimulator::do_md()
             cglo_flags_iteration &= ~CGLO_TEMPERATURE;
         }
         compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                        makeConstArrayRef(state->v), state->box, state->lambda[efptVDW], mdatoms,
-                        nrnb, &vcm, nullptr, enerd, force_vir, shake_vir, total_vir, pres, constr,
-                        &nullSignaller, state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
+                        makeConstArrayRef(state->v), state->box, mdatoms, nrnb, &vcm, nullptr,
+                        enerd, force_vir, shake_vir, total_vir, pres, constr, &nullSignaller,
+                        state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
                         cglo_flags_iteration
                                 | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
                                                                          : 0));
@@ -607,9 +607,9 @@ void gmx::LegacySimulator::do_md()
            perhaps loses some logic?*/
 
         compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                        makeConstArrayRef(state->v), state->box, state->lambda[efptVDW], mdatoms,
-                        nrnb, &vcm, nullptr, enerd, force_vir, shake_vir, total_vir, pres, constr,
-                        &nullSignaller, state->box, nullptr, &bSumEkinhOld, cglo_flags & ~CGLO_PRESSURE);
+                        makeConstArrayRef(state->v), state->box, mdatoms, nrnb, &vcm, nullptr,
+                        enerd, force_vir, shake_vir, total_vir, pres, constr, &nullSignaller,
+                        state->box, nullptr, &bSumEkinhOld, cglo_flags & ~CGLO_PRESSURE);
     }
 
     /* Calculate the initial half step temperature, and save the ekinh_old */
@@ -897,9 +897,9 @@ void gmx::LegacySimulator::do_md()
              * the full step kinetic energy and possibly for T-coupling.*/
             /* This may not be quite working correctly yet . . . . */
             compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                            makeConstArrayRef(state->v), state->box, state->lambda[efptVDW], mdatoms,
-                            nrnb, &vcm, wcycle, enerd, nullptr, nullptr, nullptr, nullptr, constr,
-                            &nullSignaller, state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
+                            makeConstArrayRef(state->v), state->box, mdatoms, nrnb, &vcm, wcycle,
+                            enerd, nullptr, nullptr, nullptr, nullptr, constr, &nullSignaller,
+                            state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_TEMPERATURE | CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS);
             checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions, top_global,
                                             &top, makeConstArrayRef(state->x), state->box,
@@ -1034,17 +1034,16 @@ void gmx::LegacySimulator::do_md()
             if (bGStat || do_per_step(step - 1, nstglobalcomm))
             {
                 wallcycle_stop(wcycle, ewcUPDATE);
-                compute_globals(
-                        gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                        makeConstArrayRef(state->v), state->box, state->lambda[efptVDW], mdatoms,
-                        nrnb, &vcm, wcycle, enerd, force_vir, shake_vir, total_vir, pres, constr,
-                        &nullSignaller, state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
-                        (bGStat ? CGLO_GSTAT : 0) | (bCalcEner ? CGLO_ENERGY : 0)
-                                | (bTemp ? CGLO_TEMPERATURE : 0) | (bPres ? CGLO_PRESSURE : 0)
-                                | (bPres ? CGLO_CONSTRAINT : 0) | (bStopCM ? CGLO_STOPCM : 0)
-                                | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                         : 0)
-                                | CGLO_SCALEEKIN);
+                compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
+                                makeConstArrayRef(state->v), state->box, mdatoms, nrnb, &vcm, wcycle,
+                                enerd, force_vir, shake_vir, total_vir, pres, constr, &nullSignaller,
+                                state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
+                                (bGStat ? CGLO_GSTAT : 0) | (bCalcEner ? CGLO_ENERGY : 0)
+                                        | (bTemp ? CGLO_TEMPERATURE : 0) | (bPres ? CGLO_PRESSURE : 0)
+                                        | (bPres ? CGLO_CONSTRAINT : 0) | (bStopCM ? CGLO_STOPCM : 0)
+                                        | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
+                                                                                 : 0)
+                                        | CGLO_SCALEEKIN);
                 /* explanation of above:
                    a) We compute Ekin at the full time step
                    if 1) we are using the AveVel Ekin, and it's not the
@@ -1097,10 +1096,9 @@ void gmx::LegacySimulator::do_md()
                      * the full step kinetic energy and possibly for T-coupling.*/
                     /* This may not be quite working correctly yet . . . . */
                     compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                                    makeConstArrayRef(state->v), state->box, state->lambda[efptVDW],
-                                    mdatoms, nrnb, &vcm, wcycle, enerd, nullptr, nullptr, nullptr,
-                                    nullptr, constr, &nullSignaller, state->box, nullptr,
-                                    &bSumEkinhOld, CGLO_GSTAT | CGLO_TEMPERATURE);
+                                    makeConstArrayRef(state->v), state->box, mdatoms, nrnb, &vcm, wcycle,
+                                    enerd, nullptr, nullptr, nullptr, nullptr, constr, &nullSignaller,
+                                    state->box, nullptr, &bSumEkinhOld, CGLO_GSTAT | CGLO_TEMPERATURE);
                     wallcycle_start(wcycle, ewcUPDATE);
                 }
             }
@@ -1347,10 +1345,9 @@ void gmx::LegacySimulator::do_md()
             /* erase F_EKIN and F_TEMP here? */
             /* just compute the kinetic energy at the half step to perform a trotter step */
             compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                            makeConstArrayRef(state->v), state->box, state->lambda[efptVDW],
-                            mdatoms, nrnb, &vcm, wcycle, enerd, force_vir, shake_vir, total_vir,
-                            pres, constr, &nullSignaller, lastbox, nullptr, &bSumEkinhOld,
-                            (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE);
+                            makeConstArrayRef(state->v), state->box, mdatoms, nrnb, &vcm, wcycle, enerd,
+                            force_vir, shake_vir, total_vir, pres, constr, &nullSignaller, lastbox,
+                            nullptr, &bSumEkinhOld, (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE);
             wallcycle_start(wcycle, ewcUPDATE);
             trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, &MassQ, trotter_seq, ettTSEQ4);
             /* now we know the scaling, we can compute the positions again */
@@ -1425,17 +1422,16 @@ void gmx::LegacySimulator::do_md()
                 bool                doIntraSimSignal = true;
                 SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
-                compute_globals(
-                        gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                        makeConstArrayRef(state->v), state->box, state->lambda[efptVDW], mdatoms,
-                        nrnb, &vcm, wcycle, enerd, force_vir, shake_vir, total_vir, pres, constr,
-                        &signaller, lastbox, &totalNumberOfBondedInteractions, &bSumEkinhOld,
-                        (bGStat ? CGLO_GSTAT : 0) | (!EI_VV(ir->eI) && bCalcEner ? CGLO_ENERGY : 0)
-                                | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
-                                | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
-                                | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) | CGLO_CONSTRAINT
-                                | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                         : 0));
+                compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
+                                makeConstArrayRef(state->v), state->box, mdatoms, nrnb, &vcm,
+                                wcycle, enerd, force_vir, shake_vir, total_vir, pres, constr,
+                                &signaller, lastbox, &totalNumberOfBondedInteractions, &bSumEkinhOld,
+                                (bGStat ? CGLO_GSTAT : 0) | (!EI_VV(ir->eI) && bCalcEner ? CGLO_ENERGY : 0)
+                                        | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
+                                        | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
+                                        | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) | CGLO_CONSTRAINT
+                                        | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
+                                                                                 : 0));
                 checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions,
                                                 top_global, &top, makeConstArrayRef(state->x),
                                                 state->box, &shouldCheckNumberOfBondedInteractions);

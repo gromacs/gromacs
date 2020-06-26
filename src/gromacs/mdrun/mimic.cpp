@@ -295,9 +295,9 @@ void gmx::LegacySimulator::do_mimic()
         bool   bSumEkinhOld = false;
         t_vcm* vcm          = nullptr;
         compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                        makeConstArrayRef(state->v), state->box, state->lambda[efptVDW], mdatoms, nrnb,
-                        vcm, nullptr, enerd, force_vir, shake_vir, total_vir, pres, constr, &nullSignaller,
-                        state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
+                        makeConstArrayRef(state->v), state->box, mdatoms, nrnb, vcm, nullptr, enerd,
+                        force_vir, shake_vir, total_vir, pres, constr, &nullSignaller, state->box,
+                        &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions, top_global, &top,
                                     makeConstArrayRef(state->x), state->box,
@@ -464,9 +464,9 @@ void gmx::LegacySimulator::do_mimic()
             SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
             compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                            makeConstArrayRef(state->v), state->box, state->lambda[efptVDW], mdatoms,
-                            nrnb, vcm, wcycle, enerd, nullptr, nullptr, nullptr, nullptr, constr,
-                            &signaller, state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
+                            makeConstArrayRef(state->v), state->box, mdatoms, nrnb, vcm, wcycle,
+                            enerd, nullptr, nullptr, nullptr, nullptr, constr, &signaller,
+                            state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_ENERGY
                                     | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
                                                                              : 0));

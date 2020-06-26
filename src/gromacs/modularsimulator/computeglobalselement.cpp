@@ -280,13 +280,9 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
     auto lastbox = useLastBox ? statePropagatorData_->constPreviousBox()
                               : statePropagatorData_->constBox();
 
-    const real vdwLambda = freeEnergyPerturbationElement_
-                                   ? freeEnergyPerturbationElement_->constLambdaView()[efptVDW]
-                                   : 0;
-
     compute_globals(
-            gstat_, cr_, inputrec_, fr_, energyElement_->ekindata(), x, v, box, vdwLambda,
-            mdAtoms_->mdatoms(), nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr, energyElement_->enerdata(),
+            gstat_, cr_, inputrec_, fr_, energyElement_->ekindata(), x, v, box, mdAtoms_->mdatoms(),
+            nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr, energyElement_->enerdata(),
             energyElement_->forceVirial(step), energyElement_->constraintVirial(step),
             energyElement_->totalVirial(step), energyElement_->pressure(step), constr_, signaller,
             lastbox, &totalNumberOfBondedInteractions_, energyElement_->needToSumEkinhOld(),
