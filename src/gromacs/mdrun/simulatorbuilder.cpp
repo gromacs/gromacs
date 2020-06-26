@@ -39,6 +39,8 @@
  * \ingroup module_mdrun
  */
 
+#include "gmxpre.h"
+
 #include "simulatorbuilder.h"
 
 #include <memory>
