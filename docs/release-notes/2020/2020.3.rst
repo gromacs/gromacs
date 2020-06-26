@@ -53,6 +53,13 @@ The tool was still broken and gave incorrect results after the previous fix.
 
 :issue:`3444`
 
+Allow configuration of dssp default path
+""""""""""""""""""""""""""""""""""""""""
+
+Users can configure the default path for dssp using GMX_DSSP_PROGRAM_PATH.
+
+:issue:`3520`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
