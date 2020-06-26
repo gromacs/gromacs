@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2015,2016,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,14 +115,14 @@ int gmx_fft_init_1d(gmx_fft_t* pfft, int nx, gmx_fft_flag gmx_unused flags)
     int       d;
     int       status;
 
-    if (pfft == NULL)
+    if (pfft == nullptr)
     {
         gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
-    *pfft = NULL;
+    *pfft = nullptr;
 
-    if ((fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
+    if ((fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == nullptr)
     {
         return ENOMEM;
     }
@@ -130,9 +130,9 @@ int gmx_fft_init_1d(gmx_fft_t* pfft, int nx, gmx_fft_flag gmx_unused flags)
     /* Mark all handles invalid */
     for (d = 0; d < 3; d++)
     {
-        fft->inplace[d] = fft->ooplace[d] = NULL;
+        fft->inplace[d] = fft->ooplace[d] = nullptr;
     }
-    fft->ooplace[3] = NULL;
+    fft->ooplace[3] = nullptr;
 
 
     status = DftiCreateDescriptor(&fft->inplace[0], GMX_DFTI_PREC, DFTI_COMPLEX, 1, (MKL_LONG)nx);
@@ -167,14 +167,12 @@ int gmx_fft_init_1d(gmx_fft_t* pfft, int nx, gmx_fft_flag gmx_unused flags)
     if (status != 0)
     {
         gmx_fatal(FARGS, "Error initializing Intel MKL FFT; status=%d", status);
-        gmx_fft_destroy(fft);
-        return status;
     }
 
     fft->ndim     = 1;
     fft->nx       = nx;
     fft->real_fft = 0;
-    fft->work     = NULL;
+    fft->work     = nullptr;
 
     *pfft = fft;
     return 0;
@@ -187,14 +185,14 @@ int gmx_fft_init_1d_real(gmx_fft_t* pfft, int nx, gmx_fft_flag gmx_unused flags)
     int       d;
     int       status;
 
-    if (pfft == NULL)
+    if (pfft == nullptr)
     {
         gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
-    *pfft = NULL;
+    *pfft = nullptr;
 
-    if ((fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
+    if ((fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == nullptr)
     {
         return ENOMEM;
     }
@@ -202,9 +200,9 @@ int gmx_fft_init_1d_real(gmx_fft_t* pfft, int nx, gmx_fft_flag gmx_unused flags)
     /* Mark all handles invalid */
     for (d = 0; d < 3; d++)
     {
-        fft->inplace[d] = fft->ooplace[d] = NULL;
+        fft->inplace[d] = fft->ooplace[d] = nullptr;
     }
-    fft->ooplace[3] = NULL;
+    fft->ooplace[3] = nullptr;
 
     status = DftiCreateDescriptor(&fft->inplace[0], GMX_DFTI_PREC, DFTI_REAL, 1, (MKL_LONG)nx);
 
@@ -238,22 +236,18 @@ int gmx_fft_init_1d_real(gmx_fft_t* pfft, int nx, gmx_fft_flag gmx_unused flags)
     if (status == DFTI_UNIMPLEMENTED)
     {
         gmx_fatal(FARGS, "The linked Intel MKL version (<6.0?) cannot do real FFTs.");
-        gmx_fft_destroy(fft);
-        return status;
     }
 
 
     if (status != 0)
     {
         gmx_fatal(FARGS, "Error initializing Intel MKL FFT; status=%d", status);
-        gmx_fft_destroy(fft);
-        return status;
     }
 
     fft->ndim     = 1;
     fft->nx       = nx;
     fft->real_fft = 1;
-    fft->work     = NULL;
+    fft->work     = nullptr;
 
     *pfft = fft;
     return 0;
@@ -268,14 +262,14 @@ int gmx_fft_init_2d_real(gmx_fft_t* pfft, int nx, int ny, gmx_fft_flag gmx_unuse
     MKL_LONG  stride[2];
     MKL_LONG  nyc;
 
-    if (pfft == NULL)
+    if (pfft == nullptr)
     {
         gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
-    *pfft = NULL;
+    *pfft = nullptr;
 
-    if ((fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == NULL)
+    if ((fft = (gmx_fft_t)malloc(sizeof(struct gmx_fft))) == nullptr)
     {
         return ENOMEM;
     }
@@ -285,9 +279,9 @@ int gmx_fft_init_2d_real(gmx_fft_t* pfft, int nx, int ny, gmx_fft_flag gmx_unuse
     /* Mark all handles invalid */
     for (d = 0; d < 3; d++)
     {
-        fft->inplace[d] = fft->ooplace[d] = NULL;
+        fft->inplace[d] = fft->ooplace[d] = nullptr;
     }
-    fft->ooplace[3] = NULL;
+    fft->ooplace[3] = nullptr;
 
     /* Roll our own 2D real transform using multiple transforms in MKL,
      * since the current MKL versions does not support our storage format,
@@ -416,8 +410,6 @@ int gmx_fft_init_2d_real(gmx_fft_t* pfft, int nx, int ny, gmx_fft_flag gmx_unuse
     if (status != 0)
     {
         gmx_fatal(FARGS, "Error initializing Intel MKL FFT; status=%d", status);
-        gmx_fft_destroy(fft);
-        return status;
     }
 
     fft->ndim     = 2;
@@ -466,7 +458,6 @@ int gmx_fft_1d(gmx_fft_t fft, enum gmx_fft_direction dir, void* in_data, void* o
     if (status != 0)
     {
         gmx_fatal(FARGS, "Error executing Intel MKL FFT.");
-        status = -1;
     }
 
     return status;
@@ -511,7 +502,6 @@ int gmx_fft_1d_real(gmx_fft_t fft, enum gmx_fft_direction dir, void* in_data, vo
     if (status != 0)
     {
         gmx_fatal(FARGS, "Error executing Intel MKL FFT.");
-        status = -1;
     }
 
     return status;
@@ -527,7 +517,6 @@ int gmx_fft_2d_real(gmx_fft_t fft, enum gmx_fft_direction dir, void* in_data, vo
         || ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)))
     {
         gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
-        return EINVAL;
     }
 
     if (dir == GMX_FFT_REAL_TO_COMPLEX)
@@ -564,7 +553,6 @@ int gmx_fft_2d_real(gmx_fft_t fft, enum gmx_fft_direction dir, void* in_data, vo
     if (status != 0)
     {
         gmx_fatal(FARGS, "Error executing Intel MKL FFT.");
-        status = -1;
     }
 
     return status;
@@ -574,24 +562,24 @@ void gmx_fft_destroy(gmx_fft_t fft)
 {
     int d;
 
-    if (fft != NULL)
+    if (fft != nullptr)
     {
         for (d = 0; d < 3; d++)
         {
-            if (fft->inplace[d] != NULL)
+            if (fft->inplace[d] != nullptr)
             {
                 DftiFreeDescriptor(&fft->inplace[d]);
             }
-            if (fft->ooplace[d] != NULL)
+            if (fft->ooplace[d] != nullptr)
             {
                 DftiFreeDescriptor(&fft->ooplace[d]);
             }
         }
-        if (fft->ooplace[3] != NULL)
+        if (fft->ooplace[3] != nullptr)
         {
             DftiFreeDescriptor(&fft->ooplace[3]);
         }
-        if (fft->work != NULL)
+        if (fft->work != nullptr)
         {
             free(fft->work);
         }
