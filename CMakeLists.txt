@@ -605,6 +605,7 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 ########################################################################
 
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
+include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/src/external)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 

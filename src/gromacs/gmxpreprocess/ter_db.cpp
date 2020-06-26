@@ -425,7 +425,7 @@ std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDataba
             if (gmx::equalCaseInsensitive(resname, s, 3))
             {
                 found = true;
-                list.push_back(it);
+                list.push_back(&*it);
             }
             else
             {
@@ -478,14 +478,14 @@ std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDataba
                 });
                 if (found == list.end())
                 {
-                    list.push_back(it);
+                    list.push_back(&*it);
                 }
             }
         }
     }
     if (none_idx != tb.end())
     {
-        list.push_back(none_idx);
+        list.push_back(&*none_idx);
     }
 
     return list;
