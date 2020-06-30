@@ -257,37 +257,37 @@ gromacs:clang-8:configure:
   variables:
     COMPILER_MAJOR_VERSION: 8
 
-    #gromacs:clang-9-mpi:configure:
-    #  extends:
-    #   - .gromacs:base:configure
-    #   - .use-clang:base
-    #   - .use-mpi
-    #   - .rules:merge-requests
-    #  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-    #  variables:
-    #    COMPILER_MAJOR_VERSION: 9
-    #    CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
+gromacs:clang-9-mpi:configure:
+  extends:
+   - .gromacs:base:configure
+   - .use-clang:base
+   - .use-mpi
+   - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  variables:
+    COMPILER_MAJOR_VERSION: 9
+    CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
 
-    #gromacs:clang-static-analyzer:configure:
-    #  extends:
-    #    - .gromacs:base:configure
-    #    - .use-clang:base
-    #    - .rules:merge-requests
-    #  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
-    #  variables:
-    #     CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
-    #     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_ANALYZER=ON -DGMX_OPENMP=OFF -DGMX_USE_RDTSCP=OFF -DGMX_FFT_LIBRARY=fftpack -DGMX_DEVELOPER_BUILD=ON"
-    #     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
+gromacs:clang-static-analyzer:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  variables:
+     CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
+     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_ANALYZER=ON -DGMX_OPENMP=OFF -DGMX_USE_RDTSCP=OFF -DGMX_FFT_LIBRARY=fftpack -DGMX_DEVELOPER_BUILD=ON"
+     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
 
-     #gromacs:clang-ASAN:configure:
-     #  extends:
-     #    - .gromacs:base:configure
-     #    - .use-clang:base
-     #    - .rules:merge-requests
-     #  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
-     #  variables:
-     #    COMPILER_MAJOR_VERSION: 8
-     #    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
+gromacs:clang-ASAN:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
 
 gromacs:gcc-7-nocuda-10.1:release:configure:
   extends:
@@ -322,22 +322,22 @@ gromacs:gcc-7:release:configure:
     - regressiontests:package
     - prepare-release-version
 
-      #gromacs:clang-9:release:configure:
-      #  extends:
-      #    - .gromacs:base:release:configure
-      #    - .use-clang:base
-      #    - .use-mpi
-      #    - .rules:nightly-only-for-release
-      #  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-      #  variables:
-      #    COMPILER_MAJOR_VERSION: 9
-      #    RELEASE_BUILD_DIR: release-builds-clang
-      #    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
-      #    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-      #  dependencies:
-      #    - archive:package
-      #    - regressiontests:package
-      #    - prepare-release-version
+gromacs:clang-9:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-clang:base
+    - .use-mpi
+    - .rules:nightly-only-for-release
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  variables:
+    COMPILER_MAJOR_VERSION: 9
+    RELEASE_BUILD_DIR: release-builds-clang
+    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
 
 gromacs:clang-9-nocuda-10.1:release:configure:
   extends:
@@ -419,29 +419,31 @@ gromacs:clang-TSAN:build:
   needs:
     - job: gromacs:clang-TSAN:configure
 
-      #gromacs:clang-ASAN:build:
-      #  extends:
-      #    - .variables:default
-      #    - .gromacs:base:build
-      #    - .use-clang:base
-      #    - .use-ccache
-      #    - .rules:merge-requests
-      #  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
-      #  tags:
-      #  needs:
-      #    - job: gromacs:clang-ASAN:configure
+gromacs:clang-ASAN:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-ASAN:configure
 
-      #gromacs:clang-static-analyzer:build:
-      #  extends:
-      #    - .variables:default
-      #    - .gromacs:static-analyzer-build
-      #    - .use-clang:base
-      #    - .use-ccache
-      #    - .rules:merge-requests
-      #  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
-      #  tags:
-      #  needs:
-      #    - job: gromacs:clang-static-analyzer:configure
+gromacs:clang-static-analyzer:build:
+  extends:
+    - .variables:default
+    - .gromacs:static-analyzer-build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-static-analyzer:configure
 
 gromacs:clang-8:build:
   extends:
@@ -454,16 +456,16 @@ gromacs:clang-8:build:
   needs:
     - job: gromacs:clang-8:configure
 
-      #gromacs:clang-9-mpi:build:
-      #  extends:
-      #    - .variables:default
-      #    - .gromacs:base:build
-      #    - .before_script:default
-      #    - .use-ccache
-      #    - .rules:merge-requests
-      #  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-      #  needs:
-      #    - job: gromacs:clang-9-mpi:configure
+gromacs:clang-9-mpi:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  needs:
+    - job: gromacs:clang-9-mpi:configure
 
 gromacs:gcc-7-nocuda-10.1:release:build:
   extends:
@@ -493,19 +495,19 @@ gromacs:gcc-7:release:build:
   needs:
     - job: gromacs:gcc-7:release:configure
 
-      #gromacs:clang-9:release:build:
-      #  extends:
-      #    - .variables:default
-      #    - .gromacs:base:build
-      #    - .before_script:default
-      #    - .use-ccache
-      #    - .rules:nightly-only-for-release
-      #  stage: release-build
-      #  variables:
-      #    BUILD_DIR: release-builds-clang
-      #  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-      #  needs:
-      #    - job: gromacs:clang-9:release:configure
+gromacs:clang-9:release:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-clang
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  needs:
+    - job: gromacs:clang-9:release:configure
 
 gromacs:clang-9-nocuda-10.1:release:build:
   extends:
@@ -596,6 +598,7 @@ gromacs:gcc-7:test:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:build
 
@@ -608,6 +611,7 @@ gromacs:gcc-7-nocuda-10.1:test:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7-nocuda-10.1:build
 
@@ -627,26 +631,28 @@ gromacs:clang-TSAN:test:
   needs:
     - job: gromacs:clang-TSAN:build
 
-      #gromacs:clang-ASAN:test:
-      #  extends:
-      #    - .gromacs:base:test
-      #    - .use-clang:base
-      #    - .rules:merge-requests
-      #  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
-      #  variables:
-      #    CTEST_RUN_MODE: "ExperimentalMemCheck"
-      #  tags:
-      #  needs:
-      #    - job: gromacs:clang-ASAN:build
+gromacs:clang-ASAN:test:
+  extends:
+    - .gromacs:base:test
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  variables:
+    CTEST_RUN_MODE: "ExperimentalMemCheck"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-ASAN:build
 
-      #gromacs:clang-9-mpi:test:
-      #  extends:
-      #    - .gromacs:base:test
-      #    - .rules:merge-requests
-      #  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-      #  tags:
-      #  needs:
-      #    - job: gromacs:clang-9-mpi:build
+gromacs:clang-9-mpi:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-9-mpi:build
 
 gromacs:gcc-7:regressiontest:
   extends:
@@ -660,6 +666,7 @@ gromacs:gcc-7:regressiontest:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:build
     - job: regressiontests:prepare
@@ -676,6 +683,7 @@ gromacs:gcc-7-nocuda-10.1:regressiontest:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7-nocuda-10.1:build
     - job: regressiontests:prepare
@@ -686,6 +694,7 @@ gromacs:clang-8:regressiontest:
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-8:build
     - job: regressiontests:prepare
@@ -696,33 +705,36 @@ gromacs:clang-TSAN:regressiontest:
     - .rules:merge-requests
   image: gromacs/cmake-3.13.0-llvm-8-tsan:master
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-TSAN:build
     - job: regressiontests:prepare
 
-      #gromacs:clang-ASAN:regressiontest:
-      #  extends:
-      #    - .gromacs:base:regressiontest
-      #    - .use-clang:base
-      #    - .rules:merge-requests
-      #  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
-      #  tags:
-      #  needs:
-      #    - job: gromacs:clang-ASAN:build
-      #    - job: regressiontests:prepare
+gromacs:clang-ASAN:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-ASAN:build
+    - job: regressiontests:prepare
 
-      #gromacs:clang-9:regressiontest:
-      #  extends:
-      #    - .gromacs:base:regressiontest
-      #    - .rules:merge-requests
-      #  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-      #  variables:
-      #    REGRESSIONTEST_DOUBLE: "-double"
-      #    REGRESSIONTEST_PARALLEL: "-np"
-      #  tags:
-      #  needs:
-      #    - job: gromacs:clang-9-mpi:build
-      #    - job: regressiontests:prepare
+gromacs:clang-9:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:merge-requests
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  variables:
+    REGRESSIONTEST_DOUBLE: "-double"
+    REGRESSIONTEST_PARALLEL: "-np"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-9-mpi:build
+    - job: regressiontests:prepare
 
 gromacs:gcc-7-nocuda-10.1:release:test:
   extends:
@@ -735,6 +747,7 @@ gromacs:gcc-7-nocuda-10.1:release:test:
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-gcc
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7-nocuda-10.1:release:configure
     - job: gromacs:gcc-7-nocuda-10.1:release:build
@@ -751,17 +764,17 @@ gromacs:gcc-7:release:test:
     - job: gromacs:gcc-7:release:configure
     - job: gromacs:gcc-7:release:build
 
-      #gromacs:clang-9:release:test:
-      #  extends:
-      #    - .gromacs:base:test
-      #    - .rules:nightly-only-for-release
-      #  stage: release-tests
-      #  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-      #  variables:
-      #    BUILD_DIR: release-builds-clang
-      #  needs:
-      #    - job: gromacs:clang-9:release:configure
-      #    - job: gromacs:clang-9:release:build
+gromacs:clang-9:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  variables:
+    BUILD_DIR: release-builds-clang
+  needs:
+    - job: gromacs:clang-9:release:configure
+    - job: gromacs:clang-9:release:build
 
 gromacs:clang-9-nocuda-10.1:release:test:
   extends:
@@ -774,6 +787,7 @@ gromacs:clang-9-nocuda-10.1:release:test:
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-clang
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-9-nocuda-10.1:release:configure
     - job: gromacs:clang-9-nocuda-10.1:release:build
@@ -787,24 +801,26 @@ gromacs:gcc-7:release:regressiontest:
   variables:
     BUILD_DIR: release-builds-gcc
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:release:build
     - job: regressiontests:package
 
-      #gromacs:clang-9:release:regressiontest:
-      #  extends:
-      #    - .gromacs:base:regressiontest
-      #    - .rules:nightly-only-for-release
-      #  stage: release-tests
-      #  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
-      #  variables:
-      #    BUILD_DIR: release-builds-clang
-      #    REGRESSIONTEST_DOUBLE: "-double"
-      #    REGRESSIONTEST_PARALLEL: "-np"
-      #  tags:
-      #  needs:
-      #    - job: gromacs:clang-9:release:build
-      #    - job: regressiontests:package
+gromacs:clang-9:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  variables:
+    BUILD_DIR: release-builds-clang
+    REGRESSIONTEST_DOUBLE: "-double"
+    REGRESSIONTEST_PARALLEL: "-np"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-9:release:build
+    - job: regressiontests:package
 
 gromacs:clang-9-nocuda-10.1:release:regressiontest:
   extends:
@@ -820,6 +836,7 @@ gromacs:clang-9-nocuda-10.1:release:regressiontest:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
   tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-9-nocuda-10.1:release:build
     - job: regressiontests:package

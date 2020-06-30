@@ -25,6 +25,7 @@
     when: always
     expire_in: 1 week
   tags:
+    - k8s-scilifelab
   # The dependency means we need to use the same tag restriction as upstream.
   needs:
     # Note: if we want to run regression tests using artifacts from the `release-2020`
