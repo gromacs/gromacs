@@ -84,6 +84,12 @@
 #include <iterator>
 #include <type_traits>
 
+#if __has_include(<boost/stl_interfaces/iterator_interface.hpp>)
+#    include <boost/stl_interfaces/iterator_interface.hpp>
+#else // fallback for installed headers
+#    include <gromacs/external/boost/stl_interfaces/iterator_interface.hpp>
+#endif
+
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -107,78 +113,38 @@ namespace gmx
  * \tparam  Step       Step increment.
  */
 template<typename EnumType, EnumType Last = EnumType::Count, unsigned int Step = 1>
-class EnumerationIterator final
+class EnumerationIterator final :
+    public boost::stl_interfaces::iterator_interface<EnumerationIterator<EnumType, Last, Step>, std::random_access_iterator_tag, EnumType>
 {
 public:
     //! Convenience alias
     using IntegerType = std::underlying_type_t<EnumType>;
 
-    /*! \name Iterator type traits
-     * Satisfies the requirements for STL forward iterator.
-     * \{
-     */
-    using iterator_category = std::forward_iterator_tag;
-    using value_type        = EnumType;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = EnumType*;
-    using reference         = EnumType&;
-    //! \}
-
     constexpr EnumerationIterator() noexcept : m_current{ 0 } // Assumes 0 is the first constant
     {
     }
-    //! Copy constructor
-    constexpr EnumerationIterator(const EnumType index) noexcept :
+    //! Conversion constructor
+    explicit constexpr EnumerationIterator(const EnumType index) noexcept :
         m_current(static_cast<IntegerType>(index))
     {
     }
-    //! Pre-increment operator
-    EnumerationIterator operator++()
+    //! Addition-assignment operator
+    constexpr EnumerationIterator& operator+=(std::ptrdiff_t i) noexcept
     {
-        m_current += Step;
+        m_current += Step * i;
         return *this;
     }
-    //! Post-increment operator
-    EnumerationIterator operator++(int)
-    {
-        EnumerationIterator old_val{ *this };
-        m_current += Step;
-        return old_val;
-    }
     //! Dereference operator
-    EnumType operator*() const
+    constexpr EnumType operator*() const noexcept
     {
         GMX_ASSERT(m_current < static_cast<IntegerType>(Last), "dereferencing out of range");
         return static_cast<EnumType>(m_current);
     }
-
-    /*!@{*/
-    //! Comparision operators
-    bool operator==(const EnumerationIterator other) const noexcept
+    //! Difference operator
+    constexpr std::ptrdiff_t operator-(const EnumerationIterator other) const noexcept
     {
-        return m_current == other.m_current;
+        return (m_current - other.m_current) / Step;
     }
-    bool operator!=(const EnumerationIterator other) const noexcept
-    {
-        return m_current != other.m_current;
-    }
-    bool operator<(const EnumerationIterator other) const noexcept
-    {
-        return m_current < other.m_current;
-    }
-    bool operator>(const EnumerationIterator other) const noexcept
-    {
-        return m_current > other.m_current;
-    }
-    bool operator<=(const EnumerationIterator other) const noexcept
-    {
-        return m_current <= other.m_current;
-    }
-    bool operator>=(const EnumerationIterator other) const noexcept
-    {
-        return m_current >= other.m_current;
-    }
-    /*!@}*/
 
 private:
     IntegerType m_current;

@@ -231,21 +231,9 @@ AtomIterator& AtomIterator::operator++()
     return *this;
 }
 
-AtomIterator AtomIterator::operator++(int)
-{
-    AtomIterator temp = *this;
-    ++(*this);
-    return temp;
-}
-
 bool AtomIterator::operator==(const AtomIterator& o) const
 {
     return mtop_ == o.mtop_ && globalAtomNumber_ == o.globalAtomNumber_;
-}
-
-bool AtomIterator::operator!=(const AtomIterator& o) const
-{
-    return !(*this == o);
 }
 
 const t_atom& AtomProxy::atom() const

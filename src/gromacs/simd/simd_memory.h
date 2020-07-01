@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,73 +92,30 @@ private:
 };
 
 template<typename T>
-class SimdIterator
+class SimdIterator :
+    public boost::stl_interfaces::iterator_interface<SimdIterator<T>, std::random_access_iterator_tag, T, SimdReference<T>>
 {
-public:
-    //! Type for representing size of the container.
-    using size_type = size_t;
-    //! Type for representing difference between two container indices.
-    using difference_type = std::ptrdiff_t;
-    //! Type of values stored in the container.
-    using value_type = T;
-    //! Pointer to a container element.
-    using pointer = typename SimdTraits<T>::type*;
-    //! Reference to a container element.
-    using reference = internal::SimdReference<T>;
+    using Base =
+            boost::stl_interfaces::iterator_interface<SimdIterator<T>, std::random_access_iterator_tag, T, SimdReference<T>>;
+    // pointer is T*
+    using DataPointer = typename SimdTraits<T>::type*;
 
-    explicit SimdIterator(pointer p = 0) : p_(p)
+public:
+    explicit SimdIterator(DataPointer p = 0) : p_(p)
     {
-        GMX_ASSERT((reinterpret_cast<size_type>(p) / sizeof(*p)) % simdWidth == 0,
+        GMX_ASSERT((reinterpret_cast<size_t>(p) / sizeof(*p)) % simdWidth == 0,
                    "Trying to create aligned iterator for non aligned address.");
     }
-    SimdIterator& operator++()
-    {
-        p_ += simdWidth;
-        return *this;
-    }
-    SimdIterator operator++(int)
-    {
-        SimdIterator retval = *this;
-        ++(*this);
-        return retval;
-    }
-    SimdIterator& operator--()
-    {
-        p_ -= simdWidth;
-        return *this;
-    }
-    SimdIterator operator--(int)
-    {
-        SimdIterator retval = *this;
-        --(*this);
-        return retval;
-    }
-    SimdIterator& operator+=(difference_type d)
+    SimdIterator& operator+=(typename Base::difference_type d)
     {
         p_ += simdWidth * d;
         return *this;
     }
-    SimdIterator& operator-=(difference_type d)
-    {
-        p_ -= simdWidth * d;
-        return *this;
-    }
-    SimdIterator operator+(difference_type d) { return SimdIterator(p_ + simdWidth * d); }
-    SimdIterator operator-(difference_type d) { return SimdIterator(p_ - simdWidth * d); }
-
-    difference_type operator-(SimdIterator o) { return (p_ - o.p_) / simdWidth; }
-
-    bool operator==(SimdIterator other) const { return p_ == other.p_; }
-    bool operator!=(SimdIterator other) const { return p_ != other.p_; }
-    bool operator<(SimdIterator other) const { return p_ < other.p_; }
-    bool operator>(SimdIterator other) const { return p_ > other.p_; }
-    bool operator<=(SimdIterator other) const { return p_ <= other.p_; }
-    bool operator>=(SimdIterator other) const { return p_ >= other.p_; }
-
-    reference operator*() const { return reference(p_); }
+    typename Base::difference_type operator-(SimdIterator o) { return (p_ - o.p_) / simdWidth; }
+    typename Base::reference       operator*() const { return typename Base::reference(p_); }
 
 private:
-    pointer              p_;
+    DataPointer          p_;
     static constexpr int simdWidth = SimdTraits<T>::width;
 };
 

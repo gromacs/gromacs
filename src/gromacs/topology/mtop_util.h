@@ -43,6 +43,8 @@
 #include <array>
 #include <vector>
 
+#include <boost/stl_interfaces/iterator_interface.hpp>
+
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -104,43 +106,28 @@ private:
     const AtomIterator* it_;
 };
 
-//! Wrapper around proxy object to implement operator->
-template<typename T>
-class ProxyPtr
-{
-public:
-    //! Construct with proxy object.
-    ProxyPtr(T t) : t_(t) {}
-    //! Member of pointer operator.
-    T* operator->() { return &t_; }
-
-private:
-    T t_;
-};
-
 /*! \brief
  * Object that allows looping over all atoms in an mtop.
  */
-class AtomIterator
+class AtomIterator :
+    public boost::stl_interfaces::proxy_iterator_interface<AtomIterator, std::forward_iterator_tag, t_atom, AtomProxy>
 {
+    using Base =
+            boost::stl_interfaces::proxy_iterator_interface<AtomIterator, std::forward_iterator_tag, t_atom, AtomProxy>;
+
 public:
     //! Construct from topology and optionalally a global atom number.
     explicit AtomIterator(const gmx_mtop_t& mtop, int globalAtomNumber = 0);
 
     //! Prefix increment.
     AtomIterator& operator++();
-    //! Postfix increment.
-    AtomIterator operator++(int);
+    using Base::  operator++;
 
     //! Equality comparison.
     bool operator==(const AtomIterator& o) const;
-    //! Non-equal comparison.
-    bool operator!=(const AtomIterator& o) const;
 
     //! Dereference operator. Returns proxy.
     AtomProxy operator*() const { return { this }; }
-    //! Member of pointer operator.
-    ProxyPtr<AtomProxy> operator->() const { return { this }; }
 
 private:
     //! Global topology.
