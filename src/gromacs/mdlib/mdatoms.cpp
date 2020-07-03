@@ -193,7 +193,12 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
 
 } // namespace gmx
 
-void atoms2md(const gmx_mtop_t* mtop, const t_inputrec* ir, int nindex, const int* index, int homenr, gmx::MDAtoms* mdAtoms)
+void atoms2md(const gmx_mtop_t*  mtop,
+              const t_inputrec*  ir,
+              int                nindex,
+              gmx::ArrayRef<int> index,
+              int                homenr,
+              gmx::MDAtoms*      mdAtoms)
 {
     gmx_bool         bLJPME;
     const t_grpopts* opts;
@@ -313,7 +318,7 @@ void atoms2md(const gmx_mtop_t* mtop, const t_inputrec* ir, int nindex, const in
             real mA, mB, fac;
             real c6, c12;
 
-            if (index == nullptr)
+            if (index.empty())
             {
                 ag = i;
             }

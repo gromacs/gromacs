@@ -831,7 +831,7 @@ int gmx_disre(int argc, char* argv[])
     }
 
     auto mdAtoms = gmx::makeMDAtoms(fplog, *topInfo.mtop(), *ir, false);
-    atoms2md(topInfo.mtop(), ir, -1, nullptr, ntopatoms, mdAtoms.get());
+    atoms2md(topInfo.mtop(), ir, -1, {}, ntopatoms, mdAtoms.get());
     update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->init_lambda);
     if (ir->pbcType != PbcType::No)
     {

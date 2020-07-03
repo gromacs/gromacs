@@ -75,22 +75,19 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
 {
     bool usingDomDec = DOMAINDECOMP(cr);
 
-    int  numAtomIndex;
-    int* atomIndex;
-    int  numHomeAtoms;
-    int  numTotalAtoms;
+    int numAtomIndex;
+    int numHomeAtoms;
+    int numTotalAtoms;
 
     if (usingDomDec)
     {
         numAtomIndex  = dd_natoms_mdatoms(cr->dd);
-        atomIndex     = cr->dd->globalAtomIndices.data();
         numHomeAtoms  = dd_numHomeAtoms(*cr->dd);
         numTotalAtoms = dd_natoms_mdatoms(cr->dd);
     }
     else
     {
         numAtomIndex  = -1;
-        atomIndex     = nullptr;
         numHomeAtoms  = top_global.natoms;
         numTotalAtoms = top_global.natoms;
     }
@@ -103,7 +100,8 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
         force->resizeWithPadding(numTotalAtoms);
     }
 
-    atoms2md(&top_global, ir, numAtomIndex, atomIndex, numHomeAtoms, mdAtoms);
+    atoms2md(&top_global, ir, numAtomIndex,
+             usingDomDec ? cr->dd->globalAtomIndices : std::vector<int>(), numHomeAtoms, mdAtoms);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)

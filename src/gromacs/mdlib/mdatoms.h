@@ -98,12 +98,12 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
 
 } // namespace gmx
 
-void atoms2md(const gmx_mtop_t* mtop,
-              const t_inputrec* ir,
-              int               nindex,
-              const int*        index,
-              int               homenr,
-              gmx::MDAtoms*     mdAtoms);
+void atoms2md(const gmx_mtop_t*  mtop,
+              const t_inputrec*  ir,
+              int                nindex,
+              gmx::ArrayRef<int> index,
+              int                homenr,
+              gmx::MDAtoms*      mdAtoms);
 /* This routine copies the atoms->atom struct into md.
  * If index!=NULL only the indexed atoms are copied.
  * For the masses the A-state (lambda=0) mass is used.
