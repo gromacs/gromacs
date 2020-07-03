@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,9 +142,7 @@ int gmx_genrestr(int argc, char* argv[])
     FILE*             out;
     int               igrp;
     real              d, dd, lo, hi;
-    int*              ind_grp;
     const char *      xfn, *nfn;
-    char*             gn_grp;
     matrix            box;
     gmx_bool          bFreeze;
     rvec              dx, *x = nullptr, *v = nullptr;
@@ -159,6 +157,7 @@ int gmx_genrestr(int argc, char* argv[])
     {
         return 0;
     }
+    output_env_done(oenv);
 
     bFreeze = opt2bSet("-of", NFILE, fnm) || opt2parg_bSet("-freeze", asize(pa), pa);
     bDisre  = bDisre || opt2parg_bSet("-disre_dist", npargs, pa);
@@ -181,10 +180,13 @@ int gmx_genrestr(int argc, char* argv[])
 
     const char* title        = "";
     bool        haveTopology = false;
+    gmx_mtop_t  mtop;
+    int*        indexGroups     = nullptr;
+    char*       indexGroupNames = nullptr;
+
     if (xfn != nullptr)
     {
         fprintf(stderr, "\nReading structure file\n");
-        gmx_mtop_t mtop;
         readConfAndTopology(xfn, &haveTopology, &mtop, nullptr, &x, &v, box);
         title = *mtop.name;
         atoms = gmx_mtop_global_atoms(&mtop);
@@ -216,18 +218,18 @@ int gmx_genrestr(int argc, char* argv[])
     else if ((bDisre || bConstr) && x)
     {
         printf("Select group to generate %s matrix from\n", bConstr ? "constraint" : "distance restraint");
-        get_index(&atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
+        get_index(&atoms, nfn, 1, &igrp, &indexGroups, &indexGroupNames);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
         if (bConstr)
         {
-            fprintf(out, "; constraints for %s of %s\n\n", gn_grp, title);
+            fprintf(out, "; constraints for %s of %s\n\n", indexGroupNames, title);
             fprintf(out, "[ constraints ]\n");
             fprintf(out, ";%4s %5s %1s %10s\n", "i", "j", "tp", "dist");
         }
         else
         {
-            fprintf(out, "; distance restraints for %s of %s\n\n", gn_grp, title);
+            fprintf(out, "; distance restraints for %s of %s\n\n", indexGroupNames, title);
             fprintf(out, "[ distance_restraints ]\n");
             fprintf(out, ";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n", "i", "j", "?", "label",
                     "funct", "lo", "up1", "up2", "weight");
@@ -236,11 +238,11 @@ int gmx_genrestr(int argc, char* argv[])
         {
             for (j = i + 1; j < igrp; j++, k++)
             {
-                rvec_sub(x[ind_grp[i]], x[ind_grp[j]], dx);
+                rvec_sub(x[indexGroups[i]], x[indexGroups[j]], dx);
                 d = norm(dx);
                 if (bConstr)
                 {
-                    fprintf(out, "%5d %5d %1d %10g\n", ind_grp[i] + 1, ind_grp[j] + 1, 2, d);
+                    fprintf(out, "%5d %5d %1d %10g\n", indexGroups[i] + 1, indexGroups[j] + 1, 2, d);
                 }
                 else
                 {
@@ -256,8 +258,8 @@ int gmx_genrestr(int argc, char* argv[])
                         }
                         lo = std::max(0.0_real, d - dd);
                         hi = d + dd;
-                        fprintf(out, "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n", ind_grp[i] + 1,
-                                ind_grp[j] + 1, 1, k, 1, lo, hi, hi + disre_up2, 1.0);
+                        fprintf(out, "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n", indexGroups[i] + 1,
+                                indexGroups[j] + 1, 1, k, 1, lo, hi, hi + disre_up2, 1.0);
                     }
                 }
             }
@@ -267,15 +269,15 @@ int gmx_genrestr(int argc, char* argv[])
     else
     {
         printf("Select group to position restrain\n");
-        get_index(&atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
+        get_index(&atoms, nfn, 1, &igrp, &indexGroups, &indexGroupNames);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
-        fprintf(out, "; position restraints for %s of %s\n\n", gn_grp, title);
+        fprintf(out, "; position restraints for %s of %s\n\n", indexGroupNames, title);
         fprintf(out, "[ position_restraints ]\n");
         fprintf(out, ";%3s %5s %9s %10s %10s\n", "i", "funct", "fcx", "fcy", "fcz");
         for (i = 0; i < igrp; i++)
         {
-            fprintf(out, "%4d %4d %10g %10g %10g\n", ind_grp[i] + 1, 1, fc[XX], fc[YY], fc[ZZ]);
+            fprintf(out, "%4d %4d %10g %10g %10g\n", indexGroups[i] + 1, 1, fc[XX], fc[YY], fc[ZZ]);
         }
         gmx_ffclose(out);
     }
@@ -285,6 +287,8 @@ int gmx_genrestr(int argc, char* argv[])
         sfree(v);
         done_atom(&atoms);
     }
+    sfree(indexGroupNames);
+    sfree(indexGroups);
 
     return 0;
 }

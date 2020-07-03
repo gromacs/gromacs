@@ -60,6 +60,14 @@ Users can configure the default path for dssp using GMX_DSSP_PROGRAM_PATH.
 
 :issue:`3520`
 
+Avoid segmentation fault in gmx genrestr
+""""""""""""""""""""""""""""""""""""""""
+
+The tool could fail when running simple inputs due to memory access errors
+caused by accessing free'd memory.
+
+:issue:`3582`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

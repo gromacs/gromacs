@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+; position restraints for C-alpha of First 10 residues from 1AKI
+
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   5    1       1000       1000       1000
+  27    1       1000       1000       1000
+  43    1       1000       1000       1000
+  63    1       1000       1000       1000
+  70    1       1000       1000       1000
+  94    1       1000       1000       1000
+ 105    1       1000       1000       1000
+ 120    1       1000       1000       1000
+ 139    1       1000       1000       1000
+ 149    1       1000       1000       1000
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>
