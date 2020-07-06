@@ -93,7 +93,7 @@ struct do_fspline
     template<typename Int>
     RVec operator()(Int order) const
     {
-        static_assert(isIntegralConstant<Int, int>::value || std::is_same<Int, int>::value,
+        static_assert(isIntegralConstant<Int, int>::value || std::is_same_v<Int, int>,
                       "'order' needs to be either of type integral_constant<int,N> or int.");
 
         const int norder = nn * order;

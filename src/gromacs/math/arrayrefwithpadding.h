@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -121,7 +121,7 @@ public:
     {
     }
     //! Convenience overload constructor to make an ArrayRefWithPadding<const T> from a non-const one.
-    template<typename U, typename = std::enable_if_t<std::is_same<value_type, const typename std::remove_reference_t<U>::value_type>::value>>
+    template<typename U, typename = std::enable_if_t<std::is_same_v<value_type, const typename std::remove_reference_t<U>::value_type>>>
     ArrayRefWithPadding(U&& o)
     {
         auto constArrayRefWithPadding = o.constArrayRefWithPadding();

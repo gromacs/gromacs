@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -176,7 +176,7 @@ using makeConstIf_t = std::conditional_t<c, const T, T>;
 
 TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
 {
-    makeConstIf_t<std::is_const<typename TestFixture::ValueType>::value, std::vector<typename TestFixture::NonConstValueType>> v(
+    makeConstIf_t<std::is_const_v<typename TestFixture::ValueType>, std::vector<typename TestFixture::NonConstValueType>> v(
             this->a, this->a + aSize);
     typename TestFixture::ArrayRefType arrayRef(v);
     this->runTests(v.data(), arrayRef);

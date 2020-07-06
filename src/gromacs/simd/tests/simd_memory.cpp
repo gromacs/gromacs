@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,10 +94,10 @@ template<typename TypeParam>
 class ArrayRefTest : public test::SimdTest
 {
 public:
-    using ArrayRefType = TypeParam;
-    using PointerType  = typename ArrayRefType::pointer;
-    using ValueType    = typename ArrayRefType::value_type;
-    using ElementType  = std::remove_const_t<typename gmx::internal::SimdTraits<ValueType>::type>;
+    using ArrayRefType         = TypeParam;
+    using PointerType          = typename ArrayRefType::pointer;
+    using ValueType            = typename ArrayRefType::value_type;
+    using ElementType          = std::remove_const_t<gmx::internal::SimdTraitsT<ValueType>>;
     static constexpr int width = gmx::internal::SimdTraits<ValueType>::width;
 
     /*! \brief Run the same tests all the time

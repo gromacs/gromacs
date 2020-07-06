@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,24 +89,24 @@ template<class T>
 class not_null
 {
 public:
-    static_assert(std::is_assignable<T&, std::nullptr_t>::value, "T cannot be assigned nullptr.");
+    static_assert(std::is_assignable_v<T&, std::nullptr_t>, "T cannot be assigned nullptr.");
 
     //! Move constructor. Asserts in debug mode if \c is nullptr.
-    template<typename U, typename = typename std::enable_if<std::is_convertible<U, T>::value>::type>
+    template<typename U, typename = std::enable_if_t<std::is_convertible_v<U, T>>>
     constexpr explicit not_null(U&& u) : ptr_(std::forward<U>(u))
     {
         Expects(ptr_ != nullptr);
     }
 
     //! Simple constructor. Asserts in debug mode if \c u is nullptr.
-    template<typename = typename std::enable_if<!std::is_same<std::nullptr_t, T>::value>::type>
+    template<typename = std::enable_if_t<!std::is_same_v<std::nullptr_t, T>>>
     constexpr explicit not_null(T u) : ptr_(u)
     {
         Expects(ptr_ != nullptr);
     }
 
     //! Copy constructor.
-    template<typename U, typename = typename std::enable_if<std::is_convertible<U, T>::value>::type>
+    template<typename U, typename = std::enable_if_t<std::is_convertible_v<U, T>>>
     constexpr not_null(const not_null<U>& other) : not_null(other.get())
     {
     }
@@ -155,16 +155,14 @@ private:
 template<class T>
 not_null<T> make_not_null(T&& t)
 {
-    return not_null<typename std::remove_cv<typename std::remove_reference<T>::type>::type>{
-        std::forward<T>(t)
-    };
+    return not_null<std::remove_cv_t<std::remove_reference_t<T>>>{ std::forward<T>(t) };
 }
 
 //! Convenience function for making not_null pointers from smart pointers.
 template<class T>
 not_null<typename T::pointer> make_not_null(T& t)
 {
-    return not_null<typename std::remove_reference<T>::type::pointer>{ t.get() };
+    return not_null<typename std::remove_reference_t<T>::pointer>{ t.get() };
 }
 
 //! Operators to compare not_null pointers.

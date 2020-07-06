@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ enum class MachineStamp : int32_t
  * \param[in,out] valueContainer the array to be serialized
  */
 template<typename ContainerType>
-std::enable_if_t<std::is_same<typename ContainerType::value_type, int32_t>::value, void>
+std::enable_if_t<std::is_same_v<typename ContainerType::value_type, int32_t>, void>
 serialize(ISerializer* serializer, ContainerType* valueContainer)
 {
     for (auto& value : *valueContainer)
@@ -95,7 +95,7 @@ serialize(ISerializer* serializer, ContainerType* valueContainer)
  * \param[in,out] valueContainer the array to be serialized
  */
 template<typename ContainerType>
-std::enable_if_t<std::is_same<typename ContainerType::value_type, float>::value, void>
+std::enable_if_t<std::is_same_v<typename ContainerType::value_type, float>, void>
 serialize(ISerializer* serializer, ContainerType* valueContainer)
 {
     for (auto& value : *valueContainer)
@@ -134,7 +134,7 @@ void serializeIndices(ISerializer* serializer, std::array<int32_t, 3>* valueArra
  * \tparam IntegralType type to be serialized as int32_t
  */
 template<class IntegralType>
-std::enable_if_t<(std::is_integral<IntegralType>::value || std::is_enum<IntegralType>::value), void>
+std::enable_if_t<(std::is_integral_v<IntegralType> || std::is_enum_v<IntegralType>), void>
 serializeAsInt32(ISerializer* serializer, IntegralType* value)
 {
     int32_t serializedValue;

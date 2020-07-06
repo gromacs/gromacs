@@ -113,8 +113,7 @@ RealType generateCanonical(Rng& g)
     // Only unsigned integer types can express the range using the
     // same type. Converting to RealType before computing the range
     // would work but we have no need for that.
-    static_assert(std::is_unsigned<decltype(Rng::max())>::value
-                          && std::is_unsigned<decltype(Rng::min())>::value,
+    static_assert(std::is_unsigned_v<decltype(Rng::max())> && std::is_unsigned_v<decltype(Rng::min())>,
                   "Rng::max and Rng::min must be unsigned");
     RealType r    = RealType(Rng::max() - Rng::min()) + RealType(1);
     RealType s    = g() - Rng::min();

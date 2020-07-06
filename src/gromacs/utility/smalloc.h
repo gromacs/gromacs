@@ -202,7 +202,7 @@ void save_free_aligned(const char* name, const char* file, int line, void* ptr);
 template<typename T>
 static inline void gmx_snew_impl(const char* name, const char* file, int line, T*& ptr, size_t nelem)
 {
-    static_assert(std::is_pod<T>::value, "snew() called on C++ type");
+    static_assert(std::is_pod_v<T>, "snew() called on C++ type");
     // NOLINTNEXTLINE bugprone-sizeof-expression
     ptr = static_cast<T*>(save_calloc(name, file, line, nelem, sizeof(T)));
 }
@@ -210,7 +210,7 @@ static inline void gmx_snew_impl(const char* name, const char* file, int line, T
 template<typename T>
 static inline void gmx_srenew_impl(const char* name, const char* file, int line, T*& ptr, size_t nelem)
 {
-    static_assert(std::is_pod<T>::value, "srenew() called on C++ type");
+    static_assert(std::is_pod_v<T>, "srenew() called on C++ type");
     // NOLINTNEXTLINE bugprone-sizeof-expression
     ptr = static_cast<T*>(save_realloc(name, file, line, ptr, nelem, sizeof(T)));
 }
@@ -218,7 +218,7 @@ static inline void gmx_srenew_impl(const char* name, const char* file, int line,
 template<typename T>
 static inline void gmx_smalloc_impl(const char* name, const char* file, int line, T*& ptr, size_t size)
 {
-    static_assert(std::is_pod<T>::value, "smalloc() called on C++ type");
+    static_assert(std::is_pod_v<T>, "smalloc() called on C++ type");
     ptr = static_cast<T*>(save_malloc(name, file, line, size));
 }
 /** C++ helper for snew_aligned(). */
@@ -226,22 +226,21 @@ template<typename T>
 static inline void
 gmx_snew_aligned_impl(const char* name, const char* file, int line, T*& ptr, size_t nelem, size_t alignment)
 {
-    static_assert(std::is_pod<T>::value, "snew_aligned() called on C++ type");
+    static_assert(std::is_pod_v<T>, "snew_aligned() called on C++ type");
     ptr = static_cast<T*>(save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment));
 }
 /** C++ helper for sfree(). */
 template<typename T>
 static inline void gmx_sfree_impl(const char* name, const char* file, int line, T* ptr)
 {
-    static_assert(std::is_pod<T>::value || std::is_void<T>::value, "sfree() called on C++ type");
+    static_assert(std::is_pod_v<T> || std::is_void_v<T>, "sfree() called on C++ type");
     save_free(name, file, line, ptr);
 }
 /** C++ helper for sfree_aligned(). */
 template<typename T>
 static inline void gmx_sfree_aligned_impl(const char* name, const char* file, int line, T* ptr)
 {
-    static_assert(std::is_pod<T>::value || std::is_void<T>::value,
-                  "sfree_aligned() called on C++ type");
+    static_assert(std::is_pod_v<T> || std::is_void_v<T>, "sfree_aligned() called on C++ type");
     save_free_aligned(name, file, line, ptr);
 }
 /*! \} */

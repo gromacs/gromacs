@@ -84,7 +84,7 @@ public:
      * \param[in] globalAtomIndex Indices of the atoms to be managed
      * \returns Handle to LocalAtomSet.
      */
-    template<typename T = void, typename U = std::enable_if_t<!std::is_same<int, index>::value, T>>
+    template<typename T = void, typename U = std::enable_if_t<!std::is_same_v<int, index>, T>>
     LocalAtomSet add(ArrayRef<const int> globalAtomIndex);
 #endif
     /*! \brief Add a new atom set to be managed and give back a handle.

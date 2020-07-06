@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -216,7 +216,7 @@ public:
      * \tparam U container type
      * \param[in] other mdspan-implementing container
      */
-    template<typename U, typename = std::enable_if_t<std::is_same<typename std::remove_reference_t<U>::view_type::element_type, ElementType>::value>>
+    template<typename U, typename = std::enable_if_t<std::is_same_v<typename std::remove_reference_t<U>::view_type::element_type, ElementType>>>
     constexpr basic_mdspan(U&& other) : basic_mdspan(other.asView())
     {
     }
@@ -230,7 +230,7 @@ public:
      * \tparam U container type
      * \param[in] other mdspan-implementing container
      */
-    template<typename U, typename = std::enable_if_t<std::is_same<typename std::remove_reference_t<U>::const_view_type::element_type, ElementType>::value>>
+    template<typename U, typename = std::enable_if_t<std::is_same_v<typename std::remove_reference_t<U>::const_view_type::element_type, ElementType>>>
     constexpr basic_mdspan(const U& other) : basic_mdspan(other.asConstView())
     {
     }
@@ -252,7 +252,7 @@ public:
      * \returns reference to element stored at position i
      */
     template<class IndexType>
-    constexpr std::enable_if_t<std::is_integral<IndexType>::value && extents_type::rank() == 1, reference>
+    constexpr std::enable_if_t<std::is_integral_v<IndexType> && extents_type::rank() == 1, reference>
     operator[](const IndexType& i) const noexcept
     {
         return acc_.access(ptr_, map_(i));
@@ -279,8 +279,8 @@ public:
      */
     template<class IndexType,
              typename sliced_mdspan_type = basic_mdspan<element_type, decltype(extents_type().sliced_extents()), LayoutPolicy, AccessorPolicy>>
-    constexpr std::enable_if_t<std::is_integral<IndexType>::value && (extents_type::rank() > 1)
-                                       && std::is_same<LayoutPolicy, layout_right>::value,
+    constexpr std::enable_if_t<std::is_integral_v<IndexType> && (extents_type::rank() > 1)
+                                       && std::is_same_v<LayoutPolicy, layout_right>,
                                sliced_mdspan_type>
     operator[](const IndexType index) const noexcept
     {

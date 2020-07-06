@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,9 +50,9 @@
 #include <climits>
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
-#include "gromacs/compat/utility.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -260,7 +260,7 @@ public:
      * \param[in] key  The key
      * \return a pointer to value for the given key or nullptr when not present
      */
-    T* find(int key) { return const_cast<T*>(gmx::compat::as_const(*this).find(key)); }
+    T* find(int key) { return const_cast<T*>(std::as_const(*this).find(key)); }
 
     /*! \brief Returns a pointer to the value for the given key or nullptr when not present
      *

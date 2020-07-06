@@ -103,7 +103,7 @@ public:
         std::int64_t   int64Value_         = c_int64Value;
         double         doubleValue_        = c_intAndFloat64.doubleValue_;
         int            intValue_           = integerSizeDependentTestingValue();
-        real           realValue_          = std::is_same<real, double>::value
+        real           realValue_          = std::is_same_v<real, double>
                                   ? static_cast<real>(c_intAndFloat64.doubleValue_)
                                   : static_cast<real>(c_intAndFloat32.floatValue_);
     } defaultValues_;

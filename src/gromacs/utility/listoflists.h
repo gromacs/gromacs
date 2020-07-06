@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,7 +77,7 @@ namespace gmx
 template<typename T>
 class ListOfLists
 {
-    static_assert(std::is_arithmetic<T>::value, "This class is limited to arithmetic types");
+    static_assert(std::is_arithmetic_v<T>, "This class is limited to arithmetic types");
 
 public:
     //! Constructs an empty list of lists
@@ -133,7 +133,7 @@ public:
     void pushBackListOfSize(int numElements)
     {
         // With arithmetic types enforced, this assertion is always true
-        static_assert(std::is_default_constructible<T>::value,
+        static_assert(std::is_default_constructible_v<T>,
                       "pushBackListOfSize should only be called with default constructable types");
         elements_.resize(elements_.size() + numElements);
         listRanges_.push_back(int(elements_.size()));

@@ -75,7 +75,7 @@ public:
      *
      * \param[in] globalAtomIndex Indices of the atoms to be managed
      */
-    template<typename T = void, typename U = std::enable_if_t<!std::is_same<int, index>::value, T>>
+    template<typename T = void, typename U = std::enable_if_t<!std::is_same_v<int, index>, T>>
     explicit LocalAtomSetData(ArrayRef<const int> globalAtomIndex) :
         globalIndex_(globalAtomIndex.begin(), globalAtomIndex.end()),
         localIndex_(globalAtomIndex.begin(), globalAtomIndex.end())

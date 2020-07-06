@@ -379,7 +379,7 @@ private:
  * if the enable_if causes problems with some compilers, it can be removed.
  */
 template<class Exception, class Tag, class T>
-inline std::enable_if_t<std::is_base_of<GromacsException, Exception>::value, Exception>
+inline std::enable_if_t<std::is_base_of_v<GromacsException, Exception>, Exception>
 operator<<(Exception ex, const ExceptionInfo<Tag, T>& item)
 {
     ex.setInfo(item);

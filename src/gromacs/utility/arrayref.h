@@ -73,7 +73,7 @@ struct ArrayRefIter :
     // This default constructor does not initialize it_
     constexpr ArrayRefIter() noexcept {}
     constexpr explicit ArrayRefIter(T* it) noexcept : it_(it) {}
-    template<class T2 = T, class = std::enable_if_t<std::is_const<T2>::value>>
+    template<class T2 = T, class = std::enable_if_t<std::is_const_v<T2>>>
     constexpr ArrayRefIter(ArrayRefIter<std::remove_const_t<T2>> it) noexcept : it_(&*it)
     {
     }
@@ -176,7 +176,7 @@ public:
      * This constructor is not explicit to allow directly passing
      * a container to a method that takes ArrayRef.
      */
-    template<typename U, typename = std::enable_if_t<std::is_convertible<typename std::remove_reference_t<U>::pointer, pointer>::value>>
+    template<typename U, typename = std::enable_if_t<std::is_convertible_v<typename std::remove_reference_t<U>::pointer, pointer>>>
     ArrayRef(U&& o) : begin_(o.data()), end_(o.data() + o.size())
     {
     }
@@ -313,7 +313,7 @@ ArrayRef<const T> constArrayRefFromArray(const T* begin, size_t size)
  * \see ArrayRef
  */
 template<typename T>
-ArrayRef<std::conditional_t<std::is_const<T>::value, const typename T::value_type, typename T::value_type>>
+ArrayRef<std::conditional_t<std::is_const_v<T>, const typename T::value_type, typename T::value_type>>
 makeArrayRef(T& c)
 {
     return c;

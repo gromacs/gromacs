@@ -55,7 +55,7 @@ class SimdReference
 {
 private:
     using non_const_T = std::remove_const_t<T>;
-    using pointer     = typename SimdTraits<T>::type*;
+    using pointer     = SimdTraitsT<T>*;
 
 public:
     //! \brief Constructor
@@ -98,7 +98,7 @@ class SimdIterator :
     using Base =
             boost::stl_interfaces::iterator_interface<SimdIterator<T>, std::random_access_iterator_tag, T, SimdReference<T>>;
     // pointer is T*
-    using DataPointer = typename SimdTraits<T>::type*;
+    using DataPointer = SimdTraitsT<T>*;
 
 public:
     explicit SimdIterator(DataPointer p = 0) : p_(p)
@@ -144,7 +144,7 @@ public:
     //! Type of values stored in the container.
     using value_type = T;
     //! Pointer to a container element.
-    using pointer = typename SimdTraits<T>::type*;
+    using pointer = SimdTraitsT<T>*;
     //! Reference to a container element.
     using reference = internal::SimdReference<T>;
     //! Iterator type for the container.
@@ -162,7 +162,7 @@ public:
                    "Size of ArrayRef needs to be divisible by type size");
     }
     //! \copydoc ArrayRef::ArrayRef(U)
-    template<typename U, typename = std::enable_if_t<std::is_convertible<typename std::remove_reference_t<U>::pointer, pointer>::value>>
+    template<typename U, typename = std::enable_if_t<std::is_convertible_v<typename std::remove_reference_t<U>::pointer, pointer>>>
     SimdArrayRef(U&& o) :
         begin_(reinterpret_cast<pointer>(o.data())),
         end_(reinterpret_cast<pointer>(o.data() + o.size()))
@@ -190,7 +190,7 @@ public:
 
 private:
     static constexpr int simdWidth = SimdTraits<T>::width;
-    using pack_type                = typename SimdTraits<T>::type[simdWidth];
+    using pack_type                = SimdTraitsT<T>[simdWidth];
     // Private because dereferencing return value is undefined behavior (strict aliasing rule)
     // Only use is conversion constructor above which immediately casts it back.
     // Return type is not "pointer" because then data()+size() would be ill defined.

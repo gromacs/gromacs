@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -194,7 +194,7 @@ public:
     reference emplace_back(Args&&... args)
     {
         GMX_ASSERT(size() < capacity, "Cannot add more elements than the capacity");
-        if (std::is_move_assignable<T>::value)
+        if (std::is_move_assignable_v<T>)
         {
             *end_ = std::move(T(args...));
         }

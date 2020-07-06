@@ -102,7 +102,7 @@ void compareViews(ArrayRef<T> input, ArrayRef<T> output)
 
 //! Comparison for non-BasicVector ignoring const qualifiers
 template<typename T, typename U>
-typename std::enable_if<std::is_same<typename std::remove_const<T>::type, typename std::remove_const<U>::type>::value, void>::type
+typename std::enable_if_t<std::is_same_v<std::remove_const_t<T>, std::remove_const_t<U>>, void>
 compareViewsIgnoreConst(ArrayRef<T> input, ArrayRef<U> output)
 {
     ASSERT_EQ(input.size(), output.size());
