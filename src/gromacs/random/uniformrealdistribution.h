@@ -107,8 +107,7 @@ RealType generateCanonical(Rng& g)
     // No point in using more bits than fit in RealType
     const uint64_t digits   = std::numeric_limits<RealType>::digits;
     const uint64_t realBits = std::min(digits, static_cast<uint64_t>(Bits));
-    const uint64_t range    = Rng::max() - Rng::min() + uint64_t(1);
-    uint64_t       log2R    = (range == 0) ? std::numeric_limits<uint64_t>::digits : log2I(range);
+    const uint64_t log2R    = std::numeric_limits<typename Rng::result_type>::digits;
     uint64_t       k        = realBits / log2R + (realBits % log2R != 0) + (realBits == 0);
     // Note that Rng::max and Rng::min are typically an integer type.
     // Only unsigned integer types can express the range using the
