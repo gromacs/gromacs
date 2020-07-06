@@ -238,7 +238,8 @@ void EnergyElement::doStep(Time time, bool isEnergyCalculationStep, bool isFreeE
     }
     if (freeEnergyPerturbationElement_)
     {
-        sum_dhdl(enerd_, freeEnergyPerturbationElement_->constLambdaView(), *inputrec_->fepvals);
+        accumulateKineticLambdaComponents(enerd_, freeEnergyPerturbationElement_->constLambdaView(),
+                                          *inputrec_->fepvals);
         dummyLegacyState_.fep_state = freeEnergyPerturbationElement_->currentFEPState();
     }
     if (parrinelloRahmanBarostat_)

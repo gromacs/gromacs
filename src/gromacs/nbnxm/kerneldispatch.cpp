@@ -460,7 +460,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
                                                   gmx::ForceWithShiftForces* forceWithShiftForces,
                                                   const t_mdatoms&           mdatoms,
                                                   t_lambda*                  fepvals,
-                                                  real*                      lambda,
+                                                  gmx::ArrayRef<real const>  lambda,
                                                   gmx_enerdata_t*            enerd,
                                                   const gmx::StepWorkload&   stepWork,
                                                   t_nrnb*                    nrnb)
@@ -493,7 +493,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
     nb_kernel_data_t kernel_data;
     real             dvdl_nb[efptNR] = { 0 };
     kernel_data.flags                = donb_flags;
-    kernel_data.lambda               = lambda;
+    kernel_data.lambda               = lambda.data();
     kernel_data.dvdl                 = dvdl_nb;
 
     kernel_data.energygrp_elec = enerd->grpp.ener[egCOULSR].data();
@@ -557,7 +557,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }
 
-            sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
+            sum_epot(enerd->foreign_grpp, enerd->foreign_term);
             enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             enerd->dhdlLambda[i] += dvdl_nb[efptVDW] + dvdl_nb[efptCOUL];
         }

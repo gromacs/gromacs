@@ -1035,7 +1035,7 @@ void relax_shell_flexcon(FILE*                         fplog,
             sf_dir += md->massT[i] * norm2(shfc->acc_dir[i]);
         }
     }
-    sum_epot(&(enerd->grpp), enerd->term);
+    accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals);
     Epot[Min] = enerd->term[F_EPOT];
 
     df[Min] = rms_force(cr, forceWithPadding[Min].paddedArrayRef(), shells, nflexcon, &sf_dir, &Epot[Min]);
@@ -1109,7 +1109,7 @@ void relax_shell_flexcon(FILE*                         fplog,
                  wcycle, top, box, posWithPadding[Try], hist, forceWithPadding[Try], force_vir, md,
                  enerd, lambda, fr, runScheduleWork, vsite, mu_tot, t, nullptr, shellfc_flags,
                  ddBalanceRegionHandler);
-        sum_epot(&(enerd->grpp), enerd->term);
+        accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals);
         if (gmx_debug_at)
         {
             pr_rvecs(debug, 0, "RELAX: force[Min]", as_rvec_array(force[Min].data()), homenr);

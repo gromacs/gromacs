@@ -1123,10 +1123,10 @@ void gmx::LegacySimulator::do_md()
             {
                 saved_conserved_quantity -= enerd->term[F_DISPCORR];
             }
-            /* sum up the foreign energy and dhdl terms for vv.  currently done every step so that dhdl is correct in the .edr */
+            /* sum up the foreign kinetic energy and dK/dl terms for vv.  currently done every step so that dhdl is correct in the .edr */
             if (ir->efep != efepNO)
             {
-                sum_dhdl(enerd, state->lambda, *ir->fepvals);
+                accumulateKineticLambdaComponents(enerd, state->lambda, *ir->fepvals);
             }
         }
 
@@ -1468,9 +1468,9 @@ void gmx::LegacySimulator::do_md()
 
         if (ir->efep != efepNO && !EI_VV(ir->eI))
         {
-            /* Sum up the foreign energy and dhdl terms for md and sd.
-               Currently done every step so that dhdl is correct in the .edr */
-            sum_dhdl(enerd, state->lambda, *ir->fepvals);
+            /* Sum up the foreign energy and dK/dl terms for md and sd.
+               Currently done every step so that dH/dl is correct in the .edr */
+            accumulateKineticLambdaComponents(enerd, state->lambda, *ir->fepvals);
         }
 
         update_pcouple_after_coordinates(fplog, step, ir, mdatoms, pres, force_vir, shake_vir,

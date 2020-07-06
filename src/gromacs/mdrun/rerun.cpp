@@ -588,13 +588,6 @@ void gmx::LegacySimulator::do_rerun()
            but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
-        if (ir->efep != efepNO)
-        {
-            /* Sum up the foreign energy and dhdl terms for md and sd.
-               Currently done every step so that dhdl is correct in the .edr */
-            sum_dhdl(enerd, state->lambda, *ir->fepvals);
-        }
-
         /* Output stuff */
         if (MASTER(cr))
         {

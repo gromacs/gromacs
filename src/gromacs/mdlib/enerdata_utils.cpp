@@ -66,20 +66,20 @@ static real sum_v(int n, gmx::ArrayRef<const real> v)
     return t;
 }
 
-void sum_epot(gmx_grppairener_t* grpp, real* epot)
+void sum_epot(const gmx_grppairener_t& grpp, real* epot)
 {
     int i;
 
     /* Accumulate energies */
-    epot[F_COUL_SR] = sum_v(grpp->nener, grpp->ener[egCOULSR]);
-    epot[F_LJ]      = sum_v(grpp->nener, grpp->ener[egLJSR]);
-    epot[F_LJ14]    = sum_v(grpp->nener, grpp->ener[egLJ14]);
-    epot[F_COUL14]  = sum_v(grpp->nener, grpp->ener[egCOUL14]);
+    epot[F_COUL_SR] = sum_v(grpp.nener, grpp.ener[egCOULSR]);
+    epot[F_LJ]      = sum_v(grpp.nener, grpp.ener[egLJSR]);
+    epot[F_LJ14]    = sum_v(grpp.nener, grpp.ener[egLJ14]);
+    epot[F_COUL14]  = sum_v(grpp.nener, grpp.ener[egCOUL14]);
 
     /* lattice part of LR doesnt belong to any group
      * and has been added earlier
      */
-    epot[F_BHAM] = sum_v(grpp->nener, grpp->ener[egBHAMSR]);
+    epot[F_BHAM] = sum_v(grpp.nener, grpp.ener[egBHAMSR]);
 
     epot[F_EPOT] = 0;
     for (i = 0; (i < F_EPOT); i++)
@@ -91,11 +91,15 @@ void sum_epot(gmx_grppairener_t* grpp, real* epot)
     }
 }
 
-void sum_dhdl(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_lambda& fepvals)
+/* Adds computed dV/dlambda contributions to the requested outputs
+ *
+ * Also adds the dispersion correction dV/dlambda to the VdW term.
+ * Note that kinetic energy and constraint contributions are handled in sum_dkdl()
+ */
+static void sum_dvdl(gmx_enerdata_t* enerd, const t_lambda& fepvals)
 {
-    int index;
-
-    enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW]; /* include dispersion correction */
+    // Add dispersion correction to the VdW component
+    enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW];
 
     for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
     {
@@ -108,6 +112,7 @@ void sum_dhdl(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_l
         if (fepvals.separate_dvdl[i])
         {
             /* could this be done more readably/compactly? */
+            int index;
             switch (i)
             {
                 case (efptMASS): index = F_DKDL; break;
@@ -134,7 +139,52 @@ void sum_dhdl(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_l
             }
         }
     }
+}
 
+void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_lambda* fepvals)
+{
+    sum_epot(enerd->grpp, enerd->term);
+
+    if (fepvals)
+    {
+        /* Note that sum_dvdl() adds the dispersion correction enerd->dvdl_lin[efptVDW],
+         * so sum_dvdl() should be called before computing the foreign lambda energy differences.
+         */
+        sum_dvdl(enerd, *fepvals);
+
+        /* Sum the foreign lambda energy difference contributions.
+         * Note that here we only add the potential energy components.
+         * The constraint and kinetic energy components are add after integration
+         * by sum_dhdl().
+         */
+        for (int i = 0; i < fepvals->n_lambda; i++)
+        {
+            /* note we are iterating over fepvals here!
+               For the current lam, dlam = 0 automatically,
+               so we don't need to add anything to the
+               enerd->enerpart_lambda[0] */
+
+            /* we don't need to worry about dvdl_lin contributions to dE at
+               current lambda, because the contributions to the current
+               lambda are automatically zeroed */
+
+            double& enerpart_lambda = enerd->enerpart_lambda[i + 1];
+
+            for (gmx::index j = 0; j < lambda.ssize(); j++)
+            {
+                /* Note that this loop is over all dhdl components, not just the separated ones */
+                const double dlam = fepvals->all_lambda[j][i] - lambda[j];
+
+                enerpart_lambda += dlam * enerd->dvdl_lin[j];
+            }
+        }
+    }
+}
+
+void accumulateKineticLambdaComponents(gmx_enerdata_t*           enerd,
+                                       gmx::ArrayRef<const real> lambda,
+                                       const t_lambda&           fepvals)
+{
     if (fepvals.separate_dvdl[efptBONDED])
     {
         enerd->term[F_DVDL_BONDED] += enerd->term[F_DVDL_CONSTR];
@@ -151,40 +201,22 @@ void sum_dhdl(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_l
            so we don't need to add anything to the
            enerd->enerpart_lambda[0] */
 
-        /* we don't need to worry about dvdl_lin contributions to dE at
-           current lambda, because the contributions to the current
-           lambda are automatically zeroed */
-
         double& enerpart_lambda = enerd->enerpart_lambda[i + 1];
 
-        for (gmx::index j = 0; j < lambda.ssize(); j++)
+        /* Note that potential energy terms have been added by sum_epot() -> sum_dvdl() */
+
+        /* Constraints can not be evaluated at foreign lambdas, so we add
+         * a linear extrapolation. This is an approximation, but usually
+         * quite accurate since constraints change little between lambdas.
+         */
+        const int    lambdaIndex = (fepvals.separate_dvdl[efptBONDED] ? efptBONDED : efptFEP);
+        const double dlam        = fepvals.all_lambda[lambdaIndex][i] - lambda[lambdaIndex];
+        enerpart_lambda += dlam * enerd->term[F_DVDL_CONSTR];
+
+        if (!fepvals.separate_dvdl[efptMASS])
         {
-            /* Note that this loop is over all dhdl components, not just the separated ones */
-            const double dlam = fepvals.all_lambda[j][i] - lambda[j];
-
-            enerpart_lambda += dlam * enerd->dvdl_lin[j];
-
-            /* Constraints can not be evaluated at foreign lambdas, so we add
-             * a linear extrapolation. This is an approximation, but usually
-             * quite accurate since constraints change little between lambdas.
-             */
-            if ((j == efptBONDED && fepvals.separate_dvdl[efptBONDED])
-                || (j == efptFEP && !fepvals.separate_dvdl[efptBONDED]))
-            {
-                enerpart_lambda += dlam * enerd->term[F_DVDL_CONSTR];
-            }
-
-            if (j == efptMASS && !fepvals.separate_dvdl[j])
-            {
-                enerpart_lambda += dlam * enerd->term[F_DKDL];
-            }
-
-            if (debug)
-            {
-                fprintf(debug, "enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
-                        fepvals.all_lambda[j][i], efpt_names[j],
-                        enerpart_lambda - enerd->enerpart_lambda[0], dlam, enerd->dvdl_lin[j]);
-            }
+            const double dlam = fepvals.all_lambda[efptMASS][i] - lambda[efptMASS];
+            enerpart_lambda += dlam * enerd->term[F_DKDL];
         }
     }
 

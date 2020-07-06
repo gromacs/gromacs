@@ -718,7 +718,7 @@ void ListedForces::calculate(struct gmx_wallcycle*          wcycle,
                 calc_listed_lambda(idef, threading_.get(), x, fr, pbc, forceBufferLambda_,
                                    shiftForceBufferLambda_, &(enerd->foreign_grpp), enerd->foreign_term,
                                    dvdl, nrnb, lam_i, md, &fcdata, global_atom_index);
-                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
+                sum_epot(enerd->foreign_grpp, enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
                 for (int j = 0; j < efptNR; j++)
                 {

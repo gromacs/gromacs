@@ -53,7 +53,7 @@ typedef struct
 {
     int                    flags;
     const struct t_blocka* exclusions;
-    real*                  lambda;
+    const real*            lambda;
     real*                  dvdl;
 
     /* pointers to tables */

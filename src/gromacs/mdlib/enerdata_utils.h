@@ -45,6 +45,7 @@
 
 struct gmx_enerdata_t;
 struct gmx_grppairener_t;
+struct t_fepvals;
 struct t_lambda;
 
 void reset_foreign_enerdata(gmx_enerdata_t* enerd);
@@ -56,10 +57,26 @@ void reset_dvdl_enerdata(gmx_enerdata_t* enerd);
 void reset_enerdata(gmx_enerdata_t* enerd);
 /* Resets the energy data */
 
-void sum_epot(gmx_grppairener_t* grpp, real* epot);
-/* Locally sum the non-bonded potential energy terms */
+/*! \brief Sums energy group pair contributions into epot */
+void sum_epot(const gmx_grppairener_t& grpp, real* epot);
 
-void sum_dhdl(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_lambda& fepvals);
-/* Sum the free energy contributions */
+/*! \brief Accumulates potential energy contributions to obtain final potential energies
+ *
+ * Accumulates energy group pair contributions into the output energy components
+ * and sums all potential energies into the total potential energy term.
+ * With free-energy also computes the foreign lambda potential energy differences.
+ *
+ * \param[in,out] enerd    Energy data with components to sum and to accumulate into
+ * \param[in]     lambda   Vector of free-energy lambdas
+ * \param[in]     fepvals  Foreign lambda energy differences, only summed with !=nullptr
+ */
+void accumulatePotentialEnergies(gmx_enerdata_t*           enerd,
+                                 gmx::ArrayRef<const real> lambda,
+                                 const t_lambda*           fepvals);
+
+/*! \brief Accumulates kinetic and constraint contributions to dH/dlambda and foreign energies */
+void accumulateKineticLambdaComponents(gmx_enerdata_t*           enerd,
+                                       gmx::ArrayRef<const real> lambda,
+                                       const t_lambda&           fepvals);
 
 #endif

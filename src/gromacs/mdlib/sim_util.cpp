@@ -610,7 +610,7 @@ static void computeSpecialForces(FILE*                          fplog,
                                  const matrix                   box,
                                  gmx::ArrayRef<const gmx::RVec> x,
                                  const t_mdatoms*               mdatoms,
-                                 real*                          lambda,
+                                 gmx::ArrayRef<const real>      lambda,
                                  const StepWorkload&            stepWork,
                                  gmx::ForceWithVirial*          forceWithVirial,
                                  gmx_enerdata_t*                enerd,
@@ -632,7 +632,7 @@ static void computeSpecialForces(FILE*                          fplog,
     if (inputrec->bPull && pull_have_potential(pull_work))
     {
         pull_potential_wrapper(cr, inputrec, box, x, forceWithVirial, mdatoms, enerd, pull_work,
-                               lambda, t, wcycle);
+                               lambda.data(), t, wcycle);
 
         if (awh)
         {
@@ -1011,7 +1011,7 @@ void do_force(FILE*                               fplog,
               tensor                              vir_force,
               const t_mdatoms*                    mdatoms,
               gmx_enerdata_t*                     enerd,
-              gmx::ArrayRef<real>                 lambda,
+              gmx::ArrayRef<const real>           lambda,
               t_forcerec*                         fr,
               gmx::MdrunScheduleWorkload*         runScheduleWork,
               gmx::VirtualSitesHandler*           vsite,
@@ -1525,14 +1525,14 @@ void do_force(FILE*                               fplog,
         nbv->dispatchFreeEnergyKernel(InteractionLocality::Local, fr,
                                       as_rvec_array(x.unpaddedArrayRef().data()),
                                       &forceOut.forceWithShiftForces(), *mdatoms, inputrec->fepvals,
-                                      lambda.data(), enerd, stepWork, nrnb);
+                                      lambda, enerd, stepWork, nrnb);
 
         if (havePPDomainDecomposition(cr))
         {
             nbv->dispatchFreeEnergyKernel(InteractionLocality::NonLocal, fr,
                                           as_rvec_array(x.unpaddedArrayRef().data()),
                                           &forceOut.forceWithShiftForces(), *mdatoms,
-                                          inputrec->fepvals, lambda.data(), enerd, stepWork, nrnb);
+                                          inputrec->fepvals, lambda, enerd, stepWork, nrnb);
         }
     }
 
@@ -1579,7 +1579,7 @@ void do_force(FILE*                               fplog,
     wallcycle_stop(wcycle, ewcFORCE);
 
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation, imdSession, pull_work, step, t,
-                         wcycle, fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda.data(),
+                         wcycle, fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
                          stepWork, &forceOut.forceWithVirial(), enerd, ed, stepWork.doNeighborSearch);
 
 
@@ -1882,8 +1882,9 @@ void do_force(FILE*                               fplog,
 
     if (stepWork.computeEnergy)
     {
-        /* Sum the potential energy terms from group contributions */
-        sum_epot(&(enerd->grpp), enerd->term);
+        /* Compute the final potential energy terms */
+        accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals);
+        ;
 
         if (!EI_TPI(inputrec->eI))
         {

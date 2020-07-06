@@ -331,7 +331,7 @@ public:
                                   gmx::ForceWithShiftForces* forceWithShiftForces,
                                   const t_mdatoms&           mdatoms,
                                   t_lambda*                  fepvals,
-                                  real*                      lambda,
+                                  gmx::ArrayRef<const real>  lambda,
                                   gmx_enerdata_t*            enerd,
                                   const gmx::StepWorkload&   stepWork,
                                   t_nrnb*                    nrnb);

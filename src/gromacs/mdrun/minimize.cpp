@@ -901,7 +901,10 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     clear_mat(ekin);
     enerd->term[F_PRES] = calc_pres(fr->pbcType, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
-    sum_dhdl(enerd, ems->s.lambda, *inputrec->fepvals);
+    if (inputrec->efep != efepNO)
+    {
+        accumulateKineticLambdaComponents(enerd, ems->s.lambda, *inputrec->fepvals);
+    }
 
     if (EI_ENERGY_MINIMIZATION(inputrec->eI))
     {
