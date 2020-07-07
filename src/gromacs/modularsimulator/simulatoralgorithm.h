@@ -32,13 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief Provides the modular simulator algorithm.
  *
  * Defines the ModularSimulatorAlgorithm class and its builder.
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
+ *
+ * This header is only used within the modular simulator module.
+ * Moving forward, the ModularSimulatorAlgorithmBuilder could be exposed to allow users to
+ * create custom algorithm - currently algorithms are only created an used by the ModularSimulator,
+ * meaning that this file is not exposed outside of the modular simulator module.
  */
 #ifndef GROMACS_MODULARSIMULATOR_SIMULATORALGORITHM_H
 #define GROMACS_MODULARSIMULATOR_SIMULATORALGORITHM_H
@@ -65,7 +70,7 @@ class ResetHandler;
 class TopologyHolder;
 class TrajectoryElementBuilder;
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief The modular simulator
  *
@@ -250,7 +255,7 @@ private:
     gmx_walltime_accounting* walltime_accounting;
 };
 
-/*!\libinternal
+/*!\internal
  * \brief Builder for ModularSimulatorAlgorithm objects
  *
  * TODO: The current builder automatically builds a simulator algorithm based on the

@@ -32,11 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief Declares the domain decomposition helper for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
+ *
+ * This header is only used within the modular simulator module
  */
 
 #ifndef GMX_MODULARSIMULATOR_DOMDECHELPER_H
@@ -70,7 +72,7 @@ typedef std::function<void()> CheckBondedInteractionsCallback;
 //! Pointer to the function type allowing to request a check of the number of bonded interactions
 typedef std::unique_ptr<CheckBondedInteractionsCallback> CheckBondedInteractionsCallbackPtr;
 
-/*! \libinternal
+/*! \internal
  * \brief Infrastructure element responsible for domain decomposition
  *
  * This encapsulates the function call to domain decomposition, which is

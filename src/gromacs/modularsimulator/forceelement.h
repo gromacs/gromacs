@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief Declares the force element for the modular simulator
  *
  * This element calculates the forces, with or without shells or
@@ -40,6 +40,8 @@
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
+ *
+ * This header is only used within the modular simulator module
  */
 
 #ifndef GMX_MODULARSIMULATOR_FORCEELEMENT_H
@@ -71,7 +73,7 @@ class MdrunScheduleWorkload;
 class StatePropagatorData;
 class VirtualSitesHandler;
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Force element
  *

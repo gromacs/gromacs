@@ -32,11 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief Declares the propagator element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
+ *
+ * This header is only used within the modular simulator module
  */
 
 #ifndef GMX_MODULARSIMULATOR_PROPAGATOR_H
@@ -105,7 +107,7 @@ typedef std::function<void(Step)> PropagatorCallback;
 //! Pointer to generic callback to the propagator
 typedef std::unique_ptr<PropagatorCallback> PropagatorCallbackPtr;
 
-/*! \libinternal
+/*! \internal
  * \brief Propagator element
  *
  * The propagator element can, through templating, cover the different

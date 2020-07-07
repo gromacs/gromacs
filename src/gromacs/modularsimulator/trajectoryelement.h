@@ -32,11 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief Declares the trajectory element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
+ *
+ * This header is only used within the modular simulator module
  */
 
 #ifndef GMX_MODULARSIMULATOR_TRAJECTORYELEMENT_H
@@ -62,7 +64,7 @@ struct MdModulesNotifier;
 struct MdrunOptions;
 enum class StartingBehavior;
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Trajectory element signals and handles trajectory writing
  *
@@ -176,7 +178,7 @@ private:
     void write(Step step, Time time, bool writeState, bool writeEnergy, bool writeLog);
 };
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Build the `TrajectoryElement`
  *

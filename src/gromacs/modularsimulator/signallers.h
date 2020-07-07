@@ -32,11 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief Declares the signallers for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
+ *
+ * This header is only used within the modular simulator module
  */
 
 #ifndef GMX_MODULARSIMULATOR_SIGNALLERS_H
@@ -53,7 +55,7 @@ namespace gmx
 class StopHandler;
 class TrajectoryElement;
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Builder for signallers
  *
@@ -90,7 +92,7 @@ private:
     SignallerCallbackPtr getSignallerCallback(typename Signaller::Client* client, Args&&... args);
 };
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Element signalling a neighbor search step
  *
@@ -138,7 +140,7 @@ private:
     const Time initTime_;
 };
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Element signalling the last step
  *
@@ -196,7 +198,7 @@ private:
     bool nsStepRegistrationDone_;
 };
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Element signalling a logging step
  *
@@ -251,7 +253,7 @@ private:
     bool lastStepRegistrationDone_;
 };
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Element signalling trajectory writing
  *
@@ -327,7 +329,7 @@ private:
     SignallerCallbackPtr registerLastStepCallback() override;
 };
 
-/*! \libinternal
+/*! \internal
  * \ingroup module_modularsimulator
  * \brief Element signalling energy related special steps
  *

@@ -32,11 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief Declares the global reduction element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
+ *
+ * This header is only used within the modular simulator module
  */
 
 #ifndef GMX_MODULARSIMULATOR_COMPUTEGLOBALSELEMENT_H
@@ -75,7 +77,7 @@ typedef std::function<void()> CheckBondedInteractionsCallback;
 //! Pointer to the function type allowing to request a check of the number of bonded interactions
 typedef std::unique_ptr<CheckBondedInteractionsCallback> CheckBondedInteractionsCallbackPtr;
 
-/*! \libinternal
+/*! \internal
  * \brief Encapsulate the calls to `compute_globals`
  *
  * This element aims at offering an interface to the legacy

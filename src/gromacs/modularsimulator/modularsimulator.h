@@ -40,6 +40,12 @@
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
+ *
+ * This header is currently the only part of the modular simulator module which is exposed.
+ * Mdrunner creates an object of type ModularSimulator (via SimulatorBuilder), and calls its
+ * run() method. Mdrunner also calls checkUseModularSimulator(...), which in turns calls a
+ * static method of ModularSimulator. This could easily become a free function if this requires
+ * more exposure than otherwise necessary.
  */
 #ifndef GROMACS_MODULARSIMULATOR_MODULARSIMULATOR_H
 #define GROMACS_MODULARSIMULATOR_MODULARSIMULATOR_H
