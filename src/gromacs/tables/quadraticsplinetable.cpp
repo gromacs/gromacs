@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ namespace
 
 /*! \brief Construct the data for a single quadratic table from analytical functions
  *
- * \param[in]  function             Analytical functiojn
+ * \param[in]  function             Analytical function
  * \param[in]  derivative           Analytical derivative
  * \param[in]  range                Upper/lower limit of region to tabulate
  * \param[in]  spacing              Distance between table points
@@ -169,11 +169,11 @@ void fillSingleQuadraticSplineTableData(ArrayRef<const double>       function,
 
     std::vector<double> thirdDerivative(internal::vectorSecondDerivative(derivative, inputSpacing));
 
-    double      maxMagnitude      = 0.0001 * GMX_REAL_MAX;
-    bool        functionIsInRange = true;
-    std::size_t lastIndexInRange  = endIndex - 1;
+    double maxMagnitude      = 0.0001 * GMX_REAL_MAX;
+    bool   functionIsInRange = true;
+    int    lastIndexInRange  = static_cast<int>(endIndex) - 1;
 
-    for (int i = endIndex - 1; i >= 0; i--)
+    for (int i = lastIndexInRange; i >= 0; i--)
     {
         double x = i * spacing;
         double tmpFunctionValue;
@@ -220,6 +220,7 @@ void fillSingleQuadraticSplineTableData(ArrayRef<const double>       function,
         {
             // Once the function or derivative (more likely) has reached very large values,
             // we simply make a linear function from the last in-range value of the derivative.
+            GMX_ASSERT(lastIndexInRange >= 0, "Array index is unexpectedly negative.");
             double lastIndexFunction   = (*functionTableData)[lastIndexInRange];
             double lastIndexDerivative = (*derivativeTableData)[lastIndexInRange];
             (*functionTableData)[i] =
