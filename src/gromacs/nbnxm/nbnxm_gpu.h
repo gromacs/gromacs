@@ -275,11 +275,6 @@ float gpu_wait_finish_task(NbnxmGpu gmx_unused*    nb,
                            gmx::ArrayRef<gmx::RVec> gmx_unused shiftForces,
                            gmx_wallcycle gmx_unused* wcycle) GPU_FUNC_TERM_WITH_RETURN(0.0);
 
-/*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-GPU_FUNC_QUALIFIER
-int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused& ic)
-        GPU_FUNC_TERM_WITH_RETURN(-1);
-
 /*! \brief Initialization for X buffer operations on GPU.
  * Called on the NS step and performs (re-)allocations and memory copies. !*/
 CUDA_FUNC_QUALIFIER

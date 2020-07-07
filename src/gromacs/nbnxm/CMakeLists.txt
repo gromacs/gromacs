@@ -63,11 +63,13 @@ file (GLOB NBNXM_SOURCES
 
 if(GMX_USE_CUDA)
     add_subdirectory(cuda)
+    gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
 endif()
 
 if(GMX_USE_OPENCL)
     add_subdirectory(opencl)
     set(NBNXM_OPENCL_KERNELS ${NBNXM_OPENCL_KERNELS} PARENT_SCOPE)
+    gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
 endif()
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${NBNXM_SOURCES} PARENT_SCOPE)

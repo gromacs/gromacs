@@ -199,11 +199,6 @@ typedef struct cl_nbparam_params
 } cl_nbparam_params_t;
 
 
-/*! \internal
- * \brief Pair list data.
- */
-using cl_plist_t = Nbnxm::gpu_plist;
-
 /** \internal
  * \brief Typedef of actual timer type.
  */
@@ -254,7 +249,7 @@ struct NbnxmGpu
     //! parameters required for the non-bonded calc.
     NBParamGpu* nbparam = nullptr;
     //! pair-list data structures (local and non-local)
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_plist_t*> plist = { nullptr };
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, Nbnxm::gpu_plist*> plist = { nullptr };
     //! staging area where fshift/energies get downloaded
     nb_staging_t nbst;
 

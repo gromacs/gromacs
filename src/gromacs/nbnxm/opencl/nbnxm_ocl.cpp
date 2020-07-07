@@ -484,7 +484,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     int adat_begin, adat_len;
 
     cl_atomdata_t*      adat         = nb->atdat;
-    cl_plist_t*         plist        = nb->plist[iloc];
+    gpu_plist*          plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
@@ -586,7 +586,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
 {
     cl_atomdata_t*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
-    cl_plist_t*         plist        = nb->plist[iloc];
+    gpu_plist*          plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
@@ -723,7 +723,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
 {
     cl_atomdata_t*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
-    cl_plist_t*         plist        = nb->plist[iloc];
+    gpu_plist*          plist        = nb->plist[iloc];
     cl_timers_t*        t            = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
     bool                bDoTime      = nb->bDoTime;
@@ -949,63 +949,6 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     {
         t->xf[aloc].nb_d2h.closeTimingRegion(deviceStream);
     }
-}
-
-
-/*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
-{
-    bool bTwinCut = (ic.rcoulomb != ic.rvdw);
-    bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
-    int  kernel_type;
-
-    /* Benchmarking/development environment variables to force the use of
-       analytical or tabulated Ewald kernel. */
-    bForceAnalyticalEwald = (getenv("GMX_OCL_NB_ANA_EWALD") != nullptr);
-    bForceTabulatedEwald  = (getenv("GMX_OCL_NB_TAB_EWALD") != nullptr);
-
-    if (bForceAnalyticalEwald && bForceTabulatedEwald)
-    {
-        gmx_incons(
-                "Both analytical and tabulated Ewald OpenCL non-bonded kernels "
-                "requested through environment variables.");
-    }
-
-    /* OpenCL: By default, use analytical Ewald
-     * TODO: tabulated does not work, it needs fixing, see init_nbparam() in nbnxn_ocl_data_mgmt.cpp
-     *
-     */
-    /* By default use analytical Ewald. */
-    bUseAnalyticalEwald = true;
-    if (bForceAnalyticalEwald)
-    {
-        if (debug)
-        {
-            fprintf(debug, "Using analytical Ewald OpenCL kernels\n");
-        }
-    }
-    else if (bForceTabulatedEwald)
-    {
-        bUseAnalyticalEwald = false;
-
-        if (debug)
-        {
-            fprintf(debug, "Using tabulated Ewald OpenCL kernels\n");
-        }
-    }
-
-    /* Use twin cut-off kernels if requested by bTwinCut or the env. var.
-       forces it (use it for debugging/benchmarking only). */
-    if (!bTwinCut && (getenv("GMX_OCL_NB_EWALD_TWINCUT") == nullptr))
-    {
-        kernel_type = bUseAnalyticalEwald ? eelTypeEWALD_ANA : eelTypeEWALD_TAB;
-    }
-    else
-    {
-        kernel_type = bUseAnalyticalEwald ? eelTypeEWALD_ANA_TWIN : eelTypeEWALD_TAB_TWIN;
-    }
-
-    return kernel_type;
 }
 
 } // namespace Nbnxm

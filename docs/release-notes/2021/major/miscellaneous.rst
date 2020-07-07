@@ -25,3 +25,11 @@ change outside of the users direct control we have removed the support for
 automatically setting booleans. GMX_BUILD_HELP and GMX_HWLOC are now
 disabled by default, while GMX_LOAD_PLUGINS is enabled by default.
 
+Unification of several CUDA and OpenCL environment variables
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The environment variables that had exactly the same meaning in OpenCL and CUDA were unified:
+
+* GMX_CUDA_NB_ANA_EWALD and GMX_OCL_NB_ANA_EWALD into GMX_GPU_NB_ANA_EWALD
+* GMX_CUDA_NB_TAB_EWALD and GMX_OCL_NB_TAB_EWALD into GMX_GPU_NB_TAB_EWALD
+* GMX_CUDA_NB_EWALD_TWINCUT and GMX_OCL_NB_EWALD_TWINCUT into GMX_GPU_NB_EWALD_TWINCUT

@@ -141,15 +141,15 @@ Performance and Run Control
         to localized bonded interaction distribution; optimal value dependent on
         system and hardware, default value is 4.
 
-``GMX_CUDA_NB_EWALD_TWINCUT``
+``GMX_GPU_NB_EWALD_TWINCUT``
         force the use of twin-range cutoff kernel even if :mdp:`rvdw` equals
         :mdp:`rcoulomb` after PP-PME load balancing. The switch to twin-range kernels is automated,
         so this variable should be used only for benchmarking.
 
-``GMX_CUDA_NB_ANA_EWALD``
+``GMX_GPU_NB_ANA_EWALD``
         force the use of analytical Ewald kernels. Should be used only for benchmarking.
 
-``GMX_CUDA_NB_TAB_EWALD``
+``GMX_GPU_NB_TAB_EWALD``
         force the use of tabulated Ewald kernels. Should be used only for benchmarking.
 
 ``GMX_DISABLE_CUDA_TIMING``
@@ -462,18 +462,6 @@ compilation of OpenCL kernels, but they are also used in device selection.
 ``GMX_OCL_ENABLE_I_PREFETCH``
         Enables i-atom data (type or LJ parameter) prefetch allowing
         testing on platforms where this behavior is not default.
-
-``GMX_OCL_NB_ANA_EWALD``
-        Forces the use of analytical Ewald kernels. Equivalent of
-        CUDA environment variable ``GMX_CUDA_NB_ANA_EWALD``
-
-``GMX_OCL_NB_TAB_EWALD``
-        Forces the use of tabulated Ewald kernel. Equivalent
-        of CUDA environment variable ``GMX_OCL_NB_TAB_EWALD``
-
-``GMX_OCL_NB_EWALD_TWINCUT``
-        Forces the use of twin-range cutoff kernel. Equivalent of
-        CUDA environment variable ``GMX_CUDA_NB_EWALD_TWINCUT``
 
 ``GMX_OCL_FILE_PATH``
         Use this parameter to force |Gromacs| to load the OpenCL

@@ -138,11 +138,6 @@ struct cu_atomdata
 };
 
 /** \internal
- * \brief Pair list data.
- */
-using cu_plist_t = Nbnxm::gpu_plist;
-
-/** \internal
  * \brief Typedef of actual timer type.
  */
 typedef struct Nbnxm::gpu_timers_t cu_timers_t;
@@ -190,7 +185,7 @@ struct NbnxmGpu
     /*! \brief parameters required for the non-bonded calc. */
     NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cu_plist_t*> plist = { { nullptr } };
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, Nbnxm::gpu_plist*> plist = { { nullptr } };
     /*! \brief staging area where fshift/energies get downloaded */
     nb_staging_t nbst;
     /*! \brief local and non-local GPU streams */
