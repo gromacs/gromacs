@@ -68,7 +68,7 @@ void createBasicTop(gmx_mtop_t* mtop)
     mtop->molblock[0].type = 0;
     mtop->molblock[0].nmol = 3;
     mtop->natoms           = moltype.atoms.nr * mtop->molblock[0].nmol;
-    gmx_mtop_finalize(mtop);
+    mtop->finalize();
 }
 
 /*! \brief
@@ -99,7 +99,7 @@ std::vector<gmx::Range<int>> createTwoResidueTopology(gmx_mtop_t* mtop)
     mtop->molblock[0].type = 0;
     mtop->molblock[0].nmol = 1;
     mtop->natoms           = moltype.atoms.nr * mtop->molblock[0].nmol;
-    gmx_mtop_finalize(mtop);
+    mtop->finalize();
     std::vector<gmx::Range<int>> residueRange;
     residueRange.emplace_back(0, residueOneSize);
     residueRange.emplace_back(residueOneSize, residueOneSize + residueTwoSize);

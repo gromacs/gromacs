@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,7 +98,7 @@ TEST(UpdateGroupsCog, ComputesCogs)
     mtop.molblock[0].type = 0;
     mtop.molblock[0].nmol = numMolecules;
     mtop.natoms           = numAtoms;
-    gmx_mtop_finalize(&mtop);
+    mtop.finalize();
 
     // Set up the SETTLE parameters.
     const real dOH = 0.1;

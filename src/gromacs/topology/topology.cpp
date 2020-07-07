@@ -86,6 +86,28 @@ gmx_moltype_t::~gmx_moltype_t()
     done_atom(&atoms);
 }
 
+static int gmx_mtop_maxresnr(const gmx::ArrayRef<const gmx_moltype_t> moltypes, int maxres_renum)
+{
+    int maxresnr = 0;
+
+    for (const gmx_moltype_t& moltype : moltypes)
+    {
+        const t_atoms& atoms = moltype.atoms;
+        if (atoms.nres > maxres_renum)
+        {
+            for (int r = 0; r < atoms.nres; r++)
+            {
+                if (atoms.resinfo[r].nr > maxresnr)
+                {
+                    maxresnr = atoms.resinfo[r].nr;
+                }
+            }
+        }
+    }
+
+    return maxresnr;
+}
+
 gmx_mtop_t::gmx_mtop_t()
 {
     init_atomtypes(&atomtypes);
@@ -99,6 +121,70 @@ gmx_mtop_t::~gmx_mtop_t()
     moltype.clear();
     molblock.clear();
     done_atomtypes(&atomtypes);
+}
+
+void gmx_mtop_t::finalize()
+{
+    if (molblock.size() == 1 && molblock[0].nmol == 1)
+    {
+        /* We have a single molecule only, no renumbering needed.
+         * This case also covers an mtop converted from pdb/gro/... input,
+         * so we retain the original residue numbering.
+         */
+        maxResiduesPerMoleculeToTriggerRenumber_ = 0;
+    }
+    else
+    {
+        /* We only renumber single residue molecules. Their intra-molecular
+         * residue numbering is anyhow irrelevant.
+         */
+        maxResiduesPerMoleculeToTriggerRenumber_ = 1;
+    }
+
+    const char* env = getenv("GMX_MAXRESRENUM");
+    if (env != nullptr)
+    {
+        sscanf(env, "%d", &maxResiduesPerMoleculeToTriggerRenumber_);
+    }
+    if (maxResiduesPerMoleculeToTriggerRenumber_ == -1)
+    {
+        /* -1 signals renumber residues in all molecules */
+        maxResiduesPerMoleculeToTriggerRenumber_ = std::numeric_limits<int>::max();
+    }
+
+    maxResNumberNotRenumbered_ = gmx_mtop_maxresnr(moltype, maxResiduesPerMoleculeToTriggerRenumber_);
+
+    buildMolblockIndices();
+}
+
+void gmx_mtop_t::buildMolblockIndices()
+{
+    moleculeBlockIndices.resize(molblock.size());
+
+    int atomIndex          = 0;
+    int residueIndex       = 0;
+    int residueNumberStart = maxResNumberNotRenumbered_ + 1;
+    int moleculeIndexStart = 0;
+    for (size_t mb = 0; mb < molblock.size(); mb++)
+    {
+        const gmx_molblock_t& molb         = molblock[mb];
+        MoleculeBlockIndices& indices      = moleculeBlockIndices[mb];
+        const int             numResPerMol = moltype[molb.type].atoms.nres;
+
+        indices.numAtomsPerMolecule = moltype[molb.type].atoms.nr;
+        indices.globalAtomStart     = atomIndex;
+        indices.globalResidueStart  = residueIndex;
+        atomIndex += molb.nmol * indices.numAtomsPerMolecule;
+        residueIndex += molb.nmol * numResPerMol;
+        indices.globalAtomEnd      = atomIndex;
+        indices.residueNumberStart = residueNumberStart;
+        if (numResPerMol <= maxResiduesPerMoleculeToTriggerRenumber_)
+        {
+            residueNumberStart += molb.nmol * numResPerMol;
+        }
+        indices.moleculeIndexStart = moleculeIndexStart;
+        moleculeIndexStart += molb.nmol;
+    }
 }
 
 void done_top(t_topology* top)
@@ -593,8 +679,9 @@ void compareMtop(FILE* fp, const gmx_mtop_t& mtop1, const gmx_mtop_t& mtop2, rea
     fprintf(fp, "comparing mtop topology\n");
     cmp_str(fp, "Name", -1, *mtop1.name, *mtop2.name);
     cmp_int(fp, "natoms", -1, mtop1.natoms, mtop2.natoms);
-    cmp_int(fp, "maxres_renum", -1, mtop1.maxres_renum, mtop2.maxres_renum);
-    cmp_int(fp, "maxresnr", -1, mtop1.maxresnr, mtop2.maxresnr);
+    cmp_int(fp, "maxres_renum", -1, mtop1.maxResiduesPerMoleculeToTriggerRenumber(),
+            mtop2.maxResiduesPerMoleculeToTriggerRenumber());
+    cmp_int(fp, "maxresnr", -1, mtop1.maxResNumberNotRenumbered(), mtop2.maxResNumberNotRenumbered());
     cmp_bool(fp, "bIntermolecularInteractions", -1, mtop1.bIntermolecularInteractions,
              mtop2.bIntermolecularInteractions);
     cmp_bool(fp, "haveMoleculeIndices", -1, mtop1.haveMoleculeIndices, mtop2.haveMoleculeIndices);

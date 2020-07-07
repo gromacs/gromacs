@@ -2837,7 +2837,7 @@ static void do_tpx_mtop(gmx::ISerializer* serializer, TpxFileHeader* tpx, gmx_mt
         {
             do_mtop(serializer, mtop, tpx->fileVersion);
             set_disres_npair(mtop);
-            gmx_mtop_finalize(mtop);
+            mtop->finalize();
         }
         else
         {

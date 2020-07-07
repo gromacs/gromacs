@@ -647,7 +647,7 @@ static void new_status(const char*                           topfile,
     /* Copy structures from msys to sys */
     molinfo2mtop(*mi, sys);
 
-    gmx_mtop_finalize(sys);
+    sys->finalize();
 
     /* Discourage using the, previously common, setup of applying constraints
      * to all bonds with force fields that have been parametrized with H-bond

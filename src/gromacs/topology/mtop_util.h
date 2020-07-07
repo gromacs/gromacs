@@ -58,12 +58,6 @@ struct t_symtab;
 // and should be replaced by versions taking const gmx_mtop & when
 // their callers are refactored similarly.
 
-/* Should be called after generating or reading mtop,
- * to set some compute intesive variables to avoid
- * N^2 operations later on.
- */
-void gmx_mtop_finalize(gmx_mtop_t* mtop);
-
 /* Counts the number of atoms of each type. State should be 0 for
  * state A and 1 for state B types.  typecount should have at
  * least mtop->ffparams.atnr elements.

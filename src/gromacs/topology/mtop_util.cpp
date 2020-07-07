@@ -57,94 +57,6 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-static int gmx_mtop_maxresnr(const gmx_mtop_t* mtop, int maxres_renum)
-{
-    int maxresnr = 0;
-
-    for (const gmx_moltype_t& moltype : mtop->moltype)
-    {
-        const t_atoms& atoms = moltype.atoms;
-        if (atoms.nres > maxres_renum)
-        {
-            for (int r = 0; r < atoms.nres; r++)
-            {
-                if (atoms.resinfo[r].nr > maxresnr)
-                {
-                    maxresnr = atoms.resinfo[r].nr;
-                }
-            }
-        }
-    }
-
-    return maxresnr;
-}
-
-static void buildMolblockIndices(gmx_mtop_t* mtop)
-{
-    mtop->moleculeBlockIndices.resize(mtop->molblock.size());
-
-    int atomIndex          = 0;
-    int residueIndex       = 0;
-    int residueNumberStart = mtop->maxresnr + 1;
-    int moleculeIndexStart = 0;
-    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
-    {
-        const gmx_molblock_t& molb         = mtop->molblock[mb];
-        MoleculeBlockIndices& indices      = mtop->moleculeBlockIndices[mb];
-        const int             numResPerMol = mtop->moltype[molb.type].atoms.nres;
-
-        indices.numAtomsPerMolecule = mtop->moltype[molb.type].atoms.nr;
-        indices.globalAtomStart     = atomIndex;
-        indices.globalResidueStart  = residueIndex;
-        atomIndex += molb.nmol * indices.numAtomsPerMolecule;
-        residueIndex += molb.nmol * numResPerMol;
-        indices.globalAtomEnd      = atomIndex;
-        indices.residueNumberStart = residueNumberStart;
-        if (numResPerMol <= mtop->maxres_renum)
-        {
-            residueNumberStart += molb.nmol * numResPerMol;
-        }
-        indices.moleculeIndexStart = moleculeIndexStart;
-        moleculeIndexStart += molb.nmol;
-    }
-}
-
-void gmx_mtop_finalize(gmx_mtop_t* mtop)
-{
-    char* env;
-
-    if (mtop->molblock.size() == 1 && mtop->molblock[0].nmol == 1)
-    {
-        /* We have a single molecule only, no renumbering needed.
-         * This case also covers an mtop converted from pdb/gro/... input,
-         * so we retain the original residue numbering.
-         */
-        mtop->maxres_renum = 0;
-    }
-    else
-    {
-        /* We only renumber single residue molecules. Their intra-molecular
-         * residue numbering is anyhow irrelevant.
-         */
-        mtop->maxres_renum = 1;
-    }
-
-    env = getenv("GMX_MAXRESRENUM");
-    if (env != nullptr)
-    {
-        sscanf(env, "%d", &mtop->maxres_renum);
-    }
-    if (mtop->maxres_renum == -1)
-    {
-        /* -1 signals renumber residues in all molecules */
-        mtop->maxres_renum = INT_MAX;
-    }
-
-    mtop->maxresnr = gmx_mtop_maxresnr(mtop, mtop->maxres_renum);
-
-    buildMolblockIndices(mtop);
-}
-
 void gmx_mtop_count_atomtypes(const gmx_mtop_t* mtop, int state, int typecount[])
 {
     for (int i = 0; i < mtop->ffparams.atnr; ++i)
@@ -195,7 +107,7 @@ AtomIterator::AtomIterator(const gmx_mtop_t& mtop, int globalAtomNumber) :
     mblock_(0),
     atoms_(&mtop.moltype[mtop.molblock[0].type].atoms),
     currentMolecule_(0),
-    highestResidueNumber_(mtop.maxresnr),
+    highestResidueNumber_(mtop.maxResNumberNotRenumbered()),
     localAtomNumber_(0),
     globalAtomNumber_(globalAtomNumber)
 {
@@ -210,7 +122,7 @@ AtomIterator& AtomIterator::operator++()
 
     if (localAtomNumber_ >= atoms_->nr)
     {
-        if (atoms_->nres <= mtop_->maxresnr)
+        if (atoms_->nres <= mtop_->maxResiduesPerMoleculeToTriggerRenumber())
         {
             /* Single residue molecule, increase the count with one */
             highestResidueNumber_ += atoms_->nres;
@@ -260,7 +172,7 @@ const char* AtomProxy::residueName() const
 int AtomProxy::residueNumber() const
 {
     int residueIndexInMolecule = it_->atoms_->atom[it_->localAtomNumber_].resind;
-    if (it_->atoms_->nres <= it_->mtop_->maxres_renum)
+    if (it_->atoms_->nres <= it_->mtop_->maxResiduesPerMoleculeToTriggerRenumber())
     {
         return it_->highestResidueNumber_ + 1 + residueIndexInMolecule;
     }
@@ -580,10 +492,11 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop)
 
     init_t_atoms(&atoms, 0, FALSE);
 
-    int maxresnr = mtop->maxresnr;
+    int maxresnr = mtop->maxResNumberNotRenumbered();
     for (const gmx_molblock_t& molb : mtop->molblock)
     {
-        atomcat(&atoms, &mtop->moltype[molb.type].atoms, molb.nmol, mtop->maxres_renum, &maxresnr);
+        atomcat(&atoms, &mtop->moltype[molb.type].atoms, molb.nmol,
+                mtop->maxResiduesPerMoleculeToTriggerRenumber(), &maxresnr);
     }
 
     return atoms;
@@ -1135,7 +1048,7 @@ void convertAtomsToMtop(t_symtab* symtab, char** name, t_atoms* atoms, gmx_mtop_
 
     mtop->haveMoleculeIndices = false;
 
-    gmx_mtop_finalize(mtop);
+    mtop->finalize();
 }
 
 bool haveFepPerturbedNBInteractions(const gmx_mtop_t* mtop)

@@ -153,9 +153,8 @@ void TopologyManager::initAtoms(int count)
     mtop_->molblock[0].type = 0;
     mtop_->molblock[0].nmol = 1;
     mtop_->natoms           = count;
-    mtop_->maxres_renum     = 0;
-    gmx_mtop_finalize(mtop_.get());
-    GMX_RELEASE_ASSERT(mtop_->maxres_renum == 0,
+    mtop_->finalize();
+    GMX_RELEASE_ASSERT(mtop_->maxResiduesPerMoleculeToTriggerRenumber() == 0,
                        "maxres_renum in mtop can be modified by an env.var., that is not supported "
                        "in this test");
     t_atoms& atoms = this->atoms();
@@ -254,9 +253,8 @@ void TopologyManager::finalizeTopology()
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
 
-    mtop_->maxres_renum        = 0;
     mtop_->haveMoleculeIndices = true;
-    gmx_mtop_finalize(mtop_.get());
+    mtop_->finalize();
 }
 
 void TopologyManager::initUniformResidues(int residueSize)
@@ -291,7 +289,7 @@ void TopologyManager::initUniformMolecules(int moleculeSize)
                        "The residues should break at molecule boundaries");
     atoms.nres                 = nres;
     mtop_->haveMoleculeIndices = true;
-    gmx_mtop_finalize(mtop_.get());
+    mtop_->finalize();
 }
 
 void TopologyManager::initFrameIndices(const ArrayRef<const int>& index)

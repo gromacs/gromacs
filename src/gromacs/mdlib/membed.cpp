@@ -1373,7 +1373,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
 
         // Re-establish the invariants of the derived values within
         // mtop.
-        gmx_mtop_finalize(mtop);
+        mtop->finalize();
 
         if (ftp2bSet(efTOP, nfile, fnm))
         {

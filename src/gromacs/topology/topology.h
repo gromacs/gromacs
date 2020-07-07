@@ -177,10 +177,6 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     std::unique_ptr<InteractionLists> intermolecular_ilist = nullptr;
     //! Number of global atoms.
     int natoms = 0;
-    //! Parameter for residue numbering.
-    int maxres_renum = 0;
-    //! The maximum residue number in moltype
-    int maxresnr = -1;
     //! Atomtype properties
     t_atomtypes atomtypes;
     //! Groups of atoms for different purposes
@@ -194,9 +190,33 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
      */
     std::vector<int> intermolecularExclusionGroup;
 
-    /* Derived data  below */
+    //! Maximum number of residues in molecule to trigger renumbering of residues
+    int maxResiduesPerMoleculeToTriggerRenumber() const
+    {
+        return maxResiduesPerMoleculeToTriggerRenumber_;
+    }
+    //! Maximum residue number that is not renumbered.
+    int maxResNumberNotRenumbered() const { return maxResNumberNotRenumbered_; }
+    /*! \brief Finalize this data structure.
+     *
+     * Should be called after generating or reading mtop, to set some compute
+     * intesive variables to avoid N^2 operations later on.
+     *
+     * \todo Move into a builder class, once available.
+     */
+    void finalize();
+
+    /* Derived data below */
     //! Indices for each molblock entry for fast lookup of atom properties
     std::vector<MoleculeBlockIndices> moleculeBlockIndices;
+
+private:
+    //! Build the molblock indices
+    void buildMolblockIndices();
+    //! Maximum number of residues in molecule to trigger renumbering of residues
+    int maxResiduesPerMoleculeToTriggerRenumber_ = 0;
+    //! The maximum residue number in moltype that is not renumbered
+    int maxResNumberNotRenumbered_ = -1;
 };
 
 /*! \brief
