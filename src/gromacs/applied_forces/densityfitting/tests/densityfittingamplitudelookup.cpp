@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/applied_forces/densityfittingamplitudelookup.h"
+#include "gromacs/applied_forces/densityfitting/densityfittingamplitudelookup.h"
 
 #include <vector>
 

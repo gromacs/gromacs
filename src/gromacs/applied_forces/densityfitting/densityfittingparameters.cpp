@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Declares output to file for density fitting
- *
- * \author Christian Blau <blau@kth.se>
- * \ingroup module_applied_forces
- */
-#ifndef GMX_APPLIED_FORCES_DENSITYFITTINGOUTPUTPROVIDER_H
-#define GMX_APPLIED_FORCES_DENSITYFITTINGOUTPUTPROVIDER_H
 
-#include "gromacs/mdtypes/imdoutputprovider.h"
+#include "gmxpre.h"
+
+#include "densityfittingparameters.h"
 
 namespace gmx
 {
 
-/*! \internal
- * \brief Handle file output for density guided simulations.
- */
-class DensityFittingOutputProvider final : public IMDOutputProvider
+bool operator==(const DensityFittingParameters& lhs, const DensityFittingParameters& rhs)
 {
-public:
-    //! Initialize output
-    void initOutput(FILE* /*fplog*/,
-                    int /*nfile*/,
-                    const t_filenm /*fnm*/[],
-                    bool /*bAppendFiles*/,
-                    const gmx_output_env_t* /*oenv*/) override;
-    //! Finalizes output from a simulation run.
-    void finishOutput() override;
-};
+    if (lhs.active_ != rhs.active_)
+    {
+        return false;
+    }
+    if (lhs.indices_ != rhs.indices_)
+    {
+        return false;
+    }
+    if (lhs.similarityMeasureMethod_ != rhs.similarityMeasureMethod_)
+    {
+        return false;
+    }
+    if (lhs.amplitudeLookupMethod_ != rhs.amplitudeLookupMethod_)
+    {
+        return false;
+    }
+    if (lhs.forceConstant_ != rhs.forceConstant_)
+    {
+        return false;
+    }
+    if (lhs.gaussianTransformSpreadingWidth_ != rhs.gaussianTransformSpreadingWidth_)
+    {
+        return false;
+    }
+    if (lhs.gaussianTransformSpreadingRangeInMultiplesOfWidth_
+        != rhs.gaussianTransformSpreadingRangeInMultiplesOfWidth_)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool operator!=(const DensityFittingParameters& lhs, const DensityFittingParameters& rhs)
+{
+    return !(lhs == rhs);
+}
 
 } // namespace gmx
-
-#endif

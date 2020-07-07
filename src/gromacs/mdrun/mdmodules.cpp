@@ -38,8 +38,8 @@
 
 #include <memory>
 
-#include "gromacs/applied_forces/densityfitting.h"
 #include "gromacs/applied_forces/electricfield.h"
+#include "gromacs/applied_forces/densityfitting/densityfitting.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"

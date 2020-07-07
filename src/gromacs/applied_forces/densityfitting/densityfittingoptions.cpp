@@ -43,7 +43,7 @@
 
 #include "densityfittingoptions.h"
 
-#include "gromacs/applied_forces/densityfitting.h"
+#include "gromacs/applied_forces/densityfitting/densityfitting.h"
 #include "gromacs/math/densityfit.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"

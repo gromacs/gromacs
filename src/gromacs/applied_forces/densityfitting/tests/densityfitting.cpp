@@ -41,7 +41,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/applied_forces/densityfitting.h"
+#include "gromacs/applied_forces/densityfitting/densityfitting.h"
 
 #include <gtest/gtest.h>
 
