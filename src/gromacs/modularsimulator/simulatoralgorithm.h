@@ -193,9 +193,12 @@ private:
     std::unique_ptr<ResetHandler> resetHandler_;
     //! Signal vector (used by stop / reset / checkpointing signaller)
     SimulationSignals signals_;
-
     //! The topology
     std::unique_ptr<TopologyHolder> topologyHolder_;
+
+    // Data structures
+    //! The state propagator data
+    std::unique_ptr<StatePropagatorData> statePropagatorData_;
 
     //! The current step
     Step step_;
@@ -295,9 +298,11 @@ private:
      */
     std::unique_ptr<ISimulatorElement>
     buildIntegrator(SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
+                    SignallerBuilder<LastStepSignaller>*       lastStepSignallerBuilder,
                     SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
                     SignallerBuilder<LoggingSignaller>*        loggingSignallerBuilder,
                     SignallerBuilder<TrajectorySignaller>*     trajectorySignallerBuilder,
+                    TrajectoryElementBuilder*                  trajectoryElementBuilder,
                     std::vector<ICheckpointHelperClient*>*     checkpointClients,
                     CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
                     compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,

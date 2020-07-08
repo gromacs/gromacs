@@ -129,9 +129,11 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildForces
 
 std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegrator(
         SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
+        SignallerBuilder<LastStepSignaller>*       lastStepSignallerBuilder,
         SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
         SignallerBuilder<LoggingSignaller>*        loggingSignallerBuilder,
         SignallerBuilder<TrajectorySignaller>*     trajectorySignallerBuilder,
+        TrajectoryElementBuilder*                  trajectoryElementBuilder,
         std::vector<ICheckpointHelperClient*>*     checkpointClients,
         CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
         compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
@@ -170,7 +172,16 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
                 inputrec->delta_t, statePropagatorDataPtr, mdAtoms, wcycle);
 
         addToCallListAndMove(std::move(forceElement), elementCallList, elementsOwnershipList);
-        addToCallList(statePropagatorDataPtr, elementCallList); // we have a full microstate at time t here!
+        auto stateElement = compat::make_not_null(statePropagatorDataPtr->element(
+                fplog, cr, inputrec->nstxout, inputrec->nstvout, inputrec->nstfout,
+                inputrec->nstxout_compressed, freeEnergyPerturbationElementPtr, fr->bMolPBC,
+                mdrunOptions.writeConfout, opt2fn("-c", nfile, fnm), inputrec, top_global));
+        trajectoryElementBuilder->registerWriterClient(stateElement);
+        trajectorySignallerBuilder->registerSignallerClient(stateElement);
+        lastStepSignallerBuilder->registerSignallerClient(stateElement);
+        checkpointClients->emplace_back(stateElement);
+        // we have a full microstate at time t here!
+        addToCallList(stateElement, elementCallList);
         if (inputrec->etc == etcVRESCALE)
         {
             // TODO: With increased complexity of the propagator, this will need further development,
@@ -271,7 +282,16 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
             addToCallListAndMove(std::move(constraintElement), elementCallList, elementsOwnershipList);
         }
         addToCallList(compat::make_not_null(computeGlobalsElement.get()), elementCallList);
-        addToCallList(statePropagatorDataPtr, elementCallList); // we have a full microstate at time t here!
+        auto stateElement = compat::make_not_null(statePropagatorDataPtr->element(
+                fplog, cr, inputrec->nstxout, inputrec->nstvout, inputrec->nstfout,
+                inputrec->nstxout_compressed, freeEnergyPerturbationElementPtr, fr->bMolPBC,
+                mdrunOptions.writeConfout, opt2fn("-c", nfile, fnm), inputrec, top_global));
+        trajectoryElementBuilder->registerWriterClient(stateElement);
+        trajectorySignallerBuilder->registerSignallerClient(stateElement);
+        lastStepSignallerBuilder->registerSignallerClient(stateElement);
+        checkpointClients->emplace_back(stateElement);
+        // we have a full microstate at time t here!
+        addToCallList(stateElement, elementCallList);
         if (inputrec->etc == etcVRESCALE)
         {
             // TODO: With increased complexity of the propagator, this will need further development,

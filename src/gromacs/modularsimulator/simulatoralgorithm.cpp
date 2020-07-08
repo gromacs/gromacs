@@ -97,6 +97,7 @@ ModularSimulatorAlgorithm::ModularSimulatorAlgorithm(std::string              to
                                                      t_forcerec*              fr,
                                                      gmx_walltime_accounting* walltime_accounting) :
     taskIterator_(taskQueue_.end()),
+    statePropagatorData_(nullptr),
     step_(-1),
     runFinished_(false),
     topologyName_(std::move(topologyName)),
@@ -129,6 +130,7 @@ void ModularSimulatorAlgorithm::setup()
     {
         element->elementSetup();
     }
+    statePropagatorData_->setup();
     if (pmeLoadBalanceHelper_)
     {
         // State must have been initialized so pmeLoadBalanceHelper_ gets a valid box
@@ -422,12 +424,9 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
         freeEnergyPerturbationElementPtr = freeEnergyPerturbationElement.get();
     }
 
-    auto statePropagatorData = std::make_unique<StatePropagatorData>(
-            top_global->natoms, fplog, cr, state_global, inputrec->nstxout, inputrec->nstvout,
-            inputrec->nstfout, inputrec->nstxout_compressed, fr->nbv->useGpu(),
-            freeEnergyPerturbationElementPtr, algorithm.topologyHolder_.get(), fr->bMolPBC,
-            mdrunOptions.writeConfout, opt2fn("-c", nfile, fnm), inputrec, mdAtoms->mdatoms());
-    auto statePropagatorDataPtr = compat::make_not_null(statePropagatorData.get());
+    algorithm.statePropagatorData_ = std::make_unique<StatePropagatorData>(
+            top_global->natoms, cr, state_global, fr->nbv->useGpu(), inputrec, mdAtoms->mdatoms());
+    auto statePropagatorDataPtr = compat::make_not_null(algorithm.statePropagatorData_.get());
 
     auto energyElement = std::make_unique<EnergyElement>(
             statePropagatorDataPtr, freeEnergyPerturbationElementPtr, top_global, inputrec, mdAtoms,
@@ -458,9 +457,6 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     /*
      * Register data structures to signallers
      */
-    trajectoryElementBuilder.registerWriterClient(statePropagatorDataPtr);
-    trajectorySignallerBuilder.registerSignallerClient(statePropagatorDataPtr);
-    lastStepSignallerBuilder.registerSignallerClient(statePropagatorDataPtr);
 
     trajectoryElementBuilder.registerWriterClient(energyElementPtr);
     trajectorySignallerBuilder.registerSignallerClient(energyElementPtr);
@@ -477,14 +473,15 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
      * have a full timestep state.
      */
     // TODO: Make a CheckpointHelperBuilder
-    std::vector<ICheckpointHelperClient*> checkpointClients = { statePropagatorDataPtr, energyElementPtr,
+    std::vector<ICheckpointHelperClient*> checkpointClients               = { energyElementPtr,
                                                                 freeEnergyPerturbationElementPtr };
-    CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback = nullptr;
-    auto                               integrator                      = buildIntegrator(
-            &neighborSearchSignallerBuilder, &energySignallerBuilder, &loggingSignallerBuilder,
-            &trajectorySignallerBuilder, &checkpointClients, &checkBondedInteractionsCallback,
-            statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-            hasReadEkinState, algorithm.topologyHolder_.get(), &algorithm.signals_);
+    CheckBondedInteractionsCallbackPtr    checkBondedInteractionsCallback = nullptr;
+    auto                                  integrator                      = buildIntegrator(
+            &neighborSearchSignallerBuilder, &lastStepSignallerBuilder, &energySignallerBuilder,
+            &loggingSignallerBuilder, &trajectorySignallerBuilder, &trajectoryElementBuilder,
+            &checkpointClients, &checkBondedInteractionsCallback, statePropagatorDataPtr,
+            energyElementPtr, freeEnergyPerturbationElementPtr, hasReadEkinState,
+            algorithm.topologyHolder_.get(), &algorithm.signals_);
 
     /*
      * Build infrastructure elements
@@ -588,10 +585,6 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     addToCallListAndMove(std::move(integrator), algorithm.elementCallList_, algorithm.elementsOwnershipList_);
     addToCallListAndMove(std::move(trajectoryElement), algorithm.elementCallList_,
                          algorithm.elementsOwnershipList_);
-    // for vv, we need to setup statePropagatorData after the compute
-    // globals so that we reset the right velocities
-    // TODO: Avoid this by getting rid of the need of resetting velocities in vv
-    algorithm.elementsOwnershipList_.emplace_back(std::move(statePropagatorData));
     algorithm.elementsOwnershipList_.emplace_back(std::move(energyElement));
 
     return algorithm;

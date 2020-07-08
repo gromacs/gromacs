@@ -63,43 +63,18 @@
 
 namespace gmx
 {
-StatePropagatorData::StatePropagatorData(int                            numAtoms,
-                                         FILE*                          fplog,
-                                         const t_commrec*               cr,
-                                         t_state*                       globalState,
-                                         int                            nstxout,
-                                         int                            nstvout,
-                                         int                            nstfout,
-                                         int                            nstxout_compressed,
-                                         bool                           useGPU,
-                                         FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                                         const TopologyHolder*          topologyHolder,
-                                         bool              canMoleculesBeDistributedOverPBC,
-                                         bool              writeFinalConfiguration,
-                                         std::string       finalConfigurationFilename,
+StatePropagatorData::StatePropagatorData(int               numAtoms,
+                                         const t_commrec*  cr,
+                                         t_state*          globalState,
+                                         bool              useGPU,
                                          const t_inputrec* inputrec,
                                          const t_mdatoms*  mdatoms) :
     totalNumAtoms_(numAtoms),
-    nstxout_(nstxout),
-    nstvout_(nstvout),
-    nstfout_(nstfout),
-    nstxout_compressed_(nstxout_compressed),
     localNAtoms_(0),
     ddpCount_(0),
-    writeOutStep_(-1),
     vvResetVelocities_(false),
-    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     isRegularSimulationEnd_(false),
     lastStep_(-1),
-    canMoleculesBeDistributedOverPBC_(canMoleculesBeDistributedOverPBC),
-    systemHasPeriodicMolecules_(inputrec->bPeriodicMols),
-    pbcType_(inputrec->pbcType),
-    topologyHolder_(topologyHolder),
-    lastPlannedStep_(inputrec->nsteps + inputrec->init_step),
-    writeFinalConfiguration_(writeFinalConfiguration),
-    finalConfigurationFilename_(std::move(finalConfigurationFilename)),
-    fplog_(fplog),
-    cr_(cr),
     globalState_(globalState)
 {
     // Initialize these here, as box_{{0}} in the initialization list
@@ -165,6 +140,41 @@ StatePropagatorData::StatePropagatorData(int                            numAtoms
     }
 }
 
+StatePropagatorData::Element* StatePropagatorData::element(FILE*            fplog,
+                                                           const t_commrec* cr,
+                                                           int              nstxout,
+                                                           int              nstvout,
+                                                           int              nstfout,
+                                                           int              nstxout_compressed,
+                                                           FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                                                           bool canMoleculesBeDistributedOverPBC,
+                                                           bool writeFinalConfiguration,
+                                                           std::string finalConfigurationFilename,
+                                                           const t_inputrec* inputrec,
+                                                           const gmx_mtop_t* globalTop)
+{
+    if (!element_)
+    {
+        element_ = std::make_unique<Element>(
+                this, fplog, cr, nstxout, nstvout, nstfout, nstxout_compressed,
+                freeEnergyPerturbationElement, canMoleculesBeDistributedOverPBC,
+                writeFinalConfiguration, std::move(finalConfigurationFilename), inputrec, globalTop);
+    }
+    else
+    {
+        GMX_THROW(InconsistentInputError("Attempted to build StatePropagatorData::Element more than once."));
+    }
+    return element_.get();
+}
+
+void StatePropagatorData::setup()
+{
+    if (element_)
+    {
+        element_->elementSetup();
+    }
+}
+
 ArrayRefWithPadding<RVec> StatePropagatorData::positionsView()
 {
     return x_.arrayRefWithPadding();
@@ -225,12 +235,12 @@ const rvec* StatePropagatorData::constPreviousBox() const
     return previousBox_;
 }
 
-int StatePropagatorData::localNumAtoms()
+int StatePropagatorData::localNumAtoms() const
 {
     return localNAtoms_;
 }
 
-int StatePropagatorData::totalNumAtoms()
+int StatePropagatorData::totalNumAtoms() const
 {
     return totalNumAtoms_;
 }
@@ -310,15 +320,19 @@ void StatePropagatorData::copyPosition(int start, int end)
     }
 }
 
-void StatePropagatorData::scheduleTask(Step step, Time gmx_unused time, const RegisterRunFunctionPtr& registerRunFunction)
+void StatePropagatorData::Element::scheduleTask(Step step,
+                                                Time gmx_unused               time,
+                                                const RegisterRunFunctionPtr& registerRunFunction)
 {
-    if (vvResetVelocities_)
+    if (statePropagatorData_->vvResetVelocities_)
     {
-        vvResetVelocities_ = false;
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() { resetVelocities(); }));
+        statePropagatorData_->vvResetVelocities_ = false;
+        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+                [this]() { statePropagatorData_->resetVelocities(); }));
     }
     // copy x -> previousX
-    (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() { copyPosition(); }));
+    (*registerRunFunction)(
+            std::make_unique<SimulatorRunFunction>([this]() { statePropagatorData_->copyPosition(); }));
     // if it's a write out step, keep a copy for writeout
     if (step == writeOutStep_ || (step == lastStep_ && writeFinalConfiguration_))
     {
@@ -326,10 +340,10 @@ void StatePropagatorData::scheduleTask(Step step, Time gmx_unused time, const Re
     }
 }
 
-void StatePropagatorData::saveState()
+void StatePropagatorData::Element::saveState()
 {
     GMX_ASSERT(!localStateBackup_, "Save state called again before previous state was written.");
-    localStateBackup_ = localState();
+    localStateBackup_ = statePropagatorData_->localState();
     if (freeEnergyPerturbationElement_)
     {
         localStateBackup_->fep_state = freeEnergyPerturbationElement_->currentFEPState();
@@ -341,7 +355,7 @@ void StatePropagatorData::saveState()
     }
 }
 
-SignallerCallbackPtr StatePropagatorData::registerTrajectorySignallerCallback(TrajectoryEvent event)
+SignallerCallbackPtr StatePropagatorData::Element::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::StateWritingStep)
     {
@@ -351,7 +365,7 @@ SignallerCallbackPtr StatePropagatorData::registerTrajectorySignallerCallback(Tr
     return nullptr;
 }
 
-ITrajectoryWriterCallbackPtr StatePropagatorData::registerTrajectoryWriterCallback(TrajectoryEvent event)
+ITrajectoryWriterCallbackPtr StatePropagatorData::Element::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::StateWritingStep)
     {
@@ -366,7 +380,7 @@ ITrajectoryWriterCallbackPtr StatePropagatorData::registerTrajectoryWriterCallba
     return nullptr;
 }
 
-void StatePropagatorData::write(gmx_mdoutf_t outf, Step currentStep, Time currentTime)
+void StatePropagatorData::Element::write(gmx_mdoutf_t outf, Step currentStep, Time currentTime)
 {
     wallcycle_start(mdoutf_get_wcycle(outf), ewcTRAJ);
     unsigned int mdof_flags = 0;
@@ -414,8 +428,9 @@ void StatePropagatorData::write(gmx_mdoutf_t outf, Step currentStep, Time curren
     ObservablesHistory* observablesHistory = nullptr;
 
     mdoutf_write_to_trajectory_files(fplog_, cr_, outf, static_cast<int>(mdof_flags),
-                                     totalNumAtoms_, currentStep, currentTime,
-                                     localStateBackup_.get(), globalState_, observablesHistory, f_);
+                                     statePropagatorData_->totalNumAtoms_, currentStep, currentTime,
+                                     localStateBackup_.get(), statePropagatorData_->globalState_,
+                                     observablesHistory, statePropagatorData_->f_);
 
     if (currentStep != lastStep_ || !isRegularSimulationEnd_)
     {
@@ -424,14 +439,14 @@ void StatePropagatorData::write(gmx_mdoutf_t outf, Step currentStep, Time curren
     wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
 }
 
-void StatePropagatorData::elementSetup()
+void StatePropagatorData::Element::elementSetup()
 {
-    if (vvResetVelocities_)
+    if (statePropagatorData_->vvResetVelocities_)
     {
         // MD-VV does the first velocity half-step only to calculate the constraint virial,
         // then resets the velocities since the input is assumed to be positions and velocities
         // at full time step. TODO: Change this to have input at half time steps.
-        velocityBackup_ = v_;
+        statePropagatorData_->velocityBackup_ = statePropagatorData_->v_;
     }
 }
 
@@ -440,17 +455,17 @@ void StatePropagatorData::resetVelocities()
     v_ = velocityBackup_;
 }
 
-void StatePropagatorData::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
+void StatePropagatorData::Element::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
 {
-    state_change_natoms(localState, localNAtoms_);
-    localState->x = x_;
-    localState->v = v_;
-    copy_mat(box_, localState->box);
-    localState->ddp_count = ddpCount_;
+    state_change_natoms(localState, statePropagatorData_->localNAtoms_);
+    localState->x = statePropagatorData_->x_;
+    localState->v = statePropagatorData_->v_;
+    copy_mat(statePropagatorData_->box_, localState->box);
+    localState->ddp_count = statePropagatorData_->ddpCount_;
     localState->flags |= (1U << estX) | (1U << estV) | (1U << estBOX);
 }
 
-void StatePropagatorData::trajectoryWriterTeardown(gmx_mdoutf* gmx_unused outf)
+void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unused outf)
 {
     // Note that part of this code is duplicated in do_md_trajectory_writing.
     // This duplication is needed while both legacy and modular code paths are in use.
@@ -465,15 +480,17 @@ void StatePropagatorData::trajectoryWriterTeardown(gmx_mdoutf* gmx_unused outf)
     wallcycle_start(mdoutf_get_wcycle(outf), ewcTRAJ);
     if (DOMAINDECOMP(cr_))
     {
-        auto globalXRef = MASTER(cr_) ? globalState_->x : gmx::ArrayRef<gmx::RVec>();
+        auto globalXRef =
+                MASTER(cr_) ? statePropagatorData_->globalState_->x : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(cr_->dd, localStateBackup_.get(), localStateBackup_->x, globalXRef);
-        auto globalVRef = MASTER(cr_) ? globalState_->v : gmx::ArrayRef<gmx::RVec>();
+        auto globalVRef =
+                MASTER(cr_) ? statePropagatorData_->globalState_->v : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(cr_->dd, localStateBackup_.get(), localStateBackup_->v, globalVRef);
     }
     else
     {
         // We have the whole state locally: copy the local state pointer
-        globalState_ = localStateBackup_.get();
+        statePropagatorData_->globalState_ = localStateBackup_.get();
     }
 
     if (MASTER(cr_))
@@ -482,22 +499,57 @@ void StatePropagatorData::trajectoryWriterTeardown(gmx_mdoutf* gmx_unused outf)
         if (canMoleculesBeDistributedOverPBC_ && !systemHasPeriodicMolecules_)
         {
             // Make molecules whole only for confout writing
-            do_pbc_mtop(pbcType_, localStateBackup_->box, &topologyHolder_->globalTopology(),
-                        globalState_->x.rvec_array());
+            do_pbc_mtop(pbcType_, localStateBackup_->box, top_global_,
+                        statePropagatorData_->globalState_->x.rvec_array());
         }
-        write_sto_conf_mtop(finalConfigurationFilename_.c_str(), *topologyHolder_->globalTopology().name,
-                            &topologyHolder_->globalTopology(), globalState_->x.rvec_array(),
-                            globalState_->v.rvec_array(), pbcType_, localStateBackup_->box);
+        write_sto_conf_mtop(finalConfigurationFilename_.c_str(), *top_global_->name, top_global_,
+                            statePropagatorData_->globalState_->x.rvec_array(),
+                            statePropagatorData_->globalState_->v.rvec_array(), pbcType_,
+                            localStateBackup_->box);
     }
     wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
 }
 
-SignallerCallbackPtr StatePropagatorData::registerLastStepCallback()
+SignallerCallbackPtr StatePropagatorData::Element::registerLastStepCallback()
 {
     return std::make_unique<SignallerCallback>([this](Step step, Time /*time*/) {
         lastStep_               = step;
         isRegularSimulationEnd_ = (step == lastPlannedStep_);
     });
+}
+
+StatePropagatorData::Element::Element(StatePropagatorData*           statePropagatorData,
+                                      FILE*                          fplog,
+                                      const t_commrec*               cr,
+                                      int                            nstxout,
+                                      int                            nstvout,
+                                      int                            nstfout,
+                                      int                            nstxout_compressed,
+                                      FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                                      bool              canMoleculesBeDistributedOverPBC,
+                                      bool              writeFinalConfiguration,
+                                      std::string       finalConfigurationFilename,
+                                      const t_inputrec* inputrec,
+                                      const gmx_mtop_t* globalTop) :
+    statePropagatorData_(statePropagatorData),
+    nstxout_(nstxout),
+    nstvout_(nstvout),
+    nstfout_(nstfout),
+    nstxout_compressed_(nstxout_compressed),
+    writeOutStep_(-1),
+    freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
+    isRegularSimulationEnd_(false),
+    lastStep_(-1),
+    canMoleculesBeDistributedOverPBC_(canMoleculesBeDistributedOverPBC),
+    systemHasPeriodicMolecules_(inputrec->bPeriodicMols),
+    pbcType_(inputrec->pbcType),
+    lastPlannedStep_(inputrec->nsteps + inputrec->init_step),
+    writeFinalConfiguration_(writeFinalConfiguration),
+    finalConfigurationFilename_(std::move(finalConfigurationFilename)),
+    fplog_(fplog),
+    cr_(cr),
+    top_global_(globalTop)
+{
 }
 
 } // namespace gmx
