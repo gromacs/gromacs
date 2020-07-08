@@ -178,7 +178,7 @@ static const char* wcsn[ewcsNR] = {
     "Launch GPU NB X buffer ops.",
     "Launch GPU NB F buffer ops.",
     "Launch GPU Comm. coord.",
-    "Launch GPU Comm. force."
+    "Launch GPU Comm. force.",
     "Test subcounter",
 };
 
