@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,7 @@ namespace gmx
  * The flags related to default values are confusing, consider reorganizing
  * them.
  */
-enum OptionFlag
+enum OptionFlag : uint64_t
 {
     //! %Option has been set.
     efOption_Set = 1 << 0,

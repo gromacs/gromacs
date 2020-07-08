@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,8 @@ namespace gmx
 /*! \brief
  * Template class for typesafe handling of combination of flags.
  *
- * \tparam FlagType An enumerated type that holds the possible single flags.
+ * \tparam FlagType An enumerated type that holds the possible single flags. The enum
+ * must be of unsigned underlying type.
  *
  * This class is not used publicly, but is present in an installed header
  * because it is used internally in public template classes.
@@ -66,6 +67,8 @@ template<typename FlagType>
 class FlagsTemplate
 {
 public:
+    static_assert(std::is_enum_v<FlagType> && std::is_unsigned_v<std::underlying_type_t<FlagType>>,
+                  "Flags must be an unsigned enum type.");
     //! Creates a flags object with no flags set.
     FlagsTemplate() : flags_(0) {}
     //! Creates a flags object from a single flag.
@@ -120,7 +123,7 @@ private:
     //! Creates a flags object with the given flags.
     explicit FlagsTemplate(unsigned long flags) : flags_(flags) {}
 
-    unsigned long flags_;
+    uint64_t flags_;
 };
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -153,7 +153,7 @@ public:
 
 private:
     //! Possible flags for \a flags_.
-    enum Flag
+    enum Flag : uint64_t
     {
         efSet      = 1 << 0, //!< Value has been set.
         efErrorSet = 1 << 1, //!< Error estimate has been set.

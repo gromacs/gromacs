@@ -66,7 +66,7 @@ namespace gmx
  * These flags are not part of the public interface, even though they are in an
  * installed header.  They are needed in the implementation of SelectionOption.
  */
-enum SelectionFlag
+enum SelectionFlag : uint64_t
 {
     efSelection_OnlyStatic = 1 << 0,
     efSelection_OnlyAtoms  = 1 << 1,
