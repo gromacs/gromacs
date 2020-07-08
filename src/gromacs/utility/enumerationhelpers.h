@@ -112,11 +112,12 @@ namespace gmx
  * \tparam  Last       Last constant or number thereof (assumes a default 'Count' member).
  * \tparam  Step       Step increment.
  */
-template<typename EnumType, EnumType Last = EnumType::Count, unsigned int Step = 1>
+template<typename EnumType, EnumType Last = EnumType::Count, std::ptrdiff_t Step = 1>
 class EnumerationIterator final :
     public boost::stl_interfaces::iterator_interface<EnumerationIterator<EnumType, Last, Step>, std::random_access_iterator_tag, EnumType>
 {
 public:
+    static_assert(std::is_enum_v<EnumType>, "Enumeration iterator must be over an enum type.");
     //! Convenience alias
     using IntegerType = std::underlying_type_t<EnumType>;
 
@@ -143,7 +144,7 @@ public:
     //! Difference operator
     constexpr std::ptrdiff_t operator-(const EnumerationIterator other) const noexcept
     {
-        return (m_current - other.m_current) / Step;
+        return (static_cast<std::ptrdiff_t>(m_current) - static_cast<std::ptrdiff_t>(other.m_current)) / Step;
     }
 
 private:
