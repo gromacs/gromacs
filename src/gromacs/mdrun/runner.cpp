@@ -844,7 +844,8 @@ int Mdrunner::mdrunner()
         {
             inputrec = &inputrecInstance;
         }
-        init_parallel(cr->mpi_comm_mygroup, MASTER(cr), inputrec, &mtop, partialDeserializedTpr.get());
+        init_parallel(cr->mpiDefaultCommunicator, MASTER(cr), inputrec, &mtop,
+                      partialDeserializedTpr.get());
     }
     GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
     partialDeserializedTpr.reset(nullptr);
@@ -877,7 +878,7 @@ int Mdrunner::mdrunner()
                 gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, !GMX_THREAD_MPI), gpusWereDetected);
         useGpuForPme = decideWhetherToUseGpusForPme(
                 useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, *hwinfo, *inputrec, mtop,
-                cr->nnodes, domdecOptions.numPmeRanks, gpusWereDetected);
+                cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks, gpusWereDetected);
         auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr)
                                   && inputSupportsGpuBondeds(*inputrec, mtop, nullptr);
         useGpuForBonded = decideWhetherToUseGpusForBonded(
@@ -958,7 +959,8 @@ int Mdrunner::mdrunner()
         {
             globalState = std::make_unique<t_state>();
         }
-        broadcastStateWithoutDynamics(cr->mpi_comm_mygroup, DOMAINDECOMP(cr), PAR(cr), globalState.get());
+        broadcastStateWithoutDynamics(cr->mpiDefaultCommunicator, DOMAINDECOMP(cr), PAR(cr),
+                                      globalState.get());
     }
 
     /* A parallel command line option consistency check that we can
@@ -992,7 +994,7 @@ int Mdrunner::mdrunner()
     {
         if (domdecOptions.numPmeRanks > 0)
         {
-            gmx_fatal_collective(FARGS, cr->mpi_comm_mysim, MASTER(cr),
+            gmx_fatal_collective(FARGS, cr->mpiDefaultCommunicator, MASTER(cr),
                                  "PME-only ranks are requested, but the system does not use PME "
                                  "for electrostatics or LJ");
         }
@@ -1102,7 +1104,7 @@ int Mdrunner::mdrunner()
 
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(box), box, cr->mpi_comm_mygroup);
+        gmx_bcast(sizeof(box), box, cr->mpiDefaultCommunicator);
     }
 
     if (inputrec->cutoff_scheme != ecutsVERLET)
@@ -1112,6 +1114,10 @@ int Mdrunner::mdrunner()
                   "Verlet scheme, or use an earlier version of GROMACS if necessary.");
     }
     /* Update rlist and nstlist. */
+    /* Note: prepare_verlet_scheme is calling increaseNstlist(...), which (while attempting to
+     * increase rlist) tries to check if the newly chosen value fits with the DD scheme. As this is
+     * run before any DD scheme is set up, this check is never executed. See #3334 for more details.
+     */
     prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes),
                           *hwinfo->cpuInfo);
@@ -1131,8 +1137,11 @@ int Mdrunner::mdrunner()
     else
     {
         /* PME, if used, is done on all nodes with 1D decomposition */
-        cr->npmenodes = 0;
-        cr->duty      = (DUTY_PP | DUTY_PME);
+        cr->nnodes     = cr->sizeOfDefaultCommunicator;
+        cr->sim_nodeid = cr->rankInDefaultCommunicator;
+        cr->nodeid     = cr->rankInDefaultCommunicator;
+        cr->npmenodes  = 0;
+        cr->duty       = (DUTY_PP | DUTY_PME);
 
         if (inputrec->pbcType == PbcType::Screw)
         {

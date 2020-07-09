@@ -284,6 +284,11 @@ void increaseNstlist(FILE*               fp,
         bDD  = TRUE;
         if (bBox && DOMAINDECOMP(cr))
         {
+            /* Currently (as of July 2020), the code in this if clause is never executed.
+             * increaseNstlist(...) is only called from prepare_verlet_scheme, which in turns
+             * gets called by the runner _before_ setting up DD. DOMAINDECOMP(cr) will therefore
+             * always be false here. See #3334.
+             */
             /* Check if rlist fits in the domain decomposition */
             if (inputrec2nboundeddim(ir) < DIM)
             {

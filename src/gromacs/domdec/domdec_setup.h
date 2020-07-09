@@ -43,7 +43,9 @@
 #define GMX_DOMDEC_DOMDEC_SETUP_H
 
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/gmxmpi.h"
 
+enum class DDRole;
 struct DDSettings;
 struct DDSystemInfo;
 struct gmx_ddbox_t;
@@ -104,7 +106,8 @@ real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
  * cell setup, DD cell size limits, and the initial ddbox.
  */
 DDGridSetup getDDGridSetup(const gmx::MDLogger&           mdlog,
-                           const t_commrec*               cr,
+                           DDRole                         ddRole,
+                           MPI_Comm                       communicator,
                            int                            numRanksRequested,
                            const gmx::DomdecOptions&      options,
                            const DDSettings&              ddSettings,

@@ -899,7 +899,8 @@ static int set_dd_dim(const gmx::IVec& numDDCells, const DDSettings& ddSettings,
 }
 
 DDGridSetup getDDGridSetup(const gmx::MDLogger&           mdlog,
-                           const t_commrec*               cr,
+                           DDRole                         ddRole,
+                           MPI_Comm                       communicator,
                            const int                      numRanksRequested,
                            const DomdecOptions&           options,
                            const DDSettings&              ddSettings,
@@ -926,13 +927,13 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&           mdlog,
     {
         numDomains                      = gmx::IVec(options.numCells);
         const ivec numDomainsLegacyIvec = { numDomains[XX], numDomains[YY], numDomains[ZZ] };
-        set_ddbox_cr(*cr, &numDomainsLegacyIvec, ir, box, xGlobal, ddbox);
+        set_ddbox_cr(ddRole, communicator, &numDomainsLegacyIvec, ir, box, xGlobal, ddbox);
     }
     else
     {
-        set_ddbox_cr(*cr, nullptr, ir, box, xGlobal, ddbox);
+        set_ddbox_cr(ddRole, communicator, nullptr, ir, box, xGlobal, ddbox);
 
-        if (MASTER(cr))
+        if (ddRole == DDRole::Master)
         {
             numDomains = optimizeDDCells(mdlog, numRanksRequested, numPmeOnlyRanks, cellSizeLimit,
                                          ddSettings.request1D, mtop, box, *ddbox, ir, systemInfo);
@@ -940,10 +941,10 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&           mdlog,
     }
 
     /* Communicate the information set by the master to all ranks */
-    gmx_bcast(sizeof(numDomains), numDomains, cr->mpi_comm_mygroup);
+    gmx_bcast(sizeof(numDomains), numDomains, communicator);
     if (EEL_PME(ir.coulombtype))
     {
-        gmx_bcast(sizeof(numPmeOnlyRanks), &numPmeOnlyRanks, cr->mpi_comm_mygroup);
+        gmx_bcast(sizeof(numPmeOnlyRanks), &numPmeOnlyRanks, communicator);
     }
 
     DDGridSetup ddGridSetup;

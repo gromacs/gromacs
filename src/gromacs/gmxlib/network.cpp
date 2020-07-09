@@ -86,21 +86,26 @@ CommrecHandle init_commrec(MPI_Comm communicator, const gmx_multisim_t* ms)
     if (ms != nullptr)
     {
 #if GMX_MPI
-        cr->nnodes = sizeOfCommunicator / ms->nsim;
-        MPI_Comm_split(communicator, ms->sim, rankInCommunicator, &cr->mpi_comm_mysim);
-        cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-        MPI_Comm_rank(cr->mpi_comm_mysim, &cr->sim_nodeid);
-        MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
+        MPI_Comm_split(communicator, ms->sim, rankInCommunicator, &cr->mpiDefaultCommunicator);
+        cr->sizeOfDefaultCommunicator = sizeOfCommunicator / ms->nsim;
+        MPI_Comm_rank(cr->mpiDefaultCommunicator, &cr->rankInDefaultCommunicator);
+#else
+        gmx_fatal(FARGS, "Multisim can only run with MPI.");
 #endif
     }
     else
     {
-        cr->nnodes           = sizeOfCommunicator;
-        cr->nodeid           = rankInCommunicator;
-        cr->sim_nodeid       = cr->nodeid;
-        cr->mpi_comm_mysim   = communicator;
-        cr->mpi_comm_mygroup = communicator;
+        cr->mpiDefaultCommunicator    = communicator;
+        cr->sizeOfDefaultCommunicator = sizeOfCommunicator;
+        cr->rankInDefaultCommunicator = rankInCommunicator;
     }
+    // For now, we want things to go horribly wrong if this is used too early...
+    // TODO: Remove when communicators are removed from commrec (#2395)
+    cr->nnodes           = -1;
+    cr->nodeid           = -1;
+    cr->sim_nodeid       = -1;
+    cr->mpi_comm_mysim   = MPI_COMM_NULL;
+    cr->mpi_comm_mygroup = MPI_COMM_NULL;
 
     // TODO cr->duty should not be initialized here
     cr->duty = (DUTY_PP | DUTY_PME);

@@ -93,6 +93,10 @@ struct t_commrec
                                   a single simulation */
     MPI_Comm mpi_comm_mygroup; /* subset of mpi_comm_mysim including only
                                   the ranks in the same group (PP or PME) */
+    //! The communicator used before DD was initialized
+    MPI_Comm mpiDefaultCommunicator;
+    int      sizeOfDefaultCommunicator;
+    int      rankInDefaultCommunicator;
 
     gmx_nodecomm_t nc;
 
@@ -139,11 +143,12 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
  * In particular, this is true for multi-rank runs with TPI and NM, because
  * they use a decomposition that is not the domain decomposition used by
  * other simulation types. */
-#define PAR(cr) ((cr)->nnodes > 1)
+#define PAR(cr) ((cr)->sizeOfDefaultCommunicator > 1)
 
 //! True of this is the master node
-#define MASTER(cr) (((cr)->nodeid == 0) || !PAR(cr))
+#define MASTER(cr) (((cr)->rankInDefaultCommunicator == 0) || !PAR(cr))
 
+// Note that currently, master is always PP master, so this is equivalent to MASTER(cr)
 //! True if this is the particle-particle master
 #define SIMMASTER(cr) ((MASTER(cr) && thisRankHasDuty((cr), DUTY_PP)) || !PAR(cr))
 

@@ -2545,11 +2545,12 @@ static void check_match(FILE*                           fplog,
         check_int(fplog, "#ranks", cr->nnodes, headerContents.nnodes, &mm);
     }
 
-    if (cr->nnodes > 1 && reproducibilityRequested)
+    if (cr->sizeOfDefaultCommunicator > 1 && reproducibilityRequested)
     {
+        // TODO: These checks are incorrect (see redmine #3309)
         check_int(fplog, "#PME-ranks", cr->npmenodes, headerContents.npme, &mm);
 
-        int npp = cr->nnodes;
+        int npp = cr->sizeOfDefaultCommunicator;
         if (cr->npmenodes >= 0)
         {
             npp -= cr->npmenodes;
@@ -2832,9 +2833,9 @@ void load_checkpoint(const char*                   fn,
     }
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr->mpi_comm_mygroup);
+        gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr->mpiDefaultCommunicator);
         gmx::MdModulesCheckpointReadingBroadcast broadcastCheckPointData = {
-            cr->mpi_comm_mygroup, PAR(cr), headerContents.file_version
+            cr->mpiDefaultCommunicator, PAR(cr), headerContents.file_version
         };
         mdModulesNotifier.checkpointingNotifications_.notify(broadcastCheckPointData);
     }

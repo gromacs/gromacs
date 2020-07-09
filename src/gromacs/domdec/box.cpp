@@ -300,18 +300,19 @@ void set_ddbox(const gmx_domdec_t&            dd,
     }
 }
 
-void set_ddbox_cr(const t_commrec&               cr,
+void set_ddbox_cr(DDRole                         ddRole,
+                  MPI_Comm                       communicator,
                   const ivec*                    dd_nc,
                   const t_inputrec&              ir,
                   const matrix                   box,
                   gmx::ArrayRef<const gmx::RVec> x,
                   gmx_ddbox_t*                   ddbox)
 {
-    if (MASTER(&cr))
+    if (ddRole == DDRole::Master)
     {
         low_set_ddbox(numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), dd_nc, box, true, x,
                       nullptr, ddbox);
     }
 
-    gmx_bcast(sizeof(gmx_ddbox_t), ddbox, cr.mpi_comm_mygroup);
+    gmx_bcast(sizeof(gmx_ddbox_t), ddbox, communicator);
 }
