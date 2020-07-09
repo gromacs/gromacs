@@ -1,7 +1,7 @@
 GROMACS 2020.3 release notes
 ----------------------------
 
-This version was released on TODO, 2020. These release notes
+This version was released on July 9th, 2020. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2020.2 version, to fix known issues. It also incorporates all
 fixes made in version 2019.6 and earlier, which you can find described
