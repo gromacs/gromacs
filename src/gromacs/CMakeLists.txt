@@ -354,11 +354,16 @@ endif()
 # for the binary
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
     install(TARGETS libgromacs
-            COMPONENT libraries
             EXPORT libgromacs
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT libraries
+            RUNTIME
+                DESTINATION ${CMAKE_INSTALL_BINDIR}
+                COMPONENT libraries
+            ARCHIVE
+                DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                COMPONENT libraries
             INCLUDES DESTINATION include)
     target_compile_definitions(libgromacs PUBLIC $<INSTALL_INTERFACE:GMX_DOUBLE=${GMX_DOUBLE_VALUE}>)
     add_library(Gromacs::libgromacs ALIAS libgromacs)
