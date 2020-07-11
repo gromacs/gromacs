@@ -25,3 +25,9 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix ``INTERFACE_INCLUDE_DIRECTORIES`` for ``libgromacs`` CMake target
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:file:`libgromacs.cmake` was malformed, referencing non-existent directories.
+
+:issue:`3592`
