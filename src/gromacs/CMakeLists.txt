@@ -366,6 +366,10 @@ if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
                 COMPONENT libraries
             INCLUDES DESTINATION include)
     target_compile_definitions(libgromacs PUBLIC $<INSTALL_INTERFACE:GMX_DOUBLE=${GMX_DOUBLE_VALUE}>)
+    # legacy headers use c++17 features, so consumer codes need to use that standard, too
+    if(GMX_INSTALL_LEGACY_API)
+        target_compile_features(libgromacs INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
+    endif()
     add_library(Gromacs::libgromacs ALIAS libgromacs)
 endif()
 
