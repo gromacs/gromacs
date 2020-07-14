@@ -41,7 +41,7 @@
 
 #include "gmxpre.h"
 
-#include "energyelement.h"
+#include "energydata.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/compute_io.h"
@@ -74,24 +74,22 @@ namespace gmx
 {
 class Awh;
 
-EnergyElement::EnergyElement(StatePropagatorData*           statePropagatorData,
-                             FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                             const gmx_mtop_t*              globalTopology,
-                             const t_inputrec*              inputrec,
-                             const MDAtoms*                 mdAtoms,
-                             gmx_enerdata_t*                enerd,
-                             gmx_ekindata_t*                ekind,
-                             const Constraints*             constr,
-                             FILE*                          fplog,
-                             t_fcdata*                      fcd,
-                             const MdModulesNotifier&       mdModulesNotifier,
-                             bool                           isMasterRank,
-                             ObservablesHistory*            observablesHistory,
-                             StartingBehavior               startingBehavior) :
+EnergyData::EnergyData(StatePropagatorData*           statePropagatorData,
+                       FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                       const gmx_mtop_t*              globalTopology,
+                       const t_inputrec*              inputrec,
+                       const MDAtoms*                 mdAtoms,
+                       gmx_enerdata_t*                enerd,
+                       gmx_ekindata_t*                ekind,
+                       const Constraints*             constr,
+                       FILE*                          fplog,
+                       t_fcdata*                      fcd,
+                       const MdModulesNotifier&       mdModulesNotifier,
+                       bool                           isMasterRank,
+                       ObservablesHistory*            observablesHistory,
+                       StartingBehavior               startingBehavior) :
+    element_(std::make_unique<Element>(this, isMasterRank)),
     isMasterRank_(isMasterRank),
-    energyWritingStep_(-1),
-    energyCalculationStep_(-1),
-    freeEnergyCalculationStep_(-1),
     forceVirialStep_(-1),
     shakeVirialStep_(-1),
     totalVirialStep_(-1),
@@ -126,7 +124,7 @@ EnergyElement::EnergyElement(StatePropagatorData*           statePropagatorData,
     }
 }
 
-void EnergyElement::scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction)
+void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction)
 {
     if (!isMasterRank_)
     {
@@ -139,17 +137,17 @@ void EnergyElement::scheduleTask(Step step, Time time, const RegisterRunFunction
     {
         (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
                 [this, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
-                    doStep(time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
+                    energyData_->doStep(time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
                 }));
     }
     else
     {
         (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this]() { energyOutput_->recordNonEnergyStep(); }));
+                [this]() { energyData_->energyOutput_->recordNonEnergyStep(); }));
     }
 }
 
-void EnergyElement::elementTeardown()
+void EnergyData::teardown()
 {
     if (inputrec_->nstcalcenergy > 0 && isMasterRank_)
     {
@@ -157,7 +155,12 @@ void EnergyElement::elementTeardown()
     }
 }
 
-void EnergyElement::trajectoryWriterSetup(gmx_mdoutf* outf)
+void EnergyData::Element::trajectoryWriterSetup(gmx_mdoutf* outf)
+{
+    energyData_->setup(outf);
+}
+
+void EnergyData::setup(gmx_mdoutf* outf)
 {
     pull_t* pull_work = nullptr;
     energyOutput_ = std::make_unique<EnergyOutput>(mdoutf_get_fp_ene(outf), top_global_, inputrec_,
@@ -193,18 +196,19 @@ void EnergyElement::trajectoryWriterSetup(gmx_mdoutf* outf)
     }
 }
 
-ITrajectoryWriterCallbackPtr EnergyElement::registerTrajectoryWriterCallback(TrajectoryEvent event)
+ITrajectoryWriterCallbackPtr EnergyData::Element::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
         return std::make_unique<ITrajectoryWriterCallback>(
-                [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory,
-                       bool writeLog) { write(mdoutf, step, time, writeTrajectory, writeLog); });
+                [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog) {
+                    energyData_->write(mdoutf, step, time, writeTrajectory, writeLog);
+                });
     }
     return nullptr;
 }
 
-SignallerCallbackPtr EnergyElement::registerTrajectorySignallerCallback(gmx::TrajectoryEvent event)
+SignallerCallbackPtr EnergyData::Element::registerTrajectorySignallerCallback(gmx::TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
@@ -214,7 +218,7 @@ SignallerCallbackPtr EnergyElement::registerTrajectorySignallerCallback(gmx::Tra
     return nullptr;
 }
 
-SignallerCallbackPtr EnergyElement::registerEnergyCallback(EnergySignallerEvent event)
+SignallerCallbackPtr EnergyData::Element::registerEnergyCallback(EnergySignallerEvent event)
 {
     if (event == EnergySignallerEvent::EnergyCalculationStep && isMasterRank_)
     {
@@ -229,7 +233,7 @@ SignallerCallbackPtr EnergyElement::registerEnergyCallback(EnergySignallerEvent 
     return nullptr;
 }
 
-void EnergyElement::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep)
+void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep)
 {
     enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
     if (vRescaleThermostat_)
@@ -259,7 +263,7 @@ void EnergyElement::doStep(Time time, bool isEnergyCalculationStep, bool isFreeE
                                        forceVirial_, totalVirial_, pressure_, ekind_, muTot_, constr_);
 }
 
-void EnergyElement::write(gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool writeLog)
+void EnergyData::write(gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool writeLog)
 {
     if (writeLog)
     {
@@ -275,7 +279,7 @@ void EnergyElement::write(gmx_mdoutf* outf, Step step, Time time, bool writeTraj
                                          writeLog ? fplog_ : nullptr, step, time, fcd_, awh);
 }
 
-void EnergyElement::addToForceVirial(const tensor virial, Step step)
+void EnergyData::addToForceVirial(const tensor virial, Step step)
 {
     if (step > forceVirialStep_)
     {
@@ -285,7 +289,7 @@ void EnergyElement::addToForceVirial(const tensor virial, Step step)
     m_add(forceVirial_, virial, forceVirial_);
 }
 
-void EnergyElement::addToConstraintVirial(const tensor virial, Step step)
+void EnergyData::addToConstraintVirial(const tensor virial, Step step)
 {
     if (step > shakeVirialStep_)
     {
@@ -295,7 +299,7 @@ void EnergyElement::addToConstraintVirial(const tensor virial, Step step)
     m_add(shakeVirial_, virial, shakeVirial_);
 }
 
-rvec* EnergyElement::forceVirial(Step gmx_unused step)
+rvec* EnergyData::forceVirial(Step gmx_unused step)
 {
     if (step > forceVirialStep_)
     {
@@ -307,7 +311,7 @@ rvec* EnergyElement::forceVirial(Step gmx_unused step)
     return forceVirial_;
 }
 
-rvec* EnergyElement::constraintVirial(Step gmx_unused step)
+rvec* EnergyData::constraintVirial(Step gmx_unused step)
 {
     if (step > shakeVirialStep_)
     {
@@ -319,7 +323,7 @@ rvec* EnergyElement::constraintVirial(Step gmx_unused step)
     return shakeVirial_;
 }
 
-rvec* EnergyElement::totalVirial(Step gmx_unused step)
+rvec* EnergyData::totalVirial(Step gmx_unused step)
 {
     if (step > totalVirialStep_)
     {
@@ -331,7 +335,7 @@ rvec* EnergyElement::totalVirial(Step gmx_unused step)
     return totalVirial_;
 }
 
-rvec* EnergyElement::pressure(Step gmx_unused step)
+rvec* EnergyData::pressure(Step gmx_unused step)
 {
     if (step > pressureStep_)
     {
@@ -343,46 +347,47 @@ rvec* EnergyElement::pressure(Step gmx_unused step)
     return pressure_;
 }
 
-real* EnergyElement::muTot()
+real* EnergyData::muTot()
 {
     return muTot_;
 }
 
-gmx_enerdata_t* EnergyElement::enerdata()
+gmx_enerdata_t* EnergyData::enerdata()
 {
     return enerd_;
 }
 
-gmx_ekindata_t* EnergyElement::ekindata()
+gmx_ekindata_t* EnergyData::ekindata()
 {
     return ekind_;
 }
 
-bool* EnergyElement::needToSumEkinhOld()
+bool* EnergyData::needToSumEkinhOld()
 {
     return &needToSumEkinhOld_;
 }
 
-void EnergyElement::writeCheckpoint(t_state gmx_unused* localState, t_state* globalState)
+void EnergyData::Element::writeCheckpoint(t_state gmx_unused* localState, t_state* globalState)
 {
     if (isMasterRank_)
     {
-        if (needToSumEkinhOld_)
+        if (energyData_->needToSumEkinhOld_)
         {
             globalState->ekinstate.bUpToDate = false;
         }
         else
         {
-            update_ekinstate(&globalState->ekinstate, ekind_);
+            update_ekinstate(&globalState->ekinstate, energyData_->ekind_);
             globalState->ekinstate.bUpToDate = true;
         }
-        energyOutput_->fillEnergyHistory(observablesHistory_->energyHistory.get());
+        energyData_->energyOutput_->fillEnergyHistory(
+                energyData_->observablesHistory_->energyHistory.get());
     }
 }
 
-void EnergyElement::initializeEnergyHistory(StartingBehavior    startingBehavior,
-                                            ObservablesHistory* observablesHistory,
-                                            EnergyOutput*       energyOutput)
+void EnergyData::initializeEnergyHistory(StartingBehavior    startingBehavior,
+                                         ObservablesHistory* observablesHistory,
+                                         EnergyOutput*       energyOutput)
 {
     if (startingBehavior != StartingBehavior::NewSimulation)
     {
@@ -424,7 +429,7 @@ void EnergyElement::initializeEnergyHistory(StartingBehavior    startingBehavior
     energyOutput->fillEnergyHistory(observablesHistory->energyHistory.get());
 }
 
-void EnergyElement::setVRescaleThermostat(const gmx::VRescaleThermostat* vRescaleThermostat)
+void EnergyData::setVRescaleThermostat(const gmx::VRescaleThermostat* vRescaleThermostat)
 {
     vRescaleThermostat_ = vRescaleThermostat;
     if (vRescaleThermostat_)
@@ -433,13 +438,27 @@ void EnergyElement::setVRescaleThermostat(const gmx::VRescaleThermostat* vRescal
     }
 }
 
-void EnergyElement::setParrinelloRahamnBarostat(const gmx::ParrinelloRahmanBarostat* parrinelloRahmanBarostat)
+void EnergyData::setParrinelloRahamnBarostat(const gmx::ParrinelloRahmanBarostat* parrinelloRahmanBarostat)
 {
     parrinelloRahmanBarostat_ = parrinelloRahmanBarostat;
     if (parrinelloRahmanBarostat_)
     {
         dummyLegacyState_.flags |= (1U << estBOX) | (1U << estBOXV);
     }
+}
+
+EnergyData::Element* EnergyData::element()
+{
+    return element_.get();
+}
+
+EnergyData::Element::Element(EnergyData* energyData, bool isMasterRank) :
+    energyData_(energyData),
+    isMasterRank_(isMasterRank),
+    energyWritingStep_(-1),
+    energyCalculationStep_(-1),
+    freeEnergyCalculationStep_(-1)
+{
 }
 
 } // namespace gmx

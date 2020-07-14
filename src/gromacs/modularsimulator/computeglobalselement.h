@@ -47,7 +47,7 @@
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdlib/vcm.h"
 
-#include "energyelement.h"
+#include "energydata.h"
 #include "modularsimulatorinterfaces.h"
 #include "statepropagatordata.h"
 #include "topologyholder.h"
@@ -107,7 +107,7 @@ class ComputeGlobalsElement final :
 public:
     //! Constructor
     ComputeGlobalsElement(StatePropagatorData*           statePropagatorData,
-                          EnergyElement*                 energyElement,
+                          EnergyData*                    energyData,
                           FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
                           SimulationSignals*             signals,
                           int                            nstglobalcomm,
@@ -210,10 +210,11 @@ private:
     //! Global reduction struct
     gmx_global_stat* gstat_;
 
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the microstate
     StatePropagatorData* statePropagatorData_;
-    //! Pointer to the energy element (needed for the tensors and mu_tot)
-    EnergyElement* energyElement_;
+    //! Pointer to the energy data (needed for the tensors and mu_tot)
+    EnergyData* energyData_;
     //! Pointer to the local topology (only needed for checkNumberOfBondedInteractions)
     const gmx_localtop_t* localTopology_;
     //! Pointer to the free energy perturbation element

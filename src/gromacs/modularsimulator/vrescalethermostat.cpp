@@ -65,7 +65,7 @@ VRescaleThermostat::VRescaleThermostat(int                   nstcouple,
                                        const real*           referenceTemperature,
                                        const real*           couplingTime,
                                        const real*           numDegreesOfFreedom,
-                                       EnergyElement*        energyElement,
+                                       EnergyData*           energyData,
                                        ArrayRef<real>        lambdaView,
                                        PropagatorCallbackPtr propagatorCallback,
                                        const t_state*        globalState,
@@ -81,7 +81,7 @@ VRescaleThermostat::VRescaleThermostat(int                   nstcouple,
     couplingTime_(couplingTime, couplingTime + numTemperatureGroups),
     numDegreesOfFreedom_(numDegreesOfFreedom, numDegreesOfFreedom + numTemperatureGroups),
     thermostatIntegral_(numTemperatureGroups, 0.0),
-    energyElement_(energyElement),
+    energyData_(energyData),
     lambda_(lambdaView),
     propagatorCallback_(std::move(propagatorCallback))
 {
@@ -128,7 +128,7 @@ void VRescaleThermostat::setLambda(Step step)
 {
     real currentKineticEnergy, referenceKineticEnergy, newKineticEnergy;
 
-    auto ekind = energyElement_->ekindata();
+    auto ekind = energyData_->ekindata();
 
     for (int i = 0; (i < numTemperatureGroups_); i++)
     {

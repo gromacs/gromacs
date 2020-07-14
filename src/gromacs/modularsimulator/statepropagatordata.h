@@ -314,6 +314,7 @@ private:
     //! Callback writing the state to file
     void write(gmx_mdoutf* outf, Step step, Time time);
 
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the free energy perturbation element (for trajectory writing only)
     FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 

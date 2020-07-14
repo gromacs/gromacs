@@ -51,7 +51,7 @@
 namespace gmx
 {
 class Constraints;
-class EnergyElement;
+class EnergyData;
 class FreeEnergyPerturbationElement;
 class StatePropagatorData;
 
@@ -77,7 +77,7 @@ public:
     //! Constructor
     ConstraintsElement(Constraints*                   constr,
                        StatePropagatorData*           statePropagatorData,
-                       EnergyElement*                 energyElement,
+                       EnergyData*                    energyData,
                        FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
                        bool                           isMaster,
                        FILE*                          fplog,
@@ -126,10 +126,11 @@ private:
     //! Whether we're master rank
     const bool isMasterRank_;
 
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
-    //! Pointer to the energy element
-    EnergyElement* energyElement_;
+    //! Pointer to the energy data
+    EnergyData* energyData_;
     //! Pointer to the free energy perturbation element
     FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 

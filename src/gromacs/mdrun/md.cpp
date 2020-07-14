@@ -122,7 +122,7 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
-#include "gromacs/modularsimulator/energyelement.h"
+#include "gromacs/modularsimulator/energydata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -448,7 +448,7 @@ void gmx::LegacySimulator::do_md()
 
     if (MASTER(cr))
     {
-        EnergyElement::initializeEnergyHistory(startingBehavior, observablesHistory, &energyOutput);
+        EnergyData::initializeEnergyHistory(startingBehavior, observablesHistory, &energyOutput);
     }
 
     preparePrevStepPullCom(ir, pull_work, mdatoms->massT, state, state_global, cr,

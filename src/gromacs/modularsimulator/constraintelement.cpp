@@ -49,7 +49,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "energyelement.h"
+#include "energydata.h"
 #include "freeenergyperturbationelement.h"
 #include "statepropagatordata.h"
 
@@ -58,7 +58,7 @@ namespace gmx
 template<ConstraintVariable variable>
 ConstraintsElement<variable>::ConstraintsElement(Constraints*                   constr,
                                                  StatePropagatorData*           statePropagatorData,
-                                                 EnergyElement*                 energyElement,
+                                                 EnergyData*                    energyData,
                                                  FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
                                                  bool                           isMaster,
                                                  FILE*                          fplog,
@@ -69,7 +69,7 @@ ConstraintsElement<variable>::ConstraintsElement(Constraints*                   
     nextLogWritingStep_(-1),
     isMasterRank_(isMaster),
     statePropagatorData_(statePropagatorData),
-    energyElement_(energyElement),
+    energyData_(energyData),
     freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     constr_(constr),
     fplog_(fplog),
@@ -162,9 +162,9 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
             // For some reason, the shake virial in VV is reset twice a step.
             // Energy element will only do this once per step.
             // TODO: Investigate this
-            clear_mat(energyElement_->constraintVirial(step));
+            clear_mat(energyData_->constraintVirial(step));
         }
-        energyElement_->addToConstraintVirial(vir_con, step);
+        energyData_->addToConstraintVirial(vir_con, step);
     }
 
     /* The factor of 2 correction is necessary because half of the constraint
@@ -175,7 +175,7 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
      * Cf. Issue #1255
      */
     const real c_dvdlConstraintCorrectionFactor = EI_VV(inputrec_->eI) ? 2.0 : 1.0;
-    energyElement_->enerdata()->term[F_DVDL_CONSTR] += c_dvdlConstraintCorrectionFactor * dvdlambda;
+    energyData_->enerdata()->term[F_DVDL_CONSTR] += c_dvdlConstraintCorrectionFactor * dvdlambda;
 }
 
 template<ConstraintVariable variable>

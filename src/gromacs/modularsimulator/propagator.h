@@ -161,6 +161,7 @@ private:
     //! The time step
     const real timestep_;
 
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
 

@@ -61,7 +61,7 @@ namespace gmx
 {
 template<ComputeGlobalsAlgorithm algorithm>
 ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* statePropagatorData,
-                                                        EnergyElement*       energyElement,
+                                                        EnergyData*          energyData,
                                                         FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
                                                         SimulationSignals* signals,
                                                         int                nstglobalcomm,
@@ -89,7 +89,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     totalNumberOfBondedInteractions_(0),
     shouldCheckNumberOfBondedInteractions_(false),
     statePropagatorData_(statePropagatorData),
-    energyElement_(energyElement),
+    energyData_(energyData),
     localTopology_(nullptr),
     freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     vcm_(global_top->groups, *inputrec),
@@ -151,8 +151,7 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
     // Calculate the initial half step temperature, and save the ekinh_old
     for (int i = 0; (i < inputrec_->opts.ngtc); i++)
     {
-        copy_mat(energyElement_->ekindata()->tcstat[i].ekinh,
-                 energyElement_->ekindata()->tcstat[i].ekinh_old);
+        copy_mat(energyData_->ekindata()->tcstat[i].ekinh, energyData_->ekindata()->tcstat[i].ekinh_old);
     }
 }
 
@@ -281,11 +280,11 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                               : statePropagatorData_->constBox();
 
     compute_globals(
-            gstat_, cr_, inputrec_, fr_, energyElement_->ekindata(), x, v, box, mdAtoms_->mdatoms(),
-            nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr, energyElement_->enerdata(),
-            energyElement_->forceVirial(step), energyElement_->constraintVirial(step),
-            energyElement_->totalVirial(step), energyElement_->pressure(step), constr_, signaller,
-            lastbox, &totalNumberOfBondedInteractions_, energyElement_->needToSumEkinhOld(),
+            gstat_, cr_, inputrec_, fr_, energyData_->ekindata(), x, v, box, mdAtoms_->mdatoms(),
+            nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr, energyData_->enerdata(),
+            energyData_->forceVirial(step), energyData_->constraintVirial(step),
+            energyData_->totalVirial(step), energyData_->pressure(step), constr_, signaller,
+            lastbox, &totalNumberOfBondedInteractions_, energyData_->needToSumEkinhOld(),
             flags | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
     checkNumberOfBondedInteractions(mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_,
                                     localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);

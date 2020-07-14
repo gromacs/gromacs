@@ -98,6 +98,7 @@ ModularSimulatorAlgorithm::ModularSimulatorAlgorithm(std::string              to
                                                      gmx_walltime_accounting* walltime_accounting) :
     taskIterator_(taskQueue_.end()),
     statePropagatorData_(nullptr),
+    energyData_(nullptr),
     step_(-1),
     runFinished_(false),
     topologyName_(std::move(topologyName)),
@@ -171,6 +172,7 @@ void ModularSimulatorAlgorithm::teardown()
     {
         element->elementTeardown();
     }
+    energyData_->teardown();
     if (pmeLoadBalanceHelper_)
     {
         pmeLoadBalanceHelper_->teardown();
@@ -428,11 +430,11 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
             top_global->natoms, cr, state_global, fr->nbv->useGpu(), inputrec, mdAtoms->mdatoms());
     auto statePropagatorDataPtr = compat::make_not_null(algorithm.statePropagatorData_.get());
 
-    auto energyElement = std::make_unique<EnergyElement>(
+    algorithm.energyData_ = std::make_unique<EnergyData>(
             statePropagatorDataPtr, freeEnergyPerturbationElementPtr, top_global, inputrec, mdAtoms,
             enerd, ekind, constr, fplog, &fr->listedForces->fcdata(), mdModulesNotifier, MASTER(cr),
             observablesHistory, startingBehavior);
-    auto energyElementPtr = compat::make_not_null(energyElement.get());
+    auto energyDataPtr = compat::make_not_null(algorithm.energyData_.get());
 
     /*
      * Build stop handler
@@ -454,14 +456,6 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     SignallerBuilder<TrajectorySignaller>     trajectorySignallerBuilder;
     TrajectoryElementBuilder                  trajectoryElementBuilder;
 
-    /*
-     * Register data structures to signallers
-     */
-
-    trajectoryElementBuilder.registerWriterClient(energyElementPtr);
-    trajectorySignallerBuilder.registerSignallerClient(energyElementPtr);
-    energySignallerBuilder.registerSignallerClient(energyElementPtr);
-
     // Register the simulator itself to the neighbor search / last step signaller
     neighborSearchSignallerBuilder.registerSignallerClient(
             compat::make_not_null(algorithm.signalHelper_.get()));
@@ -473,14 +467,13 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
      * have a full timestep state.
      */
     // TODO: Make a CheckpointHelperBuilder
-    std::vector<ICheckpointHelperClient*> checkpointClients               = { energyElementPtr,
-                                                                freeEnergyPerturbationElementPtr };
+    std::vector<ICheckpointHelperClient*> checkpointClients = { freeEnergyPerturbationElementPtr };
     CheckBondedInteractionsCallbackPtr    checkBondedInteractionsCallback = nullptr;
     auto                                  integrator                      = buildIntegrator(
             &neighborSearchSignallerBuilder, &lastStepSignallerBuilder, &energySignallerBuilder,
             &loggingSignallerBuilder, &trajectorySignallerBuilder, &trajectoryElementBuilder,
             &checkpointClients, &checkBondedInteractionsCallback, statePropagatorDataPtr,
-            energyElementPtr, freeEnergyPerturbationElementPtr, hasReadEkinState,
+            energyDataPtr, freeEnergyPerturbationElementPtr, hasReadEkinState,
             algorithm.topologyHolder_.get(), &algorithm.signals_);
 
     /*
@@ -585,7 +578,6 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     addToCallListAndMove(std::move(integrator), algorithm.elementCallList_, algorithm.elementsOwnershipList_);
     addToCallListAndMove(std::move(trajectoryElement), algorithm.elementCallList_,
                          algorithm.elementsOwnershipList_);
-    algorithm.elementsOwnershipList_.emplace_back(std::move(energyElement));
 
     return algorithm;
 }

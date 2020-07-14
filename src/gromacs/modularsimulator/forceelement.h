@@ -65,7 +65,7 @@ struct t_nrnb;
 namespace gmx
 {
 class Awh;
-class EnergyElement;
+class EnergyData;
 class FreeEnergyPerturbationElement;
 class ImdSession;
 class MDAtoms;
@@ -89,7 +89,7 @@ class ForceElement final :
 public:
     //! Constructor
     ForceElement(StatePropagatorData*           statePropagatorData,
-                 EnergyElement*                 energyElement,
+                 EnergyData*                    energyData,
                  FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
                  bool                           isVerbose,
                  bool                           isDynamicBox,
@@ -146,10 +146,11 @@ private:
     //! The next free energy calculation step
     Step nextFreeEnergyCalculationStep_;
 
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
-    //! Pointer to the energy element
-    EnergyElement* energyElement_;
+    //! Pointer to the energy data
+    EnergyData* energyData_;
     //! Pointer to the free energy perturbation element
     FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 

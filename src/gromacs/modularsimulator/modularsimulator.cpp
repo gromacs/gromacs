@@ -77,7 +77,7 @@
 #include "compositesimulatorelement.h"
 #include "computeglobalselement.h"
 #include "constraintelement.h"
-#include "energyelement.h"
+#include "energydata.h"
 #include "forceelement.h"
 #include "freeenergyperturbationelement.h"
 #include "parrinellorahmanbarostat.h"
@@ -108,7 +108,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildForces
         SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
         SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
         StatePropagatorData*                       statePropagatorDataPtr,
-        EnergyElement*                             energyElementPtr,
+        EnergyData*                                energyDataPtr,
         FreeEnergyPerturbationElement*             freeEnergyPerturbationElement,
         TopologyHolder*                            topologyHolder)
 {
@@ -116,7 +116,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildForces
     const bool isDynamicBox = inputrecDynamicBox(inputrec);
 
     auto forceElement = std::make_unique<ForceElement>(
-            statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement, isVerbose,
+            statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElement, isVerbose,
             isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, wcycle, runScheduleWork, vsite,
             imdSession, pull_work, constr, top_global, enforcedRotation);
     topologyHolder->registerClient(forceElement.get());
@@ -137,14 +137,14 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         std::vector<ICheckpointHelperClient*>*     checkpointClients,
         CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
         compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
-        compat::not_null<EnergyElement*>           energyElementPtr,
+        compat::not_null<EnergyData*>              energyDataPtr,
         FreeEnergyPerturbationElement*             freeEnergyPerturbationElementPtr,
         bool                                       hasReadEkinState,
         TopologyHolder*                            topologyHolder,
         SimulationSignals*                         signals)
 {
     auto forceElement = buildForces(neighborSearchSignallerBuilder, energySignallerBuilder,
-                                    statePropagatorDataPtr, energyElementPtr,
+                                    statePropagatorDataPtr, energyDataPtr,
                                     freeEnergyPerturbationElementPtr, topologyHolder);
 
     // list of elements owned by the simulator composite object
@@ -157,7 +157,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
     {
         auto computeGlobalsElement =
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
-                        statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
                         signals, nstglobalcomm_, fplog, mdlog, cr, inputrec, mdAtoms, nrnb, wcycle,
                         fr, top_global, constr, hasReadEkinState);
         topologyHolder->registerClient(computeGlobalsElement.get());
@@ -190,10 +190,10 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
             auto thermostat = std::make_unique<VRescaleThermostat>(
                     inputrec->nsttcouple, -1, false, inputrec->ld_seed, inputrec->opts.ngtc,
                     inputrec->delta_t * inputrec->nsttcouple, inputrec->opts.ref_t, inputrec->opts.tau_t,
-                    inputrec->opts.nrdf, energyElementPtr, propagator->viewOnVelocityScaling(),
+                    inputrec->opts.nrdf, energyDataPtr, propagator->viewOnVelocityScaling(),
                     propagator->velocityScalingCallback(), state_global, cr, inputrec->bContinuation);
             checkpointClients->emplace_back(thermostat.get());
-            energyElementPtr->setVRescaleThermostat(thermostat.get());
+            energyDataPtr->setVRescaleThermostat(thermostat.get());
             addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
         }
 
@@ -205,16 +205,16 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
             prBarostat = std::make_unique<ParrinelloRahmanBarostat>(
                     inputrec->nstpcouple, -1, inputrec->delta_t * inputrec->nstpcouple,
                     inputrec->init_step, propagator->viewOnPRScalingMatrix(),
-                    propagator->prScalingCallback(), statePropagatorDataPtr, energyElementPtr,
-                    fplog, inputrec, mdAtoms, state_global, cr, inputrec->bContinuation);
-            energyElementPtr->setParrinelloRahamnBarostat(prBarostat.get());
+                    propagator->prScalingCallback(), statePropagatorDataPtr, energyDataPtr, fplog,
+                    inputrec, mdAtoms, state_global, cr, inputrec->bContinuation);
+            energyDataPtr->setParrinelloRahamnBarostat(prBarostat.get());
             checkpointClients->emplace_back(prBarostat.get());
         }
         addToCallListAndMove(std::move(propagator), elementCallList, elementsOwnershipList);
         if (constr)
         {
             auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Positions>>(
-                    constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             auto constraintElementPtr = compat::make_not_null(constraintElement.get());
             energySignallerBuilder->registerSignallerClient(constraintElementPtr);
@@ -225,7 +225,13 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         }
 
         addToCallListAndMove(std::move(computeGlobalsElement), elementCallList, elementsOwnershipList);
-        addToCallList(energyElementPtr, elementCallList); // we have the energies at time t here!
+        auto energyElement = compat::make_not_null(energyDataPtr->element());
+        trajectoryElementBuilder->registerWriterClient(energyElement);
+        trajectorySignallerBuilder->registerSignallerClient(energyElement);
+        energySignallerBuilder->registerSignallerClient(energyElement);
+        checkpointClients->emplace_back(energyElement);
+        // we have the energies at time t here!
+        addToCallList(energyElement, elementCallList);
         if (prBarostat)
         {
             addToCallListAndMove(std::move(prBarostat), elementCallList, elementsOwnershipList);
@@ -235,7 +241,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
     {
         auto computeGlobalsElement =
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>(
-                        statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
                         signals, nstglobalcomm_, fplog, mdlog, cr, inputrec, mdAtoms, nrnb, wcycle,
                         fr, &topologyHolder->globalTopology(), constr, hasReadEkinState);
         topologyHolder->registerClient(computeGlobalsElement.get());
@@ -262,16 +268,16 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
             prBarostat = std::make_unique<ParrinelloRahmanBarostat>(
                     inputrec->nstpcouple, -1, inputrec->delta_t * inputrec->nstpcouple,
                     inputrec->init_step, propagatorVelocities->viewOnPRScalingMatrix(),
-                    propagatorVelocities->prScalingCallback(), statePropagatorDataPtr, energyElementPtr,
+                    propagatorVelocities->prScalingCallback(), statePropagatorDataPtr, energyDataPtr,
                     fplog, inputrec, mdAtoms, state_global, cr, inputrec->bContinuation);
-            energyElementPtr->setParrinelloRahamnBarostat(prBarostat.get());
+            energyDataPtr->setParrinelloRahamnBarostat(prBarostat.get());
             checkpointClients->emplace_back(prBarostat.get());
         }
         addToCallListAndMove(std::move(propagatorVelocities), elementCallList, elementsOwnershipList);
         if (constr)
         {
             auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Velocities>>(
-                    constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             energySignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
             trajectorySignallerBuilder->registerSignallerClient(
@@ -300,12 +306,12 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
             auto thermostat = std::make_unique<VRescaleThermostat>(
                     inputrec->nsttcouple, 0, true, inputrec->ld_seed, inputrec->opts.ngtc,
                     inputrec->delta_t * inputrec->nsttcouple, inputrec->opts.ref_t,
-                    inputrec->opts.tau_t, inputrec->opts.nrdf, energyElementPtr,
+                    inputrec->opts.tau_t, inputrec->opts.nrdf, energyDataPtr,
                     propagatorVelocitiesAndPositions->viewOnVelocityScaling(),
                     propagatorVelocitiesAndPositions->velocityScalingCallback(), state_global, cr,
                     inputrec->bContinuation);
             checkpointClients->emplace_back(thermostat.get());
-            energyElementPtr->setVRescaleThermostat(thermostat.get());
+            energyDataPtr->setVRescaleThermostat(thermostat.get());
             addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
         }
         addToCallListAndMove(std::move(propagatorVelocitiesAndPositions), elementCallList,
@@ -313,7 +319,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         if (constr)
         {
             auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Positions>>(
-                    constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                    constr, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationElementPtr,
                     MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             energySignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
             trajectorySignallerBuilder->registerSignallerClient(
@@ -324,7 +330,13 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
             addToCallListAndMove(std::move(constraintElement), elementCallList, elementsOwnershipList);
         }
         addToCallListAndMove(std::move(computeGlobalsElement), elementCallList, elementsOwnershipList);
-        addToCallList(energyElementPtr, elementCallList); // we have the energies at time t here!
+        auto energyElement = compat::make_not_null(energyDataPtr->element());
+        trajectoryElementBuilder->registerWriterClient(energyElement);
+        trajectorySignallerBuilder->registerSignallerClient(energyElement);
+        energySignallerBuilder->registerSignallerClient(energyElement);
+        checkpointClients->emplace_back(energyElement);
+        // we have the energies at time t here!
+        addToCallList(energyElement, elementCallList);
         if (prBarostat)
         {
             addToCallListAndMove(std::move(prBarostat), elementCallList, elementsOwnershipList);

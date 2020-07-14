@@ -135,6 +135,7 @@ private:
     //! The global communication frequency
     const int nstglobalcomm_;
 
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
     //! Pointer to the topology

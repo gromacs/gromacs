@@ -46,7 +46,7 @@
 
 #include "gromacs/utility/arrayref.h"
 
-#include "energyelement.h"
+#include "energydata.h"
 #include "modularsimulatorinterfaces.h"
 #include "propagator.h"
 
@@ -75,7 +75,7 @@ public:
                        const real*           referenceTemperature,
                        const real*           couplingTime,
                        const real*           numDegreesOfFreedom,
-                       EnergyElement*        energyElement,
+                       EnergyData*           energyData,
                        ArrayRef<real>        lambdaView,
                        PropagatorCallbackPtr propagatorCallback,
                        const t_state*        globalState,
@@ -121,8 +121,9 @@ private:
     //! Work exerted by thermostat
     std::vector<double> thermostatIntegral_;
 
-    //! Pointer to the energy element (for ekindata)
-    EnergyElement* energyElement_;
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
+    //! Pointer to the energy data (for ekindata)
+    EnergyData* energyData_;
 
     //! View on the scaling factor of the propagator
     ArrayRef<real> lambda_;

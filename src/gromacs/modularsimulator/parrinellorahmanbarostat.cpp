@@ -54,7 +54,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 
-#include "energyelement.h"
+#include "energydata.h"
 #include "statepropagatordata.h"
 
 namespace gmx
@@ -67,7 +67,7 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                   nstpcou
                                                    ArrayRef<rvec>        scalingTensor,
                                                    PropagatorCallbackPtr propagatorCallback,
                                                    StatePropagatorData*  statePropagatorData,
-                                                   EnergyElement*        energyElement,
+                                                   EnergyData*           energyData,
                                                    FILE*                 fplog,
                                                    const t_inputrec*     inputrec,
                                                    const MDAtoms*        mdAtoms,
@@ -81,7 +81,7 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                   nstpcou
     scalingTensor_(scalingTensor),
     propagatorCallback_(std::move(propagatorCallback)),
     statePropagatorData_(statePropagatorData),
-    energyElement_(energyElement),
+    energyData_(energyData),
     fplog_(fplog),
     inputrec_(inputrec),
     mdAtoms_(mdAtoms)
@@ -131,7 +131,7 @@ void ParrinelloRahmanBarostat::scheduleTask(gmx::Step step,
 void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
 {
     auto box = statePropagatorData_->constBox();
-    parrinellorahman_pcoupl(fplog_, step, inputrec_, couplingTimeStep_, energyElement_->pressure(step),
+    parrinellorahman_pcoupl(fplog_, step, inputrec_, couplingTimeStep_, energyData_->pressure(step),
                             box, boxRel_, boxVelocity_, scalingTensor_.data(), mu_, false);
     // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
     msmul(scalingTensor_.data(), couplingTimeStep_, scalingTensor_.data());

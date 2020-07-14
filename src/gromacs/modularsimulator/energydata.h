@@ -71,71 +71,48 @@ struct MdModulesNotifier;
 
 /*! \internal
  * \ingroup module_modularsimulator
- * \brief Element managing energies
+ * \brief Data class managing energies
  *
- * The EnergyElement owns the EnergyObject, and is hence responsible
- * for saving energy data and writing it to trajectory. It also owns
+ * The EnergyData owns the EnergyObject,
  * the tensors for the different virials and the pressure as well as
- * the total dipole vector.
+ * the total dipole vector. It has a member class which is part of the
+ * simulator loop and and is responsible
+ * for saving energy data and writing it to trajectory.
  *
- * It subscribes to the trajectory signaller, the energy signaller,
- * and the logging signaller to know when an energy calculation is
- * needed and when a non-recording step is enough. The simulator
- * builder is responsible to place the element in a location at
- * which a valid energy state is available. The EnergyElement is
- * also a subscriber to the trajectory writer element, as it is
- * responsible to write energy data to trajectory.
- *
- * The EnergyElement offers an interface to add virial contributions,
+ * The EnergyData offers an interface to add virial contributions,
  * but also allows access to the raw pointers to tensor data, the
  * dipole vector, and the legacy energy data structures.
+ *
+ * The EnergyData owns an object of type EnergyData::Element,
+ * which takes part in the simulation loop, allowing to record
+ * and output energies during the simulation.
  */
-class EnergyElement final :
-    public ISimulatorElement,
-    public ITrajectoryWriterClient,
-    public ITrajectorySignallerClient,
-    public IEnergySignallerClient,
-    public ICheckpointHelperClient
+class EnergyData final
 {
 public:
     //! Constructor
-    EnergyElement(StatePropagatorData*           statePropagatorData,
-                  FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
-                  const gmx_mtop_t*              globalTopology,
-                  const t_inputrec*              inputrec,
-                  const MDAtoms*                 mdAtoms,
-                  gmx_enerdata_t*                enerd,
-                  gmx_ekindata_t*                ekind,
-                  const Constraints*             constr,
-                  FILE*                          fplog,
-                  t_fcdata*                      fcd,
-                  const MdModulesNotifier&       mdModulesNotifier,
-                  bool                           isMasterRank,
-                  ObservablesHistory*            observablesHistory,
-                  StartingBehavior               startingBehavior);
-
-    /*! \brief Register run function for step / time
-     *
-     * This needs to be called when the energies are at a full time step.
-     * Positioning this element is the responsibility of the programmer.
-     *
-     * This is also the place at which the current state becomes the previous
-     * state.
-     *
-     * @param step                 The step number
-     * @param time                 The time
-     * @param registerRunFunction  Function allowing to register a run function
-     */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
-
-    //! No element setup needed
-    void elementSetup() override {}
+    EnergyData(StatePropagatorData*           statePropagatorData,
+               FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+               const gmx_mtop_t*              globalTopology,
+               const t_inputrec*              inputrec,
+               const MDAtoms*                 mdAtoms,
+               gmx_enerdata_t*                enerd,
+               gmx_ekindata_t*                ekind,
+               const Constraints*             constr,
+               FILE*                          fplog,
+               t_fcdata*                      fcd,
+               const MdModulesNotifier&       mdModulesNotifier,
+               bool                           isMasterRank,
+               ObservablesHistory*            observablesHistory,
+               StartingBehavior               startingBehavior);
 
     /*! \brief Final output
      *
-     * Prints the averages to log.
+     * Prints the averages to log. This is called from ModularSimulatorAlgorithm.
+     *
+     * \see ModularSimulatorAlgorithm::teardown
      */
-    void elementTeardown() override;
+    void teardown();
 
     /*! \brief Add contribution to force virial
      *
@@ -225,25 +202,19 @@ public:
                                         ObservablesHistory* observablesHistory,
                                         EnergyOutput*       energyOutput);
 
+    //! The element taking part in the simulator loop
+    class Element;
+    //! Get pointer to element (whose lifetime is managed by this)
+    Element* element();
+
 private:
     /*! \brief Setup (needs file pointer)
-     *
-     * ITrajectoryWriterClient implementation.
      *
      * Initializes the EnergyOutput object, and does some logging output.
      *
      * @param mdoutf  File pointer
      */
-    void trajectoryWriterSetup(gmx_mdoutf* mdoutf) override;
-    //! No trajectory writer teardown needed
-    void trajectoryWriterTeardown(gmx_mdoutf gmx_unused* outf) override {}
-
-    //! ITrajectoryWriterClient implementation.
-    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
-    //! ITrajectorySignallerClient implementation
-    ITrajectoryWriterCallbackPtr registerTrajectoryWriterCallback(TrajectoryEvent event) override;
-    //! IEnergySignallerClient implementation
-    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    void setup(gmx_mdoutf* mdoutf);
 
     /*! \brief Save data at energy steps
      *
@@ -259,23 +230,16 @@ private:
      */
     void write(gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool writeLog);
 
-    //! ICheckpointHelperClient implementation
-    void writeCheckpoint(t_state* localState, t_state* globalState) override;
-
     /*
-     * Data owned by EnergyElement
+     * Data owned by EnergyData
      */
+    //! The element
+    std::unique_ptr<Element> element_;
     //! The energy output object
     std::unique_ptr<EnergyOutput> energyOutput_;
 
     //! Whether this is the master rank
     const bool isMasterRank_;
-    //! The next communicated energy writing step
-    Step energyWritingStep_;
-    //! The next communicated energy calculation step
-    Step energyCalculationStep_;
-    //! The next communicated free energy calculation step
-    Step freeEnergyCalculationStep_;
 
     //! The force virial tensor
     tensor forceVirial_;
@@ -309,6 +273,7 @@ private:
     /*
      * Pointers to Simulator data
      */
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the state propagator data
     StatePropagatorData* statePropagatorData_;
     //! Pointer to the free energy perturbation element
@@ -339,6 +304,87 @@ private:
     const SimulationGroups* groups_;
     //! History of simulation observables.
     ObservablesHistory* observablesHistory_;
+};
+
+/*! \internal
+ * \ingroup module_modularsimulator
+ * \brief Element for EnergyData
+ *
+ * This member class allows EnergyData to take part in the simulator
+ * loop.
+ *
+ * It subscribes to the trajectory signaller, the energy signaller,
+ * and the logging signaller to know when an energy calculation is
+ * needed and when a non-recording step is enough. The simulator
+ * builder is responsible to place the element in a location at
+ * which a valid energy state is available. The EnergyData::Element is
+ * also a subscriber to the trajectory writer element, as it is
+ * responsible to write energy data to trajectory.
+ */
+class EnergyData::Element final :
+    public ISimulatorElement,
+    public ITrajectoryWriterClient,
+    public ITrajectorySignallerClient,
+    public IEnergySignallerClient,
+    public ICheckpointHelperClient
+{
+public:
+    //! Constructor
+    Element(EnergyData* energyData, bool isMasterRank);
+
+    /*! \brief Register run function for step / time
+     *
+     * This needs to be called when the energies are at a full time step.
+     * Positioning this element is the responsibility of the programmer.
+     *
+     * This is also the place at which the current state becomes the previous
+     * state.
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+
+    //! No element setup needed
+    void elementSetup() override {}
+
+    //! No element teardown needed
+    void elementTeardown() override {}
+
+private:
+    EnergyData* energyData_;
+
+    /*! \brief Setup (needs file pointer)
+     *
+     * ITrajectoryWriterClient implementation.
+     *
+     * Initializes the EnergyOutput object, and does some logging output.
+     *
+     * @param mdoutf  File pointer
+     */
+    void trajectoryWriterSetup(gmx_mdoutf* mdoutf) override;
+    //! No trajectory writer teardown needed
+    void trajectoryWriterTeardown(gmx_mdoutf gmx_unused* outf) override {}
+
+    //! ITrajectoryWriterClient implementation.
+    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    //! ITrajectorySignallerClient implementation
+    ITrajectoryWriterCallbackPtr registerTrajectoryWriterCallback(TrajectoryEvent event) override;
+    //! IEnergySignallerClient implementation
+    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+
+    //! ICheckpointHelperClient implementation
+    void writeCheckpoint(t_state* localState, t_state* globalState) override;
+
+    //! Whether this is the master rank
+    const bool isMasterRank_;
+    //! The next communicated energy writing step
+    Step energyWritingStep_;
+    //! The next communicated energy calculation step
+    Step energyCalculationStep_;
+    //! The next communicated free energy calculation step
+    Step freeEnergyCalculationStep_;
 };
 
 } // namespace gmx

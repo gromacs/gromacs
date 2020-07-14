@@ -54,7 +54,7 @@ struct t_commrec;
 
 namespace gmx
 {
-class EnergyElement;
+class EnergyData;
 class MDAtoms;
 class StatePropagatorData;
 
@@ -79,7 +79,7 @@ public:
                              ArrayRef<rvec>        scalingTensor,
                              PropagatorCallbackPtr propagatorCallback,
                              StatePropagatorData*  statePropagatorData,
-                             EnergyElement*        energyElement,
+                             EnergyData*           energyData,
                              FILE*                 fplog,
                              const t_inputrec*     inputrec,
                              const MDAtoms*        mdAtoms,
@@ -125,10 +125,11 @@ private:
     //! Box velocity
     tensor boxVelocity_;
 
+    // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
-    //! Pointer to the energy element
-    EnergyElement* energyElement_;
+    //! Pointer to the energy data
+    EnergyData* energyData_;
 
     //! Integrate the PR box vector equations of motion - does not alter state
     void integrateBoxVelocityEquations(Step step);

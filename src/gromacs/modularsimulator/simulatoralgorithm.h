@@ -60,7 +60,7 @@
 
 namespace gmx
 {
-class EnergyElement;
+class EnergyData;
 class EnergySignaller;
 class FreeEnergyPerturbationElement;
 class LoggingSignaller;
@@ -199,6 +199,8 @@ private:
     // Data structures
     //! The state propagator data
     std::unique_ptr<StatePropagatorData> statePropagatorData_;
+    //! The energy data
+    std::unique_ptr<EnergyData> energyData_;
 
     //! The current step
     Step step_;
@@ -306,7 +308,7 @@ private:
                     std::vector<ICheckpointHelperClient*>*     checkpointClients,
                     CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
                     compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
-                    compat::not_null<EnergyElement*>           energyElementPtr,
+                    compat::not_null<EnergyData*>              energyDataPtr,
                     FreeEnergyPerturbationElement*             freeEnergyPerturbationElementPtr,
                     bool                                       hasReadEkinState,
                     TopologyHolder*                            topologyHolder,
@@ -317,7 +319,7 @@ private:
     buildForces(SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
                 SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
                 StatePropagatorData*                       statePropagatorDataPtr,
-                EnergyElement*                             energyElementPtr,
+                EnergyData*                                energyDataPtr,
                 FreeEnergyPerturbationElement*             freeEnergyPerturbationElement,
                 TopologyHolder*                            topologyHolder);
 
