@@ -2410,7 +2410,7 @@ bool constrain_lincs(bool                            computeRmsd,
                     std::string simMesg;
                     if (isMultiSim(ms))
                     {
-                        simMesg += gmx::formatString(" in simulation %d", ms->sim);
+                        simMesg += gmx::formatString(" in simulation %d", ms->simulationIndex_);
                     }
                     fprintf(stderr,
                             "\nStep %" PRId64

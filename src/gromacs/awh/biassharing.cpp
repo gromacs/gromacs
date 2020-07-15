@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams&           
                                                      const std::vector<size_t>& pointSize,
                                                      const gmx_multisim_t*      multiSimComm)
 {
-    const int numSim = multiSimComm->nsim;
+    const int numSim = multiSimComm->numSimulations_;
 
     /* We currently enforce subsequent shared biases to have consecutive
      * share-group values starting at 1. This means we can reduce shared
@@ -105,7 +105,7 @@ void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams&           
         }
     }
     std::vector<int> numShareAll(numSim);
-    numShareAll[multiSimComm->sim] = numShare;
+    numShareAll[multiSimComm->simulationIndex_] = numShare;
     gmx_sumi_sim(numShareAll.size(), numShareAll.data(), multiSimComm);
     for (int sim = 1; sim < numSim; sim++)
     {
@@ -117,8 +117,8 @@ void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams&           
     }
 
     std::vector<int> intervals(numSim * 2);
-    intervals[numSim * 0 + multiSimComm->sim] = awhParams.nstSampleCoord;
-    intervals[numSim * 1 + multiSimComm->sim] = awhParams.numSamplesUpdateFreeEnergy;
+    intervals[numSim * 0 + multiSimComm->simulationIndex_] = awhParams.nstSampleCoord;
+    intervals[numSim * 1 + multiSimComm->simulationIndex_] = awhParams.numSamplesUpdateFreeEnergy;
     gmx_sumi_sim(intervals.size(), intervals.data(), multiSimComm);
     for (int sim = 1; sim < numSim; sim++)
     {
@@ -142,7 +142,7 @@ void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams&           
         if (awhParams.awhBiasParams[b].shareGroup > 0)
         {
             std::vector<int64_t> pointSizes(numSim);
-            pointSizes[multiSimComm->sim] = pointSize[b];
+            pointSizes[multiSimComm->simulationIndex_] = pointSize[b];
             gmx_sumli_sim(pointSizes.size(), pointSizes.data(), multiSimComm);
             for (int sim = 1; sim < numSim; sim++)
             {

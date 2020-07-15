@@ -45,10 +45,35 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/mpiinplacebuffers.h"
+
+struct gmx_multisim_t;
+
+/*! \libinternal
+ * \brief Builder function for gmx_multisim_t
+ *
+ * \param[in]  worldComm   MPI communicator to split when
+ *                         multi-simulation is requested.
+ * \param[in]  multidirs   Strings naming the subdirectories when
+ *                         multi-simulation is requested, otherwise empty
+ *
+ * Splits \c worldComm into \c multidirs.size() separate
+ * simulations, if >1, and creates a communication structure
+ * between the master ranks of these simulations.
+ *
+ * Valid to call regardless of build configuration, but \c
+ * multidirs must be empty unless a real MPI build is used.
+ *
+ * \throws NotImplementedError     when \c multidirs is non-empty unless using real MPI is true
+ * \throws NotImplementedError     when \c multidirs has exactly one element
+ * \throws InconsistentInputError  when the number of MPI ranks is not a multiple of the number of \c multidirs
+ * \throws FileIOError             when the simulation cannot change to the working directory in \c multidirs
+ */
+std::unique_ptr<gmx_multisim_t> buildMultiSimulation(MPI_Comm                         worldComm,
+                                                     gmx::ArrayRef<const std::string> multidirs);
 
 /*! \libinternal
  * \brief Coordinate multi-simulation resources for mdrun
@@ -57,30 +82,45 @@
  */
 struct gmx_multisim_t
 {
-    //! Default constructor
-    gmx_multisim_t();
-    /*! \brief Constructor useful for mdrun simulations
+    /*! \brief Constructor
      *
-     * Splits the communicator into multidirs.size() separate
-     * simulations, if >1, and creates a communication structure
-     * between the master these simulations.
+     * \param[in]  numSimulations   The number of simulations in the MPI world.
+     * \param[in]  simulationIndex  The index of this simulation in the set of simulations.
+     * \param[in]  mastersComm      On master ranks, the communicator among master ranks;
+     *                              otherwise MPI_COMM_NULL.
+     * \param[in]  simulationComm   The communicator among ranks of this simulation.
      *
-     * Valid to call regardless of build configuration, but \c
-     * multidirs must be empty unless a real MPI build is used. */
-    gmx_multisim_t(MPI_Comm comm, gmx::ArrayRef<const std::string> multidirs);
+     * Assumes ownership of the communicators if they are neither
+     * MPI_COMM_WORLD nor MPI_COMM_NULL. If so, upon destruction will
+     * call MPI_Comm_free on them.
+     */
+    gmx_multisim_t(int numSimulations, int simulationIndex, MPI_Comm mastersComm, MPI_Comm simulationComm);
     //! Destructor
     ~gmx_multisim_t();
 
     //! The number of simulations in the set of multi-simulations
-    int nsim = 1;
+    int numSimulations_ = 1;
     //! The index of the simulation that owns this object within the set
-    int sim = 0;
-    //! The MPI Group between master ranks of simulations, valid only on master ranks.
-    MPI_Group mpi_group_masters = MPI_GROUP_NULL;
+    int simulationIndex_ = 0;
     //! The MPI communicator between master ranks of simulations, valid only on master ranks.
-    MPI_Comm mpi_comm_masters = MPI_COMM_NULL;
-    //! Communication buffers needed if MPI_IN_PLACE isn't supported
-    mpi_in_place_buf_t* mpb = nullptr;
+    MPI_Comm mastersComm_ = MPI_COMM_NULL;
+    //! The MPI communicator between ranks of this simulation.
+    MPI_Comm simulationComm_ = MPI_COMM_NULL;
+    /*! \brief Communication buffers needed if MPI_IN_PLACE isn't supported
+     *
+     * Other types could be added as needed.
+     *
+     * These vectors are unused when MPI_IN_PLACE is available
+     * and could be removed with preprocessing (or perhaps
+     * templating) or simply requiring MPI 2.0 (the standard
+     * introduced in 1997). However, the additional cache pressure
+     * introduced by the extra size of this type is not of great
+     * concern, since we have at most one per MPI rank.
+     * See issue #3591. */
+    //! \{
+    std::vector<int>     intBuffer_;
+    std::vector<int64_t> int64Buffer_;
+    //! \}
 };
 
 //! Calculate the sum over the simulations of an array of ints

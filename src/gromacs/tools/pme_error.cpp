@@ -1121,7 +1121,7 @@ int gmx_pme_error(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
-    CommrecHandle commrecHandle = init_commrec(MPI_COMM_WORLD, nullptr);
+    CommrecHandle commrecHandle = init_commrec(MPI_COMM_WORLD);
     t_commrec*    cr            = commrecHandle.get();
     PCA_Flags                   = PCA_NOEXIT_ON_ARGS;
 

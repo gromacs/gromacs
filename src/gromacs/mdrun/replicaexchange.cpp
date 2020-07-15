@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,12 +166,12 @@ static gmx_bool repl_quantity(const gmx_multisim_t* ms, struct gmx_repl_ex* re, 
     gmx_bool bDiff;
     int      s;
 
-    snew(qall, ms->nsim);
+    snew(qall, ms->numSimulations_);
     qall[re->repl] = q;
-    gmx_sum_sim(ms->nsim, qall, ms);
+    gmx_sum_sim(ms->numSimulations_, qall, ms);
 
     bDiff = FALSE;
-    for (s = 1; s < ms->nsim; s++)
+    for (s = 1; s < ms->numSimulations_; s++)
     {
         if (qall[s] != qall[0])
         {
@@ -185,7 +185,7 @@ static gmx_bool repl_quantity(const gmx_multisim_t* ms, struct gmx_repl_ex* re, 
         re->type = ere;
 
         snew(re->q[ere], re->nrepl);
-        for (s = 0; s < ms->nsim; s++)
+        for (s = 0; s < ms->numSimulations_; s++)
         {
             re->q[ere][s] = qall[s];
         }
@@ -208,7 +208,7 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
 
     fprintf(fplog, "\nInitializing Replica Exchange\n");
 
-    if (!isMultiSim(ms) || ms->nsim == 1)
+    if (!isMultiSim(ms) || ms->numSimulations_ == 1)
     {
         gmx_fatal(FARGS,
                   "Nothing to exchange with only one replica, maybe you forgot to set the "
@@ -235,8 +235,8 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
 
     snew(re, 1);
 
-    re->repl  = ms->sim;
-    re->nrepl = ms->nsim;
+    re->repl  = ms->simulationIndex_;
+    re->nrepl = ms->numSimulations_;
     snew(re->q, ereENDSINGLE);
 
     fprintf(fplog, "Repl  There are %d replicas:\n", re->nrepl);
@@ -507,14 +507,13 @@ static void exchange_reals(const gmx_multisim_t gmx_unused* ms, int gmx_unused b
         /*
            MPI_Sendrecv(v,  n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+           ms->mastersComm_,MPI_STATUS_IGNORE);
          */
         {
             MPI_Request mpi_req;
 
-            MPI_Isend(v, n * sizeof(real), MPI_BYTE, MSRANK(ms, b), 0, ms->mpi_comm_masters, &mpi_req);
-            MPI_Recv(buf, n * sizeof(real), MPI_BYTE, MSRANK(ms, b), 0, ms->mpi_comm_masters,
-                     MPI_STATUS_IGNORE);
+            MPI_Isend(v, n * sizeof(real), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, &mpi_req);
+            MPI_Recv(buf, n * sizeof(real), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
 #endif
@@ -539,13 +538,13 @@ static void exchange_doubles(const gmx_multisim_t gmx_unused* ms, int gmx_unused
         /*
            MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+           ms->mastersComm_,MPI_STATUS_IGNORE);
          */
         {
             MPI_Request mpi_req;
 
-            MPI_Isend(v, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mpi_comm_masters, &mpi_req);
-            MPI_Recv(buf, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mpi_comm_masters,
+            MPI_Isend(v, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, &mpi_req);
+            MPI_Recv(buf, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_,
                      MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
@@ -570,13 +569,13 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused* ms, int gmx_unused b
         /*
            MPI_Sendrecv(v[0],  n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
            buf[0],n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
-           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+           ms->mastersComm_,MPI_STATUS_IGNORE);
          */
         {
             MPI_Request mpi_req;
 
-            MPI_Isend(v[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mpi_comm_masters, &mpi_req);
-            MPI_Recv(buf[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mpi_comm_masters,
+            MPI_Isend(v[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, &mpi_req);
+            MPI_Recv(buf[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_,
                      MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }

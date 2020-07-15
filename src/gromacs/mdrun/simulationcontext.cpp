@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,9 @@ SimulationContext::SimulationContext(MPI_Comm                          communica
                        "Without it, the communicator must be null.");
     if (!multiSimDirectoryNames.empty())
     {
-        multiSimulation_ = std::make_unique<gmx_multisim_t>(communicator, multiSimDirectoryNames);
+        multiSimulation_ = buildMultiSimulation(communicator, multiSimDirectoryNames);
+        // Use the communicator resulting from the split for the multi-simulation.
+        communicator_ = multiSimulation_->simulationComm_;
     }
 }
 

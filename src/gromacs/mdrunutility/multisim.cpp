@@ -46,103 +46,116 @@
 #include "config.h"
 
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/mpiinplacebuffers.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_multisim_t::gmx_multisim_t() = default;
-
-gmx_multisim_t::gmx_multisim_t(MPI_Comm comm, gmx::ArrayRef<const std::string> multidirs)
+std::unique_ptr<gmx_multisim_t> buildMultiSimulation(MPI_Comm                         worldComm,
+                                                     gmx::ArrayRef<const std::string> multidirs)
 {
     if (multidirs.empty())
     {
-        return;
+        return nullptr;
     }
 
     if (!GMX_LIB_MPI && !multidirs.empty())
     {
-        gmx_fatal(FARGS,
-                  "mdrun -multidir is only supported when GROMACS has been "
-                  "configured with a proper external MPI library.");
+        GMX_THROW(gmx::NotImplementedError(
+                "Multi-simulations are only supported when GROMACS has been "
+                "configured with a proper external MPI library."));
     }
 
     if (multidirs.size() == 1)
     {
         /* NOTE: It would be nice if this special case worked, but this requires checks/tests. */
-        gmx_fatal(FARGS,
-                  "To run mdrun in multiple simulation mode, more then one "
-                  "actual simulation is required. The single simulation case is not supported.");
+        GMX_THROW(gmx::NotImplementedError(
+                "To run mdrun in multi-simulation mode, more then one "
+                "actual simulation is required. The single simulation case is not supported."));
     }
 
-#if GMX_MPI
+#if GMX_LIB_MPI
     int numRanks;
-    MPI_Comm_size(comm, &numRanks);
+    MPI_Comm_size(worldComm, &numRanks);
     if (numRanks % multidirs.size() != 0)
     {
-        gmx_fatal(FARGS,
-                  "The number of ranks (%d) is not a multiple of the number of simulations (%td)",
-                  numRanks, multidirs.ssize());
+        auto message = gmx::formatString(
+                "The number of ranks (%d) is not a multiple of the number of simulations (%td)",
+                numRanks, multidirs.ssize());
+        GMX_THROW(gmx::InconsistentInputError(message));
     }
 
-    int numRanksPerSim = numRanks / multidirs.size();
-    int rankWithinComm;
-    MPI_Comm_rank(comm, &rankWithinComm);
+    int numRanksPerSimulation = numRanks / multidirs.size();
+    int rankWithinWorldComm;
+    MPI_Comm_rank(worldComm, &rankWithinWorldComm);
 
     if (debug)
     {
         fprintf(debug, "We have %td simulations, %d ranks per simulation, local simulation is %d\n",
-                multidirs.ssize(), numRanksPerSim, rankWithinComm / numRanksPerSim);
+                multidirs.ssize(), numRanksPerSimulation, rankWithinWorldComm / numRanksPerSimulation);
     }
 
-    nsim = multidirs.size();
-    sim  = rankWithinComm / numRanksPerSim;
-    /* Create a communicator for the master nodes */
-    std::vector<int> rank(nsim);
-    for (int i = 0; i < nsim; i++)
+    int numSimulations = multidirs.size();
+    // Create a communicator for the master ranks of each simulation
+    std::vector<int> ranksOfMasters(numSimulations);
+    for (int i = 0; i < numSimulations; i++)
     {
-        rank[i] = i * numRanksPerSim;
+        ranksOfMasters[i] = i * numRanksPerSimulation;
     }
-    MPI_Group mpi_group_world;
-    MPI_Comm_group(comm, &mpi_group_world);
-    MPI_Group_incl(mpi_group_world, nsim, rank.data(), &mpi_group_masters);
-    MPI_Comm_create(comm, mpi_group_masters, &mpi_comm_masters);
+    MPI_Group worldGroup;
+    // No need to free worldGroup later, we didn't create it.
+    MPI_Comm_group(worldComm, &worldGroup);
 
-#    if !MPI_IN_PLACE_EXISTS
-    /* initialize the MPI_IN_PLACE replacement buffers */
-    snew(mpb, 1);
-    mpb->ibuf        = nullptr;
-    mpb->libuf       = nullptr;
-    mpb->fbuf        = nullptr;
-    mpb->dbuf        = nullptr;
-    mpb->ibuf_alloc  = 0;
-    mpb->libuf_alloc = 0;
-    mpb->fbuf_alloc  = 0;
-    mpb->dbuf_alloc  = 0;
-#    endif
+    MPI_Group mastersGroup = MPI_GROUP_NULL;
+    MPI_Group_incl(worldGroup, numSimulations, ranksOfMasters.data(), &mastersGroup);
+    MPI_Comm mastersComm = MPI_COMM_NULL;
+    MPI_Comm_create(worldComm, mastersGroup, &mastersComm);
+    if (mastersGroup != MPI_GROUP_NULL)
+    {
+        MPI_Group_free(&mastersGroup);
+    }
 
-    // TODO This should throw upon error
-    gmx_chdir(multidirs[sim].c_str());
+    int      simulationIndex = rankWithinWorldComm / numRanksPerSimulation;
+    MPI_Comm simulationComm  = MPI_COMM_NULL;
+    MPI_Comm_split(worldComm, simulationIndex, rankWithinWorldComm, &simulationComm);
+
+    try
+    {
+        gmx_chdir(multidirs[simulationIndex].c_str());
+    }
+    catch (gmx::GromacsException& e)
+    {
+        e.prependContext("While changing directory for multi-simulation to " + multidirs[simulationIndex]);
+        throw;
+    }
+    return std::make_unique<gmx_multisim_t>(numSimulations, simulationIndex, mastersComm, simulationComm);
 #else
-    GMX_UNUSED_VALUE(comm);
+    GMX_UNUSED_VALUE(worldComm);
+    return nullptr;
 #endif
+}
+
+gmx_multisim_t::gmx_multisim_t(int numSimulations, int simulationIndex, MPI_Comm mastersComm, MPI_Comm simulationComm) :
+    numSimulations_(numSimulations),
+    simulationIndex_(simulationIndex),
+    mastersComm_(mastersComm),
+    simulationComm_(simulationComm)
+{
 }
 
 gmx_multisim_t::~gmx_multisim_t()
 {
-    done_mpi_in_place_buf(mpb);
-
-#if GMX_MPI
+#if GMX_LIB_MPI
     // TODO This would work better if the result of MPI_Comm_split was
     // put into an RAII-style guard, such as gmx::unique_cptr.
-    if (mpi_comm_masters != MPI_COMM_NULL && mpi_comm_masters != MPI_COMM_WORLD)
+    if (mastersComm_ != MPI_COMM_NULL && mastersComm_ != MPI_COMM_WORLD)
     {
-        MPI_Comm_free(&mpi_comm_masters);
+        MPI_Comm_free(&mastersComm_);
     }
-    if (mpi_group_masters != MPI_GROUP_NULL)
+    if (simulationComm_ != MPI_COMM_NULL && simulationComm_ != MPI_COMM_WORLD)
     {
-        MPI_Group_free(&mpi_group_masters);
+        MPI_Comm_free(&simulationComm_);
     }
 #endif
 }
@@ -198,7 +211,7 @@ void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumd_sim");
 #else
-    gmx_sumd_comm(nr, r, ms->mpi_comm_masters);
+    gmx_sumd_comm(nr, r, ms->mastersComm_);
 #endif
 }
 
@@ -207,7 +220,7 @@ void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t 
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumf_sim");
 #else
-    gmx_sumf_comm(nr, r, ms->mpi_comm_masters);
+    gmx_sumf_comm(nr, r, ms->mastersComm_);
 #endif
 }
 
@@ -217,21 +230,12 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumi_sim");
 #else
 #    if MPI_IN_PLACE_EXISTS
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mpi_comm_masters);
+    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mastersComm_);
 #    else
     /* this is thread-unsafe, but it will do for now: */
-    int i;
-
-    if (nr > ms->mpb->ibuf_alloc)
-    {
-        ms->mpb->ibuf_alloc = nr;
-        srenew(ms->mpb->ibuf, ms->mpb->ibuf_alloc);
-    }
-    MPI_Allreduce(r, ms->mpb->ibuf, nr, MPI_INT, MPI_SUM, ms->mpi_comm_masters);
-    for (i = 0; i < nr; i++)
-    {
-        r[i] = ms->mpb->ibuf[i];
-    }
+    ms->intBuffer.resize(nr);
+    MPI_Allreduce(r, ms->intBuffer.data(), ms->intBuffer.size(), MPI_INT, MPI_SUM, ms->mastersComm_);
+    std::copy(std::begin(ms->intBuffer), std::end(ms->intBuffer), r);
 #    endif
 #endif
 }
@@ -242,21 +246,12 @@ void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumli_sim");
 #else
 #    if MPI_IN_PLACE_EXISTS
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, ms->mpi_comm_masters);
+    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, ms->mastersComm_);
 #    else
     /* this is thread-unsafe, but it will do for now: */
-    int i;
-
-    if (nr > ms->mpb->libuf_alloc)
-    {
-        ms->mpb->libuf_alloc = nr;
-        srenew(ms->mpb->libuf, ms->mpb->libuf_alloc);
-    }
-    MPI_Allreduce(r, ms->mpb->libuf, nr, MPI_INT64_T, MPI_SUM, ms->mpi_comm_masters);
-    for (i = 0; i < nr; i++)
-    {
-        r[i] = ms->mpb->libuf[i];
-    }
+    ms->int64Buffer.resize(nr);
+    MPI_Allreduce(r, ms->int64Buffer.data(), ms->int64Buffer.size(), MPI_INT64_T, MPI_SUM, ms->mastersComm_);
+    std::copy(std::begin(ms->int64Buffer), std::end(ms->int64Buffer), r);
 #    endif
 #endif
 }
@@ -267,9 +262,9 @@ std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t* ms, const in
 #if GMX_MPI
     if (ms != nullptr)
     {
-        valuesFromAllRanks.resize(ms->nsim);
-        valuesFromAllRanks[ms->sim] = localValue;
-        gmx_sumi_sim(ms->nsim, valuesFromAllRanks.data(), ms);
+        valuesFromAllRanks.resize(ms->numSimulations_);
+        valuesFromAllRanks[ms->simulationIndex_] = localValue;
+        gmx_sumi_sim(ms->numSimulations_, valuesFromAllRanks.data(), ms);
     }
     else
     {
@@ -297,12 +292,12 @@ void check_multi_int(FILE* log, const gmx_multisim_t* ms, int val, const char* n
         gmx_fatal(FARGS, "check_multi_int called with a NULL communication pointer");
     }
 
-    snew(ibuf, ms->nsim);
-    ibuf[ms->sim] = val;
-    gmx_sumi_sim(ms->nsim, ibuf, ms);
+    snew(ibuf, ms->numSimulations_);
+    ibuf[ms->simulationIndex_] = val;
+    gmx_sumi_sim(ms->numSimulations_, ibuf, ms);
 
     bCompatible = TRUE;
-    for (p = 1; p < ms->nsim; p++)
+    for (p = 1; p < ms->numSimulations_; p++)
     {
         bCompatible = bCompatible && (ibuf[p - 1] == ibuf[p]);
     }
@@ -319,12 +314,12 @@ void check_multi_int(FILE* log, const gmx_multisim_t* ms, int val, const char* n
         if (nullptr != log)
         {
             fprintf(log, "\n%s is not equal for all subsystems\n", name);
-            for (p = 0; p < ms->nsim; p++)
+            for (p = 0; p < ms->numSimulations_; p++)
             {
                 fprintf(log, "  subsystem %d: %d\n", p, ibuf[p]);
             }
         }
-        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->nsim);
+        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->numSimulations_);
     }
 
     sfree(ibuf);
@@ -346,12 +341,12 @@ void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const c
         gmx_fatal(FARGS, "check_multi_int called with a NULL communication pointer");
     }
 
-    snew(ibuf, ms->nsim);
-    ibuf[ms->sim] = val;
-    gmx_sumli_sim(ms->nsim, ibuf, ms);
+    snew(ibuf, ms->numSimulations_);
+    ibuf[ms->simulationIndex_] = val;
+    gmx_sumli_sim(ms->numSimulations_, ibuf, ms);
 
     bCompatible = TRUE;
-    for (p = 1; p < ms->nsim; p++)
+    for (p = 1; p < ms->numSimulations_; p++)
     {
         bCompatible = bCompatible && (ibuf[p - 1] == ibuf[p]);
     }
@@ -370,7 +365,7 @@ void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const c
         if (nullptr != log)
         {
             fprintf(log, "\n%s is not equal for all subsystems\n", name);
-            for (p = 0; p < ms->nsim; p++)
+            for (p = 0; p < ms->numSimulations_; p++)
             {
                 char strbuf[255];
                 /* first make the format string */
@@ -378,7 +373,7 @@ void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const c
                 fprintf(log, strbuf, p, ibuf[p]);
             }
         }
-        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->nsim);
+        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->numSimulations_);
     }
 
     sfree(ibuf);
@@ -391,9 +386,9 @@ bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator)
         // Ranks of multi-simulations know whether they are a master
         // rank. Ranks of non-multi simulation do not know until a
         // t_commrec is available.
-        if ((ms != nullptr) && (ms->nsim > 1))
+        if ((ms != nullptr) && (ms->numSimulations_ > 1))
         {
-            return ms->mpi_comm_masters != MPI_COMM_NULL;
+            return ms->mastersComm_ != MPI_COMM_NULL;
         }
         else
         {
@@ -422,7 +417,7 @@ bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator)
 
 bool isMasterSim(const gmx_multisim_t* ms)
 {
-    return !isMultiSim(ms) || ms->sim == 0;
+    return !isMultiSim(ms) || ms->simulationIndex_ == 0;
 }
 
 bool isMasterSimMasterRank(const gmx_multisim_t* ms, const bool isMaster)

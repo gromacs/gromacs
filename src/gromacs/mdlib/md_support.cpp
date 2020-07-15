@@ -88,12 +88,12 @@ bool multisim_int_all_are_equal(const gmx_multisim_t* ms, int64_t value)
 
     GMX_RELEASE_ASSERT(ms, "Invalid use of multi-simulation pointer");
 
-    snew(buf, ms->nsim);
+    snew(buf, ms->numSimulations_);
     /* send our value to all other master ranks, receive all of theirs */
-    buf[ms->sim] = value;
-    gmx_sumli_sim(ms->nsim, buf, ms);
+    buf[ms->simulationIndex_] = value;
+    gmx_sumli_sim(ms->numSimulations_, buf, ms);
 
-    for (int s = 0; s < ms->nsim; s++)
+    for (int s = 0; s < ms->numSimulations_; s++)
     {
         if (buf[s] != value)
         {
@@ -113,12 +113,12 @@ int multisim_min(const gmx_multisim_t* ms, int nmin, int n)
     gmx_bool bPos, bEqual;
     int      s, d;
 
-    snew(buf, ms->nsim);
-    buf[ms->sim] = n;
-    gmx_sumi_sim(ms->nsim, buf, ms);
+    snew(buf, ms->numSimulations_);
+    buf[ms->simulationIndex_] = n;
+    gmx_sumi_sim(ms->numSimulations_, buf, ms);
     bPos   = TRUE;
     bEqual = TRUE;
-    for (s = 0; s < ms->nsim; s++)
+    for (s = 0; s < ms->numSimulations_; s++)
     {
         bPos   = bPos && (buf[s] > 0);
         bEqual = bEqual && (buf[s] == buf[0]);
@@ -135,11 +135,11 @@ int multisim_min(const gmx_multisim_t* ms, int nmin, int n)
             for (d = 2; d < nmin; d++)
             {
                 s = 0;
-                while (s < ms->nsim && d % buf[s] == 0)
+                while (s < ms->numSimulations_ && d % buf[s] == 0)
                 {
                     s++;
                 }
-                if (s == ms->nsim)
+                if (s == ms->numSimulations_)
                 {
                     /* We found the LCM and it is less than nmin */
                     nmin = d;

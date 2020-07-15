@@ -149,7 +149,7 @@ Awh::Awh(FILE*                 fplog,
     int numSharingSimulations = 1;
     if (awhParams.shareBiasMultisim && isMultiSim(multiSimRecord_))
     {
-        numSharingSimulations = multiSimRecord_->nsim;
+        numSharingSimulations = multiSimRecord_->numSimulations_;
     }
 
     /* Initialize all the biases */

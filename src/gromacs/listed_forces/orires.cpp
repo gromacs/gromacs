@@ -282,7 +282,8 @@ void init_orires(FILE*                 fplog,
 
     if (ms)
     {
-        fprintf(fplog, "  the orientation restraints are ensemble averaged over %d systems\n", ms->nsim);
+        fprintf(fplog, "  the orientation restraints are ensemble averaged over %d systems\n",
+                ms->numSimulations_);
 
         check_multi_int(fplog, ms, od->nr, "the number of orientation restraints", FALSE);
         check_multi_int(fplog, ms, od->nref, "the number of fit atoms for orientation restraining", FALSE);
@@ -432,7 +433,7 @@ real calc_orires_dev(const gmx_multisim_t* ms,
 
     if (ms)
     {
-        invn = 1.0 / ms->nsim;
+        invn = 1.0 / ms->numSimulations_;
     }
     else
     {

@@ -85,7 +85,7 @@ struct gmx_mdoutf
     gmx::IMDOutputProvider*       outputProvider;
     const gmx::MdModulesNotifier* mdModulesNotifier;
     bool                          simulationsShareState;
-    MPI_Comm                      mpiCommMasters;
+    MPI_Comm                      mastersComm;
 };
 
 
@@ -133,7 +133,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
     of->simulationsShareState = simulationsShareState;
     if (of->simulationsShareState)
     {
-        of->mpiCommMasters = ms->mpi_comm_masters;
+        of->mastersComm = ms->mastersComm_;
     }
 
     if (MASTER(cr))
@@ -320,7 +320,7 @@ void mdoutf_write_to_trajectory_files(FILE*                    fplog,
                              DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes, of->eIntegrator,
                              of->simulation_part, of->bExpanded, of->elamstats, step, t,
                              state_global, observablesHistory, *(of->mdModulesNotifier),
-                             of->simulationsShareState, of->mpiCommMasters);
+                             of->simulationsShareState, of->mastersComm);
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))

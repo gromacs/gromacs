@@ -832,8 +832,9 @@ int Mdrunner::mdrunner()
         physicalNodeComm = PhysicalNodeCommunicator(communicator, gmx_physicalnode_id_hash());
     }
 
-    GMX_RELEASE_ASSERT(communicator == MPI_COMM_WORLD, "Must have valid world communicator");
-    CommrecHandle crHandle = init_commrec(communicator, ms);
+    GMX_RELEASE_ASSERT(ms || communicator == MPI_COMM_WORLD,
+                       "Must have valid world communicator unless running a multi-simulation");
+    CommrecHandle crHandle = init_commrec(communicator);
     t_commrec*    cr       = crHandle.get();
     GMX_RELEASE_ASSERT(cr != nullptr, "Must have valid commrec");
 
@@ -1248,7 +1249,7 @@ int Mdrunner::mdrunner()
                 .appendTextFormatted(
                         "This is simulation %d out of %d running as a composite GROMACS\n"
                         "multi-simulation job. Setup for this simulation:\n",
-                        ms->sim, ms->nsim);
+                        ms->simulationIndex_, ms->numSimulations_);
     }
     GMX_LOG(mdlog.warning)
             .appendTextFormatted("Using %d MPI %s\n", cr->nnodes,

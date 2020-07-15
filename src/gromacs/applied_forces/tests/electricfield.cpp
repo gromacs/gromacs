@@ -109,7 +109,7 @@ public:
         std::vector<real> chargeA{ 1 };
         md.homenr                   = ssize(chargeA);
         md.chargeA                  = chargeA.data();
-        CommrecHandle      cr       = init_commrec(MPI_COMM_WORLD, nullptr);
+        CommrecHandle      cr       = init_commrec(MPI_COMM_WORLD);
         matrix             boxDummy = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
         ForceProviderInput forceProviderInput({}, md, 0.0, boxDummy, *cr);
 

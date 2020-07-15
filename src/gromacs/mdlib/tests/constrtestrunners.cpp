@@ -118,7 +118,7 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
     cr.dd     = nullptr;
 
     // Multi-sim record
-    gmx_multisim_t ms;
+    gmx_multisim_t ms{ 1, 0, MPI_COMM_NULL, MPI_COMM_NULL };
 
     // Make blocka structure for faster LINCS setup
     std::vector<ListOfLists<int>> at2con_mt;

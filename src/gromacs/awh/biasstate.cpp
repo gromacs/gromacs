@@ -153,9 +153,9 @@ void sumPmf(gmx::ArrayRef<PointState> pointState,
     {
         return;
     }
-    GMX_ASSERT(multiSimComm != nullptr && numSharedUpdate % multiSimComm->nsim == 0,
-               "numSharedUpdate should be a multiple of multiSimComm->nsim");
-    GMX_ASSERT(numSharedUpdate == multiSimComm->nsim,
+    GMX_ASSERT(multiSimComm != nullptr && numSharedUpdate % multiSimComm->numSimulations_ == 0,
+               "numSharedUpdate should be a multiple of multiSimComm->numSimulations_");
+    GMX_ASSERT(numSharedUpdate == multiSimComm->numSimulations_,
                "Sharing within a simulation is not implemented (yet)");
 
     std::vector<double> buffer(pointState.size());
@@ -734,7 +734,7 @@ void sumHistograms(gmx::ArrayRef<PointState> pointState,
     /* Sum histograms over multiple simulations if needed. */
     if (numSharedUpdate > 1)
     {
-        GMX_ASSERT(numSharedUpdate == multiSimComm->nsim,
+        GMX_ASSERT(numSharedUpdate == multiSimComm->numSimulations_,
                    "Sharing within a simulation is not implemented (yet)");
 
         /* Collect the weights and counts in linear arrays to be able to use gmx_sumd_sim. */

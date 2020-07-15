@@ -237,22 +237,22 @@ void init_disres(FILE*                 fplog,
         gmx_bcast(sizeof(int), &dd->nsystems, communicator);
 
         /* We use to allow any value of nsystems which was a divisor
-         * of ms->nsim. But this required an extra communicator which
+         * of ms->numSimulations_. But this required an extra communicator which
          * pulled in mpi.h in nearly all C files.
          */
-        if (!(ms->nsim == 1 || ms->nsim == dd->nsystems))
+        if (!(ms->numSimulations_ == 1 || ms->numSimulations_ == dd->nsystems))
         {
             gmx_fatal(FARGS,
                       "GMX_DISRE_ENSEMBLE_SIZE (%d) is not equal to 1 or the number of systems "
                       "(option -multidir) %d",
-                      dd->nsystems, ms->nsim);
+                      dd->nsystems, ms->numSimulations_);
         }
         if (fplog)
         {
             fprintf(fplog, "Our ensemble consists of systems:");
             for (int i = 0; i < dd->nsystems; i++)
             {
-                fprintf(fplog, " %d", (ms->sim / dd->nsystems) * dd->nsystems + i);
+                fprintf(fplog, " %d", (ms->simulationIndex_ / dd->nsystems) * dd->nsystems + i);
             }
             fprintf(fplog, "\n");
         }

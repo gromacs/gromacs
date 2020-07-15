@@ -533,7 +533,7 @@ checkpoint file was written).
 To help you identify which directories need attention, the %d
 simulations wanted the following respective behaviors:
 )",
-                                           ms->nsim);
+                                           ms->numSimulations_);
         for (index simIndex = 0; simIndex != ssize(startingBehaviors); ++simIndex)
         {
             auto behavior = static_cast<StartingBehavior>(startingBehaviors[simIndex]);
@@ -573,7 +573,7 @@ To help you identify which directories need attention, the %d
 simulation checkpoint files were from the following respective
 simulation parts:
 )",
-                                           ms->nsim);
+                                           ms->numSimulations_);
         for (index partIndex = 0; partIndex != ssize(simulationParts); ++partIndex)
         {
             message += formatString("  Simulation %6zd: %d\n", partIndex, simulationParts[partIndex]);

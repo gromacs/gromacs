@@ -743,7 +743,9 @@ void gmx_chdir(const char* directory)
 #endif
     if (rc != 0)
     {
-        gmx_fatal(FARGS, "Cannot change directory to '%s'. Reason: %s", directory, strerror(errno));
+        auto message = gmx::formatString("Cannot change directory to '%s'. Reason: %s", directory,
+                                         strerror(errno));
+        GMX_THROW(gmx::FileIOError(message));
     }
 }
 
