@@ -788,6 +788,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(share)
     add_subdirectory(scripts)
 endif()
+add_subdirectory(api)
 add_subdirectory(src)
 
 if (BUILD_TESTING)

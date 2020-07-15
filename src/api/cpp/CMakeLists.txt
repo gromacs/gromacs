@@ -32,24 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This list file provides the Gromacs::gmxapi cmake module.
+# This list file provides the Gromacs::gmxapi cmake target.
 
-##########################
-# Set up public interface.
-#
-# The parent (src/api/) CMake scope provides a variable named
-# GMXAPI_PUBLIC_HEADERS containing the full paths to the public
-# headers that are being installed. The headers are segregated into a
-# subdirectory here so that their build-time include directory path
-# does not expose lower level headers.
-
-add_subdirectory(include)
-
-# The include directory should be mostly empty so that we can use it internally as
-# the public interface include directory during build and testing.
-configure_file(include/version.h.in include/gmxapi/version.h)
-
-add_library(gmxapi SHARED
+target_sources(gmxapi PRIVATE
             context.cpp
             exceptions.cpp
             gmxapi.cpp
@@ -63,20 +48,13 @@ add_library(gmxapi SHARED
             workflow.cpp
             tpr.cpp
             )
+set_target_properties(gmxapi PROPERTIES POSITION_INDEPENDENT_CODE ON)
 gmx_target_compile_options(gmxapi)
 target_compile_definitions(gmxapi PRIVATE HAVE_CONFIG_H)
 target_include_directories(gmxapi SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 # Should be possible to change this when resolving #3290
 target_include_directories(gmxapi SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 
-# Define public interface. Make sure targets linking against `gmxapi` in the build
-# system don't accidentally have the implementation headers (this directory))
-# in a default include path.
-target_include_directories(gmxapi PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-                           $<INSTALL_INTERFACE:include>
-                           )
 # Define implementation interface
 target_include_directories(gmxapi PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}
@@ -85,13 +63,6 @@ target_include_directories(gmxapi PRIVATE
 ###############################
 # Install the public interface.
 #
-# If any item begins in a generator expression it must evaluate to a full path,
-# so we can't just use something like $<TARGET_PROPERTIES:gmxapiPublicHeaders,SOURCES>.
-# Instead, we use a canonical list defined in the parent scope.
-install(DIRECTORY include/gmxapi
-        DESTINATION include)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/version.h
-        DESTINATION include/gmxapi)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     # Instruct a linking client to use its RPATH to resolve the libgmxapi location.
@@ -143,6 +114,7 @@ configure_package_config_file(
     "${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config.cmake"
     INSTALL_DESTINATION share/cmake/gmxapi/
 )
+get_target_property(GMXAPI_RELEASE gmxapi RELEASE)
 write_basic_package_version_file(
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config-version.cmake
     VERSION ${GMXAPI_RELEASE}
