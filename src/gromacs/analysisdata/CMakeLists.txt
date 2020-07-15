@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2019, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,6 +34,17 @@
 
 file(GLOB ANALYSISDATA_SOURCES *.cpp modules/*.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ANALYSISDATA_SOURCES} PARENT_SCOPE)
+
+if(GMX_INSTALL_LEGACY_API)
+    install(FILES
+            abstractdata.h
+            analysisdata.h
+            arraydata.h
+            dataframe.h
+            datamodule.h
+            DESTINATION include/gromacs/analysisdata)
+endif()
+
 
 add_subdirectory(modules)
 

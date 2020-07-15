@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2013,2014,2019, by the GROMACS development team, led by
+# Copyright (c) 2010,2013,2014,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -31,3 +31,13 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+
+if(GMX_INSTALL_LEGACY_API)
+    install(FILES
+	    average.h
+	    displacement.h
+	    histogram.h
+	    lifetime.h
+	    plot.h
+            DESTINATION include/gromacs/analysisdata/modules)
+endif()

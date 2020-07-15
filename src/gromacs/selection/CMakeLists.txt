@@ -60,6 +60,20 @@ endif()
 list(APPEND libgromacs_object_library_dependencies scanner)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
 
+if(GMX_INSTALL_LEGACY_API)
+    install(FILES
+	    indexutil.h
+	    nbsearch.h
+	    position.h
+	    selectioncollection.h
+	    selectionenums.h
+	    selection.h
+	    selectionoptionbehavior.h
+	    selectionoption.h
+	    selectionoptionmanager.h
+            DESTINATION include/gromacs/selection)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

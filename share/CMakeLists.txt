@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2018, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014,2018,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_subdirectory(template)
+if(GMX_INSTALL_LEGACY_API)
+    add_subdirectory(template)
+endif()
 
 install(FILES README.tutor README_FreeEnergyModifications.txt
     DESTINATION ${GMX_INSTALL_GMXDATADIR}
