@@ -60,6 +60,7 @@
 #include <memory>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 
 struct gmx_localtop_t;
 struct gmx_mdoutf;
@@ -367,6 +368,53 @@ protected:
     //! Write checkpoint
     virtual void writeCheckpoint(t_state* localState, t_state* globalState) = 0;
 };
+
+/*! \brief
+ * Exception class signalling that a requested element was not found.
+ *
+ * \internal
+ */
+class ElementNotFoundError final : public ModularSimulatorError
+{
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit ElementNotFoundError(const ExceptionInitializer& details) :
+        ModularSimulatorError(details)
+    {
+    }
+};
+
+/*! \brief
+ * Exception class signalling that elements were not connected properly.
+ *
+ * \internal
+ */
+class MissingElementConnectionError final : public ModularSimulatorError
+{
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit MissingElementConnectionError(const ExceptionInitializer& details) :
+        ModularSimulatorError(details)
+    {
+    }
+};
+
+/*! \brief
+ * Exception class signalling that the ModularSimulatorAlgorithm was set up
+ * in an incompatible way.
+ *
+ * \internal
+ */
+class SimulationAlgorithmSetupError final : public ModularSimulatorError
+{
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit SimulationAlgorithmSetupError(const ExceptionInitializer& details) :
+        ModularSimulatorError(details)
+    {
+    }
+};
+
 //! /}
 } // namespace gmx
 

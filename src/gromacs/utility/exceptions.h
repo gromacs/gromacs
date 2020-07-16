@@ -570,6 +570,22 @@ public:
 };
 
 /*! \brief
+ * Exception class for modular simulator.
+ *
+ * \inpublicapi
+ */
+class ModularSimulatorError : public GromacsException
+{
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit ModularSimulatorError(const ExceptionInitializer& details) : GromacsException(details)
+    {
+    }
+
+    [[nodiscard]] int errorCode() const override;
+};
+
+/*! \brief
  * Macro for throwing an exception.
  *
  * \param[in] e    Exception object to throw.

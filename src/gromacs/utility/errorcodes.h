@@ -94,6 +94,9 @@ enum ErrorCode
 
     //! Parallel consistency check failed.
     eeParallelConsistency,
+
+    //! Error specific for modular simulator.
+    eeModularSimulator,
     //!\}
 
     //! Unknown error detected.

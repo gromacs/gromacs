@@ -74,6 +74,7 @@ const char* const error_names[] = {
     "API error (bug)",
     "Range checking error (possible bug)",
     "Communication (parallel processing) problem",
+    "Modular simulator error",
 
     "Unknown error",
 };
