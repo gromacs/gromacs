@@ -91,12 +91,18 @@ class StatePropagatorData final
 {
 public:
     //! Constructor
-    StatePropagatorData(int               numAtoms,
-                        const t_commrec*  cr,
-                        t_state*          globalState,
-                        bool              useGPU,
-                        const t_inputrec* inputrec,
-                        const t_mdatoms*  mdatoms);
+    StatePropagatorData(int                         numAtoms,
+                        FILE*                       fplog,
+                        const t_commrec*            cr,
+                        t_state*                    globalState,
+                        bool                        useGPU,
+                        FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                        bool                        canMoleculesBeDistributedOverPBC,
+                        bool                        writeFinalConfiguration,
+                        const std::string&          finalConfigurationFilename,
+                        const t_inputrec*           inputrec,
+                        const t_mdatoms*            mdatoms,
+                        const gmx_mtop_t*           globalTop);
 
     // Allow access to state
     //! Get write access to position vector
@@ -131,18 +137,7 @@ public:
     //! The element taking part in the simulator loop
     class Element;
     //! Get pointer to element (whose lifetime is managed by this)
-    Element* element(FILE*                       fplog,
-                     const t_commrec*            cr,
-                     int                         nstxout,
-                     int                         nstvout,
-                     int                         nstfout,
-                     int                         nstxout_compressed,
-                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                     bool                        canMoleculesBeDistributedOverPBC,
-                     bool                        writeFinalConfiguration,
-                     std::string                 finalConfigurationFilename,
-                     const t_inputrec*           inputrec,
-                     const gmx_mtop_t*           globalTop);
+    Element* element();
     //! Initial set up for the associated element
     void setup();
 

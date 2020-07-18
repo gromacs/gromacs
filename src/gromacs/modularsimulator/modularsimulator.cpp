@@ -172,10 +172,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
                 inputrec->delta_t, statePropagatorDataPtr, mdAtoms, wcycle);
 
         addToCallListAndMove(std::move(forceElement), elementCallList, elementsOwnershipList);
-        auto stateElement = compat::make_not_null(statePropagatorDataPtr->element(
-                fplog, cr, inputrec->nstxout, inputrec->nstvout, inputrec->nstfout,
-                inputrec->nstxout_compressed, freeEnergyPerturbationDataPtr, fr->bMolPBC,
-                mdrunOptions.writeConfout, opt2fn("-c", nfile, fnm), inputrec, top_global));
+        auto stateElement = compat::make_not_null(statePropagatorDataPtr->element());
         trajectoryElementBuilder->registerWriterClient(stateElement);
         trajectorySignallerBuilder->registerSignallerClient(stateElement);
         lastStepSignallerBuilder->registerSignallerClient(stateElement);
@@ -288,10 +285,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
             addToCallListAndMove(std::move(constraintElement), elementCallList, elementsOwnershipList);
         }
         addToCallList(compat::make_not_null(computeGlobalsElement.get()), elementCallList);
-        auto stateElement = compat::make_not_null(statePropagatorDataPtr->element(
-                fplog, cr, inputrec->nstxout, inputrec->nstvout, inputrec->nstfout,
-                inputrec->nstxout_compressed, freeEnergyPerturbationDataPtr, fr->bMolPBC,
-                mdrunOptions.writeConfout, opt2fn("-c", nfile, fnm), inputrec, top_global));
+        auto stateElement = compat::make_not_null(statePropagatorDataPtr->element());
         trajectoryElementBuilder->registerWriterClient(stateElement);
         trajectorySignallerBuilder->registerSignallerClient(stateElement);
         lastStepSignallerBuilder->registerSignallerClient(stateElement);

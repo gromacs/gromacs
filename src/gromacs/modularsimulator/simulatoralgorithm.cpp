@@ -427,7 +427,9 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
             algorithm.freeEnergyPerturbationData_.get();
 
     algorithm.statePropagatorData_ = std::make_unique<StatePropagatorData>(
-            top_global->natoms, cr, state_global, fr->nbv->useGpu(), inputrec, mdAtoms->mdatoms());
+            top_global->natoms, fplog, cr, state_global, fr->nbv->useGpu(),
+            freeEnergyPerturbationDataPtr, fr->bMolPBC, mdrunOptions.writeConfout,
+            opt2fn("-c", nfile, fnm), inputrec, mdAtoms->mdatoms(), top_global);
     auto statePropagatorDataPtr = compat::make_not_null(algorithm.statePropagatorData_.get());
 
     algorithm.energyData_ = std::make_unique<EnergyData>(

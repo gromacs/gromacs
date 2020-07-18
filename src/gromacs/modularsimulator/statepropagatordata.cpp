@@ -63,25 +63,41 @@
 
 namespace gmx
 {
-StatePropagatorData::StatePropagatorData(int               numAtoms,
-                                         const t_commrec*  cr,
-                                         t_state*          globalState,
-                                         bool              useGPU,
-                                         const t_inputrec* inputrec,
-                                         const t_mdatoms*  mdatoms) :
+StatePropagatorData::StatePropagatorData(int                         numAtoms,
+                                         FILE*                       fplog,
+                                         const t_commrec*            cr,
+                                         t_state*                    globalState,
+                                         bool                        useGPU,
+                                         FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                                         bool               canMoleculesBeDistributedOverPBC,
+                                         bool               writeFinalConfiguration,
+                                         const std::string& finalConfigurationFilename,
+                                         const t_inputrec*  inputrec,
+                                         const t_mdatoms*   mdatoms,
+                                         const gmx_mtop_t*  globalTop) :
     totalNumAtoms_(numAtoms),
     localNAtoms_(0),
+    box_{ { 0 } },
+    previousBox_{ { 0 } },
     ddpCount_(0),
+    element_(std::make_unique<Element>(this,
+                                       fplog,
+                                       cr,
+                                       inputrec->nstxout,
+                                       inputrec->nstvout,
+                                       inputrec->nstfout,
+                                       inputrec->nstxout_compressed,
+                                       freeEnergyPerturbationData,
+                                       canMoleculesBeDistributedOverPBC,
+                                       writeFinalConfiguration,
+                                       finalConfigurationFilename,
+                                       inputrec,
+                                       globalTop)),
     vvResetVelocities_(false),
     isRegularSimulationEnd_(false),
     lastStep_(-1),
     globalState_(globalState)
 {
-    // Initialize these here, as box_{{0}} in the initialization list
-    // is confusing uncrustify and doxygen
-    clear_mat(box_);
-    clear_mat(previousBox_);
-
     bool stateHasVelocities;
     // Local state only becomes valid now.
     if (DOMAINDECOMP(cr))
@@ -140,31 +156,8 @@ StatePropagatorData::StatePropagatorData(int               numAtoms,
     }
 }
 
-StatePropagatorData::Element* StatePropagatorData::element(FILE*            fplog,
-                                                           const t_commrec* cr,
-                                                           int              nstxout,
-                                                           int              nstvout,
-                                                           int              nstfout,
-                                                           int              nstxout_compressed,
-                                                           FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                           bool canMoleculesBeDistributedOverPBC,
-                                                           bool writeFinalConfiguration,
-                                                           std::string finalConfigurationFilename,
-                                                           const t_inputrec* inputrec,
-                                                           const gmx_mtop_t* globalTop)
+StatePropagatorData::Element* StatePropagatorData::element()
 {
-    if (!element_)
-    {
-        element_ = std::make_unique<Element>(
-                this, fplog, cr, nstxout, nstvout, nstfout, nstxout_compressed,
-                freeEnergyPerturbationData, canMoleculesBeDistributedOverPBC,
-                writeFinalConfiguration, std::move(finalConfigurationFilename), inputrec, globalTop);
-    }
-    else
-    {
-        GMX_THROW(InconsistentInputError(
-                "Attempted to build StatePropagatorData::Element more than once."));
-    }
     return element_.get();
 }
 
