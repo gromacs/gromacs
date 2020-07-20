@@ -812,7 +812,7 @@ int Mdrunner::mdrunner()
                     hw_opt.nthreads_tmpi);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi(
                     useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment, *hwinfo,
-                    *inputrec, mtop, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
+                    *inputrec, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
@@ -878,7 +878,7 @@ int Mdrunner::mdrunner()
                 nonbondedTarget, userGpuTaskAssignment, emulateGpuNonbonded, canUseGpuForNonbonded,
                 gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, !GMX_THREAD_MPI), gpusWereDetected);
         useGpuForPme = decideWhetherToUseGpusForPme(
-                useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, *hwinfo, *inputrec, mtop,
+                useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, *hwinfo, *inputrec,
                 cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks, gpusWereDetected);
         auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr)
                                   && inputSupportsGpuBondeds(*inputrec, mtop, nullptr);

@@ -20,3 +20,8 @@ The time `gmx grompp` spent processing distance restraint has been
 changed from quadratic in the number of restraints to linear.
        
 :issue:`3457`
+
+Support for offloading PME to GPU when doing Coulomb FEP
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+PME calculations can be offloaded to GPU when doing Coulomb free-energy perturbations.

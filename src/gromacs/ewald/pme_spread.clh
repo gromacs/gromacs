@@ -75,7 +75,8 @@
  *
  * \param[out] sm_destination    Local memory array for output.
  * \param[in]  gm_source         Global memory array for input.
- * \param[in] dataCountPerAtom   Number of data elements per single atom (e.g. DIM for an rvec coordinates array).
+ * \param[in]  dataCountPerAtom  Number of data elements per single
+ * atom (e.g. DIM for an rvec coordinates array).
  *
  */
 inline void pme_gpu_stage_atom_data(__local float* __restrict__ sm_destination,
@@ -113,7 +114,7 @@ inline void pme_gpu_stage_atom_data(__local float* __restrict__ sm_destination,
  * \param[out] gm_dtheta                Atom spline parameter derivatives
  * \param[out] gm_gridlineIndices       Same as \p sm_gridlineIndices but in global memory.
  * \param[in]  gm_fractShiftsTable      Atom fractional coordinates correction table
- * \param[in]  gm_gridlineIndicesTable  Atom fractional coordinates correction table
+ * \param[in]  gm_gridlineIndicesTable  Table with atom gridline indices
  */
 gmx_opencl_inline void calculate_splines(const struct PmeOpenCLKernelParams kernelParams,
                                          const int                          atomIndexOffset,
@@ -404,10 +405,17 @@ gmx_opencl_inline void spread_charges(const struct PmeOpenCLKernelParams kernelP
  * \param[in,out] gm_theta                 Atom spline parameter values
  * \param[out]    gm_dtheta                Atom spline parameter derivatives
  * \param[in,out] gm_gridlineIndices       Atom gridline indices (ivec)
- * \param[out]    gm_grid                  Global 3D grid for charge spreading.
+ * \param[out]    gm_gridA                 Global 3D grid for charge spreading.
+ * Grid for the unperturbed state, FEP state A or the single grid used for
+ * interpolated coefficients on one grid in FEP A/B.
+ * \param[out]    gm_gridB                 Global 3D grid for charge spreading.
+ * FEP state B when using dual grids (when calculating energy and virials).
  * \param[in]     gm_fractShiftsTable      Atom fractional coordinates correction table
- * \param[in]     gm_gridlineIndicesTable  Atom fractional coordinates correction table
- * \param[in]     gm_coefficients          Atom charges/coefficients.
+ * \param[in]     gm_gridlineIndicesTable  Table with atom gridline indices
+ * \param[in]     gm_coefficientsA         Atom charges/coefficients of the unperturbed state
+ * or FEP state A.
+ * \param[in]     gm_coefficientsB         Atom charges/coefficients in FEP state B. Only
+ * used when spreading interpolated coefficients on one grid.
  * \param[in]     gm_coordinates           Atom coordinates (rvec)
  */
 __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void CUSTOMIZED_KERNEL_NAME(
@@ -415,10 +423,12 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
                                       __global float* __restrict__ gm_theta,
                                       __global float* __restrict__ gm_dtheta,
                                       __global int* __restrict__ gm_gridlineIndices,
-                                      __global float* __restrict__ gm_grid,
+                                      __global float* __restrict__ gm_gridA,
+                                      __global float* __restrict__ gm_gridB,
                                       __global const float* __restrict__ gm_fractShiftsTable,
                                       __global const int* __restrict__ gm_gridlineIndicesTable,
-                                      __global const float* __restrict__ gm_coefficients,
+                                      __global const float* __restrict__ gm_coefficientsA,
+                                      __global const float* __restrict__ gm_coefficientsB,
                                       __global const float* __restrict__ gm_coordinates)
 {
     // Gridline indices, ivec
@@ -433,9 +443,10 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
     __local float sm_coordinates[DIM * atomsPerBlock];
 
     const int atomIndexOffset = (int)get_group_id(XX) * atomsPerBlock;
+    int       gridIndex       = 0;
 
     /* Staging coefficients/charges for both spline and spread */
-    pme_gpu_stage_atom_data(sm_coefficients, gm_coefficients, 1);
+    pme_gpu_stage_atom_data(sm_coefficients, gm_coefficientsA, 1);
 
     if (computeSplines)
     {
@@ -470,6 +481,17 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
     /* Spreading */
     if (spreadCharges)
     {
-        spread_charges(kernelParams, sm_coefficients, sm_gridlineIndices, sm_theta, gm_grid);
+        spread_charges(kernelParams, sm_coefficients, sm_gridlineIndices, sm_theta, gm_gridA);
+    }
+    if (numGrids == 2)
+    {
+        barrier(CLK_LOCAL_MEM_FENCE);
+        gridIndex = 1;
+        pme_gpu_stage_atom_data(sm_coefficients, gm_coefficientsB, 1);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        if (spreadCharges)
+        {
+            spread_charges(kernelParams, sm_coefficients, sm_gridlineIndices, sm_theta, gm_gridB);
+        }
     }
 }

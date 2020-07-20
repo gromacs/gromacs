@@ -673,17 +673,19 @@ static void computeSpecialForces(FILE*                          fplog,
  * \param[in]  pmedata              The PME structure
  * \param[in]  box                  The box matrix
  * \param[in]  stepWork             Step schedule flags
- * \param[in]  xReadyOnDevice       Event synchronizer indicating that the coordinates are ready in
- * the device memory. \param[in]  wcycle               The wallcycle structure
+ * \param[in]  xReadyOnDevice       Event synchronizer indicating that the coordinates are ready in the device memory.
+ * \param[in]  lambdaQ              The Coulomb lambda of the current state.
+ * \param[in]  wcycle               The wallcycle structure
  */
 static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
                                       const matrix          box,
                                       const StepWorkload&   stepWork,
                                       GpuEventSynchronizer* xReadyOnDevice,
+                                      const real            lambdaQ,
                                       gmx_wallcycle_t       wcycle)
 {
     pme_gpu_prepare_computation(pmedata, box, wcycle, stepWork);
-    pme_gpu_launch_spread(pmedata, xReadyOnDevice, wcycle);
+    pme_gpu_launch_spread(pmedata, xReadyOnDevice, wcycle, lambdaQ);
 }
 
 /*! \brief Launch the FFT and gather stages of PME GPU
@@ -691,13 +693,17 @@ static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
  * This function only implements setting the output forces (no accumulation).
  *
  * \param[in]  pmedata        The PME structure
+ * \param[in]  lambdaQ        The Coulomb lambda of the current system state.
  * \param[in]  wcycle         The wallcycle structure
  * \param[in]  stepWork       Step schedule flags
  */
-static void launchPmeGpuFftAndGather(gmx_pme_t* pmedata, gmx_wallcycle_t wcycle, const gmx::StepWorkload& stepWork)
+static void launchPmeGpuFftAndGather(gmx_pme_t*               pmedata,
+                                     const real               lambdaQ,
+                                     gmx_wallcycle_t          wcycle,
+                                     const gmx::StepWorkload& stepWork)
 {
     pme_gpu_launch_complex_transforms(pmedata, wcycle, stepWork);
-    pme_gpu_launch_gather(pmedata, wcycle);
+    pme_gpu_launch_gather(pmedata, wcycle, lambdaQ);
 }
 
 /*! \brief
@@ -713,6 +719,7 @@ static void launchPmeGpuFftAndGather(gmx_pme_t* pmedata, gmx_wallcycle_t wcycle,
  * \param[in,out] pmedata          PME module data
  * \param[in,out] forceOutputs     Output buffer for the forces and virial
  * \param[in,out] enerd            Energy data structure results are reduced into
+ * \param[in]     lambdaQ          The Coulomb lambda of the current system state.
  * \param[in]     stepWork         Step schedule flags
  * \param[in]     wcycle           The wallcycle structure
  */
@@ -720,6 +727,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
                                         gmx_pme_t*          pmedata,
                                         gmx::ForceOutputs*  forceOutputs,
                                         gmx_enerdata_t*     enerd,
+                                        const real          lambdaQ,
                                         const StepWorkload& stepWork,
                                         gmx_wallcycle_t     wcycle)
 {
@@ -739,7 +747,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
             GpuTaskCompletion completionType =
                     (isNbGpuDone) ? GpuTaskCompletion::Wait : GpuTaskCompletion::Check;
             isPmeGpuDone = pme_gpu_try_finish_task(pmedata, stepWork, wcycle, &forceWithVirial,
-                                                   enerd, completionType);
+                                                   enerd, lambdaQ, completionType);
         }
 
         if (!isNbGpuDone)
@@ -1173,7 +1181,7 @@ void do_force(FILE*                               fplog,
 
     if (useGpuPmeOnThisRank)
     {
-        launchPmeGpuSpread(fr->pmedata, box, stepWork, localXReadyOnDevice, wcycle);
+        launchPmeGpuSpread(fr->pmedata, box, stepWork, localXReadyOnDevice, lambda[efptCOUL], wcycle);
     }
 
     /* do gridding for pair search */
@@ -1330,7 +1338,7 @@ void do_force(FILE*                               fplog,
         // X copy/transform to allow overlap as well as after the GPU NB
         // launch to avoid FFT launch overhead hijacking the CPU and delaying
         // the nonbonded kernel.
-        launchPmeGpuFftAndGather(fr->pmedata, wcycle, stepWork);
+        launchPmeGpuFftAndGather(fr->pmedata, lambda[efptCOUL], wcycle, stepWork);
     }
 
     /* Communicate coordinates and sum dipole if necessary +
@@ -1685,12 +1693,14 @@ void do_force(FILE*                               fplog,
                              && !DOMAINDECOMP(cr) && !stepWork.useGpuFBufferOps);
     if (alternateGpuWait)
     {
-        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &forceOut, enerd, stepWork, wcycle);
+        alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &forceOut, enerd, lambda[efptCOUL],
+                                    stepWork, wcycle);
     }
 
     if (!alternateGpuWait && useGpuPmeOnThisRank)
     {
-        pme_gpu_wait_and_reduce(fr->pmedata, stepWork, wcycle, &forceOut.forceWithVirial(), enerd);
+        pme_gpu_wait_and_reduce(fr->pmedata, stepWork, wcycle, &forceOut.forceWithVirial(), enerd,
+                                lambda[efptCOUL]);
     }
 
     /* Wait for local GPU NB outputs on the non-alternating wait path */

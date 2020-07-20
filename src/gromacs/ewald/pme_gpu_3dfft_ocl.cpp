@@ -63,7 +63,7 @@ static void handleClfftError(clfftStatus status, const char* msg)
     }
 }
 
-GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
+GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu, const int gridIndex)
 {
     // Extracting all the data from PME GPU
     std::array<size_t, DIM> realGridSize, realGridSizePadded, complexGridSizePadded;
@@ -82,8 +82,8 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
     }
     cl_context context = pmeGpu->archSpecific->deviceContext_.context();
     deviceStreams_.push_back(pmeGpu->archSpecific->pmeStream_.stream());
-    realGrid_                       = kernelParamsPtr->grid.d_realGrid;
-    complexGrid_                    = kernelParamsPtr->grid.d_fourierGrid;
+    realGrid_                       = kernelParamsPtr->grid.d_realGrid[gridIndex];
+    complexGrid_                    = kernelParamsPtr->grid.d_fourierGrid[gridIndex];
     const bool performOutOfPlaceFFT = pmeGpu->archSpecific->performOutOfPlaceFFT;
 
 

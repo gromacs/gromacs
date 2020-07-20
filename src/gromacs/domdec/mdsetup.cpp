@@ -137,7 +137,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
          * For PME-only ranks, gmx_pmeonly() has its own call to gmx_pme_reinit_atoms().
          */
         const int numPmeAtoms = numHomeAtoms - fr->n_tpi;
-        gmx_pme_reinit_atoms(fr->pmedata, numPmeAtoms, mdatoms->chargeA);
+        gmx_pme_reinit_atoms(fr->pmedata, numPmeAtoms, mdatoms->chargeA, mdatoms->chargeB);
     }
 
     if (constr)

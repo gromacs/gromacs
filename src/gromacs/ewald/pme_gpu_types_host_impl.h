@@ -62,6 +62,11 @@
 
 #include "pme_gpu_3dfft.h"
 
+#ifndef NUMFEPSTATES
+//! Number of FEP states.
+#    define NUMFEPSTATES 2
+#endif
+
 class GpuParallel3dFft;
 
 /*! \internal \brief
@@ -141,21 +146,21 @@ struct PmeGpuSpecific
     /*! \brief Both the kernelParams.atoms.theta and kernelParams.atoms.dtheta float element count (reserved) */
     int splineDataSizeAlloc = 0;
     /*! \brief The kernelParams.atoms.coefficients float element count (actual) */
-    int coefficientsSize = 0;
+    int coefficientsSize[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.atoms.coefficients float element count (reserved) */
-    int coefficientsSizeAlloc = 0;
+    int coefficientsCapacity[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.splineValuesArray float element count (actual) */
-    int splineValuesSize = 0;
+    int splineValuesSize[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.splineValuesArray float element count (reserved) */
-    int splineValuesSizeAlloc = 0;
+    int splineValuesCapacity[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.realGrid float element count (actual) */
-    int realGridSize = 0;
+    int realGridSize[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.realGrid float element count (reserved) */
-    int realGridSizeAlloc = 0;
+    int realGridCapacity[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (actual) */
-    int complexGridSize = 0;
+    int complexGridSize[NUMFEPSTATES] = { 0, 0 };
     /*! \brief The kernelParams.grid.fourierGrid float (not float2!) element count (reserved) */
-    int complexGridSizeAlloc = 0;
+    int complexGridCapacity[NUMFEPSTATES] = { 0, 0 };
 };
 
 #endif

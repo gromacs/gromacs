@@ -60,7 +60,8 @@
  * \param[in]     kernelParams         Input PME GPU data in constant memory.
  * \param[in]     gm_splineModuli      B-Spline moduli.
  * \param[out]    gm_virialAndEnergy   Reduced virial and enrgy (only with computeEnergyAndVirial ==
- * true) \param[in,out] gm_grid              Fourier grid to transform.
+ * true)
+ * \param[in,out] gm_grid              Fourier grid to transform.
  */
 __attribute__((work_group_size_hint(c_solveMaxWorkGroupSize, 1, 1)))
 __kernel void CUSTOMIZED_KERNEL_NAME(pme_solve_kernel)(const struct PmeOpenCLKernelParams kernelParams,
@@ -137,8 +138,9 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_solve_kernel)(const struct PmeOpenCLKer
         & (gridLineIndex < gridLinesPerBlock))
     {
         /* The offset should be equal to the global thread index for coalesced access */
-        const int gridIndex = (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
-        __global float2* __restrict__ gm_gridCell = gm_grid + gridIndex;
+        const int gridThreadIndex =
+                (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
+        __global float2* __restrict__ gm_gridCell = gm_grid + gridThreadIndex;
 
         const int kMajor = indexMajor + localOffsetMajor;
         /* Checking either X in XYZ, or Y in YZX cases */

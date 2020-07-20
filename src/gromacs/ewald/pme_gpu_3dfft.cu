@@ -60,7 +60,7 @@ static void handleCufftError(cufftResult_t status, const char* msg)
     }
 }
 
-GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
+GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu, const int gridIndex)
 {
     const PmeGpuCudaKernelParams* kernelParamsPtr = pmeGpu->kernelParams.get();
     ivec                          realGridSize, realGridSizePadded, complexGridSizePadded;
@@ -79,9 +79,9 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
     const int realGridSizePaddedTotal =
             realGridSizePadded[XX] * realGridSizePadded[YY] * realGridSizePadded[ZZ];
 
-    realGrid_ = (cufftReal*)kernelParamsPtr->grid.d_realGrid;
+    realGrid_ = (cufftReal*)kernelParamsPtr->grid.d_realGrid[gridIndex];
     GMX_RELEASE_ASSERT(realGrid_, "Bad (null) input real-space grid");
-    complexGrid_ = (cufftComplex*)kernelParamsPtr->grid.d_fourierGrid;
+    complexGrid_ = (cufftComplex*)kernelParamsPtr->grid.d_fourierGrid[gridIndex];
     GMX_RELEASE_ASSERT(complexGrid_, "Bad (null) input complex grid");
 
     cufftResult_t result;

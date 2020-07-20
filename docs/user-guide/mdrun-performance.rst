@@ -1093,9 +1093,6 @@ Known limitations
 
 - Only single precision is supported.
 
-- Free energy calculations where charges are perturbed are not supported,
-  because only single PME grids can be calculated.
-
 - Only dynamical integrators are supported (ie. leap-frog, Velocity Verlet,
   stochastic dynamics)
 

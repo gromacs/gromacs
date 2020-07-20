@@ -105,17 +105,28 @@ struct PmeGpuProgramImpl
      *   or recalculated in the gather.
      * Spreading kernels also have hardcoded X/Y indices wrapping parameters,
      * as a placeholder for implementing 1/2D decomposition.
+     * The kernels are templated separately for spreading on one grid (one or
+     * two sets of coefficients) or on two grids (required for energy and virial
+     * calculations).
      */
     size_t spreadWorkGroupSize;
 
-    PmeKernelHandle splineKernel;
-    PmeKernelHandle splineKernelThPerAtom4;
-    PmeKernelHandle spreadKernel;
-    PmeKernelHandle spreadKernelThPerAtom4;
-    PmeKernelHandle splineAndSpreadKernel;
-    PmeKernelHandle splineAndSpreadKernelThPerAtom4;
-    PmeKernelHandle splineAndSpreadKernelWriteSplines;
-    PmeKernelHandle splineAndSpreadKernelWriteSplinesThPerAtom4;
+    PmeKernelHandle splineKernelSingle;
+    PmeKernelHandle splineKernelThPerAtom4Single;
+    PmeKernelHandle spreadKernelSingle;
+    PmeKernelHandle spreadKernelThPerAtom4Single;
+    PmeKernelHandle splineAndSpreadKernelSingle;
+    PmeKernelHandle splineAndSpreadKernelThPerAtom4Single;
+    PmeKernelHandle splineAndSpreadKernelWriteSplinesSingle;
+    PmeKernelHandle splineAndSpreadKernelWriteSplinesThPerAtom4Single;
+    PmeKernelHandle splineKernelDual;
+    PmeKernelHandle splineKernelThPerAtom4Dual;
+    PmeKernelHandle spreadKernelDual;
+    PmeKernelHandle spreadKernelThPerAtom4Dual;
+    PmeKernelHandle splineAndSpreadKernelDual;
+    PmeKernelHandle splineAndSpreadKernelThPerAtom4Dual;
+    PmeKernelHandle splineAndSpreadKernelWriteSplinesDual;
+    PmeKernelHandle splineAndSpreadKernelWriteSplinesThPerAtom4Dual;
     //@}
 
     //@{
@@ -123,25 +134,36 @@ struct PmeGpuProgramImpl
      * it can either reduce with previous forces in the host buffer, or ignore them.
      * Also similarly to the gather we can use either order(4) or order*order (16) threads per atom
      * and either recalculate the splines or read the ones written by the spread
+     * The kernels are templated separately for using one or two grids (required for
+     * calculating energies and virial).
      */
     size_t gatherWorkGroupSize;
 
-    PmeKernelHandle gatherKernel;
-    PmeKernelHandle gatherKernelThPerAtom4;
-    PmeKernelHandle gatherKernelReadSplines;
-    PmeKernelHandle gatherKernelReadSplinesThPerAtom4;
+    PmeKernelHandle gatherKernelSingle;
+    PmeKernelHandle gatherKernelThPerAtom4Single;
+    PmeKernelHandle gatherKernelReadSplinesSingle;
+    PmeKernelHandle gatherKernelReadSplinesThPerAtom4Single;
+    PmeKernelHandle gatherKernelDual;
+    PmeKernelHandle gatherKernelThPerAtom4Dual;
+    PmeKernelHandle gatherKernelReadSplinesDual;
+    PmeKernelHandle gatherKernelReadSplinesThPerAtom4Dual;
     //@}
 
     //@{
     /** Solve kernel doesn't care about the interpolation order, but can optionally
      * compute energy and virial, and supports XYZ and YZX grid orderings.
+     * The kernels are templated separately for grids in state A and B.
      */
     size_t solveMaxWorkGroupSize;
 
-    PmeKernelHandle solveYZXKernel;
-    PmeKernelHandle solveXYZKernel;
-    PmeKernelHandle solveYZXEnergyKernel;
-    PmeKernelHandle solveXYZEnergyKernel;
+    PmeKernelHandle solveYZXKernelA;
+    PmeKernelHandle solveXYZKernelA;
+    PmeKernelHandle solveYZXEnergyKernelA;
+    PmeKernelHandle solveXYZEnergyKernelA;
+    PmeKernelHandle solveYZXKernelB;
+    PmeKernelHandle solveXYZKernelB;
+    PmeKernelHandle solveYZXEnergyKernelB;
+    PmeKernelHandle solveXYZEnergyKernelB;
     //@}
 
     PmeGpuProgramImpl() = delete;

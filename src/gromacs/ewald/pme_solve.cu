@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,10 +53,11 @@
  * PME complex grid solver kernel function.
  *
  * \tparam[in] gridOrdering             Specifies the dimension ordering of the complex grid.
- * \tparam[in] computeEnergyAndVirial   Tells if the reciprocal energy and virial should be
- * computed. \param[in]  kernelParams             Input PME CUDA data in constant memory.
+ * \tparam[in] computeEnergyAndVirial   Tells if the reciprocal energy and virial should be computed.
+ * \tparam[in] gridIndex                The index of the grid to use in the kernel.
+ * \param[in]  kernelParams             Input PME CUDA data in constant memory.
  */
-template<GridOrdering gridOrdering, bool computeEnergyAndVirial>
+template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex>
 __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __global__
         void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParams)
 {
@@ -80,14 +81,14 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
     }
 
     /* Global memory pointers */
-    const float* __restrict__ gm_splineValueMajor =
-            kernelParams.grid.d_splineModuli + kernelParams.grid.splineValuesOffset[majorDim];
-    const float* __restrict__ gm_splineValueMiddle =
-            kernelParams.grid.d_splineModuli + kernelParams.grid.splineValuesOffset[middleDim];
-    const float* __restrict__ gm_splineValueMinor =
-            kernelParams.grid.d_splineModuli + kernelParams.grid.splineValuesOffset[minorDim];
-    float* __restrict__ gm_virialAndEnergy = kernelParams.constants.d_virialAndEnergy;
-    float2* __restrict__ gm_grid           = (float2*)kernelParams.grid.d_fourierGrid;
+    const float* __restrict__ gm_splineValueMajor = kernelParams.grid.d_splineModuli[gridIndex]
+                                                    + kernelParams.grid.splineValuesOffset[majorDim];
+    const float* __restrict__ gm_splineValueMiddle = kernelParams.grid.d_splineModuli[gridIndex]
+                                                     + kernelParams.grid.splineValuesOffset[middleDim];
+    const float* __restrict__ gm_splineValueMinor = kernelParams.grid.d_splineModuli[gridIndex]
+                                                    + kernelParams.grid.splineValuesOffset[minorDim];
+    float* __restrict__ gm_virialAndEnergy = kernelParams.constants.d_virialAndEnergy[gridIndex];
+    float2* __restrict__ gm_grid           = (float2*)kernelParams.grid.d_fourierGrid[gridIndex];
 
     /* Various grid sizes and indices */
     const int localOffsetMinor = 0, localOffsetMajor = 0, localOffsetMiddle = 0; // unused
@@ -131,8 +132,9 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
         & (gridLineIndex < gridLinesPerBlock))
     {
         /* The offset should be equal to the global thread index for coalesced access */
-        const int gridIndex = (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
-        float2* __restrict__ gm_gridCell = gm_grid + gridIndex;
+        const int gridThreadIndex =
+                (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
+        float2* __restrict__ gm_gridCell = gm_grid + gridThreadIndex;
 
         const int kMajor = indexMajor + localOffsetMajor;
         /* Checking either X in XYZ, or Y in YZX cases */
@@ -352,7 +354,11 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
 }
 
 //! Kernel instantiations
-template __global__ void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, false>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, true, 0>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, false, 0>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, 0>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, 0>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, true, 1>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, false, 1>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, 1>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, 1>(const PmeGpuCudaKernelParams);

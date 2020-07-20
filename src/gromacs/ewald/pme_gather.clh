@@ -184,6 +184,86 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
     }
 }
 
+/*! \brief Calculate the sum of the force partial components (in X, Y and Z)
+ *
+ * \param[out] fx                 The force partial component in the X dimension.
+ * \param[out] fy                 The force partial component in the Y dimension.
+ * \param[out] fz                 The force partial component in the Z dimension.
+ * \param[in] ixBase              The grid line index base value in the X dimension.
+ * \param[in] nx                  The grid real size in the X dimension.
+ * \param[in] pny                 The padded grid real size in the Y dimension.
+ * \param[in] pnz                 The padded grid real size in the Z dimension.
+ * \param[in] constOffset         The offset to calculate the global grid index.
+ * \param[in] splineIndexBase     The base value of the spline parameter index.
+ * \param[in] tdy                 The theta and dtheta in the Y dimension.
+ * \param[in] tdz                 The theta and dtheta in the Z dimension.
+ * \param[in] sm_splineParams     Shared memory array of spline parameters.
+ * \param[in] gm_grid             Global memory array of the grid to use.
+ */
+inline void sumForceComponents(float*        fx,
+                               float*        fy,
+                               float*        fz,
+                               const int     ixBase,
+                               const int     nx,
+                               const int     pny,
+                               const int     pnz,
+                               const int     constOffset,
+                               const int     splineIndexBase,
+                               const float2  tdy,
+                               const float2  tdz,
+                               __local const float2* __restrict__ sm_splineParams,
+                               __global const float* __restrict__ gm_grid)
+{
+#    pragma unroll order
+    for (int ithx = 0; (ithx < order); ithx++)
+    {
+        int ix = ixBase + ithx;
+        if (wrapX & (ix >= nx))
+        {
+            ix -= nx;
+        }
+        const int gridIndexGlobal = ix * pny * pnz + constOffset;
+        assert(gridIndexGlobal >= 0);
+        const float gridValue = gm_grid[gridIndexGlobal];
+        assert(isfinite(gridValue));
+        const int    splineIndexX = getSplineParamIndex(splineIndexBase, XX, ithx);
+        const float2 tdx          = sm_splineParams[splineIndexX];
+        const float  fxy1         = tdz.x * gridValue;
+        const float  fz1          = tdz.y * gridValue;
+        *fx += tdx.y * tdy.x * fxy1;
+        *fy += tdx.x * tdy.y * fxy1;
+        *fz += tdx.x * tdy.x * fz1;
+    }
+}
+
+/*! \brief Calculate the grid forces and store them in shared memory.
+ *
+ * \param[in,out] sm_forces       Shared memory array with the output forces.
+ * \param[in] forceIndexLocal     The local (per thread) index in the sm_forces array.
+ * \param[in] forceIndexGlobal    The index of the thread in the gm_coefficients array.
+ * \param[in] recipBox            The reciprocal box.
+ * \param[in] scale               The scale to use when calculating the forces (only relevant when
+ * using two grids).
+ * \param[in] gm_coefficients     Global memory array of the coefficients to use.
+ */
+inline void calculateAndStoreGridForces(__local float* __restrict__ sm_forces,
+                                        const int   forceIndexLocal,
+                                        const int   forceIndexGlobal,
+                                        const float recipBox[DIM][DIM],
+                                        const float scale,
+                                        __global const float* __restrict__ gm_coefficients)
+{
+    const float3 atomForces     = vload3(forceIndexLocal, sm_forces);
+    float        negCoefficient = -scale * gm_coefficients[forceIndexGlobal];
+    float3       result;
+    result.x = negCoefficient * recipBox[XX][XX] * atomForces.x;
+    result.y = negCoefficient * (recipBox[XX][YY] * atomForces.x + recipBox[YY][YY] * atomForces.y);
+    result.z = negCoefficient
+               * (recipBox[XX][ZZ] * atomForces.x + recipBox[YY][ZZ] * atomForces.y
+                  + recipBox[ZZ][ZZ] * atomForces.z);
+    vstore3(result, forceIndexLocal, sm_forces);
+}
+
 #endif // COMPILE_GATHER_HELPERS_ONCE
 
 /*! \brief
@@ -192,8 +272,15 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
  * Please see the file description for additional defines which this kernel expects.
  *
  * \param[in]     kernelParams         All the PME GPU data.
- * \param[in]     gm_coefficients      Atom charges/coefficients.
- * \param[in]     gm_grid              Global 3D grid.
+ * \param[in]     gm_coefficientsA     Atom charges/coefficients in the unperturbed state, or FEP
+ * state A.
+ * \param[in]     gm_coefficientsB     Atom charges/coefficients in FEP state B. Only used
+ * when spreading interpolated coefficients on one grid or spreading two sets of coefficients on two
+ * separate grids.
+ * \param[in]     gm_gridA             Global 3D grid for the unperturbed state, FEP
+ * state A or the single grid used for interpolated coefficients on one grid in FEP A/B.
+ * \param[in]     gm_gridB             Global 3D grid for FEP state B when using dual
+ * grids (when calculating energy and virials).
  * \param[in]     gm_theta             Atom spline parameter values
  * \param[in]     gm_dtheta            Atom spline parameter derivatives
  * \param[in]     gm_gridlineIndices   Atom gridline indices (ivec)
@@ -201,13 +288,17 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
  */
 __attribute__((reqd_work_group_size(order, order, atomsPerBlock)))
 __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKernelParams kernelParams,
-                                                        __global const float* __restrict__ gm_coefficients,
-                                                        __global const float* __restrict__ gm_grid,
+                                                        __global const float* __restrict__ gm_coefficientsA,
+                                                        __global const float* __restrict__ gm_coefficientsB,
+                                                        __global const float* __restrict__ gm_gridA,
+                                                        __global const float* __restrict__ gm_gridB,
                                                         __global const float* __restrict__ gm_theta,
                                                         __global const float* __restrict__ gm_dtheta,
                                                         __global const int* __restrict__ gm_gridlineIndices,
                                                         __global float* __restrict__ gm_forces)
 {
+    assert(numGrids == 1 || numGrids == 2);
+
     /* These are the atom indices - for the shared and global memory */
     const int atomIndexLocal  = get_local_id(ZZ);
     const int atomIndexOffset = (int)get_group_id(XX) * atomsPerBlock;
@@ -267,58 +358,40 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     float fy = 0.0F;
     float fz = 0.0F;
 
-    const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficients[atomIndexGlobal]);
+    int chargeCheck = pme_gpu_check_atom_charge(gm_coefficientsA[atomIndexGlobal]);
+
+    const int nx  = kernelParams.grid.realGridSize[XX];
+    const int ny  = kernelParams.grid.realGridSize[YY];
+    const int nz  = kernelParams.grid.realGridSize[ZZ];
+    const int pny = kernelParams.grid.realGridSizePadded[YY];
+    const int pnz = kernelParams.grid.realGridSizePadded[ZZ];
+
+    const int atomWarpIndex = atomIndexLocal % atomsPerWarp;
+    const int warpIndex     = atomIndexLocal / atomsPerWarp;
+
+    const int    splineIndexBase = getSplineParamIndexBase(warpIndex, atomWarpIndex);
+    const int    splineIndexY    = getSplineParamIndex(splineIndexBase, YY, ithy);
+    const float2 tdy             = sm_splineParams[splineIndexY];
+    const int    splineIndexZ    = getSplineParamIndex(splineIndexBase, ZZ, ithz);
+    const float2 tdz             = sm_splineParams[splineIndexZ];
+
+    const int ixBase = sm_gridlineIndices[atomIndexLocal * DIM + XX];
+    int       iy     = sm_gridlineIndices[atomIndexLocal * DIM + YY] + ithy;
+    if (wrapY & (iy >= ny))
+    {
+        iy -= ny;
+    }
+    int iz = sm_gridlineIndices[atomIndexLocal * DIM + ZZ] + ithz;
+    if (iz >= nz)
+    {
+        iz -= nz;
+    }
+    const int constOffset = iy * pnz + iz;
 
     if (chargeCheck)
     {
-        const int nx  = kernelParams.grid.realGridSize[XX];
-        const int ny  = kernelParams.grid.realGridSize[YY];
-        const int nz  = kernelParams.grid.realGridSize[ZZ];
-        const int pny = kernelParams.grid.realGridSizePadded[YY];
-        const int pnz = kernelParams.grid.realGridSizePadded[ZZ];
-
-        const int atomWarpIndex = atomIndexLocal % atomsPerWarp;
-        const int warpIndex     = atomIndexLocal / atomsPerWarp;
-
-        const int    splineIndexBase = getSplineParamIndexBase(warpIndex, atomWarpIndex);
-        const int    splineIndexY    = getSplineParamIndex(splineIndexBase, YY, ithy);
-        const float2 tdy             = sm_splineParams[splineIndexY];
-        const int    splineIndexZ    = getSplineParamIndex(splineIndexBase, ZZ, ithz);
-        const float2 tdz             = sm_splineParams[splineIndexZ];
-
-        const int ixBase = sm_gridlineIndices[atomIndexLocal * DIM + XX];
-        int       iy     = sm_gridlineIndices[atomIndexLocal * DIM + YY] + ithy;
-        if (wrapY & (iy >= ny))
-        {
-            iy -= ny;
-        }
-        int iz = sm_gridlineIndices[atomIndexLocal * DIM + ZZ] + ithz;
-        if (iz >= nz)
-        {
-            iz -= nz;
-        }
-        const int constOffset = iy * pnz + iz;
-
-#pragma unroll order
-        for (int ithx = 0; (ithx < order); ithx++)
-        {
-            int ix = ixBase + ithx;
-            if (wrapX & (ix >= nx))
-            {
-                ix -= nx;
-            }
-            const int gridIndexGlobal = ix * pny * pnz + constOffset;
-            assert(gridIndexGlobal >= 0);
-            const float gridValue = gm_grid[gridIndexGlobal];
-            assert(isfinite(gridValue));
-            const int    splineIndexX = getSplineParamIndex(splineIndexBase, XX, ithx);
-            const float2 tdx          = sm_splineParams[splineIndexX];
-            const float  fxy1         = tdz.x * gridValue;
-            const float  fz1          = tdz.y * gridValue;
-            fx += tdx.y * tdy.x * fxy1;
-            fy += tdx.x * tdy.y * fxy1;
-            fz += tdx.x * tdy.x * fz1;
-        }
+        sumForceComponents(&fx, &fy, &fz, ixBase, nx, pny, pnz, constOffset, splineIndexBase, tdy,
+                           tdz, sm_splineParams, gm_gridA);
     }
 
     // Reduction of partial force contributions
@@ -332,22 +405,13 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     barrier(CLK_LOCAL_MEM_FENCE);
 
     /* Calculating the final forces with no component branching, atomsPerBlock threads */
-    const int forceIndexLocal  = threadLocalId;
-    const int forceIndexGlobal = atomIndexOffset + forceIndexLocal;
+    const int   forceIndexLocal  = threadLocalId;
+    const int   forceIndexGlobal = atomIndexOffset + forceIndexLocal;
+    const float scale            = kernelParams.current.scale;
     if (forceIndexLocal < atomsPerBlock)
     {
-        const float3 atomForces     = vload3(forceIndexLocal, sm_forces);
-        const float  negCoefficient = -gm_coefficients[forceIndexGlobal];
-        float3       result;
-        result.x = negCoefficient * kernelParams.current.recipBox[XX][XX] * atomForces.x;
-        result.y = negCoefficient
-                   * (kernelParams.current.recipBox[XX][YY] * atomForces.x
-                      + kernelParams.current.recipBox[YY][YY] * atomForces.y);
-        result.z = negCoefficient
-                   * (kernelParams.current.recipBox[XX][ZZ] * atomForces.x
-                      + kernelParams.current.recipBox[YY][ZZ] * atomForces.y
-                      + kernelParams.current.recipBox[ZZ][ZZ] * atomForces.z);
-        vstore3(result, forceIndexLocal, sm_forces);
+        calculateAndStoreGridForces(sm_forces, forceIndexLocal, forceIndexGlobal,
+                                    kernelParams.current.recipBox, scale, gm_coefficientsA);
     }
 
 #if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_)
@@ -372,6 +436,48 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
             const int outputIndexGlobal = (int)get_group_id(XX) * blockForcesSize + outputIndexLocal;
             const float outputForceComponent = sm_forces[outputIndexLocal];
             gm_forces[outputIndexGlobal]     = outputForceComponent;
+        }
+    }
+
+    if (numGrids == 2)
+    {
+        barrier(CLK_LOCAL_MEM_FENCE);
+        fx          = 0.0f;
+        fy          = 0.0f;
+        fz          = 0.0f;
+        chargeCheck = pme_gpu_check_atom_charge(gm_coefficientsB[atomIndexGlobal]);
+        if (chargeCheck)
+        {
+            sumForceComponents(&fx, &fy, &fz, ixBase, nx, pny, pnz, constOffset, splineIndexBase,
+                               tdy, tdz, sm_splineParams, gm_gridB);
+        }
+        reduce_atom_forces(sm_forces, atomIndexLocal, splineIndex, lineIndex,
+                           kernelParams.grid.realGridSizeFP, fx, fy, fz, sm_forceReduction, sm_forceTemp);
+        barrier(CLK_LOCAL_MEM_FENCE);
+        if (forceIndexLocal < atomsPerBlock)
+        {
+            calculateAndStoreGridForces(sm_forces, forceIndexLocal, forceIndexGlobal,
+                                        kernelParams.current.recipBox, 1.0F - scale, gm_coefficientsB);
+        }
+
+#if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_)
+        /* This is only here for execution of e.g. 32-sized warps on 16-wide hardware; this was
+         * __syncwarp() in CUDA. #2519
+         */
+        barrier(CLK_LOCAL_MEM_FENCE);
+#endif
+
+        /* Writing or adding the final forces component-wise, single warp */
+        if (threadLocalId < iterThreads)
+        {
+#pragma unroll
+            for (int i = 0; i < numIter; i++)
+            {
+                const int outputIndexLocal  = i * iterThreads + threadLocalId;
+                const int outputIndexGlobal = get_group_id(XX) * blockForcesSize + outputIndexLocal;
+                const float outputForceComponent = sm_forces[outputIndexLocal];
+                gm_forces[outputIndexGlobal] += outputForceComponent;
+            }
         }
     }
 }

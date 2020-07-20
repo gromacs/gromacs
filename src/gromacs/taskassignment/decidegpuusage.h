@@ -136,7 +136,6 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
- * \param[in]  mtop                      Global system topology
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
  *
@@ -150,7 +149,6 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
                                                const std::vector<int>& userGpuTaskAssignment,
                                                const gmx_hw_info_t&    hardwareInfo,
                                                const t_inputrec&       inputrec,
-                                               const gmx_mtop_t&       mtop,
                                                int                     numRanksPerSimulation,
                                                int                     numPmeRanksPerSimulation);
 
@@ -209,7 +207,6 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
- * \param[in]  mtop                      Global system topology
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
@@ -223,7 +220,6 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
                                   const std::vector<int>& userGpuTaskAssignment,
                                   const gmx_hw_info_t&    hardwareInfo,
                                   const t_inputrec&       inputrec,
-                                  const gmx_mtop_t&       mtop,
                                   int                     numRanksPerSimulation,
                                   int                     numPmeRanksPerSimulation,
                                   bool                    gpusWereDetected);

@@ -320,7 +320,7 @@ void LegacySimulator::do_tpi()
 
     if (EEL_PME(fr->ic->eeltype))
     {
-        gmx_pme_reinit_atoms(fr->pmedata, a_tp0, nullptr);
+        gmx_pme_reinit_atoms(fr->pmedata, a_tp0, nullptr, nullptr);
     }
 
     /* With reacion-field we have distance dependent potentials

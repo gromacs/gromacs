@@ -154,14 +154,12 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
                                                const std::vector<int>& userGpuTaskAssignment,
                                                const gmx_hw_info_t&    hardwareInfo,
                                                const t_inputrec&       inputrec,
-                                               const gmx_mtop_t&       mtop,
                                                const int               numRanksPerSimulation,
                                                const int               numPmeRanksPerSimulation)
 {
     // First, exclude all cases where we can't run PME on GPUs.
     if ((pmeTarget == TaskTarget::Cpu) || !useGpuForNonbonded || !pme_gpu_supports_build(nullptr)
-        || !pme_gpu_supports_hardware(hardwareInfo, nullptr)
-        || !pme_gpu_supports_input(inputrec, mtop, nullptr))
+        || !pme_gpu_supports_hardware(hardwareInfo, nullptr) || !pme_gpu_supports_input(inputrec, nullptr))
     {
         // PME can't run on a GPU. If the user required that, we issue
         // an error later.
@@ -328,7 +326,6 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
                                   const std::vector<int>& userGpuTaskAssignment,
                                   const gmx_hw_info_t&    hardwareInfo,
                                   const t_inputrec&       inputrec,
-                                  const gmx_mtop_t&       mtop,
                                   const int               numRanksPerSimulation,
                                   const int               numPmeRanksPerSimulation,
                                   const bool              gpusWereDetected)
@@ -365,7 +362,7 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
         }
         return false;
     }
-    if (!pme_gpu_supports_input(inputrec, mtop, &message))
+    if (!pme_gpu_supports_input(inputrec, &message))
     {
         if (pmeTarget == TaskTarget::Gpu)
         {

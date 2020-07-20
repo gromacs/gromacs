@@ -81,15 +81,14 @@ namespace test
 
 bool pmeSupportsInputForMode(const gmx_hw_info_t& hwinfo, const t_inputrec* inputRec, CodePath mode)
 {
-    bool       implemented;
-    gmx_mtop_t mtop;
+    bool implemented;
     switch (mode)
     {
         case CodePath::CPU: implemented = true; break;
 
         case CodePath::GPU:
             implemented = (pme_gpu_supports_build(nullptr) && pme_gpu_supports_hardware(hwinfo, nullptr)
-                           && pme_gpu_supports_input(*inputRec, mtop, nullptr));
+                           && pme_gpu_supports_input(*inputRec, nullptr));
             break;
 
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
@@ -202,7 +201,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc              = &(pme->atc[0]);
             atc->x           = coordinates;
             atc->coefficient = charges;
-            gmx_pme_reinit_atoms(pme, atomCount, charges.data());
+            gmx_pme_reinit_atoms(pme, atomCount, charges.data(), nullptr);
             /* With decomposition there would be more boilerplate atc code here, e.g. do_redist_pos_coeffs */
             break;
 
@@ -211,7 +210,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc = &(pme->atc[0]);
             // We need to set atc->n for passing the size in the tests
             atc->setNumAtoms(atomCount);
-            gmx_pme_reinit_atoms(pme, atomCount, charges.data());
+            gmx_pme_reinit_atoms(pme, atomCount, charges.data(), nullptr);
 
             stateGpu->reinit(atomCount, atomCount);
             stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()),
@@ -314,28 +313,35 @@ void pmePerformSplineAndSpread(gmx_pme_t* pme,
     PmeAtomComm* atc                          = &(pme->atc[0]);
     const size_t gridIndex                    = 0;
     const bool   computeSplinesForZeroCharges = true;
-    real*        fftgrid                      = spreadCharges ? pme->fftgrid[gridIndex] : nullptr;
+    real**       fftgrid                      = spreadCharges ? pme->fftgrid : nullptr;
     real*        pmegrid                      = pme->pmegrid[gridIndex].grid.grid;
 
     switch (mode)
     {
         case CodePath::CPU:
             spread_on_grid(pme, atc, &pme->pmegrid[gridIndex], computeSplines, spreadCharges,
-                           fftgrid, computeSplinesForZeroCharges, gridIndex);
+                           fftgrid != nullptr ? fftgrid[gridIndex] : nullptr,
+                           computeSplinesForZeroCharges, gridIndex);
             if (spreadCharges && !pme->bUseThreads)
             {
                 wrap_periodic_pmegrid(pme, pmegrid);
-                copy_pmegrid_to_fftgrid(pme, pmegrid, fftgrid, gridIndex);
+                copy_pmegrid_to_fftgrid(
+                        pme, pmegrid, fftgrid != nullptr ? fftgrid[gridIndex] : nullptr, gridIndex);
             }
             break;
 
+/* The compiler will complain about passing fftgrid (converting double ** to float **) if using
+ * double precision. GPUs are not used with double precision anyhow. */
+#if !GMX_DOUBLE
         case CodePath::GPU:
         {
+            const real lambdaQ = 1.0;
             // no synchronization needed as x is transferred in the PME stream
             GpuEventSynchronizer* xReadyOnDevice = nullptr;
-            pme_gpu_spread(pme->gpu, xReadyOnDevice, gridIndex, fftgrid, computeSplines, spreadCharges);
+            pme_gpu_spread(pme->gpu, xReadyOnDevice, fftgrid, computeSplines, spreadCharges, lambdaQ);
         }
         break;
+#endif
 
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
     }
@@ -374,6 +380,7 @@ void pmePerformSolve(const gmx_pme_t*  pme,
     t_complex*   h_grid              = pmeGetComplexGridInternal(pme);
     const bool   useLorentzBerthelot = false;
     const size_t threadIndex         = 0;
+    const size_t gridIndex           = 0;
     switch (mode)
     {
         case CodePath::CPU:
@@ -400,7 +407,7 @@ void pmePerformSolve(const gmx_pme_t*  pme,
             switch (method)
             {
                 case PmeSolveAlgorithm::Coulomb:
-                    pme_gpu_solve(pme->gpu, h_grid, gridOrdering, computeEnergyAndVirial);
+                    pme_gpu_solve(pme->gpu, gridIndex, h_grid, gridOrdering, computeEnergyAndVirial);
                     break;
 
                 default: GMX_THROW(InternalError("Test not implemented for this mode"));
@@ -421,7 +428,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
     const size_t threadIndex = 0;
     const size_t gridIndex   = 0;
     real*        pmegrid     = pme->pmegrid[gridIndex].grid.grid;
-    real*        fftgrid     = pme->fftgrid[gridIndex];
+    real**       fftgrid     = pme->fftgrid;
 
     switch (mode)
     {
@@ -432,22 +439,27 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
                 // something which is normally done in serial spline computation (make_thread_local_ind())
                 atc->spline[threadIndex].n = atomCount;
             }
-            copy_fftgrid_to_pmegrid(pme, fftgrid, pmegrid, gridIndex, pme->nthread, threadIndex);
+            copy_fftgrid_to_pmegrid(pme, fftgrid[gridIndex], pmegrid, gridIndex, pme->nthread, threadIndex);
             unwrap_periodic_pmegrid(pme, pmegrid);
             gather_f_bsplines(pme, pmegrid, true, atc, &atc->spline[threadIndex], scale);
             break;
 
+/* The compiler will complain about passing fftgrid (converting double ** to float **) if using
+ * double precision. GPUs are not used with double precision anyhow. */
+#if !GMX_DOUBLE
         case CodePath::GPU:
         {
             // Variable initialization needs a non-switch scope
             const bool computeEnergyAndVirial = false;
-            PmeOutput  output                 = pme_gpu_getOutput(*pme, computeEnergyAndVirial);
+            const real lambdaQ                = 1.0;
+            PmeOutput  output = pme_gpu_getOutput(*pme, computeEnergyAndVirial, lambdaQ);
             GMX_ASSERT(forces.size() == output.forces_.size(),
                        "Size of force buffers did not match");
-            pme_gpu_gather(pme->gpu, reinterpret_cast<float*>(fftgrid));
+            pme_gpu_gather(pme->gpu, fftgrid, lambdaQ);
             std::copy(std::begin(output.forces_), std::end(output.forces_), std::begin(forces));
         }
         break;
+#endif
 
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
     }
@@ -843,7 +855,8 @@ SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t* pme, CodePath m
 //! Getting the reciprocal energy and virial
 PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t* pme, CodePath mode, PmeSolveAlgorithm method)
 {
-    PmeOutput output;
+    PmeOutput  output;
+    const real lambdaQ = 1.0;
     switch (mode)
     {
         case CodePath::CPU:
@@ -863,7 +876,9 @@ PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t* pme, CodePath mode, P
         case CodePath::GPU:
             switch (method)
             {
-                case PmeSolveAlgorithm::Coulomb: pme_gpu_getEnergyAndVirial(*pme, &output); break;
+                case PmeSolveAlgorithm::Coulomb:
+                    pme_gpu_getEnergyAndVirial(*pme, lambdaQ, &output);
+                    break;
 
                 default: GMX_THROW(InternalError("Test not implemented for this mode"));
             }

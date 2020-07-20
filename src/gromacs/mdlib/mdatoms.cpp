@@ -75,8 +75,9 @@ MDAtoms::~MDAtoms()
     gmx::AlignedAllocationPolicy::free(mdatoms_->invmass);
     sfree(mdatoms_->invMassPerDim);
     sfree(mdatoms_->typeA);
-    sfree(mdatoms_->chargeB);
     sfree(mdatoms_->typeB);
+    /* mdatoms->chargeA and mdatoms->chargeB point at chargeA_.data()
+     * and chargeB_.data() respectively. They get freed automatically. */
     sfree(mdatoms_->sqrt_c6A);
     sfree(mdatoms_->sigmaA);
     sfree(mdatoms_->sigma3A);
@@ -95,16 +96,28 @@ MDAtoms::~MDAtoms()
     sfree(mdatoms_->cU2);
 }
 
-void MDAtoms::resize(int newSize)
+void MDAtoms::resizeChargeA(const int newSize)
 {
     chargeA_.resizeWithPadding(newSize);
     mdatoms_->chargeA = chargeA_.data();
 }
 
-void MDAtoms::reserve(int newCapacity)
+void MDAtoms::resizeChargeB(const int newSize)
+{
+    chargeB_.resizeWithPadding(newSize);
+    mdatoms_->chargeB = chargeB_.data();
+}
+
+void MDAtoms::reserveChargeA(const int newCapacity)
 {
     chargeA_.reserveWithPadding(newCapacity);
     mdatoms_->chargeA = chargeA_.data();
+}
+
+void MDAtoms::reserveChargeB(const int newCapacity)
+{
+    chargeB_.reserveWithPadding(newCapacity);
+    mdatoms_->chargeB = chargeB_.data();
 }
 
 std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, const bool rankHasPmeGpuTask)
@@ -114,6 +127,7 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
     if (rankHasPmeGpuTask)
     {
         changePinningPolicy(&mdAtoms->chargeA_, pme_get_pinning_policy());
+        changePinningPolicy(&mdAtoms->chargeB_, pme_get_pinning_policy());
     }
     t_mdatoms* md;
     snew(md, 1);
@@ -242,12 +256,16 @@ void atoms2md(const gmx_mtop_t*  mtop,
         // everything, but for now the semantics of md->nalloc being
         // the capacity are preserved by keeping vectors within
         // mdAtoms having the same properties as the other arrays.
-        mdAtoms->reserve(md->nalloc);
-        mdAtoms->resize(md->nr);
+        mdAtoms->reserveChargeA(md->nalloc);
+        mdAtoms->resizeChargeA(md->nr);
+        if (md->nPerturbed > 0)
+        {
+            mdAtoms->reserveChargeB(md->nalloc);
+            mdAtoms->resizeChargeB(md->nr);
+        }
         srenew(md->typeA, md->nalloc);
         if (md->nPerturbed)
         {
-            srenew(md->chargeB, md->nalloc);
             srenew(md->typeB, md->nalloc);
         }
         if (bLJPME)

@@ -73,8 +73,9 @@ public:
      * Constructs CUDA/OpenCL FFT plans for performing 3D FFT on a PME grid.
      *
      * \param[in] pmeGpu                  The PME GPU structure.
+     * \param[in] gridIndex               The index of the grid on which to perform the calculations.
      */
-    GpuParallel3dFft(const PmeGpu* pmeGpu);
+    GpuParallel3dFft(const PmeGpu* pmeGpu, const int gridIndex);
     /*! \brief Destroys the FFT plans. */
     ~GpuParallel3dFft();
     /*! \brief Performs the FFT transform in given direction

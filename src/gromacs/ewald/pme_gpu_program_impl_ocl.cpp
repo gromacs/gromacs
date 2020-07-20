@@ -72,14 +72,22 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
 {
     // TODO: log releasing errors
     cl_int gmx_used_in_debug stat = 0;
-    stat |= clReleaseKernel(splineAndSpreadKernel);
-    stat |= clReleaseKernel(splineKernel);
-    stat |= clReleaseKernel(spreadKernel);
-    stat |= clReleaseKernel(gatherKernel);
-    stat |= clReleaseKernel(solveXYZKernel);
-    stat |= clReleaseKernel(solveXYZEnergyKernel);
-    stat |= clReleaseKernel(solveYZXKernel);
-    stat |= clReleaseKernel(solveYZXEnergyKernel);
+    stat |= clReleaseKernel(splineAndSpreadKernelSingle);
+    stat |= clReleaseKernel(splineKernelSingle);
+    stat |= clReleaseKernel(spreadKernelSingle);
+    stat |= clReleaseKernel(splineAndSpreadKernelDual);
+    stat |= clReleaseKernel(splineKernelDual);
+    stat |= clReleaseKernel(spreadKernelDual);
+    stat |= clReleaseKernel(gatherKernelSingle);
+    stat |= clReleaseKernel(gatherKernelDual);
+    stat |= clReleaseKernel(solveXYZKernelA);
+    stat |= clReleaseKernel(solveXYZEnergyKernelA);
+    stat |= clReleaseKernel(solveYZXKernelA);
+    stat |= clReleaseKernel(solveYZXEnergyKernelA);
+    stat |= clReleaseKernel(solveXYZKernelB);
+    stat |= clReleaseKernel(solveXYZEnergyKernelB);
+    stat |= clReleaseKernel(solveYZXKernelB);
+    stat |= clReleaseKernel(solveYZXEnergyKernelB);
     GMX_ASSERT(stat == CL_SUCCESS,
                gmx::formatString("Failed to release PME OpenCL resources %d: %s", stat,
                                  ocl_get_error_string(stat).c_str())
@@ -163,7 +171,7 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
-    constexpr cl_uint expectedKernelCount = 9;
+    constexpr cl_uint expectedKernelCount = 18;
     // Has to be equal or larger than the number of kernel instances.
     // If it is not, CL_INVALID_VALUE will be thrown.
     std::vector<cl_kernel> kernels(expectedKernelCount, nullptr);
@@ -193,42 +201,79 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
 
         // The names below must correspond to those defined in pme_program.cl
         // TODO use a map with string key instead?
-        if (!strcmp(kernelNamesBuffer.data(), "pmeSplineKernel"))
+        if (!strcmp(kernelNamesBuffer.data(), "pmeSplineKernelSingle"))
         {
-            splineKernel = kernel;
+            splineKernelSingle = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernel"))
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernelSingle"))
         {
-            splineAndSpreadKernel             = kernel;
-            splineAndSpreadKernelWriteSplines = kernel;
-            checkRequiredWarpSize(splineAndSpreadKernel, kernelNamesBuffer.data(), deviceInfo);
+            splineAndSpreadKernelSingle             = kernel;
+            splineAndSpreadKernelWriteSplinesSingle = kernel;
+            checkRequiredWarpSize(splineAndSpreadKernelSingle, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSpreadKernel"))
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSpreadKernelSingle"))
         {
-            spreadKernel = kernel;
-            checkRequiredWarpSize(spreadKernel, kernelNamesBuffer.data(), deviceInfo);
+            spreadKernelSingle = kernel;
+            checkRequiredWarpSize(spreadKernelSingle, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherKernel"))
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineKernelDual"))
         {
-            gatherKernel            = kernel;
-            gatherKernelReadSplines = kernel;
-            checkRequiredWarpSize(gatherKernel, kernelNamesBuffer.data(), deviceInfo);
+            splineKernelDual = kernel;
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernel"))
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSplineAndSpreadKernelDual"))
         {
-            solveYZXKernel = kernel;
+            splineAndSpreadKernelDual             = kernel;
+            splineAndSpreadKernelWriteSplinesDual = kernel;
+            checkRequiredWarpSize(splineAndSpreadKernelDual, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXEnergyKernel"))
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSpreadKernelDual"))
         {
-            solveYZXEnergyKernel = kernel;
+            spreadKernelDual = kernel;
+            checkRequiredWarpSize(spreadKernelDual, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZKernel"))
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherKernelSingle"))
         {
-            solveXYZKernel = kernel;
+            gatherKernelSingle            = kernel;
+            gatherKernelReadSplinesSingle = kernel;
+            checkRequiredWarpSize(gatherKernelSingle, kernelNamesBuffer.data(), deviceInfo);
         }
-        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZEnergyKernel"))
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeGatherKernelDual"))
         {
-            solveXYZEnergyKernel = kernel;
+            gatherKernelDual            = kernel;
+            gatherKernelReadSplinesDual = kernel;
+            checkRequiredWarpSize(gatherKernelDual, kernelNamesBuffer.data(), deviceInfo);
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernelA"))
+        {
+            solveYZXKernelA = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXEnergyKernelA"))
+        {
+            solveYZXEnergyKernelA = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZKernelA"))
+        {
+            solveXYZKernelA = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZEnergyKernelA"))
+        {
+            solveXYZEnergyKernelA = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXKernelB"))
+        {
+            solveYZXKernelB = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveYZXEnergyKernelB"))
+        {
+            solveYZXEnergyKernelB = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZKernelB"))
+        {
+            solveXYZKernelB = kernel;
+        }
+        else if (!strcmp(kernelNamesBuffer.data(), "pmeSolveXYZEnergyKernelB"))
+        {
+            solveXYZEnergyKernelB = kernel;
         }
     }
     clReleaseProgram(program);

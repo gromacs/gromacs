@@ -100,7 +100,7 @@ struct DeviceInformation;
  */
 struct PmeShared
 {
-    /*! \brief Grid count - currently always 1 on GPU */
+    /*! \brief Grid count */
     int ngrids;
     /*! \brief Grid dimensions - nkx, nky, nkz */
     int nk[DIM];

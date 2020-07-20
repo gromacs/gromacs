@@ -179,7 +179,7 @@ bool pme_gpu_supports_hardware(const gmx_hw_info_t gmx_unused& hwinfo, std::stri
     return addMessageIfNotSupported(errorReasons, error);
 }
 
-bool pme_gpu_supports_input(const t_inputrec& ir, const gmx_mtop_t& mtop, std::string* error)
+bool pme_gpu_supports_input(const t_inputrec& ir, std::string* error)
 {
     std::list<std::string> errorReasons;
     if (!EEL_PME(ir.coulombtype))
@@ -189,14 +189,6 @@ bool pme_gpu_supports_input(const t_inputrec& ir, const gmx_mtop_t& mtop, std::s
     if (ir.pme_order != 4)
     {
         errorReasons.emplace_back("interpolation orders other than 4");
-    }
-    if (ir.efep != efepNO)
-    {
-        if (gmx_mtop_has_perturbed_charges(mtop))
-        {
-            errorReasons.emplace_back(
-                    "free energy calculations with perturbed charges (multiple grids)");
-        }
     }
     if (EVDW_PME(ir.vdwtype))
     {
@@ -230,10 +222,6 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t* pme, std::string* error)
     if (pme->pme_order != 4)
     {
         errorReasons.emplace_back("interpolation orders other than 4");
-    }
-    if (pme->bFEP)
-    {
-        errorReasons.emplace_back("free energy calculations (multiple grids)");
     }
     if (pme->doLJ)
     {
@@ -939,7 +927,7 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
          */
         if (!pme_src->gpu && pme_src->nnodes == 1)
         {
-            gmx_pme_reinit_atoms(*pmedata, pme_src->atc[0].numAtoms(), nullptr);
+            gmx_pme_reinit_atoms(*pmedata, pme_src->atc[0].numAtoms(), nullptr, nullptr);
         }
         // TODO this is mostly passing around current values
     }
@@ -1703,11 +1691,13 @@ void gmx_pme_destroy(gmx_pme_t* pme)
     delete pme;
 }
 
-void gmx_pme_reinit_atoms(gmx_pme_t* pme, const int numAtoms, const real* charges)
+void gmx_pme_reinit_atoms(gmx_pme_t* pme, const int numAtoms, const real* chargesA, const real* chargesB)
 {
     if (pme->gpu != nullptr)
     {
-        pme_gpu_reinit_atoms(pme->gpu, numAtoms, charges);
+        GMX_ASSERT(!(pme->bFEP_q && chargesB == nullptr),
+                   "B state charges must be specified if running Coulomb FEP on the GPU");
+        pme_gpu_reinit_atoms(pme->gpu, numAtoms, chargesA, pme->bFEP_q ? chargesB : nullptr);
     }
     else
     {

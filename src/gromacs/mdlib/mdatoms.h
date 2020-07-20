@@ -69,6 +69,8 @@ class MDAtoms
     unique_cptr<t_mdatoms> mdatoms_;
     //! Memory for chargeA that can be set up for efficient GPU transfer.
     gmx::PaddedHostVector<real> chargeA_;
+    //! Memory for chargeB that can be set up for efficient GPU transfer.
+    gmx::PaddedHostVector<real> chargeB_;
 
 public:
     // TODO make this private
@@ -78,16 +80,26 @@ public:
     t_mdatoms* mdatoms() { return mdatoms_.get(); }
     //! Const getter.
     const t_mdatoms* mdatoms() const { return mdatoms_.get(); }
-    /*! \brief Resizes memory.
+    /*! \brief Resizes memory for charges of FEP state A.
      *
      * \throws std::bad_alloc  If out of memory.
      */
-    void resize(int newSize);
-    /*! \brief Reserves memory.
+    void resizeChargeA(int newSize);
+    /*! \brief Resizes memory for charges of FEP state B.
      *
      * \throws std::bad_alloc  If out of memory.
      */
-    void reserve(int newCapacity);
+    void resizeChargeB(int newSize);
+    /*! \brief Reserves memory for charges of FEP state A.
+     *
+     * \throws std::bad_alloc  If out of memory.
+     */
+    void reserveChargeA(int newCapacity);
+    /*! \brief Reserves memory for charges of FEP state B.
+     *
+     * \throws std::bad_alloc  If out of memory.
+     */
+    void reserveChargeB(int newCapacity);
     //! Builder function.
     friend std::unique_ptr<MDAtoms>
     makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, bool rankHasPmeGpuTask);
