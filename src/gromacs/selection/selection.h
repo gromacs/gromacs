@@ -635,7 +635,7 @@ public:
      */
     const rvec& f() const
     {
-        GMX_ASSERT(sel_->rawPositions_.f != nullptr, "Velocities accessed, but unavailable");
+        GMX_ASSERT(sel_->rawPositions_.f != nullptr, "Forces accessed, but unavailable");
         return sel_->rawPositions_.f[i_];
     }
     /*! \brief
