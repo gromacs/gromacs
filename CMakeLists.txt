@@ -615,8 +615,9 @@ gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 include(gmxSetBuildInformation)
 gmx_set_build_information()
 
-# Anything but truly ancient hardware should support rdtscp, so we enable it by default
-option(GMX_USE_RDTSCP "Use low-latency RDTSCP instruction for CPU-based timers for mdrun execution; might need to be off when compiling for heterogeneous environments)" ON)
+# Anything but truly ancient x86 hardware should support rdtscp, so we enable it by default.
+# The inline assembly calling it is only ever compiled on x86, so defaulting to ON is OK.
+option(GMX_USE_RDTSCP "Use low-latency RDTSCP instruction for x86 CPU-based timers for mdrun execution; might need to be off when compiling for heterogeneous environments" ON)
 mark_as_advanced(GMX_USE_RDTSCP)
 
 include(gmxTestLargeFiles)

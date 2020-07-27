@@ -1,5 +1,5 @@
 /*
- * define HAVE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
+ * define GMX_USE_RDTSCP to use the serializing rdtscp instruction instead of rdtsc.
  * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
  */
 
@@ -15,7 +15,7 @@ static __inline__ tMPI_Cycles_t tMPI_Cycles_read(void)
     tMPI_Cycles_t cycle;
     unsigned      low, high;
 
-#ifdef HAVE_RDTSCP
+#if GMX_USE_RDTSCP
     __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
 #else
     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
@@ -48,7 +48,7 @@ static __inline__ tMPI_Cycles_t tMPI_Cycles_read(void)
 typedef __int64 tMPI_Cycles_t;
 static __inline tMPI_Cycles_t tMPI_Cycles_read(void)
 {
-#ifdef HAVE_RDTSCP
+#ifdef GMX_USE_RDTSCP
     unsigned int ui;
     return __rdtscp(&ui);
 #else

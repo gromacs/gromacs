@@ -42,3 +42,12 @@ Windows
 
 |Gromacs| now builds correctly on Windows with MSVC even when the path
 to the source or build directory has a space in it.
+
+RDTSCP usage and reporting
+""""""""""""""""""""""""""
+
+|Gromacs| now defaults always on x86 to use the RDTSCP machine
+instruction for lower latency timing. Very old machines might need to
+configure with ``GMX_USE_RDTSCP=off``. Non-x86 platforms are
+unaffected, except that they will no longer report that RDTSCP is
+disabled (because that is self-evident).

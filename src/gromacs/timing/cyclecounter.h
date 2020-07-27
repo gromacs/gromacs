@@ -47,8 +47,8 @@
 #define GMX_TIMING_CYCLECOUNTER_H
 
 /*
- * Define HAVE_RDTSCP=1 to use the serializing rdtscp instruction instead of rdtsc.
- * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
+ * Define GMX_USE_RDTSCP=1 to use the serializing rdtscp instruction instead of rdtsc.
+ * This is supported on essentially all Intel/AMD hardware still in use, and provides better accuracy.
  */
 #include "config.h"
 
@@ -181,7 +181,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read()
     /* x86 with GCC inline assembly - pentium TSC register */
     unsigned low, high;
 
-#    if HAVE_RDTSCP
+#    if GMX_USE_RDTSCP
     __asm__ __volatile__("rdtscp" : "=a"(low), "=d"(high)::"ecx");
 #    else
     __asm__ __volatile__("rdtsc" : "=a"(low), "=d"(high));
@@ -215,7 +215,7 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
     return __rdpmccntr64();
 #    else
     /* x86 */
-#        if HAVE_RDTSCP
+#        if GMX_USE_RDTSCP
     unsigned int ui;
     return __rdtscp(&ui);
 #        else

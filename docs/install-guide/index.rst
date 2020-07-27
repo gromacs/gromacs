@@ -804,8 +804,9 @@ of the build host machine or otherwise specified to ``cmake`` during
 configuration.
 
 Often it is possible to ensure portability by choosing the least
-common denominator of SIMD support, e.g. SSE2 for x86, and ensuring
-the you use ``cmake -DGMX_USE_RDTSCP=off`` if any of the target CPU
+common denominator of SIMD support, e.g. SSE2 for x86. In rare cases
+of very old x86 machines, ensure that
+you use ``cmake -DGMX_USE_RDTSCP=off`` if any of the target CPU
 architectures does not support the ``RDTSCP`` instruction.  However, we
 discourage attempts to use a single |Gromacs| installation when the
 execution environment is heterogeneous, such as a mix of AVX and

@@ -82,7 +82,7 @@ static std::string sprint_gpus(const gmx_gpu_info_t& gpu_info)
    and runtime CPU do not match. */
 static void check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger& mdlog, const gmx::CpuInfo& cpuInfo)
 {
-    bool binaryUsesRdtscp = HAVE_RDTSCP;
+    bool binaryUsesRdtscp = GMX_USE_RDTSCP;
 
     const char* programName = gmx::getProgramContext().displayName();
 
