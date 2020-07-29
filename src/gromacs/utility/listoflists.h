@@ -77,7 +77,8 @@ namespace gmx
 template<typename T>
 class ListOfLists
 {
-    static_assert(std::is_arithmetic_v<T>, "This class is limited to arithmetic types");
+    // TODO: Use std::is_arithmetic_v when CUDA 11 is a requirement.
+    static_assert(std::is_arithmetic<T>::value, "This class is limited to arithmetic types");
 
 public:
     //! Constructs an empty list of lists
@@ -133,7 +134,8 @@ public:
     void pushBackListOfSize(int numElements)
     {
         // With arithmetic types enforced, this assertion is always true
-        static_assert(std::is_default_constructible_v<T>,
+        // TODO: Use std::is_default_constructible_v when CUDA 11 is a requirement.
+        static_assert(std::is_default_constructible<T>::value,
                       "pushBackListOfSize should only be called with default constructable types");
         elements_.resize(elements_.size() + numElements);
         listRanges_.push_back(int(elements_.size()));

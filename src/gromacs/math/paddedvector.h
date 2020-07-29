@@ -372,14 +372,20 @@ public:
     {
         return ArrayRefWithPadding<const T>(data(), data() + size(), data() + paddedSize());
     }
-    //! Returns an rvec * pointer for containers of RVec, for use with legacy code.
-    template<typename AlsoT = T, typename = typename std::enable_if<std::is_same_v<AlsoT, RVec>>>
+    /*! \brief Returns an rvec * pointer for containers of RVec, for use with legacy code.
+     *
+     * \todo Use std::is_same_v when CUDA 11 is a requirement.
+     */
+    template<typename AlsoT = T, typename = typename std::enable_if<std::is_same<AlsoT, RVec>::value>>
     rvec* rvec_array()
     {
         return as_rvec_array(data());
     }
-    //! Returns a const rvec * pointer for containers of RVec, for use with legacy code.
-    template<typename AlsoT = T, typename = typename std::enable_if<std::is_same_v<AlsoT, RVec>>>
+    /*! \brief Returns a const rvec * pointer for containers of RVec, for use with legacy code.
+     *
+     * \todo Use std::is_same_v when CUDA 11 is a requirement.
+     */
+    template<typename AlsoT = T, typename = typename std::enable_if<std::is_same<AlsoT, RVec>::value>>
     const rvec* rvec_array() const
     {
         return as_rvec_array(data());

@@ -94,7 +94,9 @@ public:
     // of pointers, the implementation will be different enough that the whole
     // template class should have a separate partial specialization. We try to avoid
     // accidental matching to pointers, but this assertion is a no-cost extra check.
-    static_assert(!std::is_pointer_v<std::remove_cv_t<ValueType>>,
+    //
+    // TODO: Use std::is_pointer_v when CUDA 11 is a requirement.
+    static_assert(!std::is_pointer<std::remove_cv_t<ValueType>>::value,
                   "BasicVector value type must not be a pointer.");
 
     //! Constructs default (uninitialized) vector.

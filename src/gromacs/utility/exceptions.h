@@ -377,9 +377,11 @@ private:
  * other overloads of `operator<<` for ExceptionInfo objects, in case someone
  * would like to declare those.  But currently we do not have such overloads, so
  * if the enable_if causes problems with some compilers, it can be removed.
+ *
+ * \todo Use std::is_base_of_v when CUDA 11 is a requirement.
  */
 template<class Exception, class Tag, class T>
-inline std::enable_if_t<std::is_base_of_v<GromacsException, Exception>, Exception>
+inline std::enable_if_t<std::is_base_of<GromacsException, Exception>::value, Exception>
 operator<<(Exception ex, const ExceptionInfo<Tag, T>& item)
 {
     ex.setInfo(item);

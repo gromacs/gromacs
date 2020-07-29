@@ -117,7 +117,8 @@ class EnumerationIterator final :
     public boost::stl_interfaces::iterator_interface<EnumerationIterator<EnumType, Last, Step>, std::random_access_iterator_tag, EnumType>
 {
 public:
-    static_assert(std::is_enum_v<EnumType>, "Enumeration iterator must be over an enum type.");
+    // TODO: Use std::is_enum_v when CUDA 11 is a requirement.
+    static_assert(std::is_enum<EnumType>::value, "Enumeration iterator must be over an enum type.");
     //! Convenience alias
     using IntegerType = std::underlying_type_t<EnumType>;
 

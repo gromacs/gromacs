@@ -152,8 +152,10 @@ public:
      * This is a member function of the left-hand-side allocator.
      * Always true for stateless polcies. Has to be defined in the policy for stateful policies.
      * FUTURE: Can be removed with C++17 (is_always_equal)
+     *
+     * \todo Use std::is_empty_v when CUDA 11 is a requirement.
      */
-    template<class T2, class A = AllocationPolicy, typename = std::enable_if_t<std::is_empty_v<A>>>
+    template<class T2, class A = AllocationPolicy, typename = std::enable_if_t<std::is_empty<A>::value>>
     bool operator==(const Allocator<T2, AllocationPolicy>& /*unused*/) const
     {
         return true;

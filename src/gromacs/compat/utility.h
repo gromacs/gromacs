@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,60 +32,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \libinternal \file
- * \brief Declares an allocator that can use default initialization instead
- * of values initialization. This is useful for improving performance of
- * resize() in standard vectors for buffers in performance critical code.
+ * \brief Provides backported functions/classes from utility
  *
- * \author Berk Hess <hess@kth.se>
+ * \todo Remove when CUDA 11 is a requirement.
+ *
+ * \author Roland Schulz <roland.schulz@intel.com>
+ * \ingroup module_compat
  * \inlibraryapi
- * \ingroup module_utility
  */
-#ifndef GMX_UTILITY_DEFAULTINITIALIZATIONALLOCATOR_H
-#define GMX_UTILITY_DEFAULTINITIALIZATIONALLOCATOR_H
-
-#include <memory>
-
+#ifndef GMX_COMPAT_UTILITY_H
+#define GMX_COMPAT_UTILITY_H
 namespace gmx
 {
-
-/*! \libinternal \brief Allocator adaptor that interposes construct() calls to
- * convert value initialization into default initialization.
- *
- * This can be used to avoid initialization e.g. on resize() in std::vector.
- */
-template<typename T, typename A = std::allocator<T>>
-class DefaultInitializationAllocator : public A
+namespace compat
 {
-    typedef std::allocator_traits<A> a_t;
-
-public:
-    template<typename U>
-    struct rebind
-    {
-        using other = DefaultInitializationAllocator<U, typename a_t::template rebind_alloc<U>>;
-    };
-
-    using A::A;
-
-    /*! \brief Constructs an object and default initializes
-     *
-     * \todo Use std::is_nothrow_default_constructible_v when CUDA 11 is a requirement.
-     */
-    template<typename U>
-    void construct(U* ptr) noexcept(std::is_nothrow_default_constructible<U>::value)
-    {
-        ::new (static_cast<void*>(ptr)) U;
-    }
-
-    /*! \brief Constructs an object and value initializes */
-    template<typename U, typename... Args>
-    void construct(U* ptr, Args&&... args)
-    {
-        a_t::construct(static_cast<A&>(*this), ptr, std::forward<Args>(args)...);
-    }
-};
-
+//! Forms lvalue reference to const type of t
+template<class T>
+constexpr const T& as_const(T& t) noexcept
+{
+    return t;
+}
+} // namespace compat
 } // namespace gmx
-
-#endif // GMX_UTILITY_DEFAULTINITIALIZATIONALLOCATOR_H
+#endif
