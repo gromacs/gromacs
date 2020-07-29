@@ -253,7 +253,9 @@ void gmx::LegacySimulator::do_md()
                   "Either specify the -ei option to mdrun, or do not use this checkpoint file.");
     }
 
-    initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
+    int*                fep_state = MASTER(cr) ? &state_global->fep_state : nullptr;
+    gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
+    initialize_lambdas(fplog, *ir, MASTER(cr), fep_state, lambda, lam0);
     Update     upd(*ir, deform);
     const bool doSimulatedAnnealing = initSimulatedAnnealing(ir, &upd);
     const bool useReplicaExchange   = (replExParams.exchangeInterval > 0);

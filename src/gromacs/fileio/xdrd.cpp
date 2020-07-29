@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,20 +114,17 @@ int xdr_int64(XDR* xdrs, int64_t* i)
     // requires 64-bit systems.
     static_assert(2 * sizeof(int) >= 8,
                   "XDR handling assumes that an int64_t can be stored in two ints");
-    int imaj, imin;
-    int ret;
 
-    static const int64_t two_p32_m1 = 0xFFFFFFFF;
-    int64_t              imaj64, imin64;
+    static const uint64_t two_p32_m1 = 0xFFFFFFFF;
 
-    imaj64 = ((*i) >> 32) & two_p32_m1;
-    imin64 = (*i) & two_p32_m1;
-    imaj   = static_cast<int>(imaj64);
-    imin   = static_cast<int>(imin64);
-    ret    = xdr_int(xdrs, &imaj);
+    uint64_t imaj64 = ((*i) >> 32) & two_p32_m1;
+    uint64_t imin64 = (*i) & two_p32_m1;
+    int      imaj   = static_cast<int>(imaj64);
+    int      imin   = static_cast<int>(imin64);
+    int      ret    = xdr_int(xdrs, &imaj);
     ret |= xdr_int(xdrs, &imin);
 
-    *i = ((static_cast<int64_t>(imaj) << 32) | (static_cast<int64_t>(imin) & two_p32_m1));
+    *i = ((static_cast<uint64_t>(imaj) << 32) | (static_cast<uint64_t>(imin) & two_p32_m1));
 
     return ret;
 }

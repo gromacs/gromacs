@@ -1,0 +1,9 @@
+# Add UBSAN suppressions here, with a leading comment about how and
+# why it is appropriate, and any circumstances about when it should be
+# removed.
+
+# This is only a problem when using the built-in XDR implementation of
+# xdr_vector. It supplies an extra argument needed for xdr_string
+# which is unused by other xdr_* primitives like xdr_float. The issue
+# is harmless and only active when not using a system XDR library.
+function:xdr_vector

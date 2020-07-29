@@ -541,10 +541,8 @@ static bool detectDefaultAffinityMask(const int nthreads_hw_avail)
     MPI_Initialized(&mpiIsInitialized);
     if (mpiIsInitialized)
     {
-        bool detectedDefaultAffinityMaskOnAllRanks;
-        MPI_Allreduce(&detectedDefaultAffinityMask, &detectedDefaultAffinityMaskOnAllRanks, 1,
-                      MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
-        detectedDefaultAffinityMask = detectedDefaultAffinityMaskOnAllRanks;
+        bool maskToReduce = detectedDefaultAffinityMask;
+        MPI_Allreduce(&maskToReduce, &detectedDefaultAffinityMask, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
     }
 #endif
 

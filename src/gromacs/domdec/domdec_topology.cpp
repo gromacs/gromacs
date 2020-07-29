@@ -121,11 +121,11 @@ struct thread_work_t
      */
     thread_work_t(const gmx_ffparams_t& ffparams) : idef(ffparams) {}
 
-    InteractionDefinitions         idef;       /**< Partial local topology */
-    std::unique_ptr<gmx::VsitePbc> vsitePbc;   /**< vsite PBC structure */
-    int                            nbonded;    /**< The number of bondeds in this struct */
-    ListOfLists<int>               excl;       /**< List of exclusions */
-    int                            excl_count; /**< The total exclusion count for \p excl */
+    InteractionDefinitions         idef;               /**< Partial local topology */
+    std::unique_ptr<gmx::VsitePbc> vsitePbc = nullptr; /**< vsite PBC structure */
+    int                            nbonded  = 0;       /**< The number of bondeds in this struct */
+    ListOfLists<int>               excl;               /**< List of exclusions */
+    int                            excl_count = 0;     /**< The total exclusion count for \p excl */
 };
 
 /*! \brief Struct for the reverse topology: links bonded interactions to atomsx */

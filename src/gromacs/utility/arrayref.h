@@ -78,7 +78,7 @@ struct ArrayRefIter :
     constexpr ArrayRefIter(ArrayRefIter<std::remove_const_t<T2>> it) noexcept : it_(&*it)
     {
     }
-
+    constexpr T*            data() const noexcept { return it_; }
     constexpr T&            operator*() const noexcept { return *it_; }
     constexpr ArrayRefIter& operator+=(std::ptrdiff_t i) noexcept
     {
@@ -270,12 +270,12 @@ public:
         return begin_[n];
     }
     //! Returns the first element.
-    reference front() const { return *begin_; }
+    reference front() const { return *(begin_); }
     //! Returns the first element.
     reference back() const { return *(end_ - 1); }
 
     //! Returns a raw pointer to the contents of the array.
-    pointer data() const { return &*begin_; }
+    pointer data() const { return begin_.data(); }
 
     /*! \brief
      * Swaps referenced memory with the other object.

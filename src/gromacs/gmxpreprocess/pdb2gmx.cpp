@@ -1345,6 +1345,10 @@ public:
         itp_file_(nullptr),
         mHmult_(0)
     {
+        gmx::LoggerBuilder builder;
+        builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &gmx::TextOutputFile::standardOutput());
+        builder.addTargetStream(gmx::MDLogger::LogLevel::Warning, &gmx::TextOutputFile::standardError());
+        loggerOwner_ = std::make_unique<LoggerOwner>(builder.build());
     }
 
     // From ICommandLineOptionsModule
@@ -1405,15 +1409,15 @@ private:
     WaterType           waterType_;
     MergeType           mergeType_;
 
-    FILE*                          itp_file_;
-    char                           forcefield_[STRLEN];
-    char                           ffdir_[STRLEN];
-    char*                          ffname_;
-    char*                          watermodel_;
-    std::vector<std::string>       incls_;
-    std::vector<t_mols>            mols_;
-    real                           mHmult_;
-    std::unique_ptr<gmx::MDLogger> loggerPointer_;
+    FILE*                        itp_file_;
+    char                         forcefield_[STRLEN];
+    char                         ffdir_[STRLEN];
+    char*                        ffname_;
+    char*                        watermodel_;
+    std::vector<std::string>     incls_;
+    std::vector<t_mols>          mols_;
+    real                         mHmult_;
+    std::unique_ptr<LoggerOwner> loggerOwner_;
 };
 
 void pdb2gmx::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
@@ -1693,7 +1697,7 @@ void pdb2gmx::optionsFinished()
 
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff_.c_str(), "select") == 0 ? nullptr : ff_.c_str(), forcefield_,
-              sizeof(forcefield_), ffdir_, sizeof(ffdir_), *loggerPointer_);
+              sizeof(forcefield_), ffdir_, sizeof(ffdir_), loggerOwner_->logger());
 
     if (strlen(forcefield_) > 0)
     {
@@ -1726,12 +1730,7 @@ int pdb2gmx::run()
     int         this_chainstart;
     int         prev_chainstart;
 
-    gmx::LoggerBuilder builder;
-    builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &gmx::TextOutputFile::standardOutput());
-    builder.addTargetStream(gmx::MDLogger::LogLevel::Warning, &gmx::TextOutputFile::standardError());
-    gmx::LoggerOwner logOwner(builder.build());
-    loggerPointer_              = std::make_unique<gmx::MDLogger>(logOwner.logger());
-    const gmx::MDLogger& logger = *loggerPointer_;
+    const gmx::MDLogger& logger = loggerOwner_->logger();
 
     GMX_LOG(logger.info)
             .asParagraph()

@@ -248,6 +248,7 @@
 #define CMAKE_BUILD_TYPE_TSAN 8
 #define CMAKE_BUILD_TYPE_ASAN 9
 #define CMAKE_BUILD_TYPE_MSAN 10
+#define CMAKE_BUILD_TYPE_UBSAN 11
 #cmakedefine CMAKE_BUILD_TYPE CMAKE_BUILD_TYPE_@CMAKE_BUILD_TYPE_UPPER@
 
 /* Define relative path to OpenCL kernels */

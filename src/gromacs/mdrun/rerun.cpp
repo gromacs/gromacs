@@ -277,8 +277,9 @@ void gmx::LegacySimulator::do_rerun()
         auto nonConstGlobalTopology                          = const_cast<gmx_mtop_t*>(top_global);
         nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(*top_global);
     }
-
-    initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
+    int*                fep_state = MASTER(cr) ? &state_global->fep_state : nullptr;
+    gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
+    initialize_lambdas(fplog, *ir, MASTER(cr), fep_state, lambda, lam0);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
                                    mdModulesNotifier, ir, top_global, oenv, wcycle,

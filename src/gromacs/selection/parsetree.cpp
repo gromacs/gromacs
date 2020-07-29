@@ -497,7 +497,10 @@ void _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer& sel
     nparams  = sel->u.expr.method->nparams;
     orgparam = sel->u.expr.method->param;
     snew(param, nparams);
-    memcpy(param, orgparam, nparams * sizeof(gmx_ana_selparam_t));
+    if (nparams > 0)
+    {
+        memcpy(param, orgparam, nparams * sizeof(gmx_ana_selparam_t));
+    }
     for (i = 0; i < nparams; ++i)
     {
         param[i].flags &= ~SPAR_SET;

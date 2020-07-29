@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,7 +111,7 @@ private:
  *
  * This class is responsible of managing all memory allocated by LoggerBuilder
  * that is needed for operation of the actual logger.  Also the actual logger
- * instance is owned by this class.  This allows keeing the actual logger simple
+ * instance is owned by this class.  This allows keeping the actual logger simple
  * and streamlined.
  *
  * This class supports move construction and assignment, which allows

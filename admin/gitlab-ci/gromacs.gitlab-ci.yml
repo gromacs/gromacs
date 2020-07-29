@@ -290,6 +290,16 @@ gromacs:clang-ASAN:configure:
     COMPILER_MAJOR_VERSION: 8
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
 
+gromacs:clang-UBSAN:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=UBSAN"
+
 gromacs:gcc-8-cuda-10.1:release:configure:
   extends:
     - .gromacs:base:release:configure
@@ -435,6 +445,19 @@ gromacs:clang-ASAN:build:
   needs:
     - job: gromacs:clang-ASAN:configure
 
+gromacs:clang-UBSAN:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-UBSAN:configure
+
 gromacs:clang-static-analyzer:build:
   extends:
     - .variables:default
@@ -539,6 +562,7 @@ gromacs:clang-8-cuda-10.1:release:build:
     CTEST_RUN_MODE: "ExperimentalTest"
   script:
     - cd $BUILD_DIR
+    - export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1:suppressions=$CI_PROJECT_DIR/admin/ubsan-suppressions.txt
     # Needed to run MPI enabled code in the docker images, until we set up different users
     - export OMPI_ALLOW_RUN_AS_ROOT=1
     - export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
@@ -648,6 +672,17 @@ gromacs:clang-ASAN:test:
     - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:build
+
+gromacs:clang-UBSAN:test:
+  extends:
+    - .gromacs:base:test
+    - .use-clang:base
+    - .rules:merge-requests
+  image: gromacs/cmake-3.13.0-llvm-8-tsan:master
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-UBSAN:build
 
 gromacs:clang-9-mpi:test:
   extends:

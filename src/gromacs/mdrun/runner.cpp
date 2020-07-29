@@ -1051,9 +1051,9 @@ int Mdrunner::mdrunner()
     snew(oriresdata, 1);
     init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), oriresdata);
 
-    auto deform = prepareBoxDeformation(globalState->box, MASTER(cr) ? DDRole::Master : DDRole::Agent,
-                                        PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-                                        cr->mpi_comm_mygroup, *inputrec);
+    auto deform = prepareBoxDeformation(
+            globalState != nullptr ? globalState->box : box, MASTER(cr) ? DDRole::Master : DDRole::Agent,
+            PAR(cr) ? NumRanks::Multiple : NumRanks::Single, cr->mpi_comm_mygroup, *inputrec);
 
     ObservablesHistory observablesHistory = {};
 
@@ -1098,7 +1098,7 @@ int Mdrunner::mdrunner()
     /* override nsteps with value set on the commandline */
     override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec);
 
-    if (SIMMASTER(cr))
+    if (isSimulationMasterRank)
     {
         copy_mat(globalState->box, box);
     }
@@ -1776,7 +1776,7 @@ int Mdrunner::mdrunner()
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the master thread needs to be told to
        wait for that. */
-    if (PAR(cr) && MASTER(cr))
+    if (MASTER(cr))
     {
         tMPI_Finalize();
     }

@@ -48,6 +48,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -107,11 +108,11 @@ public:
         // Prepare a ForceProviderInput
         t_mdatoms         md;
         std::vector<real> chargeA{ 1 };
-        md.homenr                   = ssize(chargeA);
-        md.chargeA                  = chargeA.data();
-        CommrecHandle      cr       = init_commrec(MPI_COMM_WORLD);
+        md.homenr  = ssize(chargeA);
+        md.chargeA = chargeA.data();
+        t_commrec          cr;
         matrix             boxDummy = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-        ForceProviderInput forceProviderInput({}, md, 0.0, boxDummy, *cr);
+        ForceProviderInput forceProviderInput({}, md, 0.0, boxDummy, cr);
 
         // Prepare a ForceProviderOutput
         PaddedVector<RVec>  f = { { 0, 0, 0 } };

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/stringtest.h"
 
@@ -65,7 +66,9 @@ class HelpWriterContextTest : public gmx::test::StringTestBase
 public:
     void testFormatting(const std::string& text, gmx::HelpOutputFormat format, const char* id)
     {
-        gmx::HelpWriterContext context(nullptr, format);
+        FILE*                  fp = nullptr;
+        gmx::TextWriter        writerStub(fp);
+        gmx::HelpWriterContext context(&writerStub, format);
         std::string            result = context.substituteMarkupAndWrapToString(settings_, text);
         if (id == nullptr)
         {

@@ -513,8 +513,11 @@ static void evaluate_same_str(const gmx::SelMethodEvalContext& /*context*/,
     while (j < g->isize)
     {
         /* Do a binary search of the strings. */
-        void* ptr;
-        ptr = bsearch(&d->val.s[j], d->as_s_sorted, d->nas, sizeof(d->as_s_sorted[0]), &cmp_str);
+        void* ptr = nullptr;
+        if (d->nas > 0)
+        {
+            ptr = bsearch(&d->val.s[j], d->as_s_sorted, d->nas, sizeof(d->as_s_sorted[0]), &cmp_str);
+        }
         /* Check whether the value was found in the as list. */
         if (ptr == nullptr)
         {

@@ -90,13 +90,14 @@ include(gmxBuildTypeProfile)
 include(gmxBuildTypeTSAN)
 include(gmxBuildTypeASAN)
 include(gmxBuildTypeMSAN)
+include(gmxBuildTypeUBSAN)
 include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert Profile TSAN ASAN MSAN." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert Profile TSAN ASAN MSAN UBSAN." FORCE)
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
-        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN")
+        "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN" "UBSAN")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
     # Add appropriate GROMACS-specific build types for the Visual

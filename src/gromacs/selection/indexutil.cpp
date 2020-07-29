@@ -849,7 +849,10 @@ void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_
             srenew(t->a, g->isize);
             t->nalloc_a = g->isize;
         }
-        std::memcpy(t->a, g->index, g->isize * sizeof(*(t->a)));
+        if (t->nra > 0)
+        {
+            std::memcpy(t->a, g->index, g->isize * sizeof(*(t->a)));
+        }
     }
 
     /* Allocate memory for the block index. We don't know in advance
@@ -1295,7 +1298,10 @@ void gmx_ana_indexmap_copy(gmx_ana_indexmap_t* dest, gmx_ana_indexmap_t* src, bo
         dest->b.nra = src->b.nra;
         std::memcpy(dest->orgid, src->orgid, dest->b.nr * sizeof(*dest->orgid));
         std::memcpy(dest->b.index, src->b.index, (dest->b.nr + 1) * sizeof(*dest->b.index));
-        std::memcpy(dest->b.a, src->b.a, dest->b.nra * sizeof(*dest->b.a));
+        if (dest->b.nra > 0)
+        {
+            std::memcpy(dest->b.a, src->b.a, dest->b.nra * sizeof(*dest->b.a));
+        }
     }
     dest->mapb.nr  = src->mapb.nr;
     dest->mapb.nra = src->mapb.nra;

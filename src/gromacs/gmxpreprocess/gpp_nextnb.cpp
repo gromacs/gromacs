@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -399,8 +399,10 @@ static void sort_and_purge_nnb(t_nextnb* nnb)
         for (n = 0; (n <= nnb->nrex); n++)
         {
             /* Sort atoms in this list */
-            qsort(nnb->a[i][n], nnb->nrexcl[i][n], sizeof(int), compare_int);
-
+            if (nnb->nrexcl[i][n] > 0)
+            {
+                qsort(nnb->a[i][n], nnb->nrexcl[i][n], sizeof(int), compare_int);
+            }
             cnt  = 0;
             prev = -1;
             for (j = 0; j < nnb->nrexcl[i][n]; j++)
