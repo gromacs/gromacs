@@ -32,59 +32,17 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This list file provides the Gromacs::gmxapi cmake module.
 
-##########################
-# Set up public interface.
-
-# Note: GROMACS releases have a single-integer monotonic version in GMX_API_VERSION
-# and LIBRARY_VERSION annotates the shared object for libgromacs. GMXAPI versioning
-# is not synchronized to releases and may increment faster or slower.
-#
-# Prior to 0.1, GMXAPI patch levels are used to mark short term development cycles
-# and allow compatibility checks for client software of the early releases.
-#
-# gmxapi 0.2 will be the first release candidate for gmxapi 1.0 and will attempt
-# to establish compatibility guarantees consistent with semantic versioning.
-# (https://semver.org). When the API is deemed suitably stable, gmxapi 1.0 should
-# be tagged. Official GROMACS releases should be mappable to a distinct gmxapi
-# release string. For roadmap details, see https://gitlab.com/gromacs/gromacs/-/issues/2585
-set(GMXAPI_MAJOR 0)
-set(GMXAPI_MINOR 1)
-set(GMXAPI_PATCH 0)
-set(GMXAPI_RELEASE ${GMXAPI_MAJOR}.${GMXAPI_MINOR}.${GMXAPI_PATCH})
-
-add_library(gmxapi)
-set_target_properties(gmxapi PROPERTIES
-                      VERSION_MAJOR ${GMXAPI_MAJOR}
-                      VERSION_MINOR ${GMXAPI_MINOR}
-                      VERSION_PATCH ${GMXAPI_PATCH}
-                      RELEASE ${GMXAPI_RELEASE})
-
-##########################
-# Define public interface.
-#
-# The include directory should be mostly empty so that we can use it internally as
-# the public interface include directory during build and testing.
-configure_file(include/gmxapiversion.h.in include/gmxapi/version.h)
-target_include_directories(gmxapi PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-                           $<INSTALL_INTERFACE:include>
-                           )
-
-###############################
-# Install the public interface.
-#
-# If any item begins in a generator expression it must evaluate to a full path,
-# so we can't just use something like $<TARGET_PROPERTIES:gmxapiPublicHeaders,SOURCES>.
-# Instead, we use a canonical list defined in the parent scope.
-
-# Install public header directories.
-install(DIRECTORY include/gmxapi
-        DESTINATION include)
-
-# Install "configured" files from the build tree.
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/version.h
-        DESTINATION include/gmxapi)
-
+# Activate targets for new C++ API components and docs.
+if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY)
+    # GMXAPI has not been tested in Microsoft environments.
+    # GMXAPI relies on libgromacs and is incompatible with an `mdrun`-only build.
+    # GMXAPI requires position-independent code
+    set(_GMXAPI_DEFAULT OFF)
+else()
+    set(_GMXAPI_DEFAULT ON)
+endif()
+option(GMXAPI "Install GROMACS API." ${_GMXAPI_DEFAULT})
+if (GMXAPI)
+    include(gmxapi.cmake)
+endif()
