@@ -291,9 +291,12 @@ def commandline_operation(executable=None,
         assert returncode is not None
         assert file is not None
         assert output is not None
-        output.file = file
         output.returncode = returncode
         output.erroroutput = erroroutput
+        if returncode == 0:
+            output.file = file
+        else:
+            output.file = {}
 
     ##
     # 2. Prepare data flow.

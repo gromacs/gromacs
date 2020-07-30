@@ -42,9 +42,13 @@ tests of the operation-building utilities in the modules depended on by
 commandline.py.
 """
 
+import os
 import shutil
+import stat
 import unittest
 
+import gmxapi as gmx
+import pytest
 from gmxapi import commandline
 
 
@@ -134,6 +138,76 @@ class CommandLineOperationSimpleTestCase(unittest.TestCase):
         operation = commandline.commandline_operation(executable='echo',
                                                       arguments=['hi there'])
         assert operation.output.returncode.result() == 0
+
+
+def test_file_dependency_chain(cleandir):
+    """Test the command line wrapper input/output file handling.
+
+    Operation output can be used as operation input.
+    """
+    file1 = os.path.join(cleandir, 'input')
+    file2 = os.path.join(cleandir, 'output')
+
+    # Make a shell script that acts like the type of tool we are wrapping.
+    scriptname = os.path.join(cleandir, 'clicommand.sh')
+    with open(scriptname, 'w') as fh:
+        fh.write('\n'.join(['#!' + shutil.which('bash'),
+                            '# Concatenate an input file and a string argument to an output file.',
+                            '# Mock a utility with the tested syntax.',
+                            '#     clicommand.sh "some words" -i inputfile -o outputfile',
+                            'echo $1 | cat $3 - > $5\n']))
+    os.chmod(scriptname, stat.S_IRWXU)
+
+    line1 = 'first line'
+    filewriter1 = gmx.commandline_operation(scriptname,
+                                            arguments=[line1],
+                                            input_files={'-i': os.devnull},
+                                            output_files={'-o': file1})
+
+    line2 = 'second line'
+    filewriter2 = gmx.commandline_operation(scriptname,
+                                            arguments=[line2],
+                                            input_files={'-i': filewriter1.output.file['-o']},
+                                            output_files={'-o': file2})
+
+    filewriter2.run()
+    # Check that the files have the expected lines
+    with open(file1, 'r') as fh:
+        lines = [text.rstrip() for text in fh]
+    assert len(lines) == 1
+    assert lines[0] == line1
+    with open(file2, 'r') as fh:
+        lines = [text.rstrip() for text in fh]
+    assert len(lines) == 2
+    assert lines[0] == line1
+    assert lines[1] == line2
+
+def test_failure(cleandir):
+    """The operation should not deliver file output if the subprocess fails."""
+    file1 = os.path.join(cleandir, 'input')
+    file2 = os.path.join(cleandir, 'output')
+
+    # Make a shell script that acts like the type of tool we are wrapping.
+    scriptname = os.path.join(cleandir, 'clicommand.sh')
+    with open(scriptname, 'w') as fh:
+        fh.write('\n'.join(['#!' + shutil.which('bash'),
+                            '# Concatenate an input file and a string argument to an output file.',
+                            '# Mock a utility with the tested syntax.',
+                            '#     clicommand.sh "some words" -i inputfile -o outputfile',
+                            'exit 1\n']))
+    os.chmod(scriptname, stat.S_IRWXU)
+
+    filewriter1 = gmx.commandline_operation(scriptname,
+                                            input_files={'-i': os.devnull},
+                                            output_files={'-o': file1})
+
+    filewriter2 = gmx.commandline_operation(scriptname,
+                                            input_files={'-i': filewriter1.output.file['-o']},
+                                            output_files={'-o': file2})
+
+    # filewriter1 has a non-zero exit code and should have no output files available.
+    with pytest.raises(KeyError):
+        filewriter2.run()
 
 
 if __name__ == '__main__':
