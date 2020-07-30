@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,70 +33,61 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GROMACS_WORKFLOW_IMPL_H
-#define GROMACS_WORKFLOW_IMPL_H
+#include "gmxpre.h"
 
-/*! \internal \file
- * \brief Implementation details for Workflow infrastructure.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
- */
-
-#include <memory>
-#include <string>
-
-#include "gmxapi/exceptions.h"
-
-// Local module internal headers.
-#include "api/cpp/workflow.h"
+#include "gmxapi/version.h"
 
 namespace gmxapi
 {
 
-class WorkflowKeyError : public BasicException<WorkflowKeyError>
+version_t Version::majorVersion()
 {
-public:
-    using BasicException::BasicException;
-};
+    return c_majorVersion;
+}
 
-/*!
- * \brief Work graph node for MD simulation.
- */
-class MDNodeSpecification : public NodeSpecification
+version_t Version::minorVersion()
 {
-public:
-    //! Uses parameter type of base class.
-    using NodeSpecification::paramsType;
+    return c_minorVersion;
+}
 
-    /*!
-     * \brief Simulation node from file input
-     *
-     * \param filename TPR input filename.
-     */
-    explicit MDNodeSpecification(const std::string& filename);
+version_t Version::patchVersion()
+{
+    return c_patchVersion;
+}
 
-    /*
-     * \brief Implement NodeSpecification::clone()
-     *
-     * \returns a node to launch a simulation from the same input as this
-     *
-     * Returns nullptr if clone is not possible.
-     */
-    std::unique_ptr<NodeSpecification> clone() override;
+std::string Version::release()
+{
+    return c_release;
+}
 
-    /*! \brief Implement NodeSpecification::params()
-     *
-     * \return Copy of internal params value.
-     */
-    paramsType params() const noexcept override;
+bool Version::hasFeature(const std::string& featurename)
+{
+    // For features introduced without an incompatible API change or where
+    // semantic versioning is otherwise insufficient, we can consult a map, TBD.
+    (void)featurename;
+    return false;
+}
 
-private:
-    //! The TPR input filename, set during construction
-    paramsType tprfilename_;
-};
+bool Version::isAtLeast(version_t major, version_t minor, version_t patch)
+{
+    if (Version::majorVersion() < major)
+    {
+        return false;
+    }
+    if (Version::majorVersion() > major)
+    {
+        return true;
+    }
+    if (Version::minorVersion() < minor)
+    {
+        return false;
+    }
+    if (Version::minorVersion() > minor)
+    {
+        return true;
+    }
+    return Version::patchVersion() >= patch;
+}
 
 
 } // end namespace gmxapi
-
-#endif // GROMACS_WORKFLOW_IMPL_H

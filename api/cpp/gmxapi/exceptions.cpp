@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,45 +32,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_MD_IMPL_H
-#define GMXAPI_MD_IMPL_H
-/*! \file
- * \brief Declarations for molecular dynamics API implementation details.
- *
- * \ingroup gmxapi
- */
 
-#include <memory>
+#include "gmxapi/exceptions.h"
 
-#include "gmxapi/gmxapi.h"
-#include "gmxapi/md.h"
+#include <string>
 
 namespace gmxapi
 {
 
-class MDWorkSpec;
+//! \cond
+Exception::Exception() = default;
 
-/*!
- * \brief Implementation class to hide guts of MDHolder
- *
- * Holds the gmxapi interface for an object that can help instantiate the gmx::MdRunner
- */
-class MDHolder::Impl
+Exception::~Exception() = default;
+
+Exception::Exception(const Exception&) = default;
+
+Exception& Exception::operator=(const Exception&) = default;
+
+Exception::Exception(Exception&&) noexcept = default;
+
+Exception& Exception::operator=(Exception&&) noexcept = default;
+
+const char* Exception::what() const noexcept
 {
-public:
-    /*!
-     * \brief Construct by capturing a messaging object.
-     *
-     * \param spec operations specified for a workflow and the means to instantiate them.
-     */
-    explicit Impl(std::shared_ptr<MDWorkSpec>&& spec);
+    return "GROMACS API error";
+}
+//! \endcond
 
-    /*!
-     * \brief Shared ownership of the gmxapi object used for higher level message passing.
-     */
-    std::shared_ptr<MDWorkSpec> spec_{ nullptr };
-};
 
-} // namespace gmxapi
-
-#endif // header guard
+} // end namespace gmxapi

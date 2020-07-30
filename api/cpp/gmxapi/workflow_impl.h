@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,31 +33,70 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifndef GROMACS_WORKFLOW_IMPL_H
+#define GROMACS_WORKFLOW_IMPL_H
+
+/*! \internal \file
+ * \brief Implementation details for Workflow infrastructure.
+ *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ * \ingroup gmxapi
+ */
+
+#include <memory>
+#include <string>
+
 #include "gmxapi/exceptions.h"
 
-#include <string>
+// Local module internal headers.
+#include "workflow.h"
 
 namespace gmxapi
 {
 
-//! \cond
-Exception::Exception() = default;
-
-Exception::~Exception() = default;
-
-Exception::Exception(const Exception&) = default;
-
-Exception& Exception::operator=(const Exception&) = default;
-
-Exception::Exception(Exception&&) noexcept = default;
-
-Exception& Exception::operator=(Exception&&) noexcept = default;
-
-const char* Exception::what() const noexcept
+class WorkflowKeyError : public BasicException<WorkflowKeyError>
 {
-    return "GROMACS API error";
-}
-//! \endcond
+public:
+    using BasicException::BasicException;
+};
+
+/*!
+ * \brief Work graph node for MD simulation.
+ */
+class MDNodeSpecification : public NodeSpecification
+{
+public:
+    //! Uses parameter type of base class.
+    using NodeSpecification::paramsType;
+
+    /*!
+     * \brief Simulation node from file input
+     *
+     * \param filename TPR input filename.
+     */
+    explicit MDNodeSpecification(const std::string& filename);
+
+    /*
+     * \brief Implement NodeSpecification::clone()
+     *
+     * \returns a node to launch a simulation from the same input as this
+     *
+     * Returns nullptr if clone is not possible.
+     */
+    std::unique_ptr<NodeSpecification> clone() override;
+
+    /*! \brief Implement NodeSpecification::params()
+     *
+     * \return Copy of internal params value.
+     */
+    paramsType params() const noexcept override;
+
+private:
+    //! The TPR input filename, set during construction
+    paramsType tprfilename_;
+};
 
 
 } // end namespace gmxapi
+
+#endif // GROMACS_WORKFLOW_IMPL_H

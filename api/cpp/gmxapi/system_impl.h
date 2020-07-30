@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,80 +32,71 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMXAPI_SYSTEM_IMPL_H
+#define GMXAPI_SYSTEM_IMPL_H
 
-#include "gmxapi/status.h"
+/*! \file
+ * \brief Declare implementation details for gmxapi::System.
+ *
+ * \author M. Eric Irrgang <ericirrgang@gmail.com>
+ * \ingroup gmxapi
+ */
 
-#include <memory>
+#include <string>
+
+#include "gmxapi/system.h"
 
 namespace gmxapi
 {
 
-/*! \cond internal
- * \brief Implementation class for Status objects.
+class Context;
+class Workflow;
+
+/*!
+ * \brief Private implementation for gmxapi::System
  *
- * Current implementation is basically just a wrapper for bool. Future
- * versions should be implemented as a "future" for a result that can contain
- * more information about failures.
+ * \ingroup gmxapi
  */
-class Status::Impl
+class System::Impl final
 {
 public:
-    /*!
-     * \brief Default construct as unsuccessful status.
-     */
-    Impl() : success_{ false } {};
+    /*! \cond */
+    ~Impl();
+
+    Impl(Impl&& /*unused*/) noexcept;
+    Impl& operator=(Impl&& source) noexcept;
+    /*! \endcond */
 
     /*!
-     * \brief Construct with success for true input.
+     * \brief Initialize from a work description.
      *
-     * \param success let Boolean true == success.
+     * \param workflow Simulation work to perform.
      */
-    explicit Impl(const bool& success) : success_{ success } {};
-
-    ~Impl() = default;
+    explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
 
     /*!
-     * \brief Query success status
+     * \brief Launch the configured simulation.
      *
-     * \return true if successful
+     * \param context Runtime execution context in which to run simulation.
+     * \return Ownership of a new simulation session.
+     *
+     * The session is returned as a shared pointer so that the Context can
+     * maintain a weak reference to it via std::weak_ptr.
      */
-    bool success() const { return success_; };
+    std::shared_ptr<Session> launch(const std::shared_ptr<Context>& context);
 
 private:
-    bool success_;
+    //! Description of simulation work.
+    std::shared_ptr<Workflow> workflow_;
+
+    /*!
+     * \brief Specified simulation work.
+     *
+     * \todo merge Workflow and MDWorkSpec
+     */
+    std::shared_ptr<gmxapi::MDWorkSpec> spec_;
 };
-/// \endcond
-
-Status::Status() : impl_{ std::make_unique<Status::Impl>() } {}
-
-Status::Status(const Status& status)
-{
-    impl_ = std::make_unique<Impl>(status.success());
-}
-
-Status& Status::operator=(const Status& status)
-{
-    this->impl_ = std::make_unique<Impl>(status.success());
-    return *this;
-}
-
-Status& Status::operator=(Status&&) noexcept = default;
-
-Status& Status::operator=(bool success)
-{
-    this->impl_ = std::make_unique<Impl>(success);
-    return *this;
-}
-
-Status::Status(Status&&) noexcept = default;
-
-Status::Status(bool success) : impl_{ std::make_unique<Status::Impl>(success) } {}
-
-bool Status::success() const
-{
-    return impl_->success();
-}
-
-Status::~Status() = default;
 
 } // end namespace gmxapi
+
+#endif // header guard

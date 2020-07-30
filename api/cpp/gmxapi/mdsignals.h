@@ -55,7 +55,7 @@
 #include "gmxapi/md/mdsignals.h"
 
 // Internal gmxapi headers.
-#include "api/cpp/session_impl.h"
+#include "session_impl.h"
 
 namespace gmxapi
 {

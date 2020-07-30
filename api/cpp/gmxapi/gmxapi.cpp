@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,71 +32,4 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMXAPI_SYSTEM_IMPL_H
-#define GMXAPI_SYSTEM_IMPL_H
-
-/*! \file
- * \brief Declare implementation details for gmxapi::System.
- *
- * \author M. Eric Irrgang <ericirrgang@gmail.com>
- * \ingroup gmxapi
- */
-
-#include <string>
-
-#include "gmxapi/system.h"
-
-namespace gmxapi
-{
-
-class Context;
-class Workflow;
-
-/*!
- * \brief Private implementation for gmxapi::System
- *
- * \ingroup gmxapi
- */
-class System::Impl final
-{
-public:
-    /*! \cond */
-    ~Impl();
-
-    Impl(Impl&& /*unused*/) noexcept;
-    Impl& operator=(Impl&& source) noexcept;
-    /*! \endcond */
-
-    /*!
-     * \brief Initialize from a work description.
-     *
-     * \param workflow Simulation work to perform.
-     */
-    explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
-
-    /*!
-     * \brief Launch the configured simulation.
-     *
-     * \param context Runtime execution context in which to run simulation.
-     * \return Ownership of a new simulation session.
-     *
-     * The session is returned as a shared pointer so that the Context can
-     * maintain a weak reference to it via std::weak_ptr.
-     */
-    std::shared_ptr<Session> launch(const std::shared_ptr<Context>& context);
-
-private:
-    //! Description of simulation work.
-    std::shared_ptr<Workflow> workflow_;
-
-    /*!
-     * \brief Specified simulation work.
-     *
-     * \todo merge Workflow and MDWorkSpec
-     */
-    std::shared_ptr<gmxapi::MDWorkSpec> spec_;
-};
-
-} // end namespace gmxapi
-
-#endif // header guard
+#include "gmxapi/gmxapi.h"

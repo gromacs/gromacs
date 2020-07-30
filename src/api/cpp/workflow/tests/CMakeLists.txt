@@ -42,7 +42,12 @@ gmx_add_gtest_executable(workflow-details-test
         $<TARGET_OBJECTS:mdrun_objlib>
 )
 
-target_link_libraries(workflow-details-test PRIVATE Gromacs::gmxapi gmxapi-detail mdrun_test_infrastructure)
+target_link_libraries(workflow-details-test
+                      PRIVATE
+                        Gromacs::gmxapi
+                        gmxapi-detail
+                        gmxapi-testsupport
+                        mdrun_test_infrastructure)
 
 gmx_register_gtest_test(GmxapiInternalInterfaceTests workflow-details-test OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
@@ -60,6 +65,11 @@ gmx_add_gtest_executable(workflow-details-mpi-test MPI
         $<TARGET_OBJECTS:mdrun_objlib>
 )
 
-target_link_libraries(workflow-details-mpi-test PRIVATE Gromacs::gmxapi gmxapi-detail mdrun_test_infrastructure)
+target_link_libraries(workflow-details-mpi-test
+                      PRIVATE
+                        Gromacs::gmxapi
+                        gmxapi-detail
+                        gmxapi-testsupport
+                        mdrun_test_infrastructure)
 
 gmx_register_gtest_test(GmxapiInternalsMpiTests workflow-details-mpi-test MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)

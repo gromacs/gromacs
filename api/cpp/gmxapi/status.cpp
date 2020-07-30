@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,21 +33,79 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxapi/md/mdmodule.h"
+#include "gmxapi/status.h"
+
+#include <memory>
 
 namespace gmxapi
 {
 
-MDModule::~MDModule() = default;
-
-const char* MDModule::name() const
+/*! \cond internal
+ * \brief Implementation class for Status objects.
+ *
+ * Current implementation is basically just a wrapper for bool. Future
+ * versions should be implemented as a "future" for a result that can contain
+ * more information about failures.
+ */
+class Status::Impl
 {
-    return "MDModule";
+public:
+    /*!
+     * \brief Default construct as unsuccessful status.
+     */
+    Impl() : success_{ false } {};
+
+    /*!
+     * \brief Construct with success for true input.
+     *
+     * \param success let Boolean true == success.
+     */
+    explicit Impl(const bool& success) : success_{ success } {};
+
+    ~Impl() = default;
+
+    /*!
+     * \brief Query success status
+     *
+     * \return true if successful
+     */
+    bool success() const { return success_; };
+
+private:
+    bool success_;
+};
+/// \endcond
+
+Status::Status() : impl_{ std::make_unique<Status::Impl>() } {}
+
+Status::Status(const Status& status)
+{
+    impl_ = std::make_unique<Impl>(status.success());
 }
 
-std::shared_ptr<::gmx::IRestraintPotential> MDModule::getRestraint()
+Status& Status::operator=(const Status& status)
 {
-    return nullptr;
+    this->impl_ = std::make_unique<Impl>(status.success());
+    return *this;
 }
+
+Status& Status::operator=(Status&&) noexcept = default;
+
+Status& Status::operator=(bool success)
+{
+    this->impl_ = std::make_unique<Impl>(success);
+    return *this;
+}
+
+Status::Status(Status&&) noexcept = default;
+
+Status::Status(bool success) : impl_{ std::make_unique<Status::Impl>(success) } {}
+
+bool Status::success() const
+{
+    return impl_->success();
+}
+
+Status::~Status() = default;
 
 } // end namespace gmxapi

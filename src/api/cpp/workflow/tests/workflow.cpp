@@ -37,7 +37,7 @@
 
 #include "workflow.h"
 #include "workflow_impl.h"
-#include "tests/testingconfiguration.h"
+#include "testingconfiguration.h"
 
 namespace gmxapi
 {

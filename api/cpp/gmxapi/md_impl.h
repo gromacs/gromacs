@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,62 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMXAPI_MD_IMPL_H
+#define GMXAPI_MD_IMPL_H
+/*! \file
+ * \brief Declarations for molecular dynamics API implementation details.
+ *
+ * \ingroup gmxapi
+ */
 
-#include "gmxpre.h"
+#include <memory>
 
-#include "gmxapi/version.h"
+#include "gmxapi/gmxapi.h"
+#include "gmxapi/md.h"
 
 namespace gmxapi
 {
 
-version_t Version::majorVersion()
+class MDWorkSpec;
+
+/*!
+ * \brief Implementation class to hide guts of MDHolder
+ *
+ * Holds the gmxapi interface for an object that can help instantiate the gmx::MdRunner
+ */
+class MDHolder::Impl
 {
-    return c_majorVersion;
-}
+public:
+    /*!
+     * \brief Construct by capturing a messaging object.
+     *
+     * \param spec operations specified for a workflow and the means to instantiate them.
+     */
+    explicit Impl(std::shared_ptr<MDWorkSpec>&& spec);
 
-version_t Version::minorVersion()
-{
-    return c_minorVersion;
-}
+    /*!
+     * \brief Shared ownership of the gmxapi object used for higher level message passing.
+     */
+    std::shared_ptr<MDWorkSpec> spec_{ nullptr };
+};
 
-version_t Version::patchVersion()
-{
-    return c_patchVersion;
-}
+} // namespace gmxapi
 
-std::string Version::release()
-{
-    return c_release;
-}
-
-bool Version::hasFeature(const std::string& featurename)
-{
-    // For features introduced without an incompatible API change or where
-    // semantic versioning is otherwise insufficient, we can consult a map, TBD.
-    (void)featurename;
-    return false;
-}
-
-bool Version::isAtLeast(version_t major, version_t minor, version_t patch)
-{
-    if (Version::majorVersion() < major)
-    {
-        return false;
-    }
-    if (Version::majorVersion() > major)
-    {
-        return true;
-    }
-    if (Version::minorVersion() < minor)
-    {
-        return false;
-    }
-    if (Version::minorVersion() > minor)
-    {
-        return true;
-    }
-    return Version::patchVersion() >= patch;
-}
-
-
-} // end namespace gmxapi
+#endif // header guard
