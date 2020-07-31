@@ -244,7 +244,7 @@ Set the MPICC environment variable to the MPI compiler wrapper and forcibly
 reinstall mpi4py_::
 
     export MPICC=`which mpicc`
-    pip install --no-cache-dir --upgrade --no-binary \":all:\" --force-reinstall mpi4py
+    pip install --no-cache-dir --upgrade --no-binary ":all:" --force-reinstall mpi4py
 
 If you have a different MPI C compiler wrapper, substitute it for :command:`mpicc` above.
 
@@ -401,7 +401,7 @@ Install from source
 You can also install the :py:mod:`gmxapi` Python package from within a local copy of
 the GROMACS source repository. Assuming you have already obtained the GROMACS
 source code and you are in the root directory of the source tree, you will find
-the :py:mod`gmxapi` Python package sources in the :file:`python_packaging/src` directory.
+the :py:mod:`gmxapi` Python package sources in the :file:`python_packaging/src` directory.
 
 ::
 
