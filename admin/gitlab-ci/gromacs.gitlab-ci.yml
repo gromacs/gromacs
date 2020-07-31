@@ -304,7 +304,7 @@ gromacs:gcc-6:release:configure:
     COMPILER_MAJOR_VERSION: 6
     RELEASE_BUILD_DIR: release-builds-gcc
     CMAKE_EXTRA_OPTIONS: "-DGMX_BUILD_MDRUN_ONLY=ON"
-    CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithDebug"
+    CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     CMAKE_REGRESSIONTEST_OPTIONS: ""
   dependencies:
     - archive:package
@@ -355,7 +355,7 @@ gromacs:clang-8:release:configure:
   variables:
     COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-clang
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebug"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
 
 # Jobs running during build stage
 
