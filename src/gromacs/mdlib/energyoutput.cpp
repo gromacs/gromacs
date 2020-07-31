@@ -1055,16 +1055,17 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
     // BAR + thermodynamic integration values
     if ((fp_dhdl_ || dhc_) && bDoDHDL)
     {
-        for (gmx::index i = 0; i < static_cast<gmx::index>(enerd->enerpart_lambda.size()) - 1; i++)
+        const auto& foreignTerms = enerd->foreignLambdaTerms;
+        for (int i = 0; i < foreignTerms.numLambdas(); i++)
         {
             /* zero for simulated tempering */
-            dE_[i] = enerd->enerpart_lambda[i + 1] - enerd->enerpart_lambda[0];
+            dE_[i] = foreignTerms.deltaH(i);
             if (numTemperatures_ > 0)
             {
                 GMX_RELEASE_ASSERT(numTemperatures_ > state->fep_state,
                                    "Number of lambdas in state is bigger then in input record");
                 GMX_RELEASE_ASSERT(
-                        numTemperatures_ >= static_cast<gmx::index>(enerd->enerpart_lambda.size()) - 1,
+                        numTemperatures_ >= foreignTerms.numLambdas(),
                         "Number of lambdas in energy data is bigger then in input record");
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
                 /* is this even useful to have at all? */
@@ -1111,7 +1112,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             {
                 fprintf(fp_dhdl_, " %#.8g", dE_[i]);
             }
-            if (bDynBox_ && bDiagPres_ && (epc_ != epcNO) && !enerd->enerpart_lambda.empty()
+            if (bDynBox_ && bDiagPres_ && (epc_ != epcNO) && foreignTerms.numLambdas() > 0
                 && (fep->init_lambda < 0))
             {
                 fprintf(fp_dhdl_, " %#.8g", pv); /* PV term only needed when

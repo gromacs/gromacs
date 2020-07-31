@@ -256,9 +256,10 @@ void global_stat(const gmx_global_stat*  gs,
         {
             idvdll  = add_bind(rb, efptNR, enerd->dvdl_lin);
             idvdlnl = add_bind(rb, efptNR, enerd->dvdl_nonlin);
-            if (!enerd->enerpart_lambda.empty())
+            if (enerd->foreignLambdaTerms.numLambdas() > 0)
             {
-                iepl = add_bind(rb, enerd->enerpart_lambda.size(), enerd->enerpart_lambda.data());
+                iepl = add_bind(rb, enerd->foreignLambdaTerms.energies().size(),
+                                enerd->foreignLambdaTerms.energies().data());
             }
         }
     }
@@ -351,9 +352,10 @@ void global_stat(const gmx_global_stat*  gs,
         {
             extract_bind(rb, idvdll, efptNR, enerd->dvdl_lin);
             extract_bind(rb, idvdlnl, efptNR, enerd->dvdl_nonlin);
-            if (!enerd->enerpart_lambda.empty())
+            if (enerd->foreignLambdaTerms.numLambdas() > 0)
             {
-                extract_bind(rb, iepl, enerd->enerpart_lambda.size(), enerd->enerpart_lambda.data());
+                extract_bind(rb, iepl, enerd->foreignLambdaTerms.energies().size(),
+                             enerd->foreignLambdaTerms.energies().data());
             }
         }
 

@@ -919,8 +919,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
         }
         for (i = 0; i < re->nrepl; i++)
         {
-            re->de[i][re->repl] = (enerd->enerpart_lambda[static_cast<int>(re->q[ereLAMBDA][i]) + 1]
-                                   - enerd->enerpart_lambda[0]);
+            re->de[i][re->repl] = enerd->foreignLambdaTerms.deltaH(re->q[ereLAMBDA][i]);
         }
     }
 

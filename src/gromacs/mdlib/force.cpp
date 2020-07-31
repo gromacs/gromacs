@@ -132,11 +132,6 @@ void do_force_lowlevel(t_forcerec*                          fr,
         real dvdl_walls = do_walls(*ir, *fr, box, *md, x, &forceWithVirial, lambda[efptVDW],
                                    enerd->grpp.ener[egLJSR].data(), nrnb);
         enerd->dvdl_lin[efptVDW] += dvdl_walls;
-
-        for (auto& dhdl : enerd->dhdlLambda)
-        {
-            dhdl += dvdl_walls;
-        }
     }
 
     {
@@ -293,11 +288,6 @@ void do_force_lowlevel(t_forcerec*                          fr,
         enerd->dvdl_lin[efptVDW] += ewaldOutput.dvdl[efptVDW];
         enerd->term[F_COUL_RECIP] = Vlr_q + ewaldOutput.Vcorr_q;
         enerd->term[F_LJ_RECIP]   = Vlr_lj + ewaldOutput.Vcorr_lj;
-
-        for (auto& dhdl : enerd->dhdlLambda)
-        {
-            dhdl += ewaldOutput.dvdl[efptVDW] + ewaldOutput.dvdl[efptCOUL];
-        }
 
         if (debug)
         {

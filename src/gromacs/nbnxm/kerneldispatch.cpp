@@ -538,7 +538,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
         kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR].data();
         kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR].data();
 
-        for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
+        for (gmx::index i = 0; i < enerd->foreignLambdaTerms.energies().ssize(); i++)
         {
             std::fill(std::begin(dvdl_nb), std::end(dvdl_nb), 0);
             for (int j = 0; j < efptNR; j++)
@@ -558,15 +558,8 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
             }
 
             sum_epot(enerd->foreign_grpp, enerd->foreign_term);
-            enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
-            enerd->dhdlLambda[i] += dvdl_nb[efptVDW] + dvdl_nb[efptCOUL];
-        }
-    }
-    else
-    {
-        for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
-        {
-            enerd->dhdlLambda[i] += dvdl_nb[efptVDW] + dvdl_nb[efptCOUL];
+            enerd->foreignLambdaTerms.accumulate(i, enerd->foreign_term[F_EPOT],
+                                                 dvdl_nb[efptVDW] + dvdl_nb[efptCOUL]);
         }
     }
     wallcycle_sub_stop(wcycle_, ewcsNONBONDED_FEP);

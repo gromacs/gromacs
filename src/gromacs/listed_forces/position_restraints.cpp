@@ -434,21 +434,20 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
                            const real*                   lambda,
                            const t_forcerec*             fr)
 {
-    real v;
-
     wallcycle_sub_start_nocount(wcycle, ewcsRESTRAINTS);
-    for (size_t i = 0; i < enerd->enerpart_lambda.size(); i++)
+
+    auto& foreignTerms = enerd->foreignLambdaTerms;
+    for (int i = 0; i < 1 + foreignTerms.numLambdas(); i++)
     {
         real dvdl = 0;
 
         const real lambda_dum =
                 (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
-        v = posres<false>(idef.il[F_POSRES].size(), idef.il[F_POSRES].iatoms.data(),
-                          idef.iparams_posres.data(), x, nullptr,
-                          fr->pbcType == PbcType::No ? nullptr : pbc, lambda_dum, &dvdl,
-                          fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
-        enerd->enerpart_lambda[i] += v;
-        enerd->dhdlLambda[i] += dvdl;
+        const real v = posres<false>(idef.il[F_POSRES].size(), idef.il[F_POSRES].iatoms.data(),
+                                     idef.iparams_posres.data(), x, nullptr,
+                                     fr->pbcType == PbcType::No ? nullptr : pbc, lambda_dum, &dvdl,
+                                     fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
+        foreignTerms.accumulate(i, v, dvdl);
     }
     wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
 }

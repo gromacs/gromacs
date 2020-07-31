@@ -36,12 +36,17 @@
 #define GMX_MDTYPES_TYPES_ENERDATA_H
 
 #include <array>
+#include <utility>
 #include <vector>
 
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+struct t_commrec;
+
+// The non-bonded energy terms accumulated for energy group pairs
 enum
 {
     egCOULSR,
@@ -52,6 +57,7 @@ enum
     egNR
 };
 
+// Struct for accumulating non-bonded energies between energy group pairs
 struct gmx_grppairener_t
 {
     gmx_grppairener_t(int numEnergyGroups) : nener(numEnergyGroups * numEnergyGroups)
@@ -66,24 +72,103 @@ struct gmx_grppairener_t
     std::array<std::vector<real>, egNR> ener;  /* Energy terms for each pair of groups */
 };
 
+//! Accumulates free-energy foreign lambda energies and dH/dlamba
+class ForeignLambdaTerms
+{
+public:
+    /*! \brief Constructor
+     *
+     * \param[in] numLambdas  The number of foreign lambda values
+     */
+    ForeignLambdaTerms(int numLambdas);
+
+    //! Returns the number of foreign lambda values
+    int numLambdas() const { return numLambdas_; }
+
+    //! Returns the H(lambdaIndex) - H(lambda_current)
+    double deltaH(int lambdaIndex) const { return energies_[1 + lambdaIndex] - energies_[0]; }
+
+    /*! \brief Returns a list of partial energies, the part which depends on lambda),
+     * current lambda in entry 0, foreign lambda i in entry 1+i
+     */
+    gmx::ArrayRef<double> energies() { return energies_; }
+
+    /*! \brief Returns a list of partial energies, the part which depends on lambda),
+     * current lambda in entry 0, foreign lambda i in entry 1+i
+     */
+    gmx::ArrayRef<const double> energies() const { return energies_; }
+
+    /*! \brief Adds an energy and dH/dl constribution to lambda list index \p listIndex
+     *
+     * This should only be used for terms with non-linear dependence on lambda
+     * The value passed as listIndex should be 0 for the current lambda
+     * and 1+i for foreign lambda index i.
+     */
+    void accumulate(int listIndex, double energy, double dhdl)
+    {
+        energies_[listIndex] += energy;
+        dhdl_[listIndex] += dhdl;
+    }
+
+    /*! \brief Add a dH/dl contribution that does not depend on lambda to all foreign dH/dl terms
+     *
+     * Note: this should not be called directly for energy terms that depend linearly on lambda,
+     * as those are added automatically through the accumulated dvdl_lin term in gmx_enerdata_t.
+     */
+    void addConstantDhdl(double dhdl)
+    {
+        for (double& foreignDhdl : dhdl_)
+        {
+            foreignDhdl += dhdl;
+        }
+    }
+
+    /*! \brief Returns a pair of lists of deltaH and dH/dlambda
+     *
+     * Both lists are of size numLambdas() and are indexed with the lambda index.
+     * The returned lists are valid until the next call to this method.
+     *
+     * \param[in] cr  Communication record, used to reduce the terms when !=nullptr
+     */
+    std::pair<std::vector<double>, std::vector<double>> getTerms(t_commrec* cr);
+
+    //! Sets all terms to 0
+    void zeroAllTerms();
+
+private:
+    //! The number of foreign lambdas
+    int numLambdas_;
+    //! Storage for foreign lambda energies
+    std::vector<double> energies_;
+    //! Storage for foreign lambda dH/dlambda
+    std::vector<double> dhdl_;
+};
+
+//! Struct for accumulating all potential energy terms and some kinetic energy terms
 struct gmx_enerdata_t
 {
     gmx_enerdata_t(int numEnergyGroups, int numFepLambdas);
 
-    real term[F_NRE] = { 0 }; /* The energies for all different interaction types */
+    //! The energies for all different interaction types
+    real term[F_NRE] = { 0 };
+    //! Energy group pair non-bonded energies
     struct gmx_grppairener_t grpp;
-    double dvdl_lin[efptNR]    = { 0 }; /* Contributions to dvdl with linear lam-dependence */
-    double dvdl_nonlin[efptNR] = { 0 }; /* Idem, but non-linear dependence                  */
+    //! Contributions to dV/dlambda with linear dependence on lambda
+    double dvdl_lin[efptNR] = { 0 };
+    //! Contributions to dV/dlambda with non-linear dependence on lambda
+    double dvdl_nonlin[efptNR] = { 0 };
     /* The idea is that dvdl terms with linear lambda dependence will be added
      * automatically to enerpart_lambda. Terms with non-linear lambda dependence
      * should explicitly determine the energies at foreign lambda points
      * when n_lambda > 0. */
 
-    int                 fep_state = 0; /*current fep state -- just for printing */
-    std::vector<double> enerpart_lambda; /* Partial Hamiltonian for lambda and flambda[], includes at least all perturbed terms */
-    std::vector<double> dhdlLambda; /* dHdL at all neighboring lambda points (the current lambda point also at index 0). */
-    real foreign_term[F_NRE] = { 0 };      /* alternate array for storing foreign lambda energies */
-    struct gmx_grppairener_t foreign_grpp; /* alternate array for storing foreign lambda energies */
+    //! Foreign lambda energies and dH/dl
+    ForeignLambdaTerms foreignLambdaTerms;
+
+    //! Alternate, temporary array for storing foreign lambda energies
+    real foreign_term[F_NRE] = { 0 };
+    //! Alternate, temporary  array for storing foreign lambda group pair energies
+    struct gmx_grppairener_t foreign_grpp;
 };
 
 #endif

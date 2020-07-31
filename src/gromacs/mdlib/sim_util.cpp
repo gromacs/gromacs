@@ -201,10 +201,6 @@ static void pull_potential_wrapper(const t_commrec*               cr,
             pull_potential(pull_work, mdatoms->massT, &pbc, cr, t, lambda[efptRESTRAINT],
                            as_rvec_array(x.data()), force, &dvdl);
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
-    for (auto& dhdl : enerd->dhdlLambda)
-    {
-        dhdl += dvdl;
-    }
     wallcycle_stop(wcycle, ewcPULLPOT);
 }
 
@@ -234,11 +230,6 @@ static void pme_receive_force_ener(t_forcerec*           fr,
     enerd->term[F_LJ_RECIP] += e_lj;
     enerd->dvdl_lin[efptCOUL] += dvdl_q;
     enerd->dvdl_lin[efptVDW] += dvdl_lj;
-
-    for (auto& dhdl : enerd->dhdlLambda)
-    {
-        dhdl += dvdl_q + dvdl_lj;
-    }
 
     if (wcycle)
     {
@@ -1865,6 +1856,7 @@ void do_force(FILE*                               fplog,
         {
             enerd->term[F_DISPCORR] = correction.energy;
             enerd->term[F_DVDL_VDW] += correction.dvdl;
+            enerd->dvdl_lin[efptVDW] += correction.dvdl;
         }
         if (stepWork.computeVirial)
         {
@@ -1894,7 +1886,6 @@ void do_force(FILE*                               fplog,
     {
         /* Compute the final potential energy terms */
         accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals);
-        ;
 
         if (!EI_TPI(inputrec->eI))
         {
