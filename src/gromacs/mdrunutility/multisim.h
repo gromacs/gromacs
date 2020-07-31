@@ -50,7 +50,13 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxmpi.h"
 
+namespace gmx
+{
+class MDLogger;
+}
+
 struct gmx_multisim_t;
+struct t_commrec;
 
 /*! \libinternal
  * \brief Builder function for gmx_multisim_t
@@ -175,5 +181,24 @@ bool isMasterSim(const gmx_multisim_t* ms);
  *
  * This rank prints the remaining run time etc. */
 bool isMasterSimMasterRank(const gmx_multisim_t* ms, bool isMaster);
+
+/*! \brief Log the initial state of the multi-sim
+ *
+ * The simulations may be at different steps, etc so we
+ * report that.
+ *
+ * \param[in]  ms                     The multi-sum object
+ * \param[in]  cr                     The commrec object
+ * \param[in]  mdlog                  Logger
+ * \param[in]  simulationsShareState  Whether the simulations share state
+ * \param[in]  numSteps               The number of steps in this simulation
+ * \param[in]  initialStep            The initial step for this simulation
+ */
+void logInitialMultisimStatus(const gmx_multisim_t* ms,
+                              const t_commrec*      cr,
+                              const gmx::MDLogger&  mdlog,
+                              bool                  simulationsShareState,
+                              int                   numSteps,
+                              int                   initialStep);
 
 #endif

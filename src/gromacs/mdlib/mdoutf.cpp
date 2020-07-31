@@ -37,6 +37,8 @@
 
 #include "mdoutf.h"
 
+#include "config.h"
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -50,17 +52,26 @@
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/multisim.h"
+#include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/df_history.h"
+#include "gromacs/mdtypes/edsamhistory.h"
+#include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/mdtypes/swaphistory.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/sysinfo.h"
 
 struct gmx_mdoutf
 {
@@ -253,6 +264,216 @@ FILE* mdoutf_get_fp_dhdl(gmx_mdoutf_t of)
 gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of)
 {
     return of->wcycle;
+}
+
+static void mpiBarrierBeforeRename(const bool applyMpiBarrierBeforeRename, MPI_Comm mpiBarrierCommunicator)
+{
+    if (applyMpiBarrierBeforeRename)
+    {
+#if GMX_MPI
+        MPI_Barrier(mpiBarrierCommunicator);
+#else
+        GMX_RELEASE_ASSERT(false, "Should not request a barrier without MPI");
+        GMX_UNUSED_VALUE(mpiBarrierCommunicator);
+#endif
+    }
+}
+/*! \brief Write a checkpoint to the filename
+ *
+ * Appends the _step<step>.cpt with bNumberAndKeep, otherwise moves
+ * the previous checkpoint filename with suffix _prev.cpt.
+ */
+static void write_checkpoint(const char*                   fn,
+                             gmx_bool                      bNumberAndKeep,
+                             FILE*                         fplog,
+                             const t_commrec*              cr,
+                             ivec                          domdecCells,
+                             int                           nppnodes,
+                             int                           eIntegrator,
+                             int                           simulation_part,
+                             gmx_bool                      bExpanded,
+                             int                           elamstats,
+                             int64_t                       step,
+                             double                        t,
+                             t_state*                      state,
+                             ObservablesHistory*           observablesHistory,
+                             const gmx::MdModulesNotifier& mdModulesNotifier,
+                             bool                          applyMpiBarrierBeforeRename,
+                             MPI_Comm                      mpiBarrierCommunicator)
+{
+    t_fileio* fp;
+    char*     fntemp; /* the temporary checkpoint file name */
+    int       npmenodes;
+    char      buf[1024], suffix[5 + STEPSTRSIZE], sbuf[STEPSTRSIZE];
+    t_fileio* ret;
+
+    if (DOMAINDECOMP(cr))
+    {
+        npmenodes = cr->npmenodes;
+    }
+    else
+    {
+        npmenodes = 0;
+    }
+
+#if !GMX_NO_RENAME
+    /* make the new temporary filename */
+    snew(fntemp, std::strlen(fn) + 5 + STEPSTRSIZE);
+    std::strcpy(fntemp, fn);
+    fntemp[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+    sprintf(suffix, "_%s%s", "step", gmx_step_str(step, sbuf));
+    std::strcat(fntemp, suffix);
+    std::strcat(fntemp, fn + std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1);
+#else
+    /* if we can't rename, we just overwrite the cpt file.
+     * dangerous if interrupted.
+     */
+    snew(fntemp, std::strlen(fn));
+    std::strcpy(fntemp, fn);
+#endif
+    std::string timebuf = gmx_format_current_time();
+
+    if (fplog)
+    {
+        fprintf(fplog, "Writing checkpoint, step %s at %s\n\n", gmx_step_str(step, buf), timebuf.c_str());
+    }
+
+    /* Get offsets for open files */
+    auto outputfiles = gmx_fio_get_output_file_positions();
+
+    fp = gmx_fio_open(fntemp, "w");
+
+    /* We can check many more things now (CPU, acceleration, etc), but
+     * it is highly unlikely to have two separate builds with exactly
+     * the same version, user, time, and build host!
+     */
+
+    int nlambda = (state->dfhist ? state->dfhist->nlambda : 0);
+
+    edsamhistory_t* edsamhist = observablesHistory->edsamHistory.get();
+    int             nED       = (edsamhist ? edsamhist->nED : 0);
+
+    swaphistory_t* swaphist    = observablesHistory->swapHistory.get();
+    int            eSwapCoords = (swaphist ? swaphist->eSwapCoords : eswapNO);
+
+    CheckpointHeaderContents headerContents = { 0,
+                                                { 0 },
+                                                { 0 },
+                                                { 0 },
+                                                { 0 },
+                                                GMX_DOUBLE,
+                                                { 0 },
+                                                { 0 },
+                                                eIntegrator,
+                                                simulation_part,
+                                                step,
+                                                t,
+                                                nppnodes,
+                                                { 0 },
+                                                npmenodes,
+                                                state->natoms,
+                                                state->ngtc,
+                                                state->nnhpres,
+                                                state->nhchainlength,
+                                                nlambda,
+                                                state->flags,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                0,
+                                                nED,
+                                                eSwapCoords };
+    std::strcpy(headerContents.version, gmx_version());
+    std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
+    std::strcpy(headerContents.ftime, timebuf.c_str());
+    if (DOMAINDECOMP(cr))
+    {
+        copy_ivec(domdecCells, headerContents.dd_nc);
+    }
+
+    write_checkpoint_data(fp, headerContents, bExpanded, elamstats, state, observablesHistory,
+                          mdModulesNotifier, &outputfiles);
+
+    /* we really, REALLY, want to make sure to physically write the checkpoint,
+       and all the files it depends on, out to disk. Because we've
+       opened the checkpoint with gmx_fio_open(), it's in our list
+       of open files.  */
+    ret = gmx_fio_all_output_fsync();
+
+    if (ret)
+    {
+        char buf[STRLEN];
+        sprintf(buf, "Cannot fsync '%s'; maybe you are out of disk space?", gmx_fio_getname(ret));
+
+        if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV) == nullptr)
+        {
+            gmx_file(buf);
+        }
+        else
+        {
+            gmx_warning("%s", buf);
+        }
+    }
+
+    if (gmx_fio_close(fp) != 0)
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
+    }
+
+    /* we don't move the checkpoint if the user specified they didn't want it,
+       or if the fsyncs failed */
+#if !GMX_NO_RENAME
+    if (!bNumberAndKeep && !ret)
+    {
+        if (gmx_fexist(fn))
+        {
+            /* Rename the previous checkpoint file */
+            mpiBarrierBeforeRename(applyMpiBarrierBeforeRename, mpiBarrierCommunicator);
+
+            std::strcpy(buf, fn);
+            buf[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
+            std::strcat(buf, "_prev");
+            std::strcat(buf, fn + std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1);
+            if (!GMX_FAHCORE)
+            {
+                /* we copy here so that if something goes wrong between now and
+                 * the rename below, there's always a state.cpt.
+                 * If renames are atomic (such as in POSIX systems),
+                 * this copying should be unneccesary.
+                 */
+                gmx_file_copy(fn, buf, FALSE);
+                /* We don't really care if this fails:
+                 * there's already a new checkpoint.
+                 */
+            }
+            else
+            {
+                gmx_file_rename(fn, buf);
+            }
+        }
+
+        /* Rename the checkpoint file from the temporary to the final name */
+        mpiBarrierBeforeRename(applyMpiBarrierBeforeRename, mpiBarrierCommunicator);
+
+        if (gmx_file_rename(fntemp, fn) != 0)
+        {
+            gmx_file("Cannot rename checkpoint file; maybe you are out of disk space?");
+        }
+    }
+#endif /* GMX_NO_RENAME */
+
+    sfree(fntemp);
+
+#if GMX_FAHCORE
+    /*code for alternate checkpointing scheme.  moved from top of loop over
+       steps */
+    fcRequestCheckPoint();
+    if (fcCheckPointParallel(cr->nodeid, NULL, 0) == 0)
+    {
+        gmx_fatal(3, __FILE__, __LINE__, "Checkpoint error on step %d\n", step);
+    }
+#endif /* end GMX_FAHCORE block */
 }
 
 void mdoutf_write_to_trajectory_files(FILE*                    fplog,

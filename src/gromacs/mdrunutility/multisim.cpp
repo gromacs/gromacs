@@ -45,11 +45,13 @@
 
 #include "config.h"
 
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 
 std::unique_ptr<gmx_multisim_t> buildMultiSimulation(MPI_Comm                         worldComm,
@@ -423,4 +425,68 @@ bool isMasterSim(const gmx_multisim_t* ms)
 bool isMasterSimMasterRank(const gmx_multisim_t* ms, const bool isMaster)
 {
     return (isMaster && isMasterSim(ms));
+}
+
+static bool multisim_int_all_are_equal(const gmx_multisim_t* ms, int64_t value)
+{
+    bool     allValuesAreEqual = true;
+    int64_t* buf;
+
+    GMX_RELEASE_ASSERT(ms, "Invalid use of multi-simulation pointer");
+
+    snew(buf, ms->numSimulations_);
+    /* send our value to all other master ranks, receive all of theirs */
+    buf[ms->simulationIndex_] = value;
+    gmx_sumli_sim(ms->numSimulations_, buf, ms);
+
+    for (int s = 0; s < ms->numSimulations_; s++)
+    {
+        if (buf[s] != value)
+        {
+            allValuesAreEqual = false;
+            break;
+        }
+    }
+
+    sfree(buf);
+
+    return allValuesAreEqual;
+}
+
+void logInitialMultisimStatus(const gmx_multisim_t* ms,
+                              const t_commrec*      cr,
+                              const gmx::MDLogger&  mdlog,
+                              const bool            simulationsShareState,
+                              const int             numSteps,
+                              const int             initialStep)
+{
+    if (!multisim_int_all_are_equal(ms, numSteps))
+    {
+        GMX_LOG(mdlog.warning)
+                .appendText(
+                        "Note: The number of steps is not consistent across multi "
+                        "simulations,\n"
+                        "but we are proceeding anyway!");
+    }
+    if (!multisim_int_all_are_equal(ms, initialStep))
+    {
+        if (simulationsShareState)
+        {
+            if (MASTER(cr))
+            {
+                gmx_fatal(FARGS,
+                          "The initial step is not consistent across multi simulations which "
+                          "share the state");
+            }
+            gmx_barrier(cr->mpi_comm_mygroup);
+        }
+        else
+        {
+            GMX_LOG(mdlog.warning)
+                    .appendText(
+                            "Note: The initial step is not consistent across multi "
+                            "simulations,\n"
+                            "but we are proceeding anyway!");
+        }
+    }
 }

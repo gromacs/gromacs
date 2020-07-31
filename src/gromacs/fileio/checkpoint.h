@@ -179,27 +179,15 @@ struct CheckpointHeaderContents
     int eSwapCoords;
 };
 
-/* Write a checkpoint to <fn>.cpt
- * Appends the _step<step>.cpt with bNumberAndKeep,
- * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
- */
-void write_checkpoint(const char*                   fn,
-                      gmx_bool                      bNumberAndKeep,
-                      FILE*                         fplog,
-                      const t_commrec*              cr,
-                      ivec                          domdecCells,
-                      int                           nppnodes,
-                      int                           eIntegrator,
-                      int                           simulation_part,
-                      gmx_bool                      bExpanded,
-                      int                           elamstats,
-                      int64_t                       step,
-                      double                        t,
-                      t_state*                      state,
-                      ObservablesHistory*           observablesHistory,
-                      const gmx::MdModulesNotifier& notifier,
-                      bool                          applyMpiBarrierBeforeRename,
-                      MPI_Comm                      mpiBarrierCommunicator);
+/*! \brief Low-level checkpoint writing function */
+void write_checkpoint_data(t_fileio*                         fp,
+                           CheckpointHeaderContents          headerContents,
+                           gmx_bool                          bExpanded,
+                           int                               elamstats,
+                           t_state*                          state,
+                           ObservablesHistory*               observablesHistory,
+                           const gmx::MdModulesNotifier&     notifier,
+                           std::vector<gmx_file_position_t>* outputfiles);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.

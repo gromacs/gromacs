@@ -56,7 +56,6 @@
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
-#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -79,79 +78,6 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
-
-// TODO move this to multi-sim module
-bool multisim_int_all_are_equal(const gmx_multisim_t* ms, int64_t value)
-{
-    bool     allValuesAreEqual = true;
-    int64_t* buf;
-
-    GMX_RELEASE_ASSERT(ms, "Invalid use of multi-simulation pointer");
-
-    snew(buf, ms->numSimulations_);
-    /* send our value to all other master ranks, receive all of theirs */
-    buf[ms->simulationIndex_] = value;
-    gmx_sumli_sim(ms->numSimulations_, buf, ms);
-
-    for (int s = 0; s < ms->numSimulations_; s++)
-    {
-        if (buf[s] != value)
-        {
-            allValuesAreEqual = false;
-            break;
-        }
-    }
-
-    sfree(buf);
-
-    return allValuesAreEqual;
-}
-
-int multisim_min(const gmx_multisim_t* ms, int nmin, int n)
-{
-    int*     buf;
-    gmx_bool bPos, bEqual;
-    int      s, d;
-
-    snew(buf, ms->numSimulations_);
-    buf[ms->simulationIndex_] = n;
-    gmx_sumi_sim(ms->numSimulations_, buf, ms);
-    bPos   = TRUE;
-    bEqual = TRUE;
-    for (s = 0; s < ms->numSimulations_; s++)
-    {
-        bPos   = bPos && (buf[s] > 0);
-        bEqual = bEqual && (buf[s] == buf[0]);
-    }
-    if (bPos)
-    {
-        if (bEqual)
-        {
-            nmin = std::min(nmin, buf[0]);
-        }
-        else
-        {
-            /* Find the least common multiple */
-            for (d = 2; d < nmin; d++)
-            {
-                s = 0;
-                while (s < ms->numSimulations_ && d % buf[s] == 0)
-                {
-                    s++;
-                }
-                if (s == ms->numSimulations_)
-                {
-                    /* We found the LCM and it is less than nmin */
-                    nmin = d;
-                    break;
-                }
-            }
-        }
-    }
-    sfree(buf);
-
-    return nmin;
-}
 
 static void calc_ke_part_normal(gmx::ArrayRef<const gmx::RVec> v,
                                 const t_grpopts*               opts,

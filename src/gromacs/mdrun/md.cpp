@@ -720,38 +720,9 @@ void gmx::LegacySimulator::do_md()
     step     = ir->init_step;
     step_rel = 0;
 
-    // TODO extract this to new multi-simulation module
     if (MASTER(cr) && isMultiSim(ms) && !useReplicaExchange)
     {
-        if (!multisim_int_all_are_equal(ms, ir->nsteps))
-        {
-            GMX_LOG(mdlog.warning)
-                    .appendText(
-                            "Note: The number of steps is not consistent across multi "
-                            "simulations,\n"
-                            "but we are proceeding anyway!");
-        }
-        if (!multisim_int_all_are_equal(ms, ir->init_step))
-        {
-            if (simulationsShareState)
-            {
-                if (MASTER(cr))
-                {
-                    gmx_fatal(FARGS,
-                              "The initial step is not consistent across multi simulations which "
-                              "share the state");
-                }
-                gmx_barrier(cr->mpi_comm_mygroup);
-            }
-            else
-            {
-                GMX_LOG(mdlog.warning)
-                        .appendText(
-                                "Note: The initial step is not consistent across multi "
-                                "simulations,\n"
-                                "but we are proceeding anyway!");
-            }
-        }
+        logInitialMultisimStatus(ms, cr, mdlog, simulationsShareState, ir->nsteps, ir->init_step);
     }
 
     /* and stop now if we should */
