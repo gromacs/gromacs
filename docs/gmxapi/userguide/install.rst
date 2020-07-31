@@ -361,9 +361,17 @@ GROMACS against and building with compatible compilers.
 Install the latest version of gmxapi
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Fetch and install the latest version of gmxapi from the Python Packaging Index::
+Fetch and install the latest official version of gmxapi from the Python Packaging Index::
 
+    # Get the latest official release.
     pip install gmxapi
+
+The `PyPI repository <https://pypi.org/project/gmxapi/#history>`_
+may include pre-release versions,
+but :command:`pip` will ignore them unless you use the ``--pre`` flag::
+
+    # Get the latest version, including pre-release versions.
+    pip install --pre gmxapi
 
 If :command:`pip` does not find your GROMACS installation, use one of the following
 environment variables to provide a hint.
@@ -511,7 +519,22 @@ https://hub.docker.com/r/gmxapi/docs for more information.
 Troubleshooting
 ===============
 
+AttributeError: module 'enum' has no attribute 'IntFlag'
+--------------------------------------------------------
+
+If you had older versions of some of the dependencies installed,
+you might have picked up a transitive dependency on the ``enum34`` package.
+Try::
+
+    pip uninstall -y enum34
+
+and see if that fixes the problem. If not, try a fresh virtual environment
+(see above) to help narrow down the problem before you
+`open an issue <https://gitlab.com/gromacs/gromacs/-/issues/>`_.
+
 Couldn't find the ``gmxapi`` support library?
+---------------------------------------------
+
 If you don't want to "source" your :ref:`GMXRC <getting access to |Gromacs|>` file, you
 can tell the package where to find a gmxapi compatible GROMACS installation with
 ``gmxapi_DIR``. E.g. ``gmxapi_DIR=/path/to/gromacs pip install .``
