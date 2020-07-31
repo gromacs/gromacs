@@ -11,7 +11,7 @@ Command line examples assume the `bash <https://www.gnu.org/software/bash/>`_ sh
 
 .. note:: Regarding multiple GROMACS installations:
     Many GROMACS users switch between multiple GROMACS installations on the same
-    computer using an HPC module system and/or a GMXRC configuration script.
+    computer using an HPC module system and/or a :ref:`GMXRC <getting access to |Gromacs|>` configuration script.
     For the equivalent sort of environment switching with the :py:mod:`gmxapi` Python package,
     we recommend installing it in a different
     `Python virtual environment <https://www.google.com/search?q=python+virtual+environment>`_
@@ -25,9 +25,9 @@ Command line examples assume the `bash <https://www.gnu.org/software/bash/>`_ sh
 
 .. note::
 
-    The following documentation contains frequent references to the :command:`pip` tool
+    The following documentation contains frequent references to the pip_ tool
     for installing Python packages. In some cases, an unprivileged user should
-    use the ``--user`` command line flag to tell :py:mod:`pip` to install packages
+    use the ``--user`` command line flag to tell pip_ to install packages
     into the user site-packages directory rather than the default site-packages
     directory for the Python installation. This flag is not appropriate when
     running :command:`pip` in a virtual environment (as recommended) and is omitted in
@@ -104,7 +104,8 @@ before proceeding.
     for your GROMACS installation, you will see CMake errors when trying to build
     and install the gmxapi Python package or other client software.
 
-Then, "source" the :file:`GMXRC` file from the GROMACS installation as you normally would
+Then, "source" the :file:`GMXRC` file from the GROMACS installation
+:ref:`as you normally would <getting access to |Gromacs|>`
 before using GROMACS, or note its installation location so that you can pass it
 to the build configuration.
 
@@ -154,19 +155,20 @@ gmxapi requires Python 3.6 or higher. Check your version with
     instead of :command:`python` and :command:`pip`. You can check the version with
     :command:`python3 --version` or :command:`python --version` and :command:`pip --version`.
 
-To build and install, you also need the packages :py:mod:`cmake`,
-:py:mod:`setuptools`, :py:mod:`networkx`, and :py:mod:`scikit-build`.
+To build and install, you need the Python packages for
+cmake_, networkx_, scikit-build_, and setuptools_
+(all available from `PyPI with pip <https://pip.pypa.io/en/stable/>`_).
 
-For full functionality, you should also have :py:mod:`mpi4py` and :py:mod:`numpy`.
+For full functionality, you should also have mpi4py_ and numpy_.
 These requirements and version numbers are listed in :file:`requirements.txt`.
 
 The easiest way to make sure you have the requirements installed, first update
-:py:mod:`pip`, then use the :file:`requirements.txt` file provided with the repository.
+pip_, then use the :file:`requirements.txt` file provided with the repository.
 File paths in this section are relative to the root directory of your local copy
 of the GROMACS source.
 
-Confirm that :py:mod:`pip` is available, install :py:mod:`pip` if it is missing, or get
-instructions on how to install :py:mod:`pip`::
+Confirm that pip_ is available, install pip_ if it is missing, or get
+instructions on how to install pip_::
 
     python -m ensurepip --default-pip
 
@@ -200,13 +202,13 @@ Testing requirements
 --------------------
 
 Testing is performed with `pytest <https://docs.pytest.org/en/latest/>`_.
-Tests also require :py:mod:`numpy`.
-You can probably install both with :command:`pip`::
+Tests also require numpy_.
+You can probably install both with pip_::
 
     pip install pytest numpy
 
 To test the full functionality also requires an MPI parallel environment.
-You will need the :py:mod:`mpi4py` Python package and an MPI launcher
+You will need the mpi4py_ Python package and an MPI launcher
 (such as :command:`mpiexec`, :command:`mpirun`, a launcher provided by your HPC queuing system,
 or whatever is provided by your favorite MPI package for your operating system).
 
@@ -231,15 +233,15 @@ so you may have to specify compilers on the command line for consistency.
 It may be necessary to require that GROMACS, gmxapi,
 and the sample code are built with the same compiler(s).
 
-Note that strange errors have been known to occur when :py:mod:`mpi4py` is built with
+Note that strange errors have been known to occur when mpi4py_ is built with
 different a different tool set than has been used to build Python and gmxapi.
 If the default compilers on your system are not sufficient for GROMACS or gmxapi,
-you may need to build, e.g., OpenMPI or MPICH, and/or build :py:mod:`mpi4py` with a
+you may need to build, e.g., OpenMPI or MPICH, and/or build mpi4py_ with a
 specific MPI compiler wrapper. This can complicate building in environments such
 as Conda_.
 
 Set the MPICC environment variable to the MPI compiler wrapper and forcibly
-reinstall :py:mod:`mpi4py`::
+reinstall mpi4py_::
 
     export MPICC=`which mpicc`
     pip install --no-cache-dir --upgrade --no-binary \":all:\" --force-reinstall mpi4py
@@ -273,7 +275,7 @@ Locate or install GROMACS
 You need a GROMACS installation that includes the gmxapi headers and library.
 If GROMACS 2020 or higher is already installed,
 *and* was configured with ``GMXAPI=ON`` at build time,
-you can just source the GMXRC
+you can just source the :ref:`GMXRC <getting access to |Gromacs|>`
 (so that the Python package knows where to find GROMACS)
 and skip to the next section.
 
@@ -333,7 +335,7 @@ the remaining examples assume the virtual environment is still active.
 Install dependencies
 ^^^^^^^^^^^^^^^^^^^^
 
-It is always a good idea to update :py:mod:`pip` and :py:mod:`setuptools` before installing
+It is always a good idea to update pip_ and setuptools_ before installing
 new Python packages::
 
     pip install --upgrade pip setuptools
@@ -345,7 +347,7 @@ they are installed and up to date before proceeding.
 
     pip install --upgrade cmake scikit-build
 
-For MPI, we use :py:mod:`mpi4py`.
+For MPI, we use mpi4py_.
 Make sure it is using the same MPI installation that we are building
 GROMACS against and building with compatible compilers.
 
@@ -419,7 +421,7 @@ For example, the last line of the previous example could be replaced with::
 
     pip install --no-cache-dir --no-deps --no-index --no-build-isolation .
 
-Refer to :py:mod:`pip` documentation for descriptions of these options.
+Refer to pip_ documentation for descriptions of these options.
 
 If you have built or downloaded a source distribution archive, you can provide
 the archive file to :command:`pip` instead of the ``.`` argument::
@@ -510,7 +512,7 @@ Troubleshooting
 ===============
 
 Couldn't find the ``gmxapi`` support library?
-If you don't want to "source" your ``GMXRC`` file, you
+If you don't want to "source" your :ref:`GMXRC <getting access to |Gromacs|>` file, you
 can tell the package where to find a gmxapi compatible GROMACS installation with
 ``gmxapi_DIR``. E.g. ``gmxapi_DIR=/path/to/gromacs pip install .``
 
@@ -549,7 +551,7 @@ Two of the easiest problems to run into are incompatible compilers and
 incompatible Python. Try to make sure that you use the same C and C++
 compilers for GROMACS, for the Python package, and for the sample
 plugin. These compilers should also correspond to the :command:`mpicc` compiler
-wrapper used to compile :py:mod:`mpi4py`. In order to build the Python
+wrapper used to compile mpi4py_. In order to build the Python
 package, you will need the Python headers or development installation,
 which might not already be installed on the machine you are using. (If
 not, then you will get an error about missing :file:`Python.h` at some
@@ -610,4 +612,18 @@ be back on track.
 If you are developing code for gmxapi, this should be an indication to
 rebase your feature branches for the new development cycle.
 
+.. _cmake: https://pypi.org/project/cmake/
+
 .. _Conda: https://docs.conda.io/en/latest/
+
+.. _mpi4py: https://pypi.org/project/mpi4py/
+
+.. _networkx: https://pypi.org/project/networkx/
+
+.. _numpy: https://www.numpy.org/
+
+.. _pip: https://pip.pypa.io/en/stable/
+
+.. _scikit-build: https://pypi.org/project/scikit-build/
+
+.. _setuptools: https://pypi.org/project/setuptools/
