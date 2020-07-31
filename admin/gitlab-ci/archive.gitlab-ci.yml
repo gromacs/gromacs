@@ -145,7 +145,7 @@ archive:configure:release:
     - .use-ccache
     - .before_script:default
     - .docs:build
-  image: gromacs/ci-docs-llvm:master
+  image: gromacs/ci-docs-llvm-master
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2

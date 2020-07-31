@@ -5,7 +5,7 @@ clang-tidy:configure-push:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:basic-push
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
   variables:
     COMPILER_MAJOR_VERSION: 9
     BUILD_DIR: build-clang-tidy
@@ -16,7 +16,7 @@ clang-tidy:configure-schedule:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:nightly-not-for-release
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
   variables:
     COMPILER_MAJOR_VERSION: 9
     BUILD_DIR: build-clang-tidy
@@ -29,7 +29,7 @@ clang-tidy:build:
     - .variables:default
     - .rules:nightly-not-for-release
   stage: source-check
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
   needs:
     - job: clang-tidy:configure-schedule
   variables:
@@ -41,7 +41,7 @@ clang-tidy:test:
     - .variables:default
     - .rules:basic-push
   stage: source-check
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi:master
+  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
   needs:
     - job: clang-tidy:configure-push
   variables:
@@ -77,7 +77,7 @@ clang-format:
     - .rules:basic-push
   cache: {}
   stage: pre-build
-  image: gromacs/ci-docs-llvm:master
+  image: gromacs/ci-docs-llvm-master
   variables:
     COMPILER_MAJOR_VERSION: 7
     KUBERNETES_CPU_LIMIT: 1
@@ -108,7 +108,7 @@ copyright-check:
     - .rules:basic-push
   cache: {}
   stage: pre-build
-  image: gromacs/ci-docs-llvm:master
+  image: gromacs/ci-docs-llvm-master
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1

@@ -6,7 +6,7 @@
     - .gromacs:base:configure
     - .before_script:default
   # TODO (#3480) this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-llvm:master
+  image: gromacs/ci-docs-llvm-master
   stage: configure-build
   cache: {}
   variables:
@@ -73,7 +73,7 @@
     - .before_script:default
     - .rules:nightly-only-for-release
   # TODO (#3480) this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-llvm:master
+  image: gromacs/ci-docs-llvm-master
   stage: release-configure
   cache: {}
   variables:
@@ -184,7 +184,7 @@ docs:configure:
 
 .docs:build:
   # TODO (#3480) this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-llvm:master
+  image: gromacs/ci-docs-llvm-master
   script:
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j8
@@ -224,7 +224,7 @@ docs:build:
     - .gromacs:base:build
     - .before_script:default
   # TODO (#3480) this should be organized more like the current documentation.py script
-  image: gromacs/ci-docs-llvm:master
+  image: gromacs/ci-docs-llvm-master
   cache: {}
   variables:
     KUBERNETES_CPU_LIMIT: 4
