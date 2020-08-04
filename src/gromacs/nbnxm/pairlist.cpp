@@ -249,7 +249,7 @@ static constexpr int sizeNeededForBufferFlags(const int numAtoms)
 static void resizeAndZeroBufferFlags(std::vector<gmx_bitmask_t>* flags, const int numAtoms)
 {
     flags->clear();
-    flags->resize(sizeNeededForBufferFlags(numAtoms), 0);
+    flags->resize(sizeNeededForBufferFlags(numAtoms), gmx_bitmask_t{ 0 });
 }
 
 
