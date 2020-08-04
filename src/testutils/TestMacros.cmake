@@ -109,7 +109,7 @@ function (gmx_add_gtest_executable EXENAME)
                  TEST_USES_HARDWARE_DETECTION=true)
         endif()
 
-        if (GMX_USE_CUDA AND NOT GMX_CLANG_CUDA)
+        if (GMX_GPU_CUDA AND NOT GMX_CLANG_CUDA)
             # Work around FindCUDA that prevents using target_link_libraries()
             # with keywords otherwise...
             set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
@@ -124,7 +124,7 @@ function (gmx_add_gtest_executable EXENAME)
                 ${TESTUTILS_DIR}/unittest_main.cpp)
         endif()
 
-        if (GMX_USE_CUDA)
+        if (GMX_GPU_CUDA)
             if (GMX_CLANG_CUDA)
                 target_sources(${EXENAME} PRIVATE
                     ${ARG_CUDA_CU_SOURCE_FILES}
@@ -135,7 +135,7 @@ function (gmx_add_gtest_executable EXENAME)
                     target_link_libraries(${EXENAME} PRIVATE ${GMX_EXTRA_LIBRARIES})
                 endif()
             endif()
-        elseif (GMX_USE_OPENCL)
+        elseif (GMX_GPU_OPENCL)
             target_sources(${EXENAME} PRIVATE ${ARG_OPENCL_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES})
             if(ARG_OPENCL_CPP_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES)
                 target_link_libraries(${EXENAME} PRIVATE ${OpenCL_LIBRARIES})
@@ -203,7 +203,7 @@ function (gmx_register_gtest_test NAME EXENAME)
             # Both OpenCL (from JIT) and ThreadSanitizer (from how it
             # checks) can take signficantly more time than other
             # configurations.
-            if (GMX_USE_OPENCL)
+            if (GMX_GPU_OPENCL)
                 set(_timeout 240)
             elseif (${CMAKE_BUILD_TYPE} STREQUAL TSAN)
                 set(_timeout 300)

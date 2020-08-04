@@ -68,11 +68,11 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/pmalloc_cuda.h"
 
 #    include "pme.cuh"
-#elif GMX_GPU == GMX_GPU_OPENCL
+#elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
 #endif
 
@@ -421,12 +421,12 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
 void pme_gpu_free_fract_shifts(const PmeGpu* pmeGpu)
 {
     auto* kernelParamsPtr = pmeGpu->kernelParams.get();
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU_CUDA
     destroyParamLookupTable(&kernelParamsPtr->grid.d_fractShiftsTable,
                             kernelParamsPtr->fractShiftsTableTexture);
     destroyParamLookupTable(&kernelParamsPtr->grid.d_gridlineIndicesTable,
                             kernelParamsPtr->gridlineIndicesTableTexture);
-#elif GMX_GPU == GMX_GPU_OPENCL
+#elif GMX_GPU_OPENCL
     freeDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable);
     freeDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable);
 #endif
@@ -502,7 +502,7 @@ void pme_gpu_sync_spread_grid(const PmeGpu* pmeGpu)
  */
 static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceContext, const DeviceStream& deviceStream)
 {
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU_CUDA
     // Prepare to use the device that this PME task was assigned earlier.
     // Other entities, such as CUDA timing events, are known to implicitly use the device context.
     CU_RET_ERR(cudaSetDevice(deviceContext.deviceInfo().id), "Switching to PME CUDA device");
@@ -518,11 +518,12 @@ static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceCon
      * TODO: PME could also try to pick up nice grid sizes (with factors of 2, 3, 5, 7).
      */
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU_CUDA
     pmeGpu->maxGridWidthX = deviceContext.deviceInfo().prop.maxGridSize[0];
-#elif GMX_GPU == GMX_GPU_OPENCL
-    pmeGpu->maxGridWidthX = INT32_MAX / 2;
+#else
+    // Use this path for any non-CUDA GPU acceleration
     // TODO: is there no really global work size limit in OpenCL?
+    pmeGpu->maxGridWidthX = INT32_MAX / 2;
 #endif
 }
 
@@ -763,7 +764,7 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
  */
 static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeGpu)
 {
-    if (pmeGpu->kernelParams->atoms.nAtoms > c_pmeGpuPerformanceAtomLimit && (GMX_GPU == GMX_GPU_CUDA))
+    if (GMX_GPU_CUDA && pmeGpu->kernelParams->atoms.nAtoms > c_pmeGpuPerformanceAtomLimit)
     {
         pmeGpu->settings.threadsPerAtom     = ThreadsPerAtom::Order;
         pmeGpu->settings.recalculateSplines = true;
@@ -1187,11 +1188,12 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     const int  threadsPerAtom =
             (pmeGpu->settings.threadsPerAtom == ThreadsPerAtom::Order ? order : order * order);
     const bool recalculateSplines = pmeGpu->settings.recalculateSplines;
-#if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(pmeGpu->settings.threadsPerAtom == ThreadsPerAtom::OrderSquared,
+
+    GMX_ASSERT(!GMX_GPU_OPENCL || pmeGpu->settings.threadsPerAtom == ThreadsPerAtom::OrderSquared,
                "Only 16 threads per atom supported in OpenCL");
-    GMX_ASSERT(!recalculateSplines, "Recalculating splines not supported in OpenCL");
-#endif
+    GMX_ASSERT(!GMX_GPU_OPENCL || !recalculateSplines,
+               "Recalculating splines not supported in OpenCL");
+
     const int atomsPerBlock = blockSize / threadsPerAtom;
 
     // TODO: pick smaller block size in runtime if needed
@@ -1206,9 +1208,10 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     // Ensure that coordinates are ready on the device before launching spread;
     // only needed with CUDA on PP+PME ranks, not on separate PME ranks, in unit tests
     // nor in OpenCL as these cases use a single stream (hence xReadyOnDevice == nullptr).
-    GMX_ASSERT(xReadyOnDevice != nullptr || (GMX_GPU != GMX_GPU_CUDA)
-                       || pmeGpu->common->isRankPmeOnly || pme_gpu_settings(pmeGpu).copyAllOutputs,
+    GMX_ASSERT(!GMX_GPU_CUDA || xReadyOnDevice != nullptr || pmeGpu->common->isRankPmeOnly
+                       || pme_gpu_settings(pmeGpu).copyAllOutputs,
                "Need a valid coordinate synchronizer on PP+PME ranks with CUDA.");
+
     if (xReadyOnDevice)
     {
         xReadyOnDevice->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
@@ -1356,7 +1359,7 @@ void pme_gpu_solve(const PmeGpu* pmeGpu,
     const int warpSize  = pmeGpu->programHandle_->warpSize();
     const int blockSize = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
 
-    static_assert(GMX_GPU != GMX_GPU_CUDA || c_solveMaxWarpsPerBlock / 2 >= 4,
+    static_assert(!GMX_GPU_CUDA || c_solveMaxWarpsPerBlock / 2 >= 4,
                   "The CUDA solve energy kernels needs at least 4 warps. "
                   "Here we launch at least half of the max warps.");
 
@@ -1528,11 +1531,12 @@ void pme_gpu_gather(PmeGpu* pmeGpu, real** h_grids, const float lambda)
     const int threadsPerAtom =
             (pmeGpu->settings.threadsPerAtom == ThreadsPerAtom::Order ? order : order * order);
     const bool recalculateSplines = pmeGpu->settings.recalculateSplines;
-#if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(pmeGpu->settings.threadsPerAtom == ThreadsPerAtom::OrderSquared,
+
+    GMX_ASSERT(!GMX_GPU_OPENCL || pmeGpu->settings.threadsPerAtom == ThreadsPerAtom::OrderSquared,
                "Only 16 threads per atom supported in OpenCL");
-    GMX_ASSERT(!recalculateSplines, "Recalculating splines not supported in OpenCL");
-#endif
+    GMX_ASSERT(!GMX_GPU_OPENCL || !recalculateSplines,
+               "Recalculating splines not supported in OpenCL");
+
     const int atomsPerBlock = blockSize / threadsPerAtom;
 
     GMX_ASSERT(!(c_pmeAtomDataBlockSize % atomsPerBlock),

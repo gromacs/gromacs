@@ -46,7 +46,7 @@
 
 #include "gromacs/mdlib/update_constrain_gpu.h"
 
-#if GMX_GPU != GMX_GPU_CUDA
+#if !GMX_GPU_CUDA
 
 namespace gmx
 {
@@ -120,4 +120,4 @@ bool UpdateConstrainGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& /* m
 
 } // namespace gmx
 
-#endif /* GMX_GPU != GMX_GPU_CUDA */
+#endif /* !GMX_GPU_CUDA */

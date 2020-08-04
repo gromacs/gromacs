@@ -46,7 +46,7 @@
 
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 
-#if GMX_GPU == GMX_GPU_NONE
+#if !GMX_GPU
 namespace gmx
 {
 
@@ -265,4 +265,4 @@ int StatePropagatorDataGpu::numAtomsAll()
 
 } // namespace gmx
 
-#endif // GMX_GPU == GMX_GPU_NONE
+#endif // !GMX_GPU

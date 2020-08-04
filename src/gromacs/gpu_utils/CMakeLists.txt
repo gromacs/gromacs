@@ -43,7 +43,7 @@ gmx_add_libgromacs_sources(
         gpu_utils.cpp
         gpu_testutils.cpp
         )
-if(GMX_USE_OPENCL)
+if(GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         device_context_ocl.cpp
         device_stream_ocl.cpp
@@ -52,7 +52,7 @@ if(GMX_USE_OPENCL)
         ocl_caching.cpp
         oclutils.cpp
         )
-elseif(GMX_USE_CUDA)
+elseif(GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         device_stream.cu
         gpu_utils.cu

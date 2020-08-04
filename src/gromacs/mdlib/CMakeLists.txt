@@ -39,7 +39,7 @@ set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
-if(GMX_USE_CUDA)
+if(GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
        leapfrog_gpu.cu
        lincs_gpu.cu

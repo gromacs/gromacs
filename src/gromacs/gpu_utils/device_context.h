@@ -50,7 +50,7 @@
 
 #include "config.h"
 
-#if GMX_GPU == GMX_GPU_OPENCL
+#if GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/device_context_ocl.h"
 #else
 #    include "gromacs/utility/classhelpers.h"
@@ -75,6 +75,6 @@ private:
 
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);
 };
-#endif // GMX_GPU != GMX_GPU_OPENCL
+#endif // !GMX_GPU_OPENCL
 
 #endif // GMX_GPU_UTILS_DEVICE_CONTEXT_H

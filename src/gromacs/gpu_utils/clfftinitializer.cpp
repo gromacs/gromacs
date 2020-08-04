@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/stringutil.h"
 
-#if GMX_GPU == GMX_GPU_OPENCL
+#if GMX_GPU_OPENCL
 #    include <clFFT.h>
 #endif
 
@@ -74,7 +74,7 @@ gmx::Mutex      g_clfftMutex;
 
 ClfftInitializer::ClfftInitializer()
 {
-#if GMX_GPU == GMX_GPU_OPENCL
+#if GMX_GPU_OPENCL
     gmx::lock_guard<gmx::Mutex> guard(g_clfftMutex);
     clfftSetupData              fftSetup;
     int                         initErrorCode = clfftInitSetupData(&fftSetup);
@@ -97,7 +97,7 @@ ClfftInitializer::ClfftInitializer()
 
 ClfftInitializer::~ClfftInitializer()
 {
-#if GMX_GPU == GMX_GPU_OPENCL
+#if GMX_GPU_OPENCL
     gmx::lock_guard<gmx::Mutex> guard(g_clfftMutex);
     if (g_clfftInitialized)
     {

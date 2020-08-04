@@ -308,12 +308,12 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine(formatString("Linked with Intel MKL version %d.%d.%d.", __INTEL_MKL__,
                                    __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__));
 #endif
-#if GMX_GPU == GMX_GPU_OPENCL
+#if GMX_GPU_OPENCL
     writer->writeLine(formatString("OpenCL include dir: %s", OPENCL_INCLUDE_DIR));
     writer->writeLine(formatString("OpenCL library:     %s", OPENCL_LIBRARY));
     writer->writeLine(formatString("OpenCL version:     %s", OPENCL_VERSION_STRING));
 #endif
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU_CUDA
     writer->writeLine(formatString("CUDA compiler:      %s", CUDA_COMPILER_INFO));
     writer->writeLine(formatString("CUDA compiler flags:%s %s", CUDA_COMPILER_FLAGS,
                                    CMAKE_BUILD_CONFIGURATION_CXX_FLAGS));

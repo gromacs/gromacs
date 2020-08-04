@@ -61,7 +61,7 @@
 #include "gromacs/utility/sysinfo.h"
 
 //! Constant used to help minimize preprocessed code
-static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
+static constexpr bool bGPUBinary = (GMX_GPU != 0);
 
 /*! \internal \brief
  * Returns the GPU information text, one GPU per line.

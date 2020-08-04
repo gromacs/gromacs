@@ -46,11 +46,11 @@
 
 #include "gromacs/nbnxm/nbnxm.h"
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU_CUDA
 #    include "cuda/nbnxm_cuda_types.h"
 #endif
 
-#if GMX_GPU == GMX_GPU_OPENCL
+#if GMX_GPU_OPENCL
 #    include "opencl/nbnxm_ocl_types.h"
 #endif
 

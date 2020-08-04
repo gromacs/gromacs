@@ -33,7 +33,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(GMX_USE_OPENCL)
+if(GMX_GPU_OPENCL)
     file(GLOB OPENCL_NB_SOURCES *.cpp)
     set(NBNXM_SOURCES ${NBNXM_SOURCES} ${OPENCL_NB_SOURCES} PARENT_SCOPE)
 endif()

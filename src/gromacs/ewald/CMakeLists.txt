@@ -54,7 +54,7 @@ gmx_add_libgromacs_sources(
     pme_coordinate_receiver_gpu_impl.cpp
     pme_force_sender_gpu_impl.cpp
     )
-if (GMX_USE_CUDA)
+if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
         pme_gather.cu
@@ -70,7 +70,7 @@ if (GMX_USE_CUDA)
         pme_gpu_internal.cpp
         pme_gpu_timings.cpp
         )
-elseif (GMX_USE_OPENCL)
+elseif (GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         # OpenCL-specific sources
         pme_gpu_3dfft_ocl.cpp

@@ -48,7 +48,7 @@
 
 #include "testutils/testasserts.h"
 
-#if GMX_GPU != GMX_GPU_CUDA
+#if !GMX_GPU_CUDA
 
 namespace gmx
 {
@@ -71,4 +71,4 @@ void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>& /* rVecOutput */,
 } // namespace test
 } // namespace gmx
 
-#endif // GMX_GPU != GMX_GPU_CUDA
+#endif // !GMX_GPU_CUDA

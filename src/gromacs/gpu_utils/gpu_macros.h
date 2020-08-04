@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@
 #    define OPENCL_FUNC_TERM REAL_FUNC_TERM
 #    define OPENCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
-#elif GMX_GPU != GMX_GPU_NONE
+#elif GMX_GPU
 
 /* GPU support is enabled, so these functions will have real code
  * defined somewhere */
@@ -83,7 +83,7 @@
 #    define GPU_FUNC_TERM REAL_FUNC_TERM
 #    define GPU_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
-#    if GMX_GPU == GMX_GPU_OPENCL
+#    if GMX_GPU_OPENCL
 
 /* OpenCL support is enabled, so CUDA-specific functions need empty
  * implementations, while OpenCL-specific functions will have real
@@ -98,7 +98,7 @@
 #        define OPENCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
 #    endif
-#    if GMX_GPU == GMX_GPU_CUDA
+#    if GMX_GPU_CUDA
 
 /* CUDA support is enabled, so OpenCL-specific functions need empty
  * implementations, while CUDA-specific functions will have real
@@ -114,7 +114,7 @@
 
 #    endif
 
-#elif GMX_GPU == GMX_GPU_NONE
+#elif !GMX_GPU
 
 /* No GPU support is configured, so none of these functions will have
  * real definitions. */

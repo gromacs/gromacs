@@ -51,12 +51,12 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 
-#if GMX_GPU != GMX_GPU_CUDA
+#if !GMX_GPU_CUDA
 
 namespace gmx
 {
 
-/*!\brief Impl class stub. */
+/*!\brief \internal Impl class stub. */
 class PmeCoordinateReceiverGpu::Impl
 {
 };
@@ -98,4 +98,4 @@ void PmeCoordinateReceiverGpu::enqueueWaitReceiveCoordinatesFromPpCudaDirect()
 
 } // namespace gmx
 
-#endif /* GMX_GPU != GMX_GPU_CUDA */
+#endif // !GMX_GPU_CUDA

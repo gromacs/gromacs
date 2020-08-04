@@ -204,8 +204,8 @@ option(GMX_INSTALL_LEGACY_API "Install legacy headers" OFF)
 gmx_option_multichoice(
     GMX_GPU
     "Framework for GPU acceleration"
-    None
-    None CUDA OpenCL)
+    OFF
+    OFF CUDA OpenCL)
 
 gmx_option_multichoice(
     GMX_SIMD
@@ -568,9 +568,9 @@ include(gmxManageTNG)
 
 include(gmxManageLmfit)
 
-string(TOUPPER "${GMX_GPU}" _gmx_gpu_uppercase)
-if(NOT ${_gmx_gpu_uppercase} STREQUAL "NONE")
+if(GMX_GPU)
 
+    string(TOUPPER "${GMX_GPU}" _gmx_gpu_uppercase)
     if(${_gmx_gpu_uppercase} STREQUAL "CUDA")
         include(gmxManageCuda)
     elseif(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
@@ -581,10 +581,6 @@ if(NOT ${_gmx_gpu_uppercase} STREQUAL "NONE")
     endif()
 
 endif()
-
-# Not ideal to set this without the GPU acceleration, but the source presently requires GMX_GPU
-# to be set to GMX_GPU_None for a non-GPU build to work.
-set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_${_gmx_gpu_uppercase}")
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)

@@ -44,7 +44,7 @@
 
 #include "config.h"
 
-#if GMX_GPU != GMX_GPU_NONE
+#if GMX_GPU
 
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
@@ -70,7 +70,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
     wcycle_(wcycle)
 {
     static_assert(
-            GMX_GPU != GMX_GPU_NONE,
+            GMX_GPU,
             "GPU state propagator data object should only be constructed on the GPU code-paths.");
 
     // We need to keep local copies for re-initialization.
@@ -78,14 +78,8 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
     localStream_    = &deviceStreamManager.stream(DeviceStreamType::NonBondedLocal);
     nonLocalStream_ = &deviceStreamManager.stream(DeviceStreamType::NonBondedNonLocal);
     // PME stream is used in OpenCL for H2D coordinate transfer
-    if (GMX_GPU == GMX_GPU_OPENCL)
-    {
-        updateStream_ = &deviceStreamManager.stream(DeviceStreamType::Pme);
-    }
-    else
-    {
-        updateStream_ = &deviceStreamManager.stream(DeviceStreamType::UpdateAndConstraints);
-    }
+    updateStream_ = &deviceStreamManager.stream(
+            GMX_GPU_OPENCL ? DeviceStreamType::Pme : DeviceStreamType::UpdateAndConstraints);
 
     // Map the atom locality to the stream that will be used for coordinates,
     // velocities and forces transfers. Same streams are used for H2D and D2H copies.
@@ -114,7 +108,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
     wcycle_(wcycle)
 {
     static_assert(
-            GMX_GPU != GMX_GPU_NONE,
+            GMX_GPU,
             "GPU state propagator data object should only be constructed on the GPU code-paths.");
 
     GMX_ASSERT(pmeStream->isValid(), "GPU PME stream should be valid.");
@@ -172,10 +166,11 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     reallocateDeviceBuffer(&d_v_, numAtomsAll_, &d_vSize_, &d_vCapacity_, deviceContext_);
     const int d_fOldCapacity = d_fCapacity_;
     reallocateDeviceBuffer(&d_f_, numAtomsAll_, &d_fSize_, &d_fCapacity_, deviceContext_);
+
     // Clearing of the forces can be done in local stream since the nonlocal stream cannot reach
     // the force accumulation stage before syncing with the local stream. Only done in CUDA,
     // since the force buffer ops are not implemented in OpenCL.
-    if (GMX_GPU == GMX_GPU_CUDA && d_fCapacity_ != d_fOldCapacity)
+    if (GMX_GPU_CUDA && d_fCapacity_ != d_fOldCapacity)
     {
         clearDeviceBufferAsync(&d_f_, 0, d_fCapacity_, *localStream_);
     }
@@ -306,7 +301,7 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<cons
     //   - it's not needed, copy is done in the same stream as the only consumer task (PME)
     //   - we don't consume the events in OpenCL which is not allowed by GpuEventSynchronizer (would leak memory).
     // TODO: remove this by adding an event-mark free flavor of this function
-    if (GMX_GPU == GMX_GPU_CUDA)
+    if (GMX_GPU_CUDA)
     {
         xReadyOnDevice_[atomLocality].markEvent(*deviceStream);
     }
@@ -328,7 +323,7 @@ StatePropagatorDataGpu::Impl::getCoordinatesReadyOnDeviceEvent(AtomLocality atom
     // TODO: This should be reconsidered to support the halo exchange.
     //
     // In OpenCL no events are used as coordinate sync is not necessary
-    if (GMX_GPU == GMX_GPU_OPENCL)
+    if (GMX_GPU_OPENCL)
     {
         return nullptr;
     }
@@ -667,4 +662,4 @@ int StatePropagatorDataGpu::numAtomsAll()
 
 } // namespace gmx
 
-#endif // GMX_GPU == GMX_GPU_NONE
+#endif // GMX_GPU

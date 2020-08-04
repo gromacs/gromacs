@@ -47,11 +47,11 @@
 
 #include "config.h"
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU_CUDA
 
 #    include "gromacs/gpu_utils/gputraits.cuh"
 
-#elif GMX_GPU == GMX_GPU_OPENCL
+#elif GMX_GPU_OPENCL
 
 #    include "gromacs/gpu_utils/gputraits_ocl.h"
 
@@ -59,7 +59,7 @@
 
 using DeviceTexture = void*;
 
-//! Stub for device information.
+//! \internal Stub for device information.
 struct DeviceInformation
 {
     // No member needed

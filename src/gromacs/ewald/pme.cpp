@@ -159,7 +159,7 @@ bool pme_gpu_supports_build(std::string* error)
     {
         errorReasons.emplace_back("a double-precision build");
     }
-    if (GMX_GPU == GMX_GPU_NONE)
+    if (!GMX_GPU)
     {
         errorReasons.emplace_back("a non-GPU build");
     }
@@ -170,7 +170,7 @@ bool pme_gpu_supports_hardware(const gmx_hw_info_t gmx_unused& hwinfo, std::stri
 {
     std::list<std::string> errorReasons;
 
-    if (GMX_GPU == GMX_GPU_OPENCL)
+    if (GMX_GPU_OPENCL)
     {
 #ifdef __APPLE__
         errorReasons.emplace_back("Apple OS X operating system");
@@ -231,7 +231,7 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t* pme, std::string* error)
     {
         errorReasons.emplace_back("double precision");
     }
-    if (GMX_GPU == GMX_GPU_NONE)
+    if (!GMX_GPU)
     {
         errorReasons.emplace_back("non-GPU build of GROMACS");
     }

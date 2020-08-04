@@ -91,15 +91,13 @@
  *
  * Any remaining vsites are assigned to a separate master thread task.
  */
-
 namespace gmx
 {
 
 //! VirialHandling is often used outside VirtualSitesHandler class members
 using VirialHandling = VirtualSitesHandler::VirialHandling;
 
-/*! \libinternal
- * \brief Information on PBC and domain decomposition for virtual sites
+/*! \brief Information on PBC and domain decomposition for virtual sites
  */
 struct DomainInfo
 {
@@ -126,8 +124,7 @@ public:
     const gmx_domdec_t* domdec_ = nullptr;
 };
 
-/*! \libinternal
- * \brief List of atom indices belonging to a task
+/*! \brief List of atom indices belonging to a task
  */
 struct AtomIndex
 {
@@ -135,8 +132,7 @@ struct AtomIndex
     std::vector<int> atom;
 };
 
-/*! \libinternal
- * \brief Data structure for thread tasks that use constructing atoms outside their own atom range
+/*! \brief Data structure for thread tasks that use constructing atoms outside their own atom range
  */
 struct InterdependentTask
 {
@@ -158,8 +154,7 @@ struct InterdependentTask
     std::vector<int> reduceTask;
 };
 
-/*! \libinternal
- * \brief Vsite thread task data structure
+/*! \brief Vsite thread task data structure
  */
 struct VsiteThread
 {
@@ -193,8 +188,7 @@ struct VsiteThread
 };
 
 
-/*! \libinternal
- * \brief Information on how the virtual site work is divided over thread tasks
+/*! \brief Information on how the virtual site work is divided over thread tasks
  */
 class ThreadingInfo
 {
@@ -232,8 +226,7 @@ private:
     std::vector<int> taskIndex_;
 };
 
-/*! \libinternal
- * \brief Impl class for VirtualSitesHandler
+/*! \brief Impl class for VirtualSitesHandler
  */
 class VirtualSitesHandler::Impl
 {

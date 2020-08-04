@@ -80,8 +80,7 @@ void applySettleGpu(SettleTestData*  testData,
 {
     // These should never fail since this function should only be called if CUDA is enabled and
     // there is a CUDA-capable device available.
-    GMX_RELEASE_ASSERT(GMX_GPU == GMX_GPU_CUDA,
-                       "CUDA version of SETTLE was called from non-CUDA build.");
+    GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "CUDA version of SETTLE was called from non-CUDA build.");
 
     // TODO: Here we should check that at least 1 suitable GPU is available
     GMX_RELEASE_ASSERT(canPerformGpuDetection(), "Can't detect CUDA-capable GPUs.");

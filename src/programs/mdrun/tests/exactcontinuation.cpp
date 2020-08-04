@@ -435,7 +435,7 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 // TODO The time for OpenCL kernel compilation means these tests time
 // out. Once that compilation is cached for the whole process, these
 // tests can run in such configurations.
-#if GMX_GPU != GMX_GPU_OPENCL
+#if !GMX_GPU_OPENCL
 
 INSTANTIATE_TEST_CASE_P(
         NormalIntegrators,

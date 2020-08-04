@@ -33,7 +33,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-if(GMX_USE_CUDA)
+if(GMX_GPU_CUDA)
     if(NOT GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
         set(NBNXM_CUDA_KERNEL_SOURCES
                 nbnxm_cuda_kernel_F_noprune.cu

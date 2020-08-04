@@ -103,14 +103,14 @@ void integrateLeapFrogSimple(LeapFrogTestData* testData, int numSteps)
     }
 }
 
-#if GMX_GPU != GMX_GPU_CUDA
+#if !GMX_GPU_CUDA
 
 void integrateLeapFrogGpu(gmx_unused LeapFrogTestData* testData, gmx_unused int numSteps)
 {
     FAIL() << "Dummy Leap-Frog CUDA function was called instead of the real one.";
 }
 
-#endif // GMX_GPU != GMX_GPU_CUDA
+#endif // !GMX_GPU_CUDA
 
 } // namespace test
 } // namespace gmx

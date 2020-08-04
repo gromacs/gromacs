@@ -132,8 +132,8 @@ static void gmx_detect_gpus(const gmx::MDLogger&             mdlog,
     /* The OpenCL support requires us to run detection on all ranks.
      * With CUDA we don't need to, and prefer to detect on one rank
      * and send the information to the other ranks over MPI. */
-    bool allRanksMustDetectGpus = (GMX_GPU == GMX_GPU_OPENCL);
-    bool gpusCanBeDetected      = false;
+    constexpr bool allRanksMustDetectGpus = (GMX_GPU_OPENCL != 0);
+    bool           gpusCanBeDetected      = false;
     if (isMasterRankOfPhysicalNode || allRanksMustDetectGpus)
     {
         std::string errorMessage;

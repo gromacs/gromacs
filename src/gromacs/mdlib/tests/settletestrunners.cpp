@@ -78,7 +78,7 @@ void applySettle(SettleTestData*    testData,
     EXPECT_FALSE(errorOccured) << testDescription;
 }
 
-#if GMX_GPU != GMX_GPU_CUDA
+#if !GMX_GPU_CUDA
 
 void applySettleGpu(gmx_unused SettleTestData* testData,
                     gmx_unused const t_pbc pbc,

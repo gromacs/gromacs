@@ -187,12 +187,9 @@ public:
         // 2. There is a CUDA-capable GPU in a system
         // 3. This GPU is detectable
         // 4. GPU detection was not disabled by GMX_DISABLE_GPU_DETECTION environment variable
-        if (s_hasCompatibleGpus)
+        if (GMX_GPU_CUDA && s_hasCompatibleGpus)
         {
-            if (GMX_GPU == GMX_GPU_CUDA && s_hasCompatibleGpus)
-            {
-                runners_["SETTLE_GPU"] = applySettleGpu;
-            }
+            runners_["SETTLE_GPU"] = applySettleGpu;
         }
     }
 

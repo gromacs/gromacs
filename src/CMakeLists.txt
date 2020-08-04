@@ -40,7 +40,7 @@
 include(GetCompilerInfo.cmake)
 get_compiler_info(C BUILD_C_COMPILER)
 get_compiler_info(CXX BUILD_CXX_COMPILER)
-if(GMX_USE_CUDA)
+if(GMX_GPU_CUDA)
     if(NOT GMX_CLANG_CUDA)
         GMX_SET_CUDA_NVCC_FLAGS()
     endif()

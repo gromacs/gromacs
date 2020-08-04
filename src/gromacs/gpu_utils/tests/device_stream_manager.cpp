@@ -71,7 +71,7 @@ const EnumerationArray<DeviceStreamType, std::string> c_deviceStreamNames = {
 
 /*! \brief Non-GPU builds return nullptr instead of streams,
  * so we have to expect that in such build configurations. */
-const bool c_canExpectValidStreams = (GMX_GPU != GMX_GPU_NONE);
+constexpr bool c_canExpectValidStreams = (GMX_GPU != 0);
 
 //! Helper function to implement readable testing
 void expectValidStreams(DeviceStreamManager* manager, std::initializer_list<DeviceStreamType> types)

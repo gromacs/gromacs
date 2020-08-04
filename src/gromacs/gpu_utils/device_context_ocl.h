@@ -48,8 +48,10 @@
  * \inlibraryapi
  */
 
-#include "gromacs/gpu_utils/gmxopencl.h"
-#include "gromacs/utility/classhelpers.h"
+#ifndef DOXYGEN
+
+#    include "gromacs/gpu_utils/gmxopencl.h"
+#    include "gromacs/utility/classhelpers.h"
 
 struct DeviceInformation;
 
@@ -81,4 +83,5 @@ private:
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);
 };
 
+#endif // !defined DOXYGEN
 #endif // GMX_GPU_UTILS_DEVICE_CONTEXT_OCL_H

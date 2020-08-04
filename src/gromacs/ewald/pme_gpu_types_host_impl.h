@@ -50,10 +50,10 @@
 #include <set>
 #include <vector>
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #    include "gromacs/gpu_utils/gpuregiontimer.cuh"
-#elif GMX_GPU == GMX_GPU_OPENCL
+#elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
 #    include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
 #endif

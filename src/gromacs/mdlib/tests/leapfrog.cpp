@@ -153,7 +153,7 @@ public:
         // All runners should be registered here under appropriate conditions
         //
         s_runners_["LeapFrogSimple"] = integrateLeapFrogSimple;
-        if (GMX_GPU == GMX_GPU_CUDA && canComputeOnGpu())
+        if (GMX_GPU_CUDA && canComputeOnGpu())
         {
             s_runners_["LeapFrogGpu"] = integrateLeapFrogGpu;
         }

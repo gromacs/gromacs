@@ -51,12 +51,12 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 
-#if GMX_GPU != GMX_GPU_CUDA
+#if !GMX_GPU_CUDA
 
 namespace gmx
 {
 
-/*!\brief Impl class stub. */
+/*!\brief \internal Impl class stub. */
 class PmePpCommGpu::Impl
 {
 };
@@ -120,4 +120,4 @@ void* PmePpCommGpu::getForcesReadySynchronizer()
 
 } // namespace gmx
 
-#endif /* GMX_GPU != GMX_GPU_CUDA */
+#endif // !GMX_GPU_CUDA

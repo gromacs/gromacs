@@ -202,13 +202,13 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
     // getenv results are ignored when clearly they are used.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
-    devFlags.enableGpuBufferOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr)
-                                  && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
-    devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr);
-    devFlags.enableGpuHaloExchange =
-            (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
+
+    devFlags.enableGpuBufferOps =
+            GMX_GPU_CUDA && useGpuForNonbonded && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
+    devFlags.enableGpuHaloExchange = GMX_GPU_CUDA && GMX_THREAD_MPI && getenv("GMX_GPU_DD_COMMS") != nullptr;
     devFlags.enableGpuPmePPComm =
-            (getenv("GMX_GPU_PME_PP_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
+            GMX_GPU_CUDA && GMX_THREAD_MPI && getenv("GMX_GPU_PME_PP_COMMS") != nullptr;
+
 #pragma GCC diagnostic pop
 
     if (devFlags.enableGpuBufferOps)
@@ -1165,7 +1165,8 @@ int Mdrunner::mdrunner()
 
     // timing enabling - TODO put this in gpu_utils (even though generally this is just option handling?)
     bool useTiming = true;
-    if (GMX_GPU == GMX_GPU_CUDA)
+
+    if (GMX_GPU_CUDA)
     {
         /* WARNING: CUDA timings are incorrect with multiple streams.
          *          This is the main reason why they are disabled by default.
@@ -1173,7 +1174,7 @@ int Mdrunner::mdrunner()
         // TODO: Consider turning on by default when we can detect nr of streams.
         useTiming = (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
     }
-    else if (GMX_GPU == GMX_GPU_OPENCL)
+    else if (GMX_GPU_OPENCL)
     {
         useTiming = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
     }

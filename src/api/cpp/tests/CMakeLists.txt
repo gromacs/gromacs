@@ -60,7 +60,7 @@ gmx_add_gtest_executable(gmxapi-test
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
         )
-if(NOT GMX_USE_OPENCL)
+if(NOT GMX_GPU_OPENCL)
     # GPU resources may not be properly reinitialized between simulations in
     # the same process.
     # TODO: include this with the other test sources once the issue is resolved
@@ -89,7 +89,7 @@ gmx_add_gtest_executable(gmxapi-mpi-test MPI
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
         )
-if(NOT GMX_USE_OPENCL)
+if(NOT GMX_GPU_OPENCL)
     # GPU resources may not be properly reinitialized between simulations in
     # the same process.
     # TODO: include this with the other test sources once the issue is resolved

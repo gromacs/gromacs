@@ -60,6 +60,8 @@
 #define CL_CONTEXT_DIAGNOSTICS_LEVEL_NEUTRAL_INTEL 0x4
 /**@}*/
 
+#ifndef DOXYGEN
+
 DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(deviceInfo)
 {
     cl_platform_id                     platformId = deviceInfo.oclPlatformId;
@@ -105,3 +107,5 @@ cl_context DeviceContext::context() const
 {
     return context_;
 }
+
+#endif

@@ -55,7 +55,7 @@
 #endif
 
 //! Constant used to help minimize preprocessed code
-static constexpr bool c_binarySupportsGpus = (GMX_GPU != GMX_GPU_NONE);
+static constexpr bool c_binarySupportsGpus = (GMX_GPU != 0);
 
 bool canPerformGpuDetection()
 {
@@ -69,7 +69,7 @@ bool canPerformGpuDetection()
     }
 }
 
-#if GMX_GPU == GMX_GPU_NONE
+#if !GMX_GPU
 DeviceStatus gpu_info_get_stat(const gmx_gpu_info_t& /*unused*/, int /*unused*/)
 {
     return DeviceStatus::Nonexistent;
