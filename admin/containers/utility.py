@@ -58,21 +58,16 @@ parsers for tools.
     Instead, inherit from it with the *parents* argument to :py:class:`argparse.ArgumentParser`
 """
 
-# TODO: Try using distutils.version.StrictVersion.
 parser.add_argument('--cmake', type=str, default='3.13.0',
-                    choices=['3.9.6', '3.11.4', '3.13.0', '3.14.7', '3.15.7', '3.16.6', '3.17.2'],
                     help='Selection of CMake version to provide to base image')
 compiler_group = parser.add_mutually_exclusive_group()
 compiler_group.add_argument('--gcc', type=int, nargs='?', const=7, default=7,
-                            choices=[5, 6, 7, 8, 9],
                             help='Select GNU compiler tool chain. (Default) '
                                  'Some checking is implemented to avoid incompatible combinations')
 compiler_group.add_argument('--llvm', type=str, nargs='?', const='7', default=None,
-                            choices=['3.6', '6', '7', '8', '9'],
                             help='Select LLVM compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
 compiler_group.add_argument('--icc', type=int, nargs='?', const=19, default=None,
-                            choices=[19, 20],
                             help='Select Intel compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
 # TODO currently the installation merely gets the latest beta version of oneAPI,
@@ -82,31 +77,24 @@ compiler_group.add_argument('--oneapi', type=str, nargs='?', const="", default="
                             help='Select Intel oneAPI package version.')
 
 linux_group = parser.add_mutually_exclusive_group()
-linux_group.add_argument('--ubuntu', type=str, nargs='?', const='18.04', default='20.04',
-                         choices=['16.04', '18.04', '20.04'],
+linux_group.add_argument('--ubuntu', type=str, nargs='?', const='20.04', default='20.04',
                          help='Select Ubuntu Linux base image. (default: ubuntu 20.04)')
 linux_group.add_argument('--centos', type=str, nargs='?', const='7', default=None,
-                         choices=['6', '7'],
                          help='Select Centos Linux base image.')
 
 parser.add_argument('--cuda', type=str, nargs='?', const='10.2', default=None,
-                    choices=['9.0', '10.0', '10.1', '10.2', '11.0'],
                     help='Select a CUDA version for a base Linux image from NVIDIA.')
 
 parser.add_argument('--mpi', type=str, nargs='?', const='openmpi', default=None,
-                    choices=['openmpi', 'impi'],
                     help='Enable MPI (default disabled) and optionally select distribution (default: openmpi)')
 
 parser.add_argument('--tsan', type=str, nargs='?', const='llvm', default=None,
-                    choices=['llvm'],
                     help='Build special compiler versions with TSAN OpenMP support')
 
 parser.add_argument('--opencl', type=str, nargs='?', const='nvidia', default=None,
-                    choices=['nvidia', 'intel', 'amd'],
                     help='Provide environment for OpenCL builds')
 
 parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None,
-                    choices=['master', 'develop'],
                     help='Add external clFFT libraries to the build image')
 
 parser.add_argument('--doxygen', type=str, nargs='?', const='1.8.5', default=None,
