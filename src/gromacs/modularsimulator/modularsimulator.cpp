@@ -141,13 +141,12 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         SignallerBuilder<TrajectorySignaller>*     trajectorySignallerBuilder,
         TrajectoryElementBuilder*                  trajectoryElementBuilder,
         std::vector<ICheckpointHelperClient*>*     checkpointClients,
-        CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
         compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
         compat::not_null<EnergyData*>              energyDataPtr,
         FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
         bool                                       hasReadEkinState,
         TopologyHolder::Builder*                   topologyHolderBuilder,
-        SimulationSignals*                         signals)
+        GlobalCommunicationHelper*                 globalCommunicationHelper)
 {
     auto forceElement = buildForces(neighborSearchSignallerBuilder, energySignallerBuilder,
                                     statePropagatorDataPtr, energyDataPtr,
@@ -161,19 +160,23 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
     std::function<void()> needToCheckNumberOfBondedInteractions;
     if (legacySimulatorData_->inputrec->eI == eiMD)
     {
-        auto computeGlobalsElement = std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
-                statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr, signals,
-                nstglobalcomm_, legacySimulatorData_->fplog, legacySimulatorData_->mdlog,
-                legacySimulatorData_->cr, legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms,
-                legacySimulatorData_->nrnb, legacySimulatorData_->wcycle, legacySimulatorData_->fr,
-                legacySimulatorData_->top_global, legacySimulatorData_->constr, hasReadEkinState);
+        auto computeGlobalsElement =
+                std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
+                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
+                        globalCommunicationHelper->simulationSignals(),
+                        globalCommunicationHelper->nstglobalcomm(), legacySimulatorData_->fplog,
+                        legacySimulatorData_->mdlog, legacySimulatorData_->cr,
+                        legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms,
+                        legacySimulatorData_->nrnb, legacySimulatorData_->wcycle,
+                        legacySimulatorData_->fr, legacySimulatorData_->top_global,
+                        legacySimulatorData_->constr, hasReadEkinState);
         topologyHolderBuilder->registerClient(computeGlobalsElement.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
         trajectorySignallerBuilder->registerSignallerClient(
                 compat::make_not_null(computeGlobalsElement.get()));
 
-        *checkBondedInteractionsCallback =
-                computeGlobalsElement->getCheckNumberOfBondedInteractionsCallback();
+        globalCommunicationHelper->setCheckBondedInteractionsCallback(
+                computeGlobalsElement->getCheckNumberOfBondedInteractionsCallback());
 
         auto propagator = std::make_unique<Propagator<IntegrationStep::LeapFrog>>(
                 legacySimulatorData_->inputrec->delta_t, statePropagatorDataPtr,
@@ -255,19 +258,21 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
     {
         auto computeGlobalsElement =
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>(
-                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr, signals,
-                        nstglobalcomm_, legacySimulatorData_->fplog, legacySimulatorData_->mdlog,
-                        legacySimulatorData_->cr, legacySimulatorData_->inputrec,
-                        legacySimulatorData_->mdAtoms, legacySimulatorData_->nrnb,
-                        legacySimulatorData_->wcycle, legacySimulatorData_->fr,
-                        legacySimulatorData_->top_global, legacySimulatorData_->constr, hasReadEkinState);
+                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
+                        globalCommunicationHelper->simulationSignals(),
+                        globalCommunicationHelper->nstglobalcomm(), legacySimulatorData_->fplog,
+                        legacySimulatorData_->mdlog, legacySimulatorData_->cr,
+                        legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms,
+                        legacySimulatorData_->nrnb, legacySimulatorData_->wcycle,
+                        legacySimulatorData_->fr, legacySimulatorData_->top_global,
+                        legacySimulatorData_->constr, hasReadEkinState);
         topologyHolderBuilder->registerClient(computeGlobalsElement.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
         trajectorySignallerBuilder->registerSignallerClient(
                 compat::make_not_null(computeGlobalsElement.get()));
 
-        *checkBondedInteractionsCallback =
-                computeGlobalsElement->getCheckNumberOfBondedInteractionsCallback();
+        globalCommunicationHelper->setCheckBondedInteractionsCallback(
+                computeGlobalsElement->getCheckNumberOfBondedInteractionsCallback());
 
         auto propagatorVelocities = std::make_unique<Propagator<IntegrationStep::VelocitiesOnly>>(
                 legacySimulatorData_->inputrec->delta_t * 0.5, statePropagatorDataPtr,

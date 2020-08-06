@@ -388,6 +388,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
             legacySimulatorData_->cr, legacySimulatorData_->mdlog, legacySimulatorData_->mdrunOptions,
             legacySimulatorData_->inputrec, legacySimulatorData_->nrnb, legacySimulatorData_->wcycle,
             legacySimulatorData_->fr, legacySimulatorData_->walltime_accounting);
+    GlobalCommunicationHelper globalCommunicationHelper(nstglobalcomm_, &algorithm.signals_);
     /* When restarting from a checkpoint, it can be appropriate to
      * initialize ekind from quantities in the checkpoint. Otherwise,
      * compute_globals must initialize ekind before the simulation
@@ -454,10 +455,10 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
      */
     const bool simulationsShareState = false;
     algorithm.stopHandler_           = legacySimulatorData_->stopHandlerBuilder->getStopHandlerMD(
-            compat::not_null<SimulationSignal*>(&algorithm.signals_[eglsSTOPCOND]),
+            compat::not_null<SimulationSignal*>(&(*globalCommunicationHelper.simulationSignals())[eglsSTOPCOND]),
             simulationsShareState, MASTER(legacySimulatorData_->cr),
             legacySimulatorData_->inputrec->nstlist, legacySimulatorData_->mdrunOptions.reproducible,
-            nstglobalcomm_, legacySimulatorData_->mdrunOptions.maximumHoursToRun,
+            globalCommunicationHelper.nstglobalcomm(), legacySimulatorData_->mdrunOptions.maximumHoursToRun,
             legacySimulatorData_->inputrec->nstlist == 0, legacySimulatorData_->fplog,
             algorithm.stophandlerCurrentStep_, algorithm.stophandlerIsNSStep_,
             legacySimulatorData_->walltime_accounting);
@@ -485,13 +486,11 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
      */
     // TODO: Make a CheckpointHelperBuilder
     std::vector<ICheckpointHelperClient*> checkpointClients;
-    CheckBondedInteractionsCallbackPtr    checkBondedInteractionsCallback = nullptr;
-    auto                                  integrator                      = buildIntegrator(
+    auto                                  integrator = buildIntegrator(
             &neighborSearchSignallerBuilder, &lastStepSignallerBuilder, &energySignallerBuilder,
             &loggingSignallerBuilder, &trajectorySignallerBuilder, &trajectoryElementBuilder,
-            &checkpointClients, &checkBondedInteractionsCallback, statePropagatorDataPtr,
-            energyDataPtr, freeEnergyPerturbationDataPtr, hasReadEkinState, &topologyHolderBuilder,
-            &algorithm.signals_);
+            &checkpointClients, statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
+            hasReadEkinState, &topologyHolderBuilder, &globalCommunicationHelper);
 
     FreeEnergyPerturbationData::Element* freeEnergyPerturbationElement = nullptr;
     if (algorithm.freeEnergyPerturbationData_)
@@ -523,16 +522,14 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
 
     if (DOMAINDECOMP(legacySimulatorData_->cr))
     {
-        GMX_ASSERT(checkBondedInteractionsCallback,
-                   "Domain decomposition needs a callback for check the number of bonded "
-                   "interactions.");
         algorithm.domDecHelper_ = std::make_unique<DomDecHelper>(
                 legacySimulatorData_->mdrunOptions.verbose,
                 legacySimulatorData_->mdrunOptions.verboseStepPrintInterval, statePropagatorDataPtr,
-                algorithm.topologyHolder_.get(), std::move(checkBondedInteractionsCallback),
-                nstglobalcomm_, legacySimulatorData_->fplog, legacySimulatorData_->cr,
-                legacySimulatorData_->mdlog, legacySimulatorData_->constr, legacySimulatorData_->inputrec,
-                legacySimulatorData_->mdAtoms, legacySimulatorData_->nrnb,
+                algorithm.topologyHolder_.get(),
+                globalCommunicationHelper.moveCheckBondedInteractionsCallback(),
+                globalCommunicationHelper.nstglobalcomm(), legacySimulatorData_->fplog,
+                legacySimulatorData_->cr, legacySimulatorData_->mdlog, legacySimulatorData_->constr,
+                legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms, legacySimulatorData_->nrnb,
                 legacySimulatorData_->wcycle, legacySimulatorData_->fr, legacySimulatorData_->vsite,
                 legacySimulatorData_->imdSession, legacySimulatorData_->pull_work);
         neighborSearchSignallerBuilder.registerSignallerClient(
@@ -541,7 +538,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
 
     const bool simulationsShareResetCounters = false;
     algorithm.resetHandler_                  = std::make_unique<ResetHandler>(
-            compat::make_not_null<SimulationSignal*>(&algorithm.signals_[eglsRESETCOUNTERS]),
+            compat::make_not_null<SimulationSignal*>(
+                    &(*globalCommunicationHelper.simulationSignals())[eglsRESETCOUNTERS]),
             simulationsShareResetCounters, legacySimulatorData_->inputrec->nsteps,
             MASTER(legacySimulatorData_->cr), legacySimulatorData_->mdrunOptions.timingOptions.resetHalfway,
             legacySimulatorData_->mdrunOptions.maximumHoursToRun, legacySimulatorData_->mdlog,
@@ -578,7 +576,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     // Add checkpoint helper here since we need a pointer to the trajectory element and
     // need to register it with the lastStepSignallerBuilder
     auto checkpointHandler = std::make_unique<CheckpointHandler>(
-            compat::make_not_null<SimulationSignal*>(&algorithm.signals_[eglsCHKPT]),
+            compat::make_not_null<SimulationSignal*>(
+                    &(*globalCommunicationHelper.simulationSignals())[eglsCHKPT]),
             simulationsShareState, legacySimulatorData_->inputrec->nstlist == 0,
             MASTER(legacySimulatorData_->cr), legacySimulatorData_->mdrunOptions.writeConfout,
             legacySimulatorData_->mdrunOptions.checkpointOptions.period);
@@ -659,4 +658,31 @@ SignallerCallbackPtr ModularSimulatorAlgorithm::SignalHelper::registerNSCallback
     return std::make_unique<SignallerCallback>(
             [this](Step step, Time gmx_unused time) { this->nextNSStep_ = step; });
 }
+
+GlobalCommunicationHelper::GlobalCommunicationHelper(int nstglobalcomm, SimulationSignals* simulationSignals) :
+    nstglobalcomm_(nstglobalcomm),
+    simulationSignals_(simulationSignals)
+{
+}
+
+int GlobalCommunicationHelper::nstglobalcomm() const
+{
+    return nstglobalcomm_;
+}
+
+SimulationSignals* GlobalCommunicationHelper::simulationSignals()
+{
+    return simulationSignals_;
+}
+
+void GlobalCommunicationHelper::setCheckBondedInteractionsCallback(CheckBondedInteractionsCallbackPtr ptr)
+{
+    checkBondedInteractionsCallbackPtr_ = std::move(ptr);
+}
+
+CheckBondedInteractionsCallbackPtr GlobalCommunicationHelper::moveCheckBondedInteractionsCallback()
+{
+    return std::move(checkBondedInteractionsCallbackPtr_);
+}
+
 } // namespace gmx

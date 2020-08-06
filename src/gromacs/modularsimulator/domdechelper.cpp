@@ -94,6 +94,9 @@ DomDecHelper::DomDecHelper(bool                               isVerbose,
     pull_work_(pull_work)
 {
     GMX_ASSERT(DOMAINDECOMP(cr), "Domain decomposition Helper constructed in non-DD simulation");
+    GMX_ASSERT(checkBondedInteractionsCallback_,
+               "Domain decomposition needs a callback to check the number of bonded "
+               "interactions.");
 }
 
 void DomDecHelper::setup()

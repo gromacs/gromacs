@@ -262,6 +262,38 @@ private:
     gmx_walltime_accounting* walltime_accounting;
 };
 
+/*! \internal
+ * \brief Helper container with data connected to global communication
+ *
+ * This includes data that needs to be shared between elements involved in
+ * global communication. This will become obsolete as soon as global
+ * communication is moved to a client system (#3421).
+ */
+class GlobalCommunicationHelper
+{
+public:
+    //! Constructor
+    GlobalCommunicationHelper(int nstglobalcomm, SimulationSignals* simulationSignals);
+
+    //! Get the compute globals communication period
+    [[nodiscard]] int nstglobalcomm() const;
+    //! Get a pointer to the signals vector
+    [[nodiscard]] SimulationSignals* simulationSignals();
+
+    //! Set the callback to check the number of bonded interactions
+    void setCheckBondedInteractionsCallback(CheckBondedInteractionsCallbackPtr ptr);
+    //! Move the callback to check the number of bonded interactions
+    [[nodiscard]] CheckBondedInteractionsCallbackPtr moveCheckBondedInteractionsCallback();
+
+private:
+    //! Compute globals communication period
+    const int nstglobalcomm_;
+    //! Signal vector (used by stop / reset / checkpointing signaller)
+    SimulationSignals* simulationSignals_;
+    //! Callback to check the number of bonded interactions
+    CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallbackPtr_;
+};
+
 /*!\internal
  * \brief Builder for ModularSimulatorAlgorithm objects
  *
@@ -308,13 +340,12 @@ private:
                     SignallerBuilder<TrajectorySignaller>*     trajectorySignallerBuilder,
                     TrajectoryElementBuilder*                  trajectoryElementBuilder,
                     std::vector<ICheckpointHelperClient*>*     checkpointClients,
-                    CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
                     compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
                     compat::not_null<EnergyData*>              energyDataPtr,
                     FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
                     bool                                       hasReadEkinState,
                     TopologyHolder::Builder*                   topologyHolderBuilder,
-                    SimulationSignals*                         signals);
+                    GlobalCommunicationHelper*                 globalCommunicationHelper);
 
     //! Build the force element - can be normal forces or shell / flex constraints
     std::unique_ptr<ISimulatorElement>
