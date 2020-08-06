@@ -86,8 +86,8 @@ endif()
 # If any of these manual override variables for target CUDA GPU architectures
 # or virtual architecture is set, parse the values and assemble the nvcc
 # command line for these. Otherwise use our defaults.
-# Note that the manual override variables require a semicolon separated
-# architectures codes.
+# Note that the manual override variables require a semicolon separating
+# architecture codes.
 if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
     set(GMX_CUDA_NVCC_GENCODE_FLAGS)
     set(_target_sm_list ${GMX_CUDA_TARGET_SM})
@@ -104,9 +104,13 @@ else()
     #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70 SASS, and compute_70 PTX
     # - with CUDA >=10.0        CC 7.5 is supported
     #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75 SASS, and compute_75 PTX
+    # - with CUDA >=11.0        CC 8.0 is supported
+    #     => compile sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75, sm_80 SASS, and compute_80 PTX
 
     # First add flags that trigger SASS (binary) code generation for physical arch
-    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
+    if(CUDA_VERSION VERSION_LESS "11.0")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_30,code=sm_30")
+    endif()
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=sm_35")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_37,code=sm_37")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=sm_50")
@@ -114,6 +118,11 @@ else()
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=sm_60")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=sm_61")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=sm_70")
+    if(NOT CUDA_VERSION VERSION_LESS "11.0")
+        # Requesting sm or compute 35, 37, or 50 triggers deprecation messages with
+        # nvcc 11.0, which we need to suppress for use in CI
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-Wno-deprecated-gpu-targets")
+    endif()
 
     # Next add flags that trigger PTX code generation for the newest supported virtual arch
     # that's useful to JIT to future architectures
@@ -125,6 +134,9 @@ else()
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=compute_70")
     if(NOT CUDA_VERSION VERSION_LESS "10.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_75,code=compute_75")
+    endif()
+    if(NOT CUDA_VERSION VERSION_LESS "11.0")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_80,code=compute_80")
     endif()
 endif()
 

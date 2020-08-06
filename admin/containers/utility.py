@@ -76,15 +76,15 @@ compiler_group.add_argument('--icc', type=int, nargs='?', const=19, default=None
                                  'Some checking is implemented to avoid incompatible combinations')
 
 linux_group = parser.add_mutually_exclusive_group()
-linux_group.add_argument('--ubuntu', type=str, nargs='?', const='18.04', default='18.04',
-                         choices=['16.04', '18.04'],
-                         help='Select Ubuntu Linux base image. (default: ubuntu 18.04)')
+linux_group.add_argument('--ubuntu', type=str, nargs='?', const='18.04', default='20.04',
+                         choices=['16.04', '18.04', '20.04'],
+                         help='Select Ubuntu Linux base image. (default: ubuntu 20.04)')
 linux_group.add_argument('--centos', type=str, nargs='?', const='7', default=None,
                          choices=['6', '7'],
                          help='Select Centos Linux base image.')
 
 parser.add_argument('--cuda', type=str, nargs='?', const='10.2', default=None,
-                    choices=['9.0', '10.0', '10.1', '10.2'],
+                    choices=['9.0', '10.0', '10.1', '10.2', '11.0'],
                     help='Select a CUDA version for a base Linux image from NVIDIA.')
 
 parser.add_argument('--mpi', type=str, nargs='?', const='openmpi', default=None,

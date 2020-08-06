@@ -9,9 +9,9 @@ SCRIPT=$PWD/scripted_gmx_docker_builds.py
 # images needed, because the same one can test library,
 # thread and no MPI configurations.
 
-tag="gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi-master"
+tag="gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master"
 tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.15.7 --gcc 8 --cuda 10.1 --opencl --clfft --mpi openmpi \
+python3 $SCRIPT --cmake 3.15.7 --gcc 8 --cuda 11.0 --opencl --clfft --mpi openmpi \
 | docker build -t $tag -
 
 tag="gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master"
@@ -26,9 +26,9 @@ tag="gromacs/cmake-3.15.7-llvm-8-cuda-10.0-openmpi-master"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.15.7 --llvm 8 --cuda 10.0 --mpi openmpi | docker build -t $tag -
 
-tag="gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi-master"
+tag="gromacs/cmake-3.15.7-llvm-8-cuda-11.0-openmpi-master"
 tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.15.7 --llvm 8 --cuda 10.1 --mpi openmpi | docker build -t $tag -
+python3 $SCRIPT --cmake 3.15.7 --llvm 8 --cuda 11.0 --mpi openmpi | docker build -t $tag -
 
 tag="gromacs/cmake-3.15.7-llvm-9-openmpi-master"
 tags[${#tags[@]}]=$tag
