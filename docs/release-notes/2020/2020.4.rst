@@ -25,6 +25,14 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fixes the unexpected change in molecule indexing in output after simulation
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Molecule indices of repeat molecules are now again numbered consecutively as
+expected (instead of all `1`).
+
+:issue:`3575`
+
 Fix ``INTERFACE_INCLUDE_DIRECTORIES`` for ``libgromacs`` CMake target
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

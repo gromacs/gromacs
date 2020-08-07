@@ -210,7 +210,7 @@ AtomIterator& AtomIterator::operator++()
 
     if (localAtomNumber_ >= atoms_->nr)
     {
-        if (atoms_->nres <= mtop_->maxresnr)
+        if (atoms_->nres <= mtop_->maxres_renum)
         {
             /* Single residue molecule, increase the count with one */
             highestResidueNumber_ += atoms_->nres;
