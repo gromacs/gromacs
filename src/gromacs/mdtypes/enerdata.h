@@ -42,9 +42,11 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 struct t_commrec;
+struct t_lambda;
 
 // The non-bonded energy terms accumulated for energy group pairs
 enum
@@ -90,58 +92,95 @@ public:
 
     /*! \brief Returns a list of partial energies, the part which depends on lambda),
      * current lambda in entry 0, foreign lambda i in entry 1+i
+     *
+     * Note: the potential terms needs to be finalized before calling this method.
      */
-    gmx::ArrayRef<double> energies() { return energies_; }
+    gmx::ArrayRef<double> energies()
+    {
+        GMX_ASSERT(finalizedPotentialContributions_, "Should be finalized");
+        return energies_;
+    }
 
     /*! \brief Returns a list of partial energies, the part which depends on lambda),
      * current lambda in entry 0, foreign lambda i in entry 1+i
+     *
+     * Note: the potential terms needs to be finalized before calling this method.
      */
-    gmx::ArrayRef<const double> energies() const { return energies_; }
+    gmx::ArrayRef<const double> energies() const
+    {
+        GMX_ASSERT(finalizedPotentialContributions_, "Should be finalized");
+        return energies_;
+    }
 
-    /*! \brief Adds an energy and dH/dl constribution to lambda list index \p listIndex
+    /*! \brief Adds an energy and dV/dl constribution to lambda list index \p listIndex
      *
      * This should only be used for terms with non-linear dependence on lambda
      * The value passed as listIndex should be 0 for the current lambda
      * and 1+i for foreign lambda index i.
      */
-    void accumulate(int listIndex, double energy, double dhdl)
+    void accumulate(int listIndex, double energy, double dvdl)
     {
+        GMX_ASSERT(!finalizedPotentialContributions_,
+                   "Can only accumulate with an unfinalized object");
+
         energies_[listIndex] += energy;
-        dhdl_[listIndex] += dhdl;
+        dhdl_[listIndex] += dvdl;
     }
 
-    /*! \brief Add a dH/dl contribution that does not depend on lambda to all foreign dH/dl terms
+    /*! \brief Finalizes the potential (non-kinetic) terms
      *
-     * Note: this should not be called directly for energy terms that depend linearly on lambda,
-     * as those are added automatically through the accumulated dvdl_lin term in gmx_enerdata_t.
+     * Note: This can be called multiple times during the same force calculations
+     * without affecting the results.
+     *
+     * \param[in] dvdlLinear  List of dV/dlambda contributions of size efptNR with depend linearly on lambda
+     * \param[in] lambda      Lambda values for the efptNR contribution types
+     * \param[in] fepvals     Free-energy parameters
      */
-    void addConstantDhdl(double dhdl)
-    {
-        for (double& foreignDhdl : dhdl_)
-        {
-            foreignDhdl += dhdl;
-        }
-    }
+    void finalizePotentialContributions(gmx::ArrayRef<const double> dvdlLinear,
+                                        gmx::ArrayRef<const real>   lambda,
+                                        const t_lambda&             fepvals);
+
+    /* !\brief Accumulates the kinetic and constraint free-energy contributions
+     *
+     * \param[in] energyTerms  List of energy terms, pass \p term in \p gmx_enerdata_t
+     * \param[in] dhdlMass     The mass dependent contribution to dH/dlambda
+     * \param[in] lambda       Lambda values for the efptNR contribution types
+     * \param[in] fepvals      Free-energy parameters
+     */
+    void finalizeKineticContributions(gmx::ArrayRef<const real> energyTerms,
+                                      double                    dhdlMass,
+                                      gmx::ArrayRef<const real> lambda,
+                                      const t_lambda&           fepvals);
 
     /*! \brief Returns a pair of lists of deltaH and dH/dlambda
      *
      * Both lists are of size numLambdas() and are indexed with the lambda index.
-     * The returned lists are valid until the next call to this method.
+     *
+     * Note: should only be called after the object has been finalized by a call to
+     * accumulateLinearPotentialComponents() (is asserted).
      *
      * \param[in] cr  Communication record, used to reduce the terms when !=nullptr
      */
-    std::pair<std::vector<double>, std::vector<double>> getTerms(t_commrec* cr);
+    std::pair<std::vector<double>, std::vector<double>> getTerms(t_commrec* cr) const;
 
     //! Sets all terms to 0
     void zeroAllTerms();
 
 private:
+    //! As accumulate(), but for kinetic contributions
+    void accumulateKinetic(int listIndex, double energy, double dhdl);
+
+    //! Add a dH/dl contribution that does not depend on lambda to all foreign dH/dl terms
+    void addConstantDhdl(double dhdl);
+
     //! The number of foreign lambdas
     int numLambdas_;
     //! Storage for foreign lambda energies
     std::vector<double> energies_;
     //! Storage for foreign lambda dH/dlambda
     std::vector<double> dhdl_;
+    //! Tells whether all potential energy contributions have been accumulated
+    bool finalizedPotentialContributions_ = false;
 };
 
 //! Struct for accumulating all potential energy terms and some kinetic energy terms

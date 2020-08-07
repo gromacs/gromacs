@@ -409,8 +409,6 @@ void compute_globals(gmx_global_stat*               gstat,
         enerd->dvdl_lin[efptMASS] = static_cast<double>(dvdl_ekin);
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
-
-        enerd->foreignLambdaTerms.addConstantDhdl(enerd->dvdl_lin[efptMASS]);
     }
 
     /* ########## Now pressure ############## */

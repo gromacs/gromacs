@@ -53,8 +53,11 @@ ForeignLambdaTerms::ForeignLambdaTerms(int numLambdas) :
 {
 }
 
-std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(t_commrec* cr)
+std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(t_commrec* cr) const
 {
+    GMX_RELEASE_ASSERT(finalizedPotentialContributions_,
+                       "The object needs to be finalized before calling getTerms");
+
     std::vector<double> data(2 * numLambdas_);
     for (int i = 0; i < numLambdas_; i++)
     {
@@ -74,6 +77,7 @@ void ForeignLambdaTerms::zeroAllTerms()
 {
     std::fill(energies_.begin(), energies_.end(), 0.0);
     std::fill(dhdl_.begin(), dhdl_.end(), 0.0);
+    finalizedPotentialContributions_ = false;
 }
 
 gmx_enerdata_t::gmx_enerdata_t(int numEnergyGroups, int numFepLambdas) :
@@ -162,32 +166,36 @@ static void set_dvdl_output(gmx_enerdata_t* enerd, const t_lambda& fepvals)
     }
 }
 
-void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_lambda* fepvals)
+void ForeignLambdaTerms::addConstantDhdl(const double dhdl)
 {
-    sum_epot(enerd->grpp, enerd->term);
+    for (double& foreignDhdl : dhdl_)
+    {
+        foreignDhdl += dhdl;
+    }
+}
 
-    if (fepvals == nullptr)
+void ForeignLambdaTerms::finalizePotentialContributions(gmx::ArrayRef<const double> dvdlLinear,
+                                                        gmx::ArrayRef<const real>   lambda,
+                                                        const t_lambda&             fepvals)
+{
+    if (finalizedPotentialContributions_)
     {
         return;
     }
 
-    // Accumulate the foreign lambda terms
-
     double dvdl_lin = 0;
     for (int i = 0; i < efptNR; i++)
     {
-        dvdl_lin += enerd->dvdl_lin[i];
+        dvdl_lin += dvdlLinear[i];
     }
-    enerd->foreignLambdaTerms.addConstantDhdl(dvdl_lin);
-
-    set_dvdl_output(enerd, *fepvals);
+    addConstantDhdl(dvdl_lin);
 
     /* Sum the foreign lambda energy difference contributions.
      * Note that here we only add the potential energy components.
      * The constraint and kinetic energy components are add after integration
      * by sum_dhdl().
      */
-    for (int i = 0; i < fepvals->n_lambda; i++)
+    for (int i = 0; i < fepvals.n_lambda; i++)
     {
         /* note we are iterating over fepvals here!
            For the current lam, dlam = 0 automatically,
@@ -202,11 +210,66 @@ void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real
         for (gmx::index j = 0; j < lambda.ssize(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            const double dlam = fepvals->all_lambda[j][i] - lambda[j];
+            const double dlam = fepvals.all_lambda[j][i] - lambda[j];
 
-            enerpart_lambda += dlam * enerd->dvdl_lin[j];
+            enerpart_lambda += dlam * dvdlLinear[j];
         }
-        enerd->foreignLambdaTerms.accumulate(1 + i, enerpart_lambda, 0);
+        accumulate(1 + i, enerpart_lambda, 0);
+    }
+
+    finalizedPotentialContributions_ = true;
+}
+
+void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_lambda* fepvals)
+{
+    sum_epot(enerd->grpp, enerd->term);
+
+    if (fepvals)
+    {
+        set_dvdl_output(enerd, *fepvals);
+
+        enerd->foreignLambdaTerms.finalizePotentialContributions(enerd->dvdl_lin, lambda, *fepvals);
+    }
+}
+
+void ForeignLambdaTerms::accumulateKinetic(int listIndex, double energy, double dhdl)
+{
+    energies_[listIndex] += energy;
+    dhdl_[listIndex] += dhdl;
+}
+
+void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> energyTerms,
+                                                      const double              dhdlMass,
+                                                      gmx::ArrayRef<const real> lambda,
+                                                      const t_lambda&           fepvals)
+{
+    // Add perturbed mass contributions
+    addConstantDhdl(dhdlMass);
+
+    // Treat current lambda, the deltaH contribution is 0 as delta-lambda=0 for the current lambda
+    accumulateKinetic(0, 0.0, energyTerms[F_DVDL_CONSTR]);
+    if (!fepvals.separate_dvdl[efptMASS])
+    {
+        accumulateKinetic(0, 0.0, energyTerms[F_DKDL]);
+    }
+
+    for (int i = 0; i < fepvals.n_lambda; i++)
+    {
+        /* Note that potential energy terms have been added by sum_epot() -> sum_dvdl() */
+
+        /* Constraints can not be evaluated at foreign lambdas, so we add
+         * a linear extrapolation. This is an approximation, but usually
+         * quite accurate since constraints change little between lambdas.
+         */
+        const int    lambdaIndex = (fepvals.separate_dvdl[efptBONDED] ? efptBONDED : efptFEP);
+        const double dlam        = fepvals.all_lambda[lambdaIndex][i] - lambda[lambdaIndex];
+        accumulateKinetic(1 + i, dlam * energyTerms[F_DVDL_CONSTR], energyTerms[F_DVDL_CONSTR]);
+
+        if (!fepvals.separate_dvdl[efptMASS])
+        {
+            const double dlam = fepvals.all_lambda[efptMASS][i] - lambda[efptMASS];
+            accumulateKinetic(1 + i, dlam * energyTerms[F_DKDL], energyTerms[F_DKDL]);
+        }
     }
 }
 
@@ -223,37 +286,12 @@ void accumulateKineticLambdaComponents(gmx_enerdata_t*           enerd,
         enerd->term[F_DVDL] += enerd->term[F_DVDL_CONSTR];
     }
 
-    // Treat current lambda, which only needs a dV/dl contribution
-    enerd->foreignLambdaTerms.accumulate(0, 0.0, enerd->term[F_DVDL_CONSTR]);
-    if (!fepvals.separate_dvdl[efptMASS])
-    {
-        enerd->foreignLambdaTerms.accumulate(0, 0.0, enerd->term[F_DKDL]);
-    }
-
-    for (int i = 0; i < fepvals.n_lambda; i++)
-    {
-        /* Note that potential energy terms have been added by sum_epot() -> sum_dvdl() */
-
-        /* Constraints can not be evaluated at foreign lambdas, so we add
-         * a linear extrapolation. This is an approximation, but usually
-         * quite accurate since constraints change little between lambdas.
-         */
-        const int    lambdaIndex = (fepvals.separate_dvdl[efptBONDED] ? efptBONDED : efptFEP);
-        const double dlam        = fepvals.all_lambda[lambdaIndex][i] - lambda[lambdaIndex];
-        enerd->foreignLambdaTerms.accumulate(1 + i, dlam * enerd->term[F_DVDL_CONSTR],
-                                             enerd->term[F_DVDL_CONSTR]);
-
-        if (!fepvals.separate_dvdl[efptMASS])
-        {
-            const double dlam = fepvals.all_lambda[efptMASS][i] - lambda[efptMASS];
-            enerd->foreignLambdaTerms.accumulate(1 + i, dlam * enerd->term[F_DKDL], enerd->term[F_DKDL]);
-        }
-    }
+    enerd->foreignLambdaTerms.finalizeKineticContributions(enerd->term, enerd->dvdl_lin[efptMASS],
+                                                           lambda, fepvals);
 
     /* The constrain contribution is now included in other terms, so clear it */
     enerd->term[F_DVDL_CONSTR] = 0;
 }
-
 
 void reset_foreign_enerdata(gmx_enerdata_t* enerd)
 {

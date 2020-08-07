@@ -538,7 +538,7 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
         kernel_data.energygrp_elec = enerd->foreign_grpp.ener[egCOULSR].data();
         kernel_data.energygrp_vdw  = enerd->foreign_grpp.ener[egLJSR].data();
 
-        for (gmx::index i = 0; i < enerd->foreignLambdaTerms.energies().ssize(); i++)
+        for (gmx::index i = 0; i < 1 + enerd->foreignLambdaTerms.numLambdas(); i++)
         {
             std::fill(std::begin(dvdl_nb), std::end(dvdl_nb), 0);
             for (int j = 0; j < efptNR; j++)
