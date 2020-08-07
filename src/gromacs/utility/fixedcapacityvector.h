@@ -194,7 +194,7 @@ public:
     reference emplace_back(Args&&... args)
     {
         GMX_ASSERT(size() < capacity, "Cannot add more elements than the capacity");
-        if (std::is_move_assignable_v<T>)
+        if (std::is_move_assignable<T>::value)
         {
             *end_ = std::move(T(args...));
         }
