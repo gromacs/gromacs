@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@ using SimulatorFunctionType = void();
  * code. Once many of them have become modules, we should change this
  * approach.
  */
-class LegacySimulator : public ISimulator
+class LegacySimulator : public ISimulator, private LegacySimulatorData
 {
 private:
     //! Implements the normal MD simulations.
@@ -91,7 +91,7 @@ private:
     //! Implements MiMiC QM/MM workflow
     SimulatorFunctionType do_mimic;
     // Use the constructor of the base class
-    using ISimulator::ISimulator;
+    using LegacySimulatorData::LegacySimulatorData;
 
 public:
     // Only builder can construct

@@ -83,7 +83,7 @@ class VirtualSitesHandler;
  * \brief The Simulator interface
  *
  * This is the general interface for any type of simulation type
- * ran with GROMACS. This allows having a builder return different
+ * run with GROMACS. This allows having a builder return different
  * Simulator objects based on user input.
  */
 class ISimulator
@@ -97,41 +97,52 @@ public:
     virtual void run() = 0;
     //! Standard destructor
     virtual ~ISimulator() = default;
+};
+
+/*! \internal
+ * \brief The legacy simulator data
+ *
+ * This contains the data passed into the GROMACS simulators from
+ * the Mdrunner object.
+ */
+class LegacySimulatorData
+{
+public:
     //! The constructor
-    ISimulator(FILE*                               fplog,
-               t_commrec*                          cr,
-               const gmx_multisim_t*               ms,
-               const MDLogger&                     mdlog,
-               int                                 nfile,
-               const t_filenm*                     fnm,
-               const gmx_output_env_t*             oenv,
-               const MdrunOptions&                 mdrunOptions,
-               StartingBehavior                    startingBehavior,
-               VirtualSitesHandler*                vsite,
-               Constraints*                        constr,
-               gmx_enfrot*                         enforcedRotation,
-               BoxDeformation*                     deform,
-               IMDOutputProvider*                  outputProvider,
-               const MdModulesNotifier&            mdModulesNotifier,
-               t_inputrec*                         inputrec,
-               ImdSession*                         imdSession,
-               pull_t*                             pull_work,
-               t_swap*                             swap,
-               gmx_mtop_t*                         top_global,
-               t_state*                            state_global,
-               ObservablesHistory*                 observablesHistory,
-               MDAtoms*                            mdAtoms,
-               t_nrnb*                             nrnb,
-               gmx_wallcycle*                      wcycle,
-               t_forcerec*                         fr,
-               gmx_enerdata_t*                     enerd,
-               gmx_ekindata_t*                     ekind,
-               MdrunScheduleWorkload*              runScheduleWork,
-               const ReplicaExchangeParameters&    replExParams,
-               gmx_membed_t*                       membed,
-               gmx_walltime_accounting*            walltime_accounting,
-               std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder,
-               bool                                doRerun) :
+    LegacySimulatorData(FILE*                               fplog,
+                        t_commrec*                          cr,
+                        const gmx_multisim_t*               ms,
+                        const MDLogger&                     mdlog,
+                        int                                 nfile,
+                        const t_filenm*                     fnm,
+                        const gmx_output_env_t*             oenv,
+                        const MdrunOptions&                 mdrunOptions,
+                        StartingBehavior                    startingBehavior,
+                        VirtualSitesHandler*                vsite,
+                        Constraints*                        constr,
+                        gmx_enfrot*                         enforcedRotation,
+                        BoxDeformation*                     deform,
+                        IMDOutputProvider*                  outputProvider,
+                        const MdModulesNotifier&            mdModulesNotifier,
+                        t_inputrec*                         inputrec,
+                        ImdSession*                         imdSession,
+                        pull_t*                             pull_work,
+                        t_swap*                             swap,
+                        gmx_mtop_t*                         top_global,
+                        t_state*                            state_global,
+                        ObservablesHistory*                 observablesHistory,
+                        MDAtoms*                            mdAtoms,
+                        t_nrnb*                             nrnb,
+                        gmx_wallcycle*                      wcycle,
+                        t_forcerec*                         fr,
+                        gmx_enerdata_t*                     enerd,
+                        gmx_ekindata_t*                     ekind,
+                        MdrunScheduleWorkload*              runScheduleWork,
+                        const ReplicaExchangeParameters&    replExParams,
+                        gmx_membed_t*                       membed,
+                        gmx_walltime_accounting*            walltime_accounting,
+                        std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder,
+                        bool                                doRerun) :
         fplog(fplog),
         cr(cr),
         ms(ms),
@@ -169,7 +180,6 @@ public:
     {
     }
 
-protected:
     //! Handles logging.
     FILE* fplog;
     //! Handles communication.

@@ -281,7 +281,7 @@ class ModularSimulatorAlgorithmBuilder
 {
 public:
     //! Constructor
-    explicit ModularSimulatorAlgorithmBuilder(compat::not_null<ModularSimulator*> simulator);
+    explicit ModularSimulatorAlgorithmBuilder(compat::not_null<LegacySimulatorData*> legacySimulatorData);
     //! Build algorithm
     ModularSimulatorAlgorithm build();
 
@@ -325,6 +325,9 @@ private:
                 FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
                 TopologyHolder*                            topologyHolder);
 
+    //! Pointer to the LegacySimulatorData object
+    compat::not_null<LegacySimulatorData*> legacySimulatorData_;
+
     //! \cond
     //! Helper function to add elements or signallers to the call list via raw pointer
     template<typename T, typename U>
@@ -346,76 +349,6 @@ private:
 
     //! Compute globals communication period
     const int nstglobalcomm_;
-
-    // ISimulator data
-    //! Handles logging.
-    FILE* fplog;
-    //! Handles communication.
-    t_commrec* cr;
-    //! Coordinates multi-simulations.
-    const gmx_multisim_t* ms;
-    //! Handles logging.
-    const MDLogger& mdlog;
-    //! Count of input file options.
-    int nfile;
-    //! Content of input file options.
-    const t_filenm* fnm;
-    //! Handles writing text output.
-    const gmx_output_env_t* oenv;
-    //! Contains command-line options to mdrun.
-    const MdrunOptions& mdrunOptions;
-    //! Whether the simulation will start afresh, or restart with/without appending.
-    const StartingBehavior startingBehavior;
-    //! Handles virtual sites.
-    VirtualSitesHandler* vsite;
-    //! Handles constraints.
-    Constraints* constr;
-    //! Handles enforced rotation.
-    gmx_enfrot* enforcedRotation;
-    //! Handles box deformation.
-    BoxDeformation* deform;
-    //! Handles writing output files.
-    IMDOutputProvider* outputProvider;
-    //! Handles notifications to MdModules for checkpoint writing
-    const MdModulesNotifier& mdModulesNotifier;
-    //! Contains user input mdp options.
-    t_inputrec* inputrec;
-    //! The Interactive Molecular Dynamics session.
-    ImdSession* imdSession;
-    //! The pull work object.
-    pull_t* pull_work;
-    //! The coordinate-swapping session.
-    t_swap* swap;
-    //! Full system topology.
-    const gmx_mtop_t* top_global;
-    //! Full simulation state (only non-nullptr on master rank).
-    t_state* state_global;
-    //! History of simulation observables.
-    ObservablesHistory* observablesHistory;
-    //! Atom parameters for this domain.
-    MDAtoms* mdAtoms;
-    //! Manages flop accounting.
-    t_nrnb* nrnb;
-    //! Manages wall cycle accounting.
-    gmx_wallcycle* wcycle;
-    //! Parameters for force calculations.
-    t_forcerec* fr;
-    //! Data for energy output.
-    gmx_enerdata_t* enerd;
-    //! Kinetic energy data.
-    gmx_ekindata_t* ekind;
-    //! Schedule of work for each MD step for this task.
-    MdrunScheduleWorkload* runScheduleWork;
-    //! Parameters for replica exchange algorihtms.
-    const ReplicaExchangeParameters& replExParams;
-    //! Parameters for membrane embedding.
-    gmx_membed_t* membed;
-    //! Manages wall time accounting.
-    gmx_walltime_accounting* walltime_accounting;
-    //! Registers stop conditions
-    StopHandlerBuilder* stopHandlerBuilder;
-    //! Whether we're doing a rerun.
-    bool doRerun;
 };
 
 //! \cond

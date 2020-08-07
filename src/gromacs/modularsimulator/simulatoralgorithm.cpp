@@ -383,8 +383,11 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
 
 ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAndSignallers()
 {
-    ModularSimulatorAlgorithm algorithm(*(top_global->name), fplog, cr, mdlog, mdrunOptions,
-                                        inputrec, nrnb, wcycle, fr, walltime_accounting);
+    ModularSimulatorAlgorithm algorithm(
+            *(legacySimulatorData_->top_global->name), legacySimulatorData_->fplog,
+            legacySimulatorData_->cr, legacySimulatorData_->mdlog, legacySimulatorData_->mdrunOptions,
+            legacySimulatorData_->inputrec, legacySimulatorData_->nrnb, legacySimulatorData_->wcycle,
+            legacySimulatorData_->fr, legacySimulatorData_->walltime_accounting);
     /* When restarting from a checkpoint, it can be appropriate to
      * initialize ekind from quantities in the checkpoint. Otherwise,
      * compute_globals must initialize ekind before the simulation
@@ -402,51 +405,66 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
      *      reading directly follows .tpr reading, because all ranks can
      *      agree on hasReadEkinState at that time.
      */
-    bool hasReadEkinState = MASTER(cr) ? state_global->ekinstate.hasReadEkinState : false;
-    if (PAR(cr))
+    bool hasReadEkinState = MASTER(legacySimulatorData_->cr)
+                                    ? legacySimulatorData_->state_global->ekinstate.hasReadEkinState
+                                    : false;
+    if (PAR(legacySimulatorData_->cr))
     {
-        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr->mpi_comm_mygroup);
+        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, legacySimulatorData_->cr->mpi_comm_mygroup);
     }
     if (hasReadEkinState)
     {
-        restore_ekinstate_from_state(cr, ekind, &state_global->ekinstate);
+        restore_ekinstate_from_state(legacySimulatorData_->cr, legacySimulatorData_->ekind,
+                                     &legacySimulatorData_->state_global->ekinstate);
     }
 
     /*
      * Build data structures
      */
-    algorithm.topologyHolder_ =
-            std::make_unique<TopologyHolder>(*top_global, cr, inputrec, fr, mdAtoms, constr, vsite);
+    algorithm.topologyHolder_ = std::make_unique<TopologyHolder>(
+            *legacySimulatorData_->top_global, legacySimulatorData_->cr,
+            legacySimulatorData_->inputrec, legacySimulatorData_->fr, legacySimulatorData_->mdAtoms,
+            legacySimulatorData_->constr, legacySimulatorData_->vsite);
 
-    if (inputrec->efep != efepNO)
+    if (legacySimulatorData_->inputrec->efep != efepNO)
     {
-        algorithm.freeEnergyPerturbationData_ =
-                std::make_unique<FreeEnergyPerturbationData>(fplog, inputrec, mdAtoms);
+        algorithm.freeEnergyPerturbationData_ = std::make_unique<FreeEnergyPerturbationData>(
+                legacySimulatorData_->fplog, legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms);
     }
     FreeEnergyPerturbationData* freeEnergyPerturbationDataPtr =
             algorithm.freeEnergyPerturbationData_.get();
 
     algorithm.statePropagatorData_ = std::make_unique<StatePropagatorData>(
-            top_global->natoms, fplog, cr, state_global, fr->nbv->useGpu(),
-            freeEnergyPerturbationDataPtr, fr->bMolPBC, mdrunOptions.writeConfout,
-            opt2fn("-c", nfile, fnm), inputrec, mdAtoms->mdatoms(), top_global);
+            legacySimulatorData_->top_global->natoms, legacySimulatorData_->fplog,
+            legacySimulatorData_->cr, legacySimulatorData_->state_global,
+            legacySimulatorData_->fr->nbv->useGpu(), freeEnergyPerturbationDataPtr,
+            legacySimulatorData_->fr->bMolPBC, legacySimulatorData_->mdrunOptions.writeConfout,
+            opt2fn("-c", legacySimulatorData_->nfile, legacySimulatorData_->fnm),
+            legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms->mdatoms(),
+            legacySimulatorData_->top_global);
     auto statePropagatorDataPtr = compat::make_not_null(algorithm.statePropagatorData_.get());
 
     algorithm.energyData_ = std::make_unique<EnergyData>(
-            statePropagatorDataPtr, freeEnergyPerturbationDataPtr, top_global, inputrec, mdAtoms,
-            enerd, ekind, constr, fplog, &fr->listedForces->fcdata(), mdModulesNotifier, MASTER(cr),
-            observablesHistory, startingBehavior);
+            statePropagatorDataPtr, freeEnergyPerturbationDataPtr, legacySimulatorData_->top_global,
+            legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms,
+            legacySimulatorData_->enerd, legacySimulatorData_->ekind, legacySimulatorData_->constr,
+            legacySimulatorData_->fplog, &legacySimulatorData_->fr->listedForces->fcdata(),
+            legacySimulatorData_->mdModulesNotifier, MASTER(legacySimulatorData_->cr),
+            legacySimulatorData_->observablesHistory, legacySimulatorData_->startingBehavior);
     auto energyDataPtr = compat::make_not_null(algorithm.energyData_.get());
 
     /*
      * Build stop handler
      */
     const bool simulationsShareState = false;
-    algorithm.stopHandler_           = stopHandlerBuilder->getStopHandlerMD(
+    algorithm.stopHandler_           = legacySimulatorData_->stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&algorithm.signals_[eglsSTOPCOND]),
-            simulationsShareState, MASTER(cr), inputrec->nstlist, mdrunOptions.reproducible,
-            nstglobalcomm_, mdrunOptions.maximumHoursToRun, inputrec->nstlist == 0, fplog,
-            algorithm.stophandlerCurrentStep_, algorithm.stophandlerIsNSStep_, walltime_accounting);
+            simulationsShareState, MASTER(legacySimulatorData_->cr),
+            legacySimulatorData_->inputrec->nstlist, legacySimulatorData_->mdrunOptions.reproducible,
+            nstglobalcomm_, legacySimulatorData_->mdrunOptions.maximumHoursToRun,
+            legacySimulatorData_->inputrec->nstlist == 0, legacySimulatorData_->fplog,
+            algorithm.stophandlerCurrentStep_, algorithm.stophandlerIsNSStep_,
+            legacySimulatorData_->walltime_accounting);
 
     /*
      * Create simulator builders
@@ -489,24 +507,32 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
      * Build infrastructure elements
      */
 
-    if (PmeLoadBalanceHelper::doPmeLoadBalancing(mdrunOptions, inputrec, fr))
+    if (PmeLoadBalanceHelper::doPmeLoadBalancing(legacySimulatorData_->mdrunOptions,
+                                                 legacySimulatorData_->inputrec,
+                                                 legacySimulatorData_->fr))
     {
         algorithm.pmeLoadBalanceHelper_ = std::make_unique<PmeLoadBalanceHelper>(
-                mdrunOptions.verbose, statePropagatorDataPtr, fplog, cr, mdlog, inputrec, wcycle, fr);
+                legacySimulatorData_->mdrunOptions.verbose, statePropagatorDataPtr,
+                legacySimulatorData_->fplog, legacySimulatorData_->cr, legacySimulatorData_->mdlog,
+                legacySimulatorData_->inputrec, legacySimulatorData_->wcycle, legacySimulatorData_->fr);
         neighborSearchSignallerBuilder.registerSignallerClient(
                 compat::make_not_null(algorithm.pmeLoadBalanceHelper_.get()));
     }
 
-    if (DOMAINDECOMP(cr))
+    if (DOMAINDECOMP(legacySimulatorData_->cr))
     {
         GMX_ASSERT(checkBondedInteractionsCallback,
                    "Domain decomposition needs a callback for check the number of bonded "
                    "interactions.");
         algorithm.domDecHelper_ = std::make_unique<DomDecHelper>(
-                mdrunOptions.verbose, mdrunOptions.verboseStepPrintInterval, statePropagatorDataPtr,
+                legacySimulatorData_->mdrunOptions.verbose,
+                legacySimulatorData_->mdrunOptions.verboseStepPrintInterval, statePropagatorDataPtr,
                 algorithm.topologyHolder_.get(), std::move(checkBondedInteractionsCallback),
-                nstglobalcomm_, fplog, cr, mdlog, constr, inputrec, mdAtoms, nrnb, wcycle, fr,
-                vsite, imdSession, pull_work);
+                nstglobalcomm_, legacySimulatorData_->fplog, legacySimulatorData_->cr,
+                legacySimulatorData_->mdlog, legacySimulatorData_->constr, legacySimulatorData_->inputrec,
+                legacySimulatorData_->mdAtoms, legacySimulatorData_->nrnb,
+                legacySimulatorData_->wcycle, legacySimulatorData_->fr, legacySimulatorData_->vsite,
+                legacySimulatorData_->imdSession, legacySimulatorData_->pull_work);
         neighborSearchSignallerBuilder.registerSignallerClient(
                 compat::make_not_null(algorithm.domDecHelper_.get()));
     }
@@ -514,9 +540,10 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     const bool simulationsShareResetCounters = false;
     algorithm.resetHandler_                  = std::make_unique<ResetHandler>(
             compat::make_not_null<SimulationSignal*>(&algorithm.signals_[eglsRESETCOUNTERS]),
-            simulationsShareResetCounters, inputrec->nsteps, MASTER(cr),
-            mdrunOptions.timingOptions.resetHalfway, mdrunOptions.maximumHoursToRun, mdlog, wcycle,
-            walltime_accounting);
+            simulationsShareResetCounters, legacySimulatorData_->inputrec->nsteps,
+            MASTER(legacySimulatorData_->cr), legacySimulatorData_->mdrunOptions.timingOptions.resetHalfway,
+            legacySimulatorData_->mdrunOptions.maximumHoursToRun, legacySimulatorData_->mdlog,
+            legacySimulatorData_->wcycle, legacySimulatorData_->walltime_accounting);
 
     /*
      * Build signaller list
@@ -525,43 +552,56 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
      * matters. It is the responsibility of this builder to ensure that the order is
      * maintained.
      */
-    auto energySignaller = energySignallerBuilder.build(
-            inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl, inputrec->nstpcouple);
+    auto energySignaller = energySignallerBuilder.build(legacySimulatorData_->inputrec->nstcalcenergy,
+                                                        legacySimulatorData_->inputrec->fepvals->nstdhdl,
+                                                        legacySimulatorData_->inputrec->nstpcouple);
     trajectorySignallerBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
     loggingSignallerBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
     auto trajectoryElement = trajectoryElementBuilder.build(
-            fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier, inputrec,
-            top_global, oenv, wcycle, startingBehavior, simulationsShareState);
+            legacySimulatorData_->fplog, legacySimulatorData_->nfile, legacySimulatorData_->fnm,
+            legacySimulatorData_->mdrunOptions, legacySimulatorData_->cr,
+            legacySimulatorData_->outputProvider, legacySimulatorData_->mdModulesNotifier,
+            legacySimulatorData_->inputrec, legacySimulatorData_->top_global,
+            legacySimulatorData_->oenv, legacySimulatorData_->wcycle,
+            legacySimulatorData_->startingBehavior, simulationsShareState);
     loggingSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
     trajectorySignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
     auto trajectorySignaller = trajectorySignallerBuilder.build(
-            inputrec->nstxout, inputrec->nstvout, inputrec->nstfout, inputrec->nstxout_compressed,
-            trajectoryElement->tngBoxOut(), trajectoryElement->tngLambdaOut(),
-            trajectoryElement->tngBoxOutCompressed(), trajectoryElement->tngLambdaOutCompressed(),
-            inputrec->nstenergy);
+            legacySimulatorData_->inputrec->nstxout, legacySimulatorData_->inputrec->nstvout,
+            legacySimulatorData_->inputrec->nstfout,
+            legacySimulatorData_->inputrec->nstxout_compressed, trajectoryElement->tngBoxOut(),
+            trajectoryElement->tngLambdaOut(), trajectoryElement->tngBoxOutCompressed(),
+            trajectoryElement->tngLambdaOutCompressed(), legacySimulatorData_->inputrec->nstenergy);
 
     // Add checkpoint helper here since we need a pointer to the trajectory element and
     // need to register it with the lastStepSignallerBuilder
     auto checkpointHandler = std::make_unique<CheckpointHandler>(
             compat::make_not_null<SimulationSignal*>(&algorithm.signals_[eglsCHKPT]),
-            simulationsShareState, inputrec->nstlist == 0, MASTER(cr), mdrunOptions.writeConfout,
-            mdrunOptions.checkpointOptions.period);
+            simulationsShareState, legacySimulatorData_->inputrec->nstlist == 0,
+            MASTER(legacySimulatorData_->cr), legacySimulatorData_->mdrunOptions.writeConfout,
+            legacySimulatorData_->mdrunOptions.checkpointOptions.period);
     algorithm.checkpointHelper_ = std::make_unique<CheckpointHelper>(
-            std::move(checkpointClients), std::move(checkpointHandler), inputrec->init_step,
-            trajectoryElement.get(), top_global->natoms, fplog, cr, observablesHistory,
-            walltime_accounting, state_global, mdrunOptions.writeConfout);
+            std::move(checkpointClients), std::move(checkpointHandler),
+            legacySimulatorData_->inputrec->init_step, trajectoryElement.get(),
+            legacySimulatorData_->top_global->natoms, legacySimulatorData_->fplog,
+            legacySimulatorData_->cr, legacySimulatorData_->observablesHistory,
+            legacySimulatorData_->walltime_accounting, legacySimulatorData_->state_global,
+            legacySimulatorData_->mdrunOptions.writeConfout);
     lastStepSignallerBuilder.registerSignallerClient(
             compat::make_not_null(algorithm.checkpointHelper_.get()));
 
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectorySignaller.get()));
-    auto loggingSignaller =
-            loggingSignallerBuilder.build(inputrec->nstlog, inputrec->init_step, inputrec->init_t);
+    auto loggingSignaller = loggingSignallerBuilder.build(legacySimulatorData_->inputrec->nstlog,
+                                                          legacySimulatorData_->inputrec->init_step,
+                                                          legacySimulatorData_->inputrec->init_t);
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(loggingSignaller.get()));
-    auto lastStepSignaller = lastStepSignallerBuilder.build(inputrec->nsteps, inputrec->init_step,
+    auto lastStepSignaller = lastStepSignallerBuilder.build(legacySimulatorData_->inputrec->nsteps,
+                                                            legacySimulatorData_->inputrec->init_step,
                                                             algorithm.stopHandler_.get());
     neighborSearchSignallerBuilder.registerSignallerClient(compat::make_not_null(lastStepSignaller.get()));
     auto neighborSearchSignaller = neighborSearchSignallerBuilder.build(
-            inputrec->nstlist, inputrec->init_step, inputrec->init_t);
+            legacySimulatorData_->inputrec->nstlist, legacySimulatorData_->inputrec->init_step,
+            legacySimulatorData_->inputrec->init_t);
 
     algorithm.signallerList_.emplace_back(std::move(neighborSearchSignaller));
     algorithm.signallerList_.emplace_back(std::move(lastStepSignaller));
@@ -590,42 +630,12 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     return algorithm;
 }
 
-ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(compat::not_null<ModularSimulator*> simulator) :
-    nstglobalcomm_(computeGlobalCommunicationPeriod(simulator->mdlog, simulator->inputrec, simulator->cr)),
-    fplog(simulator->fplog),
-    cr(simulator->cr),
-    ms(simulator->ms),
-    mdlog(simulator->mdlog),
-    nfile(simulator->nfile),
-    fnm(simulator->fnm),
-    oenv(simulator->oenv),
-    mdrunOptions(simulator->mdrunOptions),
-    startingBehavior(simulator->startingBehavior),
-    vsite(simulator->vsite),
-    constr(simulator->constr),
-    enforcedRotation(simulator->enforcedRotation),
-    deform(simulator->deform),
-    outputProvider(simulator->outputProvider),
-    mdModulesNotifier(simulator->mdModulesNotifier),
-    inputrec(simulator->inputrec),
-    imdSession(simulator->imdSession),
-    pull_work(simulator->pull_work),
-    swap(simulator->swap),
-    top_global(simulator->top_global),
-    state_global(simulator->state_global),
-    observablesHistory(simulator->observablesHistory),
-    mdAtoms(simulator->mdAtoms),
-    nrnb(simulator->nrnb),
-    wcycle(simulator->wcycle),
-    fr(simulator->fr),
-    enerd(simulator->enerd),
-    ekind(simulator->ekind),
-    runScheduleWork(simulator->runScheduleWork),
-    replExParams(simulator->replExParams),
-    membed(simulator->membed),
-    walltime_accounting(simulator->walltime_accounting),
-    stopHandlerBuilder(simulator->stopHandlerBuilder.get()),
-    doRerun(simulator->doRerun)
+ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
+        compat::not_null<LegacySimulatorData*> legacySimulatorData) :
+    legacySimulatorData_(legacySimulatorData),
+    nstglobalcomm_(computeGlobalCommunicationPeriod(legacySimulatorData->mdlog,
+                                                    legacySimulatorData->inputrec,
+                                                    legacySimulatorData->cr))
 {
 }
 

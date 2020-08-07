@@ -92,19 +92,14 @@ public:
 
 private:
     //! Constructor
-    template<typename... Args>
-    explicit ModularSimulator(Args&&... args);
+    explicit ModularSimulator(std::unique_ptr<LegacySimulatorData> legacySimulatorData);
 
     //! Check for disabled functionality (during construction time)
     void checkInputForDisabledFunctionality();
-};
 
-//! Constructor implementation (here to avoid template-related linker problems)
-template<typename... Args>
-ModularSimulator::ModularSimulator(Args&&... args) : ISimulator(std::forward<Args>(args)...)
-{
-    checkInputForDisabledFunctionality();
-}
+    //! Pointer to legacy simulator data
+    std::unique_ptr<LegacySimulatorData> legacySimulatorData_;
+};
 
 /*!
  * \brief Whether or not to use the ModularSimulator

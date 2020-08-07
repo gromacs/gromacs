@@ -126,7 +126,7 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
     if (useModularSimulator)
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
-        return std::unique_ptr<ModularSimulator>(new ModularSimulator(
+        return std::unique_ptr<ModularSimulator>(new ModularSimulator(std::make_unique<LegacySimulatorData>(
                 simulatorEnv_->fplog_, simulatorEnv_->commRec_, simulatorEnv_->multisimCommRec_,
                 simulatorEnv_->logger_, legacyInput_->numFile, legacyInput_->filenames,
                 simulatorEnv_->outputEnv_, simulatorConfig_->mdrunOptions_,
@@ -139,7 +139,7 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(bool useModularSimulator)
                 profiling_->wallCycle, legacyInput_->forceRec, simulatorStateData_->enerdata_p,
                 simulatorStateData_->ekindata_p, simulatorConfig_->runScheduleWork_,
                 *replicaExchangeParameters_, membedHolder_->membed(), profiling_->walltimeAccounting,
-                std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun));
+                std::move(stopHandlerBuilder_), simulatorConfig_->mdrunOptions_.rerun)));
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<LegacySimulator>(new LegacySimulator(
