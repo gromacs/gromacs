@@ -181,9 +181,17 @@ SignallerCallbackPtr TrajectoryElement::registerTrajectorySignallerCallback(Traj
     return nullptr;
 }
 
-void TrajectoryElementBuilder::registerWriterClient(compat::not_null<ITrajectoryWriterClient*> client)
+void TrajectoryElementBuilder::registerWriterClient(ITrajectoryWriterClient* client)
 {
-    writerClients_.emplace_back(client);
+    if (client)
+    {
+        if (state_ == ModularSimulatorBuilderState::NotAcceptingClientRegistrations)
+        {
+            throw SimulationAlgorithmSetupError(
+                    "Tried to register to signaller after it was built.");
+        }
+        writerClients_.emplace_back(client);
+    }
 }
 
 } // namespace gmx

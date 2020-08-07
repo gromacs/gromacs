@@ -50,15 +50,17 @@
 
 namespace gmx
 {
-TopologyHolder::TopologyHolder(const gmx_mtop_t&    globalTopology,
-                               const t_commrec*     cr,
-                               const t_inputrec*    inputrec,
-                               t_forcerec*          fr,
-                               MDAtoms*             mdAtoms,
-                               Constraints*         constr,
-                               VirtualSitesHandler* vsite) :
+TopologyHolder::TopologyHolder(std::vector<ITopologyHolderClient*> clients,
+                               const gmx_mtop_t&                   globalTopology,
+                               const t_commrec*                    cr,
+                               const t_inputrec*                   inputrec,
+                               t_forcerec*                         fr,
+                               MDAtoms*                            mdAtoms,
+                               Constraints*                        constr,
+                               VirtualSitesHandler*                vsite) :
     globalTopology_(globalTopology),
-    localTopology_(std::make_unique<gmx_localtop_t>(globalTopology.ffparams))
+    localTopology_(std::make_unique<gmx_localtop_t>(globalTopology.ffparams)),
+    clients_(std::move(clients))
 {
     if (!DOMAINDECOMP(cr))
     {
@@ -71,6 +73,8 @@ TopologyHolder::TopologyHolder(const gmx_mtop_t&    globalTopology,
         mdAlgorithmsSetupAtomData(cr, inputrec, globalTopology, localTopology_.get(), fr, nullptr,
                                   mdAtoms, constr, vsite, nullptr);
     }
+    // Send copy of initial topology to clients
+    updateLocalTopology();
 }
 
 const gmx_mtop_t& TopologyHolder::globalTopology() const
@@ -86,11 +90,17 @@ void TopologyHolder::updateLocalTopology()
     }
 }
 
-void TopologyHolder::registerClient(ITopologyHolderClient* client)
+void TopologyHolder::Builder::registerClient(ITopologyHolderClient* client)
 {
     // Register client
-    clients_.emplace_back(client);
-    // Send copy of current topology
-    client->setTopology(localTopology_.get());
+    if (client)
+    {
+        if (state_ == ModularSimulatorBuilderState::NotAcceptingClientRegistrations)
+        {
+            throw SimulationAlgorithmSetupError(
+                    "Tried to register to signaller after it was built.");
+        }
+        clients_.emplace_back(client);
+    }
 }
 } // namespace gmx

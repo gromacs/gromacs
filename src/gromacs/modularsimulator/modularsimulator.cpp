@@ -112,7 +112,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildForces
         StatePropagatorData*                       statePropagatorDataPtr,
         EnergyData*                                energyDataPtr,
         FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
-        TopologyHolder*                            topologyHolder)
+        TopologyHolder::Builder*                   topologyHolderBuilder)
 {
     const bool isVerbose    = legacySimulatorData_->mdrunOptions.verbose;
     const bool isDynamicBox = inputrecDynamicBox(legacySimulatorData_->inputrec);
@@ -125,7 +125,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildForces
             legacySimulatorData_->vsite, legacySimulatorData_->imdSession,
             legacySimulatorData_->pull_work, legacySimulatorData_->constr,
             legacySimulatorData_->top_global, legacySimulatorData_->enforcedRotation);
-    topologyHolder->registerClient(forceElement.get());
+    topologyHolderBuilder->registerClient(forceElement.get());
     neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
     energySignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
 
@@ -146,12 +146,12 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
         compat::not_null<EnergyData*>              energyDataPtr,
         FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
         bool                                       hasReadEkinState,
-        TopologyHolder*                            topologyHolder,
+        TopologyHolder::Builder*                   topologyHolderBuilder,
         SimulationSignals*                         signals)
 {
     auto forceElement = buildForces(neighborSearchSignallerBuilder, energySignallerBuilder,
                                     statePropagatorDataPtr, energyDataPtr,
-                                    freeEnergyPerturbationDataPtr, topologyHolder);
+                                    freeEnergyPerturbationDataPtr, topologyHolderBuilder);
 
     // list of elements owned by the simulator composite object
     std::vector<std::unique_ptr<ISimulatorElement>> elementsOwnershipList;
@@ -167,7 +167,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
                 legacySimulatorData_->cr, legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms,
                 legacySimulatorData_->nrnb, legacySimulatorData_->wcycle, legacySimulatorData_->fr,
                 legacySimulatorData_->top_global, legacySimulatorData_->constr, hasReadEkinState);
-        topologyHolder->registerClient(computeGlobalsElement.get());
+        topologyHolderBuilder->registerClient(computeGlobalsElement.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
         trajectorySignallerBuilder->registerSignallerClient(
                 compat::make_not_null(computeGlobalsElement.get()));
@@ -255,14 +255,13 @@ std::unique_ptr<ISimulatorElement> ModularSimulatorAlgorithmBuilder::buildIntegr
     {
         auto computeGlobalsElement =
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>(
-                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr,
-                        signals, nstglobalcomm_, legacySimulatorData_->fplog,
-                        legacySimulatorData_->mdlog, legacySimulatorData_->cr,
-                        legacySimulatorData_->inputrec, legacySimulatorData_->mdAtoms,
-                        legacySimulatorData_->nrnb, legacySimulatorData_->wcycle,
-                        legacySimulatorData_->fr, &topologyHolder->globalTopology(),
-                        legacySimulatorData_->constr, hasReadEkinState);
-        topologyHolder->registerClient(computeGlobalsElement.get());
+                        statePropagatorDataPtr, energyDataPtr, freeEnergyPerturbationDataPtr, signals,
+                        nstglobalcomm_, legacySimulatorData_->fplog, legacySimulatorData_->mdlog,
+                        legacySimulatorData_->cr, legacySimulatorData_->inputrec,
+                        legacySimulatorData_->mdAtoms, legacySimulatorData_->nrnb,
+                        legacySimulatorData_->wcycle, legacySimulatorData_->fr,
+                        legacySimulatorData_->top_global, legacySimulatorData_->constr, hasReadEkinState);
+        topologyHolderBuilder->registerClient(computeGlobalsElement.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
         trajectorySignallerBuilder->registerSignallerClient(
                 compat::make_not_null(computeGlobalsElement.get()));

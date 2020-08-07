@@ -415,6 +415,13 @@ public:
     }
 };
 
+//! Enum allowing builders to store whether they can accept client registrations
+enum class ModularSimulatorBuilderState
+{
+    AcceptingClientRegistrations,
+    NotAcceptingClientRegistrations
+};
+
 //! /}
 } // namespace gmx
 

@@ -421,10 +421,6 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     /*
      * Build data structures
      */
-    algorithm.topologyHolder_ = std::make_unique<TopologyHolder>(
-            *legacySimulatorData_->top_global, legacySimulatorData_->cr,
-            legacySimulatorData_->inputrec, legacySimulatorData_->fr, legacySimulatorData_->mdAtoms,
-            legacySimulatorData_->constr, legacySimulatorData_->vsite);
 
     if (legacySimulatorData_->inputrec->efep != efepNO)
     {
@@ -475,6 +471,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     SignallerBuilder<EnergySignaller>         energySignallerBuilder;
     SignallerBuilder<TrajectorySignaller>     trajectorySignallerBuilder;
     TrajectoryElementBuilder                  trajectoryElementBuilder;
+    TopologyHolder::Builder                   topologyHolderBuilder;
 
     // Register the simulator itself to the neighbor search / last step signaller
     neighborSearchSignallerBuilder.registerSignallerClient(
@@ -493,8 +490,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
             &neighborSearchSignallerBuilder, &lastStepSignallerBuilder, &energySignallerBuilder,
             &loggingSignallerBuilder, &trajectorySignallerBuilder, &trajectoryElementBuilder,
             &checkpointClients, &checkBondedInteractionsCallback, statePropagatorDataPtr,
-            energyDataPtr, freeEnergyPerturbationDataPtr, hasReadEkinState,
-            algorithm.topologyHolder_.get(), &algorithm.signals_);
+            energyDataPtr, freeEnergyPerturbationDataPtr, hasReadEkinState, &topologyHolderBuilder,
+            &algorithm.signals_);
 
     FreeEnergyPerturbationData::Element* freeEnergyPerturbationElement = nullptr;
     if (algorithm.freeEnergyPerturbationData_)
@@ -506,6 +503,11 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::constructElementsAnd
     /*
      * Build infrastructure elements
      */
+    // Build topology holder
+    algorithm.topologyHolder_ = topologyHolderBuilder.build(
+            *legacySimulatorData_->top_global, legacySimulatorData_->cr,
+            legacySimulatorData_->inputrec, legacySimulatorData_->fr, legacySimulatorData_->mdAtoms,
+            legacySimulatorData_->constr, legacySimulatorData_->vsite);
 
     if (PmeLoadBalanceHelper::doPmeLoadBalancing(legacySimulatorData_->mdrunOptions,
                                                  legacySimulatorData_->inputrec,

@@ -69,7 +69,7 @@ class SignallerBuilder final
 {
 public:
     //! Allows clients to register to the signaller
-    void registerSignallerClient(compat::not_null<typename Signaller::Client*> client);
+    void registerSignallerClient(typename Signaller::Client* client);
 
     //! Build the signaller
     template<typename... Args>
@@ -78,6 +78,8 @@ public:
 private:
     //! List of signaller clients
     std::vector<typename Signaller::Client*> signallerClients_;
+    //! The state of the builder
+    ModularSimulatorBuilderState state_ = ModularSimulatorBuilderState::AcceptingClientRegistrations;
 
     //! Helper function to get the callbacks from the clients
     template<typename... Args>
@@ -407,9 +409,17 @@ private:
 
 //! Allows clients to register to the signaller
 template<class Signaller>
-void SignallerBuilder<Signaller>::registerSignallerClient(compat::not_null<typename Signaller::Client*> client)
+void SignallerBuilder<Signaller>::registerSignallerClient(typename Signaller::Client* client)
 {
-    signallerClients_.emplace_back(client);
+    if (client)
+    {
+        if (state_ == ModularSimulatorBuilderState::NotAcceptingClientRegistrations)
+        {
+            throw SimulationAlgorithmSetupError(
+                    "Tried to register to signaller after it was built.");
+        }
+        signallerClients_.emplace_back(client);
+    }
 }
 
 /*! \brief Build the signaller
@@ -420,6 +430,7 @@ template<class Signaller>
 template<typename... Args>
 std::unique_ptr<Signaller> SignallerBuilder<Signaller>::build(Args&&... args)
 {
+    state_         = ModularSimulatorBuilderState::NotAcceptingClientRegistrations;
     auto callbacks = buildCallbackVector();
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<Signaller>(new Signaller(std::move(callbacks), std::forward<Args>(args)...));
@@ -433,6 +444,7 @@ template<>
 template<typename... Args>
 std::unique_ptr<TrajectorySignaller> SignallerBuilder<TrajectorySignaller>::build(Args&&... args)
 {
+    state_                     = ModularSimulatorBuilderState::NotAcceptingClientRegistrations;
     auto signalEnergyCallbacks = buildCallbackVector(TrajectoryEvent::EnergyWritingStep);
     auto signalStateCallbacks  = buildCallbackVector(TrajectoryEvent::StateWritingStep);
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
@@ -448,6 +460,7 @@ template<>
 template<typename... Args>
 std::unique_ptr<EnergySignaller> SignallerBuilder<EnergySignaller>::build(Args&&... args)
 {
+    state_                        = ModularSimulatorBuilderState::NotAcceptingClientRegistrations;
     auto calculateEnergyCallbacks = buildCallbackVector(EnergySignallerEvent::EnergyCalculationStep);
     auto calculateVirialCallbacks = buildCallbackVector(EnergySignallerEvent::VirialCalculationStep);
     auto calculateFreeEnergyCallbacks =

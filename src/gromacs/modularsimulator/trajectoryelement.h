@@ -92,10 +92,6 @@ public:
     //! Get the compressed lambda writeout frequency for TNG
     [[nodiscard]] int tngLambdaOutCompressed() const;
 
-    /*
-     * Methods for the trajectory writing part of the element
-     */
-
     /*! \brief Prepare trajectory writer
      *
      * During setup, the trajectory writer will query the writer clients for
@@ -189,7 +185,7 @@ class TrajectoryElementBuilder final
 {
 public:
     //! Allows clients to register as trajectory writers
-    void registerWriterClient(compat::not_null<ITrajectoryWriterClient*> client);
+    void registerWriterClient(ITrajectoryWriterClient* client);
 
     //! Build the TrajectoryElement
     template<typename... Args>
@@ -198,11 +194,14 @@ public:
 private:
     //! List of writer clients
     std::vector<ITrajectoryWriterClient*> writerClients_;
+    //! The state of the builder
+    ModularSimulatorBuilderState state_ = ModularSimulatorBuilderState::AcceptingClientRegistrations;
 };
 
 template<typename... Args>
 std::unique_ptr<TrajectoryElement> TrajectoryElementBuilder::build(Args&&... args)
 {
+    state_ = ModularSimulatorBuilderState::NotAcceptingClientRegistrations;
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<TrajectoryElement>(
             new TrajectoryElement(std::move(writerClients_), std::forward<Args>(args)...));

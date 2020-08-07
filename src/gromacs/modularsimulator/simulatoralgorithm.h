@@ -313,7 +313,7 @@ private:
                     compat::not_null<EnergyData*>              energyDataPtr,
                     FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
                     bool                                       hasReadEkinState,
-                    TopologyHolder*                            topologyHolder,
+                    TopologyHolder::Builder*                   topologyHolderBuilder,
                     SimulationSignals*                         signals);
 
     //! Build the force element - can be normal forces or shell / flex constraints
@@ -323,7 +323,7 @@ private:
                 StatePropagatorData*                       statePropagatorDataPtr,
                 EnergyData*                                energyDataPtr,
                 FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
-                TopologyHolder*                            topologyHolder);
+                TopologyHolder::Builder*                   topologyHolderBuilder);
 
     //! Pointer to the LegacySimulatorData object
     compat::not_null<LegacySimulatorData*> legacySimulatorData_;
