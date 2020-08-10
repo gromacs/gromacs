@@ -46,11 +46,12 @@
 #include <memory>
 #include <numeric>
 
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/mrcdensitymap.h"
+#include "gromacs/math/coordinatetransformation.h"
 #include "gromacs/math/multidimarray.h"
-#include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
@@ -324,19 +325,20 @@ public:
 
         // writing checkpoint data
         const auto checkpointDataWriting = [this](MdModulesWriteCheckpointData checkpointData) {
-            this->writeCheckpointData(checkpointData);
+            forceProvider_->writeCheckpointData(checkpointData, DensityFittingModuleInfo::name_);
         };
         notifier->checkpointingNotifications_.subscribe(checkpointDataWriting);
 
         // reading checkpoint data
         const auto checkpointDataReading = [this](MdModulesCheckpointReadingDataOnMaster checkpointData) {
-            this->readCheckpointDataOnMaster(checkpointData);
+            densityFittingState_.readState(checkpointData.checkpointedData_,
+                                           DensityFittingModuleInfo::name_);
         };
         notifier->checkpointingNotifications_.subscribe(checkpointDataReading);
 
         // broadcasting checkpoint data
         const auto checkpointDataBroadcast = [this](MdModulesCheckpointReadingBroadcast checkpointData) {
-            this->broadcastCheckpointData(checkpointData);
+            densityFittingState_.broadcastState(checkpointData.communicator_, checkpointData.isParallelRun_);
         };
         notifier->checkpointingNotifications_.subscribe(checkpointDataBroadcast);
     }
@@ -387,76 +389,6 @@ public:
     void setEnergyOutputRequest(MdModulesEnergyOutputToDensityFittingRequestChecker* energyOutputRequest)
     {
         energyOutputRequest->energyOutputToDensityFitting_ = densityFittingOptions_.active();
-    }
-
-    /*! \brief Write internal density fitting data to checkpoint file.
-     * \param[in] checkpointWriting enables writing to the Key-Value-Tree
-     *                              that is used for storing the checkpoint
-     *                              information
-     *
-     * \note The provided state to checkpoint has to change if checkpointing
-     *       is moved before the force provider call in the MD-loop.
-     */
-    void writeCheckpointData(MdModulesWriteCheckpointData checkpointWriting)
-    {
-        const DensityFittingForceProviderState& state = forceProvider_->stateToCheckpoint();
-        checkpointWriting.builder_.addValue<std::int64_t>(
-                DensityFittingModuleInfo::name_ + "-stepsSinceLastCalculation",
-                state.stepsSinceLastCalculation_);
-        checkpointWriting.builder_.addValue<real>(
-                DensityFittingModuleInfo::name_ + "-adaptiveForceConstantScale",
-                state.adaptiveForceConstantScale_);
-        KeyValueTreeObjectBuilder exponentialMovingAverageKvtEntry = checkpointWriting.builder_.addObject(
-                DensityFittingModuleInfo::name_ + "-exponentialMovingAverageState");
-        exponentialMovingAverageStateAsKeyValueTree(exponentialMovingAverageKvtEntry,
-                                                    state.exponentialMovingAverageState_);
-    }
-
-    /*! \brief Read the internal parameters from the checkpoint file on master
-     * \param[in] checkpointReading holding the checkpoint information
-     */
-    void readCheckpointDataOnMaster(MdModulesCheckpointReadingDataOnMaster checkpointReading)
-    {
-        if (checkpointReading.checkpointedData_.keyExists(DensityFittingModuleInfo::name_
-                                                          + "-stepsSinceLastCalculation"))
-        {
-            densityFittingState_.stepsSinceLastCalculation_ =
-                    checkpointReading
-                            .checkpointedData_[DensityFittingModuleInfo::name_
-                                               + "-stepsSinceLastCalculation"]
-                            .cast<std::int64_t>();
-        }
-        if (checkpointReading.checkpointedData_.keyExists(DensityFittingModuleInfo::name_
-                                                          + "-adaptiveForceConstantScale"))
-        {
-            densityFittingState_.adaptiveForceConstantScale_ =
-                    checkpointReading
-                            .checkpointedData_[DensityFittingModuleInfo::name_
-                                               + "-adaptiveForceConstantScale"]
-                            .cast<real>();
-        }
-        if (checkpointReading.checkpointedData_.keyExists(DensityFittingModuleInfo::name_
-                                                          + "-exponentialMovingAverageState"))
-        {
-            densityFittingState_.exponentialMovingAverageState_ = exponentialMovingAverageStateFromKeyValueTree(
-                    checkpointReading
-                            .checkpointedData_[DensityFittingModuleInfo::name_ + "-exponentialMovingAverageState"]
-                            .asObject());
-        }
-    }
-
-    /*! \brief Broadcast the internal parameters.
-     * \param[in] checkpointBroadcast containing the communication record to
-     *                                broadcast the checkpoint information
-     */
-    void broadcastCheckpointData(MdModulesCheckpointReadingBroadcast checkpointBroadcast)
-    {
-        if (checkpointBroadcast.isParallelRun_)
-        {
-            block_bc(checkpointBroadcast.communicator_, densityFittingState_.stepsSinceLastCalculation_);
-            block_bc(checkpointBroadcast.communicator_, densityFittingState_.adaptiveForceConstantScale_);
-            block_bc(checkpointBroadcast.communicator_, densityFittingState_.exponentialMovingAverageState_);
-        }
     }
 
 private:

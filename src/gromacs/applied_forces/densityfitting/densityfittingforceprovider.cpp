@@ -46,15 +46,16 @@
 #include <numeric>
 #include <optional>
 
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/math/coordinatetransformation.h"
 #include "gromacs/math/densityfit.h"
 #include "gromacs/math/densityfittingforce.h"
-#include "gromacs/math/exponentialmovingaverage.h"
 #include "gromacs/math/gausstransform.h"
+#include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
-#include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "densityfittingamplitudelookup.h"
@@ -83,6 +84,59 @@ GaussianSpreadKernelParameters::Shape makeSpreadKernel(real sigma, real nSigma, 
 }
 
 } // namespace
+
+/********************************************************************
+ * DensityFittingForceProviderState
+ */
+
+const std::string DensityFittingForceProviderState::adaptiveForceConstantScaleName_ =
+        "adaptiveForceConstantScale";
+
+const std::string DensityFittingForceProviderState::exponentialMovingAverageStateName_ =
+        "exponentialMovingAverageState";
+
+const std::string DensityFittingForceProviderState::stepsSinceLastCalculationName_ =
+        "stepsSinceLastCalculation";
+
+void DensityFittingForceProviderState::writeState(KeyValueTreeObjectBuilder kvtBuilder,
+                                                  const std::string&        identifier) const
+{
+    writeKvtCheckpointValue(stepsSinceLastCalculation_, stepsSinceLastCalculationName_, identifier,
+                            kvtBuilder);
+    writeKvtCheckpointValue(adaptiveForceConstantScale_, adaptiveForceConstantScaleName_,
+                            identifier, kvtBuilder);
+
+    KeyValueTreeObjectBuilder exponentialMovingAverageKvtEntry =
+            kvtBuilder.addObject(identifier + "-" + exponentialMovingAverageStateName_);
+    exponentialMovingAverageStateAsKeyValueTree(exponentialMovingAverageKvtEntry,
+                                                exponentialMovingAverageState_);
+}
+
+void DensityFittingForceProviderState::readState(const KeyValueTreeObject& kvtData,
+                                                 const std::string&        identifier)
+{
+    readKvtCheckpointValue(compat::make_not_null(&stepsSinceLastCalculation_),
+                           stepsSinceLastCalculationName_, identifier, kvtData);
+    readKvtCheckpointValue(compat::make_not_null(&adaptiveForceConstantScale_),
+                           adaptiveForceConstantScaleName_, identifier, kvtData);
+
+    if (kvtData.keyExists(identifier + "-" + exponentialMovingAverageStateName_))
+    {
+        exponentialMovingAverageState_ = exponentialMovingAverageStateFromKeyValueTree(
+                kvtData[identifier + "-" + exponentialMovingAverageStateName_].asObject());
+    }
+}
+
+void DensityFittingForceProviderState::broadcastState(MPI_Comm communicator, bool isParallelRun)
+{
+    if (isParallelRun)
+    {
+        block_bc(communicator, stepsSinceLastCalculation_);
+        block_bc(communicator, adaptiveForceConstantScale_);
+        block_bc(communicator, exponentialMovingAverageState_);
+    }
+}
+
 
 /********************************************************************
  * DensityFittingForceProvider::Impl
@@ -325,9 +379,10 @@ void DensityFittingForceProvider::calculateForces(const ForceProviderInput& forc
     impl_->calculateForces(forceProviderInput, forceProviderOutput);
 }
 
-const DensityFittingForceProviderState& DensityFittingForceProvider::stateToCheckpoint()
+void DensityFittingForceProvider::writeCheckpointData(MdModulesWriteCheckpointData checkpointWriting,
+                                                      const std::string&           moduleName)
 {
-    return impl_->stateToCheckpoint();
+    impl_->stateToCheckpoint().writeState(checkpointWriting.builder_, moduleName);
 }
 
 } // namespace gmx

@@ -95,6 +95,54 @@
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
+namespace gmx
+{
+
+template<typename ValueType>
+void readKvtCheckpointValue(compat::not_null<ValueType*> value,
+                            const std::string&           name,
+                            const std::string&           identifier,
+                            const KeyValueTreeObject&    kvt)
+{
+    const std::string key = identifier + "-" + name;
+    if (!kvt.keyExists(key))
+    {
+        std::string errorMessage = "Cannot read requested checkpoint value " + key + " .";
+        GMX_THROW(InternalError(errorMessage));
+    }
+    *value = kvt[key].cast<ValueType>();
+}
+
+template void readKvtCheckpointValue(compat::not_null<std::int64_t*> value,
+                                     const std::string&              name,
+                                     const std::string&              identifier,
+                                     const KeyValueTreeObject&       kvt);
+template void readKvtCheckpointValue(compat::not_null<real*>   value,
+                                     const std::string&        name,
+                                     const std::string&        identifier,
+                                     const KeyValueTreeObject& kvt);
+
+template<typename ValueType>
+void writeKvtCheckpointValue(const ValueType&          value,
+                             const std::string&        name,
+                             const std::string&        identifier,
+                             KeyValueTreeObjectBuilder kvtBuilder)
+{
+    kvtBuilder.addValue<ValueType>(identifier + "-" + name, value);
+}
+
+template void writeKvtCheckpointValue(const std::int64_t&       value,
+                                      const std::string&        name,
+                                      const std::string&        identifier,
+                                      KeyValueTreeObjectBuilder kvtBuilder);
+template void writeKvtCheckpointValue(const real&               value,
+                                      const std::string&        name,
+                                      const std::string&        identifier,
+                                      KeyValueTreeObjectBuilder kvtBuilder);
+
+
+} // namespace gmx
+
 /*! \brief Enum of values that describe the contents of a cpt file
  * whose format matches a version number
  *

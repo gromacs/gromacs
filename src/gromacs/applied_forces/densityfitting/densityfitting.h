@@ -38,13 +38,10 @@
 #include <memory>
 #include <string>
 
-enum class PbcType : int;
-
 namespace gmx
 {
 
 class IMDModule;
-struct MdModulesNotifier;
 
 /*! \libinternal \brief Information about the density fitting module.
  *

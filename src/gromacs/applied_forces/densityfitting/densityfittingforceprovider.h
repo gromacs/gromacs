@@ -44,8 +44,7 @@
 
 #include <memory>
 
-#include "gromacs/domdec/localatomset.h"
-#include "gromacs/math/coordinatetransformation.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/math/exponentialmovingaverage.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -56,6 +55,8 @@ enum class PbcType : int;
 namespace gmx
 {
 
+class LocalAtomSet;
+class TranslateAndScale;
 struct DensityFittingParameters;
 
 /*! \internal
@@ -67,10 +68,48 @@ struct DensityFittingForceProviderState
      *  Used if density fitting is to be calculated every N steps.
      */
     std::int64_t stepsSinceLastCalculation_ = 0;
+    /*! \brief String naming variable holding the steps since last calculation.
+     * \note Changing this name will break backwards compability for checkpoint file writing.
+     */
+    static const std::string stepsSinceLastCalculationName_;
     //! The state of the exponential moving average of the similarity measure
     ExponentialMovingAverageState exponentialMovingAverageState_ = {};
+    /*! \brief String naming variable holding the exponential moving average.
+     * \note Changing this name will break backwards compability for checkpoint file writing.
+     */
+    static const std::string exponentialMovingAverageStateName_;
+
     //! An additional factor scaling the force for adaptive force scaling
     real adaptiveForceConstantScale_ = 1.0_real;
+    /*! \brief String naming variable holding the adaptive force constant scale.
+     * \note Changing this name will break backwards compability for checkpoint file writing.
+     */
+    static const std::string adaptiveForceConstantScaleName_;
+
+    /*! \brief Write internal density fitting data into a key value tree.
+     * The entries to the kvt are identified with identifier, so that a variable
+     * is indentified with the key "identifier-variablename"
+     *
+     * \param[in] kvtBuilder enables writing to the Key-Value-Tree
+     *                              the state is written to
+     *
+     * \param[in] identifier denotes the module that is checkpointing the data
+     */
+    void writeState(KeyValueTreeObjectBuilder kvtBuilder, const std::string& identifier) const;
+
+    /*! \brief Read the internal parameters from the checkpoint file on master
+     * \param[in] kvtData holding the checkpoint information
+     * \param[in] identifier identifies the data in a key-value-tree
+     */
+    void readState(const KeyValueTreeObject& kvtData, const std::string& identifier);
+
+    /*! \brief Broadcast the internal parameters.
+     *
+     * \param[in] communicator to broadcast the state information
+     * \param[in] isParallelRun to determine if anything has to be broadcast at all
+     *
+     */
+    void broadcastState(MPI_Comm communicator, bool isParallelRun);
 };
 
 /*! \internal \brief
@@ -95,11 +134,16 @@ public:
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
 
-    /*! \brief Return the state of the forceprovider to be checkpointed
-     * TODO update this routine if checkpointing is moved to the beginning of
-     *      the md loop
+    /*! \brief Write internal density fitting data to checkpoint file.
+     * \param[in] checkpointWriting enables writing to the Key-Value-Tree
+     *                              that is used for storing the checkpoint
+     *                              information
+     * \param[in] moduleName names the module that is checkpointing this force-provider
+     *
+     * \note The provided state to checkpoint has to change if checkpointing
+     *       is moved before the force provider call in the MD-loop.
      */
-    const DensityFittingForceProviderState& stateToCheckpoint();
+    void writeCheckpointData(MdModulesWriteCheckpointData checkpointWriting, const std::string& moduleName);
 
 private:
     class Impl;
