@@ -233,6 +233,9 @@
 /* Define if OpenCL GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_OPENCL
 
+/* Define if SYCL GPU acceleration is compiled */
+#cmakedefine01 GMX_GPU_SYCL
+
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
 

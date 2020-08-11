@@ -205,7 +205,7 @@ gmx_option_multichoice(
     GMX_GPU
     "Framework for GPU acceleration"
     OFF
-    OFF CUDA OpenCL)
+    OFF CUDA OpenCL SYCL)
 
 gmx_option_multichoice(
     GMX_SIMD
@@ -575,6 +575,8 @@ if(GMX_GPU)
         include(gmxManageCuda)
     elseif(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
         include(gmxManageOpenCL)
+    elseif(${_gmx_gpu_uppercase} STREQUAL "SYCL")
+        include(gmxManageSYCL)	
     endif()
     if(NOT GMX_OPENMP)
         message(WARNING "To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading, which is currently not enabled.")
@@ -716,7 +718,7 @@ else()
     foreach(build_type ${build_types_with_explicit_flags})
         message("CMAKE_C_FLAGS_${build_type}: ${GMXC_CFLAGS_${build_type}}")
     endforeach()
-    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}")
+    message("CMAKE_CXX_FLAGS: ${DISABLE_SYCL_CXX_FLAGS};${SIMD_CXX_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}")
     foreach(build_type ${build_types_with_explicit_flags})
         message("CMAKE_CXX_FLAGS_${build_type}: ${GMXC_CXXFLAGS_${build_type}}")
     endforeach()
