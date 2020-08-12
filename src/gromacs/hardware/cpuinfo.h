@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,25 +97,26 @@ public:
      */
     enum class Feature
     {
-        X86_Aes,      //!< x86 advanced encryption standard accel.
-        X86_Amd,      //!< This is an AMD x86 processor
-        X86_Apic,     //!< APIC support
-        X86_Avx,      //!< Advanced vector extensions
-        X86_Avx2,     //!< AVX2 including gather support (not used yet)
-        X86_Avx512F,  //!< Foundation AVX-512 instructions
-        X86_Avx512PF, //!< Extended gather/scatter for AVX-512
-        X86_Avx512ER, //!< AVX-512 exponential and recpirocal extensions
-        X86_Avx512CD, //!< Memory conflict-detection for AVX-512
-        X86_Avx512BW, //!< AVX-512 byte and word instructions
-        X86_Avx512VL, //!< AVX-512 vector length extensions
-        X86_Clfsh,    //!< Supports CLFLUSH instruction
-        X86_Cmov,     //!< Conditional move insn support
-        X86_Cx8,      //!< Supports CMPXCHG8B (8-byte compare-exchange)
-        X86_Cx16,     //!< Supports CMPXCHG16B (16-byte compare-exchg)
-        X86_F16C,     //!< Supports 16-bit FP conversion instructions
-        X86_Fma,      //!< Fused-multiply add support (mainly for AVX)
-        X86_Fma4,     //!< 4-operand FMA, only on AMD for now
-        X86_Hle,      //!< Hardware lock elision
+        X86_Aes,             //!< x86 advanced encryption standard accel.
+        X86_Amd,             //!< This is an AMD x86 processor
+        X86_Apic,            //!< APIC support
+        X86_Avx,             //!< Advanced vector extensions
+        X86_Avx2,            //!< AVX2 including gather support (not used yet)
+        X86_Avx512F,         //!< Foundation AVX-512 instructions
+        X86_Avx512PF,        //!< Extended gather/scatter for AVX-512
+        X86_Avx512ER,        //!< AVX-512 exponential and recpirocal extensions
+        X86_Avx512CD,        //!< Memory conflict-detection for AVX-512
+        X86_Avx512BW,        //!< AVX-512 byte and word instructions
+        X86_Avx512VL,        //!< AVX-512 vector length extensions
+        X86_Avx512secondFMA, //!< AVX-512 second FMA unit
+        X86_Clfsh,           //!< Supports CLFLUSH instruction
+        X86_Cmov,            //!< Conditional move insn support
+        X86_Cx8,             //!< Supports CMPXCHG8B (8-byte compare-exchange)
+        X86_Cx16,            //!< Supports CMPXCHG16B (16-byte compare-exchg)
+        X86_F16C,            //!< Supports 16-bit FP conversion instructions
+        X86_Fma,             //!< Fused-multiply add support (mainly for AVX)
+        X86_Fma4,            //!< 4-operand FMA, only on AMD for now
+        X86_Hle,             //!< Hardware lock elision
         X86_Htt,   //!< Hyper-Threading enabled (NOTE: might not match the CPUID HTT support flag)
         X86_Intel, //!< This is an Intel x86 processor
         X86_Lahf,  //!< LAHF/SAHF support in 64 bits

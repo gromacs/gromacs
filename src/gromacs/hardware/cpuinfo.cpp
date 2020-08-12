@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,6 +85,7 @@
 #endif
 
 #include <cctype>
+#include <cstdint> // uint32_t in X86 processor name code
 #include <cstdlib>
 
 #include <algorithm>
@@ -251,6 +252,49 @@ CpuInfo::Vendor detectX86Vendor()
     return v;
 }
 
+/*! \brief Detect second AVX-512 FMA from the processor name
+ *
+ *  \param [in] brand     x86 processor name
+ *  \param [in] model     x86 model
+ *  \return               True if second FMA present
+ */
+bool detectProcCpuInfoSecondAvx512FMA(const std::string& brand, int model)
+{
+    // Skylake server
+    if (model == 0x55)
+    {
+        // detect Xeon
+        if (brand.find("Xeon") == 9)
+        {
+            // detect Silver or Bronze or specific models
+            if (brand.find("Silver") == 17 || brand.find("Bronze") == 17
+                || (brand.find('W') == 17 && brand.find('0') == 21)   // detect Xeon W 210x
+                || (brand.find('D') == 17 && brand.find("21") == 19)) // detect Xeon D 2xxx
+            {
+                return false;
+            }
+            // detect Gold 5120 and below
+            else if (brand.find("Gold") == 17 && brand.find('5') == 22)
+            {
+                return (brand.find("22") == 24);
+            }
+        }
+        return true;
+    }
+    // Cannon Lake client
+    if (model == 0x66)
+    {
+        return false;
+    }
+    // Ice Lake client
+    if (model == 0x7d || model == 0x7e)
+    {
+        return false;
+    }
+    // This is the right default...
+    return true;
+}
+
 /*! \brief Simple utility function to set/clear feature in a set
  *
  *  \param featureSet    Pointer to the feature set to update
@@ -328,22 +372,6 @@ void detectX86Features(std::string* brand, int* family, int* model, int* steppin
         setFeatureFromBit(features, CpuInfo::Feature::X86_Htt, edx, 28);
     }
 
-    if (maxStdLevel >= 0x7)
-    {
-        executeX86CpuID(0x7, 0, &eax, &ebx, &ecx, &edx);
-
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Hle, ebx, 4);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx2, ebx, 5);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Rtm, ebx, 11);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512F, ebx, 16);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512PF, ebx, 26);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512ER, ebx, 27);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512CD, ebx, 28);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Sha, ebx, 29);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512BW, ebx, 30);
-        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512VL, ebx, 31);
-    }
-
     // Check whether Hyper-threading is really possible to enable in the hardware,
     // not just technically supported by this generation of processors
     if ((features->count(CpuInfo::Feature::X86_Htt) != 0U) && maxStdLevel >= 0x4)
@@ -393,6 +421,29 @@ void detectX86Features(std::string* brand, int* family, int* model, int* steppin
         }
         trimString(brand);
     }
+
+    if (maxStdLevel >= 0x7)
+    {
+        executeX86CpuID(0x7, 0, &eax, &ebx, &ecx, &edx);
+
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Hle, ebx, 4);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx2, ebx, 5);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Rtm, ebx, 11);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512F, ebx, 16);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512PF, ebx, 26);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512ER, ebx, 27);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512CD, ebx, 28);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Sha, ebx, 29);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512BW, ebx, 30);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512VL, ebx, 31);
+
+        // There is no CPUID bit for this...
+        if (detectProcCpuInfoSecondAvx512FMA(*brand, *model))
+        {
+            features->insert(CpuInfo::Feature::X86_Avx512secondFMA);
+        }
+    }
+
 
     if (maxExtLevel >= 0x80000007)
     {
@@ -1050,6 +1101,7 @@ const std::string& CpuInfo::featureString(Feature f)
         { Feature::X86_Avx512CD, "avx512cd" },
         { Feature::X86_Avx512BW, "avx512bw" },
         { Feature::X86_Avx512VL, "avx512vl" },
+        { Feature::X86_Avx512secondFMA, "avx512secondFMA" },
         { Feature::X86_Clfsh, "clfsh" },
         { Feature::X86_Cmov, "cmov" },
         { Feature::X86_Cx8, "cx8" },
