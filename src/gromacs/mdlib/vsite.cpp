@@ -2272,21 +2272,19 @@ static void assignVsitesToThread(VsiteThread*                    tData,
         tData->ilist[ftype].clear();
         tData->idTask.ilist[ftype].clear();
 
-        int        nral1 = 1 + NRAL(ftype);
-        int        inc   = nral1;
+        const int  nral1 = 1 + NRAL(ftype);
         const int* iat   = ilist[ftype].iatoms.data();
         for (int i = 0; i < ilist[ftype].size();)
         {
-            if (ftype == F_VSITEN)
-            {
-                /* The 3 below is from 1+NRAL(ftype)=3 */
-                inc = ip[iat[i]].vsiten.n * 3;
-            }
+            /* Get the number of iatom entries in this virtual site.
+             * The 3 below for F_VSITEN is from 1+NRAL(ftype)=3
+             */
+            const int numIAtoms = (ftype == F_VSITEN ? ip[iat[i]].vsiten.n * 3 : nral1);
 
             if (iat[1 + i] < tData->rangeStart || iat[1 + i] >= tData->rangeEnd)
             {
                 /* This vsite belongs to a different thread */
-                i += inc;
+                i += numIAtoms;
                 continue;
             }
 
@@ -2327,7 +2325,7 @@ static void assignVsitesToThread(VsiteThread*                    tData,
             }
             else
             {
-                for (int j = i + 2; j < i + inc; j += 3)
+                for (int j = i + 2; j < i + numIAtoms; j += 3)
                 {
                     /* Do a range check to avoid a harmless race on taskIndex */
                     if (iat[j] < tData->rangeStart || iat[j] >= tData->rangeEnd || taskIndex[iat[j]] != thread)
@@ -2358,10 +2356,10 @@ static void assignVsitesToThread(VsiteThread*                    tData,
                     il_task = &tData->idTask.ilist[ftype];
                 }
                 /* Copy the vsite data to the thread-task local array */
-                il_task->push_back(iat[i], nral1 - 1, iat + i + 1);
+                il_task->push_back(iat[i], numIAtoms - 1, iat + i + 1);
                 if (task == nthread + thread)
                 {
-                    /* This vsite write outside our own task force block.
+                    /* This vsite writes outside our own task force block.
                      * Put it into the interdependent task list and flag
                      * the atoms involved for reduction.
                      */
@@ -2375,7 +2373,7 @@ static void assignVsitesToThread(VsiteThread*                    tData,
                     }
                     else
                     {
-                        for (int j = i + 2; j < i + inc; j += 3)
+                        for (int j = i + 2; j < i + numIAtoms; j += 3)
                         {
                             flagAtom(&tData->idTask, iat[j], nthread, natperthread);
                         }
@@ -2383,7 +2381,7 @@ static void assignVsitesToThread(VsiteThread*                    tData,
                 }
             }
 
-            i += inc;
+            i += numIAtoms;
         }
     }
 }
