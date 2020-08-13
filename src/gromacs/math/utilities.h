@@ -131,7 +131,7 @@ bool gmx_within_tol(double f1, double f2, double tol);
  * If a number is smaller than this value we risk numerical overflow
  * if any number larger than 1.0/GMX_REAL_EPS is divided by it.
  *
- * \return 1  if 'almost' numerically zero, 0 otherwise.
+ * \return True if 'almost' numerically zero, false otherwise.
  */
 bool gmx_numzero(double a);
 
@@ -140,13 +140,6 @@ bool gmx_numzero(double a);
  * \return False iff overflow occurred
  */
 gmx_bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result);
-
-/*! \brief Find greatest common divisor of two numbers
- *
- * \return GCD of the two inputs
- */
-int gmx_greatest_common_divisor(int p, int q);
-
 
 /*! \brief Enable floating-point exceptions if supported on OS
  *
@@ -163,16 +156,5 @@ int gmx_feenableexcept();
  * \returns 0 if successful in disabling exceptions, anything else in case of failure/unsupported OS.
  */
 int gmx_fedisableexcept();
-
-/*! \brief Return cut-off to use
- *
- * Takes the max of two cut-offs. However a cut-off of 0
- * signifies that the cut-off in fact is infinite, and
- * this requires this special routine.
- * \param[in] cutoff1 The first cutoff (e.g. coulomb)
- * \param[in] cutoff2 The second cutoff (e.g. vdw)
- * \return 0 if either is 0, the normal max of the two otherwise.
- */
-real max_cutoff(real cutoff1, real cutoff2);
 
 #endif

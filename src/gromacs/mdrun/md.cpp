@@ -50,6 +50,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <numeric>
 
 #include "gromacs/awh/awh.h"
 #include "gromacs/commandline/filenm.h"
@@ -72,7 +73,6 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/checkpointhandler.h"
@@ -523,11 +523,11 @@ void gmx::LegacySimulator::do_md()
         nstfep = ir->fepvals->nstdhdl;
         if (ir->bExpanded)
         {
-            nstfep = gmx_greatest_common_divisor(ir->expandedvals->nstexpanded, nstfep);
+            nstfep = std::gcd(ir->expandedvals->nstexpanded, nstfep);
         }
         if (useReplicaExchange)
         {
-            nstfep = gmx_greatest_common_divisor(replExParams.exchangeInterval, nstfep);
+            nstfep = std::gcd(replExParams.exchangeInterval, nstfep);
         }
     }
 

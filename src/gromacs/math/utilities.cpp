@@ -90,18 +90,6 @@ gmx_bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
     return TRUE;
 }
 
-int gmx_greatest_common_divisor(int p, int q)
-{
-    int tmp;
-    while (q != 0)
-    {
-        tmp = q;
-        q   = p % q;
-        p   = tmp;
-    }
-    return p;
-}
-
 int gmx_feenableexcept()
 {
 #if HAVE_FEENABLEEXCEPT
@@ -151,16 +139,4 @@ int gmx_fedisableexcept()
 #else
     return -1;
 #endif
-}
-
-real max_cutoff(real cutoff1, real cutoff2)
-{
-    if (cutoff1 == 0 || cutoff2 == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return std::max(cutoff1, cutoff2);
-    }
 }

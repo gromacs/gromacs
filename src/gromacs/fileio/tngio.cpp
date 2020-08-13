@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <iterator>
 #include <memory>
+#include <numeric>
 #include <vector>
 
 #if GMX_USE_TNG
@@ -372,7 +373,7 @@ static int greatest_common_divisor_if_positive(int n1, int n2)
     }
 
     /* We have a non-trivial greatest common divisor to compute. */
-    return gmx_greatest_common_divisor(n1, n2);
+    return std::gcd(n1, n2);
 }
 
 /* By default try to write 100 frames (of actual output) in each frame set.

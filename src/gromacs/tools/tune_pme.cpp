@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include <ctime>
 
 #include <algorithm>
+#include <numeric>
 #include <string>
 
 #ifdef HAVE_SYS_TIME_H
@@ -1294,7 +1295,7 @@ static void make_npme_list(const char* npmevalues_opt, /* Make a complete list w
                 break;
             default: gmx_fatal(FARGS, "Unknown option for eNPME in make_npme_list");
         }
-        if (gmx_greatest_common_divisor(npp, npme) >= min_factor)
+        if (std::gcd(npp, npme) >= min_factor)
         {
             (*nPMEnodes)[nlist] = npme;
             nlist++;

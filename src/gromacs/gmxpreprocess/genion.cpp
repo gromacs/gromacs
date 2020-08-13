@@ -50,7 +50,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -539,7 +538,7 @@ int gmx_genion(int argc, char* argv[])
 
         /* Check if the system is neutralizable
          * is (qdelta == p_q*p_num + n_q*n_num) solvable for p_num and n_num? */
-        int gcd = gmx_greatest_common_divisor(n_q, p_q);
+        int gcd = std::gcd(n_q, p_q);
         if ((qdelta % gcd) != 0)
         {
             gmx_fatal(FARGS,
