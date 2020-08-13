@@ -392,7 +392,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
 
     const bool haveMultipleDomains = havePPDomainDecomposition(cr);
 
-    bool           bFEP_NonBonded = (fr->efep != efepNO) && haveFepPerturbedNBInteractions(mtop);
+    bool           bFEP_NonBonded = (fr->efep != efepNO) && haveFepPerturbedNBInteractions(*mtop);
     PairlistParams pairlistParams(kernelSetup.kernelType, bFEP_NonBonded, ir->rlist, haveMultipleDomains);
 
     setupDynamicPairlistPruning(mdlog, ir, mtop, box, fr->ic, &pairlistParams);

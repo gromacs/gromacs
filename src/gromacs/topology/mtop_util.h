@@ -277,11 +277,13 @@ std::vector<int> get_atom_index(const gmx_mtop_t* mtop);
  */
 void convertAtomsToMtop(t_symtab* symtab, char** name, t_atoms* atoms, gmx_mtop_t* mtop);
 
-/*! \brief Checks if the non-bonded FEP should be performed in this run.
- *
- * \param[in]  mtop  Molecular topology.
- * \returns Whether FEP non-bonded is requested.
- */
-bool haveFepPerturbedNBInteractions(const gmx_mtop_t* mtop);
+//! Checks and returns whether non-bonded interactions are perturbed for free-energy calculations
+bool haveFepPerturbedNBInteractions(const gmx_mtop_t& mtop);
+
+//! Checks whether masses are perturbed for free-energy calculations
+bool haveFepPerturbedMasses(const gmx_mtop_t& mtop);
+
+//! Checks whether constraints are perturbed for free-energy calculations
+bool havePerturbedConstraints(const gmx_mtop_t& mtop);
 
 #endif
