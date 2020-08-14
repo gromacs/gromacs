@@ -40,17 +40,21 @@
  */
 #include "gmxpre.h"
 
-#include <vector>
+#include "config.h"
 
-#include <gtest/gtest.h>
+#if GMX_GPU_CUDA
 
-#include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/gpu_utils/pmalloc_cuda.h"
-#include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
+#    include <vector>
 
-#include "gputest.h"
+#    include <gtest/gtest.h>
+
+#    include "gromacs/gpu_utils/gpu_utils.h"
+#    include "gromacs/gpu_utils/hostallocator.h"
+#    include "gromacs/gpu_utils/pmalloc_cuda.h"
+#    include "gromacs/utility/real.h"
+#    include "gromacs/utility/smalloc.h"
+
+#    include "gputest.h"
 
 namespace gmx
 {
@@ -128,3 +132,5 @@ TEST_F(PinnedMemoryCheckerTest, PinnedCBufferIsRecognized)
 } // namespace
 } // namespace test
 } // namespace gmx
+
+#endif // GMX_GPU_CUDA

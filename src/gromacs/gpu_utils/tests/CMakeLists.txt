@@ -44,7 +44,10 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test
         gputest.cpp
         # Tests of code
         clfftinitializer.cpp
+        device_stream_manager.cpp
         hostallocator.cpp
+        pinnedmemorychecker.cpp
+        typecasts.cpp
 
     CUDA_CU_SOURCE_FILES
         devicetransfers.cu
@@ -54,6 +57,5 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test
         devicetransfers_ocl.cpp
 
     NON_GPU_CPP_SOURCE_FILES
-        device_stream_manager.cpp
         devicetransfers.cpp
     )
