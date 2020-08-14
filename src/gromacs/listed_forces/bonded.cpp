@@ -997,6 +997,7 @@ angles(int             nbonds,
     SimdReal                         nrij2_S, nrij_1_S;
     SimdReal                         nrkj2_S, nrkj_1_S;
     SimdReal                         cos_S, invsin_S;
+    SimdReal                         cos2_S;
     SimdReal                         theta_S;
     SimdReal                         st_S, sth_S;
     SimdReal                         cik_S, cii_S, ckk_S;
@@ -1065,6 +1066,16 @@ angles(int             nbonds,
 
         cos_S = rij_rkj_S * nrij_1_S * nrkj_1_S;
 
+        /* We compute cos^2 using a division instead of squaring cos_S,
+         * as we would then get additional error contributions from
+         * the two invsqrt operations, which get amplified by
+         * the 1/sqrt(1-cos^2) for cos values close to 1.
+         *
+         * Note that the non-SIMD version of angles() avoids this issue
+         * by computing the cosine using double precision.
+         */
+        cos2_S = rij_rkj_S * rij_rkj_S / (nrij2_S * nrkj2_S);
+
         /* To allow for 180 degrees, we take the max of cos and -1 + 1bit,
          * so we can safely get the 1/sin from 1/sqrt(1 - cos^2).
          * This also ensures that rounding errors would cause the argument
@@ -1076,7 +1087,7 @@ angles(int             nbonds,
 
         theta_S = acos(cos_S);
 
-        invsin_S = invsqrt(one_S - cos_S * cos_S);
+        invsin_S = invsqrt(one_S - cos2_S);
 
         st_S  = k_S * (theta0_S - theta_S) * invsin_S;
         sth_S = st_S * cos_S;

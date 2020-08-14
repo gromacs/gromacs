@@ -51,6 +51,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/listed_forces/listed_forces.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -85,20 +86,29 @@ struct OutputQuantities
     //! Shift vectors
     rvec fshift[N_IVEC] = { { 0 } };
     //! Forces
-    rvec4 f[c_numAtoms] = { { 0 } };
+    alignas(GMX_REAL_MAX_SIMD_WIDTH * sizeof(real)) rvec4 f[c_numAtoms] = { { 0 } };
 };
 
 /*! \brief Utility to check the output from bonded tests
  *
  * \param[in] checker Reference checker
  * \param[in] output  The output from the test to check
+ * \param[in] bondedKernelFlavor  Flavor for determining what output to check
  */
-void checkOutput(test::TestReferenceChecker* checker, const OutputQuantities& output)
+void checkOutput(test::TestReferenceChecker* checker,
+                 const OutputQuantities&     output,
+                 const BondedKernelFlavor    bondedKernelFlavor)
 {
-    checker->checkReal(output.energy, "Epot ");
-    // Should still be zero if not doing FEP, so may as well test it.
-    checker->checkReal(output.dvdlambda, "dVdlambda ");
-    checker->checkVector(output.fshift[CENTRAL], "Central shift forces");
+    if (computeEnergy(bondedKernelFlavor))
+    {
+        checker->checkReal(output.energy, "Epot ");
+        // Should still be zero when not doing FEP, so may as well test it.
+        checker->checkReal(output.dvdlambda, "dVdlambda ");
+    }
+    if (computeVirial(bondedKernelFlavor))
+    {
+        checker->checkVector(output.fshift[CENTRAL], "Central shift forces");
+    }
     checker->checkSequence(std::begin(output.f), std::end(output.f), "Forces");
 }
 
@@ -514,12 +524,12 @@ void fillIatoms(int ftype, std::vector<t_iatom>* iatoms)
 }
 
 class ListedForcesTest :
-    public ::testing::TestWithParam<std::tuple<iListInput, std::vector<gmx::RVec>, PbcType>>
+    public ::testing::TestWithParam<std::tuple<iListInput, PaddedVector<RVec>, PbcType>>
 {
 protected:
     matrix                     box_;
     t_pbc                      pbc_;
-    std::vector<gmx::RVec>     x_;
+    PaddedVector<RVec>         x_;
     PbcType                    pbcType_;
     iListInput                 input_;
     test::TestReferenceData    refData_;
@@ -545,16 +555,29 @@ protected:
         std::vector<real> chargeA    = { 1.5, -2.0, 1.5, -1.0 };
         t_mdatoms         mdatoms    = { 0 };
         mdatoms.chargeA              = chargeA.data();
-        OutputQuantities output;
-        output.energy = calculateSimpleBond(input_.ftype, iatoms.size(), iatoms.data(),
-                                            &input_.iparams, as_rvec_array(x_.data()), output.f,
-                                            output.fshift, &pbc_, lambda, &output.dvdlambda, &mdatoms,
-                                            /* struct t_fcdata * */ nullptr, ddgatindex.data(),
-                                            BondedKernelFlavor::ForcesAndVirialAndEnergy);
-        // Internal consistency test of both test input
-        // and bonded functions.
-        EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0))) << "dvdlambda was " << output.dvdlambda;
-        checkOutput(checker, output);
+        /* Here we run both the standard, plain-C force+shift-forcs+energy+free-energy
+         * kernel flavor and the potentially optimized, with SIMD and less output,
+         * force only kernels. Note that we also run the optimized kernel for free-energy
+         * input when lambda=0, as the force output should match the non free-energy case.
+         */
+        std::vector<BondedKernelFlavor> flavors = { BondedKernelFlavor::ForcesAndVirialAndEnergy };
+        if (!input_.fep || lambda == 0)
+        {
+            flavors.push_back(BondedKernelFlavor::ForcesSimdWhenAvailable);
+        }
+        for (const auto flavor : flavors)
+        {
+            OutputQuantities output;
+            output.energy =
+                    calculateSimpleBond(input_.ftype, iatoms.size(), iatoms.data(), &input_.iparams,
+                                        as_rvec_array(x_.data()), output.f, output.fshift, &pbc_,
+                                        lambda, &output.dvdlambda, &mdatoms,
+                                        /* struct t_fcdata * */ nullptr, ddgatindex.data(), flavor);
+            // Internal consistency test of both test input
+            // and bonded functions.
+            EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0))) << "dvdlambda was " << output.dvdlambda;
+            checkOutput(checker, output, flavor);
+        }
     }
     void testIfunc()
     {
@@ -653,7 +676,7 @@ std::vector<iListInput> c_InputRestraints = {
 };
 
 //! Coordinates for testing
-std::vector<std::vector<gmx::RVec>> c_coordinatesForTests = {
+std::vector<PaddedVector<RVec>> c_coordinatesForTests = {
     { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.2 }, { 0.005, 0.0, 0.1 }, { -0.001, 0.1, 0.0 } },
     { { 0.5, 0.0, 0.0 }, { 0.5, 0.0, 0.15 }, { 0.5, 0.07, 0.22 }, { 0.5, 0.18, 0.22 } },
     { { -0.1143, -0.0282, 0.0 }, { 0.0, 0.0434, 0.0 }, { 0.1185, -0.0138, 0.0 }, { -0.0195, 0.1498, 0.0 } }
