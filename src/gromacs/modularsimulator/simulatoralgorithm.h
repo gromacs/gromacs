@@ -53,22 +53,23 @@
 #include "gromacs/mdrun/isimulator.h"
 
 #include "checkpointhelper.h"
-#include "computeglobalselement.h"
 #include "domdechelper.h"
 #include "freeenergyperturbationdata.h"
 #include "modularsimulatorinterfaces.h"
 #include "pmeloadbalancehelper.h"
+#include "signallers.h"
+#include "topologyholder.h"
+#include "trajectoryelement.h"
 
 namespace gmx
 {
+enum class IntegrationStep;
 class EnergyData;
-class EnergySignaller;
-class LoggingSignaller;
 class ModularSimulator;
-class NeighborSearchSignaller;
 class ResetHandler;
+template<IntegrationStep algorithm>
+class Propagator;
 class TopologyHolder;
-class TrajectoryElementBuilder;
 
 /*! \internal
  * \ingroup module_modularsimulator
@@ -178,7 +179,7 @@ private:
     //! List of schedulerElements (ownership)
     std::vector<std::unique_ptr<ISimulatorElement>> elementsOwnershipList_;
     //! List of schedulerElements (calling sequence)
-    std::vector<compat::not_null<ISimulatorElement*>> elementCallList_;
+    std::vector<ISimulatorElement*> elementCallList_;
 
     // Infrastructure elements
     //! The domain decomposition element
@@ -192,7 +193,7 @@ private:
     //! The reset handler
     std::unique_ptr<ResetHandler> resetHandler_;
     //! Signal vector (used by stop / reset / checkpointing signaller)
-    SimulationSignals signals_;
+    std::unique_ptr<SimulationSignals> signals_;
     //! The topology
     std::unique_ptr<TopologyHolder> topologyHolder_;
 
@@ -294,22 +295,58 @@ private:
     CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallbackPtr_;
 };
 
+class ModularSimulatorAlgorithmBuilder;
+
+/*! \internal
+ * \brief Helper for element addition
+ *
+ * Such an object will be given to each invocation of getElementPointer
+ *
+ * Note: It would be nicer to define this as a member type of
+ * ModularSimulatorAlgorithmBuilder, but this would break forward declaration.
+ * This object is therefore defined as friend class.
+ */
+class ModularSimulatorAlgorithmBuilderHelper
+{
+public:
+    //! Constructor
+    ModularSimulatorAlgorithmBuilderHelper(ModularSimulatorAlgorithmBuilder* builder);
+    //! Store an element to the ModularSimulatorAlgorithmBuilder
+    ISimulatorElement* storeElement(std::unique_ptr<ISimulatorElement> element);
+    //! Check if an element is stored in the ModularSimulatorAlgorithmBuilder
+    bool elementIsStored(const ISimulatorElement* element) const;
+    //! Register a thermostat that accepts propagator registrations
+    void registerThermostat(std::function<void(const PropagatorThermostatConnection&)> registrationFunction);
+    //! Register a barostat that accepts propagator registrations
+    void registerBarostat(std::function<void(const PropagatorBarostatConnection&)> registrationFunction);
+    //! Register a propagator to the thermostat used
+    void registerWithThermostat(PropagatorThermostatConnection connectionData);
+    //! Register a propagator to the barostat used
+    void registerWithBarostat(PropagatorBarostatConnection connectionData);
+
+private:
+    //! Pointer to the associated ModularSimulatorAlgorithmBuilder
+    ModularSimulatorAlgorithmBuilder* builder_;
+};
+
 /*!\internal
  * \brief Builder for ModularSimulatorAlgorithm objects
  *
- * TODO: The current builder automatically builds a simulator algorithm based on the
- *       input. This is only an intemediate step towards a builder that will create
- *       algorithms designed by the user of ModularSimulatorAlgorithm (for now, the
- *       only user is the ModularSimulator).
- * TODO: This mirrors all protected members of ISimulator. This hack allows to keep
- *       the number of line changes minimal, and will be removed as soon as the builder
- *       allows the user to compose the integrator algorithm.
- *       For the same reason, the constructElementsAndSignallers(), buildIntegrator(...),
- *       and buildForces(...) implementations were left in modularsimulator.cpp. See other
- *       to do - as the ModularSimulator will eventually design the algorithm, moving it
- *       would only cause unnecessary noise.
+ * This builds a ModularSimulatorAlgorithm.
+ *
+ * Users can add elements and define their call order by calling the templated
+ * add<Element> function. Note that only elements that have a static
+ * getElementPointerImpl factory method can be built in that way.
+ *
+ * Note that each ModularSimulatorAlgorithmBuilder can only be used to build
+ * one ModularSimulatorAlgorithm object, i.e. build() can only be called once.
+ * During the call to build, all elements and other infrastructure objects will
+ * be moved to the built ModularSimulatorAlgorithm object, such that further use
+ * of the builder would not make sense.
+ * Any access to the build or add<> methods after the first call to
+ * build() will result in an exception being thrown.
  */
-class ModularSimulatorAlgorithmBuilder
+class ModularSimulatorAlgorithmBuilder final
 {
 public:
     //! Constructor
@@ -317,110 +354,250 @@ public:
     //! Build algorithm
     ModularSimulatorAlgorithm build();
 
+    /*! \brief  Add element to the modular simulator algorithm builder
+     *
+     * This function has a general implementation, which will call the getElementPointer(...)
+     * factory function.
+     *
+     * \tparam Element  The element type
+     * \tparam Args     A variable number of argument types
+     * \param args      A variable number of arguments
+     */
+    template<typename Element, typename... Args>
+    void add(Args&&... args);
+
+    //! Allow access from helper
+    friend class ModularSimulatorAlgorithmBuilderHelper;
+
 private:
-    /*! \brief The initialisation
-     *
-     * This builds all signallers and elements, and is responsible to put
-     * them in the correct order.
-     */
-    ModularSimulatorAlgorithm constructElementsAndSignallers();
+    //! The state of the builder
+    bool algorithmHasBeenBuilt_ = false;
 
-    /*! \brief Build the integrator part of the simulator
-     *
-     * This includes the force calculation, state propagation, constraints,
-     * global computation, and the points during the process at which valid
-     * micro state / energy states are found. Currently, buildIntegrator
-     * knows about NVE md and md-vv algorithms.
-     */
-    std::unique_ptr<ISimulatorElement>
-    buildIntegrator(SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
-                    SignallerBuilder<LastStepSignaller>*       lastStepSignallerBuilder,
-                    SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
-                    SignallerBuilder<LoggingSignaller>*        loggingSignallerBuilder,
-                    SignallerBuilder<TrajectorySignaller>*     trajectorySignallerBuilder,
-                    TrajectoryElementBuilder*                  trajectoryElementBuilder,
-                    std::vector<ICheckpointHelperClient*>*     checkpointClients,
-                    compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
-                    compat::not_null<EnergyData*>              energyDataPtr,
-                    FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
-                    bool                                       hasReadEkinState,
-                    TopologyHolder::Builder*                   topologyHolderBuilder,
-                    GlobalCommunicationHelper*                 globalCommunicationHelper);
-
-    //! Build the force element - can be normal forces or shell / flex constraints
-    std::unique_ptr<ISimulatorElement>
-    buildForces(SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
-                SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
-                StatePropagatorData*                       statePropagatorDataPtr,
-                EnergyData*                                energyDataPtr,
-                FreeEnergyPerturbationData*                freeEnergyPerturbationDataPtr,
-                TopologyHolder::Builder*                   topologyHolderBuilder);
+    // Data structures
+    //! The state propagator data
+    std::unique_ptr<StatePropagatorData> statePropagatorData_;
+    //! The energy data
+    std::unique_ptr<EnergyData> energyData_;
+    //! The free energy data
+    std::unique_ptr<FreeEnergyPerturbationData> freeEnergyPerturbationData_;
 
     //! Pointer to the LegacySimulatorData object
     compat::not_null<LegacySimulatorData*> legacySimulatorData_;
 
-    //! \cond
-    //! Helper function to add elements or signallers to the call list via raw pointer
-    template<typename T, typename U>
-    static void addToCallList(U* element, std::vector<compat::not_null<T*>>& callList);
-    //! Helper function to add elements or signallers to the call list via non-null raw pointer
-    template<typename T, typename U>
-    static void addToCallList(compat::not_null<U*> element, std::vector<compat::not_null<T*>>& callList);
-    //! Helper function to add elements or signallers to the call list via smart pointer
-    template<typename T, typename U>
-    static void addToCallList(std::unique_ptr<U>& element, std::vector<compat::not_null<T*>>& callList);
-    /*! \brief Helper function to add elements or signallers to the call list
-     *         and move the ownership to the ownership list
-     */
-    template<typename T, typename U>
-    static void addToCallListAndMove(std::unique_ptr<U>                 element,
-                                     std::vector<compat::not_null<T*>>& callList,
-                                     std::vector<std::unique_ptr<T>>&   elementList);
-    //! \endcond
+    // Helper objects
+    //! Signal vector (used by stop / reset / checkpointing signaller)
+    std::unique_ptr<SimulationSignals> signals_;
+    //! Helper object passed to element factory functions
+    ModularSimulatorAlgorithmBuilderHelper elementAdditionHelper_;
+    //! Container for global computation data
+    GlobalCommunicationHelper globalCommunicationHelper_;
 
-    //! Compute globals communication period
-    const int nstglobalcomm_;
+    /*! \brief  Register an element to all applicable signallers and infrastructure elements
+     *
+     * \tparam Element  Type of the Element
+     * \param element   Pointer to the element
+     */
+    template<typename Element>
+    void registerWithInfrastructureAndSignallers(Element* element);
+
+    /*! \brief Take ownership of element
+     *
+     * This function returns a non-owning pointer to the new location of that
+     * element, allowing further usage (e.g. adding the element to the call list).
+     * Note that simply addin an element using this function will not call it
+     * during the simulation - it needs to be added to the call list separately.
+     * Note that generally, users will want to add elements to the call list, but
+     * it might not be practical to do this in the same order.
+     *
+     * \param element  A unique pointer to the element
+     * \return  A non-owning (raw) pointer to the element for further usage
+     */
+    ISimulatorElement* addElementToSimulatorAlgorithm(std::unique_ptr<ISimulatorElement> element);
+
+    /*! \brief Check if element is owned by *this
+     *
+     * \param element  Pointer to the element
+     * \return  Bool indicating whether element is owned by *this
+     */
+    [[nodiscard]] bool elementExists(const ISimulatorElement* element) const;
+
+    /*! \brief Add element to setupAndTeardownList_ if it's not already there
+     *
+     * \param element  Element pointer to be added
+     */
+    void addElementToSetupTeardownList(ISimulatorElement* element);
+
+    //! Vector to store elements, allowing the SimulatorAlgorithm to control their lifetime
+    std::vector<std::unique_ptr<ISimulatorElement>> elements_;
+    /*! \brief List defining in which order elements are called every step
+     *
+     * Elements may be referenced more than once if they should be called repeatedly
+     */
+    std::vector<ISimulatorElement*> callList_;
+    /*! \brief  List defining in which order elements are set up and torn down
+     *
+     * Elements should only appear once in this list
+     */
+    std::vector<ISimulatorElement*> setupAndTeardownList_;
+
+    //! Builder for the NeighborSearchSignaller
+    SignallerBuilder<NeighborSearchSignaller> neighborSearchSignallerBuilder_;
+    //! Builder for the LastStepSignaller
+    SignallerBuilder<LastStepSignaller> lastStepSignallerBuilder_;
+    //! Builder for the LoggingSignaller
+    SignallerBuilder<LoggingSignaller> loggingSignallerBuilder_;
+    //! Builder for the EnergySignaller
+    SignallerBuilder<EnergySignaller> energySignallerBuilder_;
+    //! Builder for the TrajectorySignaller
+    SignallerBuilder<TrajectorySignaller> trajectorySignallerBuilder_;
+    //! Builder for the TrajectoryElementBuilder
+    TrajectoryElementBuilder trajectoryElementBuilder_;
+    //! Builder for the TopologyHolder
+    TopologyHolder::Builder topologyHolderBuilder_;
+
+    /*! \brief List of clients for the CheckpointHelper
+     *
+     * \todo Replace this by proper builder (#3422)
+     */
+    std::vector<ICheckpointHelperClient*> checkpointClients_;
+
+    //! List of thermostat registration functions
+    std::vector<std::function<void(const PropagatorThermostatConnection&)>> thermostatRegistrationFunctions_;
+    //! List of barostat registration functions
+    std::vector<std::function<void(const PropagatorBarostatConnection&)>> barostatRegistrationFunctions_;
+    //! List of data to connect propagators to thermostats
+    std::vector<PropagatorThermostatConnection> propagatorThermostatConnections_;
+    //! List of data to connect propagators to barostats
+    std::vector<PropagatorBarostatConnection> propagatorBarostatConnections_;
 };
 
-//! \cond
-template<typename T, typename U>
-void ModularSimulatorAlgorithmBuilder::addToCallList(U* element, std::vector<compat::not_null<T*>>& callList)
+/*! \internal
+ * \brief Factory function for elements that can be added via ModularSimulatorAlgorithmBuilder:
+ *        Get a pointer to an object of type \c Element to add to the call list
+ *
+ * This allows elements to be built via the templated ModularSimulatorAlgorithmBuilder::add<Element>
+ * method. Elements buildable throught this factor function are required to implement a static
+ * function with minimal signature
+ *
+ *     static ISimulatorElement* getElementPointerImpl(
+ *             LegacySimulatorData*                    legacySimulatorData,
+ *             ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+ *             StatePropagatorData*                    statePropagatorData,
+ *             EnergyData*                             energyData,
+ *             FreeEnergyPerturbationData*             freeEnergyPerturbationData,
+ *             GlobalCommunicationHelper*              globalCommunicationHelper)
+ *
+ * This function may also accept additional parameters which are passed using the variadic
+ * template parameter pack forwarded in getElementPointer.
+ *
+ * This function returns a pointer to an object of the Element type. Note that the caller will
+ * check whether the returned object has previously been stored using the `storeElement`
+ * function, and throw an exception if the element is not found.
+ * The function can check whether a previously stored pointer is valid using
+ * the `checkElementExistence` function. Most implementing functions will simply want
+ * to create an object, store it using `storeElement`, and then use the return value of
+ * `storeElement` as a return value to the caller. However, this setup allows the function
+ * to store a created element (using a static pointer inside the function) and return it
+ * in case that the factory function is called repeatedly. This allows to create an element
+ * once, but have it called multiple times during the simulation run.
+ *
+ * \see ModularSimulatorAlgorithmBuilder::add
+ *      Function using this functionality
+ * \see ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>::getElementPointerImpl
+ *      Implementation using the single object / multiple call sites functionality
+ *
+ * \tparam Element The type of the element
+ * \tparam Args  Variable number of argument types allowing specific implementations to have
+ *               additional arguments
+ *
+ * \param legacySimulatorData  Pointer allowing access to simulator level data
+ * \param builderHelper  ModularSimulatorAlgorithmBuilder helper object
+ * \param statePropagatorData  Pointer to the \c StatePropagatorData object
+ * \param energyData  Pointer to the \c EnergyData object
+ * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
+ * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+ * \param args  Variable number of additional parameters to be forwarded
+ *
+ * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
+ */
+template<typename Element, typename... Args>
+ISimulatorElement* getElementPointer(LegacySimulatorData*                    legacySimulatorData,
+                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+                                     StatePropagatorData*                    statePropagatorData,
+                                     EnergyData*                             energyData,
+                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                                     GlobalCommunicationHelper*  globalCommunicationHelper,
+                                     Args&&... args)
 {
-    if (element)
-    {
-        callList.emplace_back(element);
-    }
+    return Element::getElementPointerImpl(legacySimulatorData, builderHelper, statePropagatorData,
+                                          energyData, freeEnergyPerturbationData,
+                                          globalCommunicationHelper, std::forward<Args>(args)...);
 }
 
-template<typename T, typename U>
-void ModularSimulatorAlgorithmBuilder::addToCallList(gmx::compat::not_null<U*>          element,
-                                                     std::vector<compat::not_null<T*>>& callList)
+template<typename Element, typename... Args>
+void ModularSimulatorAlgorithmBuilder::add(Args&&... args)
 {
-    callList.emplace_back(element);
+    if (algorithmHasBeenBuilt_)
+    {
+        throw SimulationAlgorithmSetupError(
+                "Tried to add an element after ModularSimulationAlgorithm was built.");
+    }
+
+    // Get element from factory method
+    auto* element = static_cast<Element*>(getElementPointer<Element>(
+            legacySimulatorData_, &elementAdditionHelper_, statePropagatorData_.get(),
+            energyData_.get(), freeEnergyPerturbationData_.get(), &globalCommunicationHelper_,
+            std::forward<Args>(args)...));
+
+    // Make sure returned element pointer is owned by *this
+    // Ensuring this makes sure we can control the life time
+    if (!elementExists(element))
+    {
+        throw ElementNotFoundError("Tried to append non-existing element to call list.");
+    }
+    // Add to call list
+    callList_.emplace_back(element);
+    // Add to setup / teardown list if element hasn't been added yet
+    addElementToSetupTeardownList(element);
+    // Register element to all applicable signallers
+    registerWithInfrastructureAndSignallers(element);
 }
 
-template<typename T, typename U>
-void ModularSimulatorAlgorithmBuilder::addToCallList(std::unique_ptr<U>&                element,
-                                                     std::vector<compat::not_null<T*>>& callList)
+//! Returns a pointer casted to type Base if the Element is derived from Base
+template<typename Base, typename Element>
+static std::enable_if_t<std::is_base_of<Base, Element>::value, Base*> castOrNull(Element* element)
 {
-    if (element)
-    {
-        callList.emplace_back(compat::make_not_null(element.get()));
-    }
+    return static_cast<Base*>(element);
 }
 
-template<typename T, typename U>
-void ModularSimulatorAlgorithmBuilder::addToCallListAndMove(std::unique_ptr<U> element,
-                                                            std::vector<compat::not_null<T*>>& callList,
-                                                            std::vector<std::unique_ptr<T>>& elementList)
+//! Returns a nullptr of type Base if Element is not derived from Base
+template<typename Base, typename Element>
+static std::enable_if_t<!std::is_base_of<Base, Element>::value, Base*> castOrNull(Element gmx_unused* element)
 {
-    if (element)
+    return nullptr;
+}
+
+template<typename Element>
+void ModularSimulatorAlgorithmBuilder::registerWithInfrastructureAndSignallers(Element* element)
+{
+    // Register element to all applicable signallers
+    neighborSearchSignallerBuilder_.registerSignallerClient(
+            castOrNull<INeighborSearchSignallerClient, Element>(element));
+    lastStepSignallerBuilder_.registerSignallerClient(castOrNull<ILastStepSignallerClient, Element>(element));
+    loggingSignallerBuilder_.registerSignallerClient(castOrNull<ILoggingSignallerClient, Element>(element));
+    energySignallerBuilder_.registerSignallerClient(castOrNull<IEnergySignallerClient, Element>(element));
+    trajectorySignallerBuilder_.registerSignallerClient(
+            castOrNull<ITrajectorySignallerClient, Element>(element));
+    // Register element to trajectory element (if applicable)
+    trajectoryElementBuilder_.registerWriterClient(castOrNull<ITrajectoryWriterClient, Element>(element));
+    // Register element to topology holder (if applicable)
+    topologyHolderBuilder_.registerClient(castOrNull<ITopologyHolderClient, Element>(element));
+    // Register element to checkpoint client (if applicable)
+    if (auto castedElement = castOrNull<ICheckpointHelperClient, Element>(element))
     {
-        callList.emplace_back(compat::make_not_null(element.get()));
-        elementList.emplace_back(std::move(element));
+        checkpointClients_.emplace_back(castedElement);
     }
 }
-//! \endcond
 
 } // namespace gmx
 

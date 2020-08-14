@@ -44,13 +44,18 @@
 #include "constraintelement.h"
 
 #include "gromacs/math/vec.h"
+#include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "energydata.h"
 #include "freeenergyperturbationdata.h"
+#include "modularsimulator.h"
+#include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 
 namespace gmx
@@ -206,10 +211,23 @@ SignallerCallbackPtr ConstraintsElement<variable>::registerLoggingCallback()
             [this](Step step, Time /*unused*/) { nextLogWritingStep_ = step; });
 }
 
-//! Explicit template initialization
-//! @{
+template<ConstraintVariable variable>
+ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
+        LegacySimulatorData*                    legacySimulatorData,
+        ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+        StatePropagatorData*                    statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData*             freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
+{
+    return builderHelper->storeElement(std::make_unique<ConstraintsElement<variable>>(
+            legacySimulatorData->constr, statePropagatorData, energyData,
+            freeEnergyPerturbationData, MASTER(legacySimulatorData->cr), legacySimulatorData->fplog,
+            legacySimulatorData->inputrec, legacySimulatorData->mdAtoms->mdatoms()));
+}
+
+// Explicit template initializations
 template class ConstraintsElement<ConstraintVariable::Positions>;
 template class ConstraintsElement<ConstraintVariable::Velocities>;
-//! @}
 
 } // namespace gmx

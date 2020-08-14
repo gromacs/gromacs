@@ -54,6 +54,14 @@ struct t_commrec;
 
 namespace gmx
 {
+class LegacySimulatorData;
+
+//! Enum describing whether the thermostat is using full or half step kinetic energy
+enum class VRescaleThermostatUseFullStepKE
+{
+    Yes,
+    No
+};
 
 /*! \internal
  * \ingroup module_modularsimulator
@@ -66,21 +74,19 @@ class VRescaleThermostat final : public ISimulatorElement, public ICheckpointHel
 {
 public:
     //! Constructor
-    VRescaleThermostat(int                   nstcouple,
-                       int                   offset,
-                       bool                  useFullStepKE,
-                       int64_t               seed,
-                       int                   numTemperatureGroups,
-                       double                couplingTimeStep,
-                       const real*           referenceTemperature,
-                       const real*           couplingTime,
-                       const real*           numDegreesOfFreedom,
-                       EnergyData*           energyData,
-                       ArrayRef<real>        lambdaView,
-                       PropagatorCallbackPtr propagatorCallback,
-                       const t_state*        globalState,
-                       t_commrec*            cr,
-                       bool                  isRestart);
+    VRescaleThermostat(int            nstcouple,
+                       int            offset,
+                       bool           useFullStepKE,
+                       int64_t        seed,
+                       int            numTemperatureGroups,
+                       double         couplingTimeStep,
+                       const real*    referenceTemperature,
+                       const real*    couplingTime,
+                       const real*    numDegreesOfFreedom,
+                       EnergyData*    energyData,
+                       const t_state* globalState,
+                       t_commrec*     cr,
+                       bool           isRestart);
 
     /*! \brief Register run function for step / time
      *
@@ -90,13 +96,38 @@ public:
      */
     void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-    //! No element setup needed
-    void elementSetup() override {}
+    //! Sanity check at setup time
+    void elementSetup() override;
     //! No element teardown needed
     void elementTeardown() override {}
 
     //! Getter for the thermostatIntegral
     const std::vector<double>& thermostatIntegral() const;
+
+    //! Connect this to propagator
+    void connectWithPropagator(const PropagatorThermostatConnection& connectionData);
+
+    /*! \brief Factory method implementation
+     *
+     * \param legacySimulatorData  Pointer allowing access to simulator level data
+     * \param builderHelper  ModularSimulatorAlgorithmBuilder helper object
+     * \param statePropagatorData  Pointer to the \c StatePropagatorData object
+     * \param energyData  Pointer to the \c EnergyData object
+     * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
+     * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     * \param offset  The step offset at which the thermostat is applied
+     * \param useFullStepKE  Whether full step or half step KE is used
+     *
+     * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
+     */
+    static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
+                                                    ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+                                                    StatePropagatorData*        statePropagatorData,
+                                                    EnergyData*                 energyData,
+                                                    FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                                                    GlobalCommunicationHelper* globalCommunicationHelper,
+                                                    int                        offset,
+                                                    VRescaleThermostatUseFullStepKE useFullStepKE);
 
 private:
     //! The frequency at which the thermostat is applied

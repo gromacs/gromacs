@@ -50,27 +50,29 @@
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "modularsimulator.h"
+#include "simulatoralgorithm.h"
 
 namespace gmx
 {
 
-VRescaleThermostat::VRescaleThermostat(int                   nstcouple,
-                                       int                   offset,
-                                       bool                  useFullStepKE,
-                                       int64_t               seed,
-                                       int                   numTemperatureGroups,
-                                       double                couplingTimeStep,
-                                       const real*           referenceTemperature,
-                                       const real*           couplingTime,
-                                       const real*           numDegreesOfFreedom,
-                                       EnergyData*           energyData,
-                                       ArrayRef<real>        lambdaView,
-                                       PropagatorCallbackPtr propagatorCallback,
-                                       const t_state*        globalState,
-                                       t_commrec*            cr,
-                                       bool                  isRestart) :
+VRescaleThermostat::VRescaleThermostat(int            nstcouple,
+                                       int            offset,
+                                       bool           useFullStepKE,
+                                       int64_t        seed,
+                                       int            numTemperatureGroups,
+                                       double         couplingTimeStep,
+                                       const real*    referenceTemperature,
+                                       const real*    couplingTime,
+                                       const real*    numDegreesOfFreedom,
+                                       EnergyData*    energyData,
+                                       const t_state* globalState,
+                                       t_commrec*     cr,
+                                       bool           isRestart) :
     nstcouple_(nstcouple),
     offset_(offset),
     useFullStepKE_(useFullStepKE),
@@ -82,9 +84,9 @@ VRescaleThermostat::VRescaleThermostat(int                   nstcouple,
     numDegreesOfFreedom_(numDegreesOfFreedom, numDegreesOfFreedom + numTemperatureGroups),
     thermostatIntegral_(numTemperatureGroups, 0.0),
     energyData_(energyData),
-    lambda_(lambdaView),
-    propagatorCallback_(std::move(propagatorCallback))
+    propagatorCallback_(nullptr)
 {
+    energyData->setVRescaleThermostat(this);
     // TODO: This is only needed to restore the thermostatIntegral_ from cpt. Remove this when
     //       switching to purely client-based checkpointing.
     if (isRestart)
@@ -100,6 +102,25 @@ VRescaleThermostat::VRescaleThermostat(int                   nstcouple,
         {
             dd_bcast(cr->dd, int(thermostatIntegral_.size() * sizeof(double)), thermostatIntegral_.data());
         }
+    }
+}
+
+void VRescaleThermostat::connectWithPropagator(const PropagatorThermostatConnection& connectionData)
+{
+    connectionData.setNumVelocityScalingVariables(numTemperatureGroups_);
+    lambda_             = connectionData.getViewOnVelocityScaling();
+    propagatorCallback_ = connectionData.getVelocityScalingCallback();
+}
+
+void VRescaleThermostat::elementSetup()
+{
+    if (propagatorCallback_ == nullptr || lambda_.empty())
+    {
+        throw MissingElementConnectionError(
+                "V-rescale thermostat was not connected to a propagator.\n"
+                "Connection to a propagator element is needed to scale the velocities.\n"
+                "Use connectWithPropagator(...) before building the ModularSimulatorAlgorithm "
+                "object.");
     }
 }
 
@@ -183,6 +204,31 @@ void VRescaleThermostat::writeCheckpoint(t_state* localState, t_state gmx_unused
 const std::vector<double>& VRescaleThermostat::thermostatIntegral() const
 {
     return thermostatIntegral_;
+}
+
+ISimulatorElement* VRescaleThermostat::getElementPointerImpl(
+        LegacySimulatorData*                    legacySimulatorData,
+        ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+        StatePropagatorData gmx_unused* statePropagatorData,
+        EnergyData gmx_unused*     energyData,
+        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        int                                   offset,
+        VRescaleThermostatUseFullStepKE       useFullStepKE)
+{
+    auto* element    = builderHelper->storeElement(std::make_unique<VRescaleThermostat>(
+            legacySimulatorData->inputrec->nsttcouple, offset,
+            useFullStepKE == VRescaleThermostatUseFullStepKE::Yes,
+            legacySimulatorData->inputrec->ld_seed, legacySimulatorData->inputrec->opts.ngtc,
+            legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nsttcouple,
+            legacySimulatorData->inputrec->opts.ref_t, legacySimulatorData->inputrec->opts.tau_t,
+            legacySimulatorData->inputrec->opts.nrdf, energyData, legacySimulatorData->state_global,
+            legacySimulatorData->cr, legacySimulatorData->inputrec->bContinuation));
+    auto* thermostat = static_cast<VRescaleThermostat*>(element);
+    builderHelper->registerThermostat([thermostat](const PropagatorThermostatConnection& connection) {
+        thermostat->connectWithPropagator(connection);
+    });
+    return element;
 }
 
 } // namespace gmx

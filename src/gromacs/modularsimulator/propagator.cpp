@@ -49,10 +49,13 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 
+#include "modularsimulator.h"
+#include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 
 namespace gmx
@@ -572,12 +575,42 @@ PropagatorCallbackPtr Propagator<algorithm>::prScalingCallback()
     return std::make_unique<PropagatorCallback>([this](Step step) { scalingStepPR_ = step; });
 }
 
-//! Explicit template initialization
-//! @{
+template<IntegrationStep algorithm>
+ISimulatorElement* Propagator<algorithm>::getElementPointerImpl(
+        LegacySimulatorData*                    legacySimulatorData,
+        ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+        StatePropagatorData*                    statePropagatorData,
+        EnergyData gmx_unused*     energyData,
+        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        double                                timestep,
+        RegisterWithThermostat                registerWithThermostat,
+        RegisterWithBarostat                  registerWithBarostat)
+{
+    auto* element = builderHelper->storeElement(std::make_unique<Propagator<algorithm>>(
+            timestep, statePropagatorData, legacySimulatorData->mdAtoms, legacySimulatorData->wcycle));
+    if (registerWithThermostat == RegisterWithThermostat::True)
+    {
+        auto* propagator = static_cast<Propagator<algorithm>*>(element);
+        builderHelper->registerWithThermostat(
+                { [propagator](int num) { propagator->setNumVelocityScalingVariables(num); },
+                  [propagator]() { return propagator->viewOnVelocityScaling(); },
+                  [propagator]() { return propagator->velocityScalingCallback(); } });
+    }
+    if (registerWithBarostat == RegisterWithBarostat::True)
+    {
+        auto* propagator = static_cast<Propagator<algorithm>*>(element);
+        builderHelper->registerWithBarostat(
+                { [propagator]() { return propagator->viewOnPRScalingMatrix(); },
+                  [propagator]() { return propagator->prScalingCallback(); } });
+    }
+    return element;
+}
+
+// Explicit template initializations
 template class Propagator<IntegrationStep::PositionsOnly>;
 template class Propagator<IntegrationStep::VelocitiesOnly>;
 template class Propagator<IntegrationStep::LeapFrog>;
 template class Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>;
-//! @}
 
 } // namespace gmx

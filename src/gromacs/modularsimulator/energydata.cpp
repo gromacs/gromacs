@@ -53,6 +53,7 @@
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -63,7 +64,9 @@
 #include "gromacs/topology/topology.h"
 
 #include "freeenergyperturbationdata.h"
+#include "modularsimulator.h"
 #include "parrinellorahmanbarostat.h"
+#include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 #include "vrescalethermostat.h"
 
@@ -459,6 +462,17 @@ EnergyData::Element::Element(EnergyData* energyData, bool isMasterRank) :
     energyCalculationStep_(-1),
     freeEnergyCalculationStep_(-1)
 {
+}
+
+ISimulatorElement* EnergyData::Element::getElementPointerImpl(
+        LegacySimulatorData gmx_unused*        legacySimulatorData,
+        ModularSimulatorAlgorithmBuilderHelper gmx_unused* builderHelper,
+        StatePropagatorData gmx_unused* statePropagatorData,
+        EnergyData*                     energyData,
+        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
+{
+    return energyData->element();
 }
 
 } // namespace gmx

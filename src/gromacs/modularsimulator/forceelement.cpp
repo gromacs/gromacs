@@ -52,10 +52,13 @@
 #include "gromacs/mdrun/shellfc.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "energydata.h"
 #include "freeenergyperturbationdata.h"
+#include "modularsimulator.h"
+#include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 
 struct gmx_edsam;
@@ -247,5 +250,24 @@ SignallerCallbackPtr ForceElement::registerEnergyCallback(EnergySignallerEvent e
                 [this](Step step, Time /*unused*/) { nextFreeEnergyCalculationStep_ = step; });
     }
     return nullptr;
+}
+
+ISimulatorElement*
+ForceElement::getElementPointerImpl(LegacySimulatorData*                    legacySimulatorData,
+                                    ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+                                    StatePropagatorData*                    statePropagatorData,
+                                    EnergyData*                             energyData,
+                                    FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                                    GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
+{
+    const bool isVerbose    = legacySimulatorData->mdrunOptions.verbose;
+    const bool isDynamicBox = inputrecDynamicBox(legacySimulatorData->inputrec);
+    return builderHelper->storeElement(std::make_unique<ForceElement>(
+            statePropagatorData, energyData, freeEnergyPerturbationData, isVerbose, isDynamicBox,
+            legacySimulatorData->fplog, legacySimulatorData->cr, legacySimulatorData->inputrec,
+            legacySimulatorData->mdAtoms, legacySimulatorData->nrnb, legacySimulatorData->fr,
+            legacySimulatorData->wcycle, legacySimulatorData->runScheduleWork, legacySimulatorData->vsite,
+            legacySimulatorData->imdSession, legacySimulatorData->pull_work, legacySimulatorData->constr,
+            legacySimulatorData->top_global, legacySimulatorData->enforcedRotation));
 }
 } // namespace gmx

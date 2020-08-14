@@ -67,9 +67,12 @@ namespace gmx
 class Awh;
 class EnergyData;
 class FreeEnergyPerturbationData;
+class GlobalCommunicationHelper;
 class ImdSession;
+class LegacySimulatorData;
 class MDAtoms;
 class MdrunScheduleWorkload;
+class ModularSimulatorAlgorithmBuilderHelper;
 class StatePropagatorData;
 class VirtualSitesHandler;
 
@@ -99,15 +102,14 @@ public:
                  const MDAtoms*              mdAtoms,
                  t_nrnb*                     nrnb,
                  t_forcerec*                 fr,
-
-                 gmx_wallcycle*         wcycle,
-                 MdrunScheduleWorkload* runScheduleWork,
-                 VirtualSitesHandler*   vsite,
-                 ImdSession*            imdSession,
-                 pull_t*                pull_work,
-                 Constraints*           constr,
-                 const gmx_mtop_t*      globalTopology,
-                 gmx_enfrot*            enforcedRotation);
+                 gmx_wallcycle*              wcycle,
+                 MdrunScheduleWorkload*      runScheduleWork,
+                 VirtualSitesHandler*        vsite,
+                 ImdSession*                 imdSession,
+                 pull_t*                     pull_work,
+                 Constraints*                constr,
+                 const gmx_mtop_t*           globalTopology,
+                 gmx_enfrot*                 enforcedRotation);
 
     /*! \brief Register force calculation for step / time
      *
@@ -121,6 +123,24 @@ public:
     void elementSetup() override;
     //! Print some final output
     void elementTeardown() override;
+
+    /*! \brief Factory method implementation
+     *
+     * \param legacySimulatorData  Pointer allowing access to simulator level data
+     * \param builderHelper  ModularSimulatorAlgorithmBuilder helper object
+     * \param statePropagatorData  Pointer to the \c StatePropagatorData object
+     * \param energyData  Pointer to the \c EnergyData object
+     * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
+     * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
+     *
+     * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
+     */
+    static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
+                                                    ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+                                                    StatePropagatorData*        statePropagatorData,
+                                                    EnergyData*                 energyData,
+                                                    FreeEnergyPerturbationData* freeEnergyPerturbationData,
+                                                    GlobalCommunicationHelper* globalCommunicationHelper);
 
 private:
     //! ITopologyHolderClient implementation

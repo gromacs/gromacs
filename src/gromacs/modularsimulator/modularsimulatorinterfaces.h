@@ -59,6 +59,7 @@
 #include <functional>
 #include <memory>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -68,6 +69,8 @@ class t_state;
 
 namespace gmx
 {
+template<typename T>
+class ArrayRef;
 template<class Signaller>
 class SignallerBuilder;
 class NeighborSearchSignaller;
@@ -420,6 +423,30 @@ enum class ModularSimulatorBuilderState
 {
     AcceptingClientRegistrations,
     NotAcceptingClientRegistrations
+};
+
+//! Generic callback to the propagator
+typedef std::function<void(Step)> PropagatorCallback;
+//! Pointer to generic callback to the propagator
+typedef std::unique_ptr<PropagatorCallback> PropagatorCallbackPtr;
+
+/*! \internal
+ * \brief Information needed to connect a propagator to a thermostat
+ */
+struct PropagatorThermostatConnection
+{
+    std::function<void(int)>               setNumVelocityScalingVariables;
+    std::function<ArrayRef<real>()>        getViewOnVelocityScaling;
+    std::function<PropagatorCallbackPtr()> getVelocityScalingCallback;
+};
+
+/*! \internal
+ * \brief Information needed to connect a propagator to a barostat
+ */
+struct PropagatorBarostatConnection
+{
+    std::function<ArrayRef<rvec>()>        getViewOnPRScalingMatrix;
+    std::function<PropagatorCallbackPtr()> getPRScalingCallback;
 };
 
 //! /}

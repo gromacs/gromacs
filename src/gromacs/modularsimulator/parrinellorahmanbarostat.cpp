@@ -55,41 +55,40 @@
 #include "gromacs/pbcutil/boxutilities.h"
 
 #include "energydata.h"
+#include "modularsimulator.h"
+#include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
 
 namespace gmx
 {
 
-ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                   nstpcouple,
-                                                   int                   offset,
-                                                   real                  couplingTimeStep,
-                                                   Step                  initStep,
-                                                   ArrayRef<rvec>        scalingTensor,
-                                                   PropagatorCallbackPtr propagatorCallback,
-                                                   StatePropagatorData*  statePropagatorData,
-                                                   EnergyData*           energyData,
-                                                   FILE*                 fplog,
-                                                   const t_inputrec*     inputrec,
-                                                   const MDAtoms*        mdAtoms,
-                                                   const t_state*        globalState,
-                                                   t_commrec*            cr,
-                                                   bool                  isRestart) :
+ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcouple,
+                                                   int                  offset,
+                                                   real                 couplingTimeStep,
+                                                   Step                 initStep,
+                                                   StatePropagatorData* statePropagatorData,
+                                                   EnergyData*          energyData,
+                                                   FILE*                fplog,
+                                                   const t_inputrec*    inputrec,
+                                                   const MDAtoms*       mdAtoms,
+                                                   const t_state*       globalState,
+                                                   t_commrec*           cr,
+                                                   bool                 isRestart) :
     nstpcouple_(nstpcouple),
     offset_(offset),
     couplingTimeStep_(couplingTimeStep),
     initStep_(initStep),
-    scalingTensor_(scalingTensor),
-    propagatorCallback_(std::move(propagatorCallback)),
+    propagatorCallback_(nullptr),
+    mu_{ { 0 } },
+    boxRel_{ { 0 } },
+    boxVelocity_{ { 0 } },
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
     fplog_(fplog),
     inputrec_(inputrec),
     mdAtoms_(mdAtoms)
 {
-    clear_mat(mu_);
-    clear_mat(boxRel_);
-    clear_mat(boxVelocity_);
-
+    energyData->setParrinelloRahamnBarostat(this);
     // TODO: This is only needed to restore the thermostatIntegral_ from cpt. Remove this when
     //       switching to purely client-based checkpointing.
     if (isRestart)
@@ -105,6 +104,12 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                   nstpcou
             dd_bcast(cr->dd, sizeof(boxRel_), boxRel_);
         }
     }
+}
+
+void ParrinelloRahmanBarostat::connectWithPropagator(const PropagatorBarostatConnection& connectionData)
+{
+    scalingTensor_      = connectionData.getViewOnPRScalingMatrix();
+    propagatorCallback_ = connectionData.getPRScalingCallback();
 }
 
 void ParrinelloRahmanBarostat::scheduleTask(gmx::Step step,
@@ -162,6 +167,15 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
 
 void ParrinelloRahmanBarostat::elementSetup()
 {
+    if (propagatorCallback_ == nullptr || scalingTensor_.empty())
+    {
+        throw MissingElementConnectionError(
+                "Parrinello-Rahman barostat was not connected to a propagator.\n"
+                "Connection to a propagator element is needed to scale the velocities.\n"
+                "Use connectWithPropagator(...) before building the ModularSimulatorAlgorithm "
+                "object.");
+    }
+
     if (inputrecPreserveShape(inputrec_))
     {
         auto      box  = statePropagatorData_->box();
@@ -202,5 +216,27 @@ void ParrinelloRahmanBarostat::writeCheckpoint(t_state* localState, t_state gmx_
     localState->flags |= (1U << estBOXV) | (1U << estBOX_REL);
 }
 
+ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
+        LegacySimulatorData*                    legacySimulatorData,
+        ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+        StatePropagatorData*                    statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        int                                   offset)
+{
+    auto* element  = builderHelper->storeElement(std::make_unique<ParrinelloRahmanBarostat>(
+            legacySimulatorData->inputrec->nstpcouple, offset,
+            legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nstpcouple,
+            legacySimulatorData->inputrec->init_step, statePropagatorData, energyData,
+            legacySimulatorData->fplog, legacySimulatorData->inputrec, legacySimulatorData->mdAtoms,
+            legacySimulatorData->state_global, legacySimulatorData->cr,
+            legacySimulatorData->inputrec->bContinuation));
+    auto* barostat = static_cast<ParrinelloRahmanBarostat*>(element);
+    builderHelper->registerBarostat([barostat](const PropagatorBarostatConnection& connection) {
+        barostat->connectWithPropagator(connection);
+    });
+    return element;
+}
 
 } // namespace gmx

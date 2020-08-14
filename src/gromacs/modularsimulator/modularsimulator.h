@@ -56,6 +56,7 @@ struct t_fcdata;
 
 namespace gmx
 {
+class ModularSimulatorAlgorithmBuilder;
 
 /*! \libinternal
  * \ingroup module_modularsimulator
@@ -93,6 +94,9 @@ public:
 private:
     //! Constructor
     explicit ModularSimulator(std::unique_ptr<LegacySimulatorData> legacySimulatorData);
+
+    //! Populate algorithm builder with elements
+    void addIntegrationElements(ModularSimulatorAlgorithmBuilder* builder);
 
     //! Check for disabled functionality (during construction time)
     void checkInputForDisabledFunctionality();

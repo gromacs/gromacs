@@ -49,6 +49,9 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 
+#include "modularsimulator.h"
+#include "simulatoralgorithm.h"
+
 namespace gmx
 {
 
@@ -117,6 +120,17 @@ FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEne
 FreeEnergyPerturbationData::Element* FreeEnergyPerturbationData::element()
 {
     return element_.get();
+}
+
+ISimulatorElement* FreeEnergyPerturbationData::Element::getElementPointerImpl(
+        LegacySimulatorData gmx_unused*        legacySimulatorData,
+        ModularSimulatorAlgorithmBuilderHelper gmx_unused* builderHelper,
+        StatePropagatorData gmx_unused* statePropagatorData,
+        EnergyData gmx_unused*      energyData,
+        FreeEnergyPerturbationData* freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
+{
+    return freeEnergyPerturbationData->element();
 }
 
 } // namespace gmx
