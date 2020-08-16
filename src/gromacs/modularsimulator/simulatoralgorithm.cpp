@@ -156,7 +156,7 @@ const SimulatorRunFunction* ModularSimulatorAlgorithm::getNextTask()
         updateTaskQueue();
         taskIterator_ = taskQueue_.begin();
     }
-    return taskIterator_->get();
+    return &*taskIterator_;
 }
 
 void ModularSimulatorAlgorithm::updateTaskQueue()
@@ -319,8 +319,9 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
      * Elements can hence register lambdas capturing their `this` pointers without expecting
      * life time issues, as the task queue and the elements are in the same scope.
      */
-    auto registerRunFunction = std::make_unique<RegisterRunFunction>(
-            [this](SimulatorRunFunctionPtr ptr) { taskQueue_.emplace_back(std::move(ptr)); });
+    auto registerRunFunction = [this](SimulatorRunFunction function) {
+        taskQueue_.emplace_back(std::move(function));
+    };
 
     Time startTime = inputrec->init_t;
     Time timeStep  = inputrec->delta_t;
@@ -353,16 +354,14 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
         const bool isNSStep = step == signalHelper_->nextNSStep_;
 
         // register pre-step (task queue is local, so no problem with `this`)
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this, step, time, isNSStep]() { preStep(step, time, isNSStep); }));
+        registerRunFunction([this, step, time, isNSStep]() { preStep(step, time, isNSStep); });
         // register elements for step
         for (auto& element : elementCallList_)
         {
             element->scheduleTask(step_, time, registerRunFunction);
         }
         // register post-step (task queue is local, so no problem with `this`)
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>([this, step, time]() { postStep(step, time); }));
+        registerRunFunction([this, step, time]() { postStep(step, time); });
 
         // prepare next step
         step_++;
@@ -378,7 +377,7 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
     if (runFinished_)
     {
         // task queue is local, so no problem with `this`
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() { teardown(); }));
+        registerRunFunction([this]() { teardown(); });
     }
 }
 
@@ -636,16 +635,14 @@ void ModularSimulatorAlgorithmBuilder::addElementToSetupTeardownList(ISimulatorE
     }
 }
 
-SignallerCallbackPtr ModularSimulatorAlgorithm::SignalHelper::registerLastStepCallback()
+std::optional<SignallerCallback> ModularSimulatorAlgorithm::SignalHelper::registerLastStepCallback()
 {
-    return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time) { this->lastStep_ = step; });
+    return [this](Step step, Time gmx_unused time) { this->lastStep_ = step; };
 }
 
-SignallerCallbackPtr ModularSimulatorAlgorithm::SignalHelper::registerNSCallback()
+std::optional<SignallerCallback> ModularSimulatorAlgorithm::SignalHelper::registerNSCallback()
 {
-    return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time) { this->nextNSStep_ = step; });
+    return [this](Step step, Time gmx_unused time) { this->nextNSStep_ = step; };
 }
 
 GlobalCommunicationHelper::GlobalCommunicationHelper(int nstglobalcomm, SimulationSignals* simulationSignals) :
@@ -664,14 +661,19 @@ SimulationSignals* GlobalCommunicationHelper::simulationSignals()
     return simulationSignals_;
 }
 
-void GlobalCommunicationHelper::setCheckBondedInteractionsCallback(CheckBondedInteractionsCallbackPtr ptr)
+void GlobalCommunicationHelper::setCheckBondedInteractionsCallback(CheckBondedInteractionsCallback callback)
 {
-    checkBondedInteractionsCallbackPtr_ = std::move(ptr);
+    checkBondedInteractionsCallback_ = std::move(callback);
 }
 
-CheckBondedInteractionsCallbackPtr GlobalCommunicationHelper::moveCheckBondedInteractionsCallback()
+CheckBondedInteractionsCallback GlobalCommunicationHelper::moveCheckBondedInteractionsCallback()
 {
-    return std::move(checkBondedInteractionsCallbackPtr_);
+    if (!checkBondedInteractionsCallback_)
+    {
+        throw SimulationAlgorithmSetupError(
+                "Requested CheckBondedInteractionsCallback before it was set.");
+    }
+    return *checkBondedInteractionsCallback_;
 }
 
 ModularSimulatorAlgorithmBuilderHelper::ModularSimulatorAlgorithmBuilderHelper(

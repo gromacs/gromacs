@@ -75,8 +75,6 @@ enum class ComputeGlobalsAlgorithm
 
 //! The function type allowing to request a check of the number of bonded interactions
 typedef std::function<void()> CheckBondedInteractionsCallback;
-//! Pointer to the function type allowing to request a check of the number of bonded interactions
-typedef std::unique_ptr<CheckBondedInteractionsCallback> CheckBondedInteractionsCallbackPtr;
 
 /*! \internal
  * \brief Encapsulate the calls to `compute_globals`
@@ -140,10 +138,10 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! Get callback to request checking of bonded interactions
-    CheckBondedInteractionsCallbackPtr getCheckNumberOfBondedInteractionsCallback();
+    CheckBondedInteractionsCallback getCheckNumberOfBondedInteractionsCallback();
 
     //! No element teardown needed
     void elementTeardown() override {}
@@ -170,9 +168,9 @@ private:
     //! ITopologyClient implementation
     void setTopology(const gmx_localtop_t* top) override;
     //! IEnergySignallerClient implementation
-    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    std::optional<SignallerCallback> registerEnergyCallback(EnergySignallerEvent event) override;
     //! ITrajectorySignallerClient implementation
-    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    std::optional<SignallerCallback> registerTrajectorySignallerCallback(TrajectoryEvent event) override;
     //! The compute_globals call
     void compute(Step step, unsigned int flags, SimulationSignaller* signaller, bool useLastBox, bool isInit = false);
 

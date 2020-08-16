@@ -127,7 +127,7 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     }
 }
 
-void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction)
+void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction)
 {
     if (!isMasterRank_)
     {
@@ -138,15 +138,13 @@ void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFu
     auto isFreeEnergyCalculationStep = freeEnergyCalculationStep_ == step;
     if (isEnergyCalculationStep || writeEnergy)
     {
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
-                    energyData_->doStep(time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
-                }));
+        registerRunFunction([this, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
+            energyData_->doStep(time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
+        });
     }
     else
     {
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this]() { energyData_->energyOutput_->recordNonEnergyStep(); }));
+        registerRunFunction([this]() { energyData_->energyOutput_->recordNonEnergyStep(); });
     }
 }
 
@@ -199,41 +197,37 @@ void EnergyData::setup(gmx_mdoutf* outf)
     }
 }
 
-ITrajectoryWriterCallbackPtr EnergyData::Element::registerTrajectoryWriterCallback(TrajectoryEvent event)
+std::optional<ITrajectoryWriterCallback> EnergyData::Element::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
-        return std::make_unique<ITrajectoryWriterCallback>(
-                [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog) {
-                    energyData_->write(mdoutf, step, time, writeTrajectory, writeLog);
-                });
+        return [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog) {
+            energyData_->write(mdoutf, step, time, writeTrajectory, writeLog);
+        };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
-SignallerCallbackPtr EnergyData::Element::registerTrajectorySignallerCallback(gmx::TrajectoryEvent event)
+std::optional<SignallerCallback> EnergyData::Element::registerTrajectorySignallerCallback(gmx::TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { energyWritingStep_ = step; });
+        return [this](Step step, Time /*unused*/) { energyWritingStep_ = step; };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
-SignallerCallbackPtr EnergyData::Element::registerEnergyCallback(EnergySignallerEvent event)
+std::optional<SignallerCallback> EnergyData::Element::registerEnergyCallback(EnergySignallerEvent event)
 {
     if (event == EnergySignallerEvent::EnergyCalculationStep && isMasterRank_)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { energyCalculationStep_ = step; });
+        return [this](Step step, Time /*unused*/) { energyCalculationStep_ = step; };
     }
     if (event == EnergySignallerEvent::FreeEnergyCalculationStep && isMasterRank_)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { freeEnergyCalculationStep_ = step; });
+        return [this](Step step, Time /*unused*/) { freeEnergyCalculationStep_ = step; };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep)

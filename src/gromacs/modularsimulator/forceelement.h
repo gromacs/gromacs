@@ -117,7 +117,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! Check that we got the local topology
     void elementSetup() override;
@@ -146,9 +146,9 @@ private:
     //! ITopologyHolderClient implementation
     void setTopology(const gmx_localtop_t* top) override;
     //! INeighborSearchSignallerClient implementation
-    SignallerCallbackPtr registerNSCallback() override;
+    std::optional<SignallerCallback> registerNSCallback() override;
     //! IEnergySignallerClient implementation
-    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    std::optional<SignallerCallback> registerEnergyCallback(EnergySignallerEvent event) override;
     //! The actual do_force call
     template<bool doShellFC>
     void run(Step step, Time time, unsigned int flags);

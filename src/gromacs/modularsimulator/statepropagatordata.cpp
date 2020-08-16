@@ -320,22 +320,20 @@ void StatePropagatorData::copyPosition(int start, int end)
 }
 
 void StatePropagatorData::Element::scheduleTask(Step step,
-                                                Time gmx_unused               time,
-                                                const RegisterRunFunctionPtr& registerRunFunction)
+                                                Time gmx_unused            time,
+                                                const RegisterRunFunction& registerRunFunction)
 {
     if (statePropagatorData_->vvResetVelocities_)
     {
         statePropagatorData_->vvResetVelocities_ = false;
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this]() { statePropagatorData_->resetVelocities(); }));
+        registerRunFunction([this]() { statePropagatorData_->resetVelocities(); });
     }
     // copy x -> previousX
-    (*registerRunFunction)(
-            std::make_unique<SimulatorRunFunction>([this]() { statePropagatorData_->copyPosition(); }));
+    registerRunFunction([this]() { statePropagatorData_->copyPosition(); });
     // if it's a write out step, keep a copy for writeout
     if (step == writeOutStep_ || (step == lastStep_ && writeFinalConfiguration_))
     {
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() { saveState(); }));
+        registerRunFunction([this]() { saveState(); });
     }
 }
 
@@ -354,29 +352,28 @@ void StatePropagatorData::Element::saveState()
     }
 }
 
-SignallerCallbackPtr StatePropagatorData::Element::registerTrajectorySignallerCallback(TrajectoryEvent event)
+std::optional<SignallerCallback> StatePropagatorData::Element::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::StateWritingStep)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { this->writeOutStep_ = step; });
+        return [this](Step step, Time /*unused*/) { this->writeOutStep_ = step; };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
-ITrajectoryWriterCallbackPtr StatePropagatorData::Element::registerTrajectoryWriterCallback(TrajectoryEvent event)
+std::optional<ITrajectoryWriterCallback>
+StatePropagatorData::Element::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::StateWritingStep)
     {
-        return std::make_unique<ITrajectoryWriterCallback>(
-                [this](gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool gmx_unused writeLog) {
-                    if (writeTrajectory)
-                    {
-                        write(outf, step, time);
-                    }
-                });
+        return [this](gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool gmx_unused writeLog) {
+            if (writeTrajectory)
+            {
+                write(outf, step, time);
+            }
+        };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 void StatePropagatorData::Element::write(gmx_mdoutf_t outf, Step currentStep, Time currentTime)
@@ -509,12 +506,12 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
     wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
 }
 
-SignallerCallbackPtr StatePropagatorData::Element::registerLastStepCallback()
+std::optional<SignallerCallback> StatePropagatorData::Element::registerLastStepCallback()
 {
-    return std::make_unique<SignallerCallback>([this](Step step, Time /*time*/) {
+    return [this](Step step, Time /*time*/) {
         lastStep_               = step;
         isRegularSimulationEnd_ = (step == lastPlannedStep_);
-    });
+    };
 }
 
 StatePropagatorData::Element::Element(StatePropagatorData* statePropagatorData,

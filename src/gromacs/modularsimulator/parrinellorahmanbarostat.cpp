@@ -78,7 +78,6 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
     offset_(offset),
     couplingTimeStep_(couplingTimeStep),
     initStep_(initStep),
-    propagatorCallback_(nullptr),
     mu_{ { 0 } },
     boxRel_{ { 0 } },
     boxVelocity_{ { 0 } },
@@ -112,24 +111,22 @@ void ParrinelloRahmanBarostat::connectWithPropagator(const PropagatorBarostatCon
     propagatorCallback_ = connectionData.getPRScalingCallback();
 }
 
-void ParrinelloRahmanBarostat::scheduleTask(gmx::Step step,
-                                            gmx::Time gmx_unused               time,
-                                            const gmx::RegisterRunFunctionPtr& registerRunFunction)
+void ParrinelloRahmanBarostat::scheduleTask(Step step,
+                                            Time gmx_unused            time,
+                                            const RegisterRunFunction& registerRunFunction)
 {
     const bool scaleOnNextStep = do_per_step(step + nstpcouple_ + offset_ + 1, nstpcouple_);
     const bool scaleOnThisStep = do_per_step(step + nstpcouple_ + offset_, nstpcouple_);
 
     if (scaleOnThisStep)
     {
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>([this]() { scaleBoxAndPositions(); }));
+        registerRunFunction([this]() { scaleBoxAndPositions(); });
     }
     if (scaleOnNextStep)
     {
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this, step]() { integrateBoxVelocityEquations(step); }));
+        registerRunFunction([this, step]() { integrateBoxVelocityEquations(step); });
         // let propagator know that it will have to scale on next step
-        (*propagatorCallback_)(step + 1);
+        propagatorCallback_(step + 1);
     }
 }
 
@@ -167,7 +164,7 @@ void ParrinelloRahmanBarostat::scaleBoxAndPositions()
 
 void ParrinelloRahmanBarostat::elementSetup()
 {
-    if (propagatorCallback_ == nullptr || scalingTensor_.empty())
+    if (!propagatorCallback_ || scalingTensor_.empty())
     {
         throw MissingElementConnectionError(
                 "Parrinello-Rahman barostat was not connected to a propagator.\n"
@@ -200,7 +197,7 @@ void ParrinelloRahmanBarostat::elementSetup()
         // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
         msmul(scalingTensor_.data(), couplingTimeStep_, scalingTensor_.data());
 
-        (*propagatorCallback_)(initStep_);
+        propagatorCallback_(initStep_);
     }
 }
 

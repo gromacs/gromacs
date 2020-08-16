@@ -162,8 +162,8 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
 
 template<ComputeGlobalsAlgorithm algorithm>
 void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
-                                                    Time gmx_unused               time,
-                                                    const RegisterRunFunctionPtr& registerRunFunction)
+                                                    Time gmx_unused            time,
+                                                    const RegisterRunFunction& registerRunFunction)
 {
     const bool needComReduction    = doStopCM_ && do_per_step(step, nstcomm_);
     const bool needGlobalReduction = step == energyReductionStep_ || step == virialReductionStep_
@@ -206,10 +206,9 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
         auto signaller = std::make_shared<SimulationSignaller>(signals_, cr_, nullptr,
                                                                doInterSimSignal, doIntraSimSignal);
 
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this, step, flags, signaller = std::move(signaller)]() {
-                    compute(step, flags, signaller.get(), true);
-                }));
+        registerRunFunction([this, step, flags, signaller = std::move(signaller)]() {
+            compute(step, flags, signaller.get(), true);
+        });
     }
     else if (algorithm == ComputeGlobalsAlgorithm::VelocityVerlet)
     {
@@ -235,8 +234,8 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
                         | (doTemperature ? CGLO_TEMPERATURE : 0) | CGLO_PRESSURE | CGLO_CONSTRAINT
                         | (needComReduction ? CGLO_STOPCM : 0) | CGLO_SCALEEKIN;
 
-            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                    [this, step, flags]() { compute(step, flags, nullSignaller_.get(), false); }));
+            registerRunFunction(
+                    [this, step, flags]() { compute(step, flags, nullSignaller_.get(), false); });
         }
         else
         {
@@ -263,10 +262,9 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
             auto signaller = std::make_shared<SimulationSignaller>(
                     signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
-            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                    [this, step, flags, signaller = std::move(signaller)]() {
-                        compute(step, flags, signaller.get(), true);
-                    }));
+            registerRunFunction([this, step, flags, signaller = std::move(signaller)]() {
+                compute(step, flags, signaller.get(), true);
+            });
         }
     }
 }
@@ -301,10 +299,9 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
 }
 
 template<ComputeGlobalsAlgorithm algorithm>
-CheckBondedInteractionsCallbackPtr ComputeGlobalsElement<algorithm>::getCheckNumberOfBondedInteractionsCallback()
+CheckBondedInteractionsCallback ComputeGlobalsElement<algorithm>::getCheckNumberOfBondedInteractionsCallback()
 {
-    return std::make_unique<CheckBondedInteractionsCallback>(
-            [this]() { needToCheckNumberOfBondedInteractions(); });
+    return [this]() { needToCheckNumberOfBondedInteractions(); };
 }
 
 template<ComputeGlobalsAlgorithm algorithm>
@@ -320,30 +317,28 @@ void ComputeGlobalsElement<algorithm>::setTopology(const gmx_localtop_t* top)
 }
 
 template<ComputeGlobalsAlgorithm algorithm>
-SignallerCallbackPtr ComputeGlobalsElement<algorithm>::registerEnergyCallback(EnergySignallerEvent event)
+std::optional<SignallerCallback> ComputeGlobalsElement<algorithm>::registerEnergyCallback(EnergySignallerEvent event)
 {
     if (event == EnergySignallerEvent::EnergyCalculationStep)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { energyReductionStep_ = step; });
+        return [this](Step step, Time /*unused*/) { energyReductionStep_ = step; };
     }
     if (event == EnergySignallerEvent::VirialCalculationStep)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { virialReductionStep_ = step; });
+        return [this](Step step, Time /*unused*/) { virialReductionStep_ = step; };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 template<ComputeGlobalsAlgorithm algorithm>
-SignallerCallbackPtr ComputeGlobalsElement<algorithm>::registerTrajectorySignallerCallback(TrajectoryEvent event)
+std::optional<SignallerCallback>
+ComputeGlobalsElement<algorithm>::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::EnergyWritingStep)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { energyReductionStep_ = step; });
+        return [this](Step step, Time /*unused*/) { energyReductionStep_ = step; };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 //! Explicit template instantiation

@@ -160,9 +160,9 @@ private:
     void populateTaskQueue();
 
     //! The run queue
-    std::vector<SimulatorRunFunctionPtr> taskQueue_;
+    std::vector<SimulatorRunFunction> taskQueue_;
     //! The task iterator
-    std::vector<SimulatorRunFunctionPtr>::const_iterator taskIterator_;
+    std::vector<SimulatorRunFunction>::const_iterator taskIterator_;
 
     /* Note that the Simulator is owning the signallers and elements.
      * The ownership list and the call list of the elements are kept
@@ -226,9 +226,9 @@ private:
         //! The next NS step
         Step nextNSStep_ = -1;
         //! ILastStepSignallerClient implementation
-        SignallerCallbackPtr registerLastStepCallback() override;
+        std::optional<SignallerCallback> registerLastStepCallback() override;
         //! INeighborSearchSignallerClient implementation
-        SignallerCallbackPtr registerNSCallback() override;
+        std::optional<SignallerCallback> registerNSCallback() override;
     };
     //! The signal helper object
     std::unique_ptr<SignalHelper> signalHelper_;
@@ -282,9 +282,9 @@ public:
     [[nodiscard]] SimulationSignals* simulationSignals();
 
     //! Set the callback to check the number of bonded interactions
-    void setCheckBondedInteractionsCallback(CheckBondedInteractionsCallbackPtr ptr);
+    void setCheckBondedInteractionsCallback(CheckBondedInteractionsCallback callback);
     //! Move the callback to check the number of bonded interactions
-    [[nodiscard]] CheckBondedInteractionsCallbackPtr moveCheckBondedInteractionsCallback();
+    [[nodiscard]] CheckBondedInteractionsCallback moveCheckBondedInteractionsCallback();
 
 private:
     //! Compute globals communication period
@@ -292,7 +292,7 @@ private:
     //! Signal vector (used by stop / reset / checkpointing signaller)
     SimulationSignals* simulationSignals_;
     //! Callback to check the number of bonded interactions
-    CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallbackPtr_;
+    std::optional<CheckBondedInteractionsCallback> checkBondedInteractionsCallback_;
 };
 
 class ModularSimulatorAlgorithmBuilder;

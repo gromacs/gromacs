@@ -92,7 +92,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! Fix relative box shape
     void elementSetup() override;
@@ -138,7 +138,7 @@ private:
     //! View on the velocity scaling tensor (owned by the propagator)
     ArrayRef<rvec> scalingTensor_;
     //! Callback to let propagator know that we updated lambda
-    PropagatorCallbackPtr propagatorCallback_;
+    PropagatorCallback propagatorCallback_;
 
     //! Relative change in box before - after barostatting
     matrix mu_;

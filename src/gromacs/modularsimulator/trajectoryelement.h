@@ -110,7 +110,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     /*! \brief Teardown trajectory writer
      *
@@ -154,9 +154,9 @@ private:
     gmx_mdoutf* outf_;
 
     //! ILoggingSignallerClient implementation
-    SignallerCallbackPtr registerLoggingCallback() override;
+    std::optional<SignallerCallback> registerLoggingCallback() override;
     //! ITrajectorySignallerClient implementation
-    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    std::optional<SignallerCallback> registerTrajectorySignallerCallback(TrajectoryEvent event) override;
 
     /*
      * Trajectory writing
@@ -166,8 +166,8 @@ private:
 
     //! Callbacks to write trajectory
     //! {
-    std::vector<ITrajectoryWriterCallbackPtr> runStateCallbacks_;
-    std::vector<ITrajectoryWriterCallbackPtr> runEnergyCallbacks_;
+    std::vector<ITrajectoryWriterCallback> runStateCallbacks_;
+    std::vector<ITrajectoryWriterCallback> runEnergyCallbacks_;
     //! }
 
     //! The writing function - calls the clients to get their contributions

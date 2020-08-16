@@ -94,7 +94,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! Sanity check at setup time
     void elementSetup() override;
@@ -159,7 +159,7 @@ private:
     //! View on the scaling factor of the propagator
     ArrayRef<real> lambda_;
     //! Callback to let propagator know that we updated lambda
-    PropagatorCallbackPtr propagatorCallback_;
+    PropagatorCallback propagatorCallback_;
 
     //! Set new lambda value (at T-coupling steps)
     void setLambda(Step step);

@@ -147,7 +147,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! No element setup needed
     void elementSetup() override {}
@@ -159,12 +159,12 @@ public:
     //! Get view on the velocity scaling vector
     ArrayRef<real> viewOnVelocityScaling();
     //! Get velocity scaling callback
-    PropagatorCallbackPtr velocityScalingCallback();
+    PropagatorCallback velocityScalingCallback();
 
     //! Get view on the full PR scaling matrix
     ArrayRef<rvec> viewOnPRScalingMatrix();
     //! Get PR scaling callback
-    PropagatorCallbackPtr prScalingCallback();
+    PropagatorCallback prScalingCallback();
 
     /*! \brief Factory method implementation
      *

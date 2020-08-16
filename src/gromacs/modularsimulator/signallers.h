@@ -83,7 +83,7 @@ private:
 
     //! Helper function to get the callbacks from the clients
     template<typename... Args>
-    std::vector<SignallerCallbackPtr> buildCallbackVector(Args&&... args);
+    std::vector<SignallerCallback> buildCallbackVector(Args&&... args);
 
     /*! \brief Get a callback from a single client
      *
@@ -91,7 +91,8 @@ private:
      * specific signaller / client.
      */
     template<typename... Args>
-    SignallerCallbackPtr getSignallerCallback(typename Signaller::Client* client, Args&&... args);
+    std::optional<SignallerCallback> getSignallerCallback(typename Signaller::Client* client,
+                                                          Args&&... args);
 };
 
 /*! \internal
@@ -129,10 +130,10 @@ private:
      * @param initStep   The first step of the simulation
      * @param initTime   The start time of the simulation
      */
-    NeighborSearchSignaller(std::vector<SignallerCallbackPtr> callbacks, Step nstlist, Step initStep, Time initTime);
+    NeighborSearchSignaller(std::vector<SignallerCallback> callbacks, Step nstlist, Step initStep, Time initTime);
 
     //! Client callbacks
-    std::vector<SignallerCallbackPtr> callbacks_;
+    std::vector<SignallerCallback> callbacks_;
 
     //! The NS frequency
     const Step nstlist_;
@@ -177,13 +178,10 @@ private:
      * @param initStep     The first step of the simulation
      * @param stopHandler  A pointer to the stop handler (LastStepSignaller takes ownership)
      */
-    LastStepSignaller(std::vector<SignallerCallbackPtr> callbacks,
-                      Step                              nsteps,
-                      Step                              initStep,
-                      StopHandler*                      stopHandler);
+    LastStepSignaller(std::vector<SignallerCallback> callbacks, Step nsteps, Step initStep, StopHandler* stopHandler);
 
     //! Client callbacks
-    std::vector<SignallerCallbackPtr> callbacks_;
+    std::vector<SignallerCallback> callbacks_;
 
     //! The last step of the simulation
     const Step stopStep_;
@@ -193,7 +191,7 @@ private:
     StopHandler* stopHandler_;
 
     //! INeighborSearchSignallerClient implementation
-    SignallerCallbackPtr registerNSCallback() override;
+    std::optional<SignallerCallback> registerNSCallback() override;
     //! The next NS step (notified by NS signaller)
     Step nextNSStep_;
     //! Whether we registered to the NS signaller
@@ -235,10 +233,10 @@ private:
      * @param initStep   The first step of the simulation
      * @param initTime   The start time of the simulation
      */
-    LoggingSignaller(std::vector<SignallerCallbackPtr> callbacks, Step nstlog, Step initStep, Time initTime);
+    LoggingSignaller(std::vector<SignallerCallback> callbacks, Step nstlog, Step initStep, Time initTime);
 
     //! Client callbacks
-    std::vector<SignallerCallbackPtr> callbacks_;
+    std::vector<SignallerCallback> callbacks_;
 
     //! The logging frequency
     const Step nstlog_;
@@ -248,7 +246,7 @@ private:
     const Time initTime_;
 
     //! ILastStepSignallerClient implementation
-    SignallerCallbackPtr registerLastStepCallback() override;
+    std::optional<SignallerCallback> registerLastStepCallback() override;
     //! The last step (notified by signaller)
     Step lastStep_;
     //! Whether we registered to the last step signaller
@@ -291,17 +289,17 @@ public:
 
 private:
     //! Constructor
-    TrajectorySignaller(std::vector<SignallerCallbackPtr> signalEnergyCallbacks,
-                        std::vector<SignallerCallbackPtr> signalStateCallbacks,
-                        int                               nstxout,
-                        int                               nstvout,
-                        int                               nstfout,
-                        int                               nstxoutCompressed,
-                        int                               tngBoxOut,
-                        int                               tngLambdaOut,
-                        int                               tngBoxOutCompressed,
-                        int                               tngLambdaOutCompressed,
-                        int                               nstenergy);
+    TrajectorySignaller(std::vector<SignallerCallback> signalEnergyCallbacks,
+                        std::vector<SignallerCallback> signalStateCallbacks,
+                        int                            nstxout,
+                        int                            nstvout,
+                        int                            nstfout,
+                        int                            nstxoutCompressed,
+                        int                            tngBoxOut,
+                        int                            tngLambdaOut,
+                        int                            tngBoxOutCompressed,
+                        int                            tngLambdaOutCompressed,
+                        int                            nstenergy);
 
     //! Output frequencies
     //! {
@@ -318,8 +316,8 @@ private:
 
     //! Callbacks to signal events
     //! {
-    std::vector<SignallerCallbackPtr> signalEnergyCallbacks_;
-    std::vector<SignallerCallbackPtr> signalStateCallbacks_;
+    std::vector<SignallerCallback> signalEnergyCallbacks_;
+    std::vector<SignallerCallback> signalStateCallbacks_;
     //! }
 
     /*
@@ -328,7 +326,7 @@ private:
     Step lastStep_;
     bool lastStepRegistrationDone_;
     //! ILastStepSignallerClient implementation
-    SignallerCallbackPtr registerLastStepCallback() override;
+    std::optional<SignallerCallback> registerLastStepCallback() override;
 };
 
 /*! \internal
@@ -371,18 +369,18 @@ private:
      * @param nstcalcfreeenergy             The free energy calculation frequency
      * @param nstcalcvirial                 The free energy calculation frequency
      */
-    EnergySignaller(std::vector<SignallerCallbackPtr> calculateEnergyCallbacks,
-                    std::vector<SignallerCallbackPtr> calculateVirialCallbacks,
-                    std::vector<SignallerCallbackPtr> calculateFreeEnergyCallbacks,
-                    int                               nstcalcenergy,
-                    int                               nstcalcfreeenergy,
-                    int                               nstcalcvirial);
+    EnergySignaller(std::vector<SignallerCallback> calculateEnergyCallbacks,
+                    std::vector<SignallerCallback> calculateVirialCallbacks,
+                    std::vector<SignallerCallback> calculateFreeEnergyCallbacks,
+                    int                            nstcalcenergy,
+                    int                            nstcalcfreeenergy,
+                    int                            nstcalcvirial);
 
     //! Client callbacks
     //! {
-    std::vector<SignallerCallbackPtr> calculateEnergyCallbacks_;
-    std::vector<SignallerCallbackPtr> calculateVirialCallbacks_;
-    std::vector<SignallerCallbackPtr> calculateFreeEnergyCallbacks_;
+    std::vector<SignallerCallback> calculateEnergyCallbacks_;
+    std::vector<SignallerCallback> calculateVirialCallbacks_;
+    std::vector<SignallerCallback> calculateFreeEnergyCallbacks_;
     //! }
 
     //! The energy calculation frequency
@@ -393,14 +391,14 @@ private:
     const int nstcalcvirial_;
 
     //! ITrajectorySignallerClient implementation
-    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    std::optional<SignallerCallback> registerTrajectorySignallerCallback(TrajectoryEvent event) override;
     //! The energy writing step (notified by signaller)
     Step energyWritingStep_;
     //! Whether we registered to the trajectory signaller
     bool trajectoryRegistrationDone_;
 
     //! ILoggingSignallerClient implementation
-    SignallerCallbackPtr registerLoggingCallback() override;
+    std::optional<SignallerCallback> registerLoggingCallback() override;
     //! The next logging step (notified by signaller)
     Step loggingStep_;
     //! Whether we registered to the logging signaller
@@ -474,15 +472,15 @@ std::unique_ptr<EnergySignaller> SignallerBuilder<EnergySignaller>::build(Args&&
 //! Helper function to get the callbacks from the clients
 template<typename Signaller>
 template<typename... Args>
-std::vector<SignallerCallbackPtr> SignallerBuilder<Signaller>::buildCallbackVector(Args&&... args)
+std::vector<SignallerCallback> SignallerBuilder<Signaller>::buildCallbackVector(Args&&... args)
 {
-    std::vector<SignallerCallbackPtr> callbacks;
+    std::vector<SignallerCallback> callbacks;
     // Allow clients to register their callbacks
     for (auto& client : signallerClients_)
     {
         if (auto callback = getSignallerCallback(client, std::forward<Args>(args)...)) // don't register nullptr
         {
-            callbacks.emplace_back(std::move(callback));
+            callbacks.emplace_back(std::move(*callback));
         }
     }
     return callbacks;
@@ -491,7 +489,7 @@ std::vector<SignallerCallbackPtr> SignallerBuilder<Signaller>::buildCallbackVect
 //! Get a callback from a single client - NeighborSearchSignaller
 template<>
 template<typename... Args>
-SignallerCallbackPtr SignallerBuilder<NeighborSearchSignaller>::getSignallerCallback(
+std::optional<SignallerCallback> SignallerBuilder<NeighborSearchSignaller>::getSignallerCallback(
         typename NeighborSearchSignaller::Client* client,
         Args&&... args)
 {
@@ -501,7 +499,7 @@ SignallerCallbackPtr SignallerBuilder<NeighborSearchSignaller>::getSignallerCall
 //! Get a callback from a single client - LastStepSignaller
 template<>
 template<typename... Args>
-SignallerCallbackPtr
+std::optional<SignallerCallback>
 SignallerBuilder<LastStepSignaller>::getSignallerCallback(typename LastStepSignaller::Client* client,
                                                           Args&&... args)
 {
@@ -511,7 +509,7 @@ SignallerBuilder<LastStepSignaller>::getSignallerCallback(typename LastStepSigna
 //! Get a callback from a single client - LoggingSignaller
 template<>
 template<typename... Args>
-SignallerCallbackPtr
+std::optional<SignallerCallback>
 SignallerBuilder<LoggingSignaller>::getSignallerCallback(typename LoggingSignaller::Client* client,
                                                          Args&&... args)
 {
@@ -521,7 +519,7 @@ SignallerBuilder<LoggingSignaller>::getSignallerCallback(typename LoggingSignall
 //! Get a callback from a single client - TrajectorySignaller
 template<>
 template<typename... Args>
-SignallerCallbackPtr
+std::optional<SignallerCallback>
 SignallerBuilder<TrajectorySignaller>::getSignallerCallback(typename TrajectorySignaller::Client* client,
                                                             Args&&... args)
 {
@@ -531,8 +529,9 @@ SignallerBuilder<TrajectorySignaller>::getSignallerCallback(typename TrajectoryS
 //! Get a callback from a single client - EnergySignaller
 template<>
 template<typename... Args>
-SignallerCallbackPtr SignallerBuilder<EnergySignaller>::getSignallerCallback(typename EnergySignaller::Client* client,
-                                                                             Args&&... args)
+std::optional<SignallerCallback>
+SignallerBuilder<EnergySignaller>::getSignallerCallback(typename EnergySignaller::Client* client,
+                                                        Args&&... args)
 {
     return client->registerEnergyCallback(std::forward<Args>(args)...);
 }

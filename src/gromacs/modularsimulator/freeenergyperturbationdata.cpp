@@ -71,13 +71,12 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
 }
 
 void FreeEnergyPerturbationData::Element::scheduleTask(Step step,
-                                                       Time gmx_unused               time,
-                                                       const RegisterRunFunctionPtr& registerRunFunction)
+                                                       Time gmx_unused            time,
+                                                       const RegisterRunFunction& registerRunFunction)
 {
     if (lambdasChange_)
     {
-        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                [this, step]() { freeEnergyPerturbationData_->updateLambdas(step); }));
+        registerRunFunction([this, step]() { freeEnergyPerturbationData_->updateLambdas(step); });
     }
 }
 

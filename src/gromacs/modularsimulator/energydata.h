@@ -347,7 +347,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! No element setup needed
     void elementSetup() override {}
@@ -389,11 +389,11 @@ private:
     void trajectoryWriterTeardown(gmx_mdoutf gmx_unused* outf) override {}
 
     //! ITrajectoryWriterClient implementation.
-    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    std::optional<SignallerCallback> registerTrajectorySignallerCallback(TrajectoryEvent event) override;
     //! ITrajectorySignallerClient implementation
-    ITrajectoryWriterCallbackPtr registerTrajectoryWriterCallback(TrajectoryEvent event) override;
+    std::optional<ITrajectoryWriterCallback> registerTrajectoryWriterCallback(TrajectoryEvent event) override;
     //! IEnergySignallerClient implementation
-    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    std::optional<SignallerCallback> registerEnergyCallback(EnergySignallerEvent event) override;
 
     //! ICheckpointHelperClient implementation
     void writeCheckpoint(t_state* localState, t_state* globalState) override;

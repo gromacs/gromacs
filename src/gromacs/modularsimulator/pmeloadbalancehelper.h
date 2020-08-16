@@ -106,7 +106,7 @@ private:
     pme_load_balancing_t* pme_loadbal_;
 
     //! INeighborSearchSignallerClient implementation
-    SignallerCallbackPtr registerNSCallback() override;
+    std::optional<SignallerCallback> registerNSCallback() override;
 
     //! The next NS step
     Step nextNSStep_;

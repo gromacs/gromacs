@@ -126,10 +126,9 @@ const pme_load_balancing_t* PmeLoadBalanceHelper::loadBalancingObject()
     return pme_loadbal_;
 }
 
-SignallerCallbackPtr PmeLoadBalanceHelper::registerNSCallback()
+std::optional<SignallerCallback> PmeLoadBalanceHelper::registerNSCallback()
 {
-    return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time) { nextNSStep_ = step; });
+    return [this](Step step, Time gmx_unused time) { nextNSStep_ = step; };
 }
 
 } // namespace gmx

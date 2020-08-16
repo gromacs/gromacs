@@ -113,18 +113,17 @@ void ConstraintsElement<variable>::elementSetup()
 
 template<ConstraintVariable variable>
 void ConstraintsElement<variable>::scheduleTask(Step step,
-                                                Time gmx_unused               time,
-                                                const RegisterRunFunctionPtr& registerRunFunction)
+                                                Time gmx_unused            time,
+                                                const RegisterRunFunction& registerRunFunction)
 {
     bool calculateVirial = (step == nextVirialCalculationStep_);
     bool writeLog        = (step == nextLogWritingStep_);
     bool writeEnergy     = (step == nextEnergyWritingStep_);
 
     // register constraining
-    (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-            [this, step, calculateVirial, writeLog, writeEnergy]() {
-                apply(step, calculateVirial, writeLog, writeEnergy);
-            }));
+    registerRunFunction([this, step, calculateVirial, writeLog, writeEnergy]() {
+        apply(step, calculateVirial, writeLog, writeEnergy);
+    });
 }
 
 template<ConstraintVariable variable>
@@ -183,32 +182,29 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
 }
 
 template<ConstraintVariable variable>
-SignallerCallbackPtr ConstraintsElement<variable>::registerEnergyCallback(EnergySignallerEvent event)
+std::optional<SignallerCallback> ConstraintsElement<variable>::registerEnergyCallback(EnergySignallerEvent event)
 {
     if (event == EnergySignallerEvent::VirialCalculationStep)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { nextVirialCalculationStep_ = step; });
+        return [this](Step step, Time /*unused*/) { nextVirialCalculationStep_ = step; };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 template<ConstraintVariable variable>
-SignallerCallbackPtr ConstraintsElement<variable>::registerTrajectorySignallerCallback(TrajectoryEvent event)
+std::optional<SignallerCallback> ConstraintsElement<variable>::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::EnergyWritingStep)
     {
-        return std::make_unique<SignallerCallback>(
-                [this](Step step, Time /*unused*/) { nextEnergyWritingStep_ = step; });
+        return [this](Step step, Time /*unused*/) { nextEnergyWritingStep_ = step; };
     }
-    return nullptr;
+    return std::nullopt;
 }
 
 template<ConstraintVariable variable>
-SignallerCallbackPtr ConstraintsElement<variable>::registerLoggingCallback()
+std::optional<SignallerCallback> ConstraintsElement<variable>::registerLoggingCallback()
 {
-    return std::make_unique<SignallerCallback>(
-            [this](Step step, Time /*unused*/) { nextLogWritingStep_ = step; });
+    return [this](Step step, Time /*unused*/) { nextLogWritingStep_ = step; };
 }
 
 template<ConstraintVariable variable>

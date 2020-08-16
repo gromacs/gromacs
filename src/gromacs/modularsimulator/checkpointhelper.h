@@ -127,7 +127,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! No element setup needed
     void elementSetup() override {}
@@ -151,7 +151,7 @@ private:
     const bool writeFinalCheckpoint_;
 
     //! ILastStepSignallerClient implementation
-    SignallerCallbackPtr registerLastStepCallback() override;
+    std::optional<SignallerCallback> registerLastStepCallback() override;
 
     //! The actual checkpoint writing function
     void writeCheckpoint(Step step, Time time);

@@ -83,8 +83,7 @@ VRescaleThermostat::VRescaleThermostat(int            nstcouple,
     couplingTime_(couplingTime, couplingTime + numTemperatureGroups),
     numDegreesOfFreedom_(numDegreesOfFreedom, numDegreesOfFreedom + numTemperatureGroups),
     thermostatIntegral_(numTemperatureGroups, 0.0),
-    energyData_(energyData),
-    propagatorCallback_(nullptr)
+    energyData_(energyData)
 {
     energyData->setVRescaleThermostat(this);
     // TODO: This is only needed to restore the thermostatIntegral_ from cpt. Remove this when
@@ -114,7 +113,7 @@ void VRescaleThermostat::connectWithPropagator(const PropagatorThermostatConnect
 
 void VRescaleThermostat::elementSetup()
 {
-    if (propagatorCallback_ == nullptr || lambda_.empty())
+    if (!propagatorCallback_ || lambda_.empty())
     {
         throw MissingElementConnectionError(
                 "V-rescale thermostat was not connected to a propagator.\n"
@@ -124,7 +123,7 @@ void VRescaleThermostat::elementSetup()
     }
 }
 
-void VRescaleThermostat::scheduleTask(Step step, Time gmx_unused time, const RegisterRunFunctionPtr& registerRunFunction)
+void VRescaleThermostat::scheduleTask(Step step, Time gmx_unused time, const RegisterRunFunction& registerRunFunction)
 {
     /* The thermostat will need a valid kinetic energy when it is running.
      * Currently, computeGlobalCommunicationPeriod() is making sure this
@@ -137,11 +136,10 @@ void VRescaleThermostat::scheduleTask(Step step, Time gmx_unused time, const Reg
     if (do_per_step(step + nstcouple_ + offset_, nstcouple_))
     {
         // do T-coupling this step
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>([this, step]() { setLambda(step); }));
+        registerRunFunction([this, step]() { setLambda(step); });
 
         // Let propagator know that we want to do T-coupling
-        (*propagatorCallback_)(step);
+        propagatorCallback_(step);
     }
 }
 

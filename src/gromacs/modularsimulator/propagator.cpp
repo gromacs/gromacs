@@ -459,8 +459,8 @@ Propagator<algorithm>::Propagator(double               timestep,
 
 template<IntegrationStep algorithm>
 void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
-                                         Time gmx_unused               time,
-                                         const RegisterRunFunctionPtr& registerRunFunction)
+                                         Time gmx_unused            time,
+                                         const RegisterRunFunction& registerRunFunction)
 {
     const bool doSingleVScalingThisStep = (doSingleVelocityScaling_ && (step == scalingStepVelocity_));
     const bool doGroupVScalingThisStep = (doGroupVelocityScaling_ && (step == scalingStepVelocity_));
@@ -471,45 +471,45 @@ void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
     {
         if (doParrinelloRahmanThisStep)
         {
-            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+            registerRunFunction([this]() {
                 run<NumVelocityScalingValues::Single, ParrinelloRahmanVelocityScaling::Full>();
-            }));
+            });
         }
         else
         {
-            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+            registerRunFunction([this]() {
                 run<NumVelocityScalingValues::Single, ParrinelloRahmanVelocityScaling::No>();
-            }));
+            });
         }
     }
     else if (doGroupVScalingThisStep)
     {
         if (doParrinelloRahmanThisStep)
         {
-            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+            registerRunFunction([this]() {
                 run<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full>();
-            }));
+            });
         }
         else
         {
-            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+            registerRunFunction([this]() {
                 run<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No>();
-            }));
+            });
         }
     }
     else
     {
         if (doParrinelloRahmanThisStep)
         {
-            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+            registerRunFunction([this]() {
                 run<NumVelocityScalingValues::None, ParrinelloRahmanVelocityScaling::Full>();
-            }));
+            });
         }
         else
         {
-            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+            registerRunFunction([this]() {
                 run<NumVelocityScalingValues::None, ParrinelloRahmanVelocityScaling::No>();
-            }));
+            });
         }
     }
 }
@@ -542,14 +542,14 @@ ArrayRef<real> Propagator<algorithm>::viewOnVelocityScaling()
 }
 
 template<IntegrationStep algorithm>
-std::unique_ptr<std::function<void(Step)>> Propagator<algorithm>::velocityScalingCallback()
+PropagatorCallback Propagator<algorithm>::velocityScalingCallback()
 {
     if (algorithm == IntegrationStep::PositionsOnly)
     {
         gmx_fatal(FARGS, "Velocity scaling not implemented for IntegrationStep::PositionsOnly.");
     }
 
-    return std::make_unique<PropagatorCallback>([this](Step step) { scalingStepVelocity_ = step; });
+    return [this](Step step) { scalingStepVelocity_ = step; };
 }
 
 template<IntegrationStep algorithm>
@@ -566,13 +566,13 @@ ArrayRef<rvec> Propagator<algorithm>::viewOnPRScalingMatrix()
 }
 
 template<IntegrationStep algorithm>
-PropagatorCallbackPtr Propagator<algorithm>::prScalingCallback()
+PropagatorCallback Propagator<algorithm>::prScalingCallback()
 {
     GMX_RELEASE_ASSERT(
             algorithm != IntegrationStep::PositionsOnly,
             "Parrinello-Rahman scaling not implemented for IntegrationStep::PositionsOnly.");
 
-    return std::make_unique<PropagatorCallback>([this](Step step) { scalingStepPR_ = step; });
+    return [this](Step step) { scalingStepPR_ = step; };
 }
 
 template<IntegrationStep algorithm>

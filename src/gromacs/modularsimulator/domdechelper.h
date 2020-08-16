@@ -69,8 +69,6 @@ class VirtualSitesHandler;
 
 //! The function type allowing to request a check of the number of bonded interactions
 typedef std::function<void()> CheckBondedInteractionsCallback;
-//! Pointer to the function type allowing to request a check of the number of bonded interactions
-typedef std::unique_ptr<CheckBondedInteractionsCallback> CheckBondedInteractionsCallbackPtr;
 
 /*! \internal
  * \brief Infrastructure element responsible for domain decomposition
@@ -89,24 +87,24 @@ class DomDecHelper final : public INeighborSearchSignallerClient
 {
 public:
     //! Constructor
-    DomDecHelper(bool                               isVerbose,
-                 int                                verbosePrintInterval,
-                 StatePropagatorData*               statePropagatorData,
-                 TopologyHolder*                    topologyHolder,
-                 CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback,
-                 int                                nstglobalcomm,
-                 FILE*                              fplog,
-                 t_commrec*                         cr,
-                 const MDLogger&                    mdlog,
-                 Constraints*                       constr,
-                 t_inputrec*                        inputrec,
-                 MDAtoms*                           mdAtoms,
-                 t_nrnb*                            nrnb,
-                 gmx_wallcycle*                     wcycle,
-                 t_forcerec*                        fr,
-                 VirtualSitesHandler*               vsite,
-                 ImdSession*                        imdSession,
-                 pull_t*                            pull_work);
+    DomDecHelper(bool                            isVerbose,
+                 int                             verbosePrintInterval,
+                 StatePropagatorData*            statePropagatorData,
+                 TopologyHolder*                 topologyHolder,
+                 CheckBondedInteractionsCallback checkBondedInteractionsCallback,
+                 int                             nstglobalcomm,
+                 FILE*                           fplog,
+                 t_commrec*                      cr,
+                 const MDLogger&                 mdlog,
+                 Constraints*                    constr,
+                 t_inputrec*                     inputrec,
+                 MDAtoms*                        mdAtoms,
+                 t_nrnb*                         nrnb,
+                 gmx_wallcycle*                  wcycle,
+                 t_forcerec*                     fr,
+                 VirtualSitesHandler*            vsite,
+                 ImdSession*                     imdSession,
+                 pull_t*                         pull_work);
 
     /*! \brief Run domain decomposition
      *
@@ -124,7 +122,7 @@ public:
 
 private:
     //! INeighborSearchSignallerClient implementation
-    SignallerCallbackPtr registerNSCallback() override;
+    std::optional<SignallerCallback> registerNSCallback() override;
 
     //! The next NS step
     Step nextNSStep_;
@@ -141,7 +139,7 @@ private:
     //! Pointer to the topology
     TopologyHolder* topologyHolder_;
     //! Pointer to the ComputeGlobalsHelper object - to ask for # of bonded interaction checking
-    CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback_;
+    CheckBondedInteractionsCallback checkBondedInteractionsCallback_;
 
     // Access to ISimulator data
     //! Handles logging.

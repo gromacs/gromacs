@@ -262,7 +262,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     /*! \brief Backup starting velocities
      *
@@ -318,16 +318,16 @@ private:
     void saveState();
 
     //! ITrajectorySignallerClient implementation
-    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    std::optional<SignallerCallback> registerTrajectorySignallerCallback(TrajectoryEvent event) override;
 
     //! ITrajectoryWriterClient implementation
-    ITrajectoryWriterCallbackPtr registerTrajectoryWriterCallback(TrajectoryEvent event) override;
+    std::optional<ITrajectoryWriterCallback> registerTrajectoryWriterCallback(TrajectoryEvent event) override;
 
     //! ICheckpointHelperClient implementation
     void writeCheckpoint(t_state* localState, t_state* globalState) override;
 
     //! ILastStepSignallerClient implementation (used for final output only)
-    SignallerCallbackPtr registerLastStepCallback() override;
+    std::optional<SignallerCallback> registerLastStepCallback() override;
 
     //! Callback writing the state to file
     void write(gmx_mdoutf* outf, Step step, Time time);

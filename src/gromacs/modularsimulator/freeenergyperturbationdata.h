@@ -127,7 +127,7 @@ public:
     explicit Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement, double deltaLambda);
 
     //! Update lambda and mdatoms
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     //! No setup needed
     void elementSetup() override{};

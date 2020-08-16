@@ -97,7 +97,7 @@ public:
      * @param time                 The time
      * @param registerRunFunction  Function allowing to register a run function
      */
-    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
+    void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
     /*! \brief Performs inital constraining
      *  \todo Should this rather happen at grompp time? Right position of this operation is currently
@@ -131,11 +131,11 @@ private:
     void apply(Step step, bool calculateVirial, bool writeLog, bool writeEnergy);
 
     //! IEnergySignallerClient implementation
-    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    std::optional<SignallerCallback> registerEnergyCallback(EnergySignallerEvent event) override;
     //! ITrajectorySignallerClient implementation
-    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    std::optional<SignallerCallback> registerTrajectorySignallerCallback(TrajectoryEvent event) override;
     //! ILoggingSignallerClient implementation
-    SignallerCallbackPtr registerLoggingCallback() override;
+    std::optional<SignallerCallback> registerLoggingCallback() override;
 
     //! The next energy calculation step
     Step nextVirialCalculationStep_;
