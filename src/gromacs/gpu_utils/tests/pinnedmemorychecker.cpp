@@ -103,6 +103,22 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
     EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
 }
 
+TEST_F(PinnedMemoryCheckerTest, PinningChangesAreRecognized)
+{
+    if (!haveCompatibleGpus())
+    {
+        return;
+    }
+
+    HostVector<real> dummy(3, 1.5);
+    changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory starts pinned";
+    changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
+    EXPECT_FALSE(isHostMemoryPinned(dummy.data())) << "memory is now unpinned";
+    changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory is pinned again";
+}
+
 TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 {
     if (!haveCompatibleGpus())
