@@ -301,9 +301,17 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
  *  2 seconds, or until all cores have come online. This can be used prior to
  *  hardware detection for platforms that take unused processors offline.
  *
- *  This routine will not throw exceptions.
+ *  This routine will not throw exceptions. In principle it should be
+ *  declared noexcept, but at least icc 19.1 and 21-beta08 with the
+ *  libstdc++-7.5 has difficulty implementing a std::vector of
+ *  std::thread started with this function when declared noexcept. It
+ *  is not clear whether the problem is the compiler or the standard
+ *  library. Fortunately, this function is not performance sensitive,
+ *  and only runs on platforms other than x86 and POWER (ie ARM),
+ *  so the possible overhead introduced by omitting noexcept is not
+ *  important.
  */
-static void spinUpCore() noexcept
+static void spinUpCore()
 {
 #if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROCESSORS_ONLN)
     float dummy           = 0.1;

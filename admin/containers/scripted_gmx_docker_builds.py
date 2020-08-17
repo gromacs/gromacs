@@ -48,6 +48,7 @@ Authors:
     * Paul Bauer <paul.bauer.q@gmail.com>
     * Eric Irrgang <ericirrgang@gmail.com>
     * Joe Jordan <e.jjordan12@gmail.com>
+    * Mark Abraham <mark.j.abraham@gmail.com>
 
 Usage::
 
@@ -178,7 +179,7 @@ def get_llvm_packages(args) -> typing.Iterable[str]:
         return []
 
 
-def get_compiler(args, tsan_stage: hpccm.Stage = None) -> bb_base:
+def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
     # Compiler
     if args.icc is not None:
         raise RuntimeError('Intel compiler toolchain recipe not implemented yet')
@@ -186,15 +187,27 @@ def get_compiler(args, tsan_stage: hpccm.Stage = None) -> bb_base:
     if args.llvm is not None:
         # Build our own version instead to get TSAN + OMP
         if args.tsan is not None:
-            if tsan_stage is not None:
-                compiler = tsan_stage.runtime(_from='tsan')
+            if compiler_build_stage is not None:
+                compiler = compiler_build_stage.runtime(_from='tsan')
             else:
-                raise RuntimeError('No TSAN stage!')
+                raise RuntimeError('No TSAN compiler build stage!')
         # Build the default compiler if we don't need special support
         else:
             compiler = hpccm.building_blocks.llvm(extra_repository=True, version=args.llvm)
 
-    elif (args.gcc is not None):
+    elif args.oneapi is not None:
+        if compiler_build_stage is not None:
+            compiler = compiler_build_stage.runtime(_from='oneapi')
+            # Prepare the toolchain (needed only for builds done within the Dockerfile, e.g.
+            # OpenMPI builds, which don't currently work for other reasons)
+            oneapi_toolchain = hpccm.toolchain(CC='/opt/intel/oneapi/compiler/latest/linux/bin/intel64/icc',
+                                               CXX='/opt/intel/oneapi/compiler/latest/linux/bin/intel64/icpc')
+            setattr(compiler, 'toolchain', oneapi_toolchain)
+
+        else:
+            raise RuntimeError('No oneAPI compiler build stage!')
+
+    elif args.gcc is not None:
         compiler = hpccm.building_blocks.gnu(extra_repository=True,
                                              version=args.gcc,
                                              fortran=False)
@@ -212,11 +225,19 @@ def get_mpi(args, compiler):
                 use_cuda = True
 
             if hasattr(compiler, 'toolchain'):
+                if args.oneapi is not None:
+                    raise RuntimeError('oneAPI building OpenMPI is not supported')
                 return hpccm.building_blocks.openmpi(toolchain=compiler.toolchain, cuda=use_cuda, infiniband=False)
             else:
                 raise RuntimeError('compiler is not an HPCCM compiler building block!')
 
         elif args.mpi == 'impi':
+            # TODO Intel MPI from the oneAPI repo is not working reliably,
+            # reasons are unclear. When solved, add packagages called:
+            # 'intel-oneapi-mpi', 'intel-oneapi-mpi-devel'
+            # during the compiler stage.
+            # TODO also consider hpccm's intel_mpi package if that doesn't need
+            # a license to run.
             raise RuntimeError('Intel MPI recipe not implemented yet.')
         else:
             raise RuntimeError('Requested unknown MPI implementation.')
@@ -234,6 +255,8 @@ def get_opencl(args):
             return hpccm.building_blocks.packages(ospackages=['nvidia-opencl-dev'])
 
         elif args.opencl == 'intel':
+            # Note, when using oneapi, there is bundled OpenCL support, so this
+            # installation is not needed.
             return hpccm.building_blocks.packages(
                     apt_ppas=['ppa:intel-opencl/intel-opencl'],
                     ospackages=['opencl-headers', 'ocl-icd-libopencl1',
@@ -259,7 +282,7 @@ def get_clfft(args):
         return None
 
 
-def add_tsan_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
+def add_tsan_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
     """Isolate the expensive TSAN preparation stage.
 
     This is a very expensive stage, but has few and disjoint dependencies, and
@@ -294,8 +317,45 @@ def add_tsan_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
                      'ln -s /usr/local/bin/clang-format /usr/local/bin/clang-format-' + str(input_args.llvm),
                      'ln -s /usr/local/bin/clang-tidy /usr/local/bin/clang-tidy-' + str(input_args.llvm),
                      'ln -s /usr/local/libexec/c++-analyzer /usr/local/bin/c++-analyzer-' + str(input_args.llvm)])
-    output_stages['tsan'] = tsan_stage
+    output_stages['compiler_build'] = tsan_stage
 
+def oneapi_runtime(_from='0'):
+    oneapi_runtime_stage = hpccm.Stage()
+    oneapi_runtime_stage += hpccm.primitives.copy(_from='oneapi-build',
+                                                  files={"/opt/intel": "/opt/intel",
+                                                         "/etc/bash.bashrc": "/etc/bash.bashrc"})
+    return oneapi_runtime_stage
+
+def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
+    """Isolate the oneAPI preparation stage.
+
+    This stage is isolated so that its installed components are minimized in the
+    final image (chiefly /opt/intel) and its environment setup script can be
+    sourced. This also helps with rebuild time and final image size.
+
+    Note that the ICC compiler inside oneAPI on linux also needs
+    gcc to build other components and provide libstdc++.
+    """
+    if not isinstance(output_stages, collections.abc.MutableMapping):
+        raise RuntimeError('Need output_stages container.')
+    oneapi_stage = hpccm.Stage()
+    oneapi_stage += hpccm.primitives.baseimage(image=base_image_tag(input_args), _as='oneapi-build')
+
+    # Add required components for the next stage (both for hpccm and Intel's setvars.sh script)
+    oneapi_stage += hpccm.building_blocks.packages(ospackages=['wget', 'gnupg2', 'ca-certificates', 'lsb-release'])
+    oneapi_stage += hpccm.building_blocks.packages(
+        apt_keys=['https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB'],
+        apt_repositories=['deb https://apt.repos.intel.com/oneapi all main'],
+        # Add minimal packages (not the whole HPC toolkit!)
+        ospackages=['intel-oneapi-dpcpp-compiler', 'intel-oneapi-icc', 'intel-oneapi-mkl', 'intel-oneapi-mkl-devel']
+    )
+    # Ensure that all bash shells on the final container will have access to oneAPI
+    oneapi_stage += hpccm.primitives.shell(
+            commands=['echo "source /opt/intel/oneapi/setvars.sh" >> /etc/bash.bashrc']
+            )
+    setattr(oneapi_stage, 'runtime', oneapi_runtime)
+
+    output_stages['compiler_build'] = oneapi_stage
 
 def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
     """Get shell commands to set up the venv for the requested Python version."""
@@ -460,22 +520,28 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     # object early in this function.
     stages = collections.OrderedDict()
 
-    # If we need the TSAN compilers, the early build is more involved.
+    # If we need TSAN or oneAPI support the early build is more complex,
+    # so that our compiler images don't have all the cruft needed to get those things
+    # installed.
     if args.llvm is not None and args.tsan is not None:
-        add_tsan_stage(input_args=args, output_stages=stages)
+        add_tsan_compiler_build_stage(input_args=args, output_stages=stages)
+    if args.oneapi is not None:
+        add_oneapi_compiler_build_stage(input_args=args, output_stages=stages)
 
     # Building blocks are chunks of container-builder instructions that can be
     # copied to any build stage with the addition operator.
     building_blocks = collections.OrderedDict()
 
     # These are the most expensive and most reusable layers, so we put them first.
-    building_blocks['compiler'] = get_compiler(args, tsan_stage=stages.get('tsan'))
+    building_blocks['compiler'] = get_compiler(args, compiler_build_stage=stages.get('compiler_build'))
     building_blocks['mpi'] = get_mpi(args, building_blocks['compiler'])
 
     # Install additional packages early in the build to optimize Docker build layer cache.
     os_packages = _common_packages + get_llvm_packages(args)
     if args.doxygen is not None:
         os_packages += _docs_extra_packages
+    if args.oneapi is not None:
+        os_packages += ['lsb-release']
     building_blocks['ospackages'] = hpccm.building_blocks.packages(ospackages=os_packages)
 
     building_blocks['cmake'] = hpccm.building_blocks.cmake(eula=True, version=args.cmake)

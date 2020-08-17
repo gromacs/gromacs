@@ -1292,17 +1292,19 @@ Tested platforms
 
 While it is our best belief that |Gromacs| will build and run pretty
 much everywhere, it is important that we tell you where we really know
-it works because we have tested it. We do test on Linux, Windows, and
-Mac with a range of compilers and libraries for a range of our
-configuration options. Every commit in our git source code repository
-is currently tested on x86 with a number of gcc versions ranging from 5.1
-through 9.1, version 19 of the Intel compiler, and Clang
-versions 3.6 through 8. For this, we use a variety of GNU/Linux
-flavors and versions as well as Windows (where we test only MSVC 2017).
+it works because we have tested it.
+Every commit in our git source code repository
+is currently tested with a range of configuration options on x86 with
+gcc versions 7 and 8,
+clang versions 8 and 9,
+and
+a beta version of oneAPI containing Intel's compiler.
+For this testing, we use Ubuntu 18.04 or 20.04 operating system.
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
-which runs Jenkins_.
+which uses GitLab runner on a local k8s x86 cluster with NVIDIA and
+AMD GPU support.
 
 We test irregularly on ARM v8, Cray, Power8, Power9,
 Google Native Client and other environments, and

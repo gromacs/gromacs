@@ -165,7 +165,7 @@ void gmx::LegacySimulator::do_md()
     int64_t      step, step_rel;
     double       t, t0 = ir->init_t, lam0[efptNR];
     gmx_bool     bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool     bNS, bNStList, bStopCM, bFirstStep, bInitStep, bLastStep = FALSE;
+    gmx_bool     bNS = FALSE, bNStList, bStopCM, bFirstStep, bInitStep, bLastStep = FALSE;
     gmx_bool     bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool     do_ene, do_log, do_verbose;
     gmx_bool     bMasterState;
@@ -699,6 +699,9 @@ void gmx::LegacySimulator::do_md()
     bExchanged       = FALSE;
     bNeedRepartition = FALSE;
 
+    step     = ir->init_step;
+    step_rel = 0;
+
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), simulationsShareState,
             MASTER(cr), ir->nstlist, mdrunOptions.reproducible, nstSignalComm,
@@ -716,9 +719,6 @@ void gmx::LegacySimulator::do_md()
             mdrunOptions.maximumHoursToRun, mdlog, wcycle, walltime_accounting);
 
     const DDBalanceRegionHandler ddBalanceRegionHandler(cr);
-
-    step     = ir->init_step;
-    step_rel = 0;
 
     if (MASTER(cr) && isMultiSim(ms) && !useReplicaExchange)
     {

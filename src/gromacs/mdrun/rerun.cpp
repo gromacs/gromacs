@@ -441,6 +441,9 @@ void gmx::LegacySimulator::do_rerun()
         calc_shifts(rerun_fr.box, fr->shift_vec);
     }
 
+    step     = ir->init_step;
+    step_rel = 0;
+
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), false, MASTER(cr),
             ir->nstlist, mdrunOptions.reproducible, nstglobalcomm, mdrunOptions.maximumHoursToRun,
@@ -450,9 +453,6 @@ void gmx::LegacySimulator::do_rerun()
     walltime_accounting_set_valid_finish(walltime_accounting);
 
     const DDBalanceRegionHandler ddBalanceRegionHandler(cr);
-
-    step     = ir->init_step;
-    step_rel = 0;
 
     /* and stop now if we should */
     isLastStep = (isLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));

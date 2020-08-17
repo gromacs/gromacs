@@ -40,6 +40,7 @@ Authors:
     * Paul Bauer <paul.bauer.q@gmail.com>
     * Eric Irrgang <ericirrgang@gmail.com>
     * Joe Jordan <e.jjordan12@gmail.com>
+    * Mark Abraham <mark.j.abraham@gmail.com>
 
 """
 
@@ -74,6 +75,11 @@ compiler_group.add_argument('--icc', type=int, nargs='?', const=19, default=None
                             choices=[19, 20],
                             help='Select Intel compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
+# TODO currently the installation merely gets the latest beta version of oneAPI,
+# not a specific version. GROMACS probably doesn't need to address that until
+# oneAPI makes an official release.
+compiler_group.add_argument('--oneapi', type=str, nargs='?', const="", default="2021.1-beta08",
+                            help='Select Intel oneAPI package version.')
 
 linux_group = parser.add_mutually_exclusive_group()
 linux_group.add_argument('--ubuntu', type=str, nargs='?', const='18.04', default='20.04',

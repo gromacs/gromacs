@@ -70,3 +70,13 @@
     - export CCACHE_DIR=${PWD}/ccache
     - export ASAN_SYMBOLIZER_PATH=/usr/local/bin/llvm-symbolizer
 
+# Base definition for using oneAPI.
+.use-oneapi:base:
+  variables:
+    # Use the HPC variants of icc and icpc so that OpenMP is active
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx
+    CMAKE_EXTRA_OPTIONS: -DGMX_FFT_LIBRARY=mkl
+  before_script:
+    - mkdir -p ccache
+    - export CCACHE_BASEDIR=${PWD}
+    - export CCACHE_DIR=${PWD}/ccache
