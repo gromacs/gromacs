@@ -173,7 +173,7 @@ index ssize(const T& t)
 #ifdef __INTEL_COMPILER
 // Ignore unused loop variable warning - it was used until the compiler removes the use!
 #    define DO_PRAGMA(x) _Pragma(#    x)
-#    define INTEL_DIAGNOSTIC_IGNORE(id) DO_PRAGMA(warning push) DO_PRAGMA(warning(disable : id ))
+#    define INTEL_DIAGNOSTIC_IGNORE(id) DO_PRAGMA(warning push) DO_PRAGMA(warning(disable : id))
 #    define INTEL_DIAGNOSTIC_RESET DO_PRAGMA(warning pop)
 #else
 #    define INTEL_DIAGNOSTIC_IGNORE(id)

@@ -255,7 +255,7 @@ gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans
         {
             gmx::UniformIntDistribution<int> tdist(0, isize - 1);
             tid = gmx_omp_get_thread_num();
-/* now starting parallel threads */
+            /* now starting parallel threads */
             INTEL_DIAGNOSTIC_IGNORE(593)
 #    pragma omp for
             for (int64_t mc = 0; mc < mc_max; mc++)
