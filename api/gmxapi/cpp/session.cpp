@@ -33,13 +33,10 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#include "gmxpre.h"
-
-#include "config.h"
-
 #include "gmxapi/session.h"
 
 #include <memory>
+
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/restraint/restraintpotential.h"

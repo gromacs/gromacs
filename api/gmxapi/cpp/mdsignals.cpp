@@ -40,10 +40,9 @@
  */
 
 #include <algorithm>
-
 #include <atomic>
-
 #include <memory>
+
 #include "gromacs/mdlib/simulationsignal.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/utility/gmxassert.h"

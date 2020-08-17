@@ -73,7 +73,7 @@ target_include_directories(gmxapi PUBLIC
                            $<INSTALL_INTERFACE:include>
                            )
 
-add_subdirectory(cpp/gmxapi)
+add_subdirectory(cpp)
 
 ###############################
 # Install the public interface.

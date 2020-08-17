@@ -36,9 +36,9 @@
 #include "gmxapi/system.h"
 
 #include <array>
+#include <memory>
 
 #include "gromacs/utility.h"
-#include <memory>
 #include "gromacs/mdrun/runner.h"
 
 #include "gmxapi/context.h"
