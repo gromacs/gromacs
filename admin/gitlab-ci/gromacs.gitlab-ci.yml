@@ -228,13 +228,13 @@ gromacs:gcc-7:configure:
     CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
     COMPILER_MAJOR_VERSION: 7
 
-gromacs:gcc-8-cuda-10.1:configure:
+gromacs:gcc-8-cuda-11.0:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-cuda
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     COMPILER_MAJOR_VERSION: 8
@@ -314,14 +314,14 @@ gromacs:clang-UBSAN:configure:
     COMPILER_MAJOR_VERSION: 8
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=UBSAN"
 
-gromacs:gcc-8-cuda-10.1:release:configure:
+gromacs:gcc-8-cuda-11.0:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-gcc:base
     - .use-mpi
     - .use-cuda
     - .rules:nightly-only-for-release
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-gcc
@@ -440,16 +440,16 @@ gromacs:gcc-7:build:
     - job: gromacs:gcc-7:configure
       artifacts: true
 
-gromacs:gcc-8-cuda-10.1:build:
+gromacs:gcc-8-cuda-11.0:build:
   extends:
     - .variables:default
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   needs:
-    - job: gromacs:gcc-8-cuda-10.1:configure
+    - job: gromacs:gcc-8-cuda-11.0:configure
 
 gromacs:clang-TSAN:build:
   extends:
@@ -539,7 +539,7 @@ gromacs:clang-9-mpi:build:
   needs:
     - job: gromacs:clang-9-mpi:configure
 
-gromacs:gcc-8-cuda-10.1:release:build:
+gromacs:gcc-8-cuda-11.0:release:build:
   extends:
     - .variables:default  
     - .gromacs:base:build
@@ -549,9 +549,9 @@ gromacs:gcc-8-cuda-10.1:release:build:
   stage: release-build
   variables:
     BUILD_DIR: release-builds-gcc
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   needs:
-    - job: gromacs:gcc-8-cuda-10.1:release:configure
+    - job: gromacs:gcc-8-cuda-11.0:release:configure
 
 gromacs:gcc-7:release:build:
   extends:
@@ -698,18 +698,18 @@ gromacs:gcc-7:test:
   needs:
     - job: gromacs:gcc-7:build
 
-gromacs:gcc-8-cuda-10.1:test:
+gromacs:gcc-8-cuda-11.0:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-8-cuda-10.1:build
+    - job: gromacs:gcc-8-cuda-11.0:build
 
 gromacs:clang-8:test:
   extends:
@@ -791,11 +791,11 @@ gromacs:gcc-7:regressiontest:
     - job: gromacs:gcc-7:build
     - job: regressiontests:prepare
 
-gromacs:gcc-8-cuda-10.1:regressiontest:
+gromacs:gcc-8-cuda-11.0:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
@@ -805,7 +805,7 @@ gromacs:gcc-8-cuda-10.1:regressiontest:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-8-cuda-10.1:build
+    - job: gromacs:gcc-8-cuda-11.0:build
     - job: regressiontests:prepare
 
 gromacs:clang-8:regressiontest:
@@ -870,12 +870,12 @@ gromacs:oneapi-2021.1-beta08:regressiontest:
     - set +e
     - source /opt/intel/oneapi/setvars.sh
 
-gromacs:gcc-8-cuda-10.1:release:test:
+gromacs:gcc-8-cuda-11.0:release:test:
   extends:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-10.1-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
@@ -883,8 +883,8 @@ gromacs:gcc-8-cuda-10.1:release:test:
   tags:
     - k8s-scilifelab
   needs:
-    - job: gromacs:gcc-8-cuda-10.1:release:configure
-    - job: gromacs:gcc-8-cuda-10.1:release:build
+    - job: gromacs:gcc-8-cuda-11.0:release:configure
+    - job: gromacs:gcc-8-cuda-11.0:release:build
 
 gromacs:gcc-7:release:test:
   extends:
