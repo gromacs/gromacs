@@ -7,7 +7,7 @@ prepare-release-version:
   cache: {}
   # Docker image uploaded to dockerhub by user eriklindahl
   # TODO: Get DockerFile for admin/dockerfiles
-  image: biophysics/gcc-gromacs
+  image: gromacs/ci-docs-llvm-master
   stage: configure-build
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -27,7 +27,7 @@ regressiontests:prepare:
     - .variables:default
     - .rules:merge-requests
   cache: {}
-  image: biophysics/gcc-gromacs
+  image: gromacs/ci-docs-llvm-master
   stage: configure-build
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -71,7 +71,7 @@ regressiontests:package:
   cache: {}
   # Docker image uploaded to dockerhub by user eriklindahl
   # TODO: Get DockerFile for admin/dockerfiles
-  image: biophysics/gcc-gromacs
+  image: gromacs/ci-docs-llvm-master
   stage: release-package
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -120,7 +120,7 @@ archive:configure:nightly:
   variables:
     BUILD_DIR: build-package
     CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
-    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF -DGMX_USE_SIMD_KERNELS=off
     CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
 
 archive:configure:release:
@@ -130,7 +130,7 @@ archive:configure:release:
   variables:
     BUILD_DIR: build-package
     CMAKE_SIMD_OPTIONS: -DGMX_SIMD=None
-    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_USE_RDTSCP=OFF -DGMX_USE_SIMD_KERNELS=off
     CMAKE_MPI_OPTIONS: -DGMX_THREAD_MPI=OFF -DGMX_OPENMP=OFF
 
 # Right now we need to use an ugly hack to move the original build directory
@@ -208,7 +208,7 @@ archive:package:
     BUILD_DIR: build-package
 
 release-verify:
-  image: biophysics/gcc-gromacs
+  image: gromacs/ci-docs-llvm-master
   stage: release-verify
   extends:
     - .variables:default
