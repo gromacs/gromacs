@@ -156,7 +156,7 @@ setup(
 
     # TODO: single-source version information (currently repeated in gmxapi/version.py)
     version='0.2.0b1',
-    python_requires='>=3.6, <3.9',
+    python_requires='>=3.6',
     install_requires=['networkx>=2.0',
                       'numpy>=1'],
 

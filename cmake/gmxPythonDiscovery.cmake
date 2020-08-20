@@ -43,7 +43,7 @@ if(FIND_PACKAGE_MESSAGE_DETAILS_Python3)
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
 # Older CMake versions might not search for Python newer than 3.7.
-set(Python_ADDITIONAL_VERSIONS 3.8)
+set(Python_ADDITIONAL_VERSIONS 3.8 3.9 3.10)
 # We advocate using Python venvs to manage package availability, so by default
 # we want to preferentially discover user-space software.
 set(Python3_FIND_REGISTRY LAST)
