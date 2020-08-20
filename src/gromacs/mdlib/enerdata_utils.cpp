@@ -53,7 +53,7 @@ ForeignLambdaTerms::ForeignLambdaTerms(int numLambdas) :
 {
 }
 
-std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(t_commrec* cr) const
+std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(const t_commrec* cr) const
 {
     GMX_RELEASE_ASSERT(finalizedPotentialContributions_,
                        "The object needs to be finalized before calling getTerms");

@@ -126,6 +126,10 @@ public:
      */
     int umbrellaGridpoint() const { return umbrellaGridpoint_; }
 
+    /*! \brief Sets the umbrella grid point to the current grid point
+     */
+    void setUmbrellaGridpointToGridpoint();
+
 private:
     awh_dvec coordValue_;        /**< Current coordinate value in (nm or rad) */
     int      gridpointIndex_;    /**< The grid point index for the current coordinate value */

@@ -37,4 +37,5 @@ gmx_add_unit_test(AwhTest awh-test
         bias.cpp
 	biasgrid.cpp
         biasstate.cpp
+        bias_fep_lambda_state.cpp
         )

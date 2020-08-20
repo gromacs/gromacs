@@ -20,22 +20,9 @@ Basics of the method
 ^^^^^^^^^^^^^^^^^^^^
 
 Rather than biasing the reaction coordinate :math:`\xi(x)` directly, AWH
-acts on a *reference coordinate* :math:`\lambda`. The reaction
-coordinate :math:`\xi(x)` is coupled to :math:`\lambda` with a harmonic
-potential
-
-.. math:: Q(\xi,\lambda) = \frac{1}{2} \beta k (\xi - \lambda)^2,
-          :label: eqnawhbasic
-
-so that for large force constants :math:`k`,
-:math:`\xi \approx \lambda`. Note the use of dimensionless energies for
-compatibility with previously published work. Units of energy are
-obtained by multiplication with :math:`k_BT=1/\beta`. In the simulation,
-:math:`\lambda` samples the user-defined sampling interval :math:`I`.
-For a multidimensional reaction coordinate :math:`\xi`, the sampling
-interval is the Cartesian product :math:`I=\Pi_{\mu} I_{\mu}` (a rectangular
-domain). The connection between atom coordinates and :math:`\lambda` is
-established through the extended ensemble \ :ref:`68 <refLyubartsev1992>`,
+acts on a *reference coordinate* :math:`\lambda`. The fundamentals of the
+method is based on the connection between atom coordinates and :math:`\lambda` and
+is established through the extended ensemble \ :ref:`68 <refLyubartsev1992>`,
 
 .. math:: P(x,\lambda) = \frac{1}{\mathcal{Z}}e^{g(\lambda) - Q(\xi(x),\lambda) - V(x)},
           :label: eqawhpxlambda
@@ -56,6 +43,18 @@ where :math:`F(\lambda)` is the free energy
 .. math:: F(\lambda) = -\ln \int e^{- Q(\xi(x),\lambda) - V(x)}  dx.
           :label: eqawhflambda
 
+The reaction coordinate :math:`\xi(x)` is commonly coupled to
+:math:`\lambda` with a harmonic potential
+
+.. math:: Q(\xi,\lambda) = \frac{1}{2} \beta k (\xi - \lambda)^2,
+          :label: eqnawhbasic
+
+so that for large force constants :math:`k`,
+:math:`\xi \approx \lambda`. Note the use of dimensionless energies for
+compatibility with previously published work. Units of energy are
+obtained by multiplication with :math:`k_BT=1/\beta`. In the simulation,
+:math:`\lambda` samples the user-defined sampling interval :math:`I`.
+
 Being the convolution of the PMF with the Gaussian defined by the
 harmonic potential, :math:`F(\lambda)` is a smoothened version of the
 PMF. :eq:`Eq. %s <eqawhplambda>` shows that in order to obtain
@@ -63,6 +62,17 @@ PMF. :eq:`Eq. %s <eqawhplambda>` shows that in order to obtain
 determined accurately. Thus, AWH adaptively calculates
 :math:`F(\lambda)` and simultaneously converges :math:`P(\lambda)`
 toward :math:`\rho(\lambda)`.
+
+It is also possible to directly control the :math:`\lambda` state
+of, e.g., alchemical free energy perturbations. In that case there is no harmonic
+potential and :math:`\lambda` changes in discrete steps along the reaction coordinate
+depending on the biased free energy difference between the :math:`\lambda` states.
+N.b., it is not yet possible to use AWH in combination with perturbed masses or
+constraints.
+
+For a multidimensional reaction coordinate :math:`\xi`, the sampling
+interval is the Cartesian product :math:`I=\Pi_{\mu} I_{\mu}` (a rectangular
+domain).
 
 The free energy update
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -126,15 +136,23 @@ implies :math:`\Delta g_n(\lambda) < 0` (assuming
 Secondly, the normalization of the histogram
 :math:`N_n=\sum_\lambda W_n(\lambda)`, determines the update size
 :math:`| \Delta F(\lambda) |`. For instance, for a single sample
-:math:`\omega(\lambda|x)`, the shape of the update is approximately a
+:math:`\omega(\lambda|x)`, and using a harmonic potential
+(:see :eq:`Eq. %s <eqnawhbasic>`),
+the shape of the update is approximately a
 Gaussian function of width :math:`\sigma=1/\sqrt{\beta k}` and height
 :math:`\propto 1/N_n` :ref:`137 <reflindahl2014accelerated>`,
 
 .. math:: | \Delta F_n(\lambda) | \propto \frac{1}{N_n} e^{-\frac{1}{2} \beta k (\xi(x) - \lambda)^2}.
           :label: eqawhdfsize
 
-Therefore, as samples accumulate in :math:`W(\lambda)` and :math:`N_n`
-grows, the updates get smaller, allowing for the free energy to
+When directly controlling the lambda state of the system, the shape of
+the update is instead
+
+.. math:: | \Delta F_n(\lambda) | \propto \frac{1}{N_n} P_n(\lambda | x).
+          :label: eqawhdfsizelambda
+
+Therefore, in both cases, as samples accumulate in :math:`W(\lambda)` and
+:math:`N_n` grows, the updates get smaller, allowing for the free energy to
 converge.
 
 Note that quantity of interest to the user is not :math:`F(\lambda)` but
@@ -164,6 +182,13 @@ the same biased probabilities :math:`P_n(x)`
 different in the two cases. This choice does not affect the internals of
 the AWH algorithm, only what force and potential AWH returns to the MD
 engine.
+
+Along a bias dimension directly controlling the
+:math:`\lambda` state of the system, such as when controlling free energy
+perturbations, the Monte-Carlo sampling alternative is always used, even if
+a convolved bias potential is chosen to be used along the other dimensions
+(if there are more than one).
+
 
 .. _fig-awhbiasevolution1:
 

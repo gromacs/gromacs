@@ -51,6 +51,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <optional>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
@@ -192,6 +193,69 @@ double getDeviationFromPointAlongGridAxis(const BiasGrid& grid, int dimIndex, in
     double coordValue = grid.point(pointIndex).coordValue[dimIndex];
 
     return getDeviationPeriodic(value, coordValue, grid.axis(dimIndex).period());
+}
+
+double getDeviationFromPointAlongGridAxis(const BiasGrid& grid, int dimIndex, int pointIndex1, int pointIndex2)
+{
+    double coordValue1 = grid.point(pointIndex1).coordValue[dimIndex];
+    double coordValue2 = grid.point(pointIndex2).coordValue[dimIndex];
+
+    return getDeviationPeriodic(coordValue1, coordValue2, grid.axis(dimIndex).period());
+}
+
+bool pointsAlongLambdaAxis(const BiasGrid& grid, int pointIndex1, int pointIndex2)
+{
+    if (!grid.hasLambdaAxis())
+    {
+        return false;
+    }
+    if (pointIndex1 == pointIndex2)
+    {
+        return true;
+    }
+    const int numDimensions = grid.numDimensions();
+    for (int d = 0; d < numDimensions; d++)
+    {
+        if (grid.axis(d).isFepLambdaAxis())
+        {
+            if (getDeviationFromPointAlongGridAxis(grid, d, pointIndex1, pointIndex2) == 0)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (getDeviationFromPointAlongGridAxis(grid, d, pointIndex1, pointIndex2) != 0)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool pointsHaveDifferentLambda(const BiasGrid& grid, int pointIndex1, int pointIndex2)
+{
+    if (!grid.hasLambdaAxis())
+    {
+        return false;
+    }
+    if (pointIndex1 == pointIndex2)
+    {
+        return false;
+    }
+    const int numDimensions = grid.numDimensions();
+    for (int d = 0; d < numDimensions; d++)
+    {
+        if (grid.axis(d).isFepLambdaAxis())
+        {
+            if (getDeviationFromPointAlongGridAxis(grid, d, pointIndex1, pointIndex2) != 0)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 void linearArrayIndexToMultiDim(int indexLinear, int numDimensions, const awh_ivec numPointsDim, awh_ivec indexMulti)
@@ -515,6 +579,30 @@ bool BiasGrid::covers(const awh_dvec value) const
     return valueIsInGrid(value, axis());
 }
 
+std::optional<int> BiasGrid::lambdaAxisIndex() const
+{
+    for (size_t i = 0; i < axis_.size(); i++)
+    {
+        if (axis_[i].isFepLambdaAxis())
+        {
+            return i;
+        }
+    }
+    return {};
+}
+
+int BiasGrid::numFepLambdaStates() const
+{
+    for (size_t i = 0; i < axis_.size(); i++)
+    {
+        if (axis_[i].isFepLambdaAxis())
+        {
+            return axis_[i].numPoints();
+        }
+    }
+    return 0;
+}
+
 int GridAxis::nearestIndex(double value) const
 {
     /* Get the point distance to the origin. This may by an out of index range for the axis. */
@@ -586,12 +674,21 @@ void setNeighborsOfGridPoint(int pointIndex, const BiasGrid& grid, std::vector<i
     awh_ivec subgridOrigin = { 0 };
     for (int d = 0; d < grid.numDimensions(); d++)
     {
-        /* The number of candidate points along this dimension is given by the scope cutoff. */
-        numCandidates[d] = std::min(c_maxNeighborsAlongAxis, grid.axis(d).numPoints());
+        if (grid.axis(d).isFepLambdaAxis())
+        {
+            /* Use all points along an axis linked to FEP */
+            numCandidates[d] = grid.axis(d).numPoints();
+            subgridOrigin[d] = 0;
+        }
+        else
+        {
+            /* The number of candidate points along this dimension is given by the scope cutoff. */
+            numCandidates[d] = std::min(c_maxNeighborsAlongAxis, grid.axis(d).numPoints());
 
-        /* The origin of the subgrid to search */
-        int centerIndex  = grid.point(pointIndex).index[d];
-        subgridOrigin[d] = centerIndex - numCandidates[d] / 2;
+            /* The origin of the subgrid to search */
+            int centerIndex  = grid.point(pointIndex).index[d];
+            subgridOrigin[d] = centerIndex - numCandidates[d] / 2;
+        }
     }
 
     /* Find and set the neighbors */
@@ -628,7 +725,14 @@ void BiasGrid::initPoints()
     {
         for (size_t d = 0; d < axis_.size(); d++)
         {
-            point.coordValue[d] = axis_[d].origin() + indexWork[d] * axis_[d].spacing();
+            if (axis_[d].isFepLambdaAxis())
+            {
+                point.coordValue[d] = indexWork[d];
+            }
+            else
+            {
+                point.coordValue[d] = axis_[d].origin() + indexWork[d] * axis_[d].spacing();
+            }
 
             if (axis_[d].period() > 0)
             {
@@ -645,7 +749,8 @@ void BiasGrid::initPoints()
 
 GridAxis::GridAxis(double origin, double end, double period, double pointDensity) :
     origin_(origin),
-    period_(period)
+    period_(period),
+    isFepLambdaAxis_(false)
 {
     length_ = getIntervalLengthPeriodic(origin_, end, period_);
 
@@ -686,14 +791,24 @@ GridAxis::GridAxis(double origin, double end, double period, double pointDensity
     }
 }
 
-GridAxis::GridAxis(double origin, double end, double period, int numPoints) :
+GridAxis::GridAxis(double origin, double end, double period, int numPoints, bool isFepLambdaAxis) :
     origin_(origin),
     period_(period),
-    numPoints_(numPoints)
+    numPoints_(numPoints),
+    isFepLambdaAxis_(isFepLambdaAxis)
 {
-    length_            = getIntervalLengthPeriodic(origin_, end, period_);
-    spacing_           = numPoints_ > 1 ? length_ / (numPoints_ - 1) : period_;
-    numPointsInPeriod_ = static_cast<int>(std::round(period_ / spacing_));
+    if (isFepLambdaAxis)
+    {
+        length_            = end - origin_;
+        spacing_           = 1;
+        numPointsInPeriod_ = numPoints;
+    }
+    else
+    {
+        length_            = getIntervalLengthPeriodic(origin_, end, period_);
+        spacing_           = numPoints_ > 1 ? length_ / (numPoints_ - 1) : period_;
+        numPointsInPeriod_ = static_cast<int>(std::round(period_ / spacing_));
+    }
 }
 
 BiasGrid::BiasGrid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams)
@@ -705,12 +820,20 @@ BiasGrid::BiasGrid(const std::vector<DimParams>& dimParams, const AwhDimParams* 
     {
         double origin = dimParams[d].scaleUserInputToInternal(awhDimParams[d].origin);
         double end    = dimParams[d].scaleUserInputToInternal(awhDimParams[d].end);
-        period[d]     = dimParams[d].scaleUserInputToInternal(awhDimParams[d].period);
-        static_assert(c_numPointsPerSigma >= 1.0,
-                      "The number of points per sigma should be at least 1.0 to get a uniformly "
-                      "covering the reaction using Gaussians");
-        double pointDensity = std::sqrt(dimParams[d].betak) * c_numPointsPerSigma;
-        axis_.emplace_back(origin, end, period[d], pointDensity);
+        if (awhDimParams[d].eCoordProvider == eawhcoordproviderPULL)
+        {
+            period[d] = dimParams[d].scaleUserInputToInternal(awhDimParams[d].period);
+            static_assert(
+                    c_numPointsPerSigma >= 1.0,
+                    "The number of points per sigma should be at least 1.0 to get a uniformly "
+                    "covering the reaction using Gaussians");
+            double pointDensity = std::sqrt(dimParams[d].betak) * c_numPointsPerSigma;
+            axis_.emplace_back(origin, end, period[d], pointDensity);
+        }
+        else
+        {
+            axis_.emplace_back(origin, end, 0, dimParams[d].numFepLambdaStates, true);
+        }
         numPoints *= axis_[d].numPoints();
     }
 
@@ -743,9 +866,10 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
 
     /* Count the number of points for each dimension. Each dimension
        has its own stride. */
-    int              stride           = 1;
-    int              numPointsCounted = 0;
-    std::vector<int> numPoints(grid.numDimensions());
+    int               stride           = 1;
+    int               numPointsCounted = 0;
+    std::vector<int>  numPoints(grid.numDimensions());
+    std::vector<bool> isFepLambdaAxis(grid.numDimensions());
     for (int d = grid.numDimensions() - 1; d >= 0; d--)
     {
         int    numPointsInDim = 0;
@@ -764,7 +888,8 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
 
         numPointsCounted = (numPointsCounted == 0) ? numPointsInDim : numPointsCounted * numPointsInDim;
 
-        numPoints[d] = numPointsInDim;
+        numPoints[d]       = numPointsInDim;
+        isFepLambdaAxis[d] = grid.axis(d).isFepLambdaAxis();
     }
 
     if (numPointsCounted != numDataPoints)
@@ -781,7 +906,15 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
     /* The data grid has the data that was read and the properties of the AWH grid */
     for (int d = 0; d < grid.numDimensions(); d++)
     {
-        axis_.emplace_back(data[d][0], data[d][numDataPoints - 1], grid.axis(d).period(), numPoints[d]);
+        if (isFepLambdaAxis[d])
+        {
+            axis_.emplace_back(data[d][0], data[d][numDataPoints - 1], 0, numPoints[d], true);
+        }
+        else
+        {
+            axis_.emplace_back(data[d][0], data[d][numDataPoints - 1], grid.axis(d).period(),
+                               numPoints[d], false);
+        }
     }
 
     /* Map each grid point to a data point. No interpolation, just pick the nearest one.

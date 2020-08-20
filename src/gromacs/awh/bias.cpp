@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,15 +102,17 @@ void Bias::doSkippedUpdatesForAllPoints()
     }
 }
 
-gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
-                                                         double*               awhPotential,
-                                                         double*               potentialJump,
-                                                         const t_commrec*      commRecord,
-                                                         const gmx_multisim_t* ms,
-                                                         double                t,
-                                                         int64_t               step,
-                                                         int64_t               seed,
-                                                         FILE*                 fplog)
+gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         coordValue,
+                                                         ArrayRef<const double> neighborLambdaEnergies,
+                                                         ArrayRef<const double> neighborLambdaDhdl,
+                                                         double*                awhPotential,
+                                                         double*                potentialJump,
+                                                         const t_commrec*       commRecord,
+                                                         const gmx_multisim_t*  ms,
+                                                         double                 t,
+                                                         int64_t                step,
+                                                         int64_t                seed,
+                                                         FILE*                  fplog)
 {
     if (step < 0)
     {
@@ -126,28 +128,34 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec        c
      * the bias in the current neighborhood needs to be up-to-date
      * and the probablity weights need to be calculated.
      */
-    const bool sampleCoord   = params_.isSampleCoordStep(step);
-    const bool moveUmbrella  = (sampleCoord || step == 0);
-    double     convolvedBias = 0;
-    if (params_.convolveForce || moveUmbrella || sampleCoord)
+    const bool        isSampleCoordStep = params_.isSampleCoordStep(step);
+    const bool        moveUmbrella      = (isSampleCoordStep || step == 0);
+    double            convolvedBias     = 0;
+    const CoordState& coordState        = state_.coordState();
+
+    if (params_.convolveForce || moveUmbrella || isSampleCoordStep)
     {
         if (params_.skipUpdates())
         {
             state_.doSkippedUpdatesInNeighborhood(params_, grid_);
         }
+        convolvedBias = state_.updateProbabilityWeightsAndConvolvedBias(
+                dimParams_, grid_, moveUmbrella ? neighborLambdaEnergies : ArrayRef<const double>{},
+                &probWeightNeighbor);
 
-        convolvedBias =
-                state_.updateProbabilityWeightsAndConvolvedBias(dimParams_, grid_, &probWeightNeighbor);
-
-        if (sampleCoord)
+        if (isSampleCoordStep)
         {
-            updateForceCorrelationGrid(probWeightNeighbor, t);
+            updateForceCorrelationGrid(probWeightNeighbor, neighborLambdaDhdl, t);
 
-            state_.sampleCoordAndPmf(grid_, probWeightNeighbor, convolvedBias);
+            state_.sampleCoordAndPmf(dimParams_, grid_, probWeightNeighbor, convolvedBias);
+        }
+        /* Set the umbrella grid point (for the lambda axis) to the
+         * current grid point. */
+        if (params_.convolveForce && grid_.hasLambdaAxis())
+        {
+            state_.setUmbrellaGridpointToGridpoint();
         }
     }
-
-    const CoordState& coordState = state_.coordState();
 
     /* Set the bias force and get the potential contribution from this bias.
      * The potential jump occurs at different times depending on how
@@ -159,7 +167,9 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec        c
     double potential;
     if (params_.convolveForce)
     {
-        state_.calcConvolvedForce(dimParams_, grid_, probWeightNeighbor, tempForce_, biasForce_);
+        state_.calcConvolvedForce(dimParams_, grid_, probWeightNeighbor,
+                                  moveUmbrella ? neighborLambdaDhdl : ArrayRef<const double>{},
+                                  tempForce_, biasForce_);
 
         potential = -convolvedBias * params_.invBeta;
     }
@@ -170,7 +180,8 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec        c
                            "AWH bias grid point for the umbrella reference value is outside of the "
                            "target region.");
         potential = state_.calcUmbrellaForceAndPotential(
-                dimParams_, grid_, coordState.umbrellaGridpoint(), biasForce_);
+                dimParams_, grid_, coordState.umbrellaGridpoint(),
+                moveUmbrella ? neighborLambdaDhdl : ArrayRef<const double>{}, biasForce_);
 
         /* Moving the umbrella results in a force correction and
          * a new potential. The umbrella center is sampled as often as
@@ -179,9 +190,11 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec        c
          */
         if (moveUmbrella)
         {
-            double newPotential = state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor,
-                                                      biasForce_, step, seed, params_.biasIndex);
-            *potentialJump      = newPotential - potential;
+            const bool onlySampleUmbrellaGridpoint = false;
+            double     newPotential = state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor,
+                                                      neighborLambdaDhdl, biasForce_, step, seed,
+                                                      params_.biasIndex, onlySampleUmbrellaGridpoint);
+            *potentialJump          = newPotential - potential;
         }
     }
 
@@ -197,6 +210,14 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec        c
             double newPotential = -calcConvolvedBias(coordState.coordValue()) * params_.invBeta;
             *potentialJump      = newPotential - potential;
         }
+    }
+    /* If there is a lambda axis it is still controlled using an umbrella even if the force
+     * is convolved in the other dimensions. */
+    if (moveUmbrella && params_.convolveForce && grid_.hasLambdaAxis())
+    {
+        const bool onlySampleUmbrellaGridpoint = true;
+        state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor, neighborLambdaDhdl, biasForce_,
+                            step, seed, params_.biasIndex, onlySampleUmbrellaGridpoint);
     }
 
     /* Return the potential. */
@@ -383,7 +404,9 @@ void Bias::printInitializationToLog(FILE* fplog) const
     }
 }
 
-void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeighbor, double t)
+void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeighbor,
+                                      ArrayRef<const double>      neighborLambdaDhdl,
+                                      double                      t)
 {
     if (forceCorrelationGrid_ == nullptr)
     {
@@ -403,7 +426,8 @@ void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeig
            We actually add the force normalized by beta which has the units of 1/length. This means that the
            resulting correlation time integral is directly in units of friction time/length^2 which is really what
            we're interested in. */
-        state_.calcUmbrellaForceAndPotential(dimParams_, grid_, indexNeighbor, forceFromNeighbor);
+        state_.calcUmbrellaForceAndPotential(dimParams_, grid_, indexNeighbor, neighborLambdaDhdl,
+                                             forceFromNeighbor);
 
         /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
         forceCorrelationGrid_->addData(indexNeighbor, weightNeighbor, forceFromNeighbor, t);
@@ -425,5 +449,18 @@ int Bias::writeToEnergySubblocks(t_enxsubblock* subblock) const
 
     return writer_->writeToEnergySubblocks(*this, subblock);
 }
+
+bool Bias::isFepLambdaDimension(int dim) const
+{
+    GMX_ASSERT(dim < ndim(), "Requested dimension out of range.");
+
+    return dimParams_[dim].isFepLambdaDimension();
+}
+
+bool Bias::isSampleCoordStep(const int64_t step) const
+{
+    return params_.isSampleCoordStep(step);
+}
+
 
 } // namespace gmx

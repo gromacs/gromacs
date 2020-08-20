@@ -215,12 +215,19 @@ public:
      * \param[in]     dimParams  The bias dimensions parameters.
      * \param[in]     grid       The grid.
      * \param[in]     point      Point for umbrella center.
+     * \param[in]     neighborLambdaDhdl     An array containing the dHdL at the neighboring lambda
+     * points. The array is of length numLambdas+1, where numLambdas is the number of free
+     * energy lambda states. Element 0 in the array is the dHdL
+     * of the current state and elements 1..numLambdas contain the dHdL of the system in the
+     * neighboring lambda states (also including the current state). When there are no free
+     * energy lambda state dimensions this can be empty.
      * \param[in,out] force      Force vector to set.
      * Returns the umbrella potential.
      */
     double calcUmbrellaForceAndPotential(const std::vector<DimParams>& dimParams,
                                          const BiasGrid&               grid,
                                          int                           point,
+                                         ArrayRef<const double>        neighborLambdaDhdl,
                                          gmx::ArrayRef<double>         force) const;
 
     /*! \brief
@@ -232,12 +239,19 @@ public:
      * \param[in]     dimParams           The bias dimensions parameters.
      * \param[in]     grid                The grid.
      * \param[in]     probWeightNeighbor  Probability weights of the neighbors.
+     * \param[in]     neighborLambdaDhdl     An array containing the dHdL at the neighboring lambda
+     * points. The array is of length numLambdas+1, where numLambdas is the number of free
+     * energy lambda states. Element 0 in the array is the dHdL
+     * of the current state and elements 1..numLambdas contain the dHdL of the system in the
+     * neighboring lambda states (also including the current state). When there are no free
+     * energy lambda state dimensions this can be empty.
      * \param[in]     forceWorkBuffer     Force work buffer, values only used internally.
      * \param[in,out] force               Bias force vector to set.
      */
     void calcConvolvedForce(const std::vector<DimParams>& dimParams,
                             const BiasGrid&               grid,
                             gmx::ArrayRef<const double>   probWeightNeighbor,
+                            ArrayRef<const double>        neighborLambdaDhdl,
                             gmx::ArrayRef<double>         forceWorkBuffer,
                             gmx::ArrayRef<double>         force) const;
 
@@ -250,22 +264,32 @@ public:
      * This function should only be called when the bias force is not being convolved.
      * It is assumed that the probability distribution has been updated.
      *
-     * \param[in] dimParams           Bias dimension parameters.
-     * \param[in] grid                The grid.
-     * \param[in] probWeightNeighbor  Probability weights of the neighbors.
-     * \param[in,out] biasForce       The AWH bias force.
-     * \param[in] step                Step number, needed for the random number generator.
-     * \param[in] seed                Random seed.
-     * \param[in] indexSeed           Second random seed, should be the bias Index.
+     * \param[in] dimParams                   Bias dimension parameters.
+     * \param[in] grid                        The grid.
+     * \param[in] probWeightNeighbor          Probability weights of the neighbors.
+     * \param[in] neighborLambdaDhdl          An array containing the dHdL at the neighboring lambda
+     * points. The array is of length numLambdas+1, where numLambdas is the number of free
+     * energy lambda states. Element 0 in the array is the dHdL
+     * of the current state and elements 1..numLambdas contain the dHdL of the system in the
+     * neighboring lambda states (also including the current state). When there are no free
+     * energy lambda state dimensions this can be empty.
+     * \param[in,out] biasForce               The AWH bias force.
+     * \param[in] step                        Step number, needed for the random number generator.
+     * \param[in] seed                        Random seed.
+     * \param[in] indexSeed                   Second random seed, should be the bias Index.
+     * \param[in] onlySampleUmbrellaGridpoint Only sample the umbrella gridpoint without calculating
+     * force and potential.
      * \returns the new potential value.
      */
     double moveUmbrella(const std::vector<DimParams>& dimParams,
                         const BiasGrid&               grid,
                         gmx::ArrayRef<const double>   probWeightNeighbor,
+                        ArrayRef<const double>        neighborLambdaDhdl,
                         gmx::ArrayRef<double>         biasForce,
                         int64_t                       step,
                         int64_t                       seed,
-                        int                           indexSeed);
+                        int                           indexSeed,
+                        bool                          onlySampleUmbrellaGridpoint);
 
 private:
     /*! \brief
@@ -413,14 +437,21 @@ public:
      * it here since this saves us from doing extra exponential function evaluations
      * later on.
      *
-     * \param[in]  dimParams  The bias dimensions parameters
-     * \param[in]  grid       The grid.
-     * \param[out] weight     Probability weights of the neighbors, SIMD aligned.
+     * \param[in]  dimParams              The bias dimensions parameters
+     * \param[in]  grid                   The grid.
+     * \param[in]  neighborLambdaEnergies An array containing the energy of the system
+     * in neighboring lambdas. The array is of length numLambdas+1, where numLambdas is
+     * the number of free energy lambda states. Element 0 in the array is the energy
+     * of the current state and elements 1..numLambdas contain the energy of the system in the
+     * neighboring lambda states (also including the current state). When there are no free
+     * energy lambda state dimensions this can be empty.
+     * \param[out] weight                 Probability weights of the neighbors, SIMD aligned.
      * \returns the convolved bias.
      */
 
     double updateProbabilityWeightsAndConvolvedBias(const std::vector<DimParams>& dimParams,
                                                     const BiasGrid&               grid,
+                                                    ArrayRef<const double> neighborLambdaEnergies,
                                                     std::vector<double, AlignedAllocator<double>>* weight) const;
 
     /*! \brief
@@ -441,13 +472,15 @@ public:
      * These samples do not affect the (future) sampling and are thus
      * pure observables. Statisics of these are stored in the energy file.
      *
+     * \param[in] dimParams           The bias dimensions parameters
      * \param[in] grid                The grid.
      * \param[in] probWeightNeighbor  Probability weights of the neighbors.
      * \param[in] convolvedBias       The convolved bias.
      */
-    void sampleCoordAndPmf(const BiasGrid&             grid,
-                           gmx::ArrayRef<const double> probWeightNeighbor,
-                           double                      convolvedBias);
+    void sampleCoordAndPmf(const std::vector<DimParams>& dimParams,
+                           const BiasGrid&               grid,
+                           gmx::ArrayRef<const double>   probWeightNeighbor,
+                           double                        convolvedBias);
     /*! \brief
      * Calculates the convolved bias for a given coordinate value.
      *
@@ -493,6 +526,10 @@ public:
     /*! \brief Returns the current histogram size.
      */
     inline HistogramSize histogramSize() const { return histogramSize_; }
+
+    /*! \brief Sets the umbrella grid point to the current grid point
+     */
+    void setUmbrellaGridpointToGridpoint() { coordState_.setUmbrellaGridpointToGridpoint(); }
 
     /* Data members */
 private:

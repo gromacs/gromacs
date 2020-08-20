@@ -161,7 +161,7 @@ public:
      *
      * \param[in] cr  Communication record, used to reduce the terms when !=nullptr
      */
-    std::pair<std::vector<double>, std::vector<double>> getTerms(t_commrec* cr) const;
+    std::pair<std::vector<double>, std::vector<double>> getTerms(const t_commrec* cr) const;
 
     //! Sets all terms to 0
     void zeroAllTerms();

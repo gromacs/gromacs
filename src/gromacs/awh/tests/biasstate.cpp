@@ -92,6 +92,7 @@ static AwhTestParameters getAwhTestParameters()
     awhDimParams0.end            = 1.5;
     awhDimParams0.coordValueInit = awhDimParams0.origin;
     awhDimParams0.coverDiameter  = 0;
+    awhDimParams0.eCoordProvider = eawhcoordproviderPULL;
 
     AwhDimParams& awhDimParams1 = awhBiasParams.dimParams[1];
 
@@ -101,6 +102,7 @@ static AwhTestParameters getAwhTestParameters()
     awhDimParams1.end            = 1.3;
     awhDimParams1.coordValueInit = awhDimParams1.origin;
     awhDimParams1.coverDiameter  = 0;
+    awhDimParams1.eCoordProvider = eawhcoordproviderPULL;
 
     awhBiasParams.ndim                 = 2;
     awhBiasParams.eTarget              = eawhtargetCONSTANT;

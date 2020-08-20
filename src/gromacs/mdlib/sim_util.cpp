@@ -624,12 +624,21 @@ static void computeSpecialForces(FILE*                          fplog,
     {
         pull_potential_wrapper(cr, inputrec, box, x, forceWithVirial, mdatoms, enerd, pull_work,
                                lambda.data(), t, wcycle);
-
-        if (awh)
+    }
+    if (awh)
+    {
+        const bool          needForeignEnergyDifferences = awh->needForeignEnergyDifferences(step);
+        std::vector<double> foreignLambdaDeltaH, foreignLambdaDhDl;
+        if (needForeignEnergyDifferences)
         {
-            enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
-                    inputrec->pbcType, mdatoms->massT, box, forceWithVirial, t, step, wcycle, fplog);
+            enerd->foreignLambdaTerms.finalizePotentialContributions(enerd->dvdl_lin, lambda,
+                                                                     *inputrec->fepvals);
+            std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(cr);
         }
+
+        enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
+                inputrec->pbcType, mdatoms->massT, foreignLambdaDeltaH, foreignLambdaDhDl, box,
+                forceWithVirial, t, step, wcycle, fplog);
     }
 
     rvec* f = as_rvec_array(forceWithVirial->force_.data());
@@ -1577,6 +1586,26 @@ void do_force(FILE*                               fplog,
 
     wallcycle_stop(wcycle, ewcFORCE);
 
+    // VdW dispersion correction, only computed on master rank to avoid double counting
+    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection && MASTER(cr))
+    {
+        // Calculate long range corrections to pressure and energy
+        const DispersionCorrection::Correction correction =
+                fr->dispersionCorrection->calculate(box, lambda[efptVDW]);
+
+        if (stepWork.computeEnergy)
+        {
+            enerd->term[F_DISPCORR] = correction.energy;
+            enerd->term[F_DVDL_VDW] += correction.dvdl;
+            enerd->dvdl_lin[efptVDW] += correction.dvdl;
+        }
+        if (stepWork.computeVirial)
+        {
+            correction.correctVirial(vir_force);
+            enerd->term[F_PDISPCORR] = correction.pressure;
+        }
+    }
+
     computeSpecialForces(fplog, cr, inputrec, awh, enforcedRotation, imdSession, pull_work, step, t,
                          wcycle, fr->forceProviders, box, x.unpaddedArrayRef(), mdatoms, lambda,
                          stepWork, &forceOut.forceWithVirial(), enerd, ed, stepWork.doNeighborSearch);
@@ -1843,26 +1872,6 @@ void do_force(FILE*                               fplog,
     {
         postProcessForceWithShiftForces(nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOut,
                                         vir_force, *mdatoms, *fr, vsite, stepWork);
-    }
-
-    // VdW dispersion correction, only computed on master rank to avoid double counting
-    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection && MASTER(cr))
-    {
-        // Calculate long range corrections to pressure and energy
-        const DispersionCorrection::Correction correction =
-                fr->dispersionCorrection->calculate(box, lambda[efptVDW]);
-
-        if (stepWork.computeEnergy)
-        {
-            enerd->term[F_DISPCORR] = correction.energy;
-            enerd->term[F_DVDL_VDW] += correction.dvdl;
-            enerd->dvdl_lin[efptVDW] += correction.dvdl;
-        }
-        if (stepWork.computeVirial)
-        {
-            correction.correctVirial(vir_force);
-            enerd->term[F_PDISPCORR] = correction.pressure;
-        }
     }
 
     // TODO refactor this and unify with above GPU PME-PP / GPU update path call to the same function

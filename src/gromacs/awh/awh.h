@@ -46,6 +46,7 @@
  *
  * \author Viveca Lindahl
  * \author Berk Hess <hess@kth.se>
+ * \author Magnus Lundborg
  */
 
 /*! \libinternal \file
@@ -84,6 +85,8 @@ enum class PbcType : int;
 namespace gmx
 {
 
+template<typename>
+class ArrayRef;
 struct AwhHistory;
 struct AwhParams;
 class Bias;
@@ -115,13 +118,19 @@ public:
      * in the user input. This allows AWH to later apply the bias force to
      * these coordinate in \ref Awh::applyBiasForcesAndUpdateBias.
      *
-     * \param[in,out] fplog             General output file, normally md.log, can be nullptr.
-     * \param[in]     inputRecord       General input parameters (as set up by grompp).
-     * \param[in]     commRecord        Struct for communication, can be nullptr.
-     * \param[in]     multiSimRecord    Multi-sim handler
-     * \param[in]     awhParams         AWH input parameters, consistent with the relevant parts of \p inputRecord (as set up by grompp).
-     * \param[in]     biasInitFilename  Name of file to read PMF and target from.
-     * \param[in,out] pull_work         Pointer to a pull struct which AWH will couple to, has to be initialized, is assumed not to change during the lifetime of the Awh object.
+     * \param[in,out] fplog              General output file, normally md.log, can be nullptr.
+     * \param[in]     inputRecord        General input parameters (as set up by grompp).
+     * \param[in]     commRecord         Struct for communication, can be nullptr.
+     * \param[in]     multiSimRecord     Multi-sim handler
+     * \param[in]     awhParams          AWH input parameters, consistent with the relevant
+     * parts of \p inputRecord (as set up by grompp).
+     * \param[in]     biasInitFilename   Name of file to read PMF and target from.
+     * \param[in,out] pull_work          Pointer to a pull struct which AWH will
+     * couple to, has to be initialized, is assumed not to change during the
+     * lifetime of the Awh object.
+     * \param[in] numLambdaStates        The number of free energy lambda states.
+     * \param[in] lambdaState            The initial free energy lambda state of the system.
+     * \throws    InvalidInputError      If there is user input (or combinations thereof) that is not allowed.
      */
     Awh(FILE*                 fplog,
         const t_inputrec&     inputRecord,
@@ -129,7 +138,9 @@ public:
         const gmx_multisim_t* multiSimRecord,
         const AwhParams&      awhParams,
         const std::string&    biasInitFilename,
-        pull_t*               pull_work);
+        pull_t*               pull_work,
+        int                   numLambdaStates,
+        int                   lambdaState);
 
     ~Awh();
 
@@ -152,8 +163,20 @@ public:
      * since AWH needs the current coordinate values (the pull code checks
      * for this).
      *
-     * \param[in]     masses           Atoms masses.
      * \param[in]     pbcType          Type of periodic boundary conditions.
+     * \param[in]     masses           Atoms masses.
+     * \param[in]     neighborLambdaEnergies An array containing the energy of the system
+     * in neighboring lambdas. The array is of length numLambdas+1, where numLambdas is
+     * the number of free energy lambda states. Element 0 in the array is the energy
+     * of the current state and elements 1..numLambdas contain the energy of the system in the
+     * neighboring lambda states (also including the current state). When there are no free
+     * energy lambda state dimensions this can be empty.
+     * \param[in]     neighborLambdaDhdl     An array containing the dHdL at the neighboring lambda
+     * points. The array is of length numLambdas+1, where numLambdas is the number of free
+     * energy lambda states. Element 0 in the array is the dHdL
+     * of the current state and elements 1..numLambdas contain the dHdL of the system in the
+     * neighboring lambda states (also including the current state). When there are no free
+     * energy lambda state dimensions this can be empty.
      * \param[in]     box              Box vectors.
      * \param[in,out] forceWithVirial  Force and virial buffers, should cover at least the local atoms.
      * \param[in]     t                Time.
@@ -162,14 +185,16 @@ public:
      * \param[in,out] fplog            General output file, normally md.log, can be nullptr.
      * \returns the potential energy for the bias.
      */
-    real applyBiasForcesAndUpdateBias(PbcType               pbcType,
-                                      const real*           masses,
-                                      const matrix          box,
-                                      gmx::ForceWithVirial* forceWithVirial,
-                                      double                t,
-                                      int64_t               step,
-                                      gmx_wallcycle*        wallcycle,
-                                      FILE*                 fplog);
+    real applyBiasForcesAndUpdateBias(PbcType                pbcType,
+                                      const real*            masses,
+                                      ArrayRef<const double> neighborLambdaEnergies,
+                                      ArrayRef<const double> neighborLambdaDhdl,
+                                      const matrix           box,
+                                      gmx::ForceWithVirial*  forceWithVirial,
+                                      double                 t,
+                                      int64_t                step,
+                                      gmx_wallcycle*         wallcycle,
+                                      FILE*                  fplog);
 
     /*! \brief
      * Update the AWH history in preparation for writing to checkpoint file.
@@ -229,12 +254,26 @@ public:
      */
     static void registerAwhWithPull(const AwhParams& awhParams, pull_t* pull_work);
 
+    /*! \brief Get the current free energy lambda state.
+     * \returns The value of lambdaState_.
+     */
+    int fepLambdaState() const { return fepLambdaState_; }
+
+    /*! \brief Returns if foreign energy differences are required during this step.
+     * \param[in]     step             The current MD step.
+     */
+    bool needForeignEnergyDifferences(int64_t step) const;
+
 private:
     /*! \brief Returns whether we need to write output at the current step.
      *
      * \param[in]     step             The current MD step.
      */
     bool isOutputStep(int64_t step) const;
+
+    /*! \brief Returns true if AWH has a bias with a free energy lambda state dimension at all.
+     */
+    bool hasFepLambdaDimension() const;
 
 private:
     std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
@@ -244,6 +283,8 @@ private:
     const gmx_multisim_t* multiSimRecord_; /**< Handler for multi-simulations. */
     pull_t*               pull_;           /**< Pointer to the pull working data. */
     double                potentialOffset_; /**< The offset of the bias potential which changes due to bias updates. */
+    const int numFepLambdaStates_; /**< The number of free energy lambda states of the system. */
+    int       fepLambdaState_;     /**< The current free energy lambda state. */
 };
 
 /*! \brief Makes an Awh and prepares to use it if the user input

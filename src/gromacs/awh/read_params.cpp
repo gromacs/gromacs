@@ -52,6 +52,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/random/seed.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -70,108 +71,30 @@ const char* eawhgrowth_names[eawhgrowthNR + 1] = { "exp-linear", "linear", nullp
 
 const char* eawhpotential_names[eawhpotentialNR + 1] = { "convolved", "umbrella", nullptr };
 
-const char* eawhcoordprovider_names[eawhcoordproviderNR + 1] = { "pull", nullptr };
+const char* eawhcoordprovider_names[eawhcoordproviderNR + 1] = { "pull", "fep-lambda", nullptr };
 
-/*! \brief
- * Read parameters of an AWH bias dimension.
- *
- * \param[in,out] inp        Input file entries.
- * \param[in] prefix         Prefix for dimension parameters.
- * \param[in,out] dimParams  AWH dimensional parameters.
- * \param[in,out] wi         Struct for bookeeping warnings.
- * \param[in] bComment       True if comments should be printed.
- */
-static void readDimParams(std::vector<t_inpfile>* inp,
-                          const std::string&      prefix,
-                          AwhDimParams*           dimParams,
-                          warninp_t               wi,
-                          bool                    bComment)
+namespace
 {
-    std::string opt;
-    if (bComment)
-    {
-        printStringNoNewline(
-                inp, "The provider of the reaction coordinate, currently only pull is supported");
-    }
-
-    opt                       = prefix + "-coord-provider";
-    dimParams->eCoordProvider = get_eeenum(inp, opt, eawhcoordprovider_names, wi);
-
-    if (bComment)
-    {
-        printStringNoNewline(inp, "The coordinate index for this dimension");
-    }
-    opt = prefix + "-coord-index";
-    int coordIndexInput;
-    coordIndexInput = get_eint(inp, opt, 1, wi);
-    if (coordIndexInput < 1)
-    {
-        gmx_fatal(FARGS,
-                  "Failed to read a valid coordinate index for %s. "
-                  "Note that the pull coordinate indexing starts at 1.",
-                  opt.c_str());
-    }
-
-    /* The pull coordinate indices start at 1 in the input file, at 0 internally */
-    dimParams->coordIndex = coordIndexInput - 1;
-
-    if (bComment)
-    {
-        printStringNoNewline(inp, "Start and end values for each coordinate dimension");
-    }
-
-    opt               = prefix + "-start";
-    dimParams->origin = get_ereal(inp, opt, 0., wi);
-
-    opt            = prefix + "-end";
-    dimParams->end = get_ereal(inp, opt, 0., wi);
-
-    if (bComment)
-    {
-        printStringNoNewline(
-                inp, "The force constant for this coordinate (kJ/mol/nm^2 or kJ/mol/rad^2)");
-    }
-    opt                      = prefix + "-force-constant";
-    dimParams->forceConstant = get_ereal(inp, opt, 0, wi);
-
-    if (bComment)
-    {
-        printStringNoNewline(inp, "Estimated diffusion constant (nm^2/ps or rad^2/ps)");
-    }
-    opt                  = prefix + "-diffusion";
-    dimParams->diffusion = get_ereal(inp, opt, 0, wi);
-
-    if (bComment)
-    {
-        printStringNoNewline(inp,
-                             "Diameter that needs to be sampled around a point before it is "
-                             "considered covered.");
-    }
-    opt                      = prefix + "-cover-diameter";
-    dimParams->coverDiameter = get_ereal(inp, opt, 0, wi);
-}
-
 /*! \brief
- * Check the parameters of an AWH bias dimension.
+ * Check the parameters of an AWH bias pull dimension.
  *
  * \param[in] prefix         Prefix for dimension parameters.
  * \param[in,out] dimParams  AWH dimensional parameters.
  * \param[in] pull_params    Pull parameters.
  * \param[in,out] wi         Struct for bookeeping warnings.
  */
-static void checkDimParams(const std::string&   prefix,
-                           AwhDimParams*        dimParams,
-                           const pull_params_t* pull_params,
-                           warninp_t            wi)
+void checkPullDimParams(const std::string&   prefix,
+                        AwhDimParams*        dimParams,
+                        const pull_params_t* pull_params,
+                        warninp_t            wi)
 {
-    std::string opt;
-
-    /* The pull settings need to be consistent with the AWH settings */
-    if (!(pull_params->coord[dimParams->coordIndex].eType == epullEXTERNAL))
+    if (dimParams->coordIndex < 0)
     {
-        gmx_fatal(FARGS, "AWH biasing can only be  applied to pull type %s", EPULLTYPE(epullEXTERNAL));
+        gmx_fatal(FARGS,
+                  "Failed to read a valid coordinate index for %s-coord-index. "
+                  "Note that the pull coordinate indexing starts at 1.",
+                  prefix.c_str());
     }
-
     if (dimParams->coordIndex >= pull_params->ncoord)
     {
         gmx_fatal(FARGS,
@@ -187,9 +110,6 @@ static void checkDimParams(const std::string&   prefix,
         warning_error(wi, message);
     }
 
-    /* BiasGrid params for each axis */
-    int eGeom = pull_params->coord[dimParams->coordIndex].eGeom;
-
     if (gmx_within_tol(dimParams->end - dimParams->origin, 0, GMX_REAL_EPS))
     {
         auto message = formatString(
@@ -198,14 +118,23 @@ static void checkDimParams(const std::string&   prefix,
                 prefix.c_str(), dimParams->origin, prefix.c_str(), dimParams->end);
         warning(wi, message);
     }
+
+    if (dimParams->forceConstant <= 0)
+    {
+        warning_error(wi, "The force AWH bias force constant should be > 0");
+    }
+
+    /* Grid params for each axis */
+    int eGeom = pull_params->coord[dimParams->coordIndex].eGeom;
+
     /* Check that the requested interval is in allowed range */
     if (eGeom == epullgDIST)
     {
         if (dimParams->origin < 0 || dimParams->end < 0)
         {
             gmx_fatal(FARGS,
-                      "%s-start (%g) or %s-end (%g) set to a negative value. With pull geometry "
-                      "distance coordinate values are non-negative. "
+                      "%s-start (%g) or %s-end (%g) set to a negative value. With pull "
+                      "geometry distance coordinate values are non-negative. "
                       "Perhaps you want to use geometry %s instead?",
                       prefix.c_str(), dimParams->origin, prefix.c_str(), dimParams->end,
                       EPULLGEOM(epullgDIR));
@@ -216,8 +145,8 @@ static void checkDimParams(const std::string&   prefix,
         if (dimParams->origin < 0 || dimParams->end > 180)
         {
             gmx_fatal(FARGS,
-                      "%s-start (%g) and %s-end (%g) are outside of the allowed range 0 to 180 deg "
-                      "for pull geometries %s and %s ",
+                      "%s-start (%g) and %s-end (%g) are outside of the allowed range "
+                      "0 to 180 deg for pull geometries %s and %s ",
                       prefix.c_str(), dimParams->origin, prefix.c_str(), dimParams->end,
                       EPULLGEOM(epullgANGLE), EPULLGEOM(epullgANGLEAXIS));
         }
@@ -227,36 +156,226 @@ static void checkDimParams(const std::string&   prefix,
         if (dimParams->origin < -180 || dimParams->end > 180)
         {
             gmx_fatal(FARGS,
-                      "%s-start (%g) and %s-end (%g) are outside of the allowed range -180 to 180 "
-                      "deg for pull geometry %s. ",
+                      "%s-start (%g) and %s-end (%g) are outside of the allowed range "
+                      "-180 to 180 deg for pull geometry %s. ",
                       prefix.c_str(), dimParams->origin, prefix.c_str(), dimParams->end,
                       EPULLGEOM(epullgDIHEDRAL));
         }
     }
+}
 
-    opt = prefix + "-force-constant";
-    if (dimParams->forceConstant <= 0)
+/*! \brief
+ * Check parameters of an AWH bias in a free energy lambda state dimension.
+ *
+ * \param[in] prefix         Prefix for dimension parameters.
+ * \param[in,out] dimParams  AWH dimensional parameters.
+ * \param[in] lambdaParams   The free energy lambda related parameters.
+ * \param[in] efep           This is the type of FEP calculation (efep enumerator).
+ * \param[in,out] wi         Struct for bookeeping warnings.
+ */
+void checkFepLambdaDimParams(const std::string&  prefix,
+                             const AwhDimParams* dimParams,
+                             const t_lambda*     lambdaParams,
+                             const int           efep,
+                             warninp_t           wi)
+{
+    std::string opt;
+
+    if (!lambdaParams)
     {
-        warning_error(wi, "The force AWH bias force constant should be > 0");
+        gmx_fatal(FARGS,
+                  "There must be free energy input if using AWH to steer the free energy lambda "
+                  "state.");
     }
 
-    opt = prefix + "-diffusion";
-    if (dimParams->diffusion <= 0)
+    if (lambdaParams->lambda_neighbors != -1)
     {
-        const double diffusion_default = 1e-5;
-        auto         message           = formatString(
-                "%s not explicitly set by user. You can choose to use a default "
-                "value (%g nm^2/ps or rad^2/ps) but this may very well be "
-                "non-optimal for your system!",
-                opt.c_str(), diffusion_default);
+        gmx_fatal(FARGS,
+                  "When running AWH coupled to the free energy lambda state all lambda states "
+                  "should be used as neighbors in order to get correct probabilities, i.e. "
+                  "calc-lambda-neighbors (%d) must be %d.",
+                  lambdaParams->lambda_neighbors, -1);
+    }
+
+    if (efep == efepSLOWGROWTH || lambdaParams->delta_lambda != 0)
+    {
+        gmx_fatal(FARGS,
+                  "AWH coupled to the free energy lambda state is not compatible with slow-growth "
+                  "and delta-lambda must be 0.");
+    }
+
+    if (efep == efepEXPANDED)
+    {
+        gmx_fatal(FARGS,
+                  "AWH is not treated like other expanded ensemble methods. Do not use expanded.");
+    }
+
+    if (dimParams->origin < 0)
+    {
+        opt = prefix + "-start";
+        gmx_fatal(FARGS,
+                  "When running AWH coupled to the free energy lambda state the lower lambda state "
+                  "for AWH, %s (%.0f), must be >= 0.",
+                  opt.c_str(), dimParams->origin);
+    }
+    if (dimParams->end >= lambdaParams->n_lambda)
+    {
+        opt = prefix + "-end";
+        gmx_fatal(FARGS,
+                  "When running AWH coupled to the free energy lambda state the upper lambda state "
+                  "for AWH, %s (%.0f), must be < n_lambda (%d).",
+                  opt.c_str(), dimParams->origin, lambdaParams->n_lambda);
+    }
+    if (gmx_within_tol(dimParams->end - dimParams->origin, 0, GMX_REAL_EPS))
+    {
+        auto message = formatString(
+                "The given interval length given by %s-start (%g) and %s-end (%g) is zero. "
+                "This will result in only one lambda point along this free energy lambda state "
+                "axis in the coordinate value grid.",
+                prefix.c_str(), dimParams->origin, prefix.c_str(), dimParams->end);
         warning(wi, message);
-        dimParams->diffusion = diffusion_default;
     }
 
-    opt = prefix + "-cover-diameter";
-    if (dimParams->coverDiameter < 0)
+    if (dimParams->forceConstant != 0)
     {
-        gmx_fatal(FARGS, "%s (%g) cannot be negative.", opt.c_str(), dimParams->coverDiameter);
+        warning_error(
+                wi,
+                "The force AWH bias force constant is not used with free energy lambda state as "
+                "coordinate provider.");
+    }
+}
+
+/*! \brief
+ * Check that AWH FEP is not combined with incompatible decoupling.
+ *
+ * \param[in] mtop      System topology.
+ * \param[in,out] wi    Struct for bookeeping warnings.
+ */
+void checkFepLambdaDimDecouplingConsistency(const gmx_mtop_t& mtop, warninp_t wi)
+{
+    if (haveFepPerturbedMasses(mtop))
+    {
+        warning(wi,
+                "Masses may not be perturbed when using the free energy lambda state as AWH "
+                "coordinate provider. If you are using fep-lambdas to specify lambda states "
+                "make sure that you also specify mass-lambdas without perturbation.");
+    }
+    if (havePerturbedConstraints(mtop))
+    {
+        warning(wi,
+                "Constraints may not be perturbed when using the free energy lambda state as AWH "
+                "coordinate provider. If you are using fep-lambdas to specify lambda states "
+                "make sure that you also specify mass-lambdas without perturbation.");
+    }
+}
+
+/*! \brief
+ * Read parameters of an AWH bias dimension.
+ *
+ * \param[in,out] inp        Input file entries.
+ * \param[in] prefix         Prefix for dimension parameters.
+ * \param[in,out] dimParams  AWH dimensional parameters.
+ * \param[in,out] wi         Struct for bookeeping warnings.
+ * \param[in] bComment       True if comments should be printed.
+ */
+void readDimParams(std::vector<t_inpfile>* inp,
+                   const std::string&      prefix,
+                   AwhDimParams*           dimParams,
+                   warninp_t               wi,
+                   bool                    bComment)
+{
+    std::string opt;
+    if (bComment)
+    {
+        printStringNoNewline(
+                inp,
+                "The provider of the reaction coordinate, "
+                "currently only 'pull' and 'fep-lambda' (free energy lambda state) is supported");
+    }
+    opt                       = prefix + "-coord-provider";
+    dimParams->eCoordProvider = get_eeenum(inp, opt, eawhcoordprovider_names, wi);
+
+    if (bComment)
+    {
+        printStringNoNewline(inp, "The coordinate index for this dimension");
+    }
+    opt = prefix + "-coord-index";
+    int coordIndexInput;
+    coordIndexInput = get_eint(inp, opt, 1, wi);
+
+    /* The pull coordinate indices start at 1 in the input file, at 0 internally */
+    dimParams->coordIndex = coordIndexInput - 1;
+
+    if (bComment)
+    {
+        printStringNoNewline(inp, "Start and end values for each coordinate dimension");
+    }
+    opt               = prefix + "-start";
+    dimParams->origin = get_ereal(inp, opt, 0., wi);
+    opt               = prefix + "-end";
+    dimParams->end    = get_ereal(inp, opt, 0., wi);
+
+    if (bComment)
+    {
+        printStringNoNewline(
+                inp, "The force constant for this coordinate (kJ/mol/nm^2 or kJ/mol/rad^2)");
+    }
+    opt                      = prefix + "-force-constant";
+    dimParams->forceConstant = get_ereal(inp, opt, 0, wi);
+
+    if (bComment)
+    {
+        printStringNoNewline(inp, "Estimated diffusion constant (nm^2/ps, rad^2/ps or ps^-1)");
+    }
+    opt                  = prefix + "-diffusion";
+    dimParams->diffusion = get_ereal(inp, opt, 0, wi);
+
+    if (bComment)
+    {
+        printStringNoNewline(inp,
+                             "Diameter that needs to be sampled around a point before it is "
+                             "considered covered. In FEP dimensions the cover diameter is "
+                             "specified in lambda states.");
+    }
+    opt                      = prefix + "-cover-diameter";
+    dimParams->coverDiameter = get_ereal(inp, opt, 0, wi);
+}
+
+/*! \brief
+ * Check the parameters of an AWH bias dimension.
+ *
+ * \param[in] prefix         Prefix for dimension parameters.
+ * \param[in,out] dimParams  AWH dimensional parameters.
+ * \param[in] ir             Input parameter struct.
+ * \param[in,out] wi         Struct for bookeeping warnings.
+ */
+void checkDimParams(const std::string& prefix, AwhDimParams* dimParams, const t_inputrec* ir, warninp_t wi)
+{
+    if (dimParams->eCoordProvider == eawhcoordproviderPULL)
+    {
+        if (!ir->bPull)
+        {
+            gmx_fatal(FARGS,
+                      "AWH biasing along a pull dimension is only compatible with COM pulling "
+                      "turned on");
+        }
+        checkPullDimParams(prefix, dimParams, ir->pull, wi);
+    }
+    else if (dimParams->eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
+    {
+        if (ir->efep == efepNO)
+        {
+            gmx_fatal(FARGS,
+                      "AWH biasing along a free energy lambda state dimension is only compatible "
+                      "with free energy turned on");
+        }
+        checkFepLambdaDimParams(prefix, dimParams, ir->fepvals, ir->efep, wi);
+    }
+    else
+    {
+        gmx_fatal(FARGS,
+                  "AWH biasing can only be  applied to pull and free energy lambda state "
+                  "coordinates");
     }
 }
 
@@ -266,7 +385,7 @@ static void checkDimParams(const std::string&   prefix,
  * \param[in]     awhBiasParams  AWH bias parameters.
  * \param[in,out] wi             Struct for bookkeeping warnings.
  */
-static void checkInputConsistencyAwhBias(const AwhBiasParams& awhBiasParams, warninp_t wi)
+void checkInputConsistencyAwhBias(const AwhBiasParams& awhBiasParams, warninp_t wi)
 {
     /* Covering diameter and sharing warning. */
     for (int d = 0; d < awhBiasParams.ndim; d++)
@@ -289,11 +408,11 @@ static void checkInputConsistencyAwhBias(const AwhBiasParams& awhBiasParams, war
  * \param[in,out] wi             Struct for bookeeping warnings.
  * \param[in]     bComment       True if comments should be printed.
  */
-static void readBiasParams(std::vector<t_inpfile>* inp,
-                           AwhBiasParams*          awhBiasParams,
-                           const std::string&      prefix,
-                           warninp_t               wi,
-                           bool                    bComment)
+void readBiasParams(std::vector<t_inpfile>* inp,
+                    AwhBiasParams*          awhBiasParams,
+                    const std::string&      prefix,
+                    warninp_t               wi,
+                    bool                    bComment)
 {
     if (bComment)
     {
@@ -389,10 +508,7 @@ static void readBiasParams(std::vector<t_inpfile>* inp,
  * \param[in]     ir             Input parameter struct.
  * \param[in,out] wi             Struct for bookeeping warnings.
  */
-static void checkBiasParams(const AwhBiasParams* awhBiasParams,
-                            const std::string&   prefix,
-                            const t_inputrec*    ir,
-                            warninp_t            wi)
+void checkBiasParams(const AwhBiasParams* awhBiasParams, const std::string& prefix, const t_inputrec* ir, warninp_t wi)
 {
     std::string opt = prefix + "-error-init";
     if (awhBiasParams->errorInitial <= 0)
@@ -487,7 +603,7 @@ static void checkBiasParams(const AwhBiasParams* awhBiasParams,
     for (int d = 0; d < awhBiasParams->ndim; d++)
     {
         std::string prefixdim = prefix + formatString("-dim%d", d + 1);
-        checkDimParams(prefixdim, &awhBiasParams->dimParams[d], ir->pull, wi);
+        checkDimParams(prefixdim, &awhBiasParams->dimParams[d], ir, wi);
     }
 
     /* Check consistencies here that cannot be checked at read time at a lower level. */
@@ -500,7 +616,7 @@ static void checkBiasParams(const AwhBiasParams* awhBiasParams,
  * \param[in]     awhParams  AWH parameters.
  * \param[in,out] wi         Struct for bookkeeping warnings.
  */
-static void checkInputConsistencyAwh(const AwhParams& awhParams, warninp_t wi)
+void checkInputConsistencyAwh(const AwhParams& awhParams, warninp_t wi)
 {
     /* Each pull coord can map to at most 1 AWH coord.
      * Check that we have a shared bias when requesting multisim sharing.
@@ -520,11 +636,19 @@ static void checkInputConsistencyAwh(const AwhParams& awhParams, warninp_t wi)
         {
             for (int d1 = 0; d1 < awhBiasParams1.ndim; d1++)
             {
+                if (awhBiasParams1.dimParams[d1].eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
+                {
+                    continue;
+                }
                 const AwhBiasParams& awhBiasParams2 = awhParams.awhBiasParams[k2];
 
                 /* d1 is the reference dimension of the reference AWH. d2 is the dim index of the AWH to compare with. */
                 for (int d2 = 0; d2 < awhBiasParams2.ndim; d2++)
                 {
+                    if (awhBiasParams2.dimParams[d2].eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
+                    {
+                        continue;
+                    }
                     /* Give an error if (d1, k1) is different from (d2, k2) but the pull coordinate is the same */
                     if ((d1 != d2 || k1 != k2)
                         && (awhBiasParams1.dimParams[d1].coordIndex == awhBiasParams2.dimParams[d2].coordIndex))
@@ -559,6 +683,7 @@ static void checkInputConsistencyAwh(const AwhParams& awhParams, warninp_t wi)
                 "this (yet)");
     }
 }
+} // namespace
 
 AwhParams* readAwhParams(std::vector<t_inpfile>* inp, warninp_t wi)
 {
@@ -625,11 +750,6 @@ AwhParams* readAwhParams(std::vector<t_inpfile>* inp, warninp_t wi)
 void checkAwhParams(const AwhParams* awhParams, const t_inputrec* ir, warninp_t wi)
 {
     std::string opt;
-
-    if (!ir->bPull)
-    {
-        gmx_fatal(FARGS, "AWH biasing is only compatible with COM pulling turned on");
-    }
 
     opt = "awh-nstout";
     if (awhParams->nstOut <= 0)
@@ -827,6 +947,71 @@ static void checkInputConsistencyInterval(const AwhParams* awhParams, warninp_t 
     }
 }
 
+/*! \brief
+ * Sets AWH parameters, for one AWH pull dimension.
+ *
+ * \param[in,out] dimParams          AWH dimension parameters.
+ * \param[in]     biasIndex             The index of the bias containing this AWH pull dimension.
+ * \param[in]     dimIndex              The index of this AWH pull dimension.
+ * \param[in]     pull_params           Pull parameters.
+ * \param[in,out] pull_work             Pull working struct to register AWH bias in.
+ * \param[in]     pbc                   A pbc information structure.
+ * \param[in]     compressibility       Compressibility matrix for pressure coupling,
+ * pass all 0 without pressure coupling.
+ * \param[in,out] wi                    Struct for bookeeping warnings.
+ *
+ */
+static void setStateDependentAwhPullDimParams(AwhDimParams*        dimParams,
+                                              const int            biasIndex,
+                                              const int            dimIndex,
+                                              const pull_params_t* pull_params,
+                                              pull_t*              pull_work,
+                                              const t_pbc&         pbc,
+                                              const tensor&        compressibility,
+                                              warninp_t            wi)
+{
+    const t_pull_coord& pullCoordParams = pull_params->coord[dimParams->coordIndex];
+
+    if (pullCoordParams.eGeom == epullgDIRPBC)
+    {
+        gmx_fatal(FARGS,
+                  "AWH does not support pull geometry '%s'. "
+                  "If the maximum distance between the groups is always "
+                  "less than half the box size, "
+                  "you can use geometry '%s' instead.",
+                  EPULLGEOM(epullgDIRPBC), EPULLGEOM(epullgDIR));
+    }
+
+    dimParams->period = get_pull_coord_period(pullCoordParams, pbc, dimParams->end - dimParams->origin);
+    // We would like to check for scaling, but we don't have the full inputrec available here
+    if (dimParams->period > 0
+        && !(pullCoordParams.eGeom == epullgANGLE || pullCoordParams.eGeom == epullgDIHEDRAL))
+    {
+        bool coordIsScaled = false;
+        for (int d2 = 0; d2 < DIM; d2++)
+        {
+            if (pullCoordParams.vec[d2] != 0 && norm2(compressibility[d2]) != 0)
+            {
+                coordIsScaled = true;
+            }
+        }
+        if (coordIsScaled)
+        {
+            std::string mesg = gmx::formatString(
+                    "AWH dimension %d of bias %d is periodic with pull geometry '%s', "
+                    "while you should are applying pressure scaling to the "
+                    "corresponding box vector, this is not supported.",
+                    dimIndex + 1, biasIndex + 1, EPULLGEOM(pullCoordParams.eGeom));
+            warning(wi, mesg.c_str());
+        }
+    }
+
+    /* The initial coordinate value, converted to external user units. */
+    dimParams->coordValueInit = get_pull_coord_value(pull_work, dimParams->coordIndex, &pbc);
+
+    dimParams->coordValueInit *= pull_conversion_factor_internal2userinput(&pullCoordParams);
+}
+
 void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const pull_params_t* pull_params,
                                 pull_t*              pull_work,
@@ -834,6 +1019,8 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 PbcType              pbcType,
                                 const tensor&        compressibility,
                                 const t_grpopts*     inputrecGroupOptions,
+                                const real           initLambda,
+                                const gmx_mtop_t&    mtop,
                                 warninp_t            wi)
 {
     /* The temperature is not really state depenendent but is not known
@@ -862,53 +1049,23 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
         AwhBiasParams* awhBiasParams = &awhParams->awhBiasParams[k];
         for (int d = 0; d < awhBiasParams->ndim; d++)
         {
-            AwhDimParams*       dimParams       = &awhBiasParams->dimParams[d];
-            const t_pull_coord& pullCoordParams = pull_params->coord[dimParams->coordIndex];
-
-            if (pullCoordParams.eGeom == epullgDIRPBC)
+            AwhDimParams* dimParams = &awhBiasParams->dimParams[d];
+            if (dimParams->eCoordProvider == eawhcoordproviderPULL)
             {
-                gmx_fatal(FARGS,
-                          "AWH does not support pull geometry '%s'. "
-                          "If the maximum distance between the groups is always less than half the "
-                          "box size, "
-                          "you can use geometry '%s' instead.",
-                          EPULLGEOM(epullgDIRPBC), EPULLGEOM(epullgDIR));
+                setStateDependentAwhPullDimParams(dimParams, k, d, pull_params, pull_work, pbc,
+                                                  compressibility, wi);
             }
-
-            dimParams->period =
-                    get_pull_coord_period(pullCoordParams, pbc, dimParams->end - dimParams->origin);
-            // We would like to check for scaling, but we don't have the full inputrec available here
-            if (dimParams->period > 0
-                && !(pullCoordParams.eGeom == epullgANGLE || pullCoordParams.eGeom == epullgDIHEDRAL))
+            else
             {
-                bool coordIsScaled = false;
-                for (int d2 = 0; d2 < DIM; d2++)
-                {
-                    if (pullCoordParams.vec[d2] != 0 && norm2(compressibility[d2]) != 0)
-                    {
-                        coordIsScaled = true;
-                    }
-                }
-                if (coordIsScaled)
-                {
-                    std::string mesg = gmx::formatString(
-                            "AWH dimension %d of bias %d is periodic with pull geometry '%s', "
-                            "while you should are applying pressure scaling to the corresponding "
-                            "box vector, this is not supported.",
-                            d + 1, k + 1, EPULLGEOM(pullCoordParams.eGeom));
-                    warning(wi, mesg.c_str());
-                }
+                dimParams->coordValueInit = initLambda;
+                checkFepLambdaDimDecouplingConsistency(mtop, wi);
             }
-
-            /* The initial coordinate value, converted to external user units. */
-            dimParams->coordValueInit = get_pull_coord_value(pull_work, dimParams->coordIndex, &pbc);
-
-            dimParams->coordValueInit *= pull_conversion_factor_internal2userinput(&pullCoordParams);
         }
     }
     checkInputConsistencyInterval(awhParams, wi);
 
-    /* Register AWH as external potential with pull to check consistency. */
+    /* Register AWH as external potential with pull (for AWH dimensions that use pull as
+     * reaction coordinate provider) to check consistency. */
     Awh::registerAwhWithPull(*awhParams, pull_work);
 }
 

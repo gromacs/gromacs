@@ -23,3 +23,11 @@ drift when large coordinate values are present. This allows for accurate
 simulations of systems with SETTLE up to 1000 nm in size (but note that
 constraining with LINCS and SHAKE still introduces significant drift,
 which limits the system size to 100 to 200 nm).
+
+FEP using AWH
+"""""""""""""
+
+It is now possible to control the lambda state of a free energy perturbation
+simulation using the Accelerated Weight Histogram method. This can be used
+as one of multiple AWH dimensions, where the other(s) are coupled to pull
+coordinates.

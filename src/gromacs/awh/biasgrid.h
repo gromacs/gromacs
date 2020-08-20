@@ -55,6 +55,7 @@
 #define GMX_AWH_BIASGRID_H
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "dimparams.h" /* This is needed for awh_dvec */
@@ -90,10 +91,11 @@ public:
      * \param[in] end              End value.
      * \param[in] period           Period, pass 0 if not periodic.
      * \param[in] numPoints        The number of points.
+     * \param[in] isFepLambdaAxis     If this axis is controlling lambda.
      */
-    GridAxis(double origin, double end, double period, int numPoints);
+    GridAxis(double origin, double end, double period, int numPoints, bool isFepLambdaAxis);
 
-    /*! \brief Returns if the axis has periodic boundaries.
+    /*! \brief Returns whether the axis has periodic boundaries.
      */
     bool isPeriodic() const { return period_ > 0; }
 
@@ -135,6 +137,10 @@ public:
      */
     int nearestIndex(double value) const;
 
+    /*! \brief Returns whether this axis is coupled to the free energy lambda state.
+     */
+    bool isFepLambdaAxis() const { return isFepLambdaAxis_; }
+
 private:
     double origin_;            /**< Interval start value */
     double length_;            /**< Interval length */
@@ -142,6 +148,7 @@ private:
     double spacing_;           /**< Point spacing */
     int    numPoints_;         /**< Number of points in the interval */
     int    numPointsInPeriod_; /**< Number of points in a period (0 if no periodicity) */
+    bool isFepLambdaAxis_; /**< If this axis is coupled to the system's free energy lambda state */
 };
 
 /*! \internal
@@ -186,7 +193,8 @@ public:
 
     /*! \brief Construct a grid using AWH input parameters.
      *
-     * \param[in] dimParams     Dimension parameters including the expected inverse variance of the coordinate living on the grid (determines the grid spacing).
+     * \param[in] dimParams     Dimension parameters including the expected inverse variance of the
+     * coordinate living on the grid (determines the grid spacing).
      * \param[in] awhDimParams  Dimension params from inputrec.
      */
     BiasGrid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams);
@@ -236,6 +244,27 @@ public:
      * \note It is assumed that any periodicity of value has already been taken care of.
      */
     bool covers(const awh_dvec value) const;
+
+    /*! \brief Returns true if the grid has a free energy lambda state axis at all.
+     */
+    bool hasLambdaAxis() const
+    {
+        return std::any_of(std::begin(axis_), std::end(axis_),
+                           [](const auto& axis) { return axis.isFepLambdaAxis(); });
+    }
+
+    /*! \brief
+     * Returns the index of a free energy lambda state axis (there can be
+     * no more than one) if there is one.
+     */
+    std::optional<int> lambdaAxisIndex() const;
+
+    /*! \brief
+     * Returns the number of free energy lambda states in the grid (the number
+     * of points along a free energy lambda state axis) or 0 if there are no free energy
+     * lambda state axes.
+     */
+    int numFepLambdaStates() const;
 
 private:
     std::vector<GridPoint> point_; /**< Points on the grid */
@@ -334,6 +363,38 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
  * \returns the deviation of the given value to the given point.
  */
 double getDeviationFromPointAlongGridAxis(const BiasGrid& grid, int dimIndex, int pointIndex, double value);
+
+/*! \brief
+ * Get the deviation from one point to another along one dimension in the grid.
+ *
+ * \param[in] grid        The grid.
+ * \param[in] dimIndex    Dimensional index in [0, ndim -1].
+ * \param[in] pointIndex1 Grid point index of the first point.
+ * \param[in] pointIndex2 Grid point index of the second point.
+ * \returns the deviation of the two points along the given axis.
+ */
+double getDeviationFromPointAlongGridAxis(const BiasGrid& grid, int dimIndex, int pointIndex1, int pointIndex2);
+
+/*! \brief
+ * Checks whether two points are along a free energy lambda state axis.
+ *
+ * \param[in] grid        The grid.
+ * \param[in] pointIndex1 Grid point index of the first point.
+ * \param[in] pointIndex2 Grid point index of the second point.
+ * \returns true if the two points are along a free energy lambda state axis.
+ */
+bool pointsAlongLambdaAxis(const BiasGrid& grid, int pointIndex1, int pointIndex2);
+
+/*! \brief
+ * Checks whether two points are different in the free energy lambda state
+ * dimension (if any).
+ *
+ * \param[in] grid        The grid.
+ * \param[in] pointIndex1 Grid point index of the first point.
+ * \param[in] pointIndex2 Grid point index of the second point.
+ * \returns true if the two points have different lambda values.
+ */
+bool pointsHaveDifferentLambda(const BiasGrid& grid, int pointIndex1, int pointIndex2);
 
 } // namespace gmx
 

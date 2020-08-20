@@ -529,6 +529,10 @@ void gmx::LegacySimulator::do_md()
         {
             nstfep = std::gcd(replExParams.exchangeInterval, nstfep);
         }
+        if (ir->bDoAwh)
+        {
+            nstfep = std::gcd(ir->awhParams->nstSampleCoord, nstfep);
+        }
     }
 
     /* Be REALLY careful about what flags you set here. You CANNOT assume
@@ -1548,6 +1552,10 @@ void gmx::LegacySimulator::do_md()
             /* Have to do this part _after_ outputting the logfile and the edr file */
             /* Gets written into the state at the beginning of next loop*/
             state->fep_state = lamnew;
+        }
+        else if (ir->bDoAwh && awh->needForeignEnergyDifferences(step))
+        {
+            state->fep_state = awh->fepLambdaState();
         }
         /* Print the remaining wall clock time for the run */
         if (isMasterSimMasterRank(ms, MASTER(cr)) && (do_verbose || gmx_got_usr_signal()) && !bPMETunePrinting)

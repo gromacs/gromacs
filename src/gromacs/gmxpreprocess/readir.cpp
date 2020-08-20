@@ -2116,7 +2116,7 @@ void get_ir(const char*     mdparin,
     }
 
     /* AWH biasing
-       NOTE: needs COM pulling input */
+       NOTE: needs COM pulling or free energy input */
     printStringNewline(&inp, "AWH biasing");
     ir->bDoAwh = (get_eeenum(&inp, "awh", yesno_names, wi) != 0);
     if (ir->bDoAwh)

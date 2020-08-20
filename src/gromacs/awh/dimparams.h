@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,14 +73,33 @@ struct DimParams
     /*! \brief
      * Constructor.
      *
-     * \param[in] conversionFactor  Conversion factor from user coordinate units to bias internal units (=DEG2RAD for angles).
+     * \param[in] conversionFactor  Conversion factor from user coordinate units to bias internal
+     * units (=DEG2RAD for angles).
      * \param[in] forceConstant     The harmonic force constant.
      * \param[in] beta              1/(k_B T).
      */
     DimParams(double conversionFactor, double forceConstant, double beta) :
         k(forceConstant),
+        beta(beta),
         betak(beta * forceConstant),
-        userCoordUnitsToInternal(conversionFactor)
+        userCoordUnitsToInternal(conversionFactor),
+        numFepLambdaStates(0)
+    {
+    }
+
+    /*! \brief
+     * Constructor for lambda dimension.
+     *
+     * \param[in] forceConstant       The harmonic force constant.
+     * \param[in] beta                1/(k_B T).
+     * \param[in] numFepLambdaStates  Number of lambda states in the system.
+     */
+    DimParams(double forceConstant, double beta, int numFepLambdaStates) :
+        k(forceConstant),
+        beta(beta),
+        betak(beta * forceConstant),
+        userCoordUnitsToInternal(1.0),
+        numFepLambdaStates(numFepLambdaStates)
     {
     }
 
@@ -98,9 +117,17 @@ struct DimParams
      */
     double scaleUserInputToInternal(double value) const { return value * userCoordUnitsToInternal; }
 
+    /*! \brief Returns if this dimension has lambda states and thereby is a dimension coupled to lambda.
+     *
+     *  \returns true if this dimension is related to the lambda state of the system.
+     */
+    bool isFepLambdaDimension() const { return numFepLambdaStates > 0; }
+
     const double k;     /**< Force constant (kJ/mol/nm^2) for each coordinate dimension. */
+    const double beta;  /**< 1/(k_B T). */
     const double betak; /**< Inverse variance (1/nm^2) for each coordinate dimension. */
     const double userCoordUnitsToInternal; /**< Conversion factor coordinate units. */
+    const double numFepLambdaStates;       /**< Number of lambda points in this dimension. */
 };
 
 } // namespace gmx

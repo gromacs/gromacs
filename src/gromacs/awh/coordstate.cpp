@@ -194,4 +194,9 @@ void CoordState::restoreFromHistory(const AwhBiasStateHistory& stateHistory)
     umbrellaGridpoint_ = stateHistory.umbrellaGridpoint;
 }
 
+void CoordState::setUmbrellaGridpointToGridpoint()
+{
+    umbrellaGridpoint_ = gridpointIndex_;
+}
+
 } // namespace gmx

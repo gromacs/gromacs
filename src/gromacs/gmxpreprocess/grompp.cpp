@@ -2303,8 +2303,10 @@ int gmx_grompp(int argc, char* argv[])
         {
             copy_mat(ir->compress, compressibility);
         }
-        setStateDependentAwhParams(ir->awhParams, ir->pull, pull, state.box, ir->pbcType,
-                                   compressibility, &ir->opts, wi);
+        setStateDependentAwhParams(
+                ir->awhParams, ir->pull, pull, state.box, ir->pbcType, compressibility, &ir->opts,
+                ir->efep != efepNO ? ir->fepvals->all_lambda[efptFEP][ir->fepvals->init_fep_state] : 0,
+                sys, wi);
     }
 
     if (ir->bPull)
