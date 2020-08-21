@@ -1088,7 +1088,6 @@ static inline void check_assign_interactions_atom(int                       i,
             {
                 add_vsite(*dd->ga2la, index, rtil, ftype, nral, TRUE, i, i_gl, i_mol, iatoms.data(), idef);
             }
-            j += 1 + nral + 2;
         }
         else
         {
@@ -1248,8 +1247,8 @@ static inline void check_assign_interactions_atom(int                       i,
                     (*nbonded_local)++;
                 }
             }
-            j += 1 + nral;
         }
+        j += 1 + nral_rt(ftype);
     }
 }
 
