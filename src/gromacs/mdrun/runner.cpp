@@ -266,6 +266,15 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
     {
         if (pmeRunMode == PmeRunMode::GPU)
         {
+            if (!devFlags.enableGpuBufferOps)
+            {
+                GMX_LOG(mdlog.warning)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "Enabling GPU buffer operations required by GMX_GPU_PME_PP_COMMS "
+                                "(equivalent with GMX_USE_GPU_BUFFER_OPS=1).");
+                devFlags.enableGpuBufferOps = true;
+            }
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
