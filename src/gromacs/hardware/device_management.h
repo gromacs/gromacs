@@ -1,0 +1,188 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2020, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \libinternal \file
+ *
+ * \brief Implements the device management for OpenCL.
+ *
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \inlibraryapi
+ * \ingroup module_hardware
+ */
+#ifndef GMX_HARDWARE_DEVICE_MANAGEMENT_H
+#define GMX_HARDWARE_DEVICE_MANAGEMENT_H
+
+#include "gmxpre.h"
+
+#include <string>
+#include <vector>
+
+#include "gromacs/hardware/device_information.h"
+
+struct DeviceInformation;
+enum class DeviceStatus : int;
+struct gmx_gpu_info_t;
+
+/*! \brief Return whether GPUs can be detected
+ *
+ * Returns true when this is a build of \Gromacs configured to support
+ * GPU usage, GPU detection is not disabled by an environment variable
+ * and a valid device driver, ICD, and/or runtime was detected.
+ * Does not throw. */
+bool canPerformGpuDetection();
+
+/*! \brief Return whether GPU detection is functioning correctly
+ *
+ * Returns true when this is a build of \Gromacs configured to support
+ * GPU usage, and a valid device driver, ICD, and/or runtime was detected.
+ *
+ * This function is not intended to be called from build
+ * configurations that do not support GPUs, and there will be no
+ * descriptive message in that case.
+ *
+ * \param[out] errorMessage  When returning false on a build configured with
+ *                           GPU support and non-nullptr was passed,
+ *                           the string contains a descriptive message about
+ *                           why GPUs cannot be detected.
+ *
+ * Does not throw. */
+bool isGpuDetectionFunctional(std::string* errorMessage);
+
+/*! \brief Find all GPUs in the system.
+ *
+ *  Will detect every GPU supported by the device driver in use.
+ *  Must only be called if canPerformGpuDetection() has returned true.
+ *  This routine also checks for the compatibility of each and fill the
+ *  gpu_info->deviceInfo array with the required information on each the
+ *  device: ID, device properties, status.
+ *
+ *  Note that this function leaves the GPU runtime API error state clean;
+ *  this is implemented ATM in the CUDA flavor.
+ *  TODO: check if errors do propagate in OpenCL as they do in CUDA and
+ *  whether there is a mechanism to "clear" them.
+ *
+ *  \param[in] gpu_info    pointer to structure holding GPU information.
+ *
+ *  \throws                InternalError if a GPU API returns an unexpected failure (because
+ *                         the call to canDetectGpus() should always prevent this occuring)
+ */
+void findGpus(gmx_gpu_info_t* gpu_info);
+
+/*! \brief Return a container of the detected GPUs that are compatible.
+ *
+ * This function filters the result of the detection for compatible
+ * GPUs, based on the previously run compatibility tests.
+ *
+ * \param[in]     gpu_info    Information detected about GPUs, including compatibility.
+ * \return                    vector of IDs of GPUs already recorded as compatible */
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t& gpu_info);
+
+/*! \brief Return a string describing how compatible the GPU with given \c index is.
+ *
+ * \param[in]   gpu_info    Information about detected GPUs
+ * \param[in]   index       index of GPU to ask about
+ * \returns                 A null-terminated C string describing the compatibility status, useful for error messages.
+ */
+const char* getGpuCompatibilityDescription(const gmx_gpu_info_t& gpu_info, int index);
+
+/*! \brief Frees the gpu_dev and dev_use array fields of \p gpu_info.
+ *
+ * \param[in]    gpu_info    pointer to structure holding GPU information
+ */
+void free_gpu_info(const gmx_gpu_info_t* gpu_info);
+
+/*! \brief Initializes the GPU described by \c deviceInfo.
+ *
+ * TODO Doxygen complains about these - probably a Doxygen bug, since
+ * the patterns here are the same as elsewhere in this header.
+ *
+ * \param[in]    deviceInfo   device info of the GPU to initialize
+ *
+ * Issues a fatal error for any critical errors that occur during
+ * initialization.
+ */
+void init_gpu(const DeviceInformation* deviceInfo);
+
+/*! \brief Frees up the CUDA GPU used by the active context at the time of calling.
+ *
+ * If \c deviceInfo is nullptr, then it is understood that no device
+ * was selected so no context is active to be freed. Otherwise, the
+ * context is explicitly destroyed and therefore all data uploaded to
+ * the GPU is lost. This must only be called when none of this data is
+ * required anymore, because subsequent attempts to free memory
+ * associated with the context will otherwise fail.
+ *
+ * Calls gmx_warning upon errors.
+ *
+ * \param[in]  deviceInfo   device info of the GPU to clean up for
+ *
+ * \returns                 true if no error occurs during the freeing.
+ */
+void free_gpu(const DeviceInformation* deviceInfo);
+
+/*! \brief Return a pointer to the device info for \c deviceId
+ *
+ * \param[in] gpu_info      GPU info of all detected devices in the system.
+ * \param[in] deviceId      ID for the GPU device requested.
+ *
+ * \returns                 Pointer to the device info for \c deviceId.
+ */
+DeviceInformation* getDeviceInfo(const gmx_gpu_info_t& gpu_info, int deviceId);
+
+/*! \brief Formats and returns a device information string for a given GPU.
+ *
+ * Given an index *directly* into the array of available GPUs (gpu_dev)
+ * returns a formatted info string for the respective GPU which includes
+ * ID, name, compute capability, and detection status.
+ *
+ * \param[out]  s           pointer to output string (has to be allocated externally)
+ * \param[in]   gpu_info    Information about detected GPUs
+ * \param[in]   index       an index *directly* into the array of available GPUs
+ */
+void get_gpu_device_info_string(char* s, const gmx_gpu_info_t& gpu_info, int index);
+
+
+/*! \brief Returns the size of the gpu_dev_info struct.
+ *
+ * The size of gpu_dev_info can be used for allocation and communication.
+ *
+ * \returns                 size in bytes of gpu_dev_info
+ */
+size_t sizeof_gpu_dev_info();
+
+//! Get status of device with specified index
+DeviceStatus gpu_info_get_stat(const gmx_gpu_info_t& info, int index);
+
+#endif // GMX_HARDWARE_DEVICE_MANAGEMENT_H

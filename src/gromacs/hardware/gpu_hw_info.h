@@ -41,47 +41,6 @@
 
 struct DeviceInformation;
 
-//! Possible results of the GPU detection/check.
-enum class DeviceStatus : int
-{
-    //! The device is compatible
-    Compatible = 0,
-    //! Device does not exist
-    Nonexistent = 1,
-    //! Device is not compatible
-    Incompatible = 2,
-    //! OpenCL device has incompatible cluster size for non-bonded kernels.
-    IncompatibleClusterSize = 3,
-    /*! \brief An error occurred he functionality checks.
-     * That indicates malfunctioning of the device, driver, or incompatible driver/runtime.
-     */
-    NonFunctional = 4,
-    /*! \brief CUDA devices are busy or unavailable.
-     * typically due to use of \p cudaComputeModeExclusive, \p cudaComputeModeProhibited modes.
-     */
-    Unavailable = 5,
-    //! Enumeration size
-    Count = 6
-};
-
-/*! \brief Names of the GPU detection/check results
- *
- * Check-source wants to warn about the use of a symbol name that would
- * require an inclusion of config.h. However the use is in a comment, so that
- * is a false warning. So C-style string concatenation is used to fool the
- * naive parser in check-source. That needs a clang-format suppression
- * in order to look reasonable. Also clang-tidy wants to suggest that a comma is
- * missing, so that is suppressed.
- */
-static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateString = {
-    "compatible", "nonexistent", "incompatible",
-    // clang-format off
-    // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
-    "incompatible (please recompile with correct GMX" "_OPENCL_NB_CLUSTER_SIZE of 4)",
-    // clang-format on
-    "non-functional", "unavailable"
-};
-
 /*! \brief Information about GPU devices on this physical node.
  *
  * Includes either CUDA or OpenCL devices.  The gmx_hardware_detect

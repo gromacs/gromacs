@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017 The GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,58 +34,56 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief
- * Tests utilities for GPU device allocation and free.
+ *  \brief Defines the implementations of the device management that are common for CPU, CUDA and OpenCL.
  *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \ingroup module_hardware
  */
 #include "gmxpre.h"
 
-#include "gputest.h"
+#include <assert.h>
 
-#include <gtest/gtest.h>
-
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/smalloc.h"
 
-namespace gmx
+bool canPerformGpuDetection()
 {
-namespace test
-{
-
-GpuTest::GpuTest()
-{
-    snew(gpuInfo_, 1);
-    if (isGpuDetectionFunctional(nullptr))
+    if (c_binarySupportsGpus && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr)
     {
-        findGpus(gpuInfo_);
-        compatibleGpuIds_ = getCompatibleGpus(*gpuInfo_);
+        return isGpuDetectionFunctional(nullptr);
     }
-    // Failing to find valid GPUs does not require further action
-}
-
-GpuTest::~GpuTest()
-{
-    free_gpu_info(gpuInfo_);
-    sfree(gpuInfo_);
-}
-
-bool GpuTest::haveCompatibleGpus() const
-{
-    return !compatibleGpuIds_.empty();
-}
-
-std::vector<const DeviceInformation*> GpuTest::getDeviceInfos() const
-{
-    std::vector<const DeviceInformation*> deviceInfos;
-    deviceInfos.reserve(compatibleGpuIds_.size());
-    for (const auto& id : compatibleGpuIds_)
+    else
     {
-        deviceInfos.emplace_back(getDeviceInfo(*gpuInfo_, id));
+        return false;
     }
-    return deviceInfos;
 }
 
-} // namespace test
-} // namespace gmx
+std::vector<int> getCompatibleGpus(const gmx_gpu_info_t& gpu_info)
+{
+    // Possible minor over-allocation here, but not important for anything
+    std::vector<int> compatibleGpus;
+    compatibleGpus.reserve(gpu_info.n_dev);
+    for (int i = 0; i < gpu_info.n_dev; i++)
+    {
+        assert(gpu_info.deviceInfo);
+        if (gpu_info_get_stat(gpu_info, i) == DeviceStatus::Compatible)
+        {
+            compatibleGpus.push_back(i);
+        }
+    }
+    return compatibleGpus;
+}
+
+const char* getGpuCompatibilityDescription(const gmx_gpu_info_t& gpu_info, int index)
+{
+    return (index >= gpu_info.n_dev ? c_deviceStateString[DeviceStatus::Nonexistent]
+                                    : c_deviceStateString[gpu_info_get_stat(gpu_info, index)]);
+}
+
+void free_gpu_info(const gmx_gpu_info_t* gpu_info)
+{
+    sfree(static_cast<void*>(gpu_info->deviceInfo)); // circumvent is_pod check in sfree
+}

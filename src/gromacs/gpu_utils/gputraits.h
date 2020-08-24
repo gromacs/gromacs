@@ -59,12 +59,6 @@
 
 using DeviceTexture = void*;
 
-//! \internal Stub for device information.
-struct DeviceInformation
-{
-    // No member needed
-};
-
 //! \brief Single GPU call timing event
 using CommandEvent = void*;
 

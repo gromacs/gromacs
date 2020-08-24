@@ -47,7 +47,6 @@ if(GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         device_context_ocl.cpp
         device_stream_ocl.cpp
-        gpu_utils_ocl.cpp
         ocl_compiler.cpp
         ocl_caching.cpp
         oclutils.cpp

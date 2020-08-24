@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017 The GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,58 +34,57 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief
- * Tests utilities for GPU device allocation and free.
+ *  \brief Defines the CPU stubs for the device management.
  *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \ingroup module_hardware
  */
 #include "gmxpre.h"
 
-#include "gputest.h"
+#include "device_management.h"
 
-#include <gtest/gtest.h>
-
-#include "gromacs/hardware/device_management.h"
-#include "gromacs/hardware/gpu_hw_info.h"
-#include "gromacs/utility/smalloc.h"
-
-namespace gmx
+bool isGpuDetectionFunctional(std::string* errorMessage)
 {
-namespace test
-{
-
-GpuTest::GpuTest()
-{
-    snew(gpuInfo_, 1);
-    if (isGpuDetectionFunctional(nullptr))
+    if (errorMessage != nullptr)
     {
-        findGpus(gpuInfo_);
-        compatibleGpuIds_ = getCompatibleGpus(*gpuInfo_);
+        errorMessage->assign("GROMACS has been built without GPU support.");
     }
-    // Failing to find valid GPUs does not require further action
+    return false;
 }
 
-GpuTest::~GpuTest()
+void findGpus(gmx_gpu_info_t* /* gpu_info */)
 {
-    free_gpu_info(gpuInfo_);
-    sfree(gpuInfo_);
+    GMX_RELEASE_ASSERT(false, "Trying to initialize GPUs in the build that does not support them.");
 }
 
-bool GpuTest::haveCompatibleGpus() const
+void init_gpu(const DeviceInformation* /* deviceInfo */)
 {
-    return !compatibleGpuIds_.empty();
+    GMX_RELEASE_ASSERT(false, "Trying to initialize GPU in the build that does not support GPUs.");
 }
 
-std::vector<const DeviceInformation*> GpuTest::getDeviceInfos() const
+void free_gpu(const DeviceInformation* /* deviceInfo */) {}
+
+DeviceInformation* getDeviceInfo(const gmx_gpu_info_t& /* gpu_info */, int /* deviceId */)
 {
-    std::vector<const DeviceInformation*> deviceInfos;
-    deviceInfos.reserve(compatibleGpuIds_.size());
-    for (const auto& id : compatibleGpuIds_)
-    {
-        deviceInfos.emplace_back(getDeviceInfo(*gpuInfo_, id));
-    }
-    return deviceInfos;
+    GMX_RELEASE_ASSERT(
+            false, "Trying to get GPU device information in the build that does not support GPUs.");
+    return nullptr;
 }
 
-} // namespace test
-} // namespace gmx
+void get_gpu_device_info_string(char* /* s */, const gmx_gpu_info_t& /* gpu_info */, int /* index */)
+{
+    GMX_RELEASE_ASSERT(
+            false,
+            "Trying to get the GPU device description in the build that does not support GPUs.");
+}
+
+size_t sizeof_gpu_dev_info()
+{
+    return 0;
+}
+
+DeviceStatus gpu_info_get_stat(const gmx_gpu_info_t& /* gpu_info */, int /* index */)
+{
+    return DeviceStatus::Nonexistent;
+}

@@ -50,38 +50,6 @@
 
 using DeviceTexture = void*;
 
-//! OpenCL device vendors
-enum class DeviceVendor : int
-{
-    Unknown = 0, //!< No data
-    Nvidia  = 1, //!< NVIDIA
-    Amd     = 2, //!< Advanced Micro Devices
-    Intel   = 3, //!< Intel
-    Count   = 4
-};
-
-/*! \internal
- * \brief OpenCL device information.
- *
- * The OpenCL device information is queried and set at detection and contains
- * both information about the device/hardware returned by the runtime as well
- * as additional data like support status.
- */
-struct DeviceInformation
-{
-    cl_platform_id oclPlatformId;       //!< OpenCL Platform ID.
-    cl_device_id   oclDeviceId;         //!< OpenCL Device ID.
-    char           device_name[256];    //!< Device name.
-    char           device_version[256]; //!< Device version.
-    char           vendorName[256];     //!< Device vendor name.
-    int            compute_units;       //!< Number of compute units.
-    int            adress_bits;         //!< Number of address bits the device is capable of.
-    DeviceStatus   stat;                //!< Device status.
-    DeviceVendor   deviceVendor;        //!< Device vendor.
-    size_t         maxWorkItemSizes[3]; //!< Workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES).
-    size_t maxWorkGroupSize; //!< Workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE).
-};
-
 //! \brief Single GPU call timing event
 using CommandEvent = cl_event;
 
