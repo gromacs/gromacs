@@ -1446,8 +1446,8 @@ void BiasState::sampleCoordAndPmf(const std::vector<DimParams>& dimParams,
                     bias = calcConvolvedBias(dimParams, grid, coordValueAlongLambda);
                 }
 
-                const double probWeight   = lambdaMarginalDistribution[neighborLambda];
-                const double weightedBias = bias - std::log(probWeight);
+                const double probWeight = lambdaMarginalDistribution[neighborLambda];
+                const double weightedBias = bias - std::log(std::max(probWeight, GMX_DOUBLE_MIN)); // avoid log(0)
 
                 if (neighbor == gridPointIndex && grid.covers(coordState_.coordValue()))
                 {
