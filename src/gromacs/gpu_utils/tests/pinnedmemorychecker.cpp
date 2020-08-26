@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,6 +97,22 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
     HostVector<real> dummy(3, 1.5);
     changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
+}
+
+TEST_F(PinnedMemoryCheckerTest, PinningChangesAreRecognized)
+{
+    if (!haveValidGpus())
+    {
+        return;
+    }
+
+    HostVector<real> dummy(3, 1.5);
+    changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory starts pinned";
+    changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
+    EXPECT_FALSE(isHostMemoryPinned(dummy.data())) << "memory is now unpinned";
+    changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory is pinned again";
 }
 
 TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)

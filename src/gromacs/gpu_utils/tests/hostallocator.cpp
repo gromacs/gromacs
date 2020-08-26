@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -328,17 +328,17 @@ TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
     EXPECT_EQ(0, input.size());
     EXPECT_EQ(0, input.paddedSize());
     EXPECT_TRUE(input.empty());
-    EXPECT_FALSE(isPinned(input));
+    EXPECT_FALSE(isPinned(input)) << "should not be pinned before allocation";
 
     // Fill some contents, which will be pinned because of the policy.
     fillInput(&input, 1);
-    EXPECT_TRUE(isPinned(input));
+    EXPECT_TRUE(isPinned(input)) << "should be pinned after allocation";
 
     // Switching policy to CannotBePinned must unpin the buffer (via
     // realloc and copy).
     auto oldInputData = input.data();
     changePinningPolicy(&input, PinningPolicy::CannotBePinned);
-    EXPECT_FALSE(isPinned(input));
+    EXPECT_FALSE(isPinned(input)) << "should not be pinned after changing policy to CannotBePinned";
     // These cannot be equal as both had to be allocated at the same
     // time for the contents to be able to be copied.
     EXPECT_NE(oldInputData, input.data());
@@ -347,7 +347,7 @@ TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
     // realloc and copy).
     oldInputData = input.data();
     changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE(isPinned(input));
+    EXPECT_TRUE(isPinned(input)) << "should be pinned after changing policy to PinnedIfSupported";
     // These cannot be equal as both had to be allocated at the same
     // time for the contents to be able to be copied.
     EXPECT_NE(oldInputData, input.data());
