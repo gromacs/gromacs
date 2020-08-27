@@ -769,6 +769,8 @@ int Mdrunner::mdrunner()
     // Print citation requests after all software/hardware printing
     pleaseCiteGromacs(fplog);
 
+    // Note: legacy program logic relies on checking whether these pointers are assigned.
+    // Objects may or may not be allocated later.
     std::unique_ptr<t_inputrec> inputrec;
     std::unique_ptr<t_state>    globalState;
 
@@ -776,10 +778,11 @@ int Mdrunner::mdrunner()
 
     if (isSimulationMasterRank)
     {
+        // Allocate objects to be initialized by later function calls.
         /* Only the master rank has the global state */
         globalState = std::make_unique<t_state>();
+        inputrec    = std::make_unique<t_inputrec>();
 
-        inputrec = std::make_unique<t_inputrec>();
         /* Read (nearly) all data required for the simulation
          * and keep the partly serialized tpr contents to send to other ranks later
          */
@@ -841,6 +844,8 @@ int Mdrunner::mdrunner()
         /* now broadcast everything to the non-master nodes/threads: */
         if (!isSimulationMasterRank)
         {
+            // Until now, only the master rank has a non-null pointer.
+            // On non-master ranks, allocate the object that will receive data in the following call.
             inputrec = std::make_unique<t_inputrec>();
         }
         init_parallel(cr->mpiDefaultCommunicator, MASTER(cr), inputrec.get(), &mtop,
