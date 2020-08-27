@@ -769,10 +769,8 @@ int Mdrunner::mdrunner()
     // Print citation requests after all software/hardware printing
     pleaseCiteGromacs(fplog);
 
-    // TODO Replace this by unique_ptr once t_inputrec is C++
-    t_inputrec               inputrecInstance;
-    t_inputrec*              inputrec = nullptr;
-    std::unique_ptr<t_state> globalState;
+    std::unique_ptr<t_inputrec> inputrec;
+    std::unique_ptr<t_state>    globalState;
 
     auto partialDeserializedTpr = std::make_unique<PartialDeserializedTprFile>();
 
@@ -781,17 +779,17 @@ int Mdrunner::mdrunner()
         /* Only the master rank has the global state */
         globalState = std::make_unique<t_state>();
 
+        inputrec = std::make_unique<t_inputrec>();
         /* Read (nearly) all data required for the simulation
          * and keep the partly serialized tpr contents to send to other ranks later
          */
         *partialDeserializedTpr = read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()),
-                                                 &inputrecInstance, globalState.get(), &mtop);
-        inputrec                = &inputrecInstance;
+                                                 inputrec.get(), globalState.get(), &mtop);
     }
 
     /* Check and update the hardware options for internal consistency */
     checkAndUpdateHardwareOptions(mdlog, &hw_opt, isSimulationMasterRank, domdecOptions.numPmeRanks,
-                                  inputrec);
+                                  inputrec.get());
 
     if (GMX_THREAD_MPI && isSimulationMasterRank)
     {
@@ -823,7 +821,7 @@ int Mdrunner::mdrunner()
          * correctly. */
         hw_opt.nthreads_tmpi =
                 get_nthreads_mpi(hwinfo, &hw_opt, gpuIdsToUse, useGpuForNonbonded, useGpuForPme,
-                                 inputrec, &mtop, mdlog, membedHolder.doMembed());
+                                 inputrec.get(), &mtop, mdlog, membedHolder.doMembed());
 
         // Now start the threads for thread MPI.
         spawnThreads(hw_opt.nthreads_tmpi);
@@ -843,9 +841,9 @@ int Mdrunner::mdrunner()
         /* now broadcast everything to the non-master nodes/threads: */
         if (!isSimulationMasterRank)
         {
-            inputrec = &inputrecInstance;
+            inputrec = std::make_unique<t_inputrec>();
         }
-        init_parallel(cr->mpiDefaultCommunicator, MASTER(cr), inputrec, &mtop,
+        init_parallel(cr->mpiDefaultCommunicator, MASTER(cr), inputrec.get(), &mtop,
                       partialDeserializedTpr.get());
     }
     GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
@@ -897,8 +895,8 @@ int Mdrunner::mdrunner()
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
     const bool useModularSimulator =
-            checkUseModularSimulator(false, inputrec, doRerun, mtop, ms, replExParams, nullptr,
-                                     doEssentialDynamics, membedHolder.doMembed());
+            checkUseModularSimulator(false, inputrec.get(), doRerun, mtop, ms, replExParams,
+                                     nullptr, doEssentialDynamics, membedHolder.doMembed());
 
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
@@ -925,7 +923,7 @@ int Mdrunner::mdrunner()
 
     if (fplog != nullptr)
     {
-        pr_inputrec(fplog, 0, "Input Parameters", inputrec, FALSE);
+        pr_inputrec(fplog, 0, "Input Parameters", inputrec.get(), FALSE);
         fprintf(fplog, "\n");
     }
 
@@ -948,7 +946,7 @@ int Mdrunner::mdrunner()
         }
 
         /* now make sure the state is initialized and propagated */
-        set_state_entries(globalState.get(), inputrec, useModularSimulator);
+        set_state_entries(globalState.get(), inputrec.get(), useModularSimulator);
     }
 
     /* NM and TPI parallelize over force/energy calculations, not atoms,
@@ -1043,13 +1041,14 @@ int Mdrunner::mdrunner()
     /* This needs to be called before read_checkpoint to extend the state */
     t_disresdata* disresdata;
     snew(disresdata, 1);
-    init_disres(fplog, &mtop, inputrec, DisResRunMode::MDRun, MASTER(cr) ? DDRole::Master : DDRole::Agent,
+    init_disres(fplog, &mtop, inputrec.get(), DisResRunMode::MDRun,
+                MASTER(cr) ? DDRole::Master : DDRole::Agent,
                 PAR(cr) ? NumRanks::Multiple : NumRanks::Single, cr->mpi_comm_mysim, ms, disresdata,
                 globalState.get(), replExParams.exchangeInterval > 0);
 
     t_oriresdata* oriresdata;
     snew(oriresdata, 1);
-    init_orires(fplog, &mtop, inputrec, cr, ms, globalState.get(), oriresdata);
+    init_orires(fplog, &mtop, inputrec.get(), cr, ms, globalState.get(), oriresdata);
 
     auto deform = prepareBoxDeformation(
             globalState != nullptr ? globalState->box : box, MASTER(cr) ? DDRole::Master : DDRole::Agent,
@@ -1072,7 +1071,7 @@ int Mdrunner::mdrunner()
         }
 
         load_checkpoint(opt2fn_master("-cpi", filenames.size(), filenames.data(), cr),
-                        logFileHandle, cr, domdecOptions.numCells, inputrec, globalState.get(),
+                        logFileHandle, cr, domdecOptions.numCells, inputrec.get(), globalState.get(),
                         &observablesHistory, mdrunOptions.reproducible, mdModules_->notifier());
 
         if (startingBehavior == StartingBehavior::RestartWithAppending && logFileHandle)
@@ -1096,7 +1095,7 @@ int Mdrunner::mdrunner()
                         "file field.");
     }
     /* override nsteps with value set on the commandline */
-    override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec);
+    override_nsteps_cmdline(mdlog, mdrunOptions.numStepsCommandline, inputrec.get());
 
     if (isSimulationMasterRank)
     {
@@ -1119,7 +1118,7 @@ int Mdrunner::mdrunner()
      * increase rlist) tries to check if the newly chosen value fits with the DD scheme. As this is
      * run before any DD scheme is set up, this check is never executed. See #3334 for more details.
      */
-    prepare_verlet_scheme(fplog, cr, inputrec, nstlist_cmdline, &mtop, box,
+    prepare_verlet_scheme(fplog, cr, inputrec.get(), nstlist_cmdline, &mtop, box,
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes),
                           *hwinfo->cpuInfo);
 
@@ -1352,7 +1351,7 @@ int Mdrunner::mdrunner()
     }
 
     // Membrane embedding must be initialized before we call init_forcerec()
-    membedHolder.initializeMembed(fplog, filenames.size(), filenames.data(), &mtop, inputrec,
+    membedHolder.initializeMembed(fplog, filenames.size(), filenames.data(), &mtop, inputrec.get(),
                                   globalState.get(), cr, &mdrunOptions.checkpointOptions.period);
 
     const bool               thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
@@ -1370,7 +1369,7 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = new t_forcerec;
         fr->forceProviders = mdModules_->initForceProviders();
-        init_forcerec(fplog, mdlog, fr, inputrec, &mtop, cr, box,
+        init_forcerec(fplog, mdlog, fr, inputrec.get(), &mtop, cr, box,
                       opt2fn("-table", filenames.size(), filenames.data()),
                       opt2fn("-tablep", filenames.size(), filenames.data()),
                       opt2fns("-tableb", filenames.size(), filenames.data()), pforce);
@@ -1397,7 +1396,7 @@ int Mdrunner::mdrunner()
                     deviceStreamManager->stream(DeviceStreamType::PmePpTransfer));
         }
 
-        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec, fr, cr, *hwinfo, useGpuForNonbonded,
+        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec.get(), fr, cr, *hwinfo, useGpuForNonbonded,
                                         deviceStreamManager.get(), &mtop, box, wcycle);
         // TODO: Move the logic below to a GPU bonded builder
         if (useGpuForBonded)
@@ -1527,10 +1526,11 @@ int Mdrunner::mdrunner()
                 const DeviceStream* pmeStream =
                         useGpuForPme ? &deviceStreamManager->stream(DeviceStreamType::Pme) : nullptr;
 
-                pmedata = gmx_pme_init(cr, getNumPmeDomains(cr->dd), inputrec, nChargePerturbed != 0,
-                                       nTypePerturbed != 0, mdrunOptions.reproducible, ewaldcoeff_q,
-                                       ewaldcoeff_lj, gmx_omp_nthreads_get(emntPME), pmeRunMode,
-                                       nullptr, deviceContext, pmeStream, pmeGpuProgram.get(), mdlog);
+                pmedata = gmx_pme_init(cr, getNumPmeDomains(cr->dd), inputrec.get(),
+                                       nChargePerturbed != 0, nTypePerturbed != 0,
+                                       mdrunOptions.reproducible, ewaldcoeff_q, ewaldcoeff_lj,
+                                       gmx_omp_nthreads_get(emntPME), pmeRunMode, nullptr,
+                                       deviceContext, pmeStream, pmeGpuProgram.get(), mdlog);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -1556,7 +1556,7 @@ int Mdrunner::mdrunner()
         if (inputrec->bPull)
         {
             /* Initialize pull code */
-            pull_work = init_pull(fplog, inputrec->pull, inputrec, &mtop, cr, &atomSets,
+            pull_work = init_pull(fplog, inputrec->pull, inputrec.get(), &mtop, cr, &atomSets,
                                   inputrec->fepvals->init_lambda);
             if (inputrec->pull->bXOutAverage || inputrec->pull->bFOutAverage)
             {
@@ -1572,16 +1572,16 @@ int Mdrunner::mdrunner()
         if (inputrec->bRot)
         {
             /* Initialize enforced rotation code */
-            enforcedRotation =
-                    init_rot(fplog, inputrec, filenames.size(), filenames.data(), cr, &atomSets,
-                             globalState.get(), &mtop, oenv, mdrunOptions, startingBehavior);
+            enforcedRotation = init_rot(fplog, inputrec.get(), filenames.size(), filenames.data(),
+                                        cr, &atomSets, globalState.get(), &mtop, oenv, mdrunOptions,
+                                        startingBehavior);
         }
 
         t_swap* swap = nullptr;
         if (inputrec->eSwapCoords != eswapNO)
         {
             /* Initialize ion swapping code */
-            swap = init_swapcoords(fplog, inputrec,
+            swap = init_swapcoords(fplog, inputrec.get(),
                                    opt2fn_master("-swap", filenames.size(), filenames.data(), cr),
                                    &mtop, globalState.get(), &observablesHistory, cr, &atomSets,
                                    oenv, mdrunOptions, startingBehavior);
@@ -1601,7 +1601,7 @@ int Mdrunner::mdrunner()
 
         /* Set up interactive MD (IMD) */
         auto imdSession =
-                makeImdSession(inputrec, cr, wcycle, &enerd, ms, &mtop, mdlog,
+                makeImdSession(inputrec.get(), cr, wcycle, &enerd, ms, &mtop, mdlog,
                                MASTER(cr) ? globalState->x.rvec_array() : nullptr, filenames.size(),
                                filenames.data(), oenv, mdrunOptions.imdOptions, startingBehavior);
 
@@ -1611,7 +1611,7 @@ int Mdrunner::mdrunner()
             /* This call is not included in init_domain_decomposition mainly
              * because fr->cginfo_mb is set later.
              */
-            dd_init_bondeds(fplog, cr->dd, mtop, vsite.get(), inputrec,
+            dd_init_bondeds(fplog, cr->dd, mtop, vsite.get(), inputrec.get(),
                             domdecOptions.checkBondedInteractions, fr->cginfo_mb);
         }
 
@@ -1655,8 +1655,8 @@ int Mdrunner::mdrunner()
                 constr.get(), enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr,
                 vsite.get()));
         // TODO: Separate `fr` to a separate add, and make the `build` handle the coupling sensibly.
-        simulatorBuilder.add(
-                LegacyInput(static_cast<int>(filenames.size()), filenames.data(), inputrec, fr));
+        simulatorBuilder.add(LegacyInput(static_cast<int>(filenames.size()), filenames.data(),
+                                         inputrec.get(), fr));
         simulatorBuilder.add(ReplicaExchangeParameters(replExParams));
         simulatorBuilder.add(InteractiveMD(imdSession.get()));
         simulatorBuilder.add(SimulatorModules(mdModules_->outputProvider(), mdModules_->notifier()));
@@ -1687,7 +1687,7 @@ int Mdrunner::mdrunner()
         GMX_RELEASE_ASSERT(pmedata, "pmedata was NULL while cr->duty was not DUTY_PP");
         /* do PME only */
         walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
-        gmx_pmeonly(pmedata, cr, &nrnb, wcycle, walltime_accounting, inputrec, pmeRunMode,
+        gmx_pmeonly(pmedata, cr, &nrnb, wcycle, walltime_accounting, inputrec.get(), pmeRunMode,
                     deviceStreamManager.get());
     }
 
@@ -1696,7 +1696,7 @@ int Mdrunner::mdrunner()
     /* Finish up, write some stuff
      * if rerunMD, don't write last frame again
      */
-    finish_run(fplog, mdlog, cr, inputrec, &nrnb, wcycle, walltime_accounting,
+    finish_run(fplog, mdlog, cr, inputrec.get(), &nrnb, wcycle, walltime_accounting,
                fr ? fr->nbv.get() : nullptr, pmedata, EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
 
     // clean up cycle counter
