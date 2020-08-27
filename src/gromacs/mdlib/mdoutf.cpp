@@ -476,19 +476,19 @@ static void write_checkpoint(const char*                   fn,
 #endif /* end GMX_FAHCORE block */
 }
 
-void mdoutf_write_to_trajectory_files(FILE*                    fplog,
-                                      const t_commrec*         cr,
-                                      gmx_mdoutf_t             of,
-                                      int                      mdof_flags,
-                                      int                      natoms,
-                                      int64_t                  step,
-                                      double                   t,
-                                      t_state*                 state_local,
-                                      t_state*                 state_global,
-                                      ObservablesHistory*      observablesHistory,
-                                      gmx::ArrayRef<gmx::RVec> f_local)
+void mdoutf_write_to_trajectory_files(FILE*                          fplog,
+                                      const t_commrec*               cr,
+                                      gmx_mdoutf_t                   of,
+                                      int                            mdof_flags,
+                                      int                            natoms,
+                                      int64_t                        step,
+                                      double                         t,
+                                      t_state*                       state_local,
+                                      t_state*                       state_global,
+                                      ObservablesHistory*            observablesHistory,
+                                      gmx::ArrayRef<const gmx::RVec> f_local)
 {
-    rvec* f_global;
+    const rvec* f_global;
 
     if (DOMAINDECOMP(cr))
     {
@@ -512,8 +512,9 @@ void mdoutf_write_to_trajectory_files(FILE*                    fplog,
         f_global = of->f_global;
         if (mdof_flags & MDOF_F)
         {
-            dd_collect_vec(cr->dd, state_local, f_local,
-                           gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(f_global), f_local.size()));
+            dd_collect_vec(
+                    cr->dd, state_local, f_local,
+                    gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(of->f_global), f_local.size()));
         }
     }
     else

@@ -66,6 +66,7 @@ class ArrayRef;
 template<typename>
 class ArrayRefWithPadding;
 class Constraints;
+class ForceBuffersView;
 class ImdSession;
 class MdrunScheduleWorkload;
 class VirtualSitesHandler;
@@ -101,7 +102,7 @@ void relax_shell_flexcon(FILE*                               log,
                          const matrix                        box,
                          gmx::ArrayRef<real>                 lambda,
                          history_t*                          hist,
-                         gmx::ArrayRefWithPadding<gmx::RVec> f,
+                         gmx::ForceBuffersView*              f,
                          tensor                              force_vir,
                          const t_mdatoms*                    md,
                          t_nrnb*                             nrnb,

@@ -110,6 +110,7 @@
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/fcdata.h"
+#include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -174,16 +175,15 @@ void gmx::LegacySimulator::do_md()
     int    i, m;
     rvec   mu_tot;
     matrix pressureCouplingMu, M;
-    gmx_repl_ex_t               repl_ex = nullptr;
-    PaddedHostVector<gmx::RVec> f{};
-    gmx_global_stat_t           gstat;
-    gmx_shellfc_t*              shellfc;
-    gmx_bool                    bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool                    bTemp, bPres, bTrotter;
-    real                        dvdl_constr;
-    std::vector<RVec>           cbuf;
-    matrix                      lastbox;
-    int                         lamnew = 0;
+    gmx_repl_ex_t     repl_ex = nullptr;
+    gmx_global_stat_t gstat;
+    gmx_shellfc_t*    shellfc;
+    gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
+    gmx_bool          bTemp, bPres, bTrotter;
+    real              dvdl_constr;
+    std::vector<RVec> cbuf;
+    matrix            lastbox;
+    int               lamnew = 0;
     /* for FEP */
     int       nstfep = 0;
     double    cycles;
@@ -322,8 +322,15 @@ void gmx::LegacySimulator::do_md()
 
     auto mdatoms = mdAtoms->mdatoms();
 
-    std::unique_ptr<UpdateConstrainGpu> integrator;
+    const auto& simulationWork     = runScheduleWork->simulationWork;
+    const bool  useGpuForPme       = simulationWork.useGpuPme;
+    const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
+    const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
+    const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
+    ForceBuffers f(((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
+                           ? PinningPolicy::PinnedIfSupported
+                           : PinningPolicy::CannotBePinned);
     if (DOMAINDECOMP(cr))
     {
         stateInstance = std::make_unique<t_state>();
@@ -349,11 +356,7 @@ void gmx::LegacySimulator::do_md()
         upd.setNumAtoms(state->natoms);
     }
 
-    const auto& simulationWork     = runScheduleWork->simulationWork;
-    const bool  useGpuForPme       = simulationWork.useGpuPme;
-    const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
-    const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
-    const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
+    std::unique_ptr<UpdateConstrainGpu> integrator;
 
     StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 
@@ -420,10 +423,6 @@ void gmx::LegacySimulator::do_md()
     if (useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
     {
         changePinningPolicy(&state->x, PinningPolicy::PinnedIfSupported);
-    }
-    if ((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
-    {
-        changePinningPolicy(&f, PinningPolicy::PinnedIfSupported);
     }
     if (useGpuForUpdate)
     {
@@ -925,8 +924,8 @@ void gmx::LegacySimulator::do_md()
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, enforcedRotation, step, ir,
                                 imdSession, pull_work, bNS, force_flags, &top, constr, enerd,
                                 state->natoms, state->x.arrayRefWithPadding(),
-                                state->v.arrayRefWithPadding(), state->box, state->lambda, &state->hist,
-                                f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, shellfc,
+                                state->v.arrayRefWithPadding(), state->box, state->lambda,
+                                &state->hist, &f.view(), force_vir, mdatoms, nrnb, wcycle, shellfc,
                                 fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
         }
         else
@@ -951,8 +950,8 @@ void gmx::LegacySimulator::do_md()
              */
             do_force(fplog, cr, ms, ir, awh.get(), enforcedRotation, imdSession, pull_work, step,
                      nrnb, wcycle, &top, state->box, state->x.arrayRefWithPadding(), &state->hist,
-                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, state->lambda, fr,
-                     runScheduleWork, vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
+                     &f.view(), force_vir, mdatoms, enerd, state->lambda, fr, runScheduleWork,
+                     vsite, mu_tot, t, ed ? ed->getLegacyED() : nullptr,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags, ddBalanceRegionHandler);
         }
 
@@ -985,8 +984,8 @@ void gmx::LegacySimulator::do_md()
                                trotter_seq, ettTSEQ1);
             }
 
-            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcdata, ekind, M,
-                              etrtVELOCITY1, cr, constr != nullptr);
+            upd.update_coords(*ir, step, mdatoms, state, f.view().forceWithPadding(), fcdata, ekind,
+                              M, etrtVELOCITY1, cr, constr != nullptr);
 
             wallcycle_stop(wcycle, ewcUPDATE);
             constrain_velocities(constr, do_log, do_ene, step, state, nullptr, bCalcVir, shake_vir);
@@ -1155,7 +1154,7 @@ void gmx::LegacySimulator::do_md()
         if (runScheduleWork->stepWork.useGpuFBufferOps && (simulationWork.useGpuUpdate && !vsite)
             && do_per_step(step, ir->nstfout))
         {
-            stateGpu->copyForcesFromGpu(ArrayRef<RVec>(f), AtomLocality::Local);
+            stateGpu->copyForcesFromGpu(f.view().force(), AtomLocality::Local);
             stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
         }
         /* Now we have the energies and forces corresponding to the
@@ -1163,9 +1162,9 @@ void gmx::LegacySimulator::do_md()
          * the update.
          */
         do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t, ir, state, state_global,
-                                 observablesHistory, top_global, fr, outf, energyOutput, ekind, f,
-                                 checkpointHandler->isCheckpointingStep(), bRerunMD, bLastStep,
-                                 mdrunOptions.writeConfout, bSumEkinhOld);
+                                 observablesHistory, top_global, fr, outf, energyOutput, ekind,
+                                 f.view().force(), checkpointHandler->isCheckpointingStep(),
+                                 bRerunMD, bLastStep, mdrunOptions.writeConfout, bSumEkinhOld);
         /* Check if IMD step and do IMD communication, if bIMD is TRUE. */
         bInteractiveMDstep = imdSession->run(step, bNS, state->box, state->x.rvec_array(), t);
 
@@ -1233,8 +1232,8 @@ void gmx::LegacySimulator::do_md()
         if (EI_VV(ir->eI))
         {
             /* velocity half-step update */
-            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcdata, ekind, M,
-                              etrtVELOCITY2, cr, constr != nullptr);
+            upd.update_coords(*ir, step, mdatoms, state, f.view().forceWithPadding(), fcdata, ekind,
+                              M, etrtVELOCITY2, cr, constr != nullptr);
         }
 
         /* Above, initialize just copies ekinh into ekin,
@@ -1276,7 +1275,7 @@ void gmx::LegacySimulator::do_md()
             // If the buffer ops were not offloaded this step, the forces are on the host and have to be copied
             if (!runScheduleWork->stepWork.useGpuFBufferOps)
             {
-                stateGpu->copyForcesToGpu(ArrayRef<RVec>(f), AtomLocality::Local);
+                stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
             }
 
             const bool doTemperatureScaling =
@@ -1299,8 +1298,8 @@ void gmx::LegacySimulator::do_md()
         }
         else
         {
-            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcdata, ekind, M,
-                              etrtPOSITION, cr, constr != nullptr);
+            upd.update_coords(*ir, step, mdatoms, state, f.view().forceWithPadding(), fcdata, ekind,
+                              M, etrtPOSITION, cr, constr != nullptr);
 
             wallcycle_stop(wcycle, ewcUPDATE);
 
@@ -1330,8 +1329,8 @@ void gmx::LegacySimulator::do_md()
             /* now we know the scaling, we can compute the positions again */
             std::copy(cbuf.begin(), cbuf.end(), state->x.begin());
 
-            upd.update_coords(*ir, step, mdatoms, state, f.arrayRefWithPadding(), fcdata, ekind, M,
-                              etrtPOSITION, cr, constr != nullptr);
+            upd.update_coords(*ir, step, mdatoms, state, f.view().forceWithPadding(), fcdata, ekind,
+                              M, etrtPOSITION, cr, constr != nullptr);
             wallcycle_stop(wcycle, ewcUPDATE);
 
             /* do we need an extra constraint here? just need to copy out of as_rvec_array(state->v.data()) to upd->xp? */

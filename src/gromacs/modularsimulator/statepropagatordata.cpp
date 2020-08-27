@@ -54,6 +54,7 @@
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -115,7 +116,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
     else
     {
         state_change_natoms(globalState, globalState->natoms);
-        f_.resizeWithPadding(globalState->natoms);
+        f_.resize(globalState->natoms);
         localNAtoms_ = globalState->natoms;
         x_           = globalState->x;
         v_           = globalState->v;
@@ -204,14 +205,14 @@ ArrayRefWithPadding<const RVec> StatePropagatorData::constVelocitiesView() const
     return v_.constArrayRefWithPadding();
 }
 
-ArrayRefWithPadding<RVec> StatePropagatorData::forcesView()
+ForceBuffersView& StatePropagatorData::forcesView()
 {
-    return f_.arrayRefWithPadding();
+    return f_.view();
 }
 
-ArrayRefWithPadding<const RVec> StatePropagatorData::constForcesView() const
+const ForceBuffersView& StatePropagatorData::constForcesView() const
 {
-    return f_.constArrayRefWithPadding();
+    return f_.view();
 }
 
 rvec* StatePropagatorData::box()
@@ -286,7 +287,7 @@ t_state* StatePropagatorData::globalState()
     return globalState_;
 }
 
-PaddedHostVector<RVec>* StatePropagatorData::forcePointer()
+ForceBuffers* StatePropagatorData::forcePointer()
 {
     return &f_;
 }
@@ -426,7 +427,7 @@ void StatePropagatorData::Element::write(gmx_mdoutf_t outf, Step currentStep, Ti
     mdoutf_write_to_trajectory_files(fplog_, cr_, outf, static_cast<int>(mdof_flags),
                                      statePropagatorData_->totalNumAtoms_, currentStep, currentTime,
                                      localStateBackup_.get(), statePropagatorData_->globalState_,
-                                     observablesHistory, statePropagatorData_->f_);
+                                     observablesHistory, statePropagatorData_->f_.view().force());
 
     if (currentStep != lastStep_ || !isRegularSimulationEnd_)
     {

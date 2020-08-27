@@ -47,6 +47,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/forcebuffers.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"
@@ -121,9 +122,9 @@ public:
     //! Get read access to velocity vector
     ArrayRefWithPadding<const RVec> constVelocitiesView() const;
     //! Get write access to force vector
-    ArrayRefWithPadding<RVec> forcesView();
+    ForceBuffersView& forcesView();
     //! Get read access to force vector
-    ArrayRefWithPadding<const RVec> constForcesView() const;
+    const ForceBuffersView& constForcesView() const;
     //! Get pointer to box
     rvec* box();
     //! Get const pointer to box
@@ -162,7 +163,7 @@ private:
     //! The velocity vector
     PaddedHostVector<RVec> v_;
     //! The force vector
-    PaddedHostVector<RVec> f_;
+    ForceBuffers f_;
     //! The box matrix
     matrix box_;
     //! The box matrix of the previous step
@@ -186,7 +187,7 @@ private:
     //! Get a pointer to the global state
     t_state* globalState();
     //! Get a force pointer
-    PaddedHostVector<gmx::RVec>* forcePointer();
+    ForceBuffers* forcePointer();
 
     //! Whether we're doing VV and need to reset velocities after the first half step
     bool vvResetVelocities_;

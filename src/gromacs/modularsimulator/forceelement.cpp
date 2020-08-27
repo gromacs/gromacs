@@ -50,6 +50,7 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdrun/shellfc.h"
+#include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
@@ -178,7 +179,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
      * Check comments in sim_util.c
      */
     auto       x      = statePropagatorData_->positionsView();
-    auto       forces = statePropagatorData_->forcesView();
+    auto&      forces = statePropagatorData_->forcesView();
     auto       box    = statePropagatorData_->constBox();
     history_t* hist   = nullptr; // disabled
 
@@ -195,7 +196,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
                 fplog_, cr_, ms, isVerbose_, enforcedRotation_, step, inputrec_, imdSession_,
                 pull_work_, step == nextNSStep_, static_cast<int>(flags), localTopology_, constr_,
                 energyData_->enerdata(), statePropagatorData_->localNumAtoms(), x, v, box, lambda,
-                hist, forces, force_vir, mdAtoms_->mdatoms(), nrnb_, wcycle_, shellfc_, fr_,
+                hist, &forces, force_vir, mdAtoms_->mdatoms(), nrnb_, wcycle_, shellfc_, fr_,
                 runScheduleWork_, time, energyData_->muTot(), vsite_, ddBalanceRegionHandler_);
         nShellRelaxationSteps_++;
     }
@@ -206,7 +207,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
         gmx_edsam* ed  = nullptr;
 
         do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation_, imdSession_, pull_work_, step,
-                 nrnb_, wcycle_, localTopology_, box, x, hist, forces, force_vir,
+                 nrnb_, wcycle_, localTopology_, box, x, hist, &forces, force_vir,
                  mdAtoms_->mdatoms(), energyData_->enerdata(), lambda, fr_, runScheduleWork_, vsite_,
                  energyData_->muTot(), time, ed, static_cast<int>(flags), ddBalanceRegionHandler_);
     }

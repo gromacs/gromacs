@@ -44,6 +44,7 @@
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -62,16 +63,16 @@ namespace gmx
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
-                               const t_inputrec*       ir,
-                               const gmx_mtop_t&       top_global,
-                               gmx_localtop_t*         top,
-                               t_forcerec*             fr,
-                               PaddedHostVector<RVec>* force,
-                               MDAtoms*                mdAtoms,
-                               Constraints*            constr,
-                               VirtualSitesHandler*    vsite,
-                               gmx_shellfc_t*          shellfc)
+void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
+                               const t_inputrec*    ir,
+                               const gmx_mtop_t&    top_global,
+                               gmx_localtop_t*      top,
+                               t_forcerec*          fr,
+                               ForceBuffers*        force,
+                               MDAtoms*             mdAtoms,
+                               Constraints*         constr,
+                               VirtualSitesHandler* vsite,
+                               gmx_shellfc_t*       shellfc)
 {
     bool usingDomDec = DOMAINDECOMP(cr);
 
@@ -94,10 +95,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*        cr,
 
     if (force != nullptr)
     {
-        /* We need to allocate one element extra, since we might use
-         * (unaligned) 4-wide SIMD loads to access rvec entries.
-         */
-        force->resizeWithPadding(numTotalAtoms);
+        force->resize(numTotalAtoms);
     }
 
     atoms2md(&top_global, ir, numAtomIndex,

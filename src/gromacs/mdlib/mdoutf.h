@@ -121,17 +121,17 @@ void done_mdoutf(gmx_mdoutf_t of);
  * \param[in] observablesHistory Pointer to the ObservableHistory object.
  * \param[in] f_local            The local forces.
  */
-void mdoutf_write_to_trajectory_files(FILE*                    fplog,
-                                      const t_commrec*         cr,
-                                      gmx_mdoutf_t             of,
-                                      int                      mdof_flags,
-                                      int                      natoms,
-                                      int64_t                  step,
-                                      double                   t,
-                                      t_state*                 state_local,
-                                      t_state*                 state_global,
-                                      ObservablesHistory*      observablesHistory,
-                                      gmx::ArrayRef<gmx::RVec> f_local);
+void mdoutf_write_to_trajectory_files(FILE*                          fplog,
+                                      const t_commrec*               cr,
+                                      gmx_mdoutf_t                   of,
+                                      int                            mdof_flags,
+                                      int                            natoms,
+                                      int64_t                        step,
+                                      double                         t,
+                                      t_state*                       state_local,
+                                      t_state*                       state_global,
+                                      ObservablesHistory*            observablesHistory,
+                                      gmx::ArrayRef<const gmx::RVec> f_local);
 
 /*! \brief Get the output interval of box size of uncompressed TNG output.
  * Returns 0 if no uncompressed TNG file is open.

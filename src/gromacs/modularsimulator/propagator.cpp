@@ -156,7 +156,7 @@ void Propagator<IntegrationStep::VelocitiesOnly>::run()
     wallcycle_start(wcycle_, ewcUPDATE);
 
     auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto f = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
+    auto f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
     auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambda =
@@ -253,7 +253,7 @@ void Propagator<IntegrationStep::LeapFrog>::run()
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     auto x = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
     auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto f = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
+    auto f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
     auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambda =
@@ -351,7 +351,7 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     auto x = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
     auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto f = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
+    auto f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
     auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     int nth    = gmx_omp_nthreads_get(emntUpdate);

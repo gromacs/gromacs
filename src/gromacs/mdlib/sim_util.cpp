@@ -84,6 +84,7 @@
 #include "gromacs/mdlib/wholemoleculetransform.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -1015,7 +1016,7 @@ void do_force(FILE*                               fplog,
               const matrix                        box,
               gmx::ArrayRefWithPadding<gmx::RVec> x,
               history_t*                          hist,
-              gmx::ArrayRefWithPadding<gmx::RVec> force,
+              gmx::ForceBuffersView*              forceView,
               tensor                              vir_force,
               const t_mdatoms*                    mdatoms,
               gmx_enerdata_t*                     enerd,
@@ -1029,6 +1030,7 @@ void do_force(FILE*                               fplog,
               int                                 legacyFlags,
               const DDBalanceRegionHandler&       ddBalanceRegionHandler)
 {
+    auto force = forceView->forceWithPadding();
     GMX_ASSERT(force.unpaddedArrayRef().ssize() >= fr->natoms_force_constr,
                "The size of the force buffer should be at least the number of atoms to compute "
                "forces for");

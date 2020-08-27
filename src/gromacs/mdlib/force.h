@@ -63,6 +63,7 @@ struct t_nrnb;
 namespace gmx
 {
 class Awh;
+class ForceBuffersView;
 class ForceOutputs;
 class ForceWithVirial;
 class ImdSession;
@@ -87,7 +88,7 @@ void do_force(FILE*                               log,
               const matrix                        box,
               gmx::ArrayRefWithPadding<gmx::RVec> coordinates,
               history_t*                          hist,
-              gmx::ArrayRefWithPadding<gmx::RVec> force,
+              gmx::ForceBuffersView*              force,
               tensor                              vir_force,
               const t_mdatoms*                    mdatoms,
               gmx_enerdata_t*                     enerd,

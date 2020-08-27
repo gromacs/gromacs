@@ -102,6 +102,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/energyhistory.h"
+#include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -171,20 +172,20 @@ void gmx::LegacySimulator::do_rerun()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec*                 ir = inputrec;
-    int64_t                     step, step_rel;
-    double                      t, lam0[efptNR];
-    bool                        isLastStep               = false;
-    bool                        doFreeEnergyPerturbation = false;
-    unsigned int                force_flags;
-    tensor                      force_vir, shake_vir, total_vir, pres;
-    t_trxstatus*                status = nullptr;
-    rvec                        mu_tot;
-    t_trxframe                  rerun_fr;
-    gmx_localtop_t              top(top_global->ffparams);
-    PaddedHostVector<gmx::RVec> f{};
-    gmx_global_stat_t           gstat;
-    gmx_shellfc_t*              shellfc;
+    t_inputrec*       ir = inputrec;
+    int64_t           step, step_rel;
+    double            t, lam0[efptNR];
+    bool              isLastStep               = false;
+    bool              doFreeEnergyPerturbation = false;
+    unsigned int      force_flags;
+    tensor            force_vir, shake_vir, total_vir, pres;
+    t_trxstatus*      status = nullptr;
+    rvec              mu_tot;
+    t_trxframe        rerun_fr;
+    gmx_localtop_t    top(top_global->ffparams);
+    ForceBuffers      f;
+    gmx_global_stat_t gstat;
+    gmx_shellfc_t*    shellfc;
 
     double cycles;
 
@@ -524,8 +525,8 @@ void gmx::LegacySimulator::do_rerun()
             relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, enforcedRotation, step, ir,
                                 imdSession, pull_work, bNS, force_flags, &top, constr, enerd,
                                 state->natoms, state->x.arrayRefWithPadding(),
-                                state->v.arrayRefWithPadding(), state->box, state->lambda, &state->hist,
-                                f.arrayRefWithPadding(), force_vir, mdatoms, nrnb, wcycle, shellfc,
+                                state->v.arrayRefWithPadding(), state->box, state->lambda,
+                                &state->hist, &f.view(), force_vir, mdatoms, nrnb, wcycle, shellfc,
                                 fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
         }
         else
@@ -539,7 +540,7 @@ void gmx::LegacySimulator::do_rerun()
             gmx_edsam* ed  = nullptr;
             do_force(fplog, cr, ms, ir, awh, enforcedRotation, imdSession, pull_work, step, nrnb,
                      wcycle, &top, state->box, state->x.arrayRefWithPadding(), &state->hist,
-                     f.arrayRefWithPadding(), force_vir, mdatoms, enerd, state->lambda, fr, runScheduleWork,
+                     &f.view(), force_vir, mdatoms, enerd, state->lambda, fr, runScheduleWork,
                      vsite, mu_tot, t, ed, GMX_FORCE_NS | force_flags, ddBalanceRegionHandler);
         }
 
@@ -552,8 +553,8 @@ void gmx::LegacySimulator::do_rerun()
             const bool bSumEkinhOld        = false;
             do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t, ir, state,
                                      state_global, observablesHistory, top_global, fr, outf,
-                                     energyOutput, ekind, f, isCheckpointingStep, doRerun,
-                                     isLastStep, mdrunOptions.writeConfout, bSumEkinhOld);
+                                     energyOutput, ekind, f.view().force(), isCheckpointingStep,
+                                     doRerun, isLastStep, mdrunOptions.writeConfout, bSumEkinhOld);
         }
 
         stopHandler->setSignal();
