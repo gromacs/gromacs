@@ -25,3 +25,10 @@ Support for offloading PME to GPU when doing Coulomb FEP
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 PME calculations can be offloaded to GPU when doing Coulomb free-energy perturbations.
+
+CPU SIMD accelerated implementation of harmonic bonds
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+SIMD acceleration for bonds slightly improves performance for systems
+with H-bonds only constrained or no constraints. This gives a significant
+improvement with multiple time stepping.

@@ -445,20 +445,20 @@ real harmonic(real kA, real kB, real xA, real xB, real x, real lambda, real* V, 
     /* That was 19 flops */
 }
 
-
 template<BondedKernelFlavor flavor>
-real bonds(int             nbonds,
-           const t_iatom   forceatoms[],
-           const t_iparams forceparams[],
-           const rvec      x[],
-           rvec4           f[],
-           rvec            fshift[],
-           const t_pbc*    pbc,
-           real            lambda,
-           real*           dvdlambda,
-           const t_mdatoms gmx_unused* md,
-           t_fcdata gmx_unused* fcd,
-           int gmx_unused* global_atom_index)
+std::enable_if_t<flavor != BondedKernelFlavor::ForcesSimdWhenAvailable || !GMX_SIMD_HAVE_REAL, real>
+bonds(int             nbonds,
+      const t_iatom   forceatoms[],
+      const t_iparams forceparams[],
+      const rvec      x[],
+      rvec4           f[],
+      rvec            fshift[],
+      const t_pbc*    pbc,
+      real            lambda,
+      real*           dvdlambda,
+      const t_mdatoms gmx_unused* md,
+      t_fcdata gmx_unused* fcd,
+      int gmx_unused* global_atom_index)
 {
     int  i, ki, ai, aj, type;
     real dr, dr2, fbond, vbond, vtot;
@@ -492,6 +492,104 @@ real bonds(int             nbonds,
     }                                                               /* 59 TOTAL	*/
     return vtot;
 }
+
+#if GMX_SIMD_HAVE_REAL
+
+/*! \brief Computes forces (only) for harmonic bonds using SIMD intrinsics
+ *
+ * As plain-C bonds(), but using SIMD to calculate many bonds at once.
+ * This routines does not calculate energies and shift forces.
+ */
+template<BondedKernelFlavor flavor>
+std::enable_if_t<flavor == BondedKernelFlavor::ForcesSimdWhenAvailable, real>
+bonds(int             nbonds,
+      const t_iatom   forceatoms[],
+      const t_iparams forceparams[],
+      const rvec      x[],
+      rvec4           f[],
+      rvec gmx_unused fshift[],
+      const t_pbc*    pbc,
+      real gmx_unused lambda,
+      real gmx_unused* dvdlambda,
+      const t_mdatoms gmx_unused* md,
+      t_fcdata gmx_unused* fcd,
+      int gmx_unused* global_atom_index)
+{
+    constexpr int                            nfa1 = 3;
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ai[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t aj[GMX_SIMD_REAL_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) real         coeff[2 * GMX_SIMD_REAL_WIDTH];
+
+    alignas(GMX_SIMD_ALIGNMENT) real pbc_simd[9 * GMX_SIMD_REAL_WIDTH];
+
+    set_pbc_simd(pbc, pbc_simd);
+
+    const SimdReal real_eps = SimdReal(GMX_REAL_EPS);
+
+    /* nbonds is the number of bonds times nfa1, here we step GMX_SIMD_REAL_WIDTH angles */
+    for (int i = 0; i < nbonds; i += GMX_SIMD_REAL_WIDTH * nfa1)
+    {
+        /* Collect atoms for GMX_SIMD_REAL_WIDTH angles.
+         * iu indexes into forceatoms, we should not let iu go beyond nbonds.
+         */
+        int iu = i;
+        for (int s = 0; s < GMX_SIMD_REAL_WIDTH; s++)
+        {
+            const int type = forceatoms[iu];
+            ai[s]          = forceatoms[iu + 1];
+            aj[s]          = forceatoms[iu + 2];
+
+            /* At the end fill the arrays with the last atoms and 0 params */
+            if (i + s * nfa1 < nbonds)
+            {
+                coeff[s]                       = forceparams[type].harmonic.krA;
+                coeff[GMX_SIMD_REAL_WIDTH + s] = forceparams[type].harmonic.rA;
+
+                if (iu + nfa1 < nbonds)
+                {
+                    iu += nfa1;
+                }
+            }
+            else
+            {
+                coeff[s]                       = 0;
+                coeff[GMX_SIMD_REAL_WIDTH + s] = 0;
+            }
+        }
+
+        /* Store the non PBC corrected distances packed and aligned */
+        SimdReal xi, yi, zi;
+        SimdReal xj, yj, zj;
+        gatherLoadUTranspose<3>(reinterpret_cast<const real*>(x), ai, &xi, &yi, &zi);
+        gatherLoadUTranspose<3>(reinterpret_cast<const real*>(x), aj, &xj, &yj, &zj);
+        SimdReal rij_x = xi - xj;
+        SimdReal rij_y = yi - yj;
+        SimdReal rij_z = zi - zj;
+
+        pbc_correct_dx_simd(&rij_x, &rij_y, &rij_z, pbc_simd);
+
+        const SimdReal dist2 = rij_x * rij_x + rij_y * rij_y + rij_z * rij_z;
+        // Here we avoid sqrt(0), the force will be zero because rij=0
+        const SimdReal invDist = invsqrt(max(dist2, real_eps));
+
+        const SimdReal k  = load<SimdReal>(coeff);
+        const SimdReal r0 = load<SimdReal>(coeff + GMX_SIMD_REAL_WIDTH);
+
+        // Compute the force divided by the distance
+        const SimdReal forceOverR = -k * (dist2 * invDist - r0) * invDist;
+
+        const SimdReal f_x = forceOverR * rij_x;
+        const SimdReal f_y = forceOverR * rij_y;
+        const SimdReal f_z = forceOverR * rij_z;
+
+        transposeScatterIncrU<4>(reinterpret_cast<real*>(f), ai, f_x, f_y, f_z);
+        transposeScatterDecrU<4>(reinterpret_cast<real*>(f), aj, f_x, f_y, f_z);
+    }
+
+    return 0;
+}
+
+#endif // GMX_SIMD_HAVE_REAL
 
 template<BondedKernelFlavor flavor>
 real restraint_bonds(int             nbonds,
