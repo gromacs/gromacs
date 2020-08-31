@@ -147,6 +147,10 @@ configure_file(version.h.cmakein version.h)
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
           ${CMAKE_CURRENT_BINARY_DIR}/version.h
+	  analysisdata.h
+	  options.h
+	  selection.h
+	  trajectoryanalysis.h
           DESTINATION include/gromacs)
 endif()
 

@@ -48,6 +48,23 @@ gmx_add_libgromacs_sources(
     treesupport.cpp
     )
 
+if(GMX_INSTALL_LEGACY_API)
+    install(FILES
+	    abstractoption.h
+	    basicoptions.h
+	    filenameoption.h
+	    filenameoptionmanager.h
+	    ioptionsbehavior.h
+	    ioptionscontainer.h
+	    ioptionscontainerwithsections.h
+	    ivaluestore.h
+	    optionfiletype.h
+	    optionflags.h
+	    options.h
+	    timeunitmanager.h
+            DESTINATION include/gromacs/options)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

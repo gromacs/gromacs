@@ -564,7 +564,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
                         const DeviceContext* deviceContext,
                         const DeviceStream*  deviceStream,
                         const PmeGpuProgram* pmeGpuProgram,
-                        const gmx::MDLogger& /*mdlog*/)
+                        const gmx::MDLogger& mdlog)
 {
     int  use_threads, sum_use_threads, i;
     ivec ndata;
@@ -733,17 +733,19 @@ gmx_pme_t* gmx_pme_init(const t_commrec*     cr,
         imbal = estimate_pme_load_imbalance(pme.get());
         if (imbal >= 1.2 && pme->nodeid_major == 0 && pme->nodeid_minor == 0)
         {
-            fprintf(stderr,
-                    "\n"
-                    "NOTE: The load imbalance in PME FFT and solve is %d%%.\n"
-                    "      For optimal PME load balancing\n"
-                    "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_ranks_x "
-                    "(%d)\n"
-                    "      and PME grid_y (%d) and grid_z (%d) should be divisible by #PME_ranks_y "
-                    "(%d)\n"
-                    "\n",
-                    gmx::roundToInt((imbal - 1) * 100), pme->nkx, pme->nky, pme->nnodes_major,
-                    pme->nky, pme->nkz, pme->nnodes_minor);
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "NOTE: The load imbalance in PME FFT and solve is %d%%.\n"
+                            "      For optimal PME load balancing\n"
+                            "      PME grid_x (%d) and grid_y (%d) should be divisible by "
+                            "#PME_ranks_x "
+                            "(%d)\n"
+                            "      and PME grid_y (%d) and grid_z (%d) should be divisible by "
+                            "#PME_ranks_y "
+                            "(%d)",
+                            gmx::roundToInt((imbal - 1) * 100), pme->nkx, pme->nky,
+                            pme->nnodes_major, pme->nky, pme->nkz, pme->nnodes_minor);
         }
     }
 
@@ -913,10 +915,10 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
 
     try
     {
+        // This is reinit. Any logging should have been done at first init.
+        // Here we should avoid writing notes for settings the user did not
+        // set directly.
         const gmx::MDLogger dummyLogger;
-        // This is reinit which is currently only changing grid size/coefficients,
-        // so we don't expect the actual logging.
-        // TODO: when PME is an object, it should take reference to mdlog on construction and save it.
         GMX_ASSERT(pmedata, "Invalid PME pointer");
         NumPmeDomains numPmeDomains = { pme_src->nnodes_major, pme_src->nnodes_minor };
         *pmedata = gmx_pme_init(cr, numPmeDomains, &irc, pme_src->bFEP_q, pme_src->bFEP_lj, FALSE,

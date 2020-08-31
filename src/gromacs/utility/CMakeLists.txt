@@ -55,9 +55,14 @@ if(GMX_INSTALL_LEGACY_API)
           enumerationhelpers.h
           exceptions.h
           listoflists.h
+	  fileptr.h
+	  futil.h
+	  flags.h
+	  pleasecite.h
           programcontext.h
           range.h
           smalloc.h
+	  stringutil.h
           unique_cptr.h
           DESTINATION include/gromacs/utility)
 endif()

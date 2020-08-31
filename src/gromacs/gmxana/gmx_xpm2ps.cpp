@@ -1068,7 +1068,7 @@ static void make_axis_labels(gmx::ArrayRef<t_matrix> mat1)
 
 static void prune_mat(gmx::ArrayRef<t_matrix> mat, gmx::ArrayRef<t_matrix> mat2, int skip)
 {
-    GMX_RELEASE_ASSERT(mat.size() == mat2.size(),
+    GMX_RELEASE_ASSERT(mat.size() == mat2.size() || mat2.empty(),
                        "Matrix pruning requires matrices of the same size");
     for (gmx::index i = 0; i != gmx::ssize(mat); ++i)
     {
@@ -1254,7 +1254,7 @@ static void do_mat(gmx::ArrayRef<t_matrix> mat,
                    int                     skip,
                    int                     mapoffset)
 {
-    GMX_RELEASE_ASSERT(mat.size() == mat2.size(),
+    GMX_RELEASE_ASSERT(mat.size() == mat2.size() || mat2.empty(),
                        "Combined matrix write requires matrices of the same size");
     if (!mat2.empty())
     {

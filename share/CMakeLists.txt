@@ -33,7 +33,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_subdirectory(template)
+if(GMX_INSTALL_LEGACY_API)
+    add_subdirectory(template)
+endif()
 
 install(FILES README.tutor README_FreeEnergyModifications.txt
     DESTINATION ${GMX_INSTALL_GMXDATADIR}

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,11 +41,13 @@ endif()
 
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
+	  atomprop.h
           atoms.h
           block.h
           forcefieldparameters.h
           idef.h
           ifunc.h
+	  index.h
           symtab.h
           topology.h
           DESTINATION include/gromacs/topology)

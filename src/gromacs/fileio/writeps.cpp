@@ -88,7 +88,7 @@ static void ps_selcolor(t_psdata* ps, char* cname)
 
 static gmx::index search_col(t_psdata* ps, real r, real g, real b)
 {
-    for (gmx::index i = 0; ssize(ps->rgb); ++i)
+    for (gmx::index i = 0; i < ssize(ps->rgb); ++i)
     {
         if ((ps->rgb[i].r == r) && (ps->rgb[i].g == g) && (ps->rgb[i].b == b))
         {

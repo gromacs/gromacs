@@ -52,9 +52,11 @@ target_sources(libgromacs PRIVATE ${FILEIO_SOURCES})
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
           oenv.h
+	  confio.h
           pdbio.h
           tpxio.h
           trxio.h
+	  filetypes.h
           DESTINATION include/gromacs/fileio)
 endif()
 

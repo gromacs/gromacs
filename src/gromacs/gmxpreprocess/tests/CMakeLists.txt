@@ -37,6 +37,7 @@ gmx_add_gtest_executable(gmxpreprocess-test
         editconf.cpp
         genconf.cpp
         genion.cpp
+        genrestr.cpp
         gpp_atomtype.cpp
         gpp_bond_atomtype.cpp
         insert_molecules.cpp

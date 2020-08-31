@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -80,7 +80,9 @@ if (GMX_CUDA_TARGET_SM)
 endif()
 
 # default flags
-list(APPEND _CUDA_CLANG_FLAGS "-x cuda" "-ffast-math")
+list(APPEND _CUDA_CLANG_FLAGS "-x cuda" "-ffast-math" "-fcuda-flush-denormals-to-zero")
+# Workaround for clang>=9 (Bug 45533). No CUDA file uses OpenMP.
+list(APPEND _CUDA_CLANG_FLAGS "-fno-openmp")
 # CUDA toolkit
 list(APPEND _CUDA_CLANG_FLAGS "--cuda-path=${CUDA_TOOLKIT_ROOT_DIR}")
 # codegen flags

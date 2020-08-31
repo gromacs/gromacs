@@ -36,6 +36,15 @@
 file(GLOB TRAJECTORYANALYSIS_SOURCES *.cpp modules/*.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORYANALYSIS_SOURCES} PARENT_SCOPE)
 
+if(GMX_INSTALL_LEGACY_API)
+    install(FILES
+	    analysismodule.h
+	    analysissettings.h
+	    cmdlinerunner.h
+	    topologyinformation.h
+            DESTINATION include/gromacs/trajectoryanalysis)
+endif()
+
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()

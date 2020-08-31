@@ -16,8 +16,8 @@ performance when non-perturbed non-bondeds are offloaded to a GPU. In that case
 the PME-mesh calculation now always takes the most CPU time.
 
 
-Proper dihedrals of Fourier type and improper dihedrals of preriodic type are SIMD accelerated
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Proper dihedrals of Fourier type and improper dihedrals of periodic type are SIMD accelerated
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Avoid configuring the own-FFTW with AVX512 enabled when |Gromacs| does not use AVX512
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

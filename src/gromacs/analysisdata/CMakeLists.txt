@@ -36,6 +36,17 @@
 file(GLOB ANALYSISDATA_SOURCES *.cpp modules/*.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${ANALYSISDATA_SOURCES} PARENT_SCOPE)
 
+if(GMX_INSTALL_LEGACY_API)
+    install(FILES
+            abstractdata.h
+            analysisdata.h
+            arraydata.h
+            dataframe.h
+            datamodule.h
+            DESTINATION include/gromacs/analysisdata)
+endif()
+
+
 add_subdirectory(modules)
 
 if (BUILD_TESTING)

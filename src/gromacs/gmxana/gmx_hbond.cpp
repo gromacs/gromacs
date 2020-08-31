@@ -3412,6 +3412,7 @@ int gmx_hbond(int argc, char* argv[])
                 mat.ny = hb->nrhb;
 
                 mat.matrix.resize(mat.nx, mat.ny);
+                mat.axis_x.resize(mat.nx);
                 for (auto& value : mat.matrix.toArrayRef())
                 {
                     value = 0;
@@ -3449,11 +3450,15 @@ int gmx_hbond(int argc, char* argv[])
                 mat.label_y = bContact ? "Contact Index" : "Hydrogen Bond Index";
                 mat.bDiscrete = true;
                 mat.map.resize(2);
-                for (auto& m : mat.map)
                 {
-                    m.code.c1 = hbmap[i];
-                    m.desc    = hbdesc[i];
-                    m.rgb     = hbrgb[i];
+                    int i = 0;
+                    for (auto& m : mat.map)
+                    {
+                        m.code.c1 = hbmap[i];
+                        m.desc    = hbdesc[i];
+                        m.rgb     = hbrgb[i];
+                        i++;
+                    }
                 }
                 fp = opt2FILE("-hbm", NFILE, fnm, "w");
                 write_xpm_m(fp, mat);

@@ -1,7 +1,7 @@
 GROMACS 2020.3 release notes
 ----------------------------
 
-This version was released on TODO, 2020. These release notes
+This version was released on July 9th, 2020. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2020.2 version, to fix known issues. It also incorporates all
 fixes made in version 2019.6 and earlier, which you can find described
@@ -19,13 +19,72 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix incorrect reading of certain older tpr files
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Certain older tpr files could be read incorrectly, usually leading to an exit
+with a memory allocation error.
+
+Fix segmentation fault with gmx lie
+"""""""""""""""""""""""""""""""""""
+
+The tool would crash due to mismatching sizes of energy terms in the file and F_NRE.
+
+:issue:`3547`
+
+Fix matrix reading in gmx xpm2ps
+""""""""""""""""""""""""""""""""
+
+The tool would fail to read a matrix if no second matrix was provided.
+
+:issue:`3551`
+
+Fix uninitialized variable warnings in gmx hbond
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+Tool would produce garbage due to using uninitialized memory.
+
+:issue:`3550`
+
+Actually fix gmx do_dssp
+""""""""""""""""""""""""
+
+The tool was still broken and gave incorrect results after the previous fix.
+
+:issue:`3444`
+
+Allow configuration of dssp default path
+""""""""""""""""""""""""""""""""""""""""
+
+Users can configure the default path for dssp using GMX_DSSP_PROGRAM_PATH.
+
+:issue:`3520`
+
+Avoid segmentation fault in gmx genrestr
+""""""""""""""""""""""""""""""""""""""""
+
+The tool could fail when running simple inputs due to memory access errors
+caused by accessing free'd memory.
+
+:issue:`3582`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Update MSVC SIMD flags
+""""""""""""""""""""""
+Newly supported SIMD flags may improve performance on recent x86 running Windows.
+
 Fix error with tinyxml2 linking
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""
 The signature for linking the external library was wrong.
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Updated message on using GPU with non-dynamical integrator
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The GPU implementation of PME and bonded forces requires dynamical integrator.
+The message that informs user why using GPU for PME or bonded forces is not
+supported with non-dynamical integrator was made more clear.
 

@@ -71,7 +71,7 @@ static t_liedata* analyze_names(int nre, gmx_enxnm_t* names, const char* ligand)
     char       self[256];
 
     /* Skip until we come to pressure */
-    for (i = 0; (i < F_NRE); i++)
+    for (i = 0; (i < nre); i++)
     {
         if (std::strcmp(names[i].name, interaction_function[F_PRES].longname) == 0)
         {

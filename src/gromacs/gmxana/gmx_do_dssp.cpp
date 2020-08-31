@@ -193,8 +193,7 @@ static int strip_dssp(FILE*                   tapeout,
         bFirst = false;
     }
     mat->axis_x.push_back(t);
-    mat->matrix.resize(mat->matrix.extent(0), nr);
-    mat->nx          = mat->matrix.extent(0);
+    mat->matrix.resize(++(mat->nx), nr);
     auto columnIndex = mat->nx - 1;
     for (int i = 0; i < nr; i++)
     {
@@ -462,15 +461,13 @@ static void analyse_ss(const char* outfile, t_matrix* mat, const char* ss_string
 int gmx_do_dssp(int argc, char* argv[])
 {
     const char* desc[] = {
-        "[THISMODULE] ",
-        "reads a trajectory file and computes the secondary structure for",
-        "each time frame ",
-        "calling the dssp program. If you do not have the dssp program,",
+        "[THISMODULE] ", "reads a trajectory file and computes the secondary structure for",
+        "each time frame ", "calling the dssp program. If you do not have the dssp program,",
         "get it from http://swift.cmbi.ru.nl/gv/dssp. [THISMODULE] assumes ",
         "that the dssp executable is located in ",
-        "[TT]/usr/local/bin/dssp[tt]. If this is not the case, then you should",
-        "set an environment variable [TT]DSSP[tt] pointing to the dssp",
-        "executable, e.g.: [PAR]",
+        // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
+        "[TT]" GMX_DSSP_PROGRAM_PATH "[tt]. If this is not the case, then you should",
+        "set an environment variable [TT]DSSP[tt] pointing to the dssp", "executable, e.g.: [PAR]",
         "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
         "Since version 2.0.0, dssp is invoked with a syntax that differs",
         "from earlier versions. If you have an older version of dssp,",
@@ -482,8 +479,7 @@ int gmx_do_dssp(int argc, char* argv[])
         "[REF].xpm[ref] matrix file. This file can be visualized with for instance",
         "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
         "Individual chains are separated by light grey lines in the [REF].xpm[ref] and",
-        "postscript files.",
-        "The number of residues with each secondary structure type and the",
+        "postscript files.", "The number of residues with each secondary structure type and the",
         "total secondary structure ([TT]-sss[tt]) count as a function of",
         "time are also written to file ([TT]-sc[tt]).[PAR]",
         "Solvent accessible surface (SAS) per residue can be calculated, both in",
@@ -600,9 +596,10 @@ int gmx_do_dssp(int argc, char* argv[])
     }
     fclose(tmpf);
 
+    const std::string defpathenv = GMX_DSSP_PROGRAM_PATH;
     if ((dptr = getenv("DSSP")) == nullptr)
     {
-        dptr = "/usr/local/bin/dssp";
+        dptr = defpathenv.c_str();
     }
     if (!gmx_fexist(dptr))
     {

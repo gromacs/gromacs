@@ -38,8 +38,22 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
 
 # TODO: (https://gitlab.com/gromacs/gromacs/-/issues/988) Find a new convention for defining public API.
 install(FILES
+	do_fit.h
+	functions.h
+	units.h
+	utilities.h
+	vec.h
         vectypes.h
         DESTINATION include/gromacs/math)
+
+if(GMX_INSTALL_LEGACY_API)
+  install(FILES
+	  do_fit.h
+	  units.h
+	  utilities.h
+          DESTINATION include/gromacs/math)
+endif()
+
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
