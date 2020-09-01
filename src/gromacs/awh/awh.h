@@ -264,16 +264,16 @@ public:
      */
     bool needForeignEnergyDifferences(int64_t step) const;
 
+    /*! \brief Returns true if AWH has a bias with a free energy lambda state dimension at all.
+     */
+    bool hasFepLambdaDimension() const;
+
 private:
     /*! \brief Returns whether we need to write output at the current step.
      *
      * \param[in]     step             The current MD step.
      */
     bool isOutputStep(int64_t step) const;
-
-    /*! \brief Returns true if AWH has a bias with a free energy lambda state dimension at all.
-     */
-    bool hasFepLambdaDimension() const;
 
 private:
     std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */

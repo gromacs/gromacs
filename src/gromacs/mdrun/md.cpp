@@ -1532,6 +1532,11 @@ void gmx::LegacySimulator::do_md()
                                                    do_log ? fplog : nullptr, step, t,
                                                    fr->fcdata.get(), awh.get());
             }
+            if (do_log && ir->bDoAwh && awh->hasFepLambdaDimension())
+            {
+                const bool isInitialOutput = false;
+                printLambdaStateToLog(fplog, state->lambda, isInitialOutput);
+            }
 
             if (ir->bPull)
             {

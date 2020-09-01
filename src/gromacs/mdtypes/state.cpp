@@ -280,6 +280,19 @@ void preserve_box_shape(const t_inputrec* ir, matrix box_rel, matrix box)
     }
 }
 
+void printLambdaStateToLog(FILE* fplog, const gmx::ArrayRef<real> lambda, const bool isInitialOutput)
+{
+    if (fplog != nullptr)
+    {
+        fprintf(fplog, "%s vector of lambda components:[ ", isInitialOutput ? "Initial" : "Current");
+        for (const auto& l : lambda)
+        {
+            fprintf(fplog, "%10.4f ", l);
+        }
+        fprintf(fplog, "]\n%s", isInitialOutput ? "" : "\n");
+    }
+}
+
 void initialize_lambdas(FILE*               fplog,
                         const t_inputrec&   ir,
                         bool                isMaster,
@@ -338,13 +351,6 @@ void initialize_lambdas(FILE*               fplog,
     }
 
     /* Send to the log the information on the current lambdas */
-    if (fplog != nullptr)
-    {
-        fprintf(fplog, "Initial vector of lambda components:[ ");
-        for (const auto& l : lambda)
-        {
-            fprintf(fplog, "%10.4f ", l);
-        }
-        fprintf(fplog, "]\n");
-    }
+    const bool isInitialOutput = true;
+    printLambdaStateToLog(fplog, lambda, isInitialOutput);
 }

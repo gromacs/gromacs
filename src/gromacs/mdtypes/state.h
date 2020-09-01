@@ -341,6 +341,15 @@ static inline gmx::ArrayRef<const gmx::RVec> positionsFromStatePointer(const t_s
     }
 };
 
+/*! \brief Prints the current lambda state to the log file.
+ *
+ * \param[in] fplog  The log file. If fplog == nullptr there will be no output.
+ * \param[in] lambda The array of lambda values.
+ * \param[in] isInitialOutput Whether this output is the initial lambda state or not.
+ */
+void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<real> lambda, bool isInitialOutput);
+
+
 /*! \brief Fills fep_state, lambda, and lam0 if needed
  *
  * If FEP or simulated tempering is in use:
