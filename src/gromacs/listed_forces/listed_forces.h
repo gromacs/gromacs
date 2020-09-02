@@ -70,13 +70,13 @@
 #define GMX_LISTED_FORCES_LISTED_FORCES_H
 
 #include <memory>
+#include <vector>
 
 #include <bitset>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -101,6 +101,8 @@ class ForceOutputs;
 class StepWorkload;
 template<typename>
 class ArrayRef;
+template<typename>
+class ArrayRefWithPadding;
 } // namespace gmx
 
 //! Type of CPU function to compute a bonded interaction.
@@ -182,24 +184,24 @@ public:
      * xWholeMolecules only needs to contain whole molecules when orientation
      * restraints need to be computed and can be empty otherwise.
      */
-    void calculate(struct gmx_wallcycle*          wcycle,
-                   const matrix                   box,
-                   const t_lambda*                fepvals,
-                   const t_commrec*               cr,
-                   const gmx_multisim_t*          ms,
-                   const rvec                     x[],
-                   gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
-                   t_fcdata*                      fcdata,
-                   history_t*                     hist,
-                   gmx::ForceOutputs*             forceOutputs,
-                   const t_forcerec*              fr,
-                   const struct t_pbc*            pbc,
-                   gmx_enerdata_t*                enerd,
-                   t_nrnb*                        nrnb,
-                   const real*                    lambda,
-                   const t_mdatoms*               md,
-                   int*                           global_atom_index,
-                   const gmx::StepWorkload&       stepWork);
+    void calculate(struct gmx_wallcycle*                     wcycle,
+                   const matrix                              box,
+                   const t_lambda*                           fepvals,
+                   const t_commrec*                          cr,
+                   const gmx_multisim_t*                     ms,
+                   gmx::ArrayRefWithPadding<const gmx::RVec> coordinates,
+                   gmx::ArrayRef<const gmx::RVec>            xWholeMolecules,
+                   t_fcdata*                                 fcdata,
+                   history_t*                                hist,
+                   gmx::ForceOutputs*                        forceOutputs,
+                   const t_forcerec*                         fr,
+                   const struct t_pbc*                       pbc,
+                   gmx_enerdata_t*                           enerd,
+                   t_nrnb*                                   nrnb,
+                   const real*                               lambda,
+                   const t_mdatoms*                          md,
+                   int*                                      global_atom_index,
+                   const gmx::StepWorkload&                  stepWork);
 
     //! Returns whether bonded interactions are assigned to the CPU
     bool haveCpuBondeds() const;

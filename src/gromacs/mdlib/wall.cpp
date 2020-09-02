@@ -56,6 +56,7 @@
 #include "gromacs/mdtypes/nblist.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -106,7 +107,7 @@ void make_wall_tables(FILE*                   fplog,
     }
 }
 
-[[noreturn]] static void wall_error(int a, const rvec* x, real r)
+[[noreturn]] static void wall_error(int a, gmx::ArrayRef<const gmx::RVec> x, real r)
 {
     gmx_fatal(FARGS,
               "An atom is beyond the wall: coordinates %f %f %f, distance %f\n"
@@ -158,15 +159,15 @@ static void tableForce(real r, const t_forcetable& tab, real Cd, real Cr, real* 
     }
 }
 
-real do_walls(const t_inputrec&     ir,
-              const t_forcerec&     fr,
-              const matrix          box,
-              const t_mdatoms&      md,
-              const rvec*           x,
-              gmx::ForceWithVirial* forceWithVirial,
-              real                  lambda,
-              real                  Vlj[],
-              t_nrnb*               nrnb)
+real do_walls(const t_inputrec&              ir,
+              const t_forcerec&              fr,
+              const matrix                   box,
+              const t_mdatoms&               md,
+              gmx::ArrayRef<const gmx::RVec> x,
+              gmx::ForceWithVirial*          forceWithVirial,
+              real                           lambda,
+              real                           Vlj[],
+              t_nrnb*                        nrnb)
 {
     constexpr real sixth   = 1.0 / 6.0;
     constexpr real twelfth = 1.0 / 12.0;

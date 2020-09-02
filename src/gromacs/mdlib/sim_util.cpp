@@ -81,6 +81,7 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vsite.h"
+#include "gromacs/mdlib/wall.h"
 #include "gromacs/mdlib/wholemoleculetransform.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -1591,10 +1592,52 @@ void do_force(FILE*                               fplog,
         /* Wait for non-local coordinate data to be copied from device */
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
     }
-    /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fr, inputrec, cr, ms, nrnb, wcycle, mdatoms, x, xWholeMolecules, hist,
-                      &forceOut, enerd, box, lambda.data(), as_rvec_array(dipoleData.muStateAB),
-                      stepWork, ddBalanceRegionHandler);
+
+    // Compute wall interactions, when present.
+    // Note: should be moved to special forces.
+    if (inputrec->nwall && stepWork.computeNonbondedForces)
+    {
+        /* foreign lambda component for walls */
+        real dvdl_walls = do_walls(*inputrec, *fr, box, *mdatoms, x.unpaddedConstArrayRef(),
+                                   &forceOut.forceWithVirial(), lambda[efptVDW],
+                                   enerd->grpp.ener[egLJSR].data(), nrnb);
+        enerd->dvdl_lin[efptVDW] += dvdl_walls;
+    }
+
+    if (stepWork.computeListedForces)
+    {
+        /* Check whether we need to take into account PBC in listed interactions */
+        bool needMolPbc = false;
+        for (const auto& listedForces : fr->listedForces)
+        {
+            if (listedForces.haveCpuListedForces(*fr->fcdata))
+            {
+                needMolPbc = fr->bMolPBC;
+            }
+        }
+
+        t_pbc pbc;
+
+        if (needMolPbc)
+        {
+            /* Since all atoms are in the rectangular or triclinic unit-cell,
+             * only single box vector shifts (2 in x) are required.
+             */
+            set_pbc_dd(&pbc, fr->pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, TRUE, box);
+        }
+
+        for (auto& listedForces : fr->listedForces)
+        {
+            listedForces.calculate(
+                    wcycle, box, inputrec->fepvals, cr, ms, x, xWholeMolecules, fr->fcdata.get(),
+                    hist, &forceOut, fr, &pbc, enerd, nrnb, lambda.data(), mdatoms,
+                    DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr, stepWork);
+        }
+    }
+
+    calculateLongRangeNonbondeds(fr, inputrec, cr, nrnb, wcycle, mdatoms, x.unpaddedConstArrayRef(),
+                                 &forceOut.forceWithVirial(), enerd, box, lambda.data(),
+                                 as_rvec_array(dipoleData.muStateAB), stepWork, ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
 

@@ -678,24 +678,24 @@ void calc_listed_lambda(const InteractionDefinitions& idef,
 
 } // namespace
 
-void ListedForces::calculate(struct gmx_wallcycle*          wcycle,
-                             const matrix                   box,
-                             const t_lambda*                fepvals,
-                             const t_commrec*               cr,
-                             const gmx_multisim_t*          ms,
-                             const rvec                     x[],
-                             gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
-                             t_fcdata*                      fcdata,
-                             history_t*                     hist,
-                             gmx::ForceOutputs*             forceOutputs,
-                             const t_forcerec*              fr,
-                             const struct t_pbc*            pbc,
-                             gmx_enerdata_t*                enerd,
-                             t_nrnb*                        nrnb,
-                             const real*                    lambda,
-                             const t_mdatoms*               md,
-                             int*                           global_atom_index,
-                             const gmx::StepWorkload&       stepWork)
+void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
+                             const matrix                              box,
+                             const t_lambda*                           fepvals,
+                             const t_commrec*                          cr,
+                             const gmx_multisim_t*                     ms,
+                             gmx::ArrayRefWithPadding<const gmx::RVec> coordinates,
+                             gmx::ArrayRef<const gmx::RVec>            xWholeMolecules,
+                             t_fcdata*                                 fcdata,
+                             history_t*                                hist,
+                             gmx::ForceOutputs*                        forceOutputs,
+                             const t_forcerec*                         fr,
+                             const struct t_pbc*                       pbc,
+                             gmx_enerdata_t*                           enerd,
+                             t_nrnb*                                   nrnb,
+                             const real*                               lambda,
+                             const t_mdatoms*                          md,
+                             int*                                      global_atom_index,
+                             const gmx::StepWorkload&                  stepWork)
 {
     if (interactionSelection_.none() || !stepWork.computeListedForces)
     {
@@ -703,6 +703,9 @@ void ListedForces::calculate(struct gmx_wallcycle*          wcycle,
     }
 
     const InteractionDefinitions& idef = *idef_;
+
+    // Todo: replace all rvec use here with ArrayRefWithPadding
+    const rvec* x = as_rvec_array(coordinates.paddedArrayRef().data());
 
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
     if (haveRestraints(*fcdata))

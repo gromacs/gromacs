@@ -47,8 +47,10 @@ struct t_nrnb;
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class ForceWithVirial;
-}
+} // namespace gmx
 
 void make_wall_tables(FILE*                   fplog,
                       const t_inputrec*       ir,
@@ -56,14 +58,14 @@ void make_wall_tables(FILE*                   fplog,
                       const SimulationGroups* groups,
                       t_forcerec*             fr);
 
-real do_walls(const t_inputrec&     ir,
-              const t_forcerec&     fr,
-              const matrix          box,
-              const t_mdatoms&      md,
-              const rvec            x[],
-              gmx::ForceWithVirial* forceWithVirial,
-              real                  lambda,
-              real                  Vlj[],
-              t_nrnb*               nrnb);
+real do_walls(const t_inputrec&              ir,
+              const t_forcerec&              fr,
+              const matrix                   box,
+              const t_mdatoms&               md,
+              gmx::ArrayRef<const gmx::RVec> x,
+              gmx::ForceWithVirial*          forceWithVirial,
+              real                           lambda,
+              real                           Vlj[],
+              t_nrnb*                        nrnb);
 
 #endif
