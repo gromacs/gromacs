@@ -1089,7 +1089,7 @@ angles(int             nbonds,
     SimdReal                                 rijx_S, rijy_S, rijz_S;
     SimdReal                                 rkjx_S, rkjy_S, rkjz_S;
     SimdReal                                 one_S(1.0);
-    SimdReal min_one_plus_eps_S(-1.0 + 2.0 * GMX_REAL_EPS); // Smallest number > -1
+    SimdReal one_min_eps_S(1.0_real - GMX_REAL_EPS); // Largest number < 1
 
     SimdReal                         rij_rkj_S;
     SimdReal                         nrij2_S, nrij_1_S;
@@ -1174,14 +1174,14 @@ angles(int             nbonds,
          */
         cos2_S = rij_rkj_S * rij_rkj_S / (nrij2_S * nrkj2_S);
 
-        /* To allow for 180 degrees, we take the max of cos and -1 + 1bit,
-         * so we can safely get the 1/sin from 1/sqrt(1 - cos^2).
-         * This also ensures that rounding errors would cause the argument
-         * of simdAcos to be < -1.
-         * Note that we do not take precautions for cos(0)=1, so the outer
-         * atoms in an angle should not be on top of each other.
+        /* To allow for 0 and 180 degrees, we need to avoid issues when
+         * the cosine is close to -1 and 1. For acos() the argument needs
+         * to be in that range. For cos^2 we take the min of cos^2 and 1 - 1bit,
+         * so we can safely compute 1/sin as 1/sqrt(1 - cos^2).
          */
-        cos_S = max(cos_S, min_one_plus_eps_S);
+        cos_S  = max(cos_S, -one_S);
+        cos_S  = min(cos_S, one_S);
+        cos2_S = min(cos2_S, one_min_eps_S);
 
         theta_S = acos(cos_S);
 
