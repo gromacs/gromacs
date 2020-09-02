@@ -358,10 +358,9 @@ ModularSimulator::ModularSimulator(std::unique_ptr<LegacySimulatorData> legacySi
 
 void ModularSimulator::checkInputForDisabledFunctionality()
 {
-    isInputCompatible(true, legacySimulatorData_->inputrec,
-                      legacySimulatorData_->mdrunOptions.rerun, *legacySimulatorData_->top_global,
-                      legacySimulatorData_->ms, legacySimulatorData_->replExParams,
-                      &legacySimulatorData_->fr->listedForces->fcdata(),
+    isInputCompatible(true, legacySimulatorData_->inputrec, legacySimulatorData_->mdrunOptions.rerun,
+                      *legacySimulatorData_->top_global, legacySimulatorData_->ms,
+                      legacySimulatorData_->replExParams, legacySimulatorData_->fr->fcdata.get(),
                       opt2bSet("-ei", legacySimulatorData_->nfile, legacySimulatorData_->fnm),
                       legacySimulatorData_->membed != nullptr);
     if (legacySimulatorData_->observablesHistory->edsamHistory)

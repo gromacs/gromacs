@@ -260,7 +260,7 @@ void gmx::LegacySimulator::do_md()
     const bool doSimulatedAnnealing = initSimulatedAnnealing(ir, &upd);
     const bool useReplicaExchange   = (replExParams.exchangeInterval > 0);
 
-    const t_fcdata& fcdata = fr->listedForces->fcdata();
+    const t_fcdata& fcdata = *fr->fcdata;
 
     bool simulationsShareState = false;
     int  nstSignalComm         = nstglobalcomm;
@@ -1530,7 +1530,7 @@ void gmx::LegacySimulator::do_md()
             {
                 energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
                                                    do_log ? fplog : nullptr, step, t,
-                                                   &fr->listedForces->fcdata(), awh.get());
+                                                   fr->fcdata.get(), awh.get());
             }
 
             if (ir->bPull)

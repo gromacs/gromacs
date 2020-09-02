@@ -138,9 +138,9 @@ void do_force_lowlevel(t_forcerec*                          fr,
         t_pbc pbc;
 
         /* Check whether we need to take into account PBC in listed interactions. */
-        ListedForces& listedForces = *fr->listedForces;
-        const auto    needPbcForListedForces =
-                fr->bMolPBC && stepWork.computeListedForces && listedForces.haveCpuListedForces();
+        ListedForces& listedForces           = fr->listedForces[0];
+        const auto    needPbcForListedForces = fr->bMolPBC && stepWork.computeListedForces
+                                            && listedForces.haveCpuListedForces(*fr->fcdata);
         if (needPbcForListedForces)
         {
             /* Since all atoms are in the rectangular or triclinic unit-cell,
@@ -149,8 +149,8 @@ void do_force_lowlevel(t_forcerec*                          fr,
             set_pbc_dd(&pbc, fr->pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, TRUE, box);
         }
 
-        listedForces.calculate(wcycle, box, ir->fepvals, cr, ms, x, xWholeMolecules, hist,
-                               forceOutputs, fr, &pbc, enerd, nrnb, lambda, md,
+        listedForces.calculate(wcycle, box, ir->fepvals, cr, ms, x, xWholeMolecules, fr->fcdata.get(),
+                               hist, forceOutputs, fr, &pbc, enerd, nrnb, lambda, md,
                                DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr, stepWork);
     }
 

@@ -75,8 +75,10 @@ constexpr unsigned int IF_CONSTRAINT = 1 << 2;
 constexpr unsigned int IF_CHEMBOND   = 1 << 3;
 constexpr unsigned int IF_BTYPE      = 1 << 4;
 constexpr unsigned int IF_ATYPE      = 1 << 5;
-constexpr unsigned int IF_TABULATED  = 1 << 6;
-constexpr unsigned int IF_LIMZERO    = 1 << 7;
+constexpr unsigned int IF_DIHEDRAL   = 1 << 6;
+constexpr unsigned int IF_PAIR       = 1 << 7;
+constexpr unsigned int IF_TABULATED  = 1 << 8;
+constexpr unsigned int IF_LIMZERO    = 1 << 9;
 /* These flags tell to some of the routines what can be done with this
  * item in the list.
  * With IF_BOND a bonded interaction will be calculated.

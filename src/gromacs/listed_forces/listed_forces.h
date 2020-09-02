@@ -71,7 +71,10 @@
 
 #include <memory>
 
+#include <bitset>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -84,7 +87,6 @@ struct gmx_grppairener_t;
 struct gmx_localtop_t;
 struct gmx_multisim_t;
 class history_t;
-class InteractionDefinitions;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
@@ -120,28 +122,59 @@ BondedFunction bondedFunction(int ftype);
 
 /*! \libinternal
  * \brief Class for calculating listed interactions, uses OpenMP parallelization
+ *
+ * Listed interactions can be divided over multiple instances of ListedForces
+ * using the selection flags passed to the constructor.
  */
 class ListedForces
 {
 public:
+    //! Enum for selecting groups of listed interaction types
+    enum class InteractionGroup : int
+    {
+        Pairs,     //!< Pair interactions
+        Dihedrals, //!< Dihedrals, including cmap
+        Rest,      //!< All listed interactions that are not any of the above
+        Count      //!< The number of items above
+    };
+
+    //! Type for specifying selections of groups of interaction types
+    using InteractionSelection = std::bitset<static_cast<int>(InteractionGroup::Count)>;
+
+    //! Returns a selection with all listed interaction types selected
+    static InteractionSelection interactionSelectionAll()
+    {
+        InteractionSelection is;
+        return is.flip();
+    }
+
     /*! \brief Constructor
      *
+     * \param[in] ffparams         The force field parameters
      * \param[in] numEnergyGroups  The number of energy groups, used for storage of pair energies
      * \param[in] numThreads       The number of threads used for computed listed interactions
+     * \param[in] interactionSelection  Select of interaction groups through bits set
      * \param[in] fplog            Log file for printing env.var. override, can be nullptr
      */
-    ListedForces(int numEnergyGroups, int numThreads, FILE* fplog);
+    ListedForces(const gmx_ffparams_t& ffparams,
+                 int                   numEnergyGroups,
+                 int                   numThreads,
+                 InteractionSelection  interactionSelection,
+                 FILE*                 fplog);
+
+    //! Move constructor, default, but in the source file to hide implementation classes
+    ListedForces(ListedForces&& o) noexcept;
 
     //! Destructor which is actually default but in the source file to hide implementation classes
     ~ListedForces();
 
     /*! \brief Copy the listed interactions from \p idef and set up the thread parallelization
      *
-     * \param[in] idef           The idef with all listed interactions to be computed on this rank
+     * \param[in] domainIdef     Interaction definitions for all listed interactions to be computed on this domain/rank
      * \param[in] numAtomsForce  Force are, potentially, computed for atoms 0 to \p numAtomsForce
      * \param[in] useGpu         Whether a GPU is used to compute (part of) the listed interactions
      */
-    void setup(const InteractionDefinitions& idef, int numAtomsForce, bool useGpu);
+    void setup(const InteractionDefinitions& domainIdef, int numAtomsForce, bool useGpu);
 
     /*! \brief Do all aspects of energy and force calculations for mdrun
      * on the set of listed interactions
@@ -156,6 +189,7 @@ public:
                    const gmx_multisim_t*          ms,
                    const rvec                     x[],
                    gmx::ArrayRef<const gmx::RVec> xWholeMolecules,
+                   t_fcdata*                      fcdata,
                    history_t*                     hist,
                    gmx::ForceOutputs*             forceOutputs,
                    const t_forcerec*              fr,
@@ -175,30 +209,26 @@ public:
      * NOTE: the current implementation returns true if there are position restraints
      * or any bonded interactions computed on the CPU.
      */
-    bool haveCpuListedForces() const;
+    bool haveCpuListedForces(const t_fcdata& fcdata) const;
 
     //! Returns true if there are position, distance or orientation restraints
-    bool haveRestraints() const;
-
-    //! Returns a reference to the force calculation data
-    const t_fcdata& fcdata() const { return *fcdata_; }
-
-    //! Returns a reference to the force calculation data
-    t_fcdata& fcdata() { return *fcdata_; }
+    bool haveRestraints(const t_fcdata& fcdata) const;
 
 private:
-    //! The interaction definitions
+    //! Pointer to the interaction definitions
     InteractionDefinitions const* idef_ = nullptr;
+    //! Interaction defintions used for storing selections
+    InteractionDefinitions idefSelection_;
     //! Thread parallelization setup, unique_ptr to avoid declaring bonded_threading_t
     std::unique_ptr<bonded_threading_t> threading_;
-    //! Data for bonded tables and NMR restraining, needs to be refactored
-    std::unique_ptr<t_fcdata> fcdata_;
+    //! Tells which interactions to select for computation
+    const InteractionSelection interactionSelection_;
     //! Force buffer for free-energy forces
     std::vector<real> forceBufferLambda_;
     //! Shift force buffer for free-energy forces
     std::vector<gmx::RVec> shiftForceBufferLambda_;
 
-    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(ListedForces);
+    GMX_DISALLOW_COPY_AND_ASSIGN(ListedForces);
 };
 
 #endif

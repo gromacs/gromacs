@@ -45,9 +45,9 @@
         str, lstr, (nra), (nrpa), (nrpb), IF_BOND \
     }
 
-#define def_bondedz(str, lstr, nra, nrpa, nrpb)                \
-    {                                                          \
-        str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_LIMZERO \
+#define def_pair(str, lstr, nra, nrpa, nrpb)                             \
+    {                                                                    \
+        str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_PAIR | IF_LIMZERO \
     }
 
 #define def_bondedt(str, lstr, nra, nrpa, nrpb)                  \
@@ -63,6 +63,16 @@
 #define def_angle(str, lstr, nra, nrpa, nrpb)                \
     {                                                        \
         str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_ATYPE \
+    }
+
+#define def_dihedral(str, lstr, nra, nrpa, nrpb)                \
+    {                                                           \
+        str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_DIHEDRAL \
+    }
+
+#define def_dihedral_tabulated(str, lstr, nra, nrpa, nrpb)                     \
+    {                                                                          \
+        str, lstr, (nra), (nrpa), (nrpb), IF_BOND | IF_DIHEDRAL | IF_TABULATED \
     }
 
 #define def_bond(str, lstr, nra, nrpa, nrpb)                               \
@@ -118,15 +128,16 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_bonded("CROSS_BOND_BOND", "Bond-Cross", 3, 3, 0),
     def_bonded("CROSS_BOND_ANGLE", "BA-Cross", 3, 4, 0), def_angle("UREY_BRADLEY", "U-B", 3, 4, 4),
     def_angle("QANGLES", "Quartic Angles", 3, 6, 0), def_bondedt("TABANGLES", "Tab. Angles", 3, 2, 2),
-    def_bonded("PDIHS", "Proper Dih.", 4, 3, 3), def_bonded("RBDIHS", "Ryckaert-Bell.", 4, 6, 6),
-    def_bonded("RESTRDIHS", "Restricted Dih.", 4, 2, 2), def_bonded("CBTDIHS", "CBT Dih.", 4, 6, 6),
-    def_bonded("FOURDIHS", "Fourier Dih.", 4, 4, 4), def_bonded("IDIHS", "Improper Dih.", 4, 2, 2),
-    def_bonded("PIDIHS", "Improper Dih.", 4, 3, 3), def_bondedt("TABDIHS", "Tab. Dih.", 4, 2, 2),
-    def_bonded("CMAP", "CMAP Dih.", 5, -1, -1), def_nofc("GB12", "GB 1-2 Pol. (unused)"),
+    def_dihedral("PDIHS", "Proper Dih.", 4, 3, 3), def_dihedral("RBDIHS", "Ryckaert-Bell.", 4, 6, 6),
+    def_dihedral("RESTRDIHS", "Restricted Dih.", 4, 2, 2),
+    def_dihedral("CBTDIHS", "CBT Dih.", 4, 6, 6), def_dihedral("FOURDIHS", "Fourier Dih.", 4, 4, 4),
+    def_dihedral("IDIHS", "Improper Dih.", 4, 2, 2), def_dihedral("PIDIHS", "Improper Dih.", 4, 3, 3),
+    def_dihedral_tabulated("TABDIHS", "Tab. Dih.", 4, 2, 2),
+    def_dihedral("CMAP", "CMAP Dih.", 5, -1, -1), def_nofc("GB12", "GB 1-2 Pol. (unused)"),
     def_nofc("GB13", "GB 1-3 Pol. (unused)"), def_nofc("GB14", "GB 1-4 Pol. (unused)"),
     def_nofc("GBPOL", "GB Polarization (unused)"), def_nofc("NPSOLVATION", "Nonpolar Sol. (unused)"),
-    def_bondedz("LJ14", "LJ-14", 2, 2, 2), def_nofc("COUL14", "Coulomb-14"),
-    def_bondedz("LJC14_Q", "LJC-14 q", 2, 5, 0), def_bondedz("LJC_NB", "LJC Pairs NB", 2, 4, 0),
+    def_pair("LJ14", "LJ-14", 2, 2, 2), def_nofc("COUL14", "Coulomb-14"),
+    def_pair("LJC14_Q", "LJC-14 q", 2, 5, 0), def_pair("LJC_NB", "LJC Pairs NB", 2, 4, 0),
     def_nb("LJ_SR", "LJ (SR)", 2, 2), def_nb("BHAM", "Buck.ham (SR)", 2, 3),
     def_nofc("LJ_LR", "LJ (unused)"), def_nofc("BHAM_LR", "B.ham (unused)"),
     def_nofc("DISPCORR", "Disper. corr."), def_nofc("COUL_SR", "Coulomb (SR)"),

@@ -607,8 +607,7 @@ void gmx::LegacySimulator::do_rerun()
 
             EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
             energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
-                                               do_log ? fplog : nullptr, step, t,
-                                               &fr->listedForces->fcdata(), awh);
+                                               do_log ? fplog : nullptr, step, t, fr->fcdata.get(), awh);
 
             if (do_per_step(step, ir->nstlog))
             {

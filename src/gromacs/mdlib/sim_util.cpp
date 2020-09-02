@@ -851,10 +851,20 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
     // Note that haveSpecialForces is constant over the whole run
     domainWork.haveSpecialForces =
             haveSpecialForces(inputrec, *fr.forceProviders, pull_work, stepWork.computeForces, ed);
-    domainWork.haveCpuBondedWork  = fr.listedForces->haveCpuBondeds();
-    domainWork.haveGpuBondedWork  = ((fr.gpuBonded != nullptr) && fr.gpuBonded->haveInteractions());
-    domainWork.haveRestraintsWork = fr.listedForces->haveRestraints();
-    domainWork.haveCpuListedForceWork = fr.listedForces->haveCpuListedForces();
+    domainWork.haveCpuListedForceWork = false;
+    domainWork.haveCpuBondedWork      = false;
+    for (const auto& listedForces : fr.listedForces)
+    {
+        if (listedForces.haveCpuListedForces(*fr.fcdata))
+        {
+            domainWork.haveCpuListedForceWork = true;
+        }
+        if (listedForces.haveCpuBondeds())
+        {
+            domainWork.haveCpuBondedWork = true;
+        }
+    }
+    domainWork.haveGpuBondedWork = ((fr.gpuBonded != nullptr) && fr.gpuBonded->haveInteractions());
     // Note that haveFreeEnergyWork is constant over the whole run
     domainWork.haveFreeEnergyWork = (fr.efep != efepNO && mdatoms.nPerturbed != 0);
     // We assume we have local force work if there are CPU

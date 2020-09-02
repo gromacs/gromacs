@@ -1388,8 +1388,8 @@ int Mdrunner::mdrunner()
                       opt2fn("-tablep", filenames.size(), filenames.data()),
                       opt2fns("-tableb", filenames.size(), filenames.data()), pforce);
         // Dirty hack, for fixing disres and orires should be made mdmodules
-        fr->listedForces->fcdata().disres = disresdata;
-        fr->listedForces->fcdata().orires = oriresdata;
+        fr->fcdata->disres = disresdata;
+        fr->fcdata->orires = oriresdata;
 
         // Save a handle to device stream manager to use elsewhere in the code
         // TODO: Forcerec is not a correct place to store it.

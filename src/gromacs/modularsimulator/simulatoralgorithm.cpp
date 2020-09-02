@@ -408,7 +408,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
             statePropagatorData_.get(), freeEnergyPerturbationData_.get(),
             legacySimulatorData->top_global, legacySimulatorData->inputrec, legacySimulatorData->mdAtoms,
             legacySimulatorData->enerd, legacySimulatorData->ekind, legacySimulatorData->constr,
-            legacySimulatorData->fplog, &legacySimulatorData->fr->listedForces->fcdata(),
+            legacySimulatorData->fplog, legacySimulatorData->fr->fcdata.get(),
             legacySimulatorData->mdModulesNotifier, MASTER(legacySimulatorData->cr),
             legacySimulatorData->observablesHistory, legacySimulatorData->startingBehavior);
 }

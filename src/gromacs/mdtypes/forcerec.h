@@ -56,6 +56,7 @@ struct bonded_threading_t;
 class DeviceContext;
 class DispersionCorrection;
 class ListedForces;
+struct t_fcdata;
 struct t_forcetable;
 struct t_QMMMrec;
 
@@ -298,8 +299,13 @@ struct t_forcerec
     real userreal3 = 0;
     real userreal4 = 0;
 
-    /* The listed forces calculation data */
-    std::unique_ptr<ListedForces> listedForces;
+    /* Data for special listed force calculations */
+    std::unique_ptr<t_fcdata> fcdata;
+
+    // The listed forces calculation data, 1 entry or multiple entries with multiple time stepping
+    std::vector<ListedForces> listedForces;
+
+    static constexpr size_t c_listedForcesFast = 0;
 
     /* TODO: Replace the pointer by an object once we got rid of C */
     gmx::GpuBonded* gpuBonded = nullptr;
