@@ -88,9 +88,6 @@ public:
     // Only builder can construct
     friend class SimulatorBuilder;
 
-    // Allow algorithm builder to access ISimulator data
-    friend class ModularSimulatorAlgorithmBuilder;
-
 private:
     //! Constructor
     explicit ModularSimulator(std::unique_ptr<LegacySimulatorData> legacySimulatorData);
