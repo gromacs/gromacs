@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -815,18 +815,20 @@ void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
     // array --- a number, greater then total number of constraints, taking into account the splits
     // in the constraints array due to the GPU block borders. This number can be adjusted to improve
     // memory access pattern. Mass factors are saved in a similar data structure.
-    int maxCoupledConstraints = 0;
+    int  maxCoupledConstraints             = 0;
+    bool maxCoupledConstraintsHasIncreased = false;
     for (int c = 0; c < numConstraints; c++)
     {
         int a1 = iatoms[stride * c + 1];
         int a2 = iatoms[stride * c + 2];
 
         // Constraint 'c' is counted twice, but it should be excluded altogether. Hence '-2'.
-        int nCoupedConstraints = atomsAdjacencyList.at(a1).size() + atomsAdjacencyList.at(a2).size() - 2;
+        int nCoupledConstraints = atomsAdjacencyList.at(a1).size() + atomsAdjacencyList.at(a2).size() - 2;
 
-        if (nCoupedConstraints > maxCoupledConstraints)
+        if (nCoupledConstraints > maxCoupledConstraints)
         {
-            maxCoupledConstraints = nCoupedConstraints;
+            maxCoupledConstraints             = nCoupledConstraints;
+            maxCoupledConstraintsHasIncreased = true;
         }
     }
 
@@ -896,7 +898,7 @@ void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
     }
 
     // (Re)allocate the memory, if the number of constraints has increased.
-    if (kernelParams_.numConstraintsThreads > numConstraintsThreadsAlloc_)
+    if ((kernelParams_.numConstraintsThreads > numConstraintsThreadsAlloc_) || maxCoupledConstraintsHasIncreased)
     {
         // Free memory if it was allocated before (i.e. if not the first time here).
         if (numConstraintsThreadsAlloc_ > 0)

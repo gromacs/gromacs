@@ -44,6 +44,15 @@ compiled without GPU support.
 
 :issue:`3400`
 
+Bug fix for the GPU version of LINCS in multiple domain case
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Increase in the maximum number of coupled constraints in the
+domain did not trigger memory re-allocation, which is now fixed.
+This can happen, e.g. when big molecule enters the domain, previously
+occupied by smaller molecules. The bug does not affect the single
+domain case.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
