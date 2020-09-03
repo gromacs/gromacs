@@ -544,7 +544,8 @@ static void write_em_traj(FILE*               fplog,
             if (!bX)
             {
                 auto globalXRef = MASTER(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>();
-                dd_collect_vec(cr->dd, &state->s, state->s.x, globalXRef);
+                dd_collect_vec(cr->dd, state->s.ddp_count, state->s.ddp_count_cg_gl, state->s.cg_gl,
+                               state->s.x, globalXRef);
             }
         }
         else

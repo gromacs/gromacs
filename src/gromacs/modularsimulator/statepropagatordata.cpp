@@ -479,10 +479,12 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
     {
         auto globalXRef =
                 MASTER(cr_) ? statePropagatorData_->globalState_->x : gmx::ArrayRef<gmx::RVec>();
-        dd_collect_vec(cr_->dd, localStateBackup_.get(), localStateBackup_->x, globalXRef);
+        dd_collect_vec(cr_->dd, localStateBackup_->ddp_count, localStateBackup_->ddp_count_cg_gl,
+                       localStateBackup_->cg_gl, localStateBackup_->x, globalXRef);
         auto globalVRef =
                 MASTER(cr_) ? statePropagatorData_->globalState_->v : gmx::ArrayRef<gmx::RVec>();
-        dd_collect_vec(cr_->dd, localStateBackup_.get(), localStateBackup_->v, globalVRef);
+        dd_collect_vec(cr_->dd, localStateBackup_->ddp_count, localStateBackup_->ddp_count_cg_gl,
+                       localStateBackup_->cg_gl, localStateBackup_->v, globalVRef);
     }
     else
     {

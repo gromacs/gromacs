@@ -55,7 +55,9 @@ class t_state;
 
 /*! \brief Gathers rvec arrays \p localVector to \p globalVector on the master rank */
 void dd_collect_vec(gmx_domdec_t*                  dd,
-                    const t_state*                 localState,
+                    int                            ddpCount,
+                    int                            ddpCountCgGl,
+                    gmx::ArrayRef<const int>       localCGNumbers,
                     gmx::ArrayRef<const gmx::RVec> localVector,
                     gmx::ArrayRef<gmx::RVec>       globalVector);
 

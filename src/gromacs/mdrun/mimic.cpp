@@ -483,7 +483,8 @@ void gmx::LegacySimulator::do_mimic()
             if (DOMAINDECOMP(cr))
             {
                 ftemp = gmx::makeArrayRef(fglobal);
-                dd_collect_vec(cr->dd, state, flocal, ftemp);
+                dd_collect_vec(cr->dd, state->ddp_count, state->ddp_count_cg_gl, state->cg_gl,
+                               flocal, ftemp);
             }
             else
             {
