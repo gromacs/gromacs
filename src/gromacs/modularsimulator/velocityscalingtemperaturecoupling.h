@@ -33,7 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Declares the v-rescale thermostat for the modular simulator
+ * \brief Declares a velocity-scaling temperature coupling element for
+ * the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
@@ -41,8 +42,8 @@
  * This header is only used within the modular simulator module
  */
 
-#ifndef GMX_MODULARSIMULATOR_VRESCALETHERMOSTAT_H
-#define GMX_MODULARSIMULATOR_VRESCALETHERMOSTAT_H
+#ifndef GMX_MODULARSIMULATOR_VELOCITYSCALINGTEMPERATURECOUPLING_H
+#define GMX_MODULARSIMULATOR_VELOCITYSCALINGTEMPERATURECOUPLING_H
 
 #include "gromacs/utility/arrayref.h"
 
@@ -79,21 +80,21 @@ enum class ReportPreviousStepConservedEnergy
  * This element takes a callback to the propagator and updates the velocity
  * scaling factor according to the v-rescale thermostat.
  */
-class VRescaleThermostat final : public ISimulatorElement, public ICheckpointHelperClient
+class VelocityScalingTemperatureCoupling final : public ISimulatorElement, public ICheckpointHelperClient
 {
 public:
     //! Constructor
-    VRescaleThermostat(int                               nstcouple,
-                       int                               offset,
-                       UseFullStepKE                     useFullStepKE,
-                       ReportPreviousStepConservedEnergy reportPreviousConservedEnergy,
-                       int64_t                           seed,
-                       int                               numTemperatureGroups,
-                       double                            couplingTimeStep,
-                       const real*                       referenceTemperature,
-                       const real*                       couplingTime,
-                       const real*                       numDegreesOfFreedom,
-                       EnergyData*                       energyData);
+    VelocityScalingTemperatureCoupling(int                               nstcouple,
+                                       int                               offset,
+                                       UseFullStepKE                     useFullStepKE,
+                                       ReportPreviousStepConservedEnergy reportPreviousConservedEnergy,
+                                       int64_t                           seed,
+                                       int                               numTemperatureGroups,
+                                       double                            couplingTimeStep,
+                                       const real*                       referenceTemperature,
+                                       const real*                       couplingTime,
+                                       const real*                       numDegreesOfFreedom,
+                                       EnergyData*                       energyData);
 
     /*! \brief Register run function for step / time
      *
@@ -186,7 +187,7 @@ private:
     void setLambda(Step step);
 
     //! CheckpointHelper identifier
-    const std::string identifier_ = "VRescaleThermostat";
+    const std::string identifier_ = "VelocityScalingTemperatureCoupling";
     //! Helper function to read from / write to CheckpointData
     template<CheckpointDataOperation operation>
     void doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr);
@@ -194,4 +195,4 @@ private:
 
 } // namespace gmx
 
-#endif // GMX_MODULARSIMULATOR_VRESCALETHERMOSTAT_H
+#endif // GMX_MODULARSIMULATOR_VELOCITYSCALINGTEMPERATURECOUPLING_H

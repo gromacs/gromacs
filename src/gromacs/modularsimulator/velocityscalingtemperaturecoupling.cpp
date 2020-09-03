@@ -33,7 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Defines the v-rescale thermostat for the modular simulator
+ * \brief Defines a velocity-scaling temperature coupling element for
+ * the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
@@ -41,7 +42,7 @@
 
 #include "gmxpre.h"
 
-#include "vrescalethermostat.h"
+#include "velocityscalingtemperaturecoupling.h"
 
 #include <numeric>
 
@@ -62,17 +63,18 @@
 namespace gmx
 {
 
-VRescaleThermostat::VRescaleThermostat(int                               nstcouple,
-                                       int                               offset,
-                                       UseFullStepKE                     useFullStepKE,
-                                       ReportPreviousStepConservedEnergy reportPreviousConservedEnergy,
-                                       int64_t                           seed,
-                                       int                               numTemperatureGroups,
-                                       double                            couplingTimeStep,
-                                       const real*                       referenceTemperature,
-                                       const real*                       couplingTime,
-                                       const real*                       numDegreesOfFreedom,
-                                       EnergyData*                       energyData) :
+VelocityScalingTemperatureCoupling::VelocityScalingTemperatureCoupling(
+        int                               nstcouple,
+        int                               offset,
+        UseFullStepKE                     useFullStepKE,
+        ReportPreviousStepConservedEnergy reportPreviousConservedEnergy,
+        int64_t                           seed,
+        int                               numTemperatureGroups,
+        double                            couplingTimeStep,
+        const real*                       referenceTemperature,
+        const real*                       couplingTime,
+        const real*                       numDegreesOfFreedom,
+        EnergyData*                       energyData) :
     nstcouple_(nstcouple),
     offset_(offset),
     useFullStepKE_(useFullStepKE),
@@ -90,29 +92,31 @@ VRescaleThermostat::VRescaleThermostat(int                               nstcoup
     {
         thermostatIntegralPreviousStep_ = thermostatIntegral_;
     }
-    energyData->setVRescaleThermostat(this);
+    energyData->setVelocityScalingTemperatureCoupling(this);
 }
 
-void VRescaleThermostat::connectWithPropagator(const PropagatorThermostatConnection& connectionData)
+void VelocityScalingTemperatureCoupling::connectWithPropagator(const PropagatorThermostatConnection& connectionData)
 {
     connectionData.setNumVelocityScalingVariables(numTemperatureGroups_);
     lambda_             = connectionData.getViewOnVelocityScaling();
     propagatorCallback_ = connectionData.getVelocityScalingCallback();
 }
 
-void VRescaleThermostat::elementSetup()
+void VelocityScalingTemperatureCoupling::elementSetup()
 {
     if (!propagatorCallback_ || lambda_.empty())
     {
         throw MissingElementConnectionError(
-                "V-rescale thermostat was not connected to a propagator.\n"
+                "Velocity scaling temperature coupling was not connected to a propagator.\n"
                 "Connection to a propagator element is needed to scale the velocities.\n"
                 "Use connectWithPropagator(...) before building the ModularSimulatorAlgorithm "
                 "object.");
     }
 }
 
-void VRescaleThermostat::scheduleTask(Step step, Time gmx_unused time, const RegisterRunFunction& registerRunFunction)
+void VelocityScalingTemperatureCoupling::scheduleTask(Step step,
+                                                      Time gmx_unused            time,
+                                                      const RegisterRunFunction& registerRunFunction)
 {
     /* The thermostat will need a valid kinetic energy when it is running.
      * Currently, computeGlobalCommunicationPeriod() is making sure this
@@ -132,7 +136,7 @@ void VRescaleThermostat::scheduleTask(Step step, Time gmx_unused time, const Reg
     }
 }
 
-void VRescaleThermostat::setLambda(Step step)
+void VelocityScalingTemperatureCoupling::setLambda(Step step)
 {
     // if we report the previous energy, calculate before the step
     if (reportPreviousConservedEnergy_ == ReportPreviousStepConservedEnergy::Yes)
@@ -191,7 +195,7 @@ void VRescaleThermostat::setLambda(Step step)
 namespace
 {
 /*!
- * \brief Enum describing the contents VRescaleThermostat writes to modular checkpoint
+ * \brief Enum describing the contents VelocityScalingTemperatureCoupling writes to modular checkpoint
  *
  * When changing the checkpoint content, add a new element just above Count, and adjust the
  * checkpoint functionality.
@@ -205,7 +209,8 @@ constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count
 } // namespace
 
 template<CheckpointDataOperation operation>
-void VRescaleThermostat::doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr)
+void VelocityScalingTemperatureCoupling::doCheckpointData(CheckpointData<operation>* checkpointData,
+                                                          const t_commrec*           cr)
 {
     if (MASTER(cr))
     {
@@ -220,22 +225,24 @@ void VRescaleThermostat::doCheckpointData(CheckpointData<operation>* checkpointD
     }
 }
 
-void VRescaleThermostat::writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr)
+void VelocityScalingTemperatureCoupling::writeCheckpoint(WriteCheckpointData checkpointData,
+                                                         const t_commrec*    cr)
 {
     doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
 }
 
-void VRescaleThermostat::readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr)
+void VelocityScalingTemperatureCoupling::readCheckpoint(ReadCheckpointData checkpointData,
+                                                        const t_commrec*   cr)
 {
     doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
 }
 
-const std::string& VRescaleThermostat::clientID()
+const std::string& VelocityScalingTemperatureCoupling::clientID()
 {
     return identifier_;
 }
 
-real VRescaleThermostat::conservedEnergyContribution() const
+real VelocityScalingTemperatureCoupling::conservedEnergyContribution() const
 {
     return (reportPreviousConservedEnergy_ == ReportPreviousStepConservedEnergy::Yes)
                    ? std::accumulate(thermostatIntegralPreviousStep_.begin(),
@@ -243,7 +250,7 @@ real VRescaleThermostat::conservedEnergyContribution() const
                    : std::accumulate(thermostatIntegral_.begin(), thermostatIntegral_.end(), 0.0);
 }
 
-ISimulatorElement* VRescaleThermostat::getElementPointerImpl(
+ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData gmx_unused* statePropagatorData,
@@ -254,13 +261,13 @@ ISimulatorElement* VRescaleThermostat::getElementPointerImpl(
         UseFullStepKE                         useFullStepKE,
         ReportPreviousStepConservedEnergy     reportPreviousStepConservedEnergy)
 {
-    auto* element    = builderHelper->storeElement(std::make_unique<VRescaleThermostat>(
+    auto* element = builderHelper->storeElement(std::make_unique<VelocityScalingTemperatureCoupling>(
             legacySimulatorData->inputrec->nsttcouple, offset, useFullStepKE, reportPreviousStepConservedEnergy,
             legacySimulatorData->inputrec->ld_seed, legacySimulatorData->inputrec->opts.ngtc,
             legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nsttcouple,
             legacySimulatorData->inputrec->opts.ref_t, legacySimulatorData->inputrec->opts.tau_t,
             legacySimulatorData->inputrec->opts.nrdf, energyData));
-    auto* thermostat = static_cast<VRescaleThermostat*>(element);
+    auto* thermostat = static_cast<VelocityScalingTemperatureCoupling*>(element);
     builderHelper->registerThermostat([thermostat](const PropagatorThermostatConnection& connection) {
         thermostat->connectWithPropagator(connection);
     });

@@ -79,7 +79,7 @@
 #include "parrinellorahmanbarostat.h"
 #include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
-#include "vrescalethermostat.h"
+#include "velocityscalingtemperaturecoupling.h"
 
 namespace gmx
 {
@@ -110,7 +110,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<StatePropagatorData::Element>();
         if (legacySimulatorData_->inputrec->etc == etcVRESCALE)
         {
-            builder->add<VRescaleThermostat>(-1, UseFullStepKE::No, ReportPreviousStepConservedEnergy::No);
+            builder->add<VelocityScalingTemperatureCoupling>(-1, UseFullStepKE::No,
+                                                             ReportPreviousStepConservedEnergy::No);
         }
         builder->add<Propagator<IntegrationStep::LeapFrog>>(legacySimulatorData_->inputrec->delta_t,
                                                             RegisterWithThermostat::True,
@@ -141,7 +142,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<StatePropagatorData::Element>();
         if (legacySimulatorData_->inputrec->etc == etcVRESCALE)
         {
-            builder->add<VRescaleThermostat>(0, UseFullStepKE::Yes, ReportPreviousStepConservedEnergy::Yes);
+            builder->add<VelocityScalingTemperatureCoupling>(
+                    0, UseFullStepKE::Yes, ReportPreviousStepConservedEnergy::Yes);
         }
         builder->add<Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>>(
                 legacySimulatorData_->inputrec->delta_t, RegisterWithThermostat::True,

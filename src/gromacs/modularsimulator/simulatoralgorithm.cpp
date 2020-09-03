@@ -83,7 +83,7 @@
 #include "pmeloadbalancehelper.h"
 #include "propagator.h"
 #include "statepropagatordata.h"
-#include "vrescalethermostat.h"
+#include "velocityscalingtemperaturecoupling.h"
 
 namespace gmx
 {
