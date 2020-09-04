@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,9 +44,12 @@
 #ifndef GMX_UTILITY_STRCONVERT_H
 #define GMX_UTILITY_STRCONVERT_H
 
+#include <algorithm>
+#include <optional>
 #include <string>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -217,6 +220,100 @@ static inline std::string toString(std::string t)
 
 //! \}
 //! \endcond
+
+/*! \brief Convert a string into an array of values.
+ *
+ * \tparam ValueType array element type to convert into
+ * \tparam NumExpectedValues number of values of the array
+ *
+ * \returns an array containing the converted string, optionally null if
+ *          the white-space stripped string is empty
+ *
+ * \throws InvalidInputError if splitting the string at whitespaces does not
+ *                           result in NumExpectedValues or zero substrings
+ *
+ * \throws InvalidInputError if conversion of any of the NumExpectedValues
+ *                           substrings of the splitted input string fails
+ *
+ * Converts a string into an array of type ValueType with exactly NumExpectedValues.
+ *
+ * No result is returned if the string is empty or contains only whitespace .
+ *
+ */
+template<typename ValueType, int NumExpectedValues>
+static inline std::optional<std::array<ValueType, NumExpectedValues>>
+parsedArrayFromInputString(const std::string& str)
+{
+    // return nullopt right away if the string is just whitespace or empty
+    {
+        const std::string& strippedString = stripString(str);
+        if (strippedString.empty())
+        {
+            return std::nullopt;
+        }
+    }
+
+    const std::vector<std::string>& valuesAsStrings = splitString(str);
+
+    // throw right away if we don't have the expected number of string entries
+    if (valuesAsStrings.size() != NumExpectedValues)
+    {
+        const std::string errorMessage =
+                "Expected empty string or string with " + intToString(NumExpectedValues)
+                + " elements to convert, but received " + intToString(valuesAsStrings.size())
+                + " elements instead.";
+        GMX_THROW(InvalidInputError(errorMessage));
+    }
+
+    // will throw if any conversion from string to value fails
+    std::array<ValueType, NumExpectedValues> valuesAsArray;
+    std::transform(std::begin(valuesAsStrings), std::end(valuesAsStrings), std::begin(valuesAsArray),
+                   [](const std::string& split) { return fromString<ValueType>(split); });
+
+    return { valuesAsArray };
+}
+
+/*! \brief Returns the input string, throwing an excpetion if the demanded
+ *         conversion to an array will not succeed.
+ *
+ * \tparam ValueType array element type to convert into
+ * \tparam NumExpectedValues number of values of the array
+ *
+ * \param[in] toConvert the string to convert
+ * \param[in] errorContextMessage the message to add to the thrown exceptions if
+ *                                conversion of the string is bound to fail at
+ *                                some point
+ * \returns the input string
+ *
+ * \throws InvalidInputError if splitting the string at whitespaces does not
+ *                           result in NumExpectedValues or zero substrings
+ *
+ * \throws InvalidInputError if conversion of any of the NumExpectedValues
+ *                           substrings of the splitted input string fails
+ *
+ * A typical use of this function would be in .mdp string option parsing
+ * where information in the .mdp file is transformed into the data that is
+ * stored in the .tpr file.
+ */
+template<typename ValueType, int NumExpectedValues>
+static inline std::string stringIdentityTransformWithArrayCheck(const std::string& toConvert,
+                                                                const std::string& errorContextMessage)
+{
+    // Attempt the conversion to an array so that the string parsing routine
+    // will throw an InvalidInputError if the string is not fit for conversion.
+    try
+    {
+        // The converted array is discarded.
+        gmx_unused const auto& val = parsedArrayFromInputString<ValueType, NumExpectedValues>(toConvert);
+    }
+    catch (const InvalidInputError& e)
+    {
+        InvalidInputError toThrow(errorContextMessage + std::string(e.what()));
+        GMX_THROW(toThrow);
+    }
+
+    return toConvert;
+}
 
 } // namespace gmx
 
