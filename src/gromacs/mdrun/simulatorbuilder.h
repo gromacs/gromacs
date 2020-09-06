@@ -77,6 +77,7 @@ class MDAtoms;
 class MDLogger;
 struct MdModulesNotifier;
 struct MdrunOptions;
+class ReadCheckpointDataHolder;
 enum class StartingBehavior;
 class StopHandlerBuilder;
 class VirtualSitesHandler;
@@ -334,6 +335,9 @@ public:
         boxDeformation_ = std::make_unique<BoxDeformationHandle>(boxDeformation);
     }
 
+    //! Pass the read checkpoint data for modular simulator
+    void add(std::unique_ptr<ReadCheckpointDataHolder> modularSimulatorCheckpointData);
+
     /*! \brief Build a Simulator object based on input data
      *
      * Return a pointer to a simulation object. The use of a parameter
@@ -364,6 +368,8 @@ private:
     std::unique_ptr<IonSwapping>               ionSwapping_;
     std::unique_ptr<TopologyData>              topologyData_;
     std::unique_ptr<BoxDeformationHandle>      boxDeformation_;
+    //! Contains checkpointing data for the modular simulator
+    std::unique_ptr<ReadCheckpointDataHolder> modularSimulatorCheckpointData_;
 };
 
 } // namespace gmx

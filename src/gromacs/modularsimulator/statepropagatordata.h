@@ -47,6 +47,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/forcebuffers.h"
 
 #include "modularsimulatorinterfaces.h"
@@ -341,6 +342,8 @@ private:
     void trajectoryWriterSetup(gmx_mdoutf gmx_unused* outf) override {}
     //! Trajectory writer teardown - write final coordinates
     void trajectoryWriterTeardown(gmx_mdoutf* outf) override;
+    //! A dummy CheckpointData - remove when we stop using the legacy trajectory writing function
+    WriteCheckpointDataHolder dummyCheckpointDataHolder_;
 
     //! Whether planned total number of steps was reached (used for final output only)
     bool isRegularSimulationEnd_;

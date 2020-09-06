@@ -350,8 +350,10 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     return isInputCompatible;
 }
 
-ModularSimulator::ModularSimulator(std::unique_ptr<LegacySimulatorData> legacySimulatorData) :
-    legacySimulatorData_(std::move(legacySimulatorData))
+ModularSimulator::ModularSimulator(std::unique_ptr<LegacySimulatorData>      legacySimulatorData,
+                                   std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder) :
+    legacySimulatorData_(std::move(legacySimulatorData)),
+    checkpointDataHolder_(std::move(checkpointDataHolder))
 {
     checkInputForDisabledFunctionality();
 }

@@ -63,6 +63,8 @@ namespace gmx
 
 struct MdModulesNotifier;
 class KeyValueTreeObject;
+class ReadCheckpointDataHolder;
+class WriteCheckpointDataHolder;
 
 /*! \brief Read to a key-value-tree value used for checkpointing.
  *
@@ -236,6 +238,8 @@ struct CheckpointHeaderContents
     int nED;
     //! Enum for coordinate swapping.
     int eSwapCoords;
+    //! Whether the checkpoint was written by modular simulator.
+    bool isModularSimulatorCheckpoint = false;
 };
 
 /*! \brief Low-level checkpoint writing function */
@@ -246,7 +250,8 @@ void write_checkpoint_data(t_fileio*                         fp,
                            t_state*                          state,
                            ObservablesHistory*               observablesHistory,
                            const gmx::MdModulesNotifier&     notifier,
-                           std::vector<gmx_file_position_t>* outputfiles);
+                           std::vector<gmx_file_position_t>* outputfiles,
+                           gmx::WriteCheckpointDataHolder*   modularSimulatorCheckpointData);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -255,15 +260,17 @@ void write_checkpoint_data(t_fileio*                         fp,
  * but not the state itself.
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
-void load_checkpoint(const char*                   fn,
-                     t_fileio*                     logfio,
-                     const t_commrec*              cr,
-                     const ivec                    dd_nc,
-                     t_inputrec*                   ir,
-                     t_state*                      state,
-                     ObservablesHistory*           observablesHistory,
-                     gmx_bool                      reproducibilityRequested,
-                     const gmx::MdModulesNotifier& mdModulesNotifier);
+void load_checkpoint(const char*                    fn,
+                     t_fileio*                      logfio,
+                     const t_commrec*               cr,
+                     const ivec                     dd_nc,
+                     t_inputrec*                    ir,
+                     t_state*                       state,
+                     ObservablesHistory*            observablesHistory,
+                     gmx_bool                       reproducibilityRequested,
+                     const gmx::MdModulesNotifier&  mdModulesNotifier,
+                     gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
+                     bool                           useModularSimulator);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
 void read_checkpoint_trxframe(struct t_fileio* fp, t_trxframe* fr);

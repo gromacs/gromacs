@@ -90,6 +90,7 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/printtime.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -532,9 +533,10 @@ static void write_em_traj(FILE*               fplog,
         mdof_flags |= MDOF_IMD;
     }
 
+    gmx::WriteCheckpointDataHolder checkpointDataHolder;
     mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global->natoms, step,
                                      static_cast<double>(step), &state->s, state_global,
-                                     observablesHistory, state->f.view().force());
+                                     observablesHistory, state->f.view().force(), &checkpointDataHolder);
 
     if (confout != nullptr)
     {
@@ -1857,9 +1859,10 @@ void LegacySimulator::do_lbfgs()
             mdof_flags |= MDOF_IMD;
         }
 
+        gmx::WriteCheckpointDataHolder checkpointDataHolder;
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global->natoms, step,
-                                         static_cast<real>(step), &ems.s, state_global,
-                                         observablesHistory, ems.f.view().force());
+                                         static_cast<real>(step), &ems.s, state_global, observablesHistory,
+                                         ems.f.view().force(), &checkpointDataHolder);
 
         /* Do the linesearching in the direction dx[point][0..(n-1)] */
 

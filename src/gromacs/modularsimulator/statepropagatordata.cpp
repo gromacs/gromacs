@@ -53,6 +53,7 @@
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -424,10 +425,10 @@ void StatePropagatorData::Element::write(gmx_mdoutf_t outf, Step currentStep, Ti
     // TODO: This is only used for CPT - needs to be filled when we turn CPT back on
     ObservablesHistory* observablesHistory = nullptr;
 
-    mdoutf_write_to_trajectory_files(fplog_, cr_, outf, static_cast<int>(mdof_flags),
-                                     statePropagatorData_->totalNumAtoms_, currentStep, currentTime,
-                                     localStateBackup_.get(), statePropagatorData_->globalState_,
-                                     observablesHistory, statePropagatorData_->f_.view().force());
+    mdoutf_write_to_trajectory_files(
+            fplog_, cr_, outf, static_cast<int>(mdof_flags), statePropagatorData_->totalNumAtoms_,
+            currentStep, currentTime, localStateBackup_.get(), statePropagatorData_->globalState_,
+            observablesHistory, statePropagatorData_->f_.view().force(), &dummyCheckpointDataHolder_);
 
     if (currentStep != lastStep_ || !isRegularSimulationEnd_)
     {

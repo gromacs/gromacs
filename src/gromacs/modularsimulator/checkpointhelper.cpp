@@ -45,6 +45,7 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/mdlib/mdoutf.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/state.h"
 
@@ -120,14 +121,16 @@ void CheckpointHelper::scheduleTask(Step step, Time time, const RegisterRunFunct
 void CheckpointHelper::writeCheckpoint(Step step, Time time)
 {
     localStateInstance_->flags = 0;
+
+    WriteCheckpointDataHolder checkpointDataHolder;
     for (const auto& client : clients_)
     {
         client->writeCheckpoint(localStateInstance_, state_global_);
     }
 
     mdoutf_write_to_trajectory_files(fplog_, cr_, trajectoryElement_->outf_, MDOF_CPT,
-                                     globalNumAtoms_, step, time, localStateInstance_,
-                                     state_global_, observablesHistory_, ArrayRef<RVec>());
+                                     globalNumAtoms_, step, time, localStateInstance_, state_global_,
+                                     observablesHistory_, ArrayRef<RVec>(), &checkpointDataHolder);
 }
 
 std::optional<SignallerCallback> CheckpointHelper::registerLastStepCallback()

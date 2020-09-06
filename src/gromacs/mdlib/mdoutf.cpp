@@ -283,23 +283,24 @@ static void mpiBarrierBeforeRename(const bool applyMpiBarrierBeforeRename, MPI_C
  * Appends the _step<step>.cpt with bNumberAndKeep, otherwise moves
  * the previous checkpoint filename with suffix _prev.cpt.
  */
-static void write_checkpoint(const char*                   fn,
-                             gmx_bool                      bNumberAndKeep,
-                             FILE*                         fplog,
-                             const t_commrec*              cr,
-                             ivec                          domdecCells,
-                             int                           nppnodes,
-                             int                           eIntegrator,
-                             int                           simulation_part,
-                             gmx_bool                      bExpanded,
-                             int                           elamstats,
-                             int64_t                       step,
-                             double                        t,
-                             t_state*                      state,
-                             ObservablesHistory*           observablesHistory,
-                             const gmx::MdModulesNotifier& mdModulesNotifier,
-                             bool                          applyMpiBarrierBeforeRename,
-                             MPI_Comm                      mpiBarrierCommunicator)
+static void write_checkpoint(const char*                     fn,
+                             gmx_bool                        bNumberAndKeep,
+                             FILE*                           fplog,
+                             const t_commrec*                cr,
+                             ivec                            domdecCells,
+                             int                             nppnodes,
+                             int                             eIntegrator,
+                             int                             simulation_part,
+                             gmx_bool                        bExpanded,
+                             int                             elamstats,
+                             int64_t                         step,
+                             double                          t,
+                             t_state*                        state,
+                             ObservablesHistory*             observablesHistory,
+                             const gmx::MdModulesNotifier&   mdModulesNotifier,
+                             gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData,
+                             bool                            applyMpiBarrierBeforeRename,
+                             MPI_Comm                        mpiBarrierCommunicator)
 {
     t_fileio* fp;
     char*     fntemp; /* the temporary checkpoint file name */
@@ -383,7 +384,8 @@ static void write_checkpoint(const char*                   fn,
                                                 0,
                                                 0,
                                                 nED,
-                                                eSwapCoords };
+                                                eSwapCoords,
+                                                false };
     std::strcpy(headerContents.version, gmx_version());
     std::strcpy(headerContents.fprog, gmx::getProgramContext().fullBinaryPath());
     std::strcpy(headerContents.ftime, timebuf.c_str());
@@ -393,7 +395,7 @@ static void write_checkpoint(const char*                   fn,
     }
 
     write_checkpoint_data(fp, headerContents, bExpanded, elamstats, state, observablesHistory,
-                          mdModulesNotifier, &outputfiles);
+                          mdModulesNotifier, &outputfiles, modularSimulatorCheckpointData);
 
     /* we really, REALLY, want to make sure to physically write the checkpoint,
        and all the files it depends on, out to disk. Because we've
@@ -476,17 +478,18 @@ static void write_checkpoint(const char*                   fn,
 #endif /* end GMX_FAHCORE block */
 }
 
-void mdoutf_write_to_trajectory_files(FILE*                          fplog,
-                                      const t_commrec*               cr,
-                                      gmx_mdoutf_t                   of,
-                                      int                            mdof_flags,
-                                      int                            natoms,
-                                      int64_t                        step,
-                                      double                         t,
-                                      t_state*                       state_local,
-                                      t_state*                       state_global,
-                                      ObservablesHistory*            observablesHistory,
-                                      gmx::ArrayRef<const gmx::RVec> f_local)
+void mdoutf_write_to_trajectory_files(FILE*                           fplog,
+                                      const t_commrec*                cr,
+                                      gmx_mdoutf_t                    of,
+                                      int                             mdof_flags,
+                                      int                             natoms,
+                                      int64_t                         step,
+                                      double                          t,
+                                      t_state*                        state_local,
+                                      t_state*                        state_global,
+                                      ObservablesHistory*             observablesHistory,
+                                      gmx::ArrayRef<const gmx::RVec>  f_local,
+                                      gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData)
 {
     const rvec* f_global;
 
@@ -544,7 +547,7 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
                              DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes, of->eIntegrator,
                              of->simulation_part, of->bExpanded, of->elamstats, step, t,
                              state_global, observablesHistory, *(of->mdModulesNotifier),
-                             of->simulationsShareState, of->mastersComm);
+                             modularSimulatorCheckpointData, of->simulationsShareState, of->mastersComm);
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))

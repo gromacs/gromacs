@@ -57,6 +57,7 @@ struct t_fcdata;
 namespace gmx
 {
 class ModularSimulatorAlgorithmBuilder;
+class ReadCheckpointDataHolder;
 
 /*! \libinternal
  * \ingroup module_modularsimulator
@@ -90,7 +91,8 @@ public:
 
 private:
     //! Constructor
-    explicit ModularSimulator(std::unique_ptr<LegacySimulatorData> legacySimulatorData);
+    ModularSimulator(std::unique_ptr<LegacySimulatorData>      legacySimulatorData,
+                     std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder);
 
     //! Populate algorithm builder with elements
     void addIntegrationElements(ModularSimulatorAlgorithmBuilder* builder);
@@ -98,8 +100,10 @@ private:
     //! Check for disabled functionality (during construction time)
     void checkInputForDisabledFunctionality();
 
-    //! Pointer to legacy simulator data
+    //! Pointer to legacy simulator data (TODO: Can we avoid using unique_ptr? #3628)
     std::unique_ptr<LegacySimulatorData> legacySimulatorData_;
+    //! Input checkpoint data
+    std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder_;
 };
 
 /*!
