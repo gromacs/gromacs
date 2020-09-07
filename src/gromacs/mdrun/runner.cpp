@@ -782,11 +782,11 @@ int Mdrunner::mdrunner()
     pleaseCiteGromacs(fplog);
 
     // TODO: Use SimulationInputHolder member to access SimulationInput. Issue #3374.
-    const auto* const tprFilename     = ftp2fn(efTPR, filenames.size(), filenames.data());
-    const auto* const cpiFilename     = opt2fn("-cpi", filenames.size(), filenames.data());
+    const auto* const tprFilename = ftp2fn(efTPR, filenames.size(), filenames.data());
+    const auto* const cpiFilename = opt2fn("-cpi", filenames.size(), filenames.data());
     // Note that, as of this change, there is no public API for simulationInput or its creation.
     // TODO: (#3374) Public API for providing simulationInput from client.
-    auto              simulationInput = detail::makeSimulationInput(tprFilename, cpiFilename);
+    auto simulationInput = detail::makeSimulationInput(tprFilename, cpiFilename);
 
     // Note: legacy program logic relies on checking whether these pointers are assigned.
     // Objects may or may not be allocated later.
