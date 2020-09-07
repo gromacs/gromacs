@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,7 +93,11 @@ void gmx_is_double_precision();
 
 void gmx_is_single_precision();
 
-/*! \brief Return a string describing what kind of GPU suport was configured in the build. */
+/*! \brief Return a string describing what kind of GPU suport was configured in the build.
+ *
+ * Currently returns correctly for CUDA, OpenCL and SYCL.
+ * Needs to be updated when adding new acceleration options.
+ */
 const char* getGpuImplementationString();
 
 /*! \brief

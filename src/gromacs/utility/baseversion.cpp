@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,6 +37,8 @@
 #include "baseversion.h"
 
 #include "config.h"
+
+#include "gromacs/utility/gmxassert.h"
 
 #include "baseversion_gen.h"
 
@@ -76,11 +78,29 @@ void gmx_is_double_precision() {}
 void gmx_is_single_precision() {}
 #endif
 
-/* Note that this array (and some which follow) must match the "GPU
- * support enumeration" in src/config.h.cmakein */
-static const char* const gpuImplementationStrings[] = { "disabled", "CUDA", "OpenCL" };
-
 const char* getGpuImplementationString()
 {
-    return gpuImplementationStrings[GMX_GPU];
+    if (GMX_GPU)
+    {
+        if (GMX_GPU_CUDA)
+        {
+            return "CUDA";
+        }
+        else if (GMX_GPU_OPENCL)
+        {
+            return "OpenCL";
+        }
+        else if (GMX_GPU_SYCL)
+        {
+            return "SYCL";
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false, "Unknown GPU configuration");
+        }
+    }
+    else
+    {
+        return "disabled";
+    }
 }
