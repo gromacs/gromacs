@@ -167,6 +167,8 @@
 #include "isimulator.h"
 #include "membedholder.h"
 #include "replicaexchange.h"
+#include "simulationinput.h"
+#include "simulationinpututility.h"
 #include "simulatorbuilder.h"
 
 #if GMX_FAHCORE
@@ -779,6 +781,13 @@ int Mdrunner::mdrunner()
     // Print citation requests after all software/hardware printing
     pleaseCiteGromacs(fplog);
 
+    // TODO: Use SimulationInputHolder member to access SimulationInput. Issue #3374.
+    const auto* const tprFilename     = ftp2fn(efTPR, filenames.size(), filenames.data());
+    const auto* const cpiFilename     = opt2fn("-cpi", filenames.size(), filenames.data());
+    // Note that, as of this change, there is no public API for simulationInput or its creation.
+    // TODO: (#3374) Public API for providing simulationInput from client.
+    auto              simulationInput = detail::makeSimulationInput(tprFilename, cpiFilename);
+
     // Note: legacy program logic relies on checking whether these pointers are assigned.
     // Objects may or may not be allocated later.
     std::unique_ptr<t_inputrec> inputrec;
@@ -796,8 +805,8 @@ int Mdrunner::mdrunner()
         /* Read (nearly) all data required for the simulation
          * and keep the partly serialized tpr contents to send to other ranks later
          */
-        *partialDeserializedTpr = read_tpx_state(ftp2fn(efTPR, filenames.size(), filenames.data()),
-                                                 inputrec.get(), globalState.get(), &mtop);
+        applyGlobalSimulationState(*simulationInput.object_, partialDeserializedTpr.get(),
+                                   globalState.get(), inputrec.get(), &mtop);
     }
 
     /* Check and update the hardware options for internal consistency */
@@ -1086,10 +1095,21 @@ int Mdrunner::mdrunner()
             inputrec->nsteps = -1;
         }
 
-        load_checkpoint(opt2fn_master("-cpi", filenames.size(), filenames.data(), cr),
-                        logFileHandle, cr, domdecOptions.numCells, inputrec.get(), globalState.get(),
-                        &observablesHistory, mdrunOptions.reproducible, mdModules_->notifier(),
+        // Finish applying initial simulation state information from external sources on all ranks.
+        // Reconcile checkpoint file data with Mdrunner state established up to this point.
+        applyLocalState(*simulationInput.object_, logFileHandle, cr, domdecOptions.numCells,
+                        inputrec.get(), globalState.get(), &observablesHistory,
+                        mdrunOptions.reproducible, mdModules_->notifier(),
                         modularSimulatorCheckpointData.get(), useModularSimulator);
+        // TODO: (#3652) Synchronize filesystem state, SimulationInput contents, and program
+        //  invariants
+        //  on all code paths.
+        // Write checkpoint or provide hook to update SimulationInput.
+        // If there was a checkpoint file, SimulationInput contains more information
+        // than if there wasn't. At this point, we have synchronized the in-memory
+        // state with the filesystem state only for restarted simulations. We should
+        // be calling applyLocalState unconditionally and expect that the completeness
+        // of SimulationInput is not dependent on its creation method.
 
         if (startingBehavior == StartingBehavior::RestartWithAppending && logFileHandle)
         {

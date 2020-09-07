@@ -45,6 +45,8 @@ gmx_add_libgromacs_sources(
     runner.cpp
     shellfc.cpp
     simulationcontext.cpp
+    simulationinput.cpp
+    simulationinpututility.cpp
     simulatorbuilder.cpp
     tpi.cpp
     )
