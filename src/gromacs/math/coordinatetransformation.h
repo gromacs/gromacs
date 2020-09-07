@@ -167,7 +167,7 @@ private:
     //! The matrix describing the affine transformation A(x) = matrix_ * x + translation_
     Matrix3x3 matrix_;
     //! The translation vector describing the affine transformation A(x) = matrix * x + translation
-    RVec      translation_;
+    RVec translation_;
 };
 
 } // namespace gmx
