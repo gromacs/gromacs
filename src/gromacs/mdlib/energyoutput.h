@@ -98,6 +98,23 @@ enum
 namespace gmx
 {
 
+/*! \internal
+ * \brief Arrays connected to Pressure and Temperature coupling
+ */
+struct PTCouplingArrays
+{
+    //! Box velocities for Parrinello-Rahman P-coupling.
+    const rvec* boxv;
+    //! Nose-Hoover coordinates.
+    ArrayRef<const double> nosehoover_xi;
+    //! Nose-Hoover velocities.
+    ArrayRef<const double> nosehoover_vxi;
+    //! Pressure Nose-Hoover coordinates.
+    ArrayRef<const double> nhpres_xi;
+    //! Pressure Nose-Hoover velocities.
+    ArrayRef<const double> nhpres_vxi;
+};
+
 /* Energy output class
  *
  * This is the collection of energy averages collected during mdrun, and to
@@ -136,32 +153,34 @@ public:
      *
      * Called every step on which the thermodynamic values are evaluated.
      *
-     * \param[in] bDoDHDL  Whether the FEP is enabled.
-     * \param[in] bSum     If this stepshould be recorded to compute sums and averaes.
-     * \param[in] time     Current simulation time.
-     * \param[in] tmass    Total mass
-     * \param[in] enerd    Energy data object.
-     * \param[in] state    System state.
-     * \param[in] fep      FEP data.
-     * \param[in] expand   Expanded ensemble (for FEP).
-     * \param[in] lastbox  PBC data.
-     * \param[in] svir     Constraint virial.
-     * \param[in] fvir     Force virial.
-     * \param[in] vir      Total virial.
-     * \param[in] pres     Pressure.
-     * \param[in] ekind    Kinetic energy data.
-     * \param[in] mu_tot   Total dipole.
-     * \param[in] constr   Constraints object to get RMSD from (for LINCS only).
+     * \param[in] bDoDHDL           Whether the FEP is enabled.
+     * \param[in] bSum              If this stepshould be recorded to compute sums and averages.
+     * \param[in] time              Current simulation time.
+     * \param[in] tmass             Total mass
+     * \param[in] enerd             Energy data object.
+     * \param[in] fep               FEP data.
+     * \param[in] expand            Expanded ensemble (for FEP).
+     * \param[in] lastbox           PBC data.
+     * \param[in] ptCouplingArrays  Arrays connected to pressure and temperature coupling.
+     * \param[in] fep_state         The current alchemical state we are in.
+     * \param[in] svir              Constraint virial.
+     * \param[in] fvir              Force virial.
+     * \param[in] vir               Total virial.
+     * \param[in] pres              Pressure.
+     * \param[in] ekind             Kinetic energy data.
+     * \param[in] mu_tot            Total dipole.
+     * \param[in] constr            Constraints object to get RMSD from (for LINCS only).
      */
     void addDataAtEnergyStep(bool                    bDoDHDL,
                              bool                    bSum,
                              double                  time,
                              real                    tmass,
                              const gmx_enerdata_t*   enerd,
-                             const t_state*          state,
                              const t_lambda*         fep,
                              const t_expanded*       expand,
                              const matrix            lastbox,
+                             PTCouplingArrays        ptCouplingArrays,
+                             int                     fep_state,
                              const tensor            svir,
                              const tensor            fvir,
                              const tensor            vir,

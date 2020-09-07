@@ -241,7 +241,6 @@ void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEner
     {
         accumulateKineticLambdaComponents(enerd_, freeEnergyPerturbationData_->constLambdaView(),
                                           *inputrec_->fepvals);
-        dummyLegacyState_.fep_state = freeEnergyPerturbationData_->currentFEPState();
     }
     if (parrinelloRahmanBarostat_)
     {
@@ -253,11 +252,17 @@ void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEner
         enerd_->term[F_ECONSERVED] =
                 enerd_->term[F_ETOT] + NPT_energy(inputrec_, &dummyLegacyState_, nullptr);
     }
-    energyOutput_->addDataAtEnergyStep(isFreeEnergyCalculationStep, isEnergyCalculationStep, time,
-                                       mdAtoms_->mdatoms()->tmass, enerd_, &dummyLegacyState_,
-                                       inputrec_->fepvals, inputrec_->expandedvals,
-                                       statePropagatorData_->constPreviousBox(), shakeVirial_,
-                                       forceVirial_, totalVirial_, pressure_, ekind_, muTot_, constr_);
+    matrix nullMatrix = {};
+    energyOutput_->addDataAtEnergyStep(
+            isFreeEnergyCalculationStep, isEnergyCalculationStep, time, mdAtoms_->mdatoms()->tmass, enerd_,
+            inputrec_->fepvals, inputrec_->expandedvals, statePropagatorData_->constPreviousBox(),
+            PTCouplingArrays({ parrinelloRahmanBarostat_ ? parrinelloRahmanBarostat_->boxVelocities() : nullMatrix,
+                               {},
+                               {},
+                               {},
+                               {} }),
+            freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->currentFEPState() : 0,
+            shakeVirial_, forceVirial_, totalVirial_, pressure_, ekind_, muTot_, constr_);
 }
 
 void EnergyData::write(gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool writeLog)

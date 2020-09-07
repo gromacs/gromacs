@@ -1126,8 +1126,8 @@ void LegacySimulator::do_cg()
         /* Copy stuff to the energy bin for easy printing etc. */
         matrix nullBox = {};
         energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step), mdatoms->tmass,
-                                         enerd, nullptr, nullptr, nullptr, nullBox, nullptr,
-                                         nullptr, vir, pres, nullptr, mu_tot, constr);
+                                         enerd, nullptr, nullptr, nullBox, PTCouplingArrays(), 0,
+                                         nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         EnergyOutput::printHeader(fplog, step, step);
         energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step,
@@ -1535,8 +1535,8 @@ void LegacySimulator::do_cg()
             /* Store the new (lower) energies */
             matrix nullBox = {};
             energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step), mdatoms->tmass,
-                                             enerd, nullptr, nullptr, nullptr, nullBox, nullptr,
-                                             nullptr, vir, pres, nullptr, mu_tot, constr);
+                                             enerd, nullptr, nullptr, nullBox, PTCouplingArrays(), 0,
+                                             nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
@@ -1776,8 +1776,8 @@ void LegacySimulator::do_lbfgs()
         /* Copy stuff to the energy bin for easy printing etc. */
         matrix nullBox = {};
         energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step), mdatoms->tmass,
-                                         enerd, nullptr, nullptr, nullptr, nullBox, nullptr,
-                                         nullptr, vir, pres, nullptr, mu_tot, constr);
+                                         enerd, nullptr, nullptr, nullBox, PTCouplingArrays(), 0,
+                                         nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
         EnergyOutput::printHeader(fplog, step, step);
         energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), TRUE, FALSE, FALSE, fplog, step,
@@ -2261,8 +2261,8 @@ void LegacySimulator::do_lbfgs()
             /* Store the new (lower) energies */
             matrix nullBox = {};
             energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(step), mdatoms->tmass,
-                                             enerd, nullptr, nullptr, nullptr, nullBox, nullptr,
-                                             nullptr, vir, pres, nullptr, mu_tot, constr);
+                                             enerd, nullptr, nullptr, nullBox, PTCouplingArrays(), 0,
+                                             nullptr, nullptr, vir, pres, nullptr, mu_tot, constr);
 
             do_log = do_per_step(step, inputrec->nstlog);
             do_ene = do_per_step(step, inputrec->nstenergy);
@@ -2473,9 +2473,10 @@ void LegacySimulator::do_steep()
             {
                 /* Store the new (lower) energies  */
                 matrix nullBox = {};
-                energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(count), mdatoms->tmass,
-                                                 enerd, nullptr, nullptr, nullptr, nullBox, nullptr,
-                                                 nullptr, vir, pres, nullptr, mu_tot, constr);
+                energyOutput.addDataAtEnergyStep(false, false, static_cast<double>(count),
+                                                 mdatoms->tmass, enerd, nullptr, nullptr, nullBox,
+                                                 PTCouplingArrays(), 0, nullptr, nullptr, vir, pres,
+                                                 nullptr, mu_tot, constr);
 
                 imdSession->fillEnergyRecord(count, TRUE);
 

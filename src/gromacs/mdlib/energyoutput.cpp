@@ -855,10 +855,11 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                        double                  time,
                                        real                    tmass,
                                        const gmx_enerdata_t*   enerd,
-                                       const t_state*          state,
                                        const t_lambda*         fep,
                                        const t_expanded*       expand,
                                        const matrix            box,
+                                       PTCouplingArrays        ptCouplingArrays,
+                                       int                     fep_state,
                                        const tensor            svir,
                                        const tensor            fvir,
                                        const tensor            vir,
@@ -936,12 +937,12 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
     }
     if (epc_ == epcPARRINELLORAHMAN || epc_ == epcMTTK)
     {
-        tmp6[0] = state->boxv[XX][XX];
-        tmp6[1] = state->boxv[YY][YY];
-        tmp6[2] = state->boxv[ZZ][ZZ];
-        tmp6[3] = state->boxv[YY][XX];
-        tmp6[4] = state->boxv[ZZ][XX];
-        tmp6[5] = state->boxv[ZZ][YY];
+        tmp6[0] = ptCouplingArrays.boxv[XX][XX];
+        tmp6[1] = ptCouplingArrays.boxv[YY][YY];
+        tmp6[2] = ptCouplingArrays.boxv[ZZ][ZZ];
+        tmp6[3] = ptCouplingArrays.boxv[YY][XX];
+        tmp6[4] = ptCouplingArrays.boxv[ZZ][XX];
+        tmp6[5] = ptCouplingArrays.boxv[ZZ][YY];
         add_ebin(ebin_, ipc_, bTricl_ ? 6 : 3, tmp6, bSum);
     }
     if (bMu_)
@@ -1000,8 +1001,8 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                         for (j = 0; j < nNHC_; j++)
                         {
                             k                 = i * nNHC_ + j;
-                            tmp_r_[2 * k]     = state->nosehoover_xi[k];
-                            tmp_r_[2 * k + 1] = state->nosehoover_vxi[k];
+                            tmp_r_[2 * k]     = ptCouplingArrays.nosehoover_xi[k];
+                            tmp_r_[2 * k + 1] = ptCouplingArrays.nosehoover_vxi[k];
                         }
                     }
                     add_ebin(ebin_, itc_, mde_n_, tmp_r_, bSum);
@@ -1013,8 +1014,8 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                             for (j = 0; j < nNHC_; j++)
                             {
                                 k                 = i * nNHC_ + j;
-                                tmp_r_[2 * k]     = state->nhpres_xi[k];
-                                tmp_r_[2 * k + 1] = state->nhpres_vxi[k];
+                                tmp_r_[2 * k]     = ptCouplingArrays.nhpres_xi[k];
+                                tmp_r_[2 * k + 1] = ptCouplingArrays.nhpres_vxi[k];
                             }
                         }
                         add_ebin(ebin_, itcb_, mdeb_n_, tmp_r_, bSum);
@@ -1024,8 +1025,8 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                 {
                     for (int i = 0; (i < nTC_); i++)
                     {
-                        tmp_r_[2 * i]     = state->nosehoover_xi[i];
-                        tmp_r_[2 * i + 1] = state->nosehoover_vxi[i];
+                        tmp_r_[2 * i]     = ptCouplingArrays.nosehoover_xi[i];
+                        tmp_r_[2 * i + 1] = ptCouplingArrays.nosehoover_vxi[i];
                     }
                     add_ebin(ebin_, itc_, mde_n_, tmp_r_, bSum);
                 }
@@ -1062,14 +1063,14 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             dE_[i] = foreignTerms.deltaH(i);
             if (numTemperatures_ > 0)
             {
-                GMX_RELEASE_ASSERT(numTemperatures_ > state->fep_state,
+                GMX_RELEASE_ASSERT(numTemperatures_ > fep_state,
                                    "Number of lambdas in state is bigger then in input record");
                 GMX_RELEASE_ASSERT(
                         numTemperatures_ >= foreignTerms.numLambdas(),
                         "Number of lambdas in energy data is bigger then in input record");
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
                 /* is this even useful to have at all? */
-                dE_[i] += (temperatures_[i] / temperatures_[state->fep_state] - 1.0) * enerd->term[F_EKIN];
+                dE_[i] += (temperatures_[i] / temperatures_[fep_state] - 1.0) * enerd->term[F_EKIN];
             }
         }
 
@@ -1081,7 +1082,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             /* print the current state if we are doing expanded ensemble */
             if (expand->elmcmove > elmcmoveNO)
             {
-                fprintf(fp_dhdl_, " %4d", state->fep_state);
+                fprintf(fp_dhdl_, " %4d", fep_state);
             }
             /* total energy (for if the temperature changes */
 
@@ -1137,7 +1138,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             }
             store_energy = enerd->term[F_ETOT];
             /* store_dh is dE */
-            mde_delta_h_coll_add_dh(dhc_, static_cast<double>(state->fep_state), store_energy, pv,
+            mde_delta_h_coll_add_dh(dhc_, static_cast<double>(fep_state), store_energy, pv,
                                     store_dhdl, dE_ + fep->lambda_start_n, time);
         }
     }

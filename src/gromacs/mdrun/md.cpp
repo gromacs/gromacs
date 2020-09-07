@@ -1509,9 +1509,12 @@ void gmx::LegacySimulator::do_md()
             }
             if (bCalcEner)
             {
-                energyOutput.addDataAtEnergyStep(bDoDHDL, bCalcEnerStep, t, mdatoms->tmass, enerd, state,
-                                                 ir->fepvals, ir->expandedvals, lastbox, shake_vir,
-                                                 force_vir, total_vir, pres, ekind, mu_tot, constr);
+                energyOutput.addDataAtEnergyStep(
+                        bDoDHDL, bCalcEnerStep, t, mdatoms->tmass, enerd, ir->fepvals,
+                        ir->expandedvals, lastbox,
+                        PTCouplingArrays{ state->boxv, state->nosehoover_xi, state->nosehoover_vxi,
+                                          state->nhpres_xi, state->nhpres_vxi },
+                        state->fep_state, shake_vir, force_vir, total_vir, pres, ekind, mu_tot, constr);
             }
             else
             {
