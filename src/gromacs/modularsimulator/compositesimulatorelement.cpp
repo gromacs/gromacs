@@ -41,22 +41,30 @@
 
 #include "gmxpre.h"
 
+#include "gromacs/mdlib/stat.h"
+
 #include "compositesimulatorelement.h"
 
 namespace gmx
 {
 CompositeSimulatorElement::CompositeSimulatorElement(
         std::vector<compat::not_null<ISimulatorElement*>>    elementCallList,
-        std::vector<std::unique_ptr<gmx::ISimulatorElement>> elements) :
-    elementCallList_(std::move(elementCallList)), elementOwnershipList_(std::move(elements))
+        std::vector<std::unique_ptr<gmx::ISimulatorElement>> elements,
+        int                                                  frequency) :
+    elementCallList_(std::move(elementCallList)),
+    elementOwnershipList_(std::move(elements)),
+    frequency_(frequency)
 {
 }
 
 void CompositeSimulatorElement::scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction)
 {
-    for (auto& element : elementCallList_)
+    if (do_per_step(step, frequency_))
     {
-        element->scheduleTask(step, time, registerRunFunction);
+        for (auto& element : elementCallList_)
+        {
+            element->scheduleTask(step, time, registerRunFunction);
+        }
     }
 }
 

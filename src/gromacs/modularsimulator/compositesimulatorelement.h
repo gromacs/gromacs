@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,7 +75,8 @@ class CompositeSimulatorElement final : public ISimulatorElement
 public:
     //! Constructor
     explicit CompositeSimulatorElement(std::vector<compat::not_null<ISimulatorElement*>> elementCallList,
-                                       std::vector<std::unique_ptr<ISimulatorElement>> elements);
+                                       std::vector<std::unique_ptr<ISimulatorElement>> elements,
+                                       int                                             frequency);
 
     /*! \brief Register run function for step / time
      *
@@ -105,6 +106,8 @@ private:
     std::vector<compat::not_null<ISimulatorElement*>> elementCallList_;
     //! List of elements owned by composite element
     std::vector<std::unique_ptr<ISimulatorElement>> elementOwnershipList_;
+    //! The frequency at which the composite element is running
+    const int frequency_;
 };
 
 } // namespace gmx
