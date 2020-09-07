@@ -50,6 +50,7 @@
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 enum class GpuApiCallBehavior;
 

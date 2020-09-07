@@ -51,7 +51,6 @@
 #include "gromacs/mdtypes/locality.h"
 
 struct NbnxmGpu;
-struct gmx_gpu_info_t;
 struct DeviceInformation;
 struct gmx_wallclock_gpu_nbnxn_t;
 struct nbnxn_atomdata_t;

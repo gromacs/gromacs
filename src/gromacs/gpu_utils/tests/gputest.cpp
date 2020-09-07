@@ -44,8 +44,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
-#include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -55,35 +56,18 @@ namespace test
 
 GpuTest::GpuTest()
 {
-    snew(gpuInfo_, 1);
-    if (isGpuDetectionFunctional(nullptr))
+    if (canPerformDeviceDetection(nullptr))
     {
-        findGpus(gpuInfo_);
-        compatibleGpuIds_ = getCompatibleGpus(*gpuInfo_);
+        deviceInfoList_ = findDevices();
     }
     // Failing to find valid GPUs does not require further action
 }
 
-GpuTest::~GpuTest()
-{
-    free_gpu_info(gpuInfo_);
-    sfree(gpuInfo_);
-}
+GpuTest::~GpuTest() = default;
 
-bool GpuTest::haveCompatibleGpus() const
+std::vector<std::unique_ptr<DeviceInformation>>& GpuTest::getDeviceInfoList()
 {
-    return !compatibleGpuIds_.empty();
-}
-
-std::vector<const DeviceInformation*> GpuTest::getDeviceInfos() const
-{
-    std::vector<const DeviceInformation*> deviceInfos;
-    deviceInfos.reserve(compatibleGpuIds_.size());
-    for (const auto& id : compatibleGpuIds_)
-    {
-        deviceInfos.emplace_back(getDeviceInfo(*gpuInfo_, id));
-    }
-    return deviceInfos;
+    return deviceInfoList_;
 }
 
 } // namespace test

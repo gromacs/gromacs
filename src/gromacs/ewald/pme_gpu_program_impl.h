@@ -45,7 +45,6 @@
 #include "config.h"
 
 #include "gromacs/gpu_utils/device_context.h"
-#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/classhelpers.h"
 
 class DeviceContext;

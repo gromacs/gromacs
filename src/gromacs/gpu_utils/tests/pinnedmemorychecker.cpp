@@ -70,7 +70,7 @@ using PinnedMemoryCheckerTest = GpuTest;
 
 TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
 {
-    if (!haveCompatibleGpus())
+    if (!canComputeOnDevice())
     {
         return;
     }
@@ -81,7 +81,7 @@ TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 {
-    if (!haveCompatibleGpus())
+    if (!canComputeOnDevice())
     {
         return;
     }
@@ -93,7 +93,7 @@ TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 {
-    if (!haveCompatibleGpus())
+    if (!canComputeOnDevice())
     {
         return;
     }
@@ -105,7 +105,7 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinningChangesAreRecognized)
 {
-    if (!haveCompatibleGpus())
+    if (!canComputeOnDevice())
     {
         return;
     }
@@ -121,7 +121,7 @@ TEST_F(PinnedMemoryCheckerTest, PinningChangesAreRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 {
-    if (!haveCompatibleGpus())
+    if (!canComputeOnDevice())
     {
         return;
     }
@@ -134,7 +134,7 @@ TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinnedCBufferIsRecognized)
 {
-    if (!haveCompatibleGpus())
+    if (!canComputeOnDevice())
     {
         return;
     }

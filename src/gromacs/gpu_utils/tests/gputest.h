@@ -45,8 +45,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/hardware/device_management.h"
+
 struct DeviceInformation;
-struct gmx_gpu_info_t;
 
 namespace gmx
 {
@@ -56,17 +57,13 @@ namespace test
 class GpuTest : public ::testing::Test
 {
 public:
-    //! Information about GPUs that are present.
-    gmx_gpu_info_t* gpuInfo_;
-    //! Contains the IDs of all compatible GPUs
-    std::vector<int> compatibleGpuIds_;
+    //! List of all available devices
+    std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList_;
 
     GpuTest();
     ~GpuTest() override;
-    //! Return whether compatible GPUs were found
-    bool haveCompatibleGpus() const;
     //! Return a vector of handles, each to a device info for a compatible GPU.
-    std::vector<const DeviceInformation*> getDeviceInfos() const;
+    std::vector<std::unique_ptr<DeviceInformation>>& getDeviceInfoList();
 };
 
 } // namespace test

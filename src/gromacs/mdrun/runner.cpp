@@ -774,7 +774,7 @@ int Mdrunner::mdrunner()
 
     gmx_print_detected_hardware(fplog, isSimulationMasterRank && isMasterSim(ms), mdlog, hwinfo);
 
-    std::vector<int> gpuIdsToUse = makeGpuIdsToUse(hwinfo->gpu_info, hw_opt.gpuIdsAvailable);
+    std::vector<int> gpuIdsToUse = makeGpuIdsToUse(hwinfo->deviceInfoList, hw_opt.gpuIdsAvailable);
 
     // Print citation requests after all software/hardware printing
     pleaseCiteGromacs(fplog);
@@ -1729,7 +1729,7 @@ int Mdrunner::mdrunner()
     }
 
     // FIXME: this is only here to manually unpin mdAtoms->chargeA_ and state->x,
-    // before we destroy the GPU context(s) in free_gpu().
+    // before we destroy the GPU context(s)
     // Pinned buffers are associated with contexts in CUDA.
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
     mdAtoms.reset(nullptr);
@@ -1743,18 +1743,17 @@ int Mdrunner::mdrunner()
     sfree(disresdata);
     sfree(oriresdata);
 
-    if (hwinfo->gpu_info.n_dev > 0)
+    if (!hwinfo->deviceInfoList.empty())
     {
         /* stop the GPU profiler (only CUDA) */
         stopGpuProfiler();
     }
 
     /* With tMPI we need to wait for all ranks to finish deallocation before
-     * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
+     * destroying the CUDA context as some tMPI ranks may be sharing
      * GPU and context.
      *
-     * This is not a concern in OpenCL where we use one context per rank which
-     * is freed in nbnxn_gpu_free().
+     * This is not a concern in OpenCL where we use one context per rank.
      *
      * Note: it is safe to not call the barrier on the ranks which do not use GPU,
      * but it is easier and more futureproof to call it on the whole node.
@@ -1769,8 +1768,7 @@ int Mdrunner::mdrunner()
     {
         physicalNodeComm.barrier();
     }
-
-    free_gpu(deviceInfo);
+    releaseDevice(deviceInfo);
 
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());

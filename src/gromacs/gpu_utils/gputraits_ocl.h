@@ -46,7 +46,6 @@
  */
 
 #include "gromacs/gpu_utils/gmxopencl.h"
-#include "gromacs/hardware/gpu_hw_info.h"
 
 using DeviceTexture = void*;
 

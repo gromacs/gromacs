@@ -1,8 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017 The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,26 +34,30 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Defines the implementations of the device management that are common for CPU, CUDA and OpenCL.
+ *  \brief Defines the implementations of device management functions that
+ *         are common for CPU, CUDA and OpenCL.
  *
+ *  \author Anca Hamuraru <anca@streamcomputing.eu>
+ *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
+ *  \author Teemu Virolainen <teemu@streamcomputing.eu>
+ *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_hardware
  */
 #include "gmxpre.h"
 
-#include <assert.h>
-
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
-#include "gromacs/hardware/gpu_hw_info.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/fatalerror.h"
 
-bool canPerformGpuDetection()
+#include "device_information.h"
+
+bool canPerformDeviceDetection(std::string* errorMessage)
 {
     if (c_binarySupportsGpus && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr)
     {
-        return isGpuDetectionFunctional(nullptr);
+        return isDeviceDetectionFunctional(errorMessage);
     }
     else
     {
@@ -61,29 +65,61 @@ bool canPerformGpuDetection()
     }
 }
 
-std::vector<int> getCompatibleGpus(const gmx_gpu_info_t& gpu_info)
+bool canComputeOnDevice()
+{
+    bool canComputeOnDevice = false;
+    if (canPerformDeviceDetection(nullptr))
+    {
+        std::vector<std::unique_ptr<DeviceInformation>> devInfos = findDevices();
+        canComputeOnDevice = !getCompatibleDevices(devInfos).empty();
+    }
+    return canComputeOnDevice;
+}
+
+std::vector<std::reference_wrapper<DeviceInformation>>
+getCompatibleDevices(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList)
 {
     // Possible minor over-allocation here, but not important for anything
-    std::vector<int> compatibleGpus;
-    compatibleGpus.reserve(gpu_info.n_dev);
-    for (int i = 0; i < gpu_info.n_dev; i++)
+    std::vector<std::reference_wrapper<DeviceInformation>> compatibleDeviceInfoList;
+    compatibleDeviceInfoList.reserve(deviceInfoList.size());
+    for (const auto& deviceInfo : deviceInfoList)
     {
-        assert(gpu_info.deviceInfo);
-        if (gpu_info_get_stat(gpu_info, i) == DeviceStatus::Compatible)
+        if (deviceInfo->status == DeviceStatus::Compatible)
         {
-            compatibleGpus.push_back(i);
+            compatibleDeviceInfoList.emplace_back(*deviceInfo);
         }
     }
-    return compatibleGpus;
+    return compatibleDeviceInfoList;
 }
 
-const char* getGpuCompatibilityDescription(const gmx_gpu_info_t& gpu_info, int index)
+std::string getDeviceCompatibilityDescription(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
+                                              int deviceId)
 {
-    return (index >= gpu_info.n_dev ? c_deviceStateString[DeviceStatus::Nonexistent]
-                                    : c_deviceStateString[gpu_info_get_stat(gpu_info, index)]);
+    return (deviceId >= static_cast<int>(deviceInfoList.size())
+                    ? c_deviceStateString[DeviceStatus::Nonexistent]
+                    : c_deviceStateString[deviceInfoList[deviceId]->status]);
 }
 
-void free_gpu_info(const gmx_gpu_info_t* gpu_info)
+void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
+                                 gmx::ISerializer*                                      serializer)
 {
-    sfree(static_cast<void*>(gpu_info->deviceInfo)); // circumvent is_pod check in sfree
+    int numDevices = deviceInfoList.size();
+    serializer->doInt(&numDevices);
+    for (auto& deviceInfo : deviceInfoList)
+    {
+        serializer->doOpaque(reinterpret_cast<char*>(deviceInfo.get()), sizeof(DeviceInformation));
+    }
+}
+
+std::vector<std::unique_ptr<DeviceInformation>> deserializeDeviceInformations(gmx::ISerializer* serializer)
+{
+    int numDevices = 0;
+    serializer->doInt(&numDevices);
+    std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList(numDevices);
+    for (int i = 0; i < numDevices; i++)
+    {
+        deviceInfoList[i] = std::make_unique<DeviceInformation>();
+        serializer->doOpaque(reinterpret_cast<char*>(deviceInfoList[i].get()), sizeof(DeviceInformation));
+    }
+    return deviceInfoList;
 }

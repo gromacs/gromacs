@@ -55,9 +55,8 @@
 #include <gtest/gtest-spi.h>
 
 #include "gromacs/ewald/pme.h"
-#include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/hardware/detecthardware.h"
-#include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -98,7 +97,7 @@ bool PmeTest::s_hasCompatibleGpus = false;
 
 void PmeTest::SetUpTestCase()
 {
-    s_hasCompatibleGpus = canComputeOnGpu();
+    s_hasCompatibleGpus = canComputeOnDevice();
 }
 
 void PmeTest::runTest(const RunModesList& runModes)

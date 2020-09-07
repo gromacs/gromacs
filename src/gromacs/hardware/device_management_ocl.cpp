@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team.
  * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -34,49 +34,61 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Define functions for detection and initialization for OpenCL devices.
+ *  \brief Defines the OpenCL implementations of the device management.
  *
  *  \author Anca Hamuraru <anca@streamcomputing.eu>
  *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
  *  \author Teemu Virolainen <teemu@streamcomputing.eu>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \ingroup module_hardware
  */
-
 #include "gmxpre.h"
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <cstdio>
-#ifdef __APPLE__
-#    include <sys/sysctl.h>
-#endif
-
-#include <memory.h>
-
-#include "gromacs/gpu_utils/ocl_compiler.h"
 #include "gromacs/gpu_utils/oclraii.h"
 #include "gromacs/gpu_utils/oclutils.h"
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
-#include "gromacs/hardware/hw_info.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "device_information.h"
+
+namespace gmx
+{
+
+/*! \brief Returns an DeviceVendor value corresponding to the input OpenCL vendor name.
+ *
+ *  \returns               DeviceVendor value for the input vendor name
+ */
+static DeviceVendor getDeviceVendor(const char* vendorName)
+{
+    if (vendorName)
+    {
+        if (strstr(vendorName, "NVIDIA"))
+        {
+            return DeviceVendor::Nvidia;
+        }
+        else if (strstr(vendorName, "AMD") || strstr(vendorName, "Advanced Micro Devices"))
+        {
+            return DeviceVendor::Amd;
+        }
+        else if (strstr(vendorName, "Intel"))
+        {
+            return DeviceVendor::Intel;
+        }
+    }
+    return DeviceVendor::Unknown;
+}
 
 /*! \brief Return true if executing on compatible OS for AMD OpenCL.
  *
  * This is assumed to be true for OS X version of at least 10.10.4 and
  * all other OS flavors.
- *
- * Uses the BSD sysctl() interfaces to extract the kernel version.
  *
  * \return true if version is 14.4 or later (= OS X version 10.10.4),
  *         or OS is not Darwin.
@@ -89,9 +101,6 @@ static bool runningOnCompatibleOSForAmd()
     size_t len = sizeof(kernelVersion);
 
     mib[0] = CTL_KERN;
-    mib[1] = KERN_OSRELEASE;
-
-    sysctl(mib, sizeof(mib) / sizeof(mib[0]), kernelVersion, &len, NULL, 0);
 
     int major = strtod(kernelVersion, NULL);
     int minor = strtod(strchr(kernelVersion, '.') + 1, NULL);
@@ -103,29 +112,79 @@ static bool runningOnCompatibleOSForAmd()
 #endif
 }
 
-namespace gmx
+/*!
+ * \brief Checks that device \c deviceInfo is compatible with GROMACS.
+ *
+ *  Vendor and OpenCL version support checks are executed an the result
+ *  of these returned.
+ *
+ * \param[in]  deviceInfo  The device info pointer.
+ * \returns                The result of the compatibility checks.
+ */
+static DeviceStatus isDeviceSupported(const DeviceInformation& deviceInfo)
 {
+    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    {
+        // Assume the device is compatible because checking has been disabled.
+        return DeviceStatus::Compatible;
+    }
+
+    // OpenCL device version check, ensure >= REQUIRED_OPENCL_MIN_VERSION
+    constexpr unsigned int minVersionMajor = REQUIRED_OPENCL_MIN_VERSION_MAJOR;
+    constexpr unsigned int minVersionMinor = REQUIRED_OPENCL_MIN_VERSION_MINOR;
+
+    // Based on the OpenCL spec we're checking the version supported by
+    // the device which has the following format:
+    //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
+    unsigned int deviceVersionMinor, deviceVersionMajor;
+    const int    valuesScanned = std::sscanf(deviceInfo.device_version, "OpenCL %u.%u",
+                                          &deviceVersionMajor, &deviceVersionMinor);
+    const bool   versionLargeEnough =
+            ((valuesScanned == 2)
+             && ((deviceVersionMajor > minVersionMajor)
+                 || (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
+    if (!versionLargeEnough)
+    {
+        return DeviceStatus::Incompatible;
+    }
+
+    /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
+    switch (deviceInfo.deviceVendor)
+    {
+        case DeviceVendor::Nvidia: return DeviceStatus::Compatible;
+        case DeviceVendor::Amd:
+            return runningOnCompatibleOSForAmd() ? DeviceStatus::Compatible : DeviceStatus::Incompatible;
+        case DeviceVendor::Intel:
+            return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? DeviceStatus::Compatible
+                                                   : DeviceStatus::IncompatibleClusterSize;
+        default: return DeviceStatus::Incompatible;
+    }
+}
 
 /*! \brief Make an error string following an OpenCL API call.
  *
  *  It is meant to be called with \p status != CL_SUCCESS, but it will
  *  work correctly even if it is called with no OpenCL failure.
  *
+ * \todo Make use of this function more.
+ *
  * \param[in]  message  Supplies context, e.g. the name of the API call that returned the error.
  * \param[in]  status   OpenCL API status code
  * \returns             A string describing the OpenCL error.
  */
-static std::string makeOpenClInternalErrorString(const char* message, cl_int status)
+inline std::string makeOpenClInternalErrorString(const char* message, cl_int status)
 {
     if (message != nullptr)
     {
-        return formatString("%s did %ssucceed %d: %s", message, ((status != CL_SUCCESS) ? "not " : ""),
-                            status, ocl_get_error_string(status).c_str());
+        return gmx::formatString("%s did %ssucceed %d: %s", message,
+                                 ((status != CL_SUCCESS) ? "not " : ""), status,
+                                 ocl_get_error_string(status).c_str());
     }
     else
     {
-        return formatString("%sOpenCL error encountered %d: %s", ((status != CL_SUCCESS) ? "" : "No "),
-                            status, ocl_get_error_string(status).c_str());
+        return gmx::formatString("%sOpenCL error encountered %d: %s",
+                                 ((status != CL_SUCCESS) ? "" : "No "), status,
+                                 ocl_get_error_string(status).c_str());
     }
 }
 
@@ -141,15 +200,15 @@ static std::string makeOpenClInternalErrorString(const char* message, cl_int sta
  * \throws     std::bad_alloc  When out of memory.
  * \returns                    Whether the device passed sanity checks
  */
-static bool isDeviceFunctional(const DeviceInformation* deviceInfo, std::string* errorMessage)
+static bool isDeviceFunctional(const DeviceInformation& deviceInfo, std::string* errorMessage)
 {
     cl_context_properties properties[] = {
-        CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(deviceInfo->oclPlatformId), 0
+        CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(deviceInfo.oclPlatformId), 0
     };
     // uncrustify spacing
 
     cl_int    status;
-    auto      deviceId = deviceInfo->oclDeviceId;
+    auto      deviceId = deviceInfo.oclDeviceId;
     ClContext context(clCreateContext(properties, 1, &deviceId, nullptr, nullptr, &status));
     if (status != CL_SUCCESS)
     {
@@ -198,56 +257,6 @@ static bool isDeviceFunctional(const DeviceInformation* deviceInfo, std::string*
     return true;
 }
 
-/*!
- * \brief Checks that device \c deviceInfo is compatible with GROMACS.
- *
- *  Vendor and OpenCL version support checks are executed an the result
- *  of these returned.
- *
- * \param[in]  deviceInfo  The device info pointer.
- * \returns                The result of the compatibility checks.
- */
-static DeviceStatus isDeviceSupported(const DeviceInformation* deviceInfo)
-{
-    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
-    {
-        // Assume the device is compatible because checking has been disabled.
-        return DeviceStatus::Compatible;
-    }
-
-    // OpenCL device version check, ensure >= REQUIRED_OPENCL_MIN_VERSION
-    constexpr unsigned int minVersionMajor = REQUIRED_OPENCL_MIN_VERSION_MAJOR;
-    constexpr unsigned int minVersionMinor = REQUIRED_OPENCL_MIN_VERSION_MINOR;
-
-    // Based on the OpenCL spec we're checking the version supported by
-    // the device which has the following format:
-    //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
-    unsigned int deviceVersionMinor, deviceVersionMajor;
-    const int    valuesScanned = std::sscanf(deviceInfo->device_version, "OpenCL %u.%u",
-                                          &deviceVersionMajor, &deviceVersionMinor);
-    const bool   versionLargeEnough =
-            ((valuesScanned == 2)
-             && ((deviceVersionMajor > minVersionMajor)
-                 || (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
-    if (!versionLargeEnough)
-    {
-        return DeviceStatus::Incompatible;
-    }
-
-    /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
-    switch (deviceInfo->deviceVendor)
-    {
-        case DeviceVendor::Nvidia: return DeviceStatus::Compatible;
-        case DeviceVendor::Amd:
-            return runningOnCompatibleOSForAmd() ? DeviceStatus::Compatible : DeviceStatus::Incompatible;
-        case DeviceVendor::Intel:
-            return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? DeviceStatus::Compatible
-                                                   : DeviceStatus::IncompatibleClusterSize;
-        default: return DeviceStatus::Incompatible;
-    }
-}
-
-
 /*! \brief Check whether the \c ocl_gpu_device is suitable for use by mdrun
  *
  * Runs sanity checks: checking that the runtime can compile a dummy kernel
@@ -260,7 +269,7 @@ static DeviceStatus isDeviceSupported(const DeviceInformation* deviceInfo)
  * \returns  A DeviceStatus to indicate if the GPU device is supported and if it was able to run
  *           basic functionality checks.
  */
-static DeviceStatus checkGpu(size_t deviceId, const DeviceInformation* deviceInfo)
+static DeviceStatus checkGpu(size_t deviceId, const DeviceInformation& deviceInfo)
 {
 
     DeviceStatus supportStatus = isDeviceSupported(deviceInfo);
@@ -281,32 +290,7 @@ static DeviceStatus checkGpu(size_t deviceId, const DeviceInformation* deviceInf
 
 } // namespace gmx
 
-/*! \brief Returns an DeviceVendor value corresponding to the input OpenCL vendor name.
- *
- *  \param[in] vendorName  String with OpenCL vendor name.
- *  \returns               DeviceVendor value for the input vendor name
- */
-static DeviceVendor getDeviceVendor(const char* vendorName)
-{
-    if (vendorName)
-    {
-        if (strstr(vendorName, "NVIDIA"))
-        {
-            return DeviceVendor::Nvidia;
-        }
-        else if (strstr(vendorName, "AMD") || strstr(vendorName, "Advanced Micro Devices"))
-        {
-            return DeviceVendor::Amd;
-        }
-        else if (strstr(vendorName, "Intel"))
-        {
-            return DeviceVendor::Intel;
-        }
-    }
-    return DeviceVendor::Unknown;
-}
-
-bool isGpuDetectionFunctional(std::string* errorMessage)
+bool isDeviceDetectionFunctional(std::string* errorMessage)
 {
     cl_uint numPlatforms;
     cl_int  status = clGetPlatformIDs(0, nullptr, &numPlatforms);
@@ -335,7 +319,7 @@ bool isGpuDetectionFunctional(std::string* errorMessage)
     return foundPlatform;
 }
 
-void findGpus(gmx_gpu_info_t* gpu_info)
+std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 {
     cl_uint         ocl_platform_count;
     cl_platform_id* ocl_platform_ids;
@@ -347,6 +331,9 @@ void findGpus(gmx_gpu_info_t* gpu_info)
     {
         req_dev_type = CL_DEVICE_TYPE_CPU;
     }
+
+    int                                             numDevices = 0;
+    std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList(0);
 
     while (true)
     {
@@ -386,22 +373,22 @@ void findGpus(gmx_gpu_info_t* gpu_info)
 
             if (1 <= ocl_device_count)
             {
-                gpu_info->n_dev += ocl_device_count;
+                numDevices += ocl_device_count;
             }
         }
 
-        if (1 > gpu_info->n_dev)
+        if (1 > numDevices)
         {
             break;
         }
 
-        snew(gpu_info->deviceInfo, gpu_info->n_dev);
+        deviceInfoList.resize(numDevices);
 
         {
             int           device_index;
             cl_device_id* ocl_device_ids;
 
-            snew(ocl_device_ids, gpu_info->n_dev);
+            snew(ocl_device_ids, numDevices);
             device_index = 0;
 
             for (unsigned int i = 0; i < ocl_platform_count; i++)
@@ -410,8 +397,8 @@ void findGpus(gmx_gpu_info_t* gpu_info)
 
                 /* If requesting req_dev_type devices fails, just go to the next platform */
                 if (CL_SUCCESS
-                    != clGetDeviceIDs(ocl_platform_ids[i], req_dev_type, gpu_info->n_dev,
-                                      ocl_device_ids, &ocl_device_count))
+                    != clGetDeviceIDs(ocl_platform_ids[i], req_dev_type, numDevices, ocl_device_ids,
+                                      &ocl_device_count))
                 {
                     continue;
                 }
@@ -423,87 +410,86 @@ void findGpus(gmx_gpu_info_t* gpu_info)
 
                 for (unsigned int j = 0; j < ocl_device_count; j++)
                 {
-                    gpu_info->deviceInfo[device_index].oclPlatformId = ocl_platform_ids[i];
-                    gpu_info->deviceInfo[device_index].oclDeviceId   = ocl_device_ids[j];
+                    deviceInfoList[device_index] = std::make_unique<DeviceInformation>();
 
-                    gpu_info->deviceInfo[device_index].device_name[0] = 0;
+                    deviceInfoList[device_index]->id = device_index;
+
+                    deviceInfoList[device_index]->oclPlatformId = ocl_platform_ids[i];
+                    deviceInfoList[device_index]->oclDeviceId   = ocl_device_ids[j];
+
+                    deviceInfoList[device_index]->device_name[0] = 0;
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_NAME,
-                                    sizeof(gpu_info->deviceInfo[device_index].device_name),
-                                    gpu_info->deviceInfo[device_index].device_name, nullptr);
+                                    sizeof(deviceInfoList[device_index]->device_name),
+                                    deviceInfoList[device_index]->device_name, nullptr);
 
-                    gpu_info->deviceInfo[device_index].device_version[0] = 0;
+                    deviceInfoList[device_index]->device_version[0] = 0;
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VERSION,
-                                    sizeof(gpu_info->deviceInfo[device_index].device_version),
-                                    gpu_info->deviceInfo[device_index].device_version, nullptr);
+                                    sizeof(deviceInfoList[device_index]->device_version),
+                                    deviceInfoList[device_index]->device_version, nullptr);
 
-                    gpu_info->deviceInfo[device_index].vendorName[0] = 0;
+                    deviceInfoList[device_index]->vendorName[0] = 0;
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VENDOR,
-                                    sizeof(gpu_info->deviceInfo[device_index].vendorName),
-                                    gpu_info->deviceInfo[device_index].vendorName, nullptr);
+                                    sizeof(deviceInfoList[device_index]->vendorName),
+                                    deviceInfoList[device_index]->vendorName, nullptr);
 
-                    gpu_info->deviceInfo[device_index].compute_units = 0;
+                    deviceInfoList[device_index]->compute_units = 0;
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_COMPUTE_UNITS,
-                                    sizeof(gpu_info->deviceInfo[device_index].compute_units),
-                                    &(gpu_info->deviceInfo[device_index].compute_units), nullptr);
+                                    sizeof(deviceInfoList[device_index]->compute_units),
+                                    &(deviceInfoList[device_index]->compute_units), nullptr);
 
-                    gpu_info->deviceInfo[device_index].adress_bits = 0;
+                    deviceInfoList[device_index]->adress_bits = 0;
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_ADDRESS_BITS,
-                                    sizeof(gpu_info->deviceInfo[device_index].adress_bits),
-                                    &(gpu_info->deviceInfo[device_index].adress_bits), nullptr);
+                                    sizeof(deviceInfoList[device_index]->adress_bits),
+                                    &(deviceInfoList[device_index]->adress_bits), nullptr);
 
-                    gpu_info->deviceInfo[device_index].deviceVendor =
-                            getDeviceVendor(gpu_info->deviceInfo[device_index].vendorName);
+                    deviceInfoList[device_index]->deviceVendor =
+                            gmx::getDeviceVendor(deviceInfoList[device_index]->vendorName);
 
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t),
-                                    &gpu_info->deviceInfo[device_index].maxWorkItemSizes, nullptr);
+                                    &deviceInfoList[device_index]->maxWorkItemSizes, nullptr);
 
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t),
-                                    &gpu_info->deviceInfo[device_index].maxWorkGroupSize, nullptr);
+                                    &deviceInfoList[device_index]->maxWorkGroupSize, nullptr);
 
-                    gpu_info->deviceInfo[device_index].stat =
-                            gmx::checkGpu(device_index, gpu_info->deviceInfo + device_index);
-
-                    if (DeviceStatus::Compatible == gpu_info->deviceInfo[device_index].stat)
-                    {
-                        gpu_info->n_dev_compatible++;
-                    }
+                    deviceInfoList[device_index]->status =
+                            gmx::checkGpu(device_index, *deviceInfoList[device_index]);
 
                     device_index++;
                 }
             }
 
-            gpu_info->n_dev = device_index;
+            numDevices = device_index;
 
             /* Dummy sort of devices -  AMD first, then NVIDIA, then Intel */
             // TODO: Sort devices based on performance.
-            if (0 < gpu_info->n_dev)
+            if (0 < numDevices)
             {
                 int last = -1;
-                for (int i = 0; i < gpu_info->n_dev; i++)
+                for (int i = 0; i < numDevices; i++)
                 {
-                    if (gpu_info->deviceInfo[i].deviceVendor == DeviceVendor::Amd)
+                    if (deviceInfoList[i]->deviceVendor == DeviceVendor::Amd)
                     {
                         last++;
 
                         if (last < i)
                         {
-                            std::swap(gpu_info->deviceInfo[i], gpu_info->deviceInfo[last]);
+                            std::swap(deviceInfoList[i], deviceInfoList[last]);
                         }
                     }
                 }
 
                 /* if more than 1 device left to be sorted */
-                if ((gpu_info->n_dev - 1 - last) > 1)
+                if ((numDevices - 1 - last) > 1)
                 {
-                    for (int i = 0; i < gpu_info->n_dev; i++)
+                    for (int i = 0; i < numDevices; i++)
                     {
-                        if (gpu_info->deviceInfo[i].deviceVendor == DeviceVendor::Nvidia)
+                        if (deviceInfoList[i]->deviceVendor == DeviceVendor::Nvidia)
                         {
                             last++;
 
                             if (last < i)
                             {
-                                std::swap(gpu_info->deviceInfo[i], gpu_info->deviceInfo[last]);
+                                std::swap(deviceInfoList[i], deviceInfoList[last]);
                             }
                         }
                     }
@@ -517,18 +503,17 @@ void findGpus(gmx_gpu_info_t* gpu_info)
     }
 
     sfree(ocl_platform_ids);
+    return deviceInfoList;
 }
 
-void init_gpu(const DeviceInformation* deviceInfo)
+void setActiveDevice(const DeviceInformation& deviceInfo)
 {
-    assert(deviceInfo);
-
     // If the device is NVIDIA, for safety reasons we disable the JIT
     // caching as this is known to be broken at least until driver 364.19;
     // the cache does not always get regenerated when the source code changes,
     // e.g. if the path to the kernel sources remains the same
 
-    if (deviceInfo->deviceVendor == DeviceVendor::Nvidia)
+    if (deviceInfo.deviceVendor == DeviceVendor::Nvidia)
     {
         // Ignore return values, failing to set the variable does not mean
         // that something will go wrong later.
@@ -541,48 +526,22 @@ void init_gpu(const DeviceInformation* deviceInfo)
     }
 }
 
-void free_gpu(const DeviceInformation* /* deviceInfo */) {}
+void releaseDevice(DeviceInformation* /* deviceInfo */) {}
 
-DeviceInformation* getDeviceInfo(const gmx_gpu_info_t& gpu_info, int deviceId)
+std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
 {
-    if (deviceId < 0 || deviceId >= gpu_info.n_dev)
+    bool gpuExists = (deviceInfo.status != DeviceStatus::Nonexistent
+                      && deviceInfo.status != DeviceStatus::NonFunctional);
+
+    if (!gpuExists)
     {
-        gmx_incons("Invalid GPU deviceId requested");
-    }
-    return &gpu_info.deviceInfo[deviceId];
-}
-
-void get_gpu_device_info_string(char* s, const gmx_gpu_info_t& gpu_info, int index)
-{
-    assert(s);
-
-    if (index < 0 && index >= gpu_info.n_dev)
-    {
-        return;
-    }
-
-    DeviceInformation* dinfo = &gpu_info.deviceInfo[index];
-
-    bool bGpuExists =
-            (dinfo->stat != DeviceStatus::Nonexistent && dinfo->stat != DeviceStatus::NonFunctional);
-
-    if (!bGpuExists)
-    {
-        sprintf(s, "#%d: %s, stat: %s", index, "N/A", c_deviceStateString[dinfo->stat]);
+        return gmx::formatString("#%d: %s, status: %s", deviceInfo.id, "N/A",
+                                 c_deviceStateString[deviceInfo.status]);
     }
     else
     {
-        sprintf(s, "#%d: name: %s, vendor: %s, device version: %s, stat: %s", index, dinfo->device_name,
-                dinfo->vendorName, dinfo->device_version, c_deviceStateString[dinfo->stat]);
+        return gmx::formatString("#%d: name: %s, vendor: %s, device version: %s, status: %s",
+                                 deviceInfo.id, deviceInfo.device_name, deviceInfo.vendorName,
+                                 deviceInfo.device_version, c_deviceStateString[deviceInfo.status]);
     }
-}
-
-size_t sizeof_gpu_dev_info()
-{
-    return sizeof(DeviceInformation);
-}
-
-DeviceStatus gpu_info_get_stat(const gmx_gpu_info_t& info, int index)
-{
-    return info.deviceInfo[index].stat;
 }

@@ -46,8 +46,6 @@
  */
 #include <cuda_runtime.h>
 
-#include "gromacs/hardware/gpu_hw_info.h"
-
 //! Device texture for fast read-only data fetching
 using DeviceTexture = cudaTextureObject_t;
 

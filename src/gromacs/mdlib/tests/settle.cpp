@@ -80,7 +80,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/gpu_utils/gpu_testutils.h"
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -326,7 +326,7 @@ public:
     //! Store whether any compatible GPUs exist.
     static bool s_hasCompatibleGpus;
     //! Before any test is run, work out whether any compatible GPUs exist.
-    static void SetUpTestCase() { s_hasCompatibleGpus = canComputeOnGpu(); }
+    static void SetUpTestCase() { s_hasCompatibleGpus = canComputeOnDevice(); }
 };
 
 bool SettleTest::s_hasCompatibleGpus = false;

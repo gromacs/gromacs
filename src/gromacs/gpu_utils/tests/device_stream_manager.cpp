@@ -108,8 +108,7 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
     // that we've called, so it is not very useful.
     const bool useTiming = false;
 
-    // TODO Is it enough to only test one device?
-    for (const auto* deviceInfo : getDeviceInfos())
+    for (const auto& deviceInfo : getDeviceInfoList())
     {
         EXPECT_FALSE(deviceInfo == nullptr)
                 << "Device information should be provided for the GPU builds.";

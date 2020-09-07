@@ -52,7 +52,7 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer.cuh"
-#include "gromacs/hardware/device_management.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -81,9 +81,6 @@ void applySettleGpu(SettleTestData*  testData,
     // These should never fail since this function should only be called if CUDA is enabled and
     // there is a CUDA-capable device available.
     GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "CUDA version of SETTLE was called from non-CUDA build.");
-
-    // TODO: Here we should check that at least 1 suitable GPU is available
-    GMX_RELEASE_ASSERT(canPerformGpuDetection(), "Can't detect CUDA-capable GPUs.");
 
     DeviceInformation   deviceInfo;
     const DeviceContext deviceContext(deviceInfo);

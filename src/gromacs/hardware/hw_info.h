@@ -40,7 +40,7 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/hardware/gpu_hw_info.h"
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
@@ -48,6 +48,7 @@ namespace gmx
 class CpuInfo;
 class HardwareTopology;
 } // namespace gmx
+struct DeviceInformation;
 
 /* Hardware information structure with CPU and GPU information.
  * It is initialized by gmx_detect_hardware().
@@ -61,8 +62,6 @@ struct gmx_hw_info_t
     ~gmx_hw_info_t();
 
     /* Data for our local physical node */
-    //! Information about GPUs detected on this physical node
-    gmx_gpu_info_t gpu_info;
 
     /*! \brief Number of hardware threads available.
      *
@@ -73,6 +72,7 @@ struct gmx_hw_info_t
 
     std::unique_ptr<gmx::CpuInfo>          cpuInfo; /* Information about CPU capabilities */
     std::unique_ptr<gmx::HardwareTopology> hardwareTopology; /* Information about hardware topology */
+    std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList; /* Information about GPUs detected on this physical node */
 
 
     /* Data reduced through MPI over all physical nodes */

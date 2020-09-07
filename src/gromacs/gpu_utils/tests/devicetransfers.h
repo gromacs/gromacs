@@ -51,7 +51,7 @@
 #ifndef GMX_GPU_UTILS_TESTS_DEVICETRANSFERS_H
 #define GMX_GPU_UTILS_TESTS_DEVICETRANSFERS_H
 
-struct gmx_gpu_info_t;
+struct DeviceInformation;
 
 namespace gmx
 {
@@ -65,7 +65,7 @@ class ArrayRef;
  * do a simple host-side buffer copy instead.
  *
  * \throws InternalError  Upon any GPU API error condition. */
-void doDeviceTransfers(const gmx_gpu_info_t& gpuInfo, ArrayRef<const char> input, ArrayRef<char> output);
+void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char> input, ArrayRef<char> output);
 
 } // namespace gmx
 

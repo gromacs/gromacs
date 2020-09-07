@@ -41,7 +41,6 @@ gmx_add_libgromacs_sources(
         device_stream_manager.cpp
         hostallocator.cpp
         gpu_utils.cpp
-        gpu_testutils.cpp
         )
 if(GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(

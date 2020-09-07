@@ -60,11 +60,13 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "architecture.h"
+#include "device_information.h"
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h> // sysconf()
@@ -77,10 +79,7 @@ gmx_hw_info_t::gmx_hw_info_t(std::unique_ptr<gmx::CpuInfo>          cpuInfo,
 {
 }
 
-gmx_hw_info_t::~gmx_hw_info_t()
-{
-    free_gpu_info(&gpu_info);
-}
+gmx_hw_info_t::~gmx_hw_info_t() = default;
 
 namespace gmx
 {
@@ -112,10 +111,16 @@ static void gmx_detect_gpus(const gmx::MDLogger&             mdlog,
                             const PhysicalNodeCommunicator&  physicalNodeComm,
                             compat::not_null<gmx_hw_info_t*> hardwareInfo)
 {
-    hardwareInfo->gpu_info.bDetectGPUs = canPerformGpuDetection();
-
-    if (!hardwareInfo->gpu_info.bDetectGPUs)
+    std::string errorMessage;
+    if (!canPerformDeviceDetection(&errorMessage))
     {
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendTextFormatted(
+                        "NOTE: Detection of GPUs failed. The API reported:\n"
+                        "      %s\n"
+                        "      GROMACS cannot run tasks on a GPU.",
+                        errorMessage.c_str());
         return;
     }
 
@@ -137,7 +142,7 @@ static void gmx_detect_gpus(const gmx::MDLogger&             mdlog,
     if (isMasterRankOfPhysicalNode || allRanksMustDetectGpus)
     {
         std::string errorMessage;
-        gpusCanBeDetected = isGpuDetectionFunctional(&errorMessage);
+        gpusCanBeDetected = isDeviceDetectionFunctional(&errorMessage);
         if (!gpusCanBeDetected)
         {
             GMX_LOG(mdlog.info)
@@ -152,30 +157,22 @@ static void gmx_detect_gpus(const gmx::MDLogger&             mdlog,
 
     if (gpusCanBeDetected)
     {
-        findGpus(&hardwareInfo->gpu_info);
+        hardwareInfo->deviceInfoList = findDevices();
         // No need to tell the user anything at this point, they get a
         // hardware report later.
     }
 
 #if GMX_LIB_MPI
-    if (!allRanksMustDetectGpus)
+    if (!allRanksMustDetectGpus && !hardwareInfo->deviceInfoList.empty())
     {
-        /* Broadcast the GPU info to the other ranks within this node */
-        MPI_Bcast(&hardwareInfo->gpu_info.n_dev, 1, MPI_INT, 0, physicalNodeComm.comm_);
+        gmx::InMemorySerializer writer;
+        serializeDeviceInformations(hardwareInfo->deviceInfoList, &writer);
+        auto buffer = writer.finishAndGetBuffer();
 
-        if (hardwareInfo->gpu_info.n_dev > 0)
-        {
-            int dev_size;
+        MPI_Bcast(buffer.data(), buffer.size(), MPI_BYTE, 0, physicalNodeComm.comm_);
 
-            dev_size = hardwareInfo->gpu_info.n_dev * sizeof_gpu_dev_info();
-
-            if (!isMasterRankOfPhysicalNode)
-            {
-                hardwareInfo->gpu_info.deviceInfo = (struct DeviceInformation*)malloc(dev_size);
-            }
-            MPI_Bcast(hardwareInfo->gpu_info.deviceInfo, dev_size, MPI_BYTE, 0, physicalNodeComm.comm_);
-            MPI_Bcast(&hardwareInfo->gpu_info.n_dev_compatible, 1, MPI_INT, 0, physicalNodeComm.comm_);
-        }
+        gmx::InMemoryDeserializer reader(buffer, false);
+        hardwareInfo->deviceInfoList = deserializeDeviceInformations(&writer);
     }
 #endif
 }
@@ -194,28 +191,27 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
                                 && (cpuInfo.model() == 1 || cpuInfo.model() == 17
                                     || cpuInfo.model() == 8 || cpuInfo.model() == 24))
                                || cpuInfo.vendor() == CpuInfo::Vendor::Hygon);
+
+    int numCompatibleDevices = getCompatibleDevices(hardwareInfo->deviceInfoList).size();
 #if GMX_LIB_MPI
-    int nhwthread, ngpu, i;
+    int nhwthread;
     int gpu_hash;
 
     nhwthread = hardwareInfo->nthreads_hw_avail;
-    ngpu      = hardwareInfo->gpu_info.n_dev_compatible;
     /* Create a unique hash of the GPU type(s) in this node */
     gpu_hash = 0;
     /* Here it might be better to only loop over the compatible GPU, but we
      * don't have that information available and it would also require
      * removing the device ID from the device info string.
      */
-    for (i = 0; i < hardwareInfo->gpu_info.n_dev; i++)
+    for (const auto& deviceInfo : hardwareInfo->deviceInfoList)
     {
-        char stmp[STRLEN];
-
         /* Since the device ID is incorporated in the hash, the order of
          * the GPUs affects the hash. Also two identical GPUs won't give
          * a gpu_hash of zero after XORing.
          */
-        get_gpu_device_info_string(stmp, hardwareInfo->gpu_info, i);
-        gpu_hash ^= gmx_string_fullhash_func(stmp, gmx_string_hash_init);
+        std::string deviceInfoString = getDeviceInformationString(*deviceInfo);
+        gpu_hash ^= gmx_string_fullhash_func(deviceInfoString.c_str(), gmx_string_hash_init);
     }
 
     constexpr int                      numElementsCounts = 4;
@@ -230,7 +226,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
             countsLocal[0] = 1;
             countsLocal[1] = ncore;
             countsLocal[2] = nhwthread;
-            countsLocal[3] = ngpu;
+            countsLocal[3] = numCompatibleDevices;
         }
 
         MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(), MPI_INT,
@@ -246,7 +242,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
          */
         maxMinLocal[0]  = ncore;
         maxMinLocal[1]  = nhwthread;
-        maxMinLocal[2]  = ngpu;
+        maxMinLocal[2]  = numCompatibleDevices;
         maxMinLocal[3]  = static_cast<int>(gmx::simdSuggested(cpuInfo));
         maxMinLocal[4]  = gpu_hash;
         maxMinLocal[5]  = -maxMinLocal[0];
@@ -283,9 +279,9 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
     hardwareInfo->nhwthread_tot       = hardwareInfo->nthreads_hw_avail;
     hardwareInfo->nhwthread_min       = hardwareInfo->nthreads_hw_avail;
     hardwareInfo->nhwthread_max       = hardwareInfo->nthreads_hw_avail;
-    hardwareInfo->ngpu_compatible_tot = hardwareInfo->gpu_info.n_dev_compatible;
-    hardwareInfo->ngpu_compatible_min = hardwareInfo->gpu_info.n_dev_compatible;
-    hardwareInfo->ngpu_compatible_max = hardwareInfo->gpu_info.n_dev_compatible;
+    hardwareInfo->ngpu_compatible_tot = numCompatibleDevices;
+    hardwareInfo->ngpu_compatible_min = numCompatibleDevices;
+    hardwareInfo->ngpu_compatible_max = numCompatibleDevices;
     hardwareInfo->simd_suggest_min    = static_cast<int>(simdSuggested(cpuInfo));
     hardwareInfo->simd_suggest_max    = static_cast<int>(simdSuggested(cpuInfo));
     hardwareInfo->bIdenticalGPUs      = TRUE;
@@ -460,10 +456,6 @@ gmx_hw_info_t* gmx_detect_hardware(const gmx::MDLogger& mdlog, const PhysicalNod
     hardwareInfo->nthreads_hw_avail = hardwareInfo->hardwareTopology->machine().logicalProcessorCount;
 
     // Detect GPUs
-    hardwareInfo->gpu_info.n_dev            = 0;
-    hardwareInfo->gpu_info.n_dev_compatible = 0;
-    hardwareInfo->gpu_info.deviceInfo       = nullptr;
-
     gmx_detect_gpus(mdlog, physicalNodeComm, compat::make_not_null(hardwareInfo));
     gmx_collect_hardware_mpi(*hardwareInfo->cpuInfo, physicalNodeComm, compat::make_not_null(hardwareInfo));
 
@@ -472,11 +464,6 @@ gmx_hw_info_t* gmx_detect_hardware(const gmx::MDLogger& mdlog, const PhysicalNod
     g_hardwareInfo.swap(hardwareInfo);
 
     return g_hardwareInfo.get();
-}
-
-bool compatibleGpusFound(const gmx_gpu_info_t& gpu_info)
-{
-    return gpu_info.n_dev_compatible > 0;
 }
 
 } // namespace gmx

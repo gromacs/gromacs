@@ -41,9 +41,10 @@
 
 #include "gpu_utils.h"
 
+#include "config.h"
+
 #include <cassert>
 
-#include "gromacs/hardware/device_information.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -74,7 +75,7 @@ bool buildSupportsNonbondedOnGpu(std::string* error)
     {
         errorReasons.emplace_back("double precision");
     }
-    if (!c_binarySupportsGpus)
+    if (!GMX_GPU)
     {
         errorReasons.emplace_back("non-GPU build of GROMACS");
     }

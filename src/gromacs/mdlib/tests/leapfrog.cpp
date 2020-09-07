@@ -63,7 +63,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/gpu_utils/gpu_testutils.h"
+#include "gromacs/hardware/device_management.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -153,7 +153,7 @@ public:
         // All runners should be registered here under appropriate conditions
         //
         s_runners_["LeapFrogSimple"] = integrateLeapFrogSimple;
-        if (GMX_GPU_CUDA && canComputeOnGpu())
+        if (GMX_GPU_CUDA && canComputeOnDevice())
         {
             s_runners_["LeapFrogGpu"] = integrateLeapFrogGpu;
         }

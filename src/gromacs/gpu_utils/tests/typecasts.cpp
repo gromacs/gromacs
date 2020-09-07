@@ -48,7 +48,7 @@
 
 #    include <gtest/gtest.h>
 
-#    include "gromacs/gpu_utils/gpu_testutils.h"
+#    include "gromacs/hardware/device_management.h"
 #    include "gromacs/utility/exceptions.h"
 
 #    include "testutils/testasserts.h"
@@ -74,7 +74,7 @@ TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3OnHost)
 
 TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3OnDevice)
 {
-    if (canComputeOnGpu())
+    if (canComputeOnDevice())
     {
         std::vector<RVec> rVecOutput(rVecInput.size());
         convertRVecToFloat3OnDevice(rVecOutput, rVecInput);
