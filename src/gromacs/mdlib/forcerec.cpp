@@ -1268,7 +1268,7 @@ void init_forcerec(FILE*                            fp,
         // TODO Don't need to catch this here, when merging with master branch
         try
         {
-            //! \todo move these tables into a separate struct and store reference in ListedForces
+            // TODO move these tables into a separate struct and store reference in ListedForces
             fcdata.bondtab  = make_bonded_tables(fp, F_TABBONDS, F_TABBONDSNC, mtop, tabbfnm, "b");
             fcdata.angletab = make_bonded_tables(fp, F_TABANGLES, -1, mtop, tabbfnm, "a");
             fcdata.dihtab   = make_bonded_tables(fp, F_TABDIHS, -1, mtop, tabbfnm, "d");
