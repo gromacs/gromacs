@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include <array>
 
 #include "gromacs/math/multidimarray.h"
+#include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/real.h"
 
@@ -81,14 +82,32 @@ constexpr real trace(Matrix3x3ConstSpan matrixView)
     return matrixView(0, 0) + matrixView(1, 1) + matrixView(2, 2);
 }
 
-//! Calculate the transpose of a 3x3 matrix, from its view
-static Matrix3x3 transpose(Matrix3x3ConstSpan matrixView)
+/*! \brief Create an identity matrix of ElementType with N * M elements.
+ *
+ * \tparam ElementType type of matrix elements
+ * \tparam N number of rows
+ * \tparam M number of columns, defaults to number of rows if not set
+ *
+ * \returns a matrix with values one where row equals column index and null
+ *          where row does not equal column index
+ */
+template<typename ElementType, int N, int M = N>
+MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> identityMatrix()
 {
-
-    return Matrix3x3({ matrixView(0, 0), matrixView(1, 0), matrixView(2, 0), matrixView(0, 1),
-                       matrixView(1, 1), matrixView(2, 1), matrixView(0, 2), matrixView(1, 2),
-                       matrixView(2, 2) });
+    std::array<ElementType, N * M>                               matrixEntries{};
+    MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> idMatrix(matrixEntries);
+    for (int i = 0; i < std::min(N, M); i++)
+    {
+        idMatrix(i, i) = 1;
+    }
+    return idMatrix;
 }
+
+//! Calculate the transpose of a 3x3 matrix, from its view
+Matrix3x3 transpose(Matrix3x3ConstSpan matrixView);
+
+//! Multiply matrix with vector.
+void matrixVectorMultiply(Matrix3x3ConstSpan matrix, RVec* v);
 
 //! Create new matrix type from legacy type.
 static inline Matrix3x3 createMatrix3x3FromLegacyMatrix(const matrix legacyMatrix)

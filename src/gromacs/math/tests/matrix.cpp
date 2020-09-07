@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 
@@ -219,6 +220,25 @@ TEST_F(MatrixTest, canFillLegacyMatrix)
             EXPECT_EQ(legacyMatrix[i][j], matrix_(i, j));
         }
     }
+}
+
+TEST_F(MatrixTest, IdentityMatrix)
+{
+    const auto realIdMatrix = identityMatrix<real, 2>();
+    EXPECT_REAL_EQ(realIdMatrix(0, 0), 1);
+    EXPECT_REAL_EQ(realIdMatrix(1, 1), 1);
+    EXPECT_REAL_EQ(realIdMatrix(0, 1), 0);
+    EXPECT_REAL_EQ(realIdMatrix(1, 0), 0);
+}
+
+TEST_F(MatrixTest, MatrixVectorMultiplication)
+{
+    const Matrix3x3 matrix({ 0.1, 1, 0.1, 0.4, 1, 0.6, 0.7, 0.8, 0.9 });
+    RVec            vector(1, 2, 3);
+    matrixVectorMultiply(matrix, &vector);
+    EXPECT_REAL_EQ(2.4, vector[XX]);
+    EXPECT_REAL_EQ(4.2, vector[YY]);
+    EXPECT_REAL_EQ(5.0, vector[ZZ]);
 }
 
 } // namespace

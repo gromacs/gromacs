@@ -44,10 +44,14 @@
 #include <vector>
 
 #include "gromacs/math/vec.h"
+#include "gromacs/mdspan/extensions.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "matrix.h"
 
 namespace gmx
 {
+
 /********************************************************************
  * ScaleCoordinates::Impl
  */
@@ -200,5 +204,28 @@ TranslateAndScale::TranslateAndScale(TranslateAndScale&&) noexcept = default;
 
 TranslateAndScale& TranslateAndScale::operator=(TranslateAndScale&&) noexcept = default;
 
+/********************************************************************
+ * AffineTransformation
+ */
+
+AffineTransformation::AffineTransformation(Matrix3x3ConstSpan matrix, const RVec& translation) :
+    translation_{ translation }
+{
+    std::copy(begin(matrix), end(matrix), begin(matrix_));
+}
+
+void AffineTransformation::operator()(ArrayRef<RVec> vectors) const
+{
+    for (RVec& vector : vectors)
+    {
+        matrixVectorMultiply(matrix_.asConstView(), &vector);
+        vector += translation_;
+    }
+}
+
+void AffineTransformation::operator()(RVec* vector) const
+{
+    (*this)({ vector, vector + 1 });
+}
 
 } // namespace gmx
