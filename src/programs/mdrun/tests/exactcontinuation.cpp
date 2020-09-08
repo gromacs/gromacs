@@ -359,7 +359,8 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     // TODO: Update this as modular simulator gains functionality
     const bool isModularSimulatorExplicitlyDisabled = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
     const bool isTCouplingCompatibleWithModularSimulator =
-            (temperatureCoupling == "no" || temperatureCoupling == "v-rescale");
+            (temperatureCoupling == "no" || temperatureCoupling == "v-rescale"
+             || temperatureCoupling == "berendsen");
     if (integrator == "md-vv" && pressureCoupling == "parrinello-rahman"
         && (isModularSimulatorExplicitlyDisabled || !isTCouplingCompatibleWithModularSimulator))
     {

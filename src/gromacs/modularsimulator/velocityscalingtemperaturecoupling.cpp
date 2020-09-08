@@ -199,6 +199,68 @@ private:
     ArrayRef<real> lambdaStartVelocities_;
 };
 
+/*! \internal
+ * \brief Implements Berendsen temperature coupling
+ */
+class BerendsenTemperatureCoupling final : public ITemperatureCouplingImpl
+{
+public:
+    //! Apply the v-rescale temperature control
+    real apply(Step gmx_unused                step,
+               int                            temperatureGroup,
+               real                           currentKineticEnergy,
+               real                           currentTemperature,
+               const TemperatureCouplingData& temperatureCouplingData) override
+    {
+        if (!(temperatureCouplingData.couplingTime[temperatureGroup] >= 0
+              && temperatureCouplingData.numDegreesOfFreedom[temperatureGroup] > 0
+              && currentKineticEnergy > 0))
+        {
+            lambdaStartVelocities_[temperatureGroup] = 1.0;
+            return temperatureCouplingData.temperatureCouplingIntegral[temperatureGroup];
+        }
+
+        real lambda =
+                std::sqrt(1.0
+                          + (temperatureCouplingData.couplingTimeStep
+                             / temperatureCouplingData.couplingTime[temperatureGroup])
+                                    * (temperatureCouplingData.referenceTemperature[temperatureGroup] / currentTemperature
+                                       - 1.0));
+        lambdaStartVelocities_[temperatureGroup] = std::max<real>(std::min<real>(lambda, 1.25), 0.8);
+        if (debug)
+        {
+            fprintf(debug, "TC: group %d: T: %g, Lambda: %g\n", temperatureGroup,
+                    currentTemperature, lambdaStartVelocities_[temperatureGroup]);
+        }
+        return temperatureCouplingData.temperatureCouplingIntegral[temperatureGroup]
+               - (lambdaStartVelocities_[temperatureGroup] * lambdaStartVelocities_[temperatureGroup]
+                  - 1) * currentKineticEnergy;
+    }
+
+    //! Connect with propagator - Berendsen only scales start step velocities
+    void connectWithPropagator(const PropagatorThermostatConnection& connectionData,
+                               int                                   numTemperatureGroups) override
+    {
+        connectionData.setNumVelocityScalingVariables(numTemperatureGroups);
+        lambdaStartVelocities_ = connectionData.getViewOnVelocityScaling();
+    }
+
+    //! No data to write to checkpoint
+    void writeCheckpoint(std::optional<WriteCheckpointData> gmx_unused checkpointData,
+                         const t_commrec gmx_unused* cr) override
+    {
+    }
+    //! No data to read from checkpoints
+    void readCheckpoint(std::optional<ReadCheckpointData> gmx_unused checkpointData,
+                        const t_commrec gmx_unused* cr) override
+    {
+    }
+
+private:
+    //! View on the scaling factor of the propagator (pre-step velocities)
+    ArrayRef<real> lambdaStartVelocities_;
+};
+
 VelocityScalingTemperatureCoupling::VelocityScalingTemperatureCoupling(
         int                               nstcouple,
         int                               offset,
@@ -232,6 +294,10 @@ VelocityScalingTemperatureCoupling::VelocityScalingTemperatureCoupling(
     if (couplingType == etcVRESCALE)
     {
         temperatureCouplingImpl_ = std::make_unique<VRescaleTemperatureCoupling>(seed);
+    }
+    else if (couplingType == etcBERENDSEN)
+    {
+        temperatureCouplingImpl_ = std::make_unique<BerendsenTemperatureCoupling>();
     }
     else
     {

@@ -222,35 +222,37 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
 // These tests are very sensitive, so we only run them in double precision.
 // As we change call ordering, they might actually become too strict to be useful.
 #if !GMX_GPU_OPENCL && GMX_DOUBLE
-INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultModular,
-                        SimulatorComparisonTest,
-                        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                              ::testing::Values("md-vv"),
-                                                              ::testing::Values("no", "v-rescale"),
-                                                              ::testing::Values("no")),
-                                           ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_CASE_P(
+        SimulatorsAreEquivalentDefaultModular,
+        SimulatorComparisonTest,
+        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                              ::testing::Values("md-vv"),
+                                              ::testing::Values("no", "v-rescale", "berendsen"),
+                                              ::testing::Values("no")),
+                           ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
 INSTANTIATE_TEST_CASE_P(
         SimulatorsAreEquivalentDefaultLegacy,
         SimulatorComparisonTest,
         ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
                                               ::testing::Values("md"),
-                                              ::testing::Values("no", "v-rescale"),
+                                              ::testing::Values("no", "v-rescale", "berendsen"),
                                               ::testing::Values("no", "Parrinello-Rahman")),
                            ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_SimulatorsAreEquivalentDefaultModular,
-                        SimulatorComparisonTest,
-                        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                              ::testing::Values("md-vv"),
-                                                              ::testing::Values("no", "v-rescale"),
-                                                              ::testing::Values("no")),
-                                           ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_CASE_P(
+        DISABLED_SimulatorsAreEquivalentDefaultModular,
+        SimulatorComparisonTest,
+        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                              ::testing::Values("md-vv"),
+                                              ::testing::Values("no", "v-rescale", "berendsen"),
+                                              ::testing::Values("no")),
+                           ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
 INSTANTIATE_TEST_CASE_P(
         DISABLED_SimulatorsAreEquivalentDefaultLegacy,
         SimulatorComparisonTest,
         ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
                                               ::testing::Values("md"),
-                                              ::testing::Values("no", "v-rescale"),
+                                              ::testing::Values("no", "v-rescale", "berendsen"),
                                               ::testing::Values("no", "Parrinello-Rahman")),
                            ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #endif
