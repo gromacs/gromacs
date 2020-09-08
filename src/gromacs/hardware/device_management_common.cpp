@@ -55,14 +55,12 @@
 
 bool canPerformDeviceDetection(std::string* errorMessage)
 {
-    if (c_binarySupportsGpus && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr)
-    {
-        return isDeviceDetectionFunctional(errorMessage);
-    }
-    else
-    {
-        return false;
-    }
+    return isDeviceDetectionEnabled() && isDeviceDetectionFunctional(errorMessage);
+}
+
+bool isDeviceDetectionEnabled()
+{
+    return c_binarySupportsGpus && getenv("GMX_DISABLE_GPU_DETECTION") == nullptr;
 }
 
 bool canComputeOnDevice()

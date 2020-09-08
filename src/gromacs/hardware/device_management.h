@@ -75,6 +75,16 @@ struct DeviceInformation;
  */
 bool canPerformDeviceDetection(std::string* errorMessage);
 
+/*! \brief Return whether GPU detection is enabled
+ *
+ * Returns true when this is a build of GROMACS configured to support
+ * GPU usage and GPU detection is not disabled by \c GMX_DISABLE_GPU_DETECTION
+ * environment variable.
+ *
+ * Does not throw.
+ */
+bool isDeviceDetectionEnabled();
+
 /*! \brief Return whether GPU detection is functioning correctly
  *
  * Returns true when this is a build of GROMACS configured to support

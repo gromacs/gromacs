@@ -150,7 +150,14 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
     }
     else if (bGPUBinary)
     {
-        s += gmx::formatString(" (GPU detection deactivated)");
+        if (isDeviceDetectionEnabled())
+        {
+            s += gmx::formatString(" (GPU detection failed)");
+        }
+        else
+        {
+            s += gmx::formatString(" (GPU detection deactivated)");
+        }
     }
     s += gmx::formatString("\n");
 

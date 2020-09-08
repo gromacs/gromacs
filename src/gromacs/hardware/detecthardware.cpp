@@ -111,18 +111,10 @@ static void gmx_detect_gpus(const gmx::MDLogger&             mdlog,
                             const PhysicalNodeCommunicator&  physicalNodeComm,
                             compat::not_null<gmx_hw_info_t*> hardwareInfo)
 {
-    std::string errorMessage;
-    if (!canPerformDeviceDetection(&errorMessage))
-    {
-        GMX_LOG(mdlog.info)
-                .asParagraph()
-                .appendTextFormatted(
-                        "NOTE: Detection of GPUs failed. The API reported:\n"
-                        "      %s\n"
-                        "      GROMACS cannot run tasks on a GPU.",
-                        errorMessage.c_str());
+    if (!isDeviceDetectionEnabled())
         return;
-    }
+
+    std::string errorMessage;
 
     bool isMasterRankOfPhysicalNode = true;
 #if GMX_LIB_MPI
@@ -145,7 +137,7 @@ static void gmx_detect_gpus(const gmx::MDLogger&             mdlog,
         gpusCanBeDetected = isDeviceDetectionFunctional(&errorMessage);
         if (!gpusCanBeDetected)
         {
-            GMX_LOG(mdlog.info)
+            GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
                             "NOTE: Detection of GPUs failed. The API reported:\n"
