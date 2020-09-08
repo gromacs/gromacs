@@ -57,6 +57,8 @@ class DeviceStream;
 namespace gmx
 {
 
+class SimulationWorkload;
+
 /*! \brief Class enum to describe the different logical streams used
  * for GPU work.
  *
@@ -98,10 +100,8 @@ public:
      * \throws InternalError  If any of the required resources could not be initialized.
      */
     DeviceStreamManager(const DeviceInformation& deviceInfo,
-                        bool                     useGpuForPme,
                         bool                     havePpDomainDecomposition,
-                        bool                     doGpuPmePpTransfer,
-                        bool                     useGpuForUpdate,
+                        SimulationWorkload       simulationWork,
                         bool                     useTiming);
     ~DeviceStreamManager();
 

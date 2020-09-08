@@ -1250,6 +1250,12 @@ int Mdrunner::mdrunner()
     const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
 
+    MdrunScheduleWorkload runScheduleWork;
+    // Also populates the simulation constant workload description.
+    runScheduleWork.simulationWork = createSimulationWorkload(
+            *inputrec, useGpuForNonbonded, pmeRunMode, useGpuForBonded, useGpuForUpdate,
+            devFlags.enableGpuBufferOps, devFlags.enableGpuHaloExchange, devFlags.enableGpuPmePPComm);
+
     std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
 
     if (deviceInfo != nullptr)
@@ -1259,8 +1265,7 @@ int Mdrunner::mdrunner()
             dd_setup_dlb_resource_sharing(cr, deviceId);
         }
         deviceStreamManager = std::make_unique<DeviceStreamManager>(
-                *deviceInfo, useGpuForPme, useGpuForNonbonded, havePPDomainDecomposition(cr),
-                useGpuForUpdate, useTiming);
+                *deviceInfo, havePPDomainDecomposition(cr), runScheduleWork.simulationWork, useTiming);
     }
 
     // If the user chose a task assignment, give them some hints
@@ -1346,7 +1351,8 @@ int Mdrunner::mdrunner()
     // Only for DD, only master PP rank needs to perform setup, and only if thread MPI plus
     // any of the GPU communication features are active.
     if (DOMAINDECOMP(cr) && MASTER(cr) && thisRankHasDuty(cr, DUTY_PP) && GMX_THREAD_MPI
-        && (devFlags.enableGpuHaloExchange || devFlags.enableGpuPmePPComm))
+        && (runScheduleWork.simulationWork.useGpuHaloExchange
+            || runScheduleWork.simulationWork.useGpuPmePpCommunication))
     {
         setupGpuDevicePeerAccess(gpuIdsToUse, mdlog);
     }
@@ -1418,7 +1424,7 @@ int Mdrunner::mdrunner()
         // TODO: Forcerec is not a correct place to store it.
         fr->deviceStreamManager = deviceStreamManager.get();
 
-        if (devFlags.enableGpuPmePPComm && !thisRankHasDuty(cr, DUTY_PME))
+        if (runScheduleWork.simulationWork.useGpuPmePpCommunication && !thisRankHasDuty(cr, DUTY_PME))
         {
             GMX_RELEASE_ASSERT(
                     deviceStreamManager != nullptr,
@@ -1433,10 +1439,11 @@ int Mdrunner::mdrunner()
                     deviceStreamManager->stream(DeviceStreamType::PmePpTransfer));
         }
 
-        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec.get(), fr, cr, *hwinfo, useGpuForNonbonded,
+        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec.get(), fr, cr, *hwinfo,
+                                        runScheduleWork.simulationWork.useGpuNonbonded,
                                         deviceStreamManager.get(), &mtop, box, wcycle);
         // TODO: Move the logic below to a GPU bonded builder
-        if (useGpuForBonded)
+        if (runScheduleWork.simulationWork.useGpuBonded)
         {
             GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
                                "GPU device stream manager should be valid in order to use GPU "
@@ -1551,17 +1558,22 @@ int Mdrunner::mdrunner()
             try
             {
                 // TODO: This should be in the builder.
-                GMX_RELEASE_ASSERT(!useGpuForPme || (deviceStreamManager != nullptr),
+                GMX_RELEASE_ASSERT(!runScheduleWork.simulationWork.useGpuPme
+                                           || (deviceStreamManager != nullptr),
                                    "Device stream manager should be valid in order to use GPU "
                                    "version of PME.");
                 GMX_RELEASE_ASSERT(
-                        !useGpuForPme || deviceStreamManager->streamIsValid(DeviceStreamType::Pme),
+                        !runScheduleWork.simulationWork.useGpuPme
+                                || deviceStreamManager->streamIsValid(DeviceStreamType::Pme),
                         "GPU PME stream should be valid in order to use GPU version of PME.");
 
-                const DeviceContext* deviceContext =
-                        useGpuForPme ? &deviceStreamManager->context() : nullptr;
+                const DeviceContext* deviceContext = runScheduleWork.simulationWork.useGpuPme
+                                                             ? &deviceStreamManager->context()
+                                                             : nullptr;
                 const DeviceStream* pmeStream =
-                        useGpuForPme ? &deviceStreamManager->stream(DeviceStreamType::Pme) : nullptr;
+                        runScheduleWork.simulationWork.useGpuPme
+                                ? &deviceStreamManager->stream(DeviceStreamType::Pme)
+                                : nullptr;
 
                 pmedata = gmx_pme_init(cr, getNumPmeDomains(cr->dd), inputrec.get(),
                                        nChargePerturbed != 0, nTypePerturbed != 0,
@@ -1652,19 +1664,9 @@ int Mdrunner::mdrunner()
                             domdecOptions.checkBondedInteractions, fr->cginfo_mb);
         }
 
-        // TODO This is not the right place to manage the lifetime of
-        // this data structure, but currently it's the easiest way to
-        // make it work.
-        MdrunScheduleWorkload runScheduleWork;
-        // Also populates the simulation constant workload description.
-        runScheduleWork.simulationWork =
-                createSimulationWorkload(*inputrec, useGpuForNonbonded, pmeRunMode, useGpuForBonded,
-                                         useGpuForUpdate, devFlags.enableGpuBufferOps,
-                                         devFlags.enableGpuHaloExchange, devFlags.enableGpuPmePPComm);
-
         std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
         if (gpusWereDetected
-            && ((useGpuForPme && thisRankHasDuty(cr, DUTY_PME))
+            && ((runScheduleWork.simulationWork.useGpuPme && thisRankHasDuty(cr, DUTY_PME))
                 || runScheduleWork.simulationWork.useGpuBufferOps))
         {
             GpuApiCallBehavior transferKind = (inputrec->eI == eiMD && !doRerun && !useModularSimulator)

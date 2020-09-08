@@ -47,6 +47,7 @@
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -71,10 +72,8 @@ public:
      * \throws InternalError  If any of the required resources could not be initialized.
      */
     Impl(const DeviceInformation& deviceInfo,
-         bool                     useGpuForPme,
          bool                     havePpDomainDecomposition,
-         bool                     doGpuPmePpTransfer,
-         bool                     useGpuForUpdate,
+         SimulationWorkload       simulationWork,
          bool                     useTiming);
     ~Impl();
 
@@ -86,10 +85,8 @@ public:
 
 // DeviceStreamManager::Impl
 DeviceStreamManager::Impl::Impl(const DeviceInformation& deviceInfo,
-                                const bool               useGpuForPme,
                                 const bool               havePpDomainDecomposition,
-                                const bool               doGpuPmePpTransfer,
-                                const bool               useGpuForUpdate,
+                                const SimulationWorkload simulationWork,
                                 const bool               useTiming) :
     context_(deviceInfo)
 {
@@ -97,7 +94,7 @@ DeviceStreamManager::Impl::Impl(const DeviceInformation& deviceInfo,
     {
         streams_[DeviceStreamType::NonBondedLocal].init(context_, DeviceStreamPriority::Normal, useTiming);
 
-        if (useGpuForPme)
+        if (simulationWork.useGpuPme)
         {
             /* Creating a PME GPU stream:
              * - default high priority with CUDA
@@ -112,12 +109,12 @@ DeviceStreamManager::Impl::Impl(const DeviceInformation& deviceInfo,
                                                                useTiming);
         }
         // Update stream is used both for coordinates transfers and for GPU update/constraints
-        if (useGpuForPme || useGpuForUpdate)
+        if (simulationWork.useGpuPme || simulationWork.useGpuUpdate || simulationWork.useGpuBufferOps)
         {
             streams_[DeviceStreamType::UpdateAndConstraints].init(
                     context_, DeviceStreamPriority::Normal, useTiming);
         }
-        if (doGpuPmePpTransfer)
+        if (simulationWork.useGpuPmePpCommunication)
         {
             streams_[DeviceStreamType::PmePpTransfer].init(context_, DeviceStreamPriority::Normal, useTiming);
         }
@@ -129,12 +126,10 @@ DeviceStreamManager::Impl::~Impl() = default;
 
 // DeviceStreamManager
 DeviceStreamManager::DeviceStreamManager(const DeviceInformation& deviceInfo,
-                                         const bool               useGpuForPme,
                                          const bool               havePpDomainDecomposition,
-                                         const bool               doGpuPmePpTransfer,
-                                         const bool               useGpuForUpdate,
+                                         const SimulationWorkload simulationWork,
                                          const bool               useTiming) :
-    impl_(new Impl(deviceInfo, useGpuForPme, havePpDomainDecomposition, doGpuPmePpTransfer, useGpuForUpdate, useTiming))
+    impl_(new Impl(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming))
 {
 }
 

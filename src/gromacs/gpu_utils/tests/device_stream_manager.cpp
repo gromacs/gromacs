@@ -51,6 +51,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
 #include "gputest.h"
@@ -116,12 +117,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
 
         {
             SCOPED_TRACE("No DD, no PME rank, no GPU update");
-            bool                useGpuForPme              = false;
+            SimulationWorkload simulationWork;
+            simulationWork.useGpuPme                      = false;
+            simulationWork.useGpuPmePpCommunication       = false;
+            simulationWork.useGpuUpdate                   = false;
             bool                havePpDomainDecomposition = false;
-            bool                doGpuPmePpTransfer        = false;
-            bool                useGpuForUpdate           = false;
-            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
-                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+            DeviceStreamManager manager(*deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal });
             expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal,
@@ -131,12 +132,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
 
         {
             SCOPED_TRACE("With DD, no PME rank, no GPU update");
-            bool                useGpuForPme              = false;
+            SimulationWorkload simulationWork;
+            simulationWork.useGpuPme                      = false;
+            simulationWork.useGpuPmePpCommunication       = false;
+            simulationWork.useGpuUpdate                   = false;
             bool                havePpDomainDecomposition = true;
-            bool                doGpuPmePpTransfer        = false;
-            bool                useGpuForUpdate           = false;
-            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
-                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+            DeviceStreamManager manager(*deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal,
                                            DeviceStreamType::NonBondedNonLocal });
@@ -146,12 +147,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
 
         {
             SCOPED_TRACE("No DD, with PME rank, no GPU update");
-            bool                useGpuForPme              = true;
+            SimulationWorkload simulationWork;
+            simulationWork.useGpuPme                      = true;
+            simulationWork.useGpuPmePpCommunication       = true;
+            simulationWork.useGpuUpdate                   = false;
             bool                havePpDomainDecomposition = false;
-            bool                doGpuPmePpTransfer        = true;
-            bool                useGpuForUpdate           = false;
-            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
-                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+            DeviceStreamManager manager(*deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
                                            DeviceStreamType::PmePpTransfer,
@@ -161,12 +162,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
 
         {
             SCOPED_TRACE("With DD, with PME rank, no GPU update");
-            bool                useGpuForPme              = true;
+            SimulationWorkload simulationWork;
+            simulationWork.useGpuPme                      = true;
+            simulationWork.useGpuPmePpCommunication       = true;
+            simulationWork.useGpuUpdate                   = false;
             bool                havePpDomainDecomposition = true;
-            bool                doGpuPmePpTransfer        = true;
-            bool                useGpuForUpdate           = false;
-            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
-                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+            DeviceStreamManager manager(*deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
                                            DeviceStreamType::NonBondedNonLocal, DeviceStreamType::PmePpTransfer,
@@ -175,12 +176,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
 
         {
             SCOPED_TRACE("No DD, no PME rank, with GPU update");
-            bool                useGpuForPme              = false;
+            SimulationWorkload simulationWork;
+            simulationWork.useGpuPme                      = false;
+            simulationWork.useGpuPmePpCommunication       = false;
+            simulationWork.useGpuUpdate                   = true;
             bool                havePpDomainDecomposition = false;
-            bool                doGpuPmePpTransfer        = false;
-            bool                useGpuForUpdate           = true;
-            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
-                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+            DeviceStreamManager manager(*deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal,
                                            DeviceStreamType::UpdateAndConstraints });
@@ -190,12 +191,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
 
         {
             SCOPED_TRACE("With DD, no PME rank, with GPU update");
-            bool                useGpuForPme              = false;
+            SimulationWorkload simulationWork;
+            simulationWork.useGpuPme                      = false;
+            simulationWork.useGpuPmePpCommunication       = false;
+            simulationWork.useGpuUpdate                   = true;
             bool                havePpDomainDecomposition = true;
-            bool                doGpuPmePpTransfer        = false;
-            bool                useGpuForUpdate           = true;
-            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
-                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+            DeviceStreamManager manager(*deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal, DeviceStreamType::NonBondedNonLocal,
                                            DeviceStreamType::UpdateAndConstraints });
@@ -204,12 +205,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
 
         {
             SCOPED_TRACE("No DD, with PME rank, with GPU update");
-            bool                useGpuForPme              = true;
+            SimulationWorkload simulationWork;
+            simulationWork.useGpuPme                      = true;
+            simulationWork.useGpuPmePpCommunication       = true;
+            simulationWork.useGpuUpdate                   = true;
             bool                havePpDomainDecomposition = false;
-            bool                doGpuPmePpTransfer        = true;
-            bool                useGpuForUpdate           = true;
-            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
-                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+            DeviceStreamManager manager(*deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
                                            DeviceStreamType::PmePpTransfer,
@@ -219,12 +220,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
 
         {
             SCOPED_TRACE("With DD, with PME rank, with GPU update");
-            bool                useGpuForPme              = true;
+            SimulationWorkload simulationWork;
+            simulationWork.useGpuPme                      = true;
+            simulationWork.useGpuPmePpCommunication       = true;
+            simulationWork.useGpuUpdate                   = true;
             bool                havePpDomainDecomposition = true;
-            bool                doGpuPmePpTransfer        = true;
-            bool                useGpuForUpdate           = true;
-            DeviceStreamManager manager(*deviceInfo, useGpuForPme, havePpDomainDecomposition,
-                                        doGpuPmePpTransfer, useGpuForUpdate, useTiming);
+            DeviceStreamManager manager(*deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
                                            DeviceStreamType::NonBondedNonLocal, DeviceStreamType::PmePpTransfer,
