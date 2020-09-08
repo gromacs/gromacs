@@ -35,6 +35,7 @@
 gmx_add_unit_test(DensityFittingAppliedForcesUnitTest density_fitting_applied_forces-test
     CPP_SOURCE_FILES
         densityfitting.cpp
-        densityfittingoptions.cpp
         densityfittingamplitudelookup.cpp
+        densityfittingforceprovider.cpp
+        densityfittingoptions.cpp
         )

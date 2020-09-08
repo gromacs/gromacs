@@ -55,7 +55,7 @@
 #include <array>
 #include <string>
 
-#include "gromacs/awh/awh.h"
+#include "gromacs/applied_forces/awh/awh.h"
 #include "gromacs/fileio/enxio.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"

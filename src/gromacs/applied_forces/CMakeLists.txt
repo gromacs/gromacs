@@ -36,6 +36,7 @@ gmx_add_libgromacs_sources(
     electricfield.cpp
     )
 
+add_subdirectory(awh)
 add_subdirectory(densityfitting)
 
 if (BUILD_TESTING)

@@ -34,7 +34,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/awh/bias.h"
+#include "gromacs/applied_forces/awh/bias.h"
 
 #include <cmath>
 
@@ -45,8 +45,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/awh/correlationgrid.h"
-#include "gromacs/awh/pointstate.h"
+#include "gromacs/applied_forces/awh/correlationgrid.h"
+#include "gromacs/applied_forces/awh/pointstate.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/stringutil.h"
 

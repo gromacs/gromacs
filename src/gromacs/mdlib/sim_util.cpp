@@ -45,7 +45,7 @@
 
 #include <array>
 
-#include "gromacs/awh/awh.h"
+#include "gromacs/applied_forces/awh/awh.h"
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"

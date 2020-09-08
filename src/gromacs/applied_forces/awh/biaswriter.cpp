@@ -40,7 +40,7 @@
 #include <cassert>
 #include <cmath>
 
-#include "gromacs/awh/awh.h"
+#include "gromacs/applied_forces/awh/awh.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/trajectory/energyframe.h"

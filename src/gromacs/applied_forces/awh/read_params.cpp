@@ -39,7 +39,7 @@
 
 #include "read_params.h"
 
-#include "gromacs/awh/awh.h"
+#include "gromacs/applied_forces/awh/awh.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/math/units.h"

@@ -25,3 +25,6 @@ modularsimulator -> mdrun
 # Cycle counters in timing use comrec for the set up, which is in the mdtypes. This introduces
 # cyclic dependencies if the cycle counting is used anywhere in mdtypes.
 timing -> mdtypes
+
+# awh has dependencies in mdlib and pulling that need resolving.
+mdlib -> applied_forces

@@ -47,7 +47,7 @@
 #include <algorithm>
 #include <string>
 
-#include "gromacs/awh/read_params.h"
+#include "gromacs/applied_forces/awh/read_params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/network.h"
