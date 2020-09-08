@@ -112,7 +112,9 @@ static void gmx_detect_gpus(const gmx::MDLogger&             mdlog,
                             compat::not_null<gmx_hw_info_t*> hardwareInfo)
 {
     if (!isDeviceDetectionEnabled())
+    {
         return;
+    }
 
     std::string errorMessage;
 
