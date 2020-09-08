@@ -35,6 +35,7 @@
 file(GLOB MDTYPES_SOURCES
     checkpointdata.cpp
     df_history.cpp
+    energyhistory.cpp
     forcebuffers.cpp
     group.cpp
     iforceprovider.cpp

@@ -411,6 +411,20 @@ public:
     }
 };
 
+/*! \brief
+ * Exception class signalling an error in reading or writing modular checkpoints.
+ *
+ * \internal
+ */
+class CheckpointError final : public ModularSimulatorError
+{
+public:
+    //! \copydoc FileIOError::FileIOError()
+    explicit CheckpointError(const ExceptionInitializer& details) : ModularSimulatorError(details)
+    {
+    }
+};
+
 //! Enum allowing builders to store whether they can accept client registrations
 enum class ModularSimulatorBuilderState
 {

@@ -72,7 +72,10 @@ struct t_inputrec;
 namespace gmx
 {
 struct AwhHistory;
-}
+enum class CheckpointDataOperation;
+template<CheckpointDataOperation operation>
+class CheckpointData;
+} // namespace gmx
 
 //! Convenience alias for until all is moved in the gmx namespace
 template<class T>
@@ -176,6 +179,14 @@ public:
      * before we enter the MD loop should compute these quantities
      * fresh, or not. */
     bool hasReadEkinState;
+
+    /*!
+     * \brief Allows to read and write checkpoint within modular simulator
+     * \tparam operation  Whether we're reading or writing
+     * \param checkpointData  The CheckpointData object
+     */
+    template<gmx::CheckpointDataOperation operation>
+    void doCheckpoint(gmx::CheckpointData<operation> checkpointData);
 };
 
 /*! \brief Free-energy sampling history struct

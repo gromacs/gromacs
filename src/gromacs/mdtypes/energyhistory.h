@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,13 @@
 
 //! \cond INTERNAL
 
+namespace gmx
+{
+enum class CheckpointDataOperation;
+template<CheckpointDataOperation operation>
+class CheckpointData;
+} // namespace gmx
+
 //! \brief Energy history for delta_h histograms in between energy file frames
 class delta_h_history_t
 {
@@ -68,6 +75,10 @@ public:
     double start_lambda;
     //! Whether the lambda value is set. Here for backward-compatibility.
     gmx_bool start_lambda_set;
+
+    //! Read / write data from / to checkpoint object
+    template<gmx::CheckpointDataOperation operation>
+    void doCheckpoint(gmx::CheckpointData<operation> checkpointData);
 
     delta_h_history_t() : start_time(0), start_lambda(0), start_lambda_set(false) {}
 };
@@ -88,15 +99,11 @@ public:
     //! History for energy difference for foreign lambdas (useful for BAR)
     std::unique_ptr<delta_h_history_t> deltaHForeignLambdas;
 
-    energyhistory_t() :
-        nsteps(0),
-        nsum(0),
+    //! Read / write data from / to checkpoint object
+    template<gmx::CheckpointDataOperation operation>
+    void doCheckpoint(gmx::CheckpointData<operation> checkpointData);
 
-        nsteps_sim(0),
-        nsum_sim(0),
-        ener_sum_sim(0)
-    {
-    }
+    energyhistory_t() : nsteps(0), nsum(0), nsteps_sim(0), nsum_sim(0), ener_sum_sim(0) {}
 };
 
 //! \endcond
