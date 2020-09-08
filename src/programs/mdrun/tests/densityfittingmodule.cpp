@@ -131,6 +131,10 @@ public:
     const std::string mdpSkipDensityfittingEveryOtherStep_ = formatString(
             "nstenergy = 2\n"
             "density-guided-simulation-nst = 2\n");
+    const std::string mdpTranslationSet_ =
+            formatString("density-guided-simulation-shift-vector = 0.1 -0.2 0.3\n");
+    const std::string mdpTranslationSetWrongValues_ =
+            formatString("density-guided-simulation-shift-vector = 0.1 -0.2\n");
     //! The command line to call mdrun
     CommandLine commandLineForMdrun_;
 };
@@ -149,6 +153,34 @@ TEST_F(DensityFittingTest, EnergyMinimizationEnergyCorrectInnerProduct)
 
     const real expectedEnergyTermMagnitude = -3378.825928;
     checkMdrun(expectedEnergyTermMagnitude);
+}
+
+/* Fit a subset of three of twelve argon atoms into a reference density
+ * whose origin is offset from the simulation box origin.
+ *
+ * All density fitting mdp parameters are set to defaults
+ */
+TEST_F(DensityFittingTest, EnergyMinimizationEnergyCorrectInnerProductTranslation)
+{
+    runner_.useStringAsMdpFile(mdpEminDensfitYesUnsetValues + mdpTranslationSet_);
+
+    ASSERT_EQ(0, runner_.callGrompp());
+    ASSERT_EQ(0, runner_.callMdrun(commandLineForMdrun_));
+
+    const real expectedEnergyTermMagnitude = -8991;
+    checkMdrun(expectedEnergyTermMagnitude);
+}
+
+/* Fit a subset of three of twelve argon atoms into a reference density
+ * whose origin is offset from the simulation box origin.
+ *
+ * All density fitting mdp parameters are set to defaults
+ */
+TEST_F(DensityFittingTest, EnergyMinimizationEnergyTranslationParametersOff)
+{
+    runner_.useStringAsMdpFile(mdpEminDensfitYesUnsetValues + mdpTranslationSetWrongValues_);
+
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(), ".*Reading three real values.*");
 }
 
 /* Like above, but with as many parameters reversed as possible

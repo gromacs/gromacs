@@ -3228,6 +3228,14 @@ electron-microscopy experiments. (See the `reference manual`_ for details)
    (4) [ps] Couple force constant to increase in similarity with reference density
    with this time constant. Larger times result in looser coupling.
 
+.. mdp:: density-guided-simulation-shift-vector
+
+   (0,0,0) [nm] Add this vector to all atoms in the 
+   density-guided-simulation-group before calculating forces and energies for
+   density-guided-simulations. Affects only the density-guided-simulation forces
+   and energies. Corresponds to a shift of the input density in the opposite
+   direction by (-1) * density-guided-simulation-shift-vector.
+
 User defined thingies
 ^^^^^^^^^^^^^^^^^^^^^
 

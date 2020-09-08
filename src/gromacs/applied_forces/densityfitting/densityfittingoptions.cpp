@@ -146,6 +146,13 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
     densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_adaptiveForceScalingTag_);
     densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>,
                                                c_adaptiveForceScalingTimeConstantTag_);
+    const auto& stringRVecToStringRVecWithCheck = [](const std::string& str) {
+        return stringIdentityTransformWithArrayCheck<real, 3>(
+                str, "Reading three real values as vector while parsing the .mdp input failed in "
+                             + DensityFittingModuleInfo::name_ + ".");
+    };
+    densityfittingMdpTransformFromString<std::string>(rules, stringRVecToStringRVecWithCheck,
+                                                      c_translationTag_);
 }
 
 //! Name the methods that may be used to evaluate similarity between densities
@@ -237,6 +244,7 @@ void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections* option
             BooleanOption(c_adaptiveForceScalingTag_.c_str()).store(&parameters_.adaptiveForceScaling_));
     section.addOption(RealOption(c_adaptiveForceScalingTimeConstantTag_.c_str())
                               .store(&parameters_.adaptiveForceScalingTimeConstant_));
+    section.addOption(StringOption(c_translationTag_.c_str()).store(&parameters_.translationString_));
 }
 
 bool DensityFittingOptions::active() const

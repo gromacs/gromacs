@@ -57,6 +57,7 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "densityfittingamplitudelookup.h"
 #include "densityfittingparameters.h"
@@ -179,6 +180,9 @@ private:
 
     //! Optionally scale the force according to a moving average of the similarity
     std::optional<ExponentialMovingAverage> expAverageSimilarity_;
+
+    //! Optionally translate the structure
+    std::optional<TranslateAndScale> translate_;
 };
 
 DensityFittingForceProvider::Impl::~Impl() = default;
@@ -214,6 +218,17 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters&         
                         / (simulationTimeStep * parameters_.calculationIntervalInSteps_),
                 state.exponentialMovingAverageState_));
     }
+
+    // set up optional coordinate translation if the translation string contains a vector
+    const std::optional<std::array<real, 3>> translationParametersAsArray =
+            parsedArrayFromInputString<real, 3>(parameters_.translationString_);
+    if (translationParametersAsArray)
+    {
+        translate_.emplace(RVec(1, 1, 1), RVec((*translationParametersAsArray)[XX],
+                                               (*translationParametersAsArray)[YY],
+                                               (*translationParametersAsArray)[ZZ]));
+    }
+
     referenceDensityCenter_ = { real(referenceDensity.extent(XX)) / 2,
                                 real(referenceDensity.extent(YY)) / 2,
                                 real(referenceDensity.extent(ZZ)) / 2 };
@@ -245,6 +260,12 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     std::transform(std::cbegin(localAtomSet_.localIndex()), std::cend(localAtomSet_.localIndex()),
                    std::begin(transformedCoordinates_),
                    [&forceProviderInput](int index) { return forceProviderInput.x_[index]; });
+
+    // optionally apply additional structure transformations
+    if (translate_)
+    {
+        (*translate_)(transformedCoordinates_);
+    }
 
     // pick periodic image that is closest to the center of the reference density
     {

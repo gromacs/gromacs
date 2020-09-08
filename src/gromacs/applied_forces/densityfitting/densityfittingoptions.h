@@ -136,6 +136,7 @@ private:
     const std::string c_adaptiveForceScalingTimeConstantTag_ =
             "adaptive-force-scaling-time-constant";
 
+    const std::string c_translationTag_ = "shift-vector";
 
     DensityFittingParameters parameters_;
 };

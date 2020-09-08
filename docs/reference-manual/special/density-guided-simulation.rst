@@ -202,6 +202,19 @@ the force constant is increased by multiplying by :math:`1+2\delta t_{\mathrm{de
 Note that adaptive force scaling does not conserve energy and will ultimately lead to very high
 forces when similarity cannot be increased further.
 
+Aligning input structure and density
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To align input structure and density data, a shift vector 
+:math:`v_{\mathrm{shift}}` may be defined that translates the input structure
+atom coordinates before evaluating density-guided-simulation energies and forces,
+so that 
+
+.. math:: U = U_{\mathrm{forcefield}}(\mathbf{r}) - k S[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}\!(\mathbf{r+v_{\mathrm{shift}}})]\,\mathrm{.}
+          :label:eqndensnine
+
+.. math:: \mathbf{F}_{\mathrm{density}} = k \nabla_{\mathbf{r}} S[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}\!(\mathbf{r+v_{\mathrm{shift}}})]\,\mathrm{.}
+          :label:eqndensten
+
 Future developments
 ^^^^^^^^^^^^^^^^^^^
 
