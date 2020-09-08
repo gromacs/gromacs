@@ -100,7 +100,9 @@ public:
     void elementTeardown() override {}
 
     //! Getter for the box velocities
-    const rvec* boxVelocities() const;
+    [[nodiscard]] const rvec* boxVelocities() const;
+    //! Contribution to the conserved energy (called by energy data)
+    [[nodiscard]] real conservedEnergyContribution() const;
 
     //! Connect this to propagator
     void connectWithPropagator(const PropagatorBarostatConnection& connectionData);

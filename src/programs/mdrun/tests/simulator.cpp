@@ -109,11 +109,14 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         return;
     }
 
+    auto hasConservedField = !(tcoupling == "no" && pcoupling == "no");
+
     SCOPED_TRACE(formatString(
             "Comparing two simulations of '%s' "
-            "with integrator '%s' and '%s' temperature coupling, "
+            "with integrator '%s', '%s' temperature coupling, and '%s' pressure coupling "
             "switching environment variable '%s'",
-            simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), environmentVariable.c_str()));
+            simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), pcoupling.c_str(),
+            environmentVariable.c_str()));
 
     auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(),
                                                 tcoupling.c_str(), pcoupling.c_str());
@@ -124,6 +127,11 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             { interaction_function[F_PRES].longname,
               relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.01, 0.001) },
     } };
+    if (hasConservedField)
+    {
+        energyTermsToCompare.emplace(interaction_function[F_ECONSERVED].longname,
+                                     relativeToleranceAsPrecisionDependentUlp(50.0, 100, 80));
+    }
 
     if (simulationName == "argon12")
     {
@@ -136,6 +144,11 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
                 { interaction_function[F_PRES].longname,
                   relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.001, 0.0001) },
         } };
+        if (hasConservedField)
+        {
+            energyTermsToCompare.emplace(interaction_function[F_ECONSERVED].longname,
+                                         relativeToleranceAsPrecisionDependentUlp(10.0, 24, 80));
+        }
     }
 
     // Specify how trajectory frame matching must work.

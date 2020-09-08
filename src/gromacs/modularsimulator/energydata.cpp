@@ -120,11 +120,6 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     clear_mat(totalVirial_);
     clear_mat(pressure_);
     clear_rvec(muTot_);
-
-    if (freeEnergyPerturbationData_)
-    {
-        dummyLegacyState_.flags = (1U << estFEPSTATE);
-    }
 }
 
 void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction)
@@ -233,24 +228,17 @@ std::optional<SignallerCallback> EnergyData::Element::registerEnergyCallback(Ene
 void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep)
 {
     enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
-    if (vRescaleThermostat_)
-    {
-        dummyLegacyState_.therm_integral = vRescaleThermostat_->thermostatIntegral();
-    }
     if (freeEnergyPerturbationData_)
     {
         accumulateKineticLambdaComponents(enerd_, freeEnergyPerturbationData_->constLambdaView(),
                                           *inputrec_->fepvals);
     }
-    if (parrinelloRahmanBarostat_)
-    {
-        copy_mat(parrinelloRahmanBarostat_->boxVelocities(), dummyLegacyState_.boxv);
-        copy_mat(statePropagatorData_->constBox(), dummyLegacyState_.box);
-    }
     if (integratorHasConservedEnergyQuantity(inputrec_))
     {
         enerd_->term[F_ECONSERVED] =
-                enerd_->term[F_ETOT] + NPT_energy(inputrec_, &dummyLegacyState_, nullptr);
+                enerd_->term[F_ETOT]
+                + (vRescaleThermostat_ ? vRescaleThermostat_->conservedEnergyContribution() : 0)
+                + (parrinelloRahmanBarostat_ ? parrinelloRahmanBarostat_->conservedEnergyContribution() : 0);
     }
     matrix nullMatrix = {};
     energyOutput_->addDataAtEnergyStep(
@@ -434,19 +422,11 @@ void EnergyData::initializeEnergyHistory(StartingBehavior    startingBehavior,
 void EnergyData::setVRescaleThermostat(const gmx::VRescaleThermostat* vRescaleThermostat)
 {
     vRescaleThermostat_ = vRescaleThermostat;
-    if (vRescaleThermostat_)
-    {
-        dummyLegacyState_.flags |= (1U << estTHERM_INT);
-    }
 }
 
 void EnergyData::setParrinelloRahamnBarostat(const gmx::ParrinelloRahmanBarostat* parrinelloRahmanBarostat)
 {
     parrinelloRahmanBarostat_ = parrinelloRahmanBarostat;
-    if (parrinelloRahmanBarostat_)
-    {
-        dummyLegacyState_.flags |= (1U << estBOX) | (1U << estBOXV);
-    }
 }
 
 EnergyData::Element* EnergyData::element()

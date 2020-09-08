@@ -51,6 +51,7 @@
 #include <string>
 
 #include "gromacs/mdrun/isimulator.h"
+#include "gromacs/mdtypes/state.h"
 
 #include "checkpointhelper.h"
 #include "domdechelper.h"

@@ -109,7 +109,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<StatePropagatorData::Element>();
         if (legacySimulatorData_->inputrec->etc == etcVRESCALE)
         {
-            builder->add<VRescaleThermostat>(-1, VRescaleThermostatUseFullStepKE::No);
+            builder->add<VRescaleThermostat>(-1, UseFullStepKE::No, ReportPreviousStepConservedEnergy::No);
         }
         builder->add<Propagator<IntegrationStep::LeapFrog>>(legacySimulatorData_->inputrec->delta_t,
                                                             RegisterWithThermostat::True,
@@ -140,7 +140,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<StatePropagatorData::Element>();
         if (legacySimulatorData_->inputrec->etc == etcVRESCALE)
         {
-            builder->add<VRescaleThermostat>(0, VRescaleThermostatUseFullStepKE::Yes);
+            builder->add<VRescaleThermostat>(0, UseFullStepKE::Yes, ReportPreviousStepConservedEnergy::Yes);
         }
         builder->add<Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>>(
                 legacySimulatorData_->inputrec->delta_t, RegisterWithThermostat::True,

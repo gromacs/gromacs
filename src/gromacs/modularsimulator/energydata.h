@@ -45,7 +45,6 @@
 #define GMX_ENERGYELEMENT_MICROSTATE_H
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/state.h"
 
 #include "modularsimulatorinterfaces.h"
 
@@ -269,9 +268,6 @@ private:
 
     //! Describes how the simulation (re)starts
     const StartingBehavior startingBehavior_;
-
-    //! Legacy state object used to communicate with energy output
-    t_state dummyLegacyState_;
 
     /*
      * Pointers to Simulator data

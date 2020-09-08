@@ -57,10 +57,19 @@ namespace gmx
 class LegacySimulatorData;
 
 //! Enum describing whether the thermostat is using full or half step kinetic energy
-enum class VRescaleThermostatUseFullStepKE
+enum class UseFullStepKE
 {
     Yes,
-    No
+    No,
+    Count
+};
+
+//! Enum describing whether the thermostat is reporting conserved energy from the previous step
+enum class ReportPreviousStepConservedEnergy
+{
+    Yes,
+    No,
+    Count
 };
 
 /*! \internal
@@ -74,19 +83,20 @@ class VRescaleThermostat final : public ISimulatorElement, public ICheckpointHel
 {
 public:
     //! Constructor
-    VRescaleThermostat(int            nstcouple,
-                       int            offset,
-                       bool           useFullStepKE,
-                       int64_t        seed,
-                       int            numTemperatureGroups,
-                       double         couplingTimeStep,
-                       const real*    referenceTemperature,
-                       const real*    couplingTime,
-                       const real*    numDegreesOfFreedom,
-                       EnergyData*    energyData,
-                       const t_state* globalState,
-                       t_commrec*     cr,
-                       bool           isRestart);
+    VRescaleThermostat(int                               nstcouple,
+                       int                               offset,
+                       UseFullStepKE                     useFullStepKE,
+                       ReportPreviousStepConservedEnergy reportPreviousConservedEnergy,
+                       int64_t                           seed,
+                       int                               numTemperatureGroups,
+                       double                            couplingTimeStep,
+                       const real*                       referenceTemperature,
+                       const real*                       couplingTime,
+                       const real*                       numDegreesOfFreedom,
+                       EnergyData*                       energyData,
+                       const t_state*                    globalState,
+                       t_commrec*                        cr,
+                       bool                              isRestart);
 
     /*! \brief Register run function for step / time
      *
@@ -101,8 +111,8 @@ public:
     //! No element teardown needed
     void elementTeardown() override {}
 
-    //! Getter for the thermostatIntegral
-    const std::vector<double>& thermostatIntegral() const;
+    //! Contribution to the conserved energy (called by energy data)
+    [[nodiscard]] real conservedEnergyContribution() const;
 
     //! Connect this to propagator
     void connectWithPropagator(const PropagatorThermostatConnection& connectionData);
@@ -117,17 +127,20 @@ public:
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
      * \param offset  The step offset at which the thermostat is applied
      * \param useFullStepKE  Whether full step or half step KE is used
+     * \param reportPreviousStepConservedEnergy  Report the previous or the current step conserved energy
      *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
-    static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
-                                                    ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
-                                                    FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                    GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    int                        offset,
-                                                    VRescaleThermostatUseFullStepKE useFullStepKE);
+    static ISimulatorElement*
+    getElementPointerImpl(LegacySimulatorData*                    legacySimulatorData,
+                          ModularSimulatorAlgorithmBuilderHelper* builderHelper,
+                          StatePropagatorData*                    statePropagatorData,
+                          EnergyData*                             energyData,
+                          FreeEnergyPerturbationData*             freeEnergyPerturbationData,
+                          GlobalCommunicationHelper*              globalCommunicationHelper,
+                          int                                     offset,
+                          UseFullStepKE                           useFullStepKE,
+                          ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy);
 
 private:
     //! The frequency at which the thermostat is applied
@@ -135,7 +148,9 @@ private:
     //! If != 0, offset the step at which the thermostat is applied
     const int offset_;
     //! Whether we're using full step kinetic energy
-    const bool useFullStepKE_;
+    const UseFullStepKE useFullStepKE_;
+    //! Whether we are reporting the conserved energy from the previous step
+    const ReportPreviousStepConservedEnergy reportPreviousConservedEnergy_;
     //! The random seed
     const int64_t seed_;
 
@@ -149,8 +164,10 @@ private:
     const std::vector<real> couplingTime_;
     //! Number of degrees of freedom per group
     const std::vector<real> numDegreesOfFreedom_;
-    //! Work exerted by thermostat
+    //! Work exerted by thermostat per group
     std::vector<double> thermostatIntegral_;
+    //! Work exerted by thermostat per group (backup from previous step)
+    std::vector<double> thermostatIntegralPreviousStep_;
 
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the energy data (for ekindata)

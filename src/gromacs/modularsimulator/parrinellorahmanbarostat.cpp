@@ -44,6 +44,7 @@
 #include "parrinellorahmanbarostat.h"
 
 #include "gromacs/domdec/domdec_network.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -204,6 +205,39 @@ void ParrinelloRahmanBarostat::elementSetup()
 const rvec* ParrinelloRahmanBarostat::boxVelocities() const
 {
     return boxVelocity_;
+}
+
+real ParrinelloRahmanBarostat::conservedEnergyContribution() const
+{
+    real        energy       = 0;
+    const auto* box          = statePropagatorData_->constBox();
+    real        maxBoxLength = std::max({ box[XX][XX], box[YY][YY], box[ZZ][ZZ] });
+    real        volume       = det(box);
+
+    // contribution from the pressure momenta
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j <= i; j++)
+        {
+            real invMass = PRESFAC * (4 * M_PI * M_PI * inputrec_->compress[i][j])
+                           / (3 * inputrec_->tau_p * inputrec_->tau_p * maxBoxLength);
+            if (invMass > 0)
+            {
+                energy += 0.5 * boxVelocity_[i][j] * boxVelocity_[i][j] / invMass;
+            }
+        }
+    }
+
+    /* Contribution from the PV term.
+     * Note that with non-zero off-diagonal reference pressures,
+     * i.e. applied shear stresses, there are additional terms.
+     * We don't support this here, since that requires keeping
+     * track of unwrapped box diagonal elements. This case is
+     * excluded in integratorHasConservedEnergyQuantity().
+     */
+    energy += volume * trace(inputrec_->ref_p) / (DIM * PRESFAC);
+
+    return energy;
 }
 
 void ParrinelloRahmanBarostat::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
