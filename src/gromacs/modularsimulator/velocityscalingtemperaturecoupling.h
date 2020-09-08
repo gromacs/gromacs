@@ -55,7 +55,9 @@ struct t_commrec;
 
 namespace gmx
 {
+class ITemperatureCouplingImpl;
 class LegacySimulatorData;
+struct TemperatureCouplingData;
 
 //! Enum describing whether the thermostat is using full or half step kinetic energy
 enum class UseFullStepKE
@@ -73,12 +75,18 @@ enum class ReportPreviousStepConservedEnergy
     Count
 };
 
+using TemperatureCouplingType = int;
+
 /*! \internal
  * \ingroup module_modularsimulator
- * \brief Element implementing the v-rescale thermostat
+ * \brief Element implementing the a velocity-scaling thermostat
  *
  * This element takes a callback to the propagator and updates the velocity
- * scaling factor according to the v-rescale thermostat.
+ * scaling factor according to the internal temperature coupling implementation.
+ *
+ * Note that the concrete implementation is handled by the concrete
+ * implementations of the ITemperatureCouplingImpl interface, while the element
+ * handles the scheduling and interfacing with other elements.
  */
 class VelocityScalingTemperatureCoupling final : public ISimulatorElement, public ICheckpointHelperClient
 {
@@ -94,7 +102,8 @@ public:
                                        const real*                       referenceTemperature,
                                        const real*                       couplingTime,
                                        const real*                       numDegreesOfFreedom,
-                                       EnergyData*                       energyData);
+                                       EnergyData*                       energyData,
+                                       TemperatureCouplingType           couplingType);
 
     /*! \brief Register run function for step / time
      *
@@ -156,8 +165,6 @@ private:
     const UseFullStepKE useFullStepKE_;
     //! Whether we are reporting the conserved energy from the previous step
     const ReportPreviousStepConservedEnergy reportPreviousConservedEnergy_;
-    //! The random seed
-    const int64_t seed_;
 
     //! The number of temperature groups
     const int numTemperatureGroups_;
@@ -170,21 +177,22 @@ private:
     //! Number of degrees of freedom per group
     const std::vector<real> numDegreesOfFreedom_;
     //! Work exerted by thermostat per group
-    std::vector<double> thermostatIntegral_;
+    std::vector<double> temperatureCouplingIntegral_;
     //! Work exerted by thermostat per group (backup from previous step)
-    std::vector<double> thermostatIntegralPreviousStep_;
+    std::vector<double> temperatureCouplingIntegralPreviousStep_;
 
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the energy data (for ekindata)
     EnergyData* energyData_;
 
-    //! View on the scaling factor of the propagator
-    ArrayRef<real> lambda_;
     //! Callback to let propagator know that we updated lambda
     PropagatorCallback propagatorCallback_;
 
     //! Set new lambda value (at T-coupling steps)
     void setLambda(Step step);
+
+    //! The temperature coupling implementation
+    std::unique_ptr<ITemperatureCouplingImpl> temperatureCouplingImpl_;
 
     //! CheckpointHelper identifier
     const std::string identifier_ = "VelocityScalingTemperatureCoupling";
