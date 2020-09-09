@@ -42,6 +42,7 @@
 #ifndef GMX_APPLIED_FORCES_DENSITYFITTINGPARAMETERS_H
 #define GMX_APPLIED_FORCES_DENSITYFITTINGPARAMETERS_H
 
+#include <string>
 #include <vector>
 
 #include "gromacs/math/densityfit.h"

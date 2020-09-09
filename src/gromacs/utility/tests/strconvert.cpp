@@ -56,15 +56,13 @@ namespace
 
 TEST(StringConvert, NoResultFromEptyString)
 {
-    const std::optional<std::array<float, 3>> parsedArray =
-            parsedArrayFromInputString<float, 3>("");
+    const auto parsedArray = parsedArrayFromInputString<float, 3>("");
     EXPECT_FALSE(parsedArray);
 }
 
 TEST(StringConvert, ThreeFloatsSuccessfully)
 {
-    const std::optional<std::array<float, 3>> parsedArray =
-            parsedArrayFromInputString<float, 3>("1.2 .5 -6e5");
+    const auto parsedArray = parsedArrayFromInputString<float, 3>("1.2 .5 -6e5");
     EXPECT_FLOAT_EQ((*parsedArray)[0], 1.2);
     EXPECT_FLOAT_EQ((*parsedArray)[1], .5);
     EXPECT_FLOAT_EQ((*parsedArray)[2], -6e5);
@@ -72,8 +70,7 @@ TEST(StringConvert, ThreeFloatsSuccessfully)
 
 TEST(StringConvert, OneIntSucessfully)
 {
-    const std::optional<std::array<int, 1>> parsedArray =
-            parsedArrayFromInputString<int, 1>(" 1 \t  ");
+    const auto parsedArray = parsedArrayFromInputString<int, 1>(" 1 \t  ");
     EXPECT_FLOAT_EQ((*parsedArray)[0], 1);
 }
 

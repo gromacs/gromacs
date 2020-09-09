@@ -45,6 +45,7 @@
 #define GMX_UTILITY_STRCONVERT_H
 
 #include <algorithm>
+#include <array>
 #include <optional>
 #include <string>
 
