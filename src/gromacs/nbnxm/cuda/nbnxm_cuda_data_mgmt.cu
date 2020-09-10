@@ -226,25 +226,6 @@ static void init_nbparam(NBParamGpu*                     nbp,
     }
 }
 
-/*! Re-generate the GPU Ewald force table, resets rlist, and update the
- *  electrostatic type switching to twin cut-off (or back) if needed. */
-void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interaction_const_t* ic)
-{
-    if (!nbv || !nbv->useGpu())
-    {
-        return;
-    }
-    NbnxmGpu*   nb  = nbv->gpu_nbv;
-    NBParamGpu* nbp = nbv->gpu_nbv->nbparam;
-
-    set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
-
-    nbp->eeltype = nbnxn_gpu_pick_ewald_kernel_type(*ic);
-
-    GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
-    init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, *nb->deviceContext_);
-}
-
 /*! Initializes simulation constant data. */
 static void cuda_init_const(NbnxmGpu*                       nb,
                             const interaction_const_t*      ic,
@@ -349,64 +330,6 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     }
 
     return nb;
-}
-
-void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const InteractionLocality iloc)
-{
-    char                sbuf[STRLEN];
-    bool                bDoTime      = (nb->bDoTime && !h_plist->sci.empty());
-    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
-    gpu_plist*          d_plist      = nb->plist[iloc];
-
-    if (d_plist->na_c < 0)
-    {
-        d_plist->na_c = h_plist->na_ci;
-    }
-    else
-    {
-        if (d_plist->na_c != h_plist->na_ci)
-        {
-            sprintf(sbuf, "In init_plist: the #atoms per cell has changed (from %d to %d)",
-                    d_plist->na_c, h_plist->na_ci);
-            gmx_incons(sbuf);
-        }
-    }
-
-    gpu_timers_t::Interaction& iTimers = nb->timers->interaction[iloc];
-
-    if (bDoTime)
-    {
-        iTimers.pl_h2d.openTimingRegion(deviceStream);
-        iTimers.didPairlistH2D = true;
-    }
-
-    const DeviceContext& deviceContext = *nb->deviceContext_;
-
-    reallocateDeviceBuffer(&d_plist->sci, h_plist->sci.size(), &d_plist->nsci, &d_plist->sci_nalloc,
-                           deviceContext);
-    copyToDeviceBuffer(&d_plist->sci, h_plist->sci.data(), 0, h_plist->sci.size(), deviceStream,
-                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
-
-    reallocateDeviceBuffer(&d_plist->cj4, h_plist->cj4.size(), &d_plist->ncj4, &d_plist->cj4_nalloc,
-                           deviceContext);
-    copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4.data(), 0, h_plist->cj4.size(), deviceStream,
-                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
-
-    reallocateDeviceBuffer(&d_plist->imask, h_plist->cj4.size() * c_nbnxnGpuClusterpairSplit,
-                           &d_plist->nimask, &d_plist->imask_nalloc, deviceContext);
-
-    reallocateDeviceBuffer(&d_plist->excl, h_plist->excl.size(), &d_plist->nexcl,
-                           &d_plist->excl_nalloc, deviceContext);
-    copyToDeviceBuffer(&d_plist->excl, h_plist->excl.data(), 0, h_plist->excl.size(), deviceStream,
-                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
-
-    if (bDoTime)
-    {
-        iTimers.pl_h2d.closeTimingRegion(deviceStream);
-    }
-
-    /* the next use of thist list we be the first one, so we need to prune */
-    d_plist->haveFreshList = true;
 }
 
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
@@ -621,29 +544,10 @@ void gpu_free(NbnxmGpu* nb)
     }
 }
 
-//! This function is documented in the header file
-gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* nb)
-{
-    return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;
-}
-
-void gpu_reset_timings(nonbonded_verlet_t* nbv)
-{
-    if (nbv->gpu_nbv && nbv->gpu_nbv->bDoTime)
-    {
-        init_timings(nbv->gpu_nbv->timings);
-    }
-}
-
 int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
     return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().prop.multiProcessorCount
                          : 0;
-}
-
-gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
-{
-    return ((nb->nbparam->eeltype == eelTypeEWALD_ANA) || (nb->nbparam->eeltype == eelTypeEWALD_ANA_TWIN));
 }
 
 void* gpu_get_xq(NbnxmGpu* nb)

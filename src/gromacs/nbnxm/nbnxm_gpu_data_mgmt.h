@@ -48,6 +48,11 @@ struct interaction_const_t;
 struct NBParamGpu;
 struct PairlistParams;
 
+namespace gmx
+{
+enum class InteractionLocality;
+}
+
 namespace Nbnxm
 {
 

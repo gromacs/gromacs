@@ -58,9 +58,12 @@
 
 #include "nbnxm_gpu_data_mgmt.h"
 
+#include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/timing/gpu_timing.h"
+#include "gromacs/utility/cstringutil.h"
 
 #include "nbnxm_gpu.h"
+#include "pairlistsets.h"
 
 namespace Nbnxm
 {
@@ -155,6 +158,23 @@ void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t* ic, const
     nbp->vdw_switch       = ic->vdw_switch;
 }
 
+void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interaction_const_t* ic)
+{
+    if (!nbv || !nbv->useGpu())
+    {
+        return;
+    }
+    NbnxmGpu*   nb  = nbv->gpu_nbv;
+    NBParamGpu* nbp = nb->nbparam;
+
+    set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
+
+    nbp->eeltype = nbnxn_gpu_pick_ewald_kernel_type(*ic);
+
+    GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
+    init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, *nb->deviceContext_);
+}
+
 void init_plist(gpu_plist* pl)
 {
     /* initialize to nullptr pointers to data that is not allocated here and will
@@ -198,6 +218,89 @@ void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
     t->pruneTime.t        = 0.0;
     t->dynamicPruneTime.c = 0;
     t->dynamicPruneTime.t = 0.0;
+}
+
+//! This function is documented in the header file
+void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const InteractionLocality iloc)
+{
+    char sbuf[STRLEN];
+    // Timing accumulation should happen only if there was work to do
+    // because getLastRangeTime() gets skipped with empty lists later
+    // which leads to the counter not being reset.
+    bool                bDoTime      = (nb->bDoTime && !h_plist->sci.empty());
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+    gpu_plist*          d_plist      = nb->plist[iloc];
+
+    if (d_plist->na_c < 0)
+    {
+        d_plist->na_c = h_plist->na_ci;
+    }
+    else
+    {
+        if (d_plist->na_c != h_plist->na_ci)
+        {
+            sprintf(sbuf, "In init_plist: the #atoms per cell has changed (from %d to %d)",
+                    d_plist->na_c, h_plist->na_ci);
+            gmx_incons(sbuf);
+        }
+    }
+
+    gpu_timers_t::Interaction& iTimers = nb->timers->interaction[iloc];
+
+    if (bDoTime)
+    {
+        iTimers.pl_h2d.openTimingRegion(deviceStream);
+        iTimers.didPairlistH2D = true;
+    }
+
+    // TODO most of this function is same in CUDA and OpenCL, move into the header
+    const DeviceContext& deviceContext = *nb->deviceContext_;
+
+    reallocateDeviceBuffer(&d_plist->sci, h_plist->sci.size(), &d_plist->nsci, &d_plist->sci_nalloc,
+                           deviceContext);
+    copyToDeviceBuffer(&d_plist->sci, h_plist->sci.data(), 0, h_plist->sci.size(), deviceStream,
+                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    reallocateDeviceBuffer(&d_plist->cj4, h_plist->cj4.size(), &d_plist->ncj4, &d_plist->cj4_nalloc,
+                           deviceContext);
+    copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4.data(), 0, h_plist->cj4.size(), deviceStream,
+                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    reallocateDeviceBuffer(&d_plist->imask, h_plist->cj4.size() * c_nbnxnGpuClusterpairSplit,
+                           &d_plist->nimask, &d_plist->imask_nalloc, deviceContext);
+
+    reallocateDeviceBuffer(&d_plist->excl, h_plist->excl.size(), &d_plist->nexcl,
+                           &d_plist->excl_nalloc, deviceContext);
+    copyToDeviceBuffer(&d_plist->excl, h_plist->excl.data(), 0, h_plist->excl.size(), deviceStream,
+                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    if (bDoTime)
+    {
+        iTimers.pl_h2d.closeTimingRegion(deviceStream);
+    }
+
+    /* need to prune the pair list during the next step */
+    d_plist->haveFreshList = true;
+}
+
+//! This function is documented in the header file
+gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* nb)
+{
+    return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;
+}
+
+//! This function is documented in the header file
+void gpu_reset_timings(nonbonded_verlet_t* nbv)
+{
+    if (nbv->gpu_nbv && nbv->gpu_nbv->bDoTime)
+    {
+        init_timings(nbv->gpu_nbv->timings);
+    }
+}
+
+bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
+{
+    return ((nb->nbparam->eeltype == eelTypeEWALD_ANA) || (nb->nbparam->eeltype == eelTypeEWALD_ANA_TWIN));
 }
 
 } // namespace Nbnxm
