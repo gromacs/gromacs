@@ -25,6 +25,14 @@ This can happen, e.g. when big molecule enters the domain, previously
 occupied by smaller molecules. The bug does not affect the single
 domain case.
 
+Fix index handling of N-body virtual sites with domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Incorrect indexing would be used to handle N-body virtual sites in
+the domain decomposition code. This would usually lead to crashes
+due to illegal or incorrect memory usage.
+
+:issue:`3635`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
