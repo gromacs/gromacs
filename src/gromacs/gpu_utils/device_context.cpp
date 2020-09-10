@@ -32,56 +32,20 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GPU_UTILS_DEVICE_CONTEXT_OCL_H
-#define GMX_GPU_UTILS_DEVICE_CONTEXT_OCL_H
-
-/*! \libinternal \file
+/*! \internal \file
  *
- * \brief Declarations for DeviceContext class.
- *
- * Only needed for OpenCL builds. Other platforms will be given a stub class.
+ * \brief Implements the DeviceContext for CPU build
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_gpu_utils
- * \inlibraryapi
  */
+#include "gmxpre.h"
 
-#ifndef DOXYGEN
+#include "device_context.h"
 
-#    include "gromacs/gpu_utils/gmxopencl.h"
-#    include "gromacs/utility/classhelpers.h"
-
-struct DeviceInformation;
-
-// OpenCL device context class
-class DeviceContext
-{
-public:
-    /*! \brief Constructor that creates the \c cl_context
-     *
-     * \param[in] deviceInfo Platform-specific device information.
-     *
-     * \throws InternalError if context creation failed.
-     */
-    DeviceContext(const DeviceInformation& deviceInfo);
-    //! Destructor
-    ~DeviceContext();
-
-    //! Get the associated device information
-    const DeviceInformation& deviceInfo() const { return deviceInfo_; }
-    //! Getter
-    cl_context context() const;
-
-private:
-    //! A reference to the device information used upon context creation
-    const DeviceInformation& deviceInfo_;
-    //! OpenCL context object
-    cl_context context_ = nullptr;
-
-    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);
-};
-
-#endif // !defined DOXYGEN
-#endif // GMX_GPU_UTILS_DEVICE_CONTEXT_OCL_H
+//! Constructor.
+DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(deviceInfo) {}
+//! Destructor
+DeviceContext::~DeviceContext() = default;

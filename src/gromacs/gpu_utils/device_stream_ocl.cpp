@@ -42,7 +42,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gpu_utils/device_context_ocl.h"
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/hardware/device_information.h"
