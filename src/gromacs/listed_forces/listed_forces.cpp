@@ -105,6 +105,8 @@ static void selectInteractions(InteractionDefinitions*                  idef,
             interactionSelection.test(static_cast<int>(ListedForces::InteractionGroup::Pairs));
     const bool selectDihedrals =
             interactionSelection.test(static_cast<int>(ListedForces::InteractionGroup::Dihedrals));
+    const bool selectAngles =
+            interactionSelection.test(static_cast<int>(ListedForces::InteractionGroup::Angles));
     const bool selectRest =
             interactionSelection.test(static_cast<int>(ListedForces::InteractionGroup::Rest));
 
@@ -121,6 +123,10 @@ static void selectInteractions(InteractionDefinitions*                  idef,
             else if (ifunc.flags & IF_DIHEDRAL)
             {
                 assign = selectDihedrals;
+            }
+            else if (ifunc.flags & IF_ATYPE)
+            {
+                assign = selectAngles;
             }
             else
             {

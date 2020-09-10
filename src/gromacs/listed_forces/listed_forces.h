@@ -136,6 +136,7 @@ public:
     {
         Pairs,     //!< Pair interactions
         Dihedrals, //!< Dihedrals, including cmap
+        Angles,    //!< Angles
         Rest,      //!< All listed interactions that are not any of the above
         Count      //!< The number of items above
     };
