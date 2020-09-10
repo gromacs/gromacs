@@ -71,7 +71,7 @@ void global_stat(const gmx_global_stat*  gs,
                  int                     nsig,
                  real*                   sig,
                  int*                    totalNumberOfBondedInteractions,
-                 gmx_bool                bSumEkinhOld,
+                 bool                    bSumEkinhOld,
                  int                     flags);
 
 /*! \brief Returns TRUE if io should be done */

@@ -27,6 +27,7 @@
 #include "gmxapi/md/mdmodule.h"
 
 #include "gromacs/restraint/restraintpotential.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 #include "sessionresources.h"

@@ -48,6 +48,7 @@
 #include "config.h"
 
 #include "gromacs/domdec/gpuhaloexchange.h"
+#include "gromacs/utility/gmxassert.h"
 
 #if !GMX_GPU_CUDA
 
