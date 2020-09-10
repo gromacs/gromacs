@@ -3638,7 +3638,7 @@ static void print_reduction_cost(gmx::ArrayRef<const gmx_bitmask_t> flags, int n
     }
     const auto numFlags = static_cast<double>(flags.size());
     fprintf(debug,
-            "nbnxn reduction: #flag %lu #list %d elem %4.2f, keep %4.2f copy %4.2f red %4.2f\n",
+            "nbnxn reduction: #flag %zu #list %d elem %4.2f, keep %4.2f copy %4.2f red %4.2f\n",
             flags.size(), nout, nelem / numFlags, nkeep / numFlags, ncopy / numFlags, nred / numFlags);
 }
 

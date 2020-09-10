@@ -106,56 +106,58 @@ if (${FFTW}_FOUND)
       message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_many_[r2c|c2r] in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
   endif()
 
-  # Check for FFTW3 compiled with --enable-sse
-  foreach(SSE_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse ${${FFTW}_FUNCTION_PREFIX}_have_sse)
-    if (FFTW_LIBRARY_CHANGED)
-      unset(${FFTW}_HAVE_${SSE_FUNCTION} CACHE)
+  if(NOT WIN32) # *_have_* functions aren't external. Thus aren't visible on Windows.
+    # Check for FFTW3 compiled with --enable-sse
+    foreach(SSE_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse ${${FFTW}_FUNCTION_PREFIX}_have_sse)
+      if (FFTW_LIBRARY_CHANGED)
+        unset(${FFTW}_HAVE_${SSE_FUNCTION} CACHE)
+      endif()
+      check_library_exists("${${FFTW}_LIBRARIES}" "${SSE_FUNCTION}" "" ${FFTW}_HAVE_${SSE_FUNCTION})
+      if(${FFTW}_HAVE_${SSE_FUNCTION})
+        set(${FFTW}_HAVE_SSE TRUE)
+        set(${FFTW}_HAVE_SIMD TRUE)
+        break()
+      endif()
+    endforeach()
+    
+    # Check for FFTW3 compiled with --enable-sse2
+    foreach(SSE2_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2 ${${FFTW}_FUNCTION_PREFIX}_have_sse2)
+      if (FFTW_LIBRARY_CHANGED)
+        unset(${FFTW}_HAVE_${SSE2_FUNCTION} CACHE)
+      endif()
+      check_library_exists("${${FFTW}_LIBRARIES}" "${SSE2_FUNCTION}" "" ${FFTW}_HAVE_${SSE2_FUNCTION})
+      if(${FFTW}_HAVE_${SSE2_FUNCTION})
+        set(${FFTW}_HAVE_SSE2 TRUE)
+        set(${FFTW}_HAVE_SIMD TRUE)
+        break()
+      endif()
+    endforeach()
+    
+    # Check for any other SIMD support in FFTW
+    if (NOT ${FFTW}_HAVE_SIMD)
+        foreach(SIMD_FCT
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2_128
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx512
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_128_fma
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_512
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_kcvi
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_neon
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_vsx
+                ${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec
+                ${${FFTW}_FUNCTION_PREFIX}_have_altivec) # Name used before FFTW 3.3
+            if (FFTW_LIBRARY_CHANGED)
+                unset(${FFTW}_HAVE_${SIMD_FCT} CACHE)
+            endif()
+            check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
+            if(${FFTW}_HAVE_${SIMD_FCT})
+                set(${FFTW}_HAVE_SIMD TRUE)
+                break()
+            endif()
+        endforeach()
     endif()
-    check_library_exists("${${FFTW}_LIBRARIES}" "${SSE_FUNCTION}" "" ${FFTW}_HAVE_${SSE_FUNCTION})
-    if(${FFTW}_HAVE_${SSE_FUNCTION})
-      set(${FFTW}_HAVE_SSE TRUE)
-      set(${FFTW}_HAVE_SIMD TRUE)
-      break()
-    endif()
-  endforeach()
-
-  # Check for FFTW3 compiled with --enable-sse2
-  foreach(SSE2_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2 ${${FFTW}_FUNCTION_PREFIX}_have_sse2)
-    if (FFTW_LIBRARY_CHANGED)
-      unset(${FFTW}_HAVE_${SSE2_FUNCTION} CACHE)
-    endif()
-    check_library_exists("${${FFTW}_LIBRARIES}" "${SSE2_FUNCTION}" "" ${FFTW}_HAVE_${SSE2_FUNCTION})
-    if(${FFTW}_HAVE_${SSE2_FUNCTION})
-      set(${FFTW}_HAVE_SSE2 TRUE)
-      set(${FFTW}_HAVE_SIMD TRUE)
-      break()
-    endif()
-  endforeach()
-
-  # Check for any other SIMD support in FFTW
-  if (NOT ${FFTW}_HAVE_SIMD)
-      foreach(SIMD_FCT
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx2_128
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx512
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_128_fma
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx_512
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_kcvi
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_neon
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_vsx
-              ${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec
-              ${${FFTW}_FUNCTION_PREFIX}_have_altivec) # Name used before FFTW 3.3
-          if (FFTW_LIBRARY_CHANGED)
-              unset(${FFTW}_HAVE_${SIMD_FCT} CACHE)
-          endif()
-          check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
-          if(${FFTW}_HAVE_${SIMD_FCT})
-              set(${FFTW}_HAVE_SIMD TRUE)
-              break()
-          endif()
-      endforeach()
   endif()
 
   #Verify FFTW is compiled with fPIC (necessary for shared libraries)

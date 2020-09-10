@@ -96,14 +96,16 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         set(PKG_FFT "${${FFTW}_PKG}")
         include_directories(SYSTEM ${${FFTW}_INCLUDE_DIRS})
 
-        if ((${GMX_SIMD_ACTIVE} MATCHES "SSE" OR ${GMX_SIMD_ACTIVE} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
-            set(FFT_WARNING_MESSAGE "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
-        else()
-            if(${GMX_SIMD_ACTIVE} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2))
-                # If we end up here we have an AVX Gromacs build, and
-                # FFTW with SIMD.
-                set(FFT_WARNING_MESSAGE "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with --enable-sse2 and --enable-avx (and --enable-avx2 or --enable-avx512 if supported).")
-            endif()
+        if(NOT WIN32) # Detection doesn't work on Windows
+          if ((${GMX_SIMD_ACTIVE} MATCHES "SSE" OR ${GMX_SIMD_ACTIVE} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
+              set(FFT_WARNING_MESSAGE "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
+          else()
+              if(${GMX_SIMD_ACTIVE} MATCHES "AVX" AND NOT (${FFTW}_HAVE_SSE OR ${FFTW}_HAVE_SSE2))
+                  # If we end up here we have an AVX Gromacs build, and
+                  # FFTW with SIMD.
+                  set(FFT_WARNING_MESSAGE "The FFTW library was compiled with neither --enable-sse nor --enable-sse2; those would have enabled SSE(2) SIMD instructions. This will give suboptimal performance. You should (re)compile the FFTW library with --enable-sse2 and --enable-avx (and --enable-avx2 or --enable-avx512 if supported).")
+              endif()
+          endif()
         endif()
 
         find_path(ARMPL_INCLUDE_DIR "armpl.h" HINTS ${${FFTW}_INCLUDE_DIRS}

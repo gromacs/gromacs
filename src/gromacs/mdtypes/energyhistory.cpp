@@ -92,8 +92,8 @@ void delta_h_history_t::doCheckpoint(gmx::CheckpointData<operation> checkpointDa
     checkpointData.scalar("start_lambda_set", &start_lambda_set);
     for (std::size_t idx = 0; idx < dh.size(); ++idx)
     {
-        checkpointVectorSize(&checkpointData, gmx::formatString("vecSize %lu", idx), &dh[idx]);
-        checkpointData.arrayRef(gmx::formatString("vec %lu", idx),
+        checkpointVectorSize(&checkpointData, gmx::formatString("vecSize %zu", idx), &dh[idx]);
+        checkpointData.arrayRef(gmx::formatString("vec %zu", idx),
                                 gmx::makeCheckpointArrayRef<operation>(dh[idx]));
     }
 }

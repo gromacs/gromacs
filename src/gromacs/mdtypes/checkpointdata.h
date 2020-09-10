@@ -42,6 +42,8 @@
 #ifndef GMX_MODULARSIMULATOR_CHECKPOINTDATA_H
 #define GMX_MODULARSIMULATOR_CHECKPOINTDATA_H
 
+#include <optional>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"

@@ -407,6 +407,7 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3;/wd161;/wd177;/wd411;/wd593;/wd981;/wd1418;/wd14
         else() # MSVC projects only use the C++ flags
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4800;/wd4355;/wd4996;/wd4305;/wd4244;/wd4101;/wd4267;/wd4090;/wd4068;" GMXC_CXXFLAGS)
         endif()
+        GMX_TEST_CXXFLAG(CXXFLAGS_LANG "/permissive-" GMXC_CXXFLAGS)
     endif()
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
