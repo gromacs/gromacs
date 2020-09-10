@@ -43,6 +43,7 @@
 
 #include "freeenergyperturbationdata.h"
 
+#include "gromacs/mdlib/freeenergyparameters.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -58,15 +59,13 @@ namespace gmx
 FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inputrec* inputrec, MDAtoms* mdAtoms) :
     element_(std::make_unique<Element>(this, inputrec->fepvals->delta_lambda)),
     lambda_(),
-    lambda0_(),
     currentFEPState_(0),
     fplog_(fplog),
     inputrec_(inputrec),
     mdAtoms_(mdAtoms)
 {
     lambda_.fill(0);
-    lambda0_.fill(0);
-    initialize_lambdas(fplog_, *inputrec_, true, &currentFEPState_, lambda_, lambda0_.data());
+    initialize_lambdas(fplog_, *inputrec_, true, &currentFEPState_, lambda_);
     update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 
@@ -83,7 +82,7 @@ void FreeEnergyPerturbationData::Element::scheduleTask(Step step,
 void FreeEnergyPerturbationData::updateLambdas(Step step)
 {
     // at beginning of step (if lambdas change...)
-    setCurrentLambdasLocal(step, inputrec_->fepvals, lambda0_.data(), lambda_, currentFEPState_);
+    lambda_ = currentLambdas(step, *(inputrec_->fepvals), currentFEPState_);
     update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 

@@ -81,6 +81,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/freeenergyparameters.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
@@ -142,7 +143,7 @@ void gmx::LegacySimulator::do_mimic()
 {
     t_inputrec*       ir = inputrec;
     int64_t           step, step_rel;
-    double            t, lam0[efptNR];
+    double            t;
     bool              isLastStep               = false;
     bool              doFreeEnergyPerturbation = false;
     unsigned int      force_flags;
@@ -223,7 +224,7 @@ void gmx::LegacySimulator::do_mimic()
         nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(*top_global);
     }
 
-    initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);
+    initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda);
 
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
@@ -371,7 +372,7 @@ void gmx::LegacySimulator::do_mimic()
 
         if (ir->efep != efepNO)
         {
-            setCurrentLambdasLocal(step, ir->fepvals, lam0, state->lambda, state->fep_state);
+            state->lambda = currentLambdas(step, *(ir->fepvals), state_global->fep_state);
         }
 
         if (MASTER(cr))

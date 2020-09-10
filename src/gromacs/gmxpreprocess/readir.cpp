@@ -2487,7 +2487,7 @@ void get_ir(const char*     mdparin,
     /* FREE ENERGY AND EXPANDED ENSEMBLE OPTIONS */
     if (ir->efep != efepNO)
     {
-        if (fep->delta_lambda > 0)
+        if (fep->delta_lambda != 0)
         {
             ir->efep = efepSLOWGROWTH;
         }

@@ -359,12 +359,7 @@ void printLambdaStateToLog(FILE* fplog, const gmx::ArrayRef<real> lambda, const 
     }
 }
 
-void initialize_lambdas(FILE*               fplog,
-                        const t_inputrec&   ir,
-                        bool                isMaster,
-                        int*                fep_state,
-                        gmx::ArrayRef<real> lambda,
-                        double*             lam0)
+void initialize_lambdas(FILE* fplog, const t_inputrec& ir, bool isMaster, int* fep_state, gmx::ArrayRef<real> lambda)
 {
     /* TODO: Clean up initialization of fep_state and lambda in
        t_state.  This function works, but could probably use a logic
@@ -398,10 +393,6 @@ void initialize_lambdas(FILE*               fplog,
         if (isMaster)
         {
             lambda[i] = thisLambda;
-        }
-        if (lam0 != nullptr)
-        {
-            lam0[i] = thisLambda;
         }
     }
     if (ir.bSimTemp)

@@ -80,6 +80,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdlib/freeenergyparameters.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/mdoutf.h"
@@ -174,7 +175,7 @@ void gmx::LegacySimulator::do_rerun()
     // will go away eventually.
     t_inputrec*       ir = inputrec;
     int64_t           step, step_rel;
-    double            t, lam0[efptNR];
+    double            t;
     bool              isLastStep               = false;
     bool              doFreeEnergyPerturbation = false;
     unsigned int      force_flags;
@@ -280,7 +281,7 @@ void gmx::LegacySimulator::do_rerun()
     }
     int*                fep_state = MASTER(cr) ? &state_global->fep_state : nullptr;
     gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
-    initialize_lambdas(fplog, *ir, MASTER(cr), fep_state, lambda, lam0);
+    initialize_lambdas(fplog, *ir, MASTER(cr), fep_state, lambda);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
                                    mdModulesNotifier, ir, top_global, oenv, wcycle,
@@ -477,7 +478,19 @@ void gmx::LegacySimulator::do_rerun()
 
         if (ir->efep != efepNO && MASTER(cr))
         {
-            setCurrentLambdasRerun(step, ir->fepvals, &rerun_fr, lam0, state_global);
+            if (rerun_fr.bLambda)
+            {
+                ir->fepvals->init_lambda = rerun_fr.lambda;
+            }
+            else
+            {
+                if (rerun_fr.bFepState)
+                {
+                    state->fep_state = rerun_fr.fep_state;
+                }
+            }
+
+            state_global->lambda = currentLambdas(step, *(ir->fepvals), state->fep_state);
         }
 
         if (MASTER(cr))

@@ -39,6 +39,7 @@
 #define GMX_MDLIB_MD_SUPPORT_H
 
 #include "gromacs/mdlib/vcm.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
 
 struct gmx_ekindata_t;
@@ -49,7 +50,6 @@ struct t_extmass;
 struct t_forcerec;
 struct t_grpopts;
 struct t_inputrec;
-struct t_lambda;
 struct t_nrnb;
 class t_state;
 struct t_trxframe;
@@ -100,21 +100,6 @@ void rerun_parallel_comm(t_commrec* cr, t_trxframe* fr, gmx_bool* bLastStep);
 
 //! \brief Allocate and initialize node-local state entries
 void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimulator);
-
-/* Set the lambda values in the global state from a frame read with rerun */
-void setCurrentLambdasRerun(int64_t           step,
-                            const t_lambda*   fepvals,
-                            const t_trxframe* rerun_fr,
-                            const double*     lam0,
-                            t_state*          globalState);
-
-/* Set the lambda values at each step of mdrun when they change */
-void setCurrentLambdasLocal(int64_t             step,
-                            const t_lambda*     fepvals,
-                            const double*       lam0,
-                            gmx::ArrayRef<real> lambda,
-                            int                 currentFEPState);
-
 
 /* Compute global variables during integration
  *

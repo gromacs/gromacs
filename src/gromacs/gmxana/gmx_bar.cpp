@@ -3079,7 +3079,7 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                 old_start_lambda = fr->block[i].sub[0].dval[3];
                 delta_lambda     = fr->block[i].sub[0].dval[4];
 
-                if (delta_lambda > 0)
+                if (delta_lambda != 0)
                 {
                     gmx_fatal(FARGS, "Lambda values not constant in %s: can't apply BAR method", fn);
                 }

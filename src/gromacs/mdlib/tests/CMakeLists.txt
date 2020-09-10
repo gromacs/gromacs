@@ -40,6 +40,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test
         constrtestrunners.cpp
         ebin.cpp
         energyoutput.cpp
+        freeenergyparameters.cpp
         leapfrog.cpp
         leapfrogtestdata.cpp
         leapfrogtestrunners.cpp
