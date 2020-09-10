@@ -43,7 +43,7 @@ regressiontests:prepare:
     - export CHECKOUTCOMMIT=FETCH_HEAD
     - if [[ ! -z $REGRESSIONTESTCOMMIT ]] ; then
       export CHECKOUTCOMMIT=$REGRESSIONTESTCOMMIT ;
-      echo "Using $CHECKOUTCOMMIT instead of head of $SOURCEBRANCH" ;
+      echo "Using $CHECKOUTCOMMIT instead of head of $REGTESTBRANCH" ;
       fi
     - if [[ ! -d regressiontests ]] ; then
         mkdir regressiontests ;
