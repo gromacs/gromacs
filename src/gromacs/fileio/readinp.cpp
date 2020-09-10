@@ -452,7 +452,6 @@ double get_ereal(std::vector<t_inpfile>* inp, const std::string& name, double de
 const char* get_estr(std::vector<t_inpfile>* inp, const char* name, const char* def)
 {
     std::vector<t_inpfile>& inpRef = *inp;
-    char                    buf[32];
 
     int ii = get_einp(inp, name);
 
@@ -460,8 +459,7 @@ const char* get_estr(std::vector<t_inpfile>* inp, const char* name, const char* 
     {
         if (def)
         {
-            sprintf(buf, "%s", def);
-            inpRef.back().value_.assign(buf);
+            inpRef.back().value_.assign(def);
         }
         else
         {
