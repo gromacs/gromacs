@@ -119,9 +119,9 @@ static bool runningOnCompatibleOSForAmd()
  *  of these returned.
  *
  * \param[in]  deviceInfo  The device info pointer.
- * \returns                The result of the compatibility checks.
+ * \returns                The status enumeration value for the checked device:
  */
-static DeviceStatus isDeviceSupported(const DeviceInformation& deviceInfo)
+static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
 {
     if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
@@ -272,7 +272,7 @@ static bool isDeviceFunctional(const DeviceInformation& deviceInfo, std::string*
 static DeviceStatus checkGpu(size_t deviceId, const DeviceInformation& deviceInfo)
 {
 
-    DeviceStatus supportStatus = isDeviceSupported(deviceInfo);
+    DeviceStatus supportStatus = isDeviceFunctional(deviceInfo);
     if (supportStatus != DeviceStatus::Compatible)
     {
         return supportStatus;
