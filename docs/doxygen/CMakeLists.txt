@@ -58,7 +58,7 @@ gmx_dependent_option(
 mark_as_advanced(GMX_COMPACT_DOXYGEN)
 
 set(USE_PYTHON_SCRIPTS OFF)
-if (PYTHON_EXECUTABLE)
+if (Python3_Interpreter_FOUND)
     set(USE_PYTHON_SCRIPTS ON)
 endif()
 
@@ -165,7 +165,7 @@ if (DOXYGEN_FOUND)
         # dependency on doxygen-xml takes care of that transitively.
         gmx_add_custom_output_target(dep-graphs-dot ADD_FAST_TARGET
             OUTPUT STAMP
-            COMMAND ${PYTHON_EXECUTABLE}
+            COMMAND ${Python3_EXECUTABLE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/graphbuilder.py
                 -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
                 --ignore-cycles ${CMAKE_CURRENT_SOURCE_DIR}/cycle-suppressions.txt
@@ -212,7 +212,7 @@ if (DOXYGEN_FOUND)
         # The output .log file currently needs to be here, since Jenkins
         # expects that.
         set(check_source_command
-            ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check-source.py
+            ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/check-source.py
             -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR}
             -l ${CMAKE_CURRENT_BINARY_DIR}/check-source.log
             --ignore ${CMAKE_CURRENT_SOURCE_DIR}/suppressions.txt
