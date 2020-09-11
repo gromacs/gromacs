@@ -79,26 +79,37 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 #
 # Test public interface with MPI.
 #
+# gmxapi is expected to work whether or not GROMACS was built with MPI (or tMPI)
+# but we don't assume that MPI is available to the build tree or testing tools
+# unless CMake was configured with MPI.
+#
+# For MPI-enabled testing of gmxapi clients using non-MPI-enabled GROMACS, we
+# defer testing to the Python gmxapi client package tests.
+#
+if (GMX_MPI)
+    gmx_add_gtest_executable(gmxapi-mpi-test MPI
+                             CPP_SOURCE_FILES
+                             restraint.cpp
+                             status.cpp
+                             system.cpp
+                             version.cpp
+                             # pseudo-library for code for mdrun
+                             $<TARGET_OBJECTS:mdrun_objlib>
+                             )
+    if(NOT GMX_GPU_OPENCL)
+        # GPU resources may not be properly reinitialized between simulations in
+        # the same process.
+        # TODO: include this with the other test sources once the issue is resolved
+        # Ref https://gitlab.com/gromacs/gromacs/-/issues/2689
+        target_sources(gmxapi-mpi-test PRIVATE runner.cpp stopsignaler.cpp)
+    endif()
 
-gmx_add_gtest_executable(gmxapi-mpi-test MPI
-    CPP_SOURCE_FILES
-        restraint.cpp
-        status.cpp
-        system.cpp
-        version.cpp
-        # pseudo-library for code for mdrun
-        $<TARGET_OBJECTS:mdrun_objlib>
-        )
-if(NOT GMX_GPU_OPENCL)
-    # GPU resources may not be properly reinitialized between simulations in
-    # the same process.
-    # TODO: include this with the other test sources once the issue is resolved
-    # Ref https://gitlab.com/gromacs/gromacs/-/issues/2689
-    target_sources(gmxapi-mpi-test PRIVATE runner.cpp stopsignaler.cpp)
-endif()
+    target_include_directories(gmxapi-mpi-test PRIVATE
+                               ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(gmxapi-mpi-test PRIVATE Gromacs::gmxapi gmxapi-testsupport mdrun_test_infrastructure)
 
-target_include_directories(gmxapi-mpi-test PRIVATE
-                           ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(gmxapi-mpi-test PRIVATE Gromacs::gmxapi gmxapi-testsupport mdrun_test_infrastructure)
+    gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
 
-gmx_register_gtest_test(GmxapiMpiTests gmxapi-mpi-test MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+    set_tests_properties(GmxapiMpiTests PROPERTIES
+                         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+endif ()
