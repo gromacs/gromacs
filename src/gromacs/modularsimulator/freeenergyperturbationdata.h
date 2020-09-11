@@ -97,8 +97,6 @@ private:
 
     //! The lambda vector
     std::array<real, efptNR> lambda_;
-    //! The starting lambda vector
-    std::array<double, efptNR> lambda0_;
     //! The current free energy state
     int currentFEPState_;
 
