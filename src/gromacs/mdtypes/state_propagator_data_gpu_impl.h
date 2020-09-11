@@ -52,6 +52,8 @@
 #    include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
+#elif GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gpueventsynchronizer_sycl.h"
 #endif
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"

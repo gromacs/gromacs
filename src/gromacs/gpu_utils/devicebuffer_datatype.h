@@ -85,6 +85,14 @@ public:
 template<typename ValueType>
 using DeviceBuffer = TypedClMemory<ValueType>;
 
+#elif GMX_GPU_SYCL
+
+// SYCL-TODO:
+
+//! \brief A device-side buffer of ValueTypes
+template<typename ValueType>
+using DeviceBuffer = ValueType*;
+
 #else
 
 //! \brief A device-side buffer of ValueTypes

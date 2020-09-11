@@ -95,6 +95,9 @@ const char* g_specifyEverythingFormatString =
         // OpenCL standard, but the only current relevant case for GROMACS
         // is AMD OpenCL, which offers this variable.
         "GPU_DEVICE_ORDINAL"
+#    elif GMX_GPU_SYCL
+        // SYCL-TODO:
+        "How to restrict visible devices in SYCL?"
 #    else
 #        error "Unreachable branch"
 #    endif

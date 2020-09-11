@@ -54,6 +54,8 @@
 #    include "gromacs/gpu_utils/devicebuffer.cuh"
 #elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/devicebuffer_ocl.h"
+#elif GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/devicebuffer_sycl.h"
 #else
 #    error "devicebuffer.h included on non-GPU build!"
 #endif

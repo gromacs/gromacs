@@ -74,7 +74,7 @@
 #    define OPENCL_FUNC_TERM REAL_FUNC_TERM
 #    define OPENCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
-#elif GMX_GPU
+#elif GMX_GPU_OPENCL || GMX_GPU_CUDA
 
 /* GPU support is enabled, so these functions will have real code
  * defined somewhere */
@@ -114,7 +114,7 @@
 
 #    endif
 
-#elif !GMX_GPU
+#elif !GMX_GPU || GMX_GPU_SYCL
 
 /* No GPU support is configured, so none of these functions will have
  * real definitions. */
