@@ -1248,8 +1248,7 @@ int Mdrunner::mdrunner()
     MdrunScheduleWorkload runScheduleWork;
     // Also populates the simulation constant workload description.
     runScheduleWork.simulationWork = createSimulationWorkload(
-            *inputrec, useGpuForNonbonded, pmeRunMode, useGpuForBonded, useGpuForUpdate,
-            devFlags.enableGpuBufferOps, devFlags.enableGpuHaloExchange, devFlags.enableGpuPmePPComm);
+            *inputrec, devFlags, useGpuForNonbonded, pmeRunMode, useGpuForBonded, useGpuForUpdate);
 
     std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
 
