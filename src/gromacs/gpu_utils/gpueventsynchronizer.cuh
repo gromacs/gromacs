@@ -45,6 +45,8 @@
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/utility/gmxassert.h"
 
+#ifndef DOXYGEN
+
 /*! \libinternal \brief
  * A class which allows for CPU thread to mark and wait for certain GPU stream execution point.
  * The event can be put into the stream with markEvent() and then later waited on with waitForEvent().
@@ -102,5 +104,7 @@ public:
 private:
     cudaEvent_t event_;
 };
+
+#endif
 
 #endif

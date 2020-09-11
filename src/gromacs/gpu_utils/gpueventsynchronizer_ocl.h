@@ -41,10 +41,12 @@
 #ifndef GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_OCL_H
 #define GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_OCL_H
 
-#include "gromacs/gpu_utils/gputraits_ocl.h"
-#include "gromacs/gpu_utils/oclutils.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
+#ifndef DOXYGEN
+
+#    include "gromacs/gpu_utils/gputraits_ocl.h"
+#    include "gromacs/gpu_utils/oclutils.h"
+#    include "gromacs/utility/exceptions.h"
+#    include "gromacs/utility/gmxassert.h"
 
 /*! \libinternal \brief
  * A class which allows for CPU thread to mark and wait for certain GPU stream execution point.
@@ -140,5 +142,7 @@ private:
 
     cl_event event_;
 };
+
+#endif
 
 #endif
