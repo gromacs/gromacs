@@ -32,4 +32,18 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_subdirectory(cpp)
+# Activate targets for new C++ API components and docs.
+if (GMXAPI)
+    if (GMX_BUILD_MDRUN_ONLY)
+        message(FATAL_ERROR "GMXAPI relies on libgromacs and is incompatible with GMX_BUILD_MDRUN_ONLY.")
+    endif()
+    if(NOT ${BUILD_SHARED_LIBS})
+        # Note: this conditional should check for the existence of a libgromacs target supporting PIC
+        # using the POSITION_INDEPENDENT_CODE property, but for now the only facility we have is the global
+        # variable, BUILD_SHARED_LIBS.
+        # TODO: gmxapi should gracefully build for dynamic linking or static linking for PIC or without.
+        message(FATAL_ERROR "GMXAPI requires position-independent code. Set -DGMXAPI=OFF or -DBUILD_SHARED_LIBS=ON.")
+    endif()
+    add_subdirectory(cpp)
+endif()
+
