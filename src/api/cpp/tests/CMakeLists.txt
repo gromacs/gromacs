@@ -54,19 +54,14 @@ target_include_directories(gmxapi-testsupport INTERFACE ${CMAKE_CURRENT_SOURCE_D
 gmx_add_gtest_executable(gmxapi-test
     CPP_SOURCE_FILES
         restraint.cpp
+        runner.cpp
         status.cpp
+        stopsignaler.cpp
         system.cpp
         version.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
         )
-if(NOT GMX_GPU_OPENCL)
-    # GPU resources may not be properly reinitialized between simulations in
-    # the same process.
-    # TODO: include this with the other test sources once the issue is resolved
-    # Ref https://gitlab.com/gromacs/gromacs/-/issues/2689
-    target_sources(gmxapi-test PRIVATE runner.cpp stopsignaler.cpp)
-endif()
 
 # Link against the gmxapi libraries and get access to its public (installed) headers.
 target_link_libraries(gmxapi-test PRIVATE Gromacs::gmxapi gmxapi-testsupport mdrun_test_infrastructure)
@@ -90,19 +85,14 @@ if (GMX_MPI)
     gmx_add_gtest_executable(gmxapi-mpi-test MPI
                              CPP_SOURCE_FILES
                              restraint.cpp
+                             runner.cpp
                              status.cpp
+                             stopsignaler.cpp
                              system.cpp
                              version.cpp
                              # pseudo-library for code for mdrun
                              $<TARGET_OBJECTS:mdrun_objlib>
                              )
-    if(NOT GMX_GPU_OPENCL)
-        # GPU resources may not be properly reinitialized between simulations in
-        # the same process.
-        # TODO: include this with the other test sources once the issue is resolved
-        # Ref https://gitlab.com/gromacs/gromacs/-/issues/2689
-        target_sources(gmxapi-mpi-test PRIVATE runner.cpp stopsignaler.cpp)
-    endif()
 
     target_include_directories(gmxapi-mpi-test PRIVATE
                                ${CMAKE_CURRENT_SOURCE_DIR})
