@@ -157,16 +157,32 @@ static void gmx_detect_gpus(const gmx::MDLogger&             mdlog,
     }
 
 #if GMX_LIB_MPI
-    if (!allRanksMustDetectGpus && !hardwareInfo->deviceInfoList.empty())
+    if (!allRanksMustDetectGpus && (physicalNodeComm.size_ > 1))
     {
-        gmx::InMemorySerializer writer;
-        serializeDeviceInformations(hardwareInfo->deviceInfoList, &writer);
-        auto buffer = writer.finishAndGetBuffer();
-
-        MPI_Bcast(buffer.data(), buffer.size(), MPI_BYTE, 0, physicalNodeComm.comm_);
-
-        gmx::InMemoryDeserializer reader(buffer, false);
-        hardwareInfo->deviceInfoList = deserializeDeviceInformations(&writer);
+        // Master rank must serialize the device information list and
+        // send it to the other ranks on this node.
+        std::vector<char> buffer;
+        int               sizeOfBuffer;
+        if (isMasterRankOfPhysicalNode)
+        {
+            gmx::InMemorySerializer writer;
+            serializeDeviceInformations(hardwareInfo->deviceInfoList, &writer);
+            buffer       = writer.finishAndGetBuffer();
+            sizeOfBuffer = buffer.size();
+        }
+        // Ensure all ranks agree on the size of list to be sent
+        MPI_Bcast(&sizeOfBuffer, 1, MPI_INT, 0, physicalNodeComm.comm_);
+        buffer.resize(sizeOfBuffer);
+        if (!buffer.empty())
+        {
+            // Send the list and deserialize it
+            MPI_Bcast(buffer.data(), buffer.size(), MPI_BYTE, 0, physicalNodeComm.comm_);
+            if (!isMasterRankOfPhysicalNode)
+            {
+                gmx::InMemoryDeserializer reader(buffer, false);
+                hardwareInfo->deviceInfoList = deserializeDeviceInformations(&reader);
+            }
+        }
     }
 #endif
 }
