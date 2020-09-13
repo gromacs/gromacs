@@ -65,12 +65,21 @@
 //! Macro to select a bool name
 #define EBOOL(e) gmx::boolToString(e)
 
+/* Default values for nstcalcenergy, used when the are no other restrictions. */
+constexpr int c_defaultNstCalcEnergy = 10;
+
 /* The minimum number of integration steps required for reasonably accurate
  * integration of first and second order coupling algorithms.
  */
 const int nstmin_berendsen_tcouple = 5;
 const int nstmin_berendsen_pcouple = 10;
 const int nstmin_harmonic          = 20;
+
+/* Default values for nst T- and P- coupling intervals, used when the are no other
+ * restrictions.
+ */
+constexpr int c_defaultNstTCouple = 10;
+constexpr int c_defaultNstPCouple = 10;
 
 t_inputrec::t_inputrec()
 {
@@ -87,21 +96,20 @@ t_inputrec::~t_inputrec()
     done_inputrec(this);
 }
 
-static int nst_wanted(const t_inputrec* ir)
+int ir_optimal_nstcalcenergy(const t_inputrec* ir)
 {
+    int nst;
+
     if (ir->nstlist > 0)
     {
-        return ir->nstlist;
+        nst = ir->nstlist;
     }
     else
     {
-        return 10;
+        nst = c_defaultNstCalcEnergy;
     }
-}
 
-int ir_optimal_nstcalcenergy(const t_inputrec* ir)
-{
-    return nst_wanted(ir);
+    return nst;
 }
 
 int tcouple_min_integration_steps(int etc)
@@ -134,7 +142,7 @@ int ir_optimal_nsttcouple(const t_inputrec* ir)
 
     nmin = tcouple_min_integration_steps(ir->etc);
 
-    nwanted = nst_wanted(ir);
+    nwanted = c_defaultNstTCouple;
 
     tau_min = 1e20;
     if (ir->etc != etcNO)
@@ -191,7 +199,7 @@ int ir_optimal_nstpcouple(const t_inputrec* ir)
 
     nmin = pcouple_min_integration_steps(ir->epc);
 
-    nwanted = nst_wanted(ir);
+    nwanted = c_defaultNstPCouple;
 
     if (nmin == 0 || ir->delta_t * nwanted <= ir->tau_p)
     {
