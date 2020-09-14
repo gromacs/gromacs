@@ -1967,6 +1967,13 @@ private:
      */
     std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_ = nullptr;
 
+    /*!
+     * \brief Sources for initial simulation state.
+     *
+     * See issue #3652 for near-term refinements to the SimulationInput interface.
+     *
+     * See issue #3379 for broader discussion on API aspects of simulation inputs and outputs.
+     */
     SimulationInputHandle inputHolder_;
 };
 
