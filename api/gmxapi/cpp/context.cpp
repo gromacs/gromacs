@@ -109,13 +109,18 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
             filename = mdNode->params();
         }
 
-        /* As default behavior, automatically extend trajectories from the checkpoint file.
+        /* Mock up the argv interface used by option processing infrastructure.
+         *
+         * As default behavior, automatically extend trajectories from the checkpoint file.
          * In the future, our API for objects used to initialize a simulation needs to address the fact that currently a
          * microstate requires data from both the TPR and checkpoint file to be fully specified. Put another way,
          * current
          * GROMACS simulations can take a "configuration" as input that does not constitute a complete microstate in
          * terms of hidden degrees of freedom (integrator/thermostat/barostat/PRNG state), but we want a clear notion of
          * a microstate for gmxapi interfaces.
+         *
+         * TODO: Remove `-s` and `-cpi` arguments.
+         *       Ref: https://gitlab.com/gromacs/gromacs/-/issues/3652
          */
 
         // Set input TPR name
@@ -192,8 +197,13 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         builder.addReplicaExchange(options_.replExParams);
         // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
         builder.addHardwareOptions(options_.hw_opt);
+
         // \todo File names are parameters that should be managed modularly through further factoring.
         builder.addFilenames(options_.filenames);
+        // TODO: Remove `s` and `-cpi` from LegacyMdrunOptions before launch(). #3652
+        auto simulationInput = makeSimulationInput(options_);
+        builder.addInput(simulationInput);
+
         // Note: The gmx_output_env_t life time is not managed after the call to parse_common_args.
         // \todo Implement lifetime management for gmx_output_env_t.
         // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
@@ -205,6 +215,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
                                         std::move(simulationContext), std::move(logFileGuard));
 
         // Clean up argv once builder is no longer in use
+        // TODO: Remove long-lived references to argv so this is no longer necessary.
+        //       Ref https://gitlab.com/gromacs/gromacs/-/issues/2877
         for (auto&& string : argv)
         {
             if (string != nullptr)

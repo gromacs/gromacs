@@ -53,6 +53,7 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdrun/mdmodules.h"
+#include "gromacs/mdrun/simulationinputhandle.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/arrayref.h"
@@ -297,6 +298,14 @@ private:
     std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_;
     //! The modules that comprise mdrun.
     std::unique_ptr<MDModules> mdModules_;
+
+    /*!
+     * \brief Holds simulation input specification provided by client, if any.
+     *
+     * If present on any instance (rank) of a simulation runner, an identical
+     * (or compatible) SimulationInput must be held on all cooperating instances.
+     */
+    SimulationInputHandle inputHolder_;
 };
 
 /*! \libinternal
@@ -584,6 +593,18 @@ public:
      * \param builder
      */
     MdrunnerBuilder& addStopHandlerBuilder(std::unique_ptr<StopHandlerBuilder> builder);
+
+    /*!
+     * \brief Acquire a handle to the SimulationInput.
+     *
+     * Required. SimulationInput will be taking responsibility for some of the
+     * input provided through other methods, such as addFilenames.
+     *
+     * See also issue https://gitlab.com/gromacs/gromacs/-/issues/3374
+     *
+     * \param input Shared ownership of a SimulationInput.
+     */
+    MdrunnerBuilder& addInput(SimulationInputHandle input);
 
     ~MdrunnerBuilder();
 

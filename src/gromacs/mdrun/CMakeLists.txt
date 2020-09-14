@@ -46,10 +46,21 @@ gmx_add_libgromacs_sources(
     shellfc.cpp
     simulationcontext.cpp
     simulationinput.cpp
-    simulationinpututility.cpp
+    simulationinputhandle.cpp
     simulatorbuilder.cpp
     tpi.cpp
     )
+
+# TODO: Find a home for this header and a scheme for installation.
+# This header straddles the installed libraries and is a transitive interface
+# from libgromacs to libgmxapi to libgmxapi clients. Near term efforts are
+# planned to consolidate these libraries and refine the public interface.
+# In the mean time, this is kept out of the gmxapi to avoid circular dependencies
+# between the libraries. It can be moved to a separate interface-only target,
+# but that is beyond the scope of issue #3379, which introduces the header.
+# Ref #3152 and #3652
+install(FILES simulationinputhandle.h
+        DESTINATION include/gromacs/mdrun)
 
 if (BUILD_TESTING)
 # TODO import this from src/programs/mdrun/tests

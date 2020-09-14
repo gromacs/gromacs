@@ -37,42 +37,40 @@
 
 #include "simulationinput.h"
 
-#include <utility>
-
-#include "simulationinput_impl.h"
+#include "gromacs/fileio/checkpoint.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/state.h"
 
 namespace gmx
 {
 
-struct MdModulesNotifier;
-
-SimulationInput::SimulationInput(const char* tprFilename, const char* cpiFilename) :
-    tprFilename_(tprFilename),
-    cpiFilename_(cpiFilename)
+void applyGlobalSimulationState(const SimulationInput&      simulationInput,
+                                PartialDeserializedTprFile* partialDeserializedTpr,
+                                t_state*                    globalState,
+                                t_inputrec*                 inputRecord,
+                                gmx_mtop_t*                 molecularTopology)
 {
+    *partialDeserializedTpr = read_tpx_state(simulationInput.tprFilename_.c_str(), inputRecord,
+                                             globalState, molecularTopology);
 }
 
-SimulationInputHolder::SimulationInputHolder() = default;
-
-SimulationInputHolder::~SimulationInputHolder() = default;
-
-namespace detail
+void applyLocalState(const SimulationInput&         simulationInput,
+                     t_fileio*                      logfio,
+                     const t_commrec*               cr,
+                     int*                           dd_nc,
+                     t_inputrec*                    inputRecord,
+                     t_state*                       state,
+                     ObservablesHistory*            observablesHistory,
+                     bool                           reproducibilityRequested,
+                     const MdModulesNotifier&       mdModulesNotifier,
+                     gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
+                     const bool                     useModularSimulator)
 {
-
-SimulationInputHolder makeSimulationInput(const char* tprFilename, const char* cpiFilename)
-{
-    // Note: it seems clear that we will want a SimulationInput to be linked to
-    // a communications context (whether the SimulationContext or something higher level)
-    // so that it can encapsulate the data locality details. Otherwise, we have
-    // to choose whether to read the files everywhere or just to store the
-    // filenames until a communications context is known.
-    auto simulationInput = std::make_unique<SimulationInput>(tprFilename, cpiFilename);
-
-    SimulationInputHolder holder;
-    holder.object_ = std::move(simulationInput);
-    return holder;
+    load_checkpoint(simulationInput.cpiFilename_.c_str(), logfio, cr, dd_nc, inputRecord, state,
+                    observablesHistory, reproducibilityRequested, mdModulesNotifier,
+                    modularSimulatorCheckpointData, useModularSimulator);
 }
-
-} // end namespace detail
 
 } // end namespace gmx
