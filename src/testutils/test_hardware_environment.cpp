@@ -37,16 +37,18 @@
  * Implements test environment class which performs hardware enumeration for unit tests.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
- * \ingroup module_ewald
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \ingroup module_testutils
  */
 
 #include "gmxpre.h"
 
-#include "testhardwarecontexts.h"
+#include "test_hardware_environment.h"
 
 #include <memory>
 
-#include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
@@ -70,21 +72,21 @@ namespace test
  * so there is no deinitialization issue.  See
  * https://isocpp.org/wiki/faq/ctors for discussion of alternatives
  * and trade-offs. */
-const PmeTestEnvironment* getPmeTestEnv()
+const TestHardwareEnvironment* getTestHardwareEnvironment()
 {
-    static PmeTestEnvironment* pmeTestEnvironment = nullptr;
-    if (pmeTestEnvironment == nullptr)
+    static TestHardwareEnvironment* testHardwareEnvironment = nullptr;
+    if (testHardwareEnvironment == nullptr)
     {
         // Ownership of the TestEnvironment is taken by GoogleTest, so nothing can leak
-        pmeTestEnvironment = static_cast<PmeTestEnvironment*>(
-                ::testing::AddGlobalTestEnvironment(new PmeTestEnvironment));
+        testHardwareEnvironment = static_cast<TestHardwareEnvironment*>(
+                ::testing::AddGlobalTestEnvironment(new TestHardwareEnvironment));
     }
-    return pmeTestEnvironment;
+    return testHardwareEnvironment;
 }
 
 void callAddGlobalTestEnvironment()
 {
-    getPmeTestEnv();
+    getTestHardwareEnvironment();
 }
 
 //! Simple hardware initialization
@@ -94,30 +96,22 @@ static gmx_hw_info_t* hardwareInit()
     return gmx_detect_hardware(MDLogger{}, physicalNodeComm);
 }
 
-void PmeTestEnvironment::SetUp()
+void TestHardwareEnvironment::SetUp()
 {
-    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "(CPU) "));
-
+    testDeviceList_.clear();
     hardwareInfo_ = hardwareInit();
-    if (!pme_gpu_supports_build(nullptr) || !pme_gpu_supports_hardware(*hardwareInfo_, nullptr))
-    {
-        // PME can only run on the CPU, so don't make any more test contexts.
-        return;
-    }
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     for (const DeviceInformation& compatibleDeviceInfo : getCompatibleDevices(hardwareInfo_->deviceInfoList))
     {
         setActiveDevice(compatibleDeviceInfo);
-        std::string deviceDescription = getDeviceInformationString(compatibleDeviceInfo);
-        std::string description       = "(GPU " + deviceDescription + ") ";
-        hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(
-                CodePath::GPU, description.c_str(), compatibleDeviceInfo));
+        std::string description = getDeviceInformationString(compatibleDeviceInfo);
+        testDeviceList_.emplace_back(std::make_unique<TestDevice>(description.c_str(), compatibleDeviceInfo));
     }
 }
 
-void PmeTestEnvironment::TearDown()
+void TestHardwareEnvironment::TearDown()
 {
-    hardwareContexts_.clear();
+    testDeviceList_.clear();
 }
 
 } // namespace test

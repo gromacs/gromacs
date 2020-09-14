@@ -57,6 +57,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -83,22 +84,11 @@ namespace
 class PmeTest : public MdrunTestFixture
 {
 public:
-    //! Before any test is run, work out whether any compatible GPUs exist.
-    static void SetUpTestCase();
-    //! Store whether any compatible GPUs exist.
-    static bool s_hasCompatibleGpus;
     //! Convenience typedef
     using RunModesList = std::map<std::string, std::vector<const char*>>;
     //! Runs the test with the given inputs
     void runTest(const RunModesList& runModes);
 };
-
-bool PmeTest::s_hasCompatibleGpus = false;
-
-void PmeTest::SetUpTestCase()
-{
-    s_hasCompatibleGpus = canComputeOnDevice();
-}
 
 void PmeTest::runTest(const RunModesList& runModes)
 {
@@ -127,7 +117,7 @@ void PmeTest::runTest(const RunModesList& runModes)
     {
         SCOPED_TRACE("mdrun " + joinStrings(mode.second, " "));
         auto modeTargetsGpus = (mode.first.find("Gpu") != std::string::npos);
-        if (modeTargetsGpus && !s_hasCompatibleGpus)
+        if (modeTargetsGpus && getCompatibleDevices(hardwareInfo_->deviceInfoList).empty())
         {
             // This run mode will cause a fatal error from mdrun when
             // it can't find GPUs, which is not something we're trying

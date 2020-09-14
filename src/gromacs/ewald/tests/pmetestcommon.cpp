@@ -59,7 +59,7 @@
 #include "gromacs/ewald/pme_solve.h"
 #include "gromacs/ewald/pme_spread.h"
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/gpu_utils/device_stream_manager.h"
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -70,9 +70,8 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
-
-#include "testhardwarecontexts.h"
 
 namespace gmx
 {
@@ -149,21 +148,6 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
     }
 
     return pme;
-}
-
-//! Simple PME initialization based on input, no atom data
-PmeSafePointer pmeInitEmpty(const t_inputrec*    inputRec,
-                            const CodePath       mode,
-                            const DeviceContext* deviceContext,
-                            const DeviceStream*  deviceStream,
-                            const PmeGpuProgram* pmeGpuProgram,
-                            const Matrix3x3&     box,
-                            const real           ewaldCoeff_q,
-                            const real           ewaldCoeff_lj)
-{
-    return pmeInitWrapper(inputRec, mode, deviceContext, deviceStream, pmeGpuProgram, box,
-                          ewaldCoeff_q, ewaldCoeff_lj);
-    // hiding the fact that PME actually needs to know the number of atoms in advance
 }
 
 PmeSafePointer pmeInitEmpty(const t_inputrec* inputRec)
@@ -887,6 +871,59 @@ PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t* pme, CodePath mode, P
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
     }
     return output;
+}
+
+const char* codePathToString(CodePath codePath)
+{
+    switch (codePath)
+    {
+        case CodePath::CPU: return "CPU";
+        case CodePath::GPU: return "GPU";
+        default: GMX_THROW(NotImplementedError("This CodePath should support codePathToString"));
+    }
+}
+
+PmeTestHardwareContext::PmeTestHardwareContext() : codePath_(CodePath::CPU) {}
+
+PmeTestHardwareContext::PmeTestHardwareContext(TestDevice* testDevice) :
+    codePath_(CodePath::CPU),
+    testDevice_(testDevice)
+{
+    setActiveDevice(testDevice_->deviceInfo());
+    pmeGpuProgram_ = buildPmeGpuProgram(testDevice_->deviceContext());
+}
+
+//! Returns a human-readable context description line
+std::string PmeTestHardwareContext::description() const
+{
+    switch (codePath_)
+    {
+        case CodePath::CPU: return "CPU";
+        case CodePath::GPU: return "GPU (" + testDevice_->description() + ")";
+        default: return "Unknown code path.";
+    }
+}
+
+void PmeTestHardwareContext::activate() const
+{
+    if (codePath_ == CodePath::GPU)
+    {
+        setActiveDevice(testDevice_->deviceInfo());
+    }
+}
+
+std::vector<std::unique_ptr<PmeTestHardwareContext>> createPmeTestHardwareContextList()
+{
+    std::vector<std::unique_ptr<PmeTestHardwareContext>> pmeTestHardwareContextList;
+    // Add CPU
+    pmeTestHardwareContextList.emplace_back(std::make_unique<PmeTestHardwareContext>());
+    // Add GPU devices
+    const auto& testDeviceList = getTestHardwareEnvironment()->getTestDeviceList();
+    for (const auto& testDevice : testDeviceList)
+    {
+        pmeTestHardwareContextList.emplace_back(std::make_unique<PmeTestHardwareContext>(testDevice.get()));
+    }
+    return pmeTestHardwareContextList;
 }
 
 } // namespace test

@@ -70,6 +70,7 @@
 
 #include "testutils/mpi_printer.h"
 #include "testutils/refdata.h"
+#include "testutils/test_hardware_environment.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 

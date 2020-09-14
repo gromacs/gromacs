@@ -39,19 +39,18 @@
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
- * \ingroup module_ewald
+ * \ingroup module_testutils
  */
-
 #include "gmxpre.h"
 
-#include "testhardwarecontext.h"
+#include "test_device.h"
 
 #include <memory>
 
-#include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
@@ -64,60 +63,64 @@ namespace gmx
 namespace test
 {
 
-TestHardwareContext::TestHardwareContext(CodePath codePath, const char* description) :
-    codePath_(codePath),
-    description_(description)
+class TestDevice::Impl
 {
-    GMX_RELEASE_ASSERT(codePath == CodePath::CPU,
-                       "A GPU code path should provide DeviceInformation to the "
-                       "TestHerdwareContext constructor.");
-    deviceContext_ = nullptr;
-    deviceStream_  = nullptr;
+public:
+    Impl(const char* description);
+    Impl(const char* description, const DeviceInformation& deviceInfo);
+    ~Impl();
+    //! Returns a human-readable context description line
+    std::string description() const { return description_; }
+    //! Returns the device info pointer
+    const DeviceInformation& deviceInfo() const { return deviceContext_.deviceInfo(); }
+    //! Get the device context
+    const DeviceContext& deviceContext() const { return deviceContext_; }
+    //! Get the device stream
+    const DeviceStream& deviceStream() const { return deviceStream_; }
+
+private:
+    //! Readable description
+    std::string description_;
+    //! Device context
+    DeviceContext deviceContext_;
+    //! Device stream
+    DeviceStream deviceStream_;
+};
+
+TestDevice::Impl::Impl(const char* description, const DeviceInformation& deviceInfo) :
+    description_(description),
+    deviceContext_(deviceInfo),
+    deviceStream_(deviceContext_, DeviceStreamPriority::Normal, false)
+{
 }
 
-TestHardwareContext::TestHardwareContext(CodePath                 codePath,
-                                         const char*              description,
-                                         const DeviceInformation& deviceInfo) :
-    codePath_(codePath),
-    description_(description)
+TestDevice::Impl::~Impl() = default;
+
+TestDevice::TestDevice(const char* description, const DeviceInformation& deviceInfo) :
+    impl_(new Impl(description, deviceInfo))
 {
-    GMX_RELEASE_ASSERT(codePath == CodePath::GPU,
-                       "TestHardwareContext tries to construct DeviceContext and PmeGpuProgram "
-                       "in CPU build.");
-    deviceContext_ = new DeviceContext(deviceInfo);
-    deviceStream_  = new DeviceStream(*deviceContext_, DeviceStreamPriority::Normal, false);
-    program_       = buildPmeGpuProgram(*deviceContext_);
 }
 
-TestHardwareContext::~TestHardwareContext()
+TestDevice::~TestDevice() = default;
+
+std::string TestDevice::description() const
 {
-    delete (deviceStream_);
-    delete (deviceContext_);
+    return impl_->description();
 }
 
-const DeviceInformation* TestHardwareContext::deviceInfo() const
+const DeviceInformation& TestDevice::deviceInfo() const
 {
-    return &deviceContext_->deviceInfo();
+    return impl_->deviceInfo();
 }
 
-const DeviceContext* TestHardwareContext::deviceContext() const
+const DeviceContext& TestDevice::deviceContext() const
 {
-    return deviceContext_;
-}
-//! Get the device stream
-const DeviceStream* TestHardwareContext::deviceStream() const
-{
-    return deviceStream_;
+    return impl_->deviceContext();
 }
 
-const char* codePathToString(CodePath codePath)
+const DeviceStream& TestDevice::deviceStream() const
 {
-    switch (codePath)
-    {
-        case CodePath::CPU: return "CPU";
-        case CodePath::GPU: return "GPU";
-        default: GMX_THROW(NotImplementedError("This CodePath should support codePathToString"));
-    }
+    return impl_->deviceStream();
 }
 
 } // namespace test

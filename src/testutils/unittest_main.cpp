@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2017, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,14 +64,6 @@
 #ifndef TEST_USES_HARDWARE_DETECTION
 //! Whether the test expects/supports running with knowledge of the hardware.
 #    define TEST_USES_HARDWARE_DETECTION false
-namespace gmx
-{
-namespace test
-{
-//! Implement a stub definition for tests that don't ask for a real one.
-void callAddGlobalTestEnvironment(){};
-} // namespace test
-} // namespace gmx
 #endif
 
 /*! \brief

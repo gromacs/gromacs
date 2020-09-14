@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,67 +32,63 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_EWALD_TEST_HARDWARE_CONTEXTS_H
-#define GMX_EWALD_TEST_HARDWARE_CONTEXTS_H
+#ifndef GMX_TESTUTILS_TEST_DEVICE_H
+#define GMX_TESTUTILS_TEST_DEVICE_H
 
 /*! \internal \file
  * \brief
- * Describes test environment class which performs hardware enumeration for unit tests.
+ * Describes test environment class which performs GPU device enumeration for unit tests.
  *
  * \author Aleksei Iupinov <a.yupinov@gmail.com>
- * \ingroup module_ewald
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
+ * \ingroup module_testutils
  */
 
 #include <map>
+#include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
-
-#include "gromacs/ewald/pme_gpu_program.h"
-#include "gromacs/hardware/device_management.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "testhardwarecontext.h"
-
-struct gmx_hw_info_t;
+class DeviceContext;
+struct DeviceInformation;
+class DeviceStream;
 
 namespace gmx
 {
 namespace test
 {
 
-//! A container of handles to hardware contexts
-typedef std::vector<std::unique_ptr<TestHardwareContext>> TestHardwareContexts;
-
 /*! \internal \brief
- * This class performs one-time test initialization (enumerating the hardware)
+ * A structure to describe a hardware context that persists over the lifetime
+ * of the test binary.
  */
-class PmeTestEnvironment : public ::testing::Environment
+class TestDevice
 {
-private:
-    //! General hardware info
-    gmx_hw_info_t* hardwareInfo_;
-    //! Storage of hardware contexts
-    TestHardwareContexts hardwareContexts_;
-
 public:
-    //! This is called by GTest framework once to query the hardware
-    void SetUp() override;
-    //! This is called by GTest framework once release the hardware
-    void TearDown() override;
-    //! Get available hardware contexts.
-    const TestHardwareContexts& getHardwareContexts() const { return hardwareContexts_; }
-    //! Get available hardware information.
-    const gmx_hw_info_t* hwinfo() const { return hardwareInfo_; }
+    //! Returns a human-readable context description line
+    std::string description() const;
+    //! Returns the device info pointer
+    const DeviceInformation& deviceInfo() const;
+    //! Get the device context
+    const DeviceContext& deviceContext() const;
+    //! Get the device stream
+    const DeviceStream& deviceStream() const;
+    //! Creates the device context and stream for tests on the GPU
+    TestDevice(const char* description, const DeviceInformation& deviceInfo);
+    //! Destructor
+    ~TestDevice();
+
+private:
+    //! Implementation type.
+    class Impl;
+    //! Implementation object.
+    PrivateImplPointer<Impl> impl_;
 };
-
-//! Get the test environment
-const PmeTestEnvironment* getPmeTestEnv();
-
-/*! \brief This constructs the test environment during setup of the
- * unit test so that they can use the hardware context. */
-void callAddGlobalTestEnvironment();
 
 } // namespace test
 } // namespace gmx
-#endif
+
+#endif // GMX_TESTUTILS_TEST_DEVICE_H

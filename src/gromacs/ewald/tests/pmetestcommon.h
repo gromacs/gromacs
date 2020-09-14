@@ -52,18 +52,30 @@
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/unique_cptr.h"
 
+#include "testutils/test_device.h"
+
 namespace gmx
 {
 
-class DeviceStreamManager;
 template<typename>
 class ArrayRef;
 
 namespace test
 {
 
-// Forward declaration
-enum class CodePath;
+//! Hardware code path being tested
+enum class CodePath : int
+{
+    //! CPU code path
+    CPU,
+    //! GPU code path
+    GPU,
+    //! Total number of code paths
+    Count
+};
+
+//! Return a string useful for human-readable messages describing a \c codePath.
+const char* codePathToString(CodePath codePath);
 
 // Convenience typedefs
 //! A safe pointer type for PME.
@@ -101,10 +113,14 @@ typedef SparseGridValuesOutput<t_complex> SparseComplexGridValuesOutput;
 //! TODO: make proper C++ matrix for the whole Gromacs, get rid of this
 typedef std::array<real, DIM * DIM> Matrix3x3;
 //! PME solver type
-enum class PmeSolveAlgorithm
+enum class PmeSolveAlgorithm : int
 {
+    //! Coulomb electrostatics
     Coulomb,
+    //! Lennard-Jones
     LennardJones,
+    //! Total number of solvers
+    Count
 };
 
 // Misc.
@@ -130,15 +146,6 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
                               const Matrix3x3&     box,
                               real                 ewaldCoeff_q  = 1.0F,
                               real                 ewaldCoeff_lj = 1.0F);
-//! Simple PME initialization (no atom data)
-PmeSafePointer pmeInitEmpty(const t_inputrec*    inputRec,
-                            CodePath             mode,
-                            const DeviceContext* deviceContext,
-                            const DeviceStream*  deviceStream,
-                            const PmeGpuProgram* pmeGpuProgram,
-                            const Matrix3x3&     box,
-                            real                 ewaldCoeff_q,
-                            real                 ewaldCoeff_lj);
 
 //! Simple PME initialization based on inputrec only
 PmeSafePointer pmeInitEmpty(const t_inputrec* inputRec);
@@ -199,7 +206,47 @@ SparseRealGridValuesOutput pmeGetRealGrid(const gmx_pme_t* pme, CodePath mode);
 SparseComplexGridValuesOutput pmeGetComplexGrid(const gmx_pme_t* pme, CodePath mode, GridOrdering gridOrdering);
 //! Getting the reciprocal energy and virial
 PmeOutput pmeGetReciprocalEnergyAndVirial(const gmx_pme_t* pme, CodePath mode, PmeSolveAlgorithm method);
+
+struct PmeTestHardwareContext
+{
+    //! Hardware path for the code being tested.
+    CodePath codePath_;
+    //! Returns a human-readable context description line
+    std::string description() const;
+    //! Pointer to the global test hardware device (if on GPU)
+    TestDevice* testDevice_ = nullptr;
+    //! PME GPU program if needed
+    PmeGpuProgramStorage pmeGpuProgram_ = nullptr;
+    // Constructor for CPU context
+    PmeTestHardwareContext();
+    // Constructor for GPU context
+    explicit PmeTestHardwareContext(TestDevice* testDevice);
+
+    //! Get the code path
+    CodePath codePath() const { return codePath_; }
+    //! Get the PME GPU program
+    const PmeGpuProgram* pmeGpuProgram() const
+    {
+        return codePath() == CodePath::GPU ? pmeGpuProgram_.get() : nullptr;
+    }
+
+    const DeviceContext* deviceContext() const
+    {
+        return codePath() == CodePath::GPU ? &testDevice_->deviceContext() : nullptr;
+    }
+
+    const DeviceStream* deviceStream() const
+    {
+        return codePath() == CodePath::GPU ? &testDevice_->deviceStream() : nullptr;
+    }
+
+    //! Activate the context (set the device)
+    void activate() const;
+};
+
+std::vector<std::unique_ptr<PmeTestHardwareContext>> createPmeTestHardwareContextList();
+
 } // namespace test
 } // namespace gmx
 
-#endif
+#endif // GMX_EWALD_PME_TEST_COMMON_H

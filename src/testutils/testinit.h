@@ -89,19 +89,6 @@ void initTestUtils(const char* dataPath,
 void finalizeTestUtils();
 //! \endcond
 
-/*! \brief Declare a function that all unit test implementations can use
- * to set up any environment that they need.
- *
- * When registering the unit test in CMake, the HARDWARE_DETECTION
- * flag requires that the code for that unit test implements this
- * function.  Otherwise, a default stub implementation is provided.
- *
- * This approach conforms to the recommendation by GoogleTest to
- * arrange for the code that sets up the global test environment to be
- * called from main, rather than potentially rely on brittle static
- * initialization order. */
-void callAddGlobalTestEnvironment();
-
 } // namespace test
 } // namespace gmx
 

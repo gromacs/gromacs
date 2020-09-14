@@ -39,9 +39,4 @@ gmx_add_unit_test(EwaldUnitTests ewald-test HARDWARE_DETECTION
         pmesolvetest.cpp
         pmesplinespreadtest.cpp
         pmetestcommon.cpp
-        testhardwarecontexts.cpp
-)
-
-gmx_add_libgromacs_sources(
-    testhardwarecontext.cpp
 )
