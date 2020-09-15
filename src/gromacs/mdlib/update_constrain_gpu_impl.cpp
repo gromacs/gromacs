@@ -45,6 +45,7 @@
 #include "config.h"
 
 #include "gromacs/mdlib/update_constrain_gpu.h"
+#include "gromacs/utility/gmxassert.h"
 
 #if !GMX_GPU_CUDA
 

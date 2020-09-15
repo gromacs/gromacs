@@ -63,6 +63,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "spline_vectors.h"

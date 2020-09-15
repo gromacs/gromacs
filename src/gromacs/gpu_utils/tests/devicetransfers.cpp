@@ -45,6 +45,7 @@
 #include <algorithm>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {

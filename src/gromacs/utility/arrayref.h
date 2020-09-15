@@ -47,6 +47,7 @@
 #ifndef GMX_UTILITY_ARRAYREF_H
 #define GMX_UTILITY_ARRAYREF_H
 
+#include <cassert>
 #include <cstddef>
 
 #include <array>
@@ -60,8 +61,6 @@
 #else // fallback for installed headers
 #    include <gromacs/external/boost/stl_interfaces/iterator_interface.hpp>
 #endif
-
-#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -193,7 +192,7 @@ public:
      */
     ArrayRef(pointer begin, pointer end) : begin_(begin), end_(end)
     {
-        GMX_ASSERT(end >= begin, "Invalid range");
+        assert((end >= begin && "Invalid range"));
     }
     /*! \brief
      * Constructs a reference to a particular range.
@@ -205,7 +204,7 @@ public:
      */
     ArrayRef(iterator begin, iterator end) : begin_(begin), end_(end)
     {
-        GMX_ASSERT(end >= begin, "Invalid range");
+        assert((end >= begin && "Invalid range"));
     }
     //! \cond
     // Doxygen 1.8.5 doesn't parse the declaration correctly...
@@ -252,7 +251,7 @@ public:
      */
     size_type size() const { return end_ - begin_; }
     //! Returns the signed size of the reference.
-    index ssize() const { return size(); }
+    difference_type ssize() const { return size(); }
     //! Identical to size().
     size_type capacity() const { return end_ - begin_; }
     //! Whether the reference refers to no memory.
