@@ -13,16 +13,20 @@ Virtual site with single constructing atom
 Added a virtual site that is constructed on top if its single constructing
 atom. This can be useful for free-energy calculations.
 
-Density-guided simulations can apply shift vector to structures
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Density-guided simulations can apply matrix multiplication and shift vector to structures
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The new mdp option "density-guided-simulation-shift-vector" defines a
 shift vector that shifts the density-guided simulation group before the 
 density forces are evaluated. With a known shift vector that aligns structure
 and input density, this feature enables structure refinement to non-aligned
 densities without the need to manipulate the input density data or structure.
+The mdp option "density-guided-simulation-transformation-matrix" allows to 
+define a matrix with which to multiply the structure coordinates, before the shift
+vector is applied. This allows arbitrary rotation, skewing and scaling of input
+structures with respect to the input densities.
 A typical use case are membrane-embedded proteins which cannot easily be
-shifted.
+shifted and rotated within membranes.
 
 Lower energy drift due to SETTLE
 """"""""""""""""""""""""""""""""

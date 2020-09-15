@@ -138,6 +138,8 @@ private:
 
     const std::string c_translationTag_ = "shift-vector";
 
+    const std::string c_transformationMatrixTag_ = "transformation-matrix";
+
     DensityFittingParameters parameters_;
 };
 

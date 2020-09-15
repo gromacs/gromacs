@@ -131,10 +131,25 @@ public:
     const std::string mdpSkipDensityfittingEveryOtherStep_ = formatString(
             "nstenergy = 2\n"
             "density-guided-simulation-nst = 2\n");
+    //! A properly set shift vector
     const std::string mdpTranslationSet_ =
             formatString("density-guided-simulation-shift-vector = 0.1 -0.2 0.3\n");
+    //! A shift vector that is lacking an entry
     const std::string mdpTranslationSetWrongValues_ =
             formatString("density-guided-simulation-shift-vector = 0.1 -0.2\n");
+    //! A 45 degree rotation around the y axis expressed as matrix transformation
+    const std::string mdpTransformationMatrix1degAroundY_ = formatString(
+            "density-guided-simulation-transformation-matrix = 0.9998477 0.0000000 0.0174524 "
+            "0.0000000 1.0000000 0.0000000 -0.0174524 0.0000000 0.9998477 \n");
+    //! The identity matrix as transformation matrix
+    const std::string mdpTransformationMatrixIdentity_ = formatString(
+            "density-guided-simulation-transformation-matrix = 1 0 0 "
+            "0 1 0 0 0 1 \n");
+    //! A transformation matrix string where only eight values are given
+    const std::string mdpTransformationMatrixWrongValues_ = formatString(
+            "density-guided-simulation-transformation-matrix = 0.7071068 0.0000000 0.7071068 "
+            "0.0000000 0.0000000 -0.7071068 0.0000000 0.7071068 \n");
+
     //! The command line to call mdrun
     CommandLine commandLineForMdrun_;
 };
@@ -181,6 +196,51 @@ TEST_F(DensityFittingTest, EnergyMinimizationEnergyTranslationParametersOff)
     runner_.useStringAsMdpFile(mdpEminDensfitYesUnsetValues + mdpTranslationSetWrongValues_);
 
     GMX_EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(), ".*Reading three real values.*");
+}
+
+/* Fit a subset of three of twelve argon atoms into a reference density
+ * that are rotated around the simulation box origin by a matrix multiplication.
+ *
+ * All density fitting mdp parameters are set to defaults
+ */
+TEST_F(DensityFittingTest, EnergyMinimizationEnergyCorrectInnerProductTranslationAndTransformationMatrix)
+{
+    runner_.useStringAsMdpFile(mdpEminDensfitYesUnsetValues + mdpTranslationSet_
+                               + mdpTransformationMatrix1degAroundY_);
+
+    ASSERT_EQ(0, runner_.callGrompp());
+    ASSERT_EQ(0, runner_.callMdrun(commandLineForMdrun_));
+
+    const real expectedEnergyTermMagnitude = -8991;
+    checkMdrun(expectedEnergyTermMagnitude);
+}
+
+/* Fit a subset of three of twelve argon atoms into a reference density
+ * whose origin is offset from the simulation box origin.
+ *
+ * All density fitting mdp parameters are set to defaults
+ */
+TEST_F(DensityFittingTest, EnergyMinimizationEnergyMatrixTransfromationOff)
+{
+    runner_.useStringAsMdpFile(mdpEminDensfitYesUnsetValues + mdpTransformationMatrixWrongValues_);
+
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(), ".*Reading nine real values.*");
+}
+
+/* Fit a subset of three of twelve argon atoms into a reference density
+ * where the given matrix transformation is the identity transformation.
+ *
+ * All density fitting mdp parameters are set to defaults
+ */
+TEST_F(DensityFittingTest, EnergyMinimizationEnergyCorrectInnerProductIdentityMatrix)
+{
+    runner_.useStringAsMdpFile(mdpEminDensfitYesUnsetValues + mdpTransformationMatrixIdentity_);
+
+    ASSERT_EQ(0, runner_.callGrompp());
+    ASSERT_EQ(0, runner_.callMdrun(commandLineForMdrun_));
+
+    const real expectedEnergyTermMagnitude = -8991;
+    checkMdrun(expectedEnergyTermMagnitude);
 }
 
 /* Like above, but with as many parameters reversed as possible

@@ -182,7 +182,7 @@ private:
     std::optional<ExponentialMovingAverage> expAverageSimilarity_;
 
     //! Optionally translate the structure
-    std::optional<TranslateAndScale> translate_;
+    std::optional<AffineTransformation> affineTransformation_;
 };
 
 DensityFittingForceProvider::Impl::~Impl() = default;
@@ -222,11 +222,20 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters&         
     // set up optional coordinate translation if the translation string contains a vector
     const std::optional<std::array<real, 3>> translationParametersAsArray =
             parsedArrayFromInputString<real, 3>(parameters_.translationString_);
-    if (translationParametersAsArray)
+    // set up optional coordinate transformation if the transformation string contains data
+    const std::optional<std::array<real, 9>> transformationMatrixParametersAsArray =
+            parsedArrayFromInputString<real, 9>(parameters_.transformationMatrixString_);
+    if (translationParametersAsArray || transformationMatrixParametersAsArray)
     {
-        translate_.emplace(RVec(1, 1, 1), RVec((*translationParametersAsArray)[XX],
-                                               (*translationParametersAsArray)[YY],
-                                               (*translationParametersAsArray)[ZZ]));
+        Matrix3x3 translationMatrix = transformationMatrixParametersAsArray.has_value()
+                                              ? *transformationMatrixParametersAsArray
+                                              : identityMatrix<real, 3>();
+        RVec translationVector = translationParametersAsArray.has_value()
+                                         ? RVec((*translationParametersAsArray)[XX],
+                                                (*translationParametersAsArray)[YY],
+                                                (*translationParametersAsArray)[ZZ])
+                                         : RVec(0, 0, 0);
+        affineTransformation_.emplace(translationMatrix.asConstView(), translationVector);
     }
 
     referenceDensityCenter_ = { real(referenceDensity.extent(XX)) / 2,
@@ -261,10 +270,10 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
                    std::begin(transformedCoordinates_),
                    [&forceProviderInput](int index) { return forceProviderInput.x_[index]; });
 
-    // optionally apply additional structure transformations
-    if (translate_)
+    // apply additional structure transformations
+    if (affineTransformation_)
     {
-        (*translate_)(transformedCoordinates_);
+        (*affineTransformation_)(transformedCoordinates_);
     }
 
     // pick periodic image that is closest to the center of the reference density
