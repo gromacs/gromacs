@@ -352,6 +352,7 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.pforce          = pforce;
     // Give the spawned thread the newly created valid communicator
     // for the simulation.
+    newRunner.worldCommunicator   = MPI_COMM_WORLD;
     newRunner.communicator        = MPI_COMM_WORLD;
     newRunner.ms                  = ms;
     newRunner.startingBehavior    = startingBehavior;
@@ -398,7 +399,8 @@ void Mdrunner::spawnThreads(int numThreadsToLaunch)
 
     // Give the master thread the newly created valid communicator for
     // the simulation.
-    communicator = MPI_COMM_WORLD;
+    worldCommunicator = MPI_COMM_WORLD;
+    communicator      = MPI_COMM_WORLD;
     threadMpiMdrunnerAccessBarrier();
 #else
     GMX_UNUSED_VALUE(numThreadsToLaunch);
@@ -773,7 +775,7 @@ int Mdrunner::mdrunner()
     // this is expressed, e.g. by expressly running detection only the
     // master rank for thread-MPI, rather than relying on the mutex
     // and reference count.
-    PhysicalNodeCommunicator physicalNodeComm(communicator, gmx_physicalnode_id_hash());
+    PhysicalNodeCommunicator physicalNodeComm(worldCommunicator, gmx_physicalnode_id_hash());
     hwinfo = gmx_detect_hardware(mdlog, physicalNodeComm);
 
     gmx_print_detected_hardware(fplog, isSimulationMasterRank && isMasterSim(ms), mdlog, hwinfo);
@@ -844,7 +846,7 @@ int Mdrunner::mdrunner()
         spawnThreads(hw_opt.nthreads_tmpi);
         // The spawned threads enter mdrunner() and execution of
         // master and spawned threads joins at the end of this block.
-        physicalNodeComm = PhysicalNodeCommunicator(communicator, gmx_physicalnode_id_hash());
+        physicalNodeComm = PhysicalNodeCommunicator(worldCommunicator, gmx_physicalnode_id_hash());
     }
 
     GMX_RELEASE_ASSERT(ms || communicator == MPI_COMM_WORLD,
@@ -1908,6 +1910,9 @@ private:
     //! Command-line override for the duration of a neighbor list with the Verlet scheme.
     int nstlist_ = 0;
 
+    //! World communicator, used for hardware detection and task assignment
+    MPI_Comm worldCommunicator_ = MPI_COMM_NULL;
+
     //! Multisim communicator handle.
     gmx_multisim_t* multiSimulation_;
 
@@ -1957,8 +1962,9 @@ Mdrunner::BuilderImplementation::BuilderImplementation(std::unique_ptr<MDModules
                                                        compat::not_null<SimulationContext*> context) :
     mdModules_(std::move(mdModules))
 {
-    communicator_    = context->communicator_;
-    multiSimulation_ = context->multiSimulation_.get();
+    worldCommunicator_ = context->worldCommunicator_;
+    communicator_      = context->simulationCommunicator_;
+    multiSimulation_   = context->multiSimulation_.get();
 }
 
 Mdrunner::BuilderImplementation::~BuilderImplementation() = default;
@@ -2007,6 +2013,8 @@ Mdrunner Mdrunner::BuilderImplementation::build()
     newRunner.replExParams = replicaExchangeParameters_;
 
     newRunner.filenames = filenames_;
+
+    newRunner.worldCommunicator = worldCommunicator_;
 
     newRunner.communicator = communicator_;
 

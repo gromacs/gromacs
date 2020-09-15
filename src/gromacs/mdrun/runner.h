@@ -261,6 +261,13 @@ private:
     //! \brief Non-owning handle to file used for logging.
     t_fileio* logFileHandle = nullptr;
 
+    /*! \brief Non-owning handle to world communication data structure for task assigment.
+     *
+     * With real MPI, gets a value from the SimulationContext
+     * supplied to the MdrunnerBuilder. With thread-MPI gets a
+     * value after threads have been spawned. */
+    MPI_Comm worldCommunicator = MPI_COMM_NULL;
+
     /*! \brief Non-owning handle to communication data structure.
      *
      * With real MPI, gets a value from the SimulationContext

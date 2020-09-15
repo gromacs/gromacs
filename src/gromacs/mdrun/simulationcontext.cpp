@@ -50,19 +50,23 @@
 namespace gmx
 {
 //! \cond libapi
-SimulationContext::SimulationContext(MPI_Comm                          communicator,
+SimulationContext::SimulationContext(MPI_Comm                          worldCommunicator,
                                      const ArrayRef<const std::string> multiSimDirectoryNames) :
-    communicator_(communicator)
+    worldCommunicator_(worldCommunicator)
 {
-    GMX_RELEASE_ASSERT((GMX_LIB_MPI && (communicator != MPI_COMM_NULL))
-                               || (!GMX_LIB_MPI && (communicator == MPI_COMM_NULL)),
+    GMX_RELEASE_ASSERT((GMX_LIB_MPI && (worldCommunicator != MPI_COMM_NULL))
+                               || (!GMX_LIB_MPI && (worldCommunicator == MPI_COMM_NULL)),
                        "With real MPI, a non-null communicator is required. "
                        "Without it, the communicator must be null.");
-    if (!multiSimDirectoryNames.empty())
+    if (multiSimDirectoryNames.empty())
     {
-        multiSimulation_ = buildMultiSimulation(communicator, multiSimDirectoryNames);
+        simulationCommunicator_ = worldCommunicator;
+    }
+    else
+    {
+        multiSimulation_ = buildMultiSimulation(worldCommunicator, multiSimDirectoryNames);
         // Use the communicator resulting from the split for the multi-simulation.
-        communicator_ = multiSimulation_->simulationComm_;
+        simulationCommunicator_ = multiSimulation_->simulationComm_;
     }
 }
 
