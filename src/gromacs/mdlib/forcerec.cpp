@@ -732,8 +732,10 @@ static void init_ewald_f_table(const interaction_const_t& ic,
      */
     const real tableScale = ewald_spline3_table_scale(ic, useCoulombTable, useVdwTable);
 
+    const bool havePerturbedNonbondeds = (ic.softCoreParameters != nullptr);
+
     real tableLen = ic.rcoulomb;
-    if (useCoulombTable && tableExtensionLength > 0.0)
+    if (useCoulombTable && havePerturbedNonbondeds && tableExtensionLength > 0.0)
     {
         /* TODO: Ideally this should also check if couple-intramol == no, but that isn't
          * stored in ir. Grompp puts that info into an opts structure that doesn't make it into the tpr.
