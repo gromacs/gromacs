@@ -41,13 +41,20 @@ Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 CUDA 11.0 supported
-^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""
 
 A build with CUDA 11.0 now configures and passes tests.
 Building with CUDA 11.0 means that hardware with CC 3.0 is no longer supported,
 while CC 8.0 can now be used.
 
 :issue:`3632`
+
+Fix building with MSVC
+""""""""""""""""""""""
+
+The build would fail due to a missing header.
+
+:issue:`3669`
 
 Miscellaneous
 ^^^^^^^^^^^^^
