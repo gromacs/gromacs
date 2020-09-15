@@ -352,12 +352,12 @@ Mdrunner Mdrunner::cloneOnSpawnedThread() const
     newRunner.pforce          = pforce;
     // Give the spawned thread the newly created valid communicator
     // for the simulation.
-    newRunner.worldCommunicator   = MPI_COMM_WORLD;
-    newRunner.communicator        = MPI_COMM_WORLD;
-    newRunner.ms                  = ms;
-    newRunner.startingBehavior    = startingBehavior;
-    newRunner.stopHandlerBuilder_ = std::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
-    newRunner.inputHolder_        = inputHolder_;
+    newRunner.libraryWorldCommunicator = MPI_COMM_WORLD;
+    newRunner.simulationCommunicator   = MPI_COMM_WORLD;
+    newRunner.ms                       = ms;
+    newRunner.startingBehavior         = startingBehavior;
+    newRunner.stopHandlerBuilder_      = std::make_unique<StopHandlerBuilder>(*stopHandlerBuilder_);
+    newRunner.inputHolder_             = inputHolder_;
 
     threadMpiMdrunnerAccessBarrier();
 
@@ -399,8 +399,8 @@ void Mdrunner::spawnThreads(int numThreadsToLaunch)
 
     // Give the master thread the newly created valid communicator for
     // the simulation.
-    worldCommunicator = MPI_COMM_WORLD;
-    communicator      = MPI_COMM_WORLD;
+    libraryWorldCommunicator = MPI_COMM_WORLD;
+    simulationCommunicator   = MPI_COMM_WORLD;
     threadMpiMdrunnerAccessBarrier();
 #else
     GMX_UNUSED_VALUE(numThreadsToLaunch);
@@ -763,7 +763,7 @@ int Mdrunner::mdrunner()
     {
         fplog = gmx_fio_getfp(logFileHandle);
     }
-    const bool       isSimulationMasterRank = findIsSimulationMasterRank(ms, communicator);
+    const bool isSimulationMasterRank = findIsSimulationMasterRank(ms, simulationCommunicator);
     gmx::LoggerOwner logOwner(buildLogger(fplog, isSimulationMasterRank));
     gmx::MDLogger    mdlog(logOwner.logger());
 
@@ -775,7 +775,7 @@ int Mdrunner::mdrunner()
     // this is expressed, e.g. by expressly running detection only the
     // master rank for thread-MPI, rather than relying on the mutex
     // and reference count.
-    PhysicalNodeCommunicator physicalNodeComm(worldCommunicator, gmx_physicalnode_id_hash());
+    PhysicalNodeCommunicator physicalNodeComm(libraryWorldCommunicator, gmx_physicalnode_id_hash());
     hwinfo = gmx_detect_hardware(mdlog, physicalNodeComm);
 
     gmx_print_detected_hardware(fplog, isSimulationMasterRank && isMasterSim(ms), mdlog, hwinfo);
@@ -846,12 +846,13 @@ int Mdrunner::mdrunner()
         spawnThreads(hw_opt.nthreads_tmpi);
         // The spawned threads enter mdrunner() and execution of
         // master and spawned threads joins at the end of this block.
-        physicalNodeComm = PhysicalNodeCommunicator(worldCommunicator, gmx_physicalnode_id_hash());
+        physicalNodeComm =
+                PhysicalNodeCommunicator(libraryWorldCommunicator, gmx_physicalnode_id_hash());
     }
 
-    GMX_RELEASE_ASSERT(ms || communicator == MPI_COMM_WORLD,
-                       "Must have valid world communicator unless running a multi-simulation");
-    CommrecHandle crHandle = init_commrec(communicator);
+    GMX_RELEASE_ASSERT(ms || simulationCommunicator != MPI_COMM_NULL,
+                       "Must have valid communicator unless running a multi-simulation");
+    CommrecHandle crHandle = init_commrec(simulationCommunicator);
     t_commrec*    cr       = crHandle.get();
     GMX_RELEASE_ASSERT(cr != nullptr, "Must have valid commrec");
 
@@ -1185,7 +1186,7 @@ int Mdrunner::mdrunner()
 
     // Produce the task assignment for this rank - done after DD is constructed
     GpuTaskAssignments gpuTaskAssignments = GpuTaskAssignmentsBuilder::build(
-            gpuIdsToUse, userGpuTaskAssignment, *hwinfo, communicator, physicalNodeComm,
+            gpuIdsToUse, userGpuTaskAssignment, *hwinfo, simulationCommunicator, physicalNodeComm,
             nonbondedTarget, pmeTarget, bondedTarget, updateTarget, useGpuForNonbonded,
             useGpuForPme, thisRankHasDuty(cr, DUTY_PP),
             // TODO cr->duty & DUTY_PME should imply that a PME
@@ -1923,13 +1924,13 @@ private:
     int nstlist_ = 0;
 
     //! World communicator, used for hardware detection and task assignment
-    MPI_Comm worldCommunicator_ = MPI_COMM_NULL;
+    MPI_Comm libraryWorldCommunicator_ = MPI_COMM_NULL;
 
     //! Multisim communicator handle.
     gmx_multisim_t* multiSimulation_;
 
     //! mdrun communicator
-    MPI_Comm communicator_ = MPI_COMM_NULL;
+    MPI_Comm simulationCommunicator_ = MPI_COMM_NULL;
 
     //! Print a warning if any force is larger than this (in kJ/mol nm).
     real forceWarningThreshold_ = -1;
@@ -1981,9 +1982,9 @@ Mdrunner::BuilderImplementation::BuilderImplementation(std::unique_ptr<MDModules
                                                        compat::not_null<SimulationContext*> context) :
     mdModules_(std::move(mdModules))
 {
-    worldCommunicator_ = context->worldCommunicator_;
-    communicator_      = context->simulationCommunicator_;
-    multiSimulation_   = context->multiSimulation_.get();
+    libraryWorldCommunicator_ = context->libraryWorldCommunicator_;
+    simulationCommunicator_   = context->simulationCommunicator_;
+    multiSimulation_          = context->multiSimulation_.get();
 }
 
 Mdrunner::BuilderImplementation::~BuilderImplementation() = default;
@@ -2033,9 +2034,9 @@ Mdrunner Mdrunner::BuilderImplementation::build()
 
     newRunner.filenames = filenames_;
 
-    newRunner.worldCommunicator = worldCommunicator_;
+    newRunner.libraryWorldCommunicator = libraryWorldCommunicator_;
 
-    newRunner.communicator = communicator_;
+    newRunner.simulationCommunicator = simulationCommunicator_;
 
     // nullptr is a valid value for the multisim handle
     newRunner.ms = multiSimulation_;

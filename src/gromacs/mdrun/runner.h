@@ -266,14 +266,14 @@ private:
      * With real MPI, gets a value from the SimulationContext
      * supplied to the MdrunnerBuilder. With thread-MPI gets a
      * value after threads have been spawned. */
-    MPI_Comm worldCommunicator = MPI_COMM_NULL;
+    MPI_Comm libraryWorldCommunicator = MPI_COMM_NULL;
 
-    /*! \brief Non-owning handle to communication data structure.
+    /*! \brief Non-owning handle to communication data structure for the current simulation.
      *
      * With real MPI, gets a value from the SimulationContext
      * supplied to the MdrunnerBuilder. With thread-MPI gets a
      * value after threads have been spawned. */
-    MPI_Comm communicator = MPI_COMM_NULL;
+    MPI_Comm simulationCommunicator = MPI_COMM_NULL;
 
     //! \brief Non-owning handle to multi-simulation handler.
     gmx_multisim_t* ms = nullptr;
