@@ -202,18 +202,25 @@ the force constant is increased by multiplying by :math:`1+2\delta t_{\mathrm{de
 Note that adaptive force scaling does not conserve energy and will ultimately lead to very high
 forces when similarity cannot be increased further.
 
-Aligning input structure and density
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Mapping input structure to density data with affine transformations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 To align input structure and density data, a transformation matrix
 :math:`\mathbf{A}` and shift vector :math:`\mathbf{v_{\mathrm{shift}}}` may be
 defined that transform the input structure atom coordinates before evaluating
 density-guided-simulation energies and forces, so that 
 
-.. math:: U = U_{\mathrm{forcefield}}(\mathbf{r}) - k S[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}\!(\mathbf{A r+v_{\mathrm{shift}}})]\,\mathrm{.}
-          :label:eqndensnine
+.. math:: U = U_{\mathrm{forcefield}}(\mathbf{r}) - k S[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}\!(\mathbf{A} \mathbf{r}+\mathbf{v}_{\mathrm{shift}})]\,\mathrm{.}
+          :label: eqndensnine
 
-.. math:: \mathbf{F}_{\mathrm{density}} = k \nabla_{\mathbf{r}} S[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}\!(\mathbf{A r+v_{\mathrm{shift}}})]\,\mathrm{.}
-          :label:eqndensten
+.. math:: \mathbf{F}_{\mathrm{density}} = k \nabla_{\mathbf{r}} S[\rho^{\mathrm{ref}},\rho^{\mathrm{sim}}\!(\mathbf{A} \mathbf{r}+\mathbf{v}_{\mathrm{shift}})]\,\mathrm{.}
+          :label: eqndensten
+
+Affine transformations may be used, amongst other things, to perform
+
+ * rotations, e.g., around the z-axis by an angle :math:`\theta` by using :math:`A=\begin{pmatrix} \cos \theta & -\sin \theta & 0 \\ \sin \theta & \cos \theta & 0 \\ 0 & 0 & 1 \end{pmatrix}`.
+ * projection, e.g., onto the z-axis by using :math:`A=\begin{pmatrix} 0 & 0 & 0 \\ 0 & 0 & 0 \\ 0 & 0 & 1 \end{pmatrix}`. This allows density-guided simulations to be steered by a density-profile along this axis.
+ * scaling the structure against the density by a factor :math:`s` by using :math:`A=\begin{pmatrix} s & 0 & 0 \\ 0 & s & 0 \\ 0 & 0 & s \end{pmatrix}`. This proves useful when, e.g., voxel-sizes in cryo-EM densities have to be adjusted.
+ * and arbitrary combinations of these by matrix multiplications (note that matrix multiplications are not commutative).
 
 Future developments
 ^^^^^^^^^^^^^^^^^^^

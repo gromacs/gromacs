@@ -84,7 +84,7 @@ struct DensityFittingParameters
     real adaptiveForceScalingTimeConstant_ = 4;
     //! Translation of the structure, so that the coordinates that are fitted are x+translation
     std::string translationString_ = "";
-    //! Linear transformat of the structure, so that the coordinates that are fitted are Matrix * x
+    //! Linear transformation of the structure, so that the coordinates that are fitted are Matrix * x
     std::string transformationMatrixString_ = "";
 };
 
