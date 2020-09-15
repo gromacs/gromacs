@@ -58,14 +58,14 @@
  * It is currently a caller's responsibility to call it only on not-yet allocated buffers.
  *
  * \tparam        ValueType            Raw value type of the \p buffer.
- * param[in,out] buffer               Pointer to the device-side buffer.
- * param[in]     numValues            Number of values to accomodate.
- * param[in]     deviceContext        The buffer's device context-to-be.
+ * \param[in,out] buffer               Pointer to the device-side buffer.
+ * \param[in]     numValues            Number of values to accomodate.
+ * \param[in]     deviceContext        The buffer's device context-to-be.
  */
 template<typename ValueType>
-void allocateDeviceBuffer(DeviceBuffer<ValueType>* /* buffer */,
-                          size_t /* numValues */,
-                          const DeviceContext& /* deviceContext */)
+void allocateDeviceBuffer(DeviceBuffer<ValueType>* gmx_unused buffer,
+                          size_t gmx_unused    numValues,
+                          const DeviceContext& gmx_unused deviceContext)
 {
     // SYCL-TODO
 }
@@ -76,10 +76,10 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* /* buffer */,
  * as this is planned to be a destructor of DeviceBuffer as a proper class,
  * and no calls on \p buffer should be made afterwards.
  *
- * param[in] buffer  Pointer to the buffer to free.
+ * \param[in] buffer  Pointer to the buffer to free.
  */
 template<typename DeviceBuffer>
-void freeDeviceBuffer(DeviceBuffer* /* buffer */)
+void freeDeviceBuffer(DeviceBuffer* gmx_unused buffer)
 {
     // SYCL-TODO
 }
@@ -91,24 +91,24 @@ void freeDeviceBuffer(DeviceBuffer* /* buffer */)
  * because of the early return.
  *
  * \tparam        ValueType            Raw value type of the \p buffer.
- * param[in,out] buffer               Pointer to the device-side buffer
- * param[in]     hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
- * param[in]     startingOffset       Offset (in values) at the device-side buffer to copy into.
- * param[in]     numValues            Number of values to copy.
- * param[in]     deviceStream         GPU stream to perform asynchronous copy in.
- * param[in]     transferKind         Copy type: synchronous or asynchronous.
- * param[out]    timingEvent          A pointer to the H2D copy timing event to be filled in.
+ * \param[in,out] buffer               Pointer to the device-side buffer
+ * \param[in]     hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
+ * \param[in]     startingOffset       Offset (in values) at the device-side buffer to copy into.
+ * \param[in]     numValues            Number of values to copy.
+ * \param[in]     deviceStream         GPU stream to perform asynchronous copy in.
+ * \param[in]     transferKind         Copy type: synchronous or asynchronous.
+ * \param[out]    timingEvent          A pointer to the H2D copy timing event to be filled in.
  *                                     If the pointer is not null, the event can further be used
  *                                     to queue a wait for this operation or to query profiling information.
  */
 template<typename ValueType>
-void copyToDeviceBuffer(DeviceBuffer<ValueType>* /* buffer */,
-                        const ValueType* /* hostBuffer */,
-                        size_t /* startingOffset */,
-                        size_t /* numValues */,
-                        const DeviceStream& /* deviceStream */,
-                        GpuApiCallBehavior /* transferKind */,
-                        CommandEvent* /* timingEvent */)
+void copyToDeviceBuffer(DeviceBuffer<ValueType>* gmx_unused buffer,
+                        const ValueType* gmx_unused hostBuffer,
+                        size_t gmx_unused startingOffset,
+                        size_t gmx_unused   numValues,
+                        const DeviceStream& gmx_unused deviceStream,
+                        GpuApiCallBehavior gmx_unused transferKind,
+                        CommandEvent* gmx_unused timingEvent)
 {
     // SYCL-TODO
 }
@@ -120,24 +120,24 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* /* buffer */,
  * because of the early return.
  *
  * \tparam        ValueType            Raw value type of the \p buffer.
- * param[in,out] hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
- * param[in]     buffer               Pointer to the device-side buffer
- * param[in]     startingOffset       Offset (in values) at the device-side buffer to copy from.
- * param[in]     numValues            Number of values to copy.
- * param[in]     deviceStream         GPU stream to perform asynchronous copy in.
- * param[in]     transferKind         Copy type: synchronous or asynchronous.
- * param[out]    timingEvent          A pointer to the H2D copy timing event to be filled in.
+ * \param[in,out] hostBuffer           Pointer to the raw host-side memory, also typed \p ValueType
+ * \param[in]     buffer               Pointer to the device-side buffer
+ * \param[in]     startingOffset       Offset (in values) at the device-side buffer to copy from.
+ * \param[in]     numValues            Number of values to copy.
+ * \param[in]     deviceStream         GPU stream to perform asynchronous copy in.
+ * \param[in]     transferKind         Copy type: synchronous or asynchronous.
+ * \param[out]    timingEvent          A pointer to the H2D copy timing event to be filled in.
  *                                     If the pointer is not null, the event can further be used
  *                                     to queue a wait for this operation or to query profiling information.
  */
 template<typename ValueType>
-void copyFromDeviceBuffer(ValueType* /* hostBuffer */,
-                          DeviceBuffer<ValueType>* /* buffer */,
-                          size_t /* startingOffset */,
-                          size_t /* numValues */,
-                          const DeviceStream& /* deviceStream */,
-                          GpuApiCallBehavior /* transferKind */,
-                          CommandEvent* /* timingEvent */)
+void copyFromDeviceBuffer(ValueType* gmx_unused    hostBuffer,
+                          DeviceBuffer<ValueType>* gmx_unused buffer,
+                          size_t gmx_unused startingOffset,
+                          size_t gmx_unused   numValues,
+                          const DeviceStream& gmx_unused deviceStream,
+                          GpuApiCallBehavior gmx_unused transferKind,
+                          CommandEvent* gmx_unused timingEvent)
 {
     // SYCL-TODO
 }
@@ -146,16 +146,16 @@ void copyFromDeviceBuffer(ValueType* /* hostBuffer */,
  * Clears the device buffer asynchronously.
  *
  * \tparam        ValueType       Raw value type of the \p buffer.
- * param[in,out] buffer          Pointer to the device-side buffer
- * param[in]     startingOffset  Offset (in values) at the device-side buffer to start clearing at.
- * param[in]     numValues       Number of values to clear.
- * param[in]     deviceStream    GPU stream.
+ * \param[in,out] buffer          Pointer to the device-side buffer
+ * \param[in]     startingOffset  Offset (in values) at the device-side buffer to start clearing at.
+ * \param[in]     numValues       Number of values to clear.
+ * \param[in]     deviceStream    GPU stream.
  */
 template<typename ValueType>
-void clearDeviceBufferAsync(DeviceBuffer<ValueType>* /* buffer */,
-                            size_t /* startingOffset */,
-                            size_t /* numValues */,
-                            const DeviceStream& /* deviceStream */)
+void clearDeviceBufferAsync(DeviceBuffer<ValueType>* gmx_unused buffer,
+                            size_t gmx_unused startingOffset,
+                            size_t gmx_unused   numValues,
+                            const DeviceStream& gmx_unused deviceStream)
 {
     // SYCL-TODO
 }
@@ -164,13 +164,13 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* /* buffer */,
  *
  * Checks if the buffer is not nullptr and if its allocation is big enough.
  *
- * param[in] buffer        Device buffer to be checked.
- * param[in] requiredSize  Number of elements that the buffer will have to accommodate.
+ * \param[in] buffer        Device buffer to be checked.
+ * \param[in] requiredSize  Number of elements that the buffer will have to accommodate.
  *
  * \returns Whether the device buffer can be set.
  */
 template<typename T>
-static bool checkDeviceBuffer(DeviceBuffer<T> /* buffer */, int /* requiredSize */)
+static bool gmx_unused checkDeviceBuffer(DeviceBuffer<T> gmx_unused buffer, int gmx_unused requiredSize)
 {
     // SYCL-TODO
 }
@@ -186,17 +186,18 @@ using DeviceTexture = void*;
  *
  * \tparam      ValueType      Raw data type.
  *
- * param[out]  deviceBuffer   Device buffer to store data in.
- * param[in]   hostBuffer     Host buffer to get date from.
- * param[in]   numValues      Number of elements in the buffer.
- * param[in]   deviceContext  GPU device context.
+ * \param[out]  deviceBuffer   Device buffer to store data in.
+ * \param[out]  deviceTexture  New texture object
+ * \param[in]   hostBuffer     Host buffer to get date from.
+ * \param[in]   numValues      Number of elements in the buffer.
+ * \param[in]   deviceContext  GPU device context.
  */
 template<typename ValueType>
-void initParamLookupTable(DeviceBuffer<ValueType>* /* deviceBuffer */,
-                          DeviceTexture* /* deviceTexture */,
-                          const ValueType* /* hostBuffer */,
-                          int /* numValues */,
-                          const DeviceContext& /* deviceContext */)
+void initParamLookupTable(DeviceBuffer<ValueType>* gmx_unused deviceBuffer,
+                          DeviceTexture* gmx_unused deviceTexture,
+                          const ValueType* gmx_unused hostBuffer,
+                          int gmx_unused       numValues,
+                          const DeviceContext& gmx_unused deviceContext)
 {
     // SYCL-TODO
 }
@@ -205,10 +206,12 @@ void initParamLookupTable(DeviceBuffer<ValueType>* /* deviceBuffer */,
  *
  * \tparam        ValueType     Raw data type.
  *
- * param[in,out] deviceBuffer  Device buffer to store data in.
+ * \param[in,out] deviceBuffer  Device buffer to store data in.
+ * \param[in]     deviceTexture Reference to texture object
  */
 template<typename ValueType>
-void destroyParamLookupTable(DeviceBuffer<ValueType>* /* deviceBuffer */, DeviceTexture& /* deviceTexture*/)
+void destroyParamLookupTable(DeviceBuffer<ValueType>* gmx_unused deviceBuffer,
+                             DeviceTexture& gmx_unused deviceTexture)
 {
     // SYCL-TODO
 }

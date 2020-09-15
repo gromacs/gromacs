@@ -57,22 +57,35 @@ if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
     # a failed link stage (when the same flag is not used). Since none of this is critical, we handle
     # it by merely checking if it works to compile a source fils with this flag, and choking if SYCL
     # is still enabled.
-    message(STATUS "Checking for flags to disable SYCL for non-SYCL hardware-specific C++ code")
+
+    if(NOT CHECK_DISABLE_SYCL_CXX_FLAGS_QUIETLY)
+        message(STATUS "Checking for flags to disable SYCL")
+    endif()
+
     gmx_check_source_compiles_with_flags(
         "int main() { return 0; }"
         "-fno-sycl"
 	"CXX"
-        DISABLE_SYCL_CXX_FLAG_RESULT)
-    if(DISABLE_SYCL_CXX_FLAG_RESULT)
-        set(DISABLE_SYCL_FLAGS "-fno-sycl")
-    else()
-        message(WARNING "Cannot find flags to disable SYCL for non-SYCL hardware-specific C++ code. Expect many warnings, but they are likely benign.")
+        DISABLE_SYCL_CXX_FLAGS_RESULT)
+
+    if(DISABLE_SYCL_CXX_FLAGS_RESULT)
+        set(DISABLE_SYCL_CXX_FLAGS "-fno-sycl")
+    endif()
+    if(NOT CHECK_DISABLE_SYCL_CXX_FLAGS_QUIETLY)
+        if(DISABLE_SYCL_CXX_FLAGS_RESULT)
+            message(STATUS "Checking for flags to disable SYCL - -fno-sycl")
+        else()
+            message(WARNING "Cannot find flags to disable SYCL for non-SYCL hardware-specific C++ code. Expect many warnings, but they are likely benign.")
+        endif()
+        set(CHECK_DISABLE_SYCL_CXX_FLAGS_QUIETLY 1 CACHE INTERNAL "Keep quiet on future calls to detect no-SYCL flags" FORCE)
     endif()
 endif()
- 
+
 # Find the flags to enable (or re-enable) SYCL with Intel extensions. In case we turned it off above,
 # it's important that we check the combination of both flags, to make sure the second one re-enables SYCL.
-message(STATUS "Checking for flags to enable SYCL source")
+if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
+    message(STATUS "Checking for flags to enable SYCL")
+endif()
 gmx_find_flag_for_source(SYCL_CXX_FLAGS_RESULT
     "#include <CL/sycl.hpp>
      namespace sycl = cl::sycl;
@@ -87,10 +100,15 @@ gmx_find_flag_for_source(SYCL_CXX_FLAGS_RESULT
          q.parallel_for<class whatever>(sycl::range<1>{length}, [=, ptr = v.data()] (sycl::id<1> i){ ptr[i] *= 2; }).wait();
          return 0;
      }
-     " "CXX" DISABLE_SYCL_FLAGS SYCL_CXX_FLAGS "-fsycl")
-  
-if(SYCL_CXX_FLAGS_RESULT)
-    message(STATUS "Checking for flags to enable SYCL source - found")
-else()
+     " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-fsycl")
+
+if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
+    if(SYCL_CXX_FLAGS_RESULT)
+        message(STATUS "Checking for flags to enable SYCL - ${SYCL_CXX_FLAGS}")
+    endif()
+    set(CHECK_SYCL_CXX_FLAGS_QUIETLY 1 CACHE INTERNAL "Keep quiet on future calls to detect SYCL flags" FORCE)
+endif()
+
+if(NOT SYCL_CXX_FLAGS_RESULT)
     message(ERROR "Cannot compile SYCL with Intel extensions. Try a different compiler or disable SYCL.")
 endif()

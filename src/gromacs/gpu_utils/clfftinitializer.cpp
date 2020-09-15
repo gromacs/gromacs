@@ -67,8 +67,8 @@ namespace
  * This ensures that thread-MPI and OpenMP builds can't accidentally
  * initialize it more than once. */
 //! @{
-gmx_unused bool g_clfftInitialized = false;
-gmx::Mutex      g_clfftMutex;
+bool       g_clfftInitialized = false;
+gmx::Mutex g_clfftMutex;
 //! @}
 #endif
 

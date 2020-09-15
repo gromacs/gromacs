@@ -38,14 +38,13 @@
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
  * \inlibraryapi
  */
-#ifndef GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_OCL_H
-#define GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_OCL_H
+#ifndef GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_SYCL_H
+#define GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_SYCL_H
+
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 
 #ifndef DOXYGEN
-
-#    include "gromacs/utility/exceptions.h"
-#    include "gromacs/utility/gmxassert.h"
-
 /*! \libinternal \brief
  * A class which allows for CPU thread to mark and wait for certain GPU stream execution point.
  * The event can be put into the stream with markEvent() and then later waited on with waitForEvent().
@@ -99,6 +98,6 @@ private:
     // SYCL-TODO
 };
 
-#endif
+#endif // !defined DOXYGEN
 
-#endif
+#endif // GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_SYCL_H

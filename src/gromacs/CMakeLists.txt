@@ -282,8 +282,16 @@ if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KN
     set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
 endif()
 
+# Only add the -fsycl flag to sources that really need it
+get_property(SYCL_SOURCES GLOBAL PROPERTY SYCL_SOURCES)
+set_source_files_properties(${SYCL_SOURCES} PROPERTIES COMPILE_FLAGS "${SYCL_CXX_FLAGS}")
+
 gmx_setup_tng_for_libgromacs()
 
+# We apply the SYCL flag explicitly just for libgromacs, since bugs in the beta versions of
+# icpx/dpcpp leads to crashes if we try to link an library without any SYCL code with the
+# -fsycl flag enabled. Once that bug is fixed, we should change it to simply add
+# SYCL_CXX_FLAGS to GMX_SHARED_LINKER_FLAGS.
 target_link_libraries(libgromacs
                       PRIVATE
                       ${EXTRAE_LIBRARIES}
@@ -291,6 +299,7 @@ target_link_libraries(libgromacs
                       ${GMX_COMMON_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS}
+		      ${SYCL_CXX_FLAGS}
                       ${OpenCL_LIBRARIES}
                       $<$<PLATFORM_ID:SunOS>:socket>
                       PUBLIC
