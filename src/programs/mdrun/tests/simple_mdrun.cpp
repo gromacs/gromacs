@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -170,18 +170,19 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
     }
 }
 
-//! Containers of systems to test.
-//! \{
-std::vector<std::string> systemsToTest_g = { "angles1" };
-std::vector<std::string> md_g            = { "md", "md-vv" };
-//! \}
-
 // The time for OpenCL kernel compilation means these tests might time
 // out. If that proves to be a problem, these can be disabled for
 // OpenCL builds. However, once that compilation is cached for the
 // lifetime of the whole test binary process, these tests should run in
 // such configurations.
 #if GMX_DOUBLE
+
+//! Containers of systems to test.
+//! \{
+std::vector<std::string> systemsToTest_g = { "angles1" };
+std::vector<std::string> md_g            = { "md", "md-vv" };
+//! \}
+
 INSTANTIATE_TEST_CASE_P(Angles1,
                         SimpleMdrunTest,
                         ::testing::Combine(::testing::ValuesIn(systemsToTest_g), ::testing::ValuesIn(md_g)));

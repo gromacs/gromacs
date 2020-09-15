@@ -171,7 +171,7 @@ void initTestOptions(IOptionsContainer* options);
         virtual void initOptions(::gmx::IOptionsContainer*(options));                                                  \
     };                                                                                                                 \
                                                                                                                        \
-    static name s_##name##Instance;                                                                                    \
+    static gmx_unused name s_##name##Instance;                                                                         \
                                                                                                                        \
     void name::initOptions(::gmx::IOptionsContainer* options) //NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)
 
