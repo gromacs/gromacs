@@ -441,7 +441,7 @@ if(GMX_GPU_OPENCL)
         ewald/pme_spread.clh
         ewald/pme_solve.clh
         ewald/pme_gather.clh
-        ewald/pme_gpu_utils.clh
+        ewald/pme_gpu_calculate_splines.clh
         ewald/pme_program.cl
         ewald/pme_gpu_types.h
         )

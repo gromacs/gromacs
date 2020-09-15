@@ -93,7 +93,7 @@ endif()
 
 
 set(PME_OCL_KERNEL_SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/pme_gpu_utils.clh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pme_gpu_calculate_splines.clh"
     "${CMAKE_CURRENT_SOURCE_DIR}/pme_solve.clh"
     "${CMAKE_CURRENT_SOURCE_DIR}/pme_gather.clh"
     "${CMAKE_CURRENT_SOURCE_DIR}/pme_spread.clh")
