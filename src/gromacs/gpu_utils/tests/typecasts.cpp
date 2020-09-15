@@ -44,13 +44,11 @@
 
 #if GMX_GPU_CUDA
 
-#    include <vector>
-
-#    include <gtest/gtest.h>
-
+#    include "gromacs/gpu_utils/gputraits.h"
 #    include "gromacs/hardware/device_management.h"
 #    include "gromacs/utility/exceptions.h"
 
+#    include "testutils/test_hardware_environment.h"
 #    include "testutils/testasserts.h"
 #    include "testutils/testmatchers.h"
 
@@ -65,19 +63,20 @@ namespace test
 //! Test data in RVec format
 static const std::vector<RVec> rVecInput = { { 1.0, 2.0, 3.0 }, { 4.0, 5.0, 6.0 } };
 
-TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3OnHost)
+TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3Host)
 {
     std::vector<RVec> rVecOutput(rVecInput.size());
     convertRVecToFloat3OnHost(rVecOutput, rVecInput);
     EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));
 }
 
-TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3OnDevice)
+TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3Device)
 {
-    if (canComputeOnDevice())
+    for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
+        setActiveDevice(testDevice->deviceInfo());
         std::vector<RVec> rVecOutput(rVecInput.size());
-        convertRVecToFloat3OnDevice(rVecOutput, rVecInput);
+        convertRVecToFloat3OnDevice(rVecOutput, rVecInput, testDevice.get());
         EXPECT_THAT(rVecInput, testing::Pointwise(RVecEq(ulpTolerance(0)), rVecOutput));
     }
 }

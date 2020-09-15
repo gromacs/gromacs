@@ -45,7 +45,11 @@
 
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "gromacs/math/vectypes.h"
+
+#include "testutils/test_device.h"
 
 namespace gmx
 {
@@ -64,8 +68,12 @@ void convertRVecToFloat3OnHost(std::vector<gmx::RVec>& rVecOutput, const std::ve
  *
  * \param[out] rVecOutput  Data in RVec format for the output.
  * \param[in]  rVecInput   Data in RVec format with the input.
+ * \param[in]  testDevice  Test herdware environment to get DeviceContext and DeviceStream from.
  */
-void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>& rVecOutput, const std::vector<gmx::RVec>& rVecInput);
+void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>&       rVecOutput,
+                                 const std::vector<gmx::RVec>& rVecInput,
+                                 const TestDevice*             testDevice);
+
 
 } // namespace test
 } // namespace gmx

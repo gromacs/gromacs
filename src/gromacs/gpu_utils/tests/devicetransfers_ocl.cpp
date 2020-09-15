@@ -80,7 +80,6 @@ void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char>
     cl_context_properties properties[] = {
         CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(deviceInfo.oclPlatformId), 0
     };
-    // Give uncrustify more space
 
     auto deviceId = deviceInfo.oclDeviceId;
     auto context  = clCreateContext(properties, 1, &deviceId, nullptr, nullptr, &status);

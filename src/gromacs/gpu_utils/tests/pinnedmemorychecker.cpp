@@ -54,7 +54,7 @@
 #    include "gromacs/utility/real.h"
 #    include "gromacs/utility/smalloc.h"
 
-#    include "gputest.h"
+#    include "testutils/test_hardware_environment.h"
 
 namespace gmx
 {
@@ -66,26 +66,10 @@ namespace
 {
 
 //! Test fixture
-using PinnedMemoryCheckerTest = GpuTest;
+using PinnedMemoryCheckerTest = ::testing::Test;
 
 TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
 {
-    if (!canComputeOnDevice())
-    {
-        return;
-    }
-
-    std::vector<real> dummy(3, 1.5);
-    EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
-}
-
-TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
-{
-    if (!canComputeOnDevice())
-    {
-        return;
-    }
-
     HostVector<real> dummy(3, 1.5);
     changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
     EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
@@ -93,11 +77,6 @@ TEST_F(PinnedMemoryCheckerTest, NonpinnedContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 {
-    if (!canComputeOnDevice())
-    {
-        return;
-    }
-
     HostVector<real> dummy(3, 1.5);
     changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
@@ -105,11 +84,6 @@ TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinningChangesAreRecognized)
 {
-    if (!canComputeOnDevice())
-    {
-        return;
-    }
-
     HostVector<real> dummy(3, 1.5);
     changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
     EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory starts pinned";
@@ -121,11 +95,6 @@ TEST_F(PinnedMemoryCheckerTest, PinningChangesAreRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 {
-    if (!canComputeOnDevice())
-    {
-        return;
-    }
-
     real* dummy;
     snew(dummy, 3);
     EXPECT_FALSE(isHostMemoryPinned(dummy));
@@ -134,11 +103,6 @@ TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 
 TEST_F(PinnedMemoryCheckerTest, PinnedCBufferIsRecognized)
 {
-    if (!canComputeOnDevice())
-    {
-        return;
-    }
-
     real* dummy = nullptr;
     pmalloc(reinterpret_cast<void**>(&dummy), 3 * sizeof(real));
     EXPECT_TRUE(isHostMemoryPinned(dummy));
