@@ -1753,7 +1753,7 @@ int pdb2gmx::run()
             bVsiteAromatics_ = true;
             break;
         case VSitesType::Count:
-            gmx_fatal(FARGS, "Internal inconsistency: VSitesType='%s'", c_vsitesTypeNames[vsitesType_]);
+            gmx_fatal(FARGS, "Internal inconsistency: VSitesType is out of range.");
     } /* end switch */
 
     /* Open the symbol table */
