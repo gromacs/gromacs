@@ -44,37 +44,70 @@ gmx_add_unit_test_library(mdrun_test_infrastructure
     trajectoryreader.cpp
     )
 
-set(testname "MdrunTests")
-set(exename "mdrun-test")
+# To avoid running into test timeouts, some end-to-end tests of mdrun
+# functionality are split off. This can be rearranged in future as we
+# see fit.
+set(testname "MdrunOutputTests")
+set(exename "mdrun-output-test")
 
 gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     compressed_x_output.cpp
+    helpwriting.cpp
+    outputfiles.cpp
+    trajectory_writing.cpp
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+
+set(testname "MdrunModulesTests")
+set(exename "mdrun-modules-test")
+
+gmx_add_gtest_executable(
+    ${exename}
     densityfittingmodule.cpp
+    interactiveMD.cpp
+    mimic.cpp
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+
+set(testname "MdrunIOTests")
+set(exename "mdrun-io-test")
+
+gmx_add_gtest_executable(
+    ${exename}
     exactcontinuation.cpp
     grompp.cpp
-    helpwriting.cpp
     initialconstraints.cpp
-    interactiveMD.cpp
-    outputfiles.cpp
+    termination.cpp
+    # pseudo-library for code for mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+
+set(testname "MdrunTests")
+set(exename "mdrun-test")
+
+gmx_add_gtest_executable(
+    ${exename}
     orires.cpp
     pmetest.cpp
     simulator.cpp
     swapcoords.cpp
     tabulated_bonded_interactions.cpp
-    termination.cpp
-    trajectory_writing.cpp
-    mimic.cpp
     # pseudo-library for code for mdrun
     $<TARGET_OBJECTS:mdrun_objlib>
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST)
 
-# To avoid running into test timeouts, some end-to-end tests of mdrun
-# functionality are split off. This can be rearranged in future as we
-# see fit.
 set(testname "MdrunNonIntegratorTests")
 set(exename "mdrun-non-integrator-test")
 
