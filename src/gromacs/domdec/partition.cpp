@@ -3117,27 +3117,20 @@ void dd_partition_system(FILE*                     fplog,
 
     state_change_natoms(state_local, state_local->natoms);
 
-    if (fr->forceHelperBuffers->haveDirectVirialContributions())
+    if (vsite && vsite->numInterUpdategroupVirtualSites())
     {
-        if (vsite && vsite->numInterUpdategroupVirtualSites())
-        {
-            nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Vsites);
-        }
-        else
-        {
-            if (EEL_FULL(ir->coulombtype) && dd->haveExclusions)
-            {
-                nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Zones);
-            }
-            else
-            {
-                nat_f_novirsum = comm->atomRanges.numHomeAtoms();
-            }
-        }
+        nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Vsites);
     }
     else
     {
-        nat_f_novirsum = 0;
+        if (EEL_FULL(ir->coulombtype) && dd->haveExclusions)
+        {
+            nat_f_novirsum = comm->atomRanges.end(DDAtomRanges::Type::Zones);
+        }
+        else
+        {
+            nat_f_novirsum = comm->atomRanges.numHomeAtoms();
+        }
     }
 
     /* Set the number of atoms required for the force calculation.
