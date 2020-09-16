@@ -16,7 +16,7 @@ python3 $SCRIPT --cmake 3.15.7 --gcc 8 --cuda 11.0 --opencl --clfft --mpi openmp
 
 tag="gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master"
 tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.13.0 --gcc 7 --opencl amd --clfft --mpi openmpi | docker build -t $tag -
+python3 $SCRIPT --cmake 3.13.0 --gcc 7 --opencl amd --clfft --mpi openmpi --ubuntu 18.04 | docker build -t $tag -
 
 tag="gromacs/cmake-3.13.0-llvm-8-tsan-master"
 tags[${#tags[@]}]=$tag
@@ -40,7 +40,7 @@ python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl intel --mpi openmpi | docker bu
 
 tag="gromacs/cmake-3.13.0-llvm-9-amdopencl-openmpi-master"
 tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl amd --mpi openmpi | docker build -t $tag -
+python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl amd --mpi openmpi --ubuntu 18.04 | docker build -t $tag -
 
 tag="gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master"
 tags[${#tags[@]}]=$tag

@@ -268,7 +268,7 @@ def get_opencl(args):
             return hpccm.building_blocks.packages(
                     apt_keys=['http://repo.radeon.com/rocm/apt/debian/rocm.gpg.key'],
                     apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main'],
-                    ospackages=['ocl-icd-libopencl1', 'ocl-icd-opencl-dev', 'opencl-headers', 'libelf1', 'rocm-opencl'])
+                    ospackages=['ocl-icd-libopencl1', 'ocl-icd-opencl-dev', 'opencl-headers', 'libelf1', 'rocm-opencl', 'rocm-dev', 'clinfo'])
     else:
         return None
 
