@@ -51,3 +51,16 @@ instruction for lower latency timing. Very old machines might need to
 configure with ``GMX_USE_RDTSCP=off``. Non-x86 platforms are
 unaffected, except that they will no longer report that RDTSCP is
 disabled (because that is self-evident).
+
+armv8+sve support (ARM_SVE)
+"""""""""""""""""""""""""""
+Support for ARM Scalable Vector Extensions (SVE) has been added.
+|Gromacs| supports SVE vector length fixed at CMake configure time
+(typically via the -msve-vector-bits=<len> compiler option),
+which is at the time of the release supported in GNU GCC 10 and later,
+and will supported soon by LLVM 12 and compilers based on this.
+The default vector length is 512 bits, and that can be changed at
+CMake configure time with ``GMX_SIMD_ARM_SVE_LENGTH=<bits>`` option.
+Supported values are 128, 256, 512 and 1024. Note that the nonbonded
+kernels have not been optimized for ARM_SVE as of yet.
+ARM_SVE support is contributed by the Research Organization for Science Information and Technology (RIST)

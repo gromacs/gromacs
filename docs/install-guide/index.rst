@@ -575,6 +575,10 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
 12. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
 13. ``ARM_NEON`` 32-bit ARMv7 with NEON support.
 14. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
+15. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
+    The SVE vector length is fixed at CMake configure time. The default vector
+    length is 512 bits, and this can be changed via the ``GMX_SIMD_ARM_SVE_LENGTH``
+    CMake variable.
 
 The CMake configure system will check that the compiler you have
 chosen can target the architecture you have chosen. mdrun will check
