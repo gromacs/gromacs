@@ -146,6 +146,7 @@ public:
         X86_Xop,         //!< AMD extended instructions, only AMD for now
         Arm_Neon,        //!< 32-bit ARM NEON
         Arm_NeonAsimd,   //!< 64-bit ARM AArch64 Advanced SIMD
+        Arm_Sve,         //!< ARM Scalable Vector Extensions
         Ibm_Qpx,         //!< IBM QPX SIMD (BlueGene/Q)
         Ibm_Vmx,         //!< IBM VMX SIMD (Altivec on Power6 and later)
         Ibm_Vsx,         //!< IBM VSX SIMD (Power7 and later)

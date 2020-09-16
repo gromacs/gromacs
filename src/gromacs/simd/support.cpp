@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,10 @@
 
 #include "config.h"
 
+#if GMX_SIMD_ARM_SVE
+#    include <arm_sve.h>
+#endif
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -56,6 +60,7 @@
 
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/identifyavx512fmaunits.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -80,6 +85,7 @@ const std::string& simdString(SimdType s)
         { SimdType::X86_Mic, "X86_MIC" },
         { SimdType::Arm_Neon, "ARM_NEON" },
         { SimdType::Arm_NeonAsimd, "ARM_NEON_ASIMD" },
+        { SimdType::Arm_Sve, "ARM_SVE" },
         { SimdType::Ibm_Vmx, "IBM_VMX" },
         { SimdType::Ibm_Vsx, "IBM_VSX" },
         { SimdType::Fujitsu_HpcAce, "Fujitsu HPC-ACE" }
@@ -179,7 +185,11 @@ SimdType simdSuggested(const CpuInfo& c)
 
                 break;
             case CpuInfo::Vendor::Arm:
-                if (c.feature(CpuInfo::Feature::Arm_NeonAsimd))
+                if (c.feature(CpuInfo::Feature::Arm_Sve))
+                {
+                    suggested = SimdType::Arm_Sve;
+                }
+                else if (c.feature(CpuInfo::Feature::Arm_NeonAsimd))
                 {
                     suggested = SimdType::Arm_NeonAsimd;
                 }
@@ -234,6 +244,8 @@ SimdType simdCompiled()
     return SimdType::Arm_Neon;
 #elif GMX_SIMD_ARM_NEON_ASIMD
     return SimdType::Arm_NeonAsimd;
+#elif GMX_SIMD_ARM_SVE
+    return SimdType::Arm_Sve;
 #elif GMX_SIMD_IBM_VMX
     return SimdType::Ibm_Vmx;
 #elif GMX_SIMD_IBM_VSX
@@ -319,6 +331,21 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
         warnMsg = wrapper.wrapToString(formatString(
                 "Compiled SIMD: %s, but for this host/run %s might be better (see log).",
                 simdString(compiled).c_str(), simdString(wanted).c_str()));
+#if GMX_SIMD_ARM_SVE
+    }
+    else if ((compiled == SimdType::Arm_Sve) && (svcntb() != GMX_SIMD_ARM_SVE_LENGTH / 8))
+    {
+        logMsg  = wrapper.wrapToString(formatString(
+                "Longest SVE length requested by all nodes in run: %d\n"
+                "SVE length selected at compile time:               %ld\n"
+                "This program was compiled for different hardware than you are running on, "
+                "which will lead to incorrect behavior.\n"
+                "Aborting",
+                GMX_SIMD_ARM_SVE_LENGTH, svcntb() * 8));
+        warnMsg = wrapper.wrapToString(formatString(
+                "Compiled SVE Length: %d, but for this process requires %ld (see log).",
+                GMX_SIMD_ARM_SVE_LENGTH, svcntb() * 8));
+#endif
     }
 
     if (!logMsg.empty() && log != nullptr)
@@ -329,6 +356,12 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
     {
         fprintf(stderr, "%s\n", warnMsg.c_str());
     }
+#if GMX_SIMD_ARM_SVE
+    if ((compiled == SimdType::Arm_Sve) && (svcntb() != GMX_SIMD_ARM_SVE_LENGTH / 8))
+    {
+        gmx_exit_on_fatal_error(ExitType_Abort, 1);
+    }
+#endif
 
     return (wanted == compiled);
 }

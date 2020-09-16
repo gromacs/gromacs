@@ -947,6 +947,10 @@ void detectProcCpuInfoArm(const std::map<std::string, std::string>& cpuInfo,
                 features->insert(CpuInfo::Feature::Arm_NeonAsimd);
             }
         }
+        if (s.find("sve") != std::string::npos)
+        {
+            features->insert(CpuInfo::Feature::Arm_Sve);
+        }
     }
 }
 
@@ -1042,6 +1046,9 @@ CpuInfo CpuInfo::detect()
 #if defined __aarch64__ || (defined _M_ARM && _M_ARM >= 8)
         result.features_.insert(Feature::Arm_Neon);      // ARMv8 always has Neon
         result.features_.insert(Feature::Arm_NeonAsimd); // ARMv8 always has Neon-asimd
+#endif
+#if defined __arch64__ && defined __ARM_FEATURE_SVE
+        result.features_.insert(Feature::Arm_Sve);
 #endif
 
 #if defined sun
@@ -1148,6 +1155,7 @@ const std::string& CpuInfo::featureString(Feature f)
         { Feature::X86_Xop, "xop" },
         { Feature::Arm_Neon, "neon" },
         { Feature::Arm_NeonAsimd, "neon_asimd" },
+        { Feature::Arm_Sve, "sve" },
         { Feature::Ibm_Qpx, "qpx" },
         { Feature::Ibm_Vmx, "vmx" },
         { Feature::Ibm_Vsx, "vsx" },
