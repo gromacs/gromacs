@@ -93,10 +93,7 @@ public:
                        const real*                       referenceTemperature,
                        const real*                       couplingTime,
                        const real*                       numDegreesOfFreedom,
-                       EnergyData*                       energyData,
-                       const t_state*                    globalState,
-                       t_commrec*                        cr,
-                       bool                              isRestart);
+                       EnergyData*                       energyData);
 
     /*! \brief Register run function for step / time
      *
@@ -116,6 +113,13 @@ public:
 
     //! Connect this to propagator
     void connectWithPropagator(const PropagatorThermostatConnection& connectionData);
+
+    //! ICheckpointHelperClient write checkpoint implementation
+    void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient read checkpoint implementation
+    void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient key implementation
+    const std::string& clientID() override;
 
     /*! \brief Factory method implementation
      *
@@ -181,8 +185,11 @@ private:
     //! Set new lambda value (at T-coupling steps)
     void setLambda(Step step);
 
-    //! ICheckpointHelperClient implementation
-    void writeCheckpoint(t_state* localState, t_state* globalState) override;
+    //! CheckpointHelper identifier
+    const std::string identifier_ = "VRescaleThermostat";
+    //! Helper function to read from / write to CheckpointData
+    template<CheckpointDataOperation operation>
+    void doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr);
 };
 
 } // namespace gmx

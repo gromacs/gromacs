@@ -43,6 +43,7 @@
 
 #include "energydata.h"
 
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/coupling.h"
@@ -53,6 +54,7 @@
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -60,7 +62,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/topology/topology.h"
 
 #include "freeenergyperturbationdata.h"
@@ -98,6 +99,7 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     totalVirialStep_(-1),
     pressureStep_(-1),
     needToSumEkinhOld_(false),
+    hasReadEkinFromCheckpoint_(false),
     startingBehavior_(startingBehavior),
     statePropagatorData_(statePropagatorData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
@@ -120,6 +122,9 @@ EnergyData::EnergyData(StatePropagatorData*        statePropagatorData,
     clear_mat(totalVirial_);
     clear_mat(pressure_);
     clear_rvec(muTot_);
+
+    init_ekinstate(&ekinstate_, inputrec_);
+    observablesHistory_->energyHistory = std::make_unique<energyhistory_t>();
 }
 
 void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction)
@@ -357,22 +362,79 @@ bool* EnergyData::needToSumEkinhOld()
     return &needToSumEkinhOld_;
 }
 
-void EnergyData::Element::writeCheckpoint(t_state gmx_unused* localState, t_state* globalState)
+bool EnergyData::hasReadEkinFromCheckpoint() const
 {
-    if (isMasterRank_)
+    return hasReadEkinFromCheckpoint_;
+}
+
+namespace
+{
+/*!
+ * \brief Enum describing the contents EnergyData::Element writes to modular checkpoint
+ *
+ * When changing the checkpoint content, add a new element just above Count, and adjust the
+ * checkpoint functionality.
+ */
+enum class CheckpointVersion
+{
+    Base, //!< First version of modular checkpointing
+    Count //!< Number of entries. Add new versions right above this!
+};
+constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count) - 1);
+} // namespace
+
+template<CheckpointDataOperation operation>
+void EnergyData::Element::doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr)
+{
+    if (MASTER(cr))
+    {
+        checkpointVersion(checkpointData, "EnergyData version", c_currentVersion);
+
+        energyData_->observablesHistory_->energyHistory->doCheckpoint<operation>(
+                checkpointData->subCheckpointData("energy history"));
+        energyData_->ekinstate_.doCheckpoint<operation>(
+                checkpointData->subCheckpointData("ekinstate"));
+    }
+}
+
+void EnergyData::Element::writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr)
+{
+    if (MASTER(cr))
     {
         if (energyData_->needToSumEkinhOld_)
         {
-            globalState->ekinstate.bUpToDate = false;
+            energyData_->ekinstate_.bUpToDate = false;
         }
         else
         {
-            update_ekinstate(&globalState->ekinstate, energyData_->ekind_);
-            globalState->ekinstate.bUpToDate = true;
+            update_ekinstate(&energyData_->ekinstate_, energyData_->ekind_);
+            energyData_->ekinstate_.bUpToDate = true;
         }
         energyData_->energyOutput_->fillEnergyHistory(
                 energyData_->observablesHistory_->energyHistory.get());
     }
+    doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
+}
+
+void EnergyData::Element::readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr)
+{
+    doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
+    energyData_->hasReadEkinFromCheckpoint_ = MASTER(cr) ? energyData_->ekinstate_.bUpToDate : false;
+    if (PAR(cr))
+    {
+        gmx_bcast(sizeof(hasReadEkinFromCheckpoint_), &energyData_->hasReadEkinFromCheckpoint_,
+                  cr->mpi_comm_mygroup);
+    }
+    if (energyData_->hasReadEkinFromCheckpoint_)
+    {
+        // this takes care of broadcasting from master to agents
+        restore_ekinstate_from_state(cr, energyData_->ekind_, &energyData_->ekinstate_);
+    }
+}
+
+const std::string& EnergyData::Element::clientID()
+{
+    return identifier_;
 }
 
 void EnergyData::initializeEnergyHistory(StartingBehavior    startingBehavior,

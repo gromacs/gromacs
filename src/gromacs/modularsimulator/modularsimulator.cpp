@@ -89,7 +89,8 @@ void ModularSimulator::run()
             .asParagraph()
             .appendText("Using the modular simulator.");
 
-    ModularSimulatorAlgorithmBuilder algorithmBuilder(compat::make_not_null(legacySimulatorData_));
+    ModularSimulatorAlgorithmBuilder algorithmBuilder(compat::make_not_null(legacySimulatorData_),
+                                                      std::move(checkpointDataHolder_));
     addIntegrationElements(&algorithmBuilder);
     auto algorithm = algorithmBuilder.build();
 

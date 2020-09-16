@@ -335,7 +335,19 @@ public:
         boxDeformation_ = std::make_unique<BoxDeformationHandle>(boxDeformation);
     }
 
-    //! Pass the read checkpoint data for modular simulator
+    /*!
+     * \brief Pass the read checkpoint data for modular simulator
+     *
+     * Note that this is currently the point at which the ReadCheckpointDataHolder
+     * is fully filled. Consequently it stops being an object at which read
+     * operations from file are targeted, and becomes a read-only object from
+     * which elements read their data to recreate an earlier internal state.
+     *
+     * Currently, this behavior change is not enforced. Once input reading and
+     * simulator builder have matured, these restrictions could be imposed.
+     *
+     * See #3656
+     */
     void add(std::unique_ptr<ReadCheckpointDataHolder> modularSimulatorCheckpointData);
 
     /*! \brief Build a Simulator object based on input data

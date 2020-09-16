@@ -351,7 +351,8 @@ class ModularSimulatorAlgorithmBuilder final
 {
 public:
     //! Constructor
-    explicit ModularSimulatorAlgorithmBuilder(compat::not_null<LegacySimulatorData*> legacySimulatorData);
+    ModularSimulatorAlgorithmBuilder(compat::not_null<LegacySimulatorData*>    legacySimulatorData,
+                                     std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder);
     //! Build algorithm
     ModularSimulatorAlgorithm build();
 
@@ -455,6 +456,8 @@ private:
     TrajectoryElementBuilder trajectoryElementBuilder_;
     //! Builder for the TopologyHolder
     TopologyHolder::Builder topologyHolderBuilder_;
+    //! Builder for the CheckpointHelper
+    CheckpointHelperBuilder checkpointHelperBuilder_;
 
     /*! \brief List of clients for the CheckpointHelper
      *
@@ -594,10 +597,7 @@ void ModularSimulatorAlgorithmBuilder::registerWithInfrastructureAndSignallers(E
     // Register element to topology holder (if applicable)
     topologyHolderBuilder_.registerClient(castOrNull<ITopologyHolderClient, Element>(element));
     // Register element to checkpoint client (if applicable)
-    if (auto castedElement = castOrNull<ICheckpointHelperClient, Element>(element))
-    {
-        checkpointClients_.emplace_back(castedElement);
-    }
+    checkpointHelperBuilder_.registerClient(castOrNull<ICheckpointHelperClient, Element>(element));
 }
 
 } // namespace gmx

@@ -61,11 +61,13 @@
 #include <optional>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
 struct gmx_localtop_t;
 struct gmx_mdoutf;
+struct t_commrec;
 class t_state;
 
 namespace gmx
@@ -341,28 +343,43 @@ protected:
 /*! \internal
  * \brief Client that needs to store data during checkpointing
  *
- * The current checkpointing helper uses the legacy t_state object to collect
- * the data to be checkpointed. Clients get queried for their contributions
- * using pointers to t_state objects.
- * \todo Add checkpoint reading
- * \todo Evolve this to a model in which the checkpoint helper passes a file
- *       pointer rather than a t_state object, and the clients are responsible
- *       to read / write.
+ * Clients receive a CheckpointData object for reading and writing.
+ * Note that `ReadCheckpointData` is a typedef for
+ * `CheckpointData<CheckpointDataOperation::Read>`, and
+ * `WriteCheckpointData` is a typedef for
+ * `CheckpointData<CheckpointDataOperation::Write>`. This allows clients
+ * to write a single templated function, e.g.
+ *     template<CheckpointDataOperation operation>
+ *     void doCheckpointData(CheckpointData<operation>* checkpointData,
+ *                           const t_commrec* cr)
+ *     {
+ *         checkpointData->scalar("important value", &value_);
+ *     }
+ * for both checkpoint reading and writing. This function can then be
+ * dispatched from the interface functions,
+ *     void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr)
+ *     {
+ *         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
+ *     }
+ *     void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr)
+ *     {
+ *         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
+ *     }
+ * This reduces code duplication and ensures that reading and writing
+ * operations will not get out of sync.
  */
 class ICheckpointHelperClient
 {
 public:
-    //! \cond
-    // (doxygen doesn't like these...)
-    //! Allow CheckpointHelper to interact
-    friend class CheckpointHelper;
-    //! \endcond
     //! Standard virtual destructor
     virtual ~ICheckpointHelperClient() = default;
 
-protected:
     //! Write checkpoint
-    virtual void writeCheckpoint(t_state* localState, t_state* globalState) = 0;
+    virtual void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr) = 0;
+    //! Read checkpoint
+    virtual void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr) = 0;
+    //! Get unique client id
+    [[nodiscard]] virtual const std::string& clientID() = 0;
 };
 
 /*! \brief

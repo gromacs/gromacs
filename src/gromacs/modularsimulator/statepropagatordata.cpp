@@ -61,7 +61,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/state.h"
-#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
@@ -130,6 +129,14 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
     if (useGPU)
     {
         changePinningPolicy(&x_, gmx::PinningPolicy::PinnedIfSupported);
+    }
+
+    if (DOMAINDECOMP(cr) && MASTER(cr))
+    {
+        xGlobal_.reserveWithPadding(totalNumAtoms_);
+        previousXGlobal_.reserveWithPadding(totalNumAtoms_);
+        vGlobal_.reserveWithPadding(totalNumAtoms_);
+        fGlobal_.reserveWithPadding(totalNumAtoms_);
     }
 
     if (!inputrec->bContinuation)
@@ -254,7 +261,9 @@ std::unique_ptr<t_state> StatePropagatorData::localState()
     state->x = x_;
     state->v = v_;
     copy_mat(box_, state->box);
-    state->ddp_count = ddpCount_;
+    state->ddp_count       = ddpCount_;
+    state->ddp_count_cg_gl = ddpCountCgGl_;
+    state->cg_gl           = cgGl_;
     return state;
 }
 
@@ -268,7 +277,9 @@ void StatePropagatorData::setLocalState(std::unique_ptr<t_state> state)
     v_ = state->v;
     copy_mat(state->box, box_);
     copyPosition();
-    ddpCount_ = state->ddp_count;
+    ddpCount_     = state->ddp_count;
+    ddpCountCgGl_ = state->ddp_count_cg_gl;
+    cgGl_         = state->cg_gl;
 
     if (vvResetVelocities_)
     {
@@ -453,14 +464,74 @@ void StatePropagatorData::resetVelocities()
     v_ = velocityBackup_;
 }
 
-void StatePropagatorData::Element::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
+namespace
 {
-    state_change_natoms(localState, statePropagatorData_->localNAtoms_);
-    localState->x = statePropagatorData_->x_;
-    localState->v = statePropagatorData_->v_;
-    copy_mat(statePropagatorData_->box_, localState->box);
-    localState->ddp_count = statePropagatorData_->ddpCount_;
-    localState->flags |= (1U << estX) | (1U << estV) | (1U << estBOX);
+/*!
+ * \brief Enum describing the contents StatePropagatorData::Element writes to modular checkpoint
+ *
+ * When changing the checkpoint content, add a new element just above Count, and adjust the
+ * checkpoint functionality.
+ */
+enum class CheckpointVersion
+{
+    Base, //!< First version of modular checkpointing
+    Count //!< Number of entries. Add new versions right above this!
+};
+constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count) - 1);
+} // namespace
+
+template<CheckpointDataOperation operation>
+void StatePropagatorData::Element::doCheckpointData(CheckpointData<operation>* checkpointData,
+                                                    const t_commrec*           cr)
+{
+    ArrayRef<RVec> xGlobalRef;
+    ArrayRef<RVec> vGlobalRef;
+    if (DOMAINDECOMP(cr))
+    {
+        if (MASTER(cr))
+        {
+            xGlobalRef = statePropagatorData_->xGlobal_;
+            vGlobalRef = statePropagatorData_->vGlobal_;
+        }
+        if (operation == CheckpointDataOperation::Write)
+        {
+            dd_collect_vec(cr->dd, statePropagatorData_->ddpCount_, statePropagatorData_->ddpCountCgGl_,
+                           statePropagatorData_->cgGl_, statePropagatorData_->x_, xGlobalRef);
+            dd_collect_vec(cr->dd, statePropagatorData_->ddpCount_, statePropagatorData_->ddpCountCgGl_,
+                           statePropagatorData_->cgGl_, statePropagatorData_->v_, vGlobalRef);
+        }
+    }
+    else
+    {
+        xGlobalRef = statePropagatorData_->x_;
+        vGlobalRef = statePropagatorData_->v_;
+    }
+    if (MASTER(cr))
+    {
+        checkpointVersion(checkpointData, "StatePropagatorData version", c_currentVersion);
+
+        checkpointData->arrayRef("positions", makeCheckpointArrayRef<operation>(xGlobalRef));
+        checkpointData->arrayRef("velocities", makeCheckpointArrayRef<operation>(vGlobalRef));
+        checkpointData->tensor("box", statePropagatorData_->box_);
+        checkpointData->scalar("ddpCount", &statePropagatorData_->ddpCount_);
+        checkpointData->scalar("ddpCountCgGl", &statePropagatorData_->ddpCountCgGl_);
+        checkpointData->arrayRef("cgGl", makeCheckpointArrayRef<operation>(statePropagatorData_->cgGl_));
+    }
+}
+
+void StatePropagatorData::Element::writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr)
+{
+    doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
+}
+
+void StatePropagatorData::Element::readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr)
+{
+    doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
+}
+
+const std::string& StatePropagatorData::Element::clientID()
+{
+    return identifier_;
 }
 
 void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unused outf)

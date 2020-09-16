@@ -45,6 +45,7 @@
 #define GMX_ENERGYELEMENT_MICROSTATE_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/state.h"
 
 #include "modularsimulatorinterfaces.h"
 
@@ -179,6 +180,13 @@ public:
      */
     bool* needToSumEkinhOld();
 
+    /*! \brief Whether kinetic energy was read from checkpoint
+     *
+     * This is needed by the compute globals element
+     * TODO: Remove this when moving global reduction to client system (#3421)
+     */
+    [[nodiscard]] bool hasReadEkinFromCheckpoint() const;
+
     /*! \brief set vrescale thermostat
      *
      * This allows to set a pointer to the vrescale thermostat used to
@@ -239,6 +247,8 @@ private:
     std::unique_ptr<Element> element_;
     //! The energy output object
     std::unique_ptr<EnergyOutput> energyOutput_;
+    //! Helper object to checkpoint kinetic energy data
+    ekinstate_t ekinstate_;
 
     //! Whether this is the master rank
     const bool isMasterRank_;
@@ -265,6 +275,8 @@ private:
 
     //! Whether ekinh_old needs to be summed up (set by compute globals)
     bool needToSumEkinhOld_;
+    //! Whether we have read ekin from checkpoint
+    bool hasReadEkinFromCheckpoint_;
 
     //! Describes how the simulation (re)starts
     const StartingBehavior startingBehavior_;
@@ -351,6 +363,13 @@ public:
     //! No element teardown needed
     void elementTeardown() override {}
 
+    //! ICheckpointHelperClient write checkpoint implementation
+    void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient read checkpoint implementation
+    void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient key implementation
+    const std::string& clientID() override;
+
     /*! \brief Factory method implementation
      *
      * \param legacySimulatorData  Pointer allowing access to simulator level data
@@ -391,8 +410,12 @@ private:
     //! IEnergySignallerClient implementation
     std::optional<SignallerCallback> registerEnergyCallback(EnergySignallerEvent event) override;
 
-    //! ICheckpointHelperClient implementation
-    void writeCheckpoint(t_state* localState, t_state* globalState) override;
+
+    //! CheckpointHelper identifier
+    const std::string identifier_ = "EnergyElement";
+    //! Helper function to read from / write to CheckpointData
+    template<CheckpointDataOperation operation>
+    void doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr);
 
     //! Whether this is the master rank
     const bool isMasterRank_;

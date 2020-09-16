@@ -54,6 +54,7 @@ struct t_commrec;
 
 namespace gmx
 {
+enum class CheckpointDataOperation;
 class EnergyData;
 class LegacySimulatorData;
 class MDAtoms;
@@ -81,10 +82,7 @@ public:
                              EnergyData*          energyData,
                              FILE*                fplog,
                              const t_inputrec*    inputrec,
-                             const MDAtoms*       mdAtoms,
-                             const t_state*       globalState,
-                             t_commrec*           cr,
-                             bool                 isRestart);
+                             const MDAtoms*       mdAtoms);
 
     /*! \brief Register run function for step / time
      *
@@ -106,6 +104,13 @@ public:
 
     //! Connect this to propagator
     void connectWithPropagator(const PropagatorBarostatConnection& connectionData);
+
+    //! ICheckpointHelperClient write checkpoint implementation
+    void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient read checkpoint implementation
+    void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient key implementation
+    const std::string& clientID() override;
 
     /*! \brief Factory method implementation
      *
@@ -160,8 +165,11 @@ private:
     //! Scale box and positions
     void scaleBoxAndPositions();
 
-    //! ICheckpointHelperClient implementation
-    void writeCheckpoint(t_state* localState, t_state* globalState) override;
+    //! CheckpointHelper identifier
+    const std::string identifier_ = "ParrinelloRahmanBarostat";
+    //! Helper function to read from / write to CheckpointData
+    template<CheckpointDataOperation operation>
+    void doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr);
 
     // Access to ISimulator data
     //! Handles logging.

@@ -49,6 +49,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/forcebuffers.h"
+#include "gromacs/utility/keyvaluetree.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"
@@ -62,6 +63,7 @@ struct t_mdatoms;
 
 namespace gmx
 {
+enum class CheckpointDataOperation;
 enum class ConstraintVariable;
 class EnergyData;
 class FreeEnergyPerturbationData;
@@ -169,8 +171,21 @@ private:
     matrix box_;
     //! The box matrix of the previous step
     matrix previousBox_;
-    //! The DD partitioning count for legacy t_state compatibility
+    //! The DD partitioning count
     int ddpCount_;
+    //! The DD partitioning count for index_gl
+    int ddpCountCgGl_;
+    //! The global cg number of the local cgs
+    std::vector<int> cgGl_;
+
+    //! The global position vector
+    PaddedHostVector<RVec> xGlobal_;
+    //! The global position vector of the previous step
+    PaddedHostVector<RVec> previousXGlobal_;
+    //! The global velocity vector
+    PaddedHostVector<RVec> vGlobal_;
+    //! The global force vector
+    PaddedHostVector<RVec> fGlobal_;
 
     //! The element
     std::unique_ptr<Element> element_;
@@ -281,6 +296,13 @@ public:
     //! Set free energy data
     void setFreeEnergyPerturbationData(FreeEnergyPerturbationData* freeEnergyPerturbationData);
 
+    //! ICheckpointHelperClient write checkpoint implementation
+    void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient read checkpoint implementation
+    void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient key implementation
+    const std::string& clientID() override;
+
     /*! \brief Factory method implementation
      *
      * \param legacySimulatorData  Pointer allowing access to simulator level data
@@ -325,8 +347,11 @@ private:
     //! ITrajectoryWriterClient implementation
     std::optional<ITrajectoryWriterCallback> registerTrajectoryWriterCallback(TrajectoryEvent event) override;
 
-    //! ICheckpointHelperClient implementation
-    void writeCheckpoint(t_state* localState, t_state* globalState) override;
+    //! CheckpointHelper identifier
+    const std::string identifier_ = "StatePropagatorData";
+    //! Helper function to read from / write to CheckpointData
+    template<CheckpointDataOperation operation>
+    void doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr);
 
     //! ILastStepSignallerClient implementation (used for final output only)
     std::optional<SignallerCallback> registerLastStepCallback() override;

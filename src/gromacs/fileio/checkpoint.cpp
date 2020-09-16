@@ -2579,6 +2579,13 @@ static void read_checkpoint(const char*                    fn,
                   fn);
     }
 
+    GMX_ASSERT(!(headerContents->isModularSimulatorCheckpoint && !useModularSimulator),
+               "Checkpoint file was written by modular simulator, but the current simulation uses "
+               "the legacy simulator.");
+    GMX_ASSERT(!(!headerContents->isModularSimulatorCheckpoint && useModularSimulator),
+               "Checkpoint file was written by legacy simulator, but the current simulation uses "
+               "the modular simulator.");
+
     if (MASTER(cr))
     {
         check_match(fplog, cr, dd_nc, *headerContents, reproducibilityRequested);

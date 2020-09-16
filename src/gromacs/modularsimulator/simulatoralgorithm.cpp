@@ -382,14 +382,18 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
 }
 
 ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
-        compat::not_null<LegacySimulatorData*> legacySimulatorData) :
+        compat::not_null<LegacySimulatorData*>    legacySimulatorData,
+        std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder) :
     legacySimulatorData_(legacySimulatorData),
     signals_(std::make_unique<SimulationSignals>()),
     elementAdditionHelper_(this),
     globalCommunicationHelper_(computeGlobalCommunicationPeriod(legacySimulatorData->mdlog,
                                                                 legacySimulatorData->inputrec,
                                                                 legacySimulatorData->cr),
-                               signals_.get())
+                               signals_.get()),
+    checkpointHelperBuilder_(std::move(checkpointDataHolder),
+                             legacySimulatorData->startingBehavior,
+                             legacySimulatorData->cr)
 {
     if (legacySimulatorData->inputrec->efep != efepNO)
     {
@@ -528,14 +532,12 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
 
     // Build checkpoint helper (do this last so everyone else can be a checkpoint client!)
     {
-        auto checkpointHandler = std::make_unique<CheckpointHandler>(
-                compat::make_not_null<SimulationSignal*>(
-                        &(*globalCommunicationHelper_.simulationSignals())[eglsCHKPT]),
+        checkpointHelperBuilder_.setCheckpointHandler(std::make_unique<CheckpointHandler>(
+                compat::make_not_null<SimulationSignal*>(&(*algorithm.signals_)[eglsCHKPT]),
                 simulationsShareState, legacySimulatorData_->inputrec->nstlist == 0,
                 MASTER(legacySimulatorData_->cr), legacySimulatorData_->mdrunOptions.writeConfout,
-                legacySimulatorData_->mdrunOptions.checkpointOptions.period);
-        algorithm.checkpointHelper_ = std::make_unique<CheckpointHelper>(
-                std::move(checkpointClients_), std::move(checkpointHandler),
+                legacySimulatorData_->mdrunOptions.checkpointOptions.period));
+        algorithm.checkpointHelper_ = checkpointHelperBuilder_.build(
                 legacySimulatorData_->inputrec->init_step, trajectoryElement.get(),
                 legacySimulatorData_->top_global->natoms, legacySimulatorData_->fplog,
                 legacySimulatorData_->cr, legacySimulatorData_->observablesHistory,

@@ -43,9 +43,12 @@
 
 #include "freeenergyperturbationdata.h"
 
+#include "gromacs/domdec/domdec_network.h"
 #include "gromacs/mdlib/freeenergyparameters.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdtypes/checkpointdata.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
@@ -65,6 +68,9 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
     mdAtoms_(mdAtoms)
 {
     lambda_.fill(0);
+    // The legacy implementation only filled the lambda vector in state_global, which is only
+    // available on master. We have the lambda vector available everywhere, so we pass a `true`
+    // for isMaster on all ranks. See #3647.
     initialize_lambdas(fplog_, *inputrec_, true, &currentFEPState_, lambda_);
     update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
@@ -101,11 +107,62 @@ int FreeEnergyPerturbationData::currentFEPState()
     return currentFEPState_;
 }
 
-void FreeEnergyPerturbationData::Element::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
+namespace
 {
-    localState->fep_state = freeEnergyPerturbationData_->currentFEPState_;
-    localState->lambda    = freeEnergyPerturbationData_->lambda_;
-    localState->flags |= (1U << estLAMBDA) | (1U << estFEPSTATE);
+/*!
+ * \brief Enum describing the contents FreeEnergyPerturbationData::Element writes to modular checkpoint
+ *
+ * When changing the checkpoint content, add a new element just above Count, and adjust the
+ * checkpoint functionality.
+ */
+enum class CheckpointVersion
+{
+    Base, //!< First version of modular checkpointing
+    Count //!< Number of entries. Add new versions right above this!
+};
+constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count) - 1);
+} // namespace
+
+template<CheckpointDataOperation operation>
+void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operation>* checkpointData,
+                                                           const t_commrec*           cr)
+{
+    if (MASTER(cr))
+    {
+        checkpointVersion(checkpointData, "FreeEnergyPerturbationData version", c_currentVersion);
+
+        checkpointData->scalar("current FEP state", &freeEnergyPerturbationData_->currentFEPState_);
+        checkpointData->arrayRef("lambda vector",
+                                 makeCheckpointArrayRef<operation>(freeEnergyPerturbationData_->lambda_));
+    }
+    if (operation == CheckpointDataOperation::Read)
+    {
+        if (DOMAINDECOMP(cr))
+        {
+            dd_bcast(cr->dd, sizeof(int), &freeEnergyPerturbationData_->currentFEPState_);
+            dd_bcast(cr->dd, freeEnergyPerturbationData_->lambda_.size() * sizeof(real),
+                     freeEnergyPerturbationData_->lambda_.data());
+        }
+        update_mdatoms(freeEnergyPerturbationData_->mdAtoms_->mdatoms(),
+                       freeEnergyPerturbationData_->lambda_[efptMASS]);
+    }
+}
+
+void FreeEnergyPerturbationData::Element::writeCheckpoint(WriteCheckpointData checkpointData,
+                                                          const t_commrec*    cr)
+{
+    doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
+}
+
+void FreeEnergyPerturbationData::Element::readCheckpoint(ReadCheckpointData checkpointData,
+                                                         const t_commrec*   cr)
+{
+    doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
+}
+
+const std::string& FreeEnergyPerturbationData::Element::clientID()
+{
+    return identifier_;
 }
 
 FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement,

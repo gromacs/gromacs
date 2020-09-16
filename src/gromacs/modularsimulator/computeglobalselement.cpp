@@ -79,8 +79,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
                                                         gmx_wallcycle*     wcycle,
                                                         t_forcerec*        fr,
                                                         const gmx_mtop_t*  global_top,
-                                                        Constraints*       constr,
-                                                        bool               hasReadEkinState) :
+                                                        Constraints*       constr) :
     energyReductionStep_(-1),
     virialReductionStep_(-1),
     vvSchedulingStep_(-1),
@@ -90,7 +89,6 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     lastStep_(inputrec->nsteps + inputrec->init_step),
     initStep_(inputrec->init_step),
     nullSignaller_(std::make_unique<SimulationSignaller>(nullptr, nullptr, nullptr, false, false)),
-    hasReadEkinState_(hasReadEkinState),
     totalNumberOfBondedInteractions_(0),
     shouldCheckNumberOfBondedInteractions_(false),
     statePropagatorData_(statePropagatorData),
@@ -144,7 +142,8 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
     }
 
-    unsigned int cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT | (hasReadEkinState_ ? CGLO_READEKIN : 0));
+    unsigned int cglo_flags = (CGLO_TEMPERATURE | CGLO_GSTAT
+                               | (energyData_->hasReadEkinFromCheckpoint() ? CGLO_READEKIN : 0));
 
     if (algorithm == ComputeGlobalsAlgorithm::VelocityVerlet)
     {
@@ -356,31 +355,6 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper*              globalCommunicationHelper)
 {
-    /* When restarting from a checkpoint, it can be appropriate to
-     * initialize ekind from quantities in the checkpoint. Otherwise,
-     * compute_globals must initialize ekind before the simulation
-     * starts/restarts. However, only the master rank knows what was
-     * found in the checkpoint file, so we have to communicate in
-     * order to coordinate the restart.
-     *
-     * TODO This will become obsolete as soon as checkpoint reading
-     *      happens within the modular simulator framework: The energy
-     *      element will read its data from the checkpoint file pointer,
-     *      and signal to the compute globals element if it needs anything
-     *      reduced.
-     */
-    bool hasReadEkinState = MASTER(legacySimulatorData->cr)
-                                    ? legacySimulatorData->state_global->ekinstate.hasReadEkinState
-                                    : false;
-    if (PAR(legacySimulatorData->cr))
-    {
-        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, legacySimulatorData->cr->mpi_comm_mygroup);
-    }
-    if (hasReadEkinState)
-    {
-        restore_ekinstate_from_state(legacySimulatorData->cr, legacySimulatorData->ekind,
-                                     &legacySimulatorData->state_global->ekinstate);
-    }
     auto* element = builderHelper->storeElement(
             std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
                     statePropagatorData, energyData, freeEnergyPerturbationData,
@@ -389,7 +363,7 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
                     legacySimulatorData->mdlog, legacySimulatorData->cr,
                     legacySimulatorData->inputrec, legacySimulatorData->mdAtoms,
                     legacySimulatorData->nrnb, legacySimulatorData->wcycle, legacySimulatorData->fr,
-                    legacySimulatorData->top_global, legacySimulatorData->constr, hasReadEkinState));
+                    legacySimulatorData->top_global, legacySimulatorData->constr));
 
     // TODO: Remove this when DD can reduce bonded interactions independently (#3421)
     auto* castedElement = static_cast<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>*>(element);
@@ -413,38 +387,13 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
     static thread_local ISimulatorElement* vvComputeGlobalsElement = nullptr;
     if (!builderHelper->elementIsStored(vvComputeGlobalsElement))
     {
-        /* When restarting from a checkpoint, it can be appropriate to
-         * initialize ekind from quantities in the checkpoint. Otherwise,
-         * compute_globals must initialize ekind before the simulation
-         * starts/restarts. However, only the master rank knows what was
-         * found in the checkpoint file, so we have to communicate in
-         * order to coordinate the restart.
-         *
-         * TODO This will become obsolete as soon as checkpoint reading
-         *      happens within the modular simulator framework: The energy
-         *      element will read its data from the checkpoint file pointer,
-         *      and signal to the compute globals element if it needs anything
-         *      reduced.
-         */
-        bool hasReadEkinState =
-                MASTER(simulator->cr) ? simulator->state_global->ekinstate.hasReadEkinState : false;
-        if (PAR(simulator->cr))
-        {
-            gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, simulator->cr->mpi_comm_mygroup);
-        }
-        if (hasReadEkinState)
-        {
-            restore_ekinstate_from_state(simulator->cr, simulator->ekind,
-                                         &simulator->state_global->ekinstate);
-        }
         vvComputeGlobalsElement = builderHelper->storeElement(
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>(
                         statePropagatorData, energyData, freeEnergyPerturbationData,
                         globalCommunicationHelper->simulationSignals(),
-                        globalCommunicationHelper->nstglobalcomm(), simulator->fplog,
-                        simulator->mdlog, simulator->cr, simulator->inputrec, simulator->mdAtoms,
-                        simulator->nrnb, simulator->wcycle, simulator->fr, simulator->top_global,
-                        simulator->constr, hasReadEkinState));
+                        globalCommunicationHelper->nstglobalcomm(), simulator->fplog, simulator->mdlog,
+                        simulator->cr, simulator->inputrec, simulator->mdAtoms, simulator->nrnb,
+                        simulator->wcycle, simulator->fr, simulator->top_global, simulator->constr));
 
         // TODO: Remove this when DD can reduce bonded interactions independently (#3421)
         auto* castedElement =

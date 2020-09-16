@@ -54,6 +54,7 @@ struct t_inputrec;
 
 namespace gmx
 {
+enum class CheckpointDataOperation;
 class EnergyData;
 class GlobalCommunicationHelper;
 class LegacySimulatorData;
@@ -133,6 +134,13 @@ public:
     //! No teardown needed
     void elementTeardown() override{};
 
+    //! ICheckpointHelperClient write checkpoint implementation
+    void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient read checkpoint implementation
+    void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr) override;
+    //! ICheckpointHelperClient key implementation
+    const std::string& clientID() override;
+
     /*! \brief Factory method implementation
      *
      * \param legacySimulatorData  Pointer allowing access to simulator level data
@@ -157,8 +165,12 @@ private:
     //! Whether lambda values are non-static
     const bool lambdasChange_;
 
-    //! ICheckpointHelperClient implementation
-    void writeCheckpoint(t_state* localState, t_state* globalState) override;
+
+    //! CheckpointHelper identifier
+    const std::string identifier_ = "FreeEnergyPerturbationElement";
+    //! Helper function to read from / write to CheckpointData
+    template<CheckpointDataOperation operation>
+    void doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr);
 };
 
 } // namespace gmx

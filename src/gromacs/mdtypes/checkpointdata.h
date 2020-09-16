@@ -46,7 +46,9 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -254,6 +256,69 @@ private:
     // Only holders should build
     friend class WriteCheckpointDataHolder;
 };
+
+/*! \brief Read a checkpoint version enum variable
+ *
+ * This reads the checkpoint version from file. The read version is returned.
+ *
+ * If the read version is more recent than the code version, this throws an error, since
+ * we cannot know what has changed in the meantime. Using newer checkpoint files with
+ * old code is not a functionality we can offer. Note, however, that since the checkpoint
+ * version is saved by module, older checkpoint files of all simulations that don't use
+ * that specific module can still be used.
+ *
+ * Allowing backwards compatibility of files (i.e., reading an older checkpoint file with
+ * a newer version of the code) is in the responsibility of the caller module. They can
+ * use the returned file checkpoint version to do that:
+ *
+ *     const auto fileVersion = checkpointVersion(checkpointData, "version", c_currentVersion);
+ *     if (fileVersion >= CheckpointVersion::AddedX)
+ *     {
+ *         checkpointData->scalar("x", &x_));
+ *     }
+ *
+ * @tparam VersionEnum     The type of the checkpoint version enum
+ * @param  checkpointData  A reading checkpoint data object
+ * @param  key             The key under which the version is saved - also used for error output
+ * @param  programVersion  The checkpoint version of the current code
+ * @return                 The checkpoint version read from file
+ */
+template<typename VersionEnum>
+VersionEnum checkpointVersion(const ReadCheckpointData* checkpointData,
+                              const std::string&        key,
+                              const VersionEnum         programVersion)
+{
+    VersionEnum fileVersion;
+    checkpointData->enumScalar(key, &fileVersion);
+    if (fileVersion > programVersion)
+    {
+        throw FileIOError(
+                formatString("The checkpoint file contains a %s that is more recent than the "
+                             "current program version and is not backward compatible.",
+                             key.c_str()));
+    }
+    return fileVersion;
+}
+
+/*! \brief Write the current code checkpoint version enum variable
+ *
+ * Write the current program checkpoint version to the checkpoint data object.
+ * Returns the written checkpoint version to mirror the signature of the reading version.
+ *
+ * @tparam VersionEnum     The type of the checkpoint version enum
+ * @param  checkpointData  A writing checkpoint data object
+ * @param  key             The key under which the version is saved
+ * @param  programVersion  The checkpoint version of the current code
+ * @return                 The checkpoint version written to file
+ */
+template<typename VersionEnum>
+VersionEnum checkpointVersion(WriteCheckpointData* checkpointData,
+                              const std::string&   key,
+                              const VersionEnum    programVersion)
+{
+    checkpointData->enumScalar(key, &programVersion);
+    return programVersion;
+}
 
 
 /*! \libinternal

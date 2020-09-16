@@ -79,12 +79,7 @@ static void checkpointVectorSize(gmx::CheckpointData<operation>* checkpointData,
 template<gmx::CheckpointDataOperation operation>
 void delta_h_history_t::doCheckpoint(gmx::CheckpointData<operation> checkpointData)
 {
-    auto version = c_currentVersionDeltaHH;
-    checkpointData.enumScalar("version", &version);
-    if (version != c_currentVersionDeltaHH)
-    {
-        throw gmx::FileIOError("delta_h_history_t checkpoint version mismatch.");
-    }
+    gmx::checkpointVersion(&checkpointData, "delta_h_history_t version", c_currentVersionDeltaHH);
 
     checkpointVectorSize(&checkpointData, "numDeltaH", &dh);
     checkpointData.scalar("start_time", &start_time);
@@ -118,12 +113,7 @@ constexpr auto c_currentVersionEnergyHistory =
 template<gmx::CheckpointDataOperation operation>
 void energyhistory_t::doCheckpoint(gmx::CheckpointData<operation> checkpointData)
 {
-    auto version = c_currentVersionEnergyHistory;
-    checkpointData.enumScalar("version", &version);
-    if (version != c_currentVersionEnergyHistory)
-    {
-        throw gmx::FileIOError("energyhistory_t checkpoint version mismatch.");
-    }
+    gmx::checkpointVersion(&checkpointData, "energyhistory_t version", c_currentVersionEnergyHistory);
 
     bool useCheckpoint = (nsum <= 0 && nsum_sim <= 0);
     checkpointData.scalar("useCheckpoint", &useCheckpoint);

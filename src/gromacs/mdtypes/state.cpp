@@ -108,12 +108,7 @@ constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count
 template<gmx::CheckpointDataOperation operation>
 void ekinstate_t::doCheckpoint(gmx::CheckpointData<operation> checkpointData)
 {
-    auto version = c_currentVersion;
-    checkpointData.enumScalar("version", &version);
-    if (version != c_currentVersion)
-    {
-        throw gmx::FileIOError("ekinstate_t checkpoint version mismatch.");
-    }
+    gmx::checkpointVersion(&checkpointData, "ekinstate_t version", c_currentVersion);
 
     checkpointData.scalar("bUpToDate", &bUpToDate);
     if (!bUpToDate)

@@ -50,10 +50,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/stat.h"
+#include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "modularsimulator.h"
@@ -72,10 +72,7 @@ VRescaleThermostat::VRescaleThermostat(int                               nstcoup
                                        const real*                       referenceTemperature,
                                        const real*                       couplingTime,
                                        const real*                       numDegreesOfFreedom,
-                                       EnergyData*                       energyData,
-                                       const t_state*                    globalState,
-                                       t_commrec*                        cr,
-                                       bool                              isRestart) :
+                                       EnergyData*                       energyData) :
     nstcouple_(nstcouple),
     offset_(offset),
     useFullStepKE_(useFullStepKE),
@@ -94,22 +91,6 @@ VRescaleThermostat::VRescaleThermostat(int                               nstcoup
         thermostatIntegralPreviousStep_ = thermostatIntegral_;
     }
     energyData->setVRescaleThermostat(this);
-    // TODO: This is only needed to restore the thermostatIntegral_ from cpt. Remove this when
-    //       switching to purely client-based checkpointing.
-    if (isRestart)
-    {
-        if (MASTER(cr))
-        {
-            for (unsigned long i = 0; i < thermostatIntegral_.size(); ++i)
-            {
-                thermostatIntegral_[i] = globalState->therm_integral[i];
-            }
-        }
-        if (DOMAINDECOMP(cr))
-        {
-            dd_bcast(cr->dd, int(thermostatIntegral_.size() * sizeof(double)), thermostatIntegral_.data());
-        }
-    }
 }
 
 void VRescaleThermostat::connectWithPropagator(const PropagatorThermostatConnection& connectionData)
@@ -207,10 +188,51 @@ void VRescaleThermostat::setLambda(Step step)
     }
 }
 
-void VRescaleThermostat::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
+namespace
 {
-    localState->therm_integral = thermostatIntegral_;
-    localState->flags |= (1U << estTHERM_INT);
+/*!
+ * \brief Enum describing the contents VRescaleThermostat writes to modular checkpoint
+ *
+ * When changing the checkpoint content, add a new element just above Count, and adjust the
+ * checkpoint functionality.
+ */
+enum class CheckpointVersion
+{
+    Base, //!< First version of modular checkpointing
+    Count //!< Number of entries. Add new versions right above this!
+};
+constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count) - 1);
+} // namespace
+
+template<CheckpointDataOperation operation>
+void VRescaleThermostat::doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr)
+{
+    if (MASTER(cr))
+    {
+        checkpointVersion(checkpointData, "VRescaleThermostat version", c_currentVersion);
+
+        checkpointData->arrayRef("thermostat integral",
+                                 makeCheckpointArrayRef<operation>(thermostatIntegral_));
+    }
+    if (operation == CheckpointDataOperation::Read && DOMAINDECOMP(cr))
+    {
+        dd_bcast(cr->dd, thermostatIntegral_.size() * sizeof(double), thermostatIntegral_.data());
+    }
+}
+
+void VRescaleThermostat::writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr)
+{
+    doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
+}
+
+void VRescaleThermostat::readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr)
+{
+    doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
+}
+
+const std::string& VRescaleThermostat::clientID()
+{
+    return identifier_;
 }
 
 real VRescaleThermostat::conservedEnergyContribution() const
@@ -237,8 +259,7 @@ ISimulatorElement* VRescaleThermostat::getElementPointerImpl(
             legacySimulatorData->inputrec->ld_seed, legacySimulatorData->inputrec->opts.ngtc,
             legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nsttcouple,
             legacySimulatorData->inputrec->opts.ref_t, legacySimulatorData->inputrec->opts.tau_t,
-            legacySimulatorData->inputrec->opts.nrdf, energyData, legacySimulatorData->state_global,
-            legacySimulatorData->cr, legacySimulatorData->inputrec->bContinuation));
+            legacySimulatorData->inputrec->opts.nrdf, energyData));
     auto* thermostat = static_cast<VRescaleThermostat*>(element);
     builderHelper->registerThermostat([thermostat](const PropagatorThermostatConnection& connection) {
         thermostat->connectWithPropagator(connection);
