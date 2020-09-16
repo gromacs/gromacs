@@ -109,6 +109,12 @@
 /* ARM (AArch64) NEON Advanced SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_ARM_NEON_ASIMD
 
+/* ARM (SVE) Scalable Vector extensions */
+#cmakedefine01 GMX_SIMD_ARM_SVE
+
+/* SVE vector length */
+#define GMX_SIMD_ARM_SVE_LENGTH @GMX_SIMD_ARM_SVE_LENGTH@
+
 /* IBM VMX was selected as SIMD instructions (Power 6 and later) */
 #cmakedefine01 GMX_SIMD_IBM_VMX
 

@@ -152,6 +152,8 @@ struct SimdDInt32Tag
 #    include "impl_arm_neon/impl_arm_neon.h"
 #elif GMX_SIMD_ARM_NEON_ASIMD
 #    include "impl_arm_neon_asimd/impl_arm_neon_asimd.h"
+#elif GMX_SIMD_ARM_SVE
+#    include "impl_arm_sve/impl_arm_sve.h"
 #elif GMX_SIMD_IBM_VMX
 #    include "impl_ibm_vmx/impl_ibm_vmx.h"
 #elif GMX_SIMD_IBM_VSX

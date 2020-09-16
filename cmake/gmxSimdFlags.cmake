@@ -341,6 +341,28 @@ function(gmx_find_simd_arm_neon_asimd_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FL
     set(${CXX_FLAGS_RESULT} ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon Asimd C++ flags" FORCE)
 endfunction()
 
+# Arm SVE (64-bit ARM)
+function(gmx_find_simd_arm_sve_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
+
+    gmx_find_flags(SIMD_ARM_SVE_C_FLAGS_RESULT SIMD_ARM_SVE_CXX_FLAGS_RESULT
+        "#include<arm_sve.h>
+         int main(){float32_t x __attribute((vector_size(${GMX_SIMD_ARM_SVE_LENGTH}/8))) = svdup_f32(0.5f); return 0;}"
+        TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
+        SIMD_ARM_SVE_C_FLAGS SIMD_ARM_SVE_CXX_FLAGS
+        "-msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH}"
+        "-march=armv8.2-a+sve -msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH}"
+        "-march=armv8.2a+sve -msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH}")
+
+    if(${SIMD_ARM_SVE_C_FLAGS_RESULT})
+        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_ARM_SVE_C_FLAGS}" CACHE INTERNAL "C flags required for Arm SVE instructions")
+    endif()
+    if(${SIMD_ARM_SVE_CXX_FLAGS_RESULT})
+        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_ARM_SVE_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for Arm SVE instructions")
+    endif()
+    set(${C_FLAGS_RESULT} ${SIMD_ARM_SVE_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm SVE C flags" FORCE)
+    set(${CXX_FLAGS_RESULT} ${SIMD_ARM_SVE_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm SVE C++ flags" FORCE)
+endfunction()
+
 # IBM VMX (power6)
 function(gmx_find_simd_ibm_vmx_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
 

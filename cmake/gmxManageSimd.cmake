@@ -247,6 +247,29 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) NEON Advanced SIMD instructions using CXX flags: ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS}")
 
+elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
+
+    # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
+
+    gmx_option_multichoice(
+        GMX_SIMD_ARM_SVE_LENGTH
+        "SVE vector length"
+        "512"
+        128 256 512 1024 2048)
+
+    gmx_find_simd_arm_sve_flags(SIMD_ARM_SVE_C_SUPPORTED SIMD_ARM_SVE_CXX_SUPPORTED
+                                SIMD_ARM_SVE_C_FLAGS SIMD_ARM_SVE_CXX_FLAGS)
+
+    if(NOT SIMD_ARM_SVE_C_SUPPORTED OR NOT SIMD_ARM_SVE_CXX_SUPPORTED)
+        gmx_give_fatal_error_when_simd_support_not_found("ARM (AArch64) SVE SIMD" "particularly gcc version 10.1 or later, or disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
+    endif()
+
+    # If multiple flags are neeed, make them into a list
+    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_ARM_SVE_C_FLAGS})
+    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_ARM_SVE_CXX_FLAGS})
+    set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
+    set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) SVE Advanced SIMD instructions using CXX flags: ${SIMD_ARM_SVE_CXX_FLAGS}")
+
 elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VMX")
 
     gmx_find_simd_ibm_vmx_flags(SIMD_IBM_VMX_C_SUPPORTED SIMD_IBM_VMX_CXX_SUPPORTED
