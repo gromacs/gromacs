@@ -37,6 +37,13 @@ due to illegal or incorrect memory usage.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix default output with gmx trjcat -demux
+"""""""""""""""""""""""""""""""""""""""""
+
+Files would not be written when using default file name output.
+
+:issue:`3653`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
