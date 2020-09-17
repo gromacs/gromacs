@@ -118,7 +118,8 @@ bool canComputeOnDevice();
  *  properties, status.
  *
  *  Note that this function leaves the GPU runtime API error state clean;
- *  this is implemented ATM in the CUDA flavor.
+ *  this is implemented ATM in the CUDA flavor. This invalidates any existing
+ *  CUDA streams, allocated memory on GPU, etc.
  *
  *  \todo:  Check if errors do propagate in OpenCL as they do in CUDA and
  *          whether there is a mechanism to "clear" them.

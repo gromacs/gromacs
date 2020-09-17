@@ -71,7 +71,7 @@ enum class DeviceStatus : int
     Incompatible = 2,
     //! OpenCL device has incompatible cluster size for non-bonded kernels.
     IncompatibleClusterSize = 3,
-    /*! \brief An error occurred he functionality checks.
+    /*! \brief An error occurred during the functionality checks.
      * That indicates malfunctioning of the device, driver, or incompatible driver/runtime.
      */
     NonFunctional = 4,

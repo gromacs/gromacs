@@ -125,6 +125,12 @@ Debugging
         arrive first. Setting this variable switches to the generic path with fixed waiting
         order.
 
+``GMX_TEST_REQUIRED_NUMBER_OF_DEVICES``
+        sets the number of GPUs required by the test suite. By default, the test suite would
+        fall-back to using CPU if GPUs could not be detected. Set it to a positive integer value
+        to ensure that at least this at least this number of usable GPUs are detected. Default:
+        0 (not testing GPU availability).
+
 There are a number of extra environment variables like these
 that are used in debugging - check the code!
 

@@ -42,6 +42,7 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test HARDWARE_DETECTION
     CPP_SOURCE_FILES
         # Tests of code
         clfftinitializer.cpp
+        device_availability.cpp
         device_stream_manager.cpp
         hostallocator.cpp
         pinnedmemorychecker.cpp
