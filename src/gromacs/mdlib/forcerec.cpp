@@ -1006,18 +1006,6 @@ void init_forcerec(FILE*                            fp,
     /* Free energy */
     fr->efep = ir->efep;
 
-    fr->bNonbonded = TRUE;
-    if (getenv("GMX_NO_NONBONDED") != nullptr)
-    {
-        /* turn off non-bonded calculations */
-        fr->bNonbonded = FALSE;
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendText(
-                        "Found environment variable GMX_NO_NONBONDED.\n"
-                        "Disabling nonbonded calculations.");
-    }
-
     if ((getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr))
     {
         fr->use_simd_kernels = FALSE;

@@ -51,7 +51,8 @@
 namespace gmx
 {
 
-SimulationWorkload createSimulationWorkload(const t_inputrec&              inputrec,
+SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
+                                            const bool        disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
                                             bool                           useGpuForNonbonded,
                                             PmeRunMode                     pmeRunMode,
@@ -59,10 +60,11 @@ SimulationWorkload createSimulationWorkload(const t_inputrec&              input
                                             bool                           useGpuForUpdate)
 {
     SimulationWorkload simulationWorkload;
-    simulationWorkload.computeMuTot    = inputrecNeedMutot(&inputrec);
-    simulationWorkload.useCpuNonbonded = !useGpuForNonbonded;
-    simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
-    simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
+    simulationWorkload.computeNonbonded = !disableNonbondedCalculation;
+    simulationWorkload.computeMuTot     = inputrecNeedMutot(&inputrec);
+    simulationWorkload.useCpuNonbonded  = !useGpuForNonbonded;
+    simulationWorkload.useGpuNonbonded  = useGpuForNonbonded;
+    simulationWorkload.useCpuPme        = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuPmeFft       = (pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuBonded       = useGpuForBonded;

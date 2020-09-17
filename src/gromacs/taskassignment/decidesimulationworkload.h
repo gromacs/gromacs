@@ -59,6 +59,7 @@ struct DevelopmentFeatureFlags;
  * task on GPUs.
  *
  * \param[in] inputrec           The input record
+ * \param[in] disableNonbondedCalculation  Disable calculation of nonbonded forces
  * \param[in] devFlags           The development feature flags
  * \param[in] useGpuForNonbonded Whether we have short-range nonbonded interactions
  *                               calculations on GPU(s).
@@ -68,7 +69,8 @@ struct DevelopmentFeatureFlags;
  *                               GPU(s).
  * \returns Simulation lifetime constant workload description.
  */
-SimulationWorkload createSimulationWorkload(const t_inputrec&              inputrec,
+SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
+                                            bool              disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
                                             bool                           useGpuForNonbonded,
                                             PmeRunMode                     pmeRunMode,

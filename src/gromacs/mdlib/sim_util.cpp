@@ -881,27 +881,26 @@ static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&     
 /*! \brief Set up force flag stuct from the force bitmask.
  *
  * \param[in]      legacyFlags          Force bitmask flags used to construct the new flags
- * \param[in]      isNonbondedOn        Global override, if false forces to turn off all nonbonded calculation.
  * \param[in]      simulationWork       Simulation workload description.
  * \param[in]      rankHasPmeDuty       If this rank computes PME.
  *
  * \returns New Stepworkload description.
  */
 static StepWorkload setupStepWorkload(const int                 legacyFlags,
-                                      const bool                isNonbondedOn,
                                       const SimulationWorkload& simulationWork,
                                       const bool                rankHasPmeDuty)
 {
     StepWorkload flags;
-    flags.stateChanged           = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
-    flags.haveDynamicBox         = ((legacyFlags & GMX_FORCE_DYNAMICBOX) != 0);
-    flags.doNeighborSearch       = ((legacyFlags & GMX_FORCE_NS) != 0);
-    flags.computeVirial          = ((legacyFlags & GMX_FORCE_VIRIAL) != 0);
-    flags.computeEnergy          = ((legacyFlags & GMX_FORCE_ENERGY) != 0);
-    flags.computeForces          = ((legacyFlags & GMX_FORCE_FORCES) != 0);
-    flags.computeListedForces    = ((legacyFlags & GMX_FORCE_LISTED) != 0);
-    flags.computeNonbondedForces = ((legacyFlags & GMX_FORCE_NONBONDED) != 0) && isNonbondedOn;
-    flags.computeDhdl            = ((legacyFlags & GMX_FORCE_DHDL) != 0);
+    flags.stateChanged        = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
+    flags.haveDynamicBox      = ((legacyFlags & GMX_FORCE_DYNAMICBOX) != 0);
+    flags.doNeighborSearch    = ((legacyFlags & GMX_FORCE_NS) != 0);
+    flags.computeVirial       = ((legacyFlags & GMX_FORCE_VIRIAL) != 0);
+    flags.computeEnergy       = ((legacyFlags & GMX_FORCE_ENERGY) != 0);
+    flags.computeForces       = ((legacyFlags & GMX_FORCE_FORCES) != 0);
+    flags.computeListedForces = ((legacyFlags & GMX_FORCE_LISTED) != 0);
+    flags.computeNonbondedForces =
+            ((legacyFlags & GMX_FORCE_NONBONDED) != 0) && simulationWork.computeNonbonded;
+    flags.computeDhdl = ((legacyFlags & GMX_FORCE_DHDL) != 0);
 
     if (simulationWork.useGpuBufferOps)
     {
@@ -1053,8 +1052,8 @@ void do_force(FILE*                               fplog,
     const SimulationWorkload& simulationWork = runScheduleWork->simulationWork;
 
 
-    runScheduleWork->stepWork    = setupStepWorkload(legacyFlags, fr->bNonbonded, simulationWork,
-                                                  thisRankHasDuty(cr, DUTY_PME));
+    runScheduleWork->stepWork =
+            setupStepWorkload(legacyFlags, simulationWork, thisRankHasDuty(cr, DUTY_PME));
     const StepWorkload& stepWork = runScheduleWork->stepWork;
 
 

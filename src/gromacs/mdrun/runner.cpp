@@ -1247,10 +1247,22 @@ int Mdrunner::mdrunner()
     const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
 
+    const bool disableNonbondedCalculation = (getenv("GMX_NO_NONBONDED") != nullptr);
+    if (disableNonbondedCalculation)
+    {
+        /* turn off non-bonded calculations */
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendText(
+                        "Found environment variable GMX_NO_NONBONDED.\n"
+                        "Disabling nonbonded calculations.");
+    }
+
     MdrunScheduleWorkload runScheduleWork;
     // Also populates the simulation constant workload description.
-    runScheduleWork.simulationWork = createSimulationWorkload(
-            *inputrec, devFlags, useGpuForNonbonded, pmeRunMode, useGpuForBonded, useGpuForUpdate);
+    runScheduleWork.simulationWork =
+            createSimulationWorkload(*inputrec, disableNonbondedCalculation, devFlags,
+                                     useGpuForNonbonded, pmeRunMode, useGpuForBonded, useGpuForUpdate);
 
     std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
 

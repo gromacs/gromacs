@@ -140,6 +140,8 @@ public:
 class SimulationWorkload
 {
 public:
+    //! Whether to compute nonbonded pair interactions
+    bool computeNonbonded = false;
     //! Whether total dipole needs to be computed
     bool computeMuTot = false;
     //! If we have calculation of short range nonbondeds on CPU
