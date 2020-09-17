@@ -63,6 +63,10 @@ The build would fail due to a missing header.
 
 :issue:`3669`
 
+Only check for RDTSCP on x86 platforms
+""""""""""""""""""""""""""""""""""""""
+
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
