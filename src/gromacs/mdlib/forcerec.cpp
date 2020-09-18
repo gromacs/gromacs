@@ -825,8 +825,6 @@ static void init_interaction_const(FILE*                 fp,
 {
     interaction_const_t* ic = new interaction_const_t;
 
-    ic->cutoff_scheme = ir->cutoff_scheme;
-
     ic->coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
     ic->vdwEwaldTables     = std::make_unique<EwaldCorrectionTables>();
 
@@ -1021,8 +1019,7 @@ void init_forcerec(FILE*                            fp,
     fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
 
     /* Neighbour searching stuff */
-    fr->cutoff_scheme = ir->cutoff_scheme;
-    fr->pbcType       = ir->pbcType;
+    fr->pbcType = ir->pbcType;
 
     /* Determine if we will do PBC for distances in bonded interactions */
     if (fr->pbcType == PbcType::No)
@@ -1139,25 +1136,20 @@ void init_forcerec(FILE*                            fp,
     }
     fr->nbkernel_vdw_modifier = ic->vdw_modifier;
 
-    if (ir->cutoff_scheme == ecutsVERLET)
+    if (!gmx_within_tol(ic->reppow, 12.0, 10 * GMX_DOUBLE_EPS))
     {
-        if (!gmx_within_tol(ic->reppow, 12.0, 10 * GMX_DOUBLE_EPS))
-        {
-            gmx_fatal(FARGS, "Cut-off scheme %s only supports LJ repulsion power 12",
-                      ecutscheme_names[ir->cutoff_scheme]);
-        }
-        /* Older tpr files can contain Coulomb user tables with the Verlet cutoff-scheme,
-         * while mdrun does not (and never did) support this.
-         */
-        if (EEL_USER(fr->ic->eeltype))
-        {
-            gmx_fatal(FARGS, "Combination of %s and cutoff scheme %s is not supported",
-                      eel_names[ir->coulombtype], ecutscheme_names[ir->cutoff_scheme]);
-        }
-
-        fr->bvdwtab  = FALSE;
-        fr->bcoultab = FALSE;
+        gmx_fatal(FARGS, "Only LJ repulsion power 12 is supported");
     }
+    /* Older tpr files can contain Coulomb user tables with the Verlet cutoff-scheme,
+     * while mdrun does not (and never did) support this.
+     */
+    if (EEL_USER(fr->ic->eeltype))
+    {
+        gmx_fatal(FARGS, "Electrostatics type %s is currently not supported", eel_names[ir->coulombtype]);
+    }
+
+    fr->bvdwtab  = FALSE;
+    fr->bcoultab = FALSE;
 
     /* 1-4 interaction electrostatics */
     fr->fudgeQQ = mtop->ffparams.fudgeQQ;
@@ -1210,15 +1202,9 @@ void init_forcerec(FILE*                            fp,
         gmx_fatal(FARGS, "Switch/shift interaction not supported with Buckingham");
     }
 
-    if (fr->bBHAM && fr->cutoff_scheme == ecutsVERLET)
+    if (fr->bBHAM)
     {
-        gmx_fatal(FARGS, "Verlet cutoff-scheme is not supported with Buckingham");
-    }
-
-    if (fp && fr->cutoff_scheme == ecutsGROUP)
-    {
-        fprintf(fp, "Cut-off's:   NS: %g   Coulomb: %g   %s: %g\n", fr->rlist, ic->rcoulomb,
-                fr->bBHAM ? "BHAM" : "LJ", ic->rvdw);
+        gmx_fatal(FARGS, "The Verlet cutoff-scheme does not (yet) support Buckingham");
     }
 
     if (ir->implicit_solvent)

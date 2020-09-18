@@ -126,10 +126,6 @@ struct interaction_const_t
         real sigma6Minimum;
     };
 
-    // Cut-off scheme, only present for reading and (not) running old tpr files
-    // which still supported the group cutoff-scheme
-    int cutoff_scheme = ecutsVERLET;
-
     /* VdW */
     int                    vdwtype          = evdwCUT;
     int                    vdw_modifier     = eintmodNONE;

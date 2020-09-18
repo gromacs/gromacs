@@ -242,8 +242,6 @@ struct t_forcerec
 
     std::unique_ptr<gmx::WholeMoleculeTransform> wholeMoleculeTransform;
 
-    int cutoff_scheme = 0; /* group- or Verlet-style cutoff */
-
     /* The Nbnxm Verlet non-bonded machinery */
     std::unique_ptr<nonbonded_verlet_t> nbv;
 

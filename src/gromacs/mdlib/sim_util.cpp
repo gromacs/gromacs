@@ -402,11 +402,6 @@ static void do_nb_verlet(t_forcerec*                fr,
     nonbonded_verlet_t* nbv = fr->nbv.get();
 
     /* GPU kernel launch overhead is already timed separately */
-    if (fr->cutoff_scheme != ecutsVERLET)
-    {
-        gmx_incons("Invalid cut-off scheme passed!");
-    }
-
     if (!nbv->useGpu())
     {
         /* When dynamic pair-list  pruning is requested, we need to prune

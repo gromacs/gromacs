@@ -3052,11 +3052,8 @@ void dd_partition_system(FILE*                     fplog,
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);
 
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        /* When bSortCG=true, we have already set the size for zone 0 */
-        set_zones_size(dd, state_local->box, &ddbox, bSortCG ? 1 : 0, comm->zones.n, 0);
-    }
+    /* When bSortCG=true, we have already set the size for zone 0 */
+    set_zones_size(dd, state_local->box, &ddbox, bSortCG ? 1 : 0, comm->zones.n, 0);
 
     wallcycle_sub_stop(wcycle, ewcsDD_SETUPCOMM);
 
