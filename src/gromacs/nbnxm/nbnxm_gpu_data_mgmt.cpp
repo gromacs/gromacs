@@ -82,18 +82,45 @@ void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
                          tables.tableF.size(), deviceContext);
 }
 
+void inline printEnviromnentVariableDeprecationMessage(bool               isEnvironmentVariableSet,
+                                                       const std::string& environmentVariableSuffix)
+{
+    if (isEnvironmentVariableSet)
+    {
+        fprintf(stderr,
+                "Environment variables GMX_CUDA_%s and GMX_OCL_%s are deprecated and will be\n"
+                "removed in release 2022, please use GMX_GPU_%s instead.",
+                environmentVariableSuffix.c_str(), environmentVariableSuffix.c_str(),
+                environmentVariableSuffix.c_str());
+    }
+}
+
 int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
 {
     bool bTwinCut = (ic.rcoulomb != ic.rvdw);
-    bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
     int  kernel_type;
 
     /* Benchmarking/development environment variables to force the use of
        analytical or tabulated Ewald kernel. */
-    bForceAnalyticalEwald = (getenv("GMX_GPU_NB_ANA_EWALD") != nullptr);
-    bForceTabulatedEwald  = (getenv("GMX_GPU_NB_TAB_EWALD") != nullptr);
 
-    if (bForceAnalyticalEwald && bForceTabulatedEwald)
+    // Remove these when old environment variables are deprecated
+    const bool forceAnalyticalEwaldLegacy = (getenv("GMX_CUDA_NB_ANA_EWALD") != nullptr)
+                                            || (getenv("GMX_OCL_NB_ANA_EWALD") != nullptr);
+    const bool forceTabulatedEwaldLegacy = (getenv("GMX_CUDA_NB_TAB_EWALD") != nullptr)
+                                           || (getenv("GMX_OCL_NB_TAB_EWALD") != nullptr);
+    const bool forceTwinCutoffEwaldLegacy = (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == nullptr)
+                                            || (getenv("GMX_OCL_NB_EWALD_TWINCUT") == nullptr);
+
+    printEnviromnentVariableDeprecationMessage(forceAnalyticalEwaldLegacy, "NB_ANA_EWALD");
+    printEnviromnentVariableDeprecationMessage(forceTabulatedEwaldLegacy, "NB_TAB_EWALD");
+    printEnviromnentVariableDeprecationMessage(forceTwinCutoffEwaldLegacy, "NB_EWALD_TWINCUT");
+
+    const bool forceAnalyticalEwald =
+            (getenv("GMX_GPU_NB_ANA_EWALD") != nullptr) || forceAnalyticalEwaldLegacy;
+    const bool forceTabulatedEwald =
+            (getenv("GMX_GPU_NB_TAB_EWALD") != nullptr) || forceTabulatedEwaldLegacy;
+
+    if (forceAnalyticalEwald && forceTabulatedEwald)
     {
         gmx_incons(
                 "Both analytical and tabulated Ewald GPU non-bonded kernels "
@@ -104,15 +131,15 @@ int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
      * TODO: tabulated does not work in OpenCL, it needs fixing, see init_nbparam() in nbnxn_ocl_data_mgmt.cpp
      *
      */
-    bUseAnalyticalEwald = true;
-    if (bForceAnalyticalEwald)
+    bool bUseAnalyticalEwald = true;
+    if (forceAnalyticalEwald)
     {
         if (debug)
         {
             fprintf(debug, "Using analytical Ewald GPU kernels\n");
         }
     }
-    else if (bForceTabulatedEwald)
+    else if (forceTabulatedEwald)
     {
         bUseAnalyticalEwald = false;
 
@@ -124,7 +151,7 @@ int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
 
     /* Use twin cut-off kernels if requested by bTwinCut or the env. var.
        forces it (use it for debugging/benchmarking only). */
-    if (!bTwinCut && (getenv("GMX_GPU_NB_EWALD_TWINCUT") == nullptr))
+    if (!bTwinCut && ((getenv("GMX_GPU_NB_EWALD_TWINCUT") == nullptr) || forceTwinCutoffEwaldLegacy))
     {
         kernel_type = bUseAnalyticalEwald ? eelTypeEWALD_ANA : eelTypeEWALD_TAB;
     }
