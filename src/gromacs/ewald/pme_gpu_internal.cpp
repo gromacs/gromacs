@@ -503,12 +503,6 @@ void pme_gpu_sync_spread_grid(const PmeGpu* pmeGpu)
  */
 static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceContext, const DeviceStream& deviceStream)
 {
-#if GMX_GPU_CUDA
-    // Prepare to use the device that this PME task was assigned earlier.
-    // Other entities, such as CUDA timing events, are known to implicitly use the device context.
-    CU_RET_ERR(cudaSetDevice(deviceContext.deviceInfo().id), "Switching to PME CUDA device");
-#endif
-
     /* Allocate the target-specific structures */
     pmeGpu->archSpecific.reset(new PmeGpuSpecific(deviceContext, deviceStream));
     pmeGpu->kernelParams.reset(new PmeGpuKernelParams());
