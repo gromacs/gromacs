@@ -71,16 +71,18 @@ enum class DeviceStatus : int
     Incompatible = 2,
     //! OpenCL device has incompatible cluster size for non-bonded kernels.
     IncompatibleClusterSize = 3,
+    //! There are known issues with NVIDIA Volta and newer.
+    IncompatibleNvidiaVolta = 4,
     /*! \brief An error occurred during the functionality checks.
      * That indicates malfunctioning of the device, driver, or incompatible driver/runtime.
      */
-    NonFunctional = 4,
+    NonFunctional = 5,
     /*! \brief CUDA devices are busy or unavailable.
      * typically due to use of \p cudaComputeModeExclusive, \p cudaComputeModeProhibited modes.
      */
-    Unavailable = 5,
+    Unavailable = 6,
     //! Enumeration size
-    Count = 6
+    Count = 7
 };
 
 /*! \brief Names of the GPU detection/check results
@@ -98,7 +100,8 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
     "incompatible (please recompile with correct GMX" "_OPENCL_NB_CLUSTER_SIZE of 4)",
     // clang-format on
-    "non-functional", "unavailable"
+    "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)", "non-functional",
+    "unavailable"
 };
 
 //! Device vendors

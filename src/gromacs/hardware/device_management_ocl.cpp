@@ -112,6 +112,35 @@ static bool runningOnCompatibleOSForAmd()
 #endif
 }
 
+/*! \brief Return true if executing on compatible GPU for NVIDIA OpenCL.
+ *
+ * There are known issues with OpenCL when running on NVIDIA Volta or newer (CC 7+).
+ * As a workaround, we recommend using CUDA on such hardware.
+ *
+ * This function relies on cl_nv_device_attribute_query. In case it's not functioning properly,
+ * we trust the user and mark the device as compatible.
+ *
+ * \return true if running on Pascal (CC 6.x) or older, or if we can not determine device generation.
+ */
+static bool runningOnCompatibleHWForNvidia(const DeviceInformation& deviceInfo)
+{
+    // The macro is defined in Intel's and AMD's headers, but it's not strictly required to be there.
+#ifndef CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV
+    return true;
+#else
+    static const unsigned int ccMajorBad = 7; // Volta and Turing
+    unsigned int              ccMajor;
+    cl_device_id              devId = deviceInfo.oclDeviceId;
+    const cl_int              err   = clGetDeviceInfo(devId, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV,
+                                       sizeof(ccMajor), &ccMajor, nullptr);
+    if (err != CL_SUCCESS)
+    {
+        return true; // Err on a side of trusting the user to know what they are doing.
+    }
+    return ccMajor < ccMajorBad;
+#endif
+}
+
 /*!
  * \brief Checks that device \c deviceInfo is compatible with GROMACS.
  *
@@ -151,7 +180,9 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
     /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
     switch (deviceInfo.deviceVendor)
     {
-        case DeviceVendor::Nvidia: return DeviceStatus::Compatible;
+        case DeviceVendor::Nvidia:
+            return runningOnCompatibleHWForNvidia(deviceInfo) ? DeviceStatus::Compatible
+                                                              : DeviceStatus::IncompatibleNvidiaVolta;
         case DeviceVendor::Amd:
             return runningOnCompatibleOSForAmd() ? DeviceStatus::Compatible : DeviceStatus::Incompatible;
         case DeviceVendor::Intel:
