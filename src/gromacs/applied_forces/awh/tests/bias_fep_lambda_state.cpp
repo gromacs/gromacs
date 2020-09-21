@@ -37,7 +37,6 @@
 #include <cmath>
 
 #include <memory>
-#include <random>
 #include <tuple>
 #include <vector>
 
@@ -87,21 +86,6 @@ struct AwhFepLambdaStateTestParameters
 
     std::vector<DimParams> dimParams; //!< Dimension parameters for setting up Bias
 };
-
-/*! \internal \brief Helper function to fill an array with random values (between lowerBound and
- * upperBound) from randomEngine.
- */
-static void randomArrayFill(ArrayRef<double>           array,
-                            std::default_random_engine randomEngine,
-                            double                     lowerBound,
-                            double                     upperBound)
-{
-    std::uniform_real_distribution<double> unif(lowerBound, upperBound);
-    for (size_t i = 0; i < array.size(); i++)
-    {
-        array[i] = unif(randomEngine);
-    }
-}
 
 //! Helper function to set up the C-style AWH parameters for the test
 static AwhFepLambdaStateTestParameters getAwhFepLambdaTestParameters(int eawhgrowth, int eawhpotential)
@@ -223,39 +207,22 @@ TEST_P(BiasFepLambdaStateTest, ForcesBiasPmf)
 
     std::vector<double> force, pot;
 
-    double                     potentialJump        = 0;
-    double                     mdTimeStep           = 0.1;
-    double                     energyNoiseMagnitude = 1.0;
-    double                     dhdlNoiseMagnitude   = 1.5;
-    int                        nSteps               = 501;
-    std::default_random_engine randomEngine;
-    randomEngine.seed(1234);
+    double potentialJump = 0;
+    double mdTimeStep    = 0.1;
+    int    nSteps        = 501;
 
     /* Some energies to use as base values (to which some noise is added later on). */
-    std::vector<double> lambdaEnergyBase(numLambdaStates);
-    std::vector<double> lambdaDhdlBase(numLambdaStates);
+    std::vector<double> neighborLambdaEnergies(numLambdaStates);
+    std::vector<double> neighborLambdaDhdl(numLambdaStates);
     const double        magnitude = 12.0;
     for (int i = 0; i < numLambdaStates; i++)
     {
-        lambdaEnergyBase[i] = magnitude * std::sin(i * 0.1);
-        lambdaDhdlBase[i]   = magnitude * std::cos(i * 0.1);
+        neighborLambdaEnergies[i] = magnitude * std::sin(i * 0.1);
+        neighborLambdaDhdl[i]     = magnitude * std::cos(i * 0.1);
     }
 
     for (int step = 0; step < nSteps; step++)
     {
-        /* Create some noise and add it to the base values */
-        std::vector<double> neighborLambdaEnergyNoise(numLambdaStates);
-        std::vector<double> neighborLambdaDhdlNoise(numLambdaStates);
-        randomArrayFill(neighborLambdaEnergyNoise, randomEngine, -energyNoiseMagnitude, energyNoiseMagnitude);
-        randomArrayFill(neighborLambdaDhdlNoise, randomEngine, -dhdlNoiseMagnitude, dhdlNoiseMagnitude);
-        std::vector<double> neighborLambdaEnergies(numLambdaStates);
-        std::vector<double> neighborLambdaDhdl(numLambdaStates);
-        for (int i = 0; i < numLambdaStates; i++)
-        {
-            neighborLambdaEnergies[i] = lambdaEnergyBase[i] + neighborLambdaEnergyNoise[i];
-            neighborLambdaDhdl[i]     = lambdaDhdlBase[i] + neighborLambdaDhdlNoise[i];
-        }
-
         int      umbrellaGridpointIndex = bias.state().coordState().umbrellaGridpoint();
         awh_dvec coordValue = { bias.getGridCoordValue(umbrellaGridpointIndex)[0], 0, 0, 0 };
         double   potential  = 0;
@@ -316,42 +283,24 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
     Bias bias(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep,
               1, "", Bias::ThisRankWillDoIO::No);
 
-    const int64_t exitStepRef = 380;
+    const int64_t exitStepRef = 320;
 
     bool inInitialStage = bias.state().inInitialStage();
 
-    double                     energyNoiseMagnitude = 1.0;
-    double                     dhdlNoiseMagnitude   = 1.5;
-    std::default_random_engine randomEngine;
-    randomEngine.seed(1234);
-
     /* Some energies to use as base values (to which some noise is added later on). */
-    std::vector<double> lambdaEnergyBase(numLambdaStates);
-    std::vector<double> lambdaDhdlBase(numLambdaStates);
+    std::vector<double> neighborLambdaEnergies(numLambdaStates);
+    std::vector<double> neighborLambdaDhdl(numLambdaStates);
     const double        magnitude = 12.0;
     for (int i = 0; i < numLambdaStates; i++)
     {
-        lambdaEnergyBase[i] = magnitude * std::sin(i * 0.1);
-        lambdaDhdlBase[i]   = magnitude * std::cos(i * 0.1);
+        neighborLambdaEnergies[i] = magnitude * std::sin(i * 0.1);
+        neighborLambdaDhdl[i]     = magnitude * std::cos(i * 0.1);
     }
 
     int64_t step;
     /* Normally this loop exits at exitStepRef, but we extend with failure */
     for (step = 0; step <= 2 * exitStepRef; step++)
     {
-        /* Create some noise and add it to the base values */
-        std::vector<double> neighborLambdaEnergyNoise(numLambdaStates);
-        std::vector<double> neighborLambdaDhdlNoise(numLambdaStates);
-        randomArrayFill(neighborLambdaEnergyNoise, randomEngine, -energyNoiseMagnitude, energyNoiseMagnitude);
-        randomArrayFill(neighborLambdaDhdlNoise, randomEngine, -dhdlNoiseMagnitude, dhdlNoiseMagnitude);
-        std::vector<double> neighborLambdaEnergies(numLambdaStates);
-        std::vector<double> neighborLambdaDhdl(numLambdaStates);
-        for (int i = 0; i < numLambdaStates; i++)
-        {
-            neighborLambdaEnergies[i] = lambdaEnergyBase[i] + neighborLambdaEnergyNoise[i];
-            neighborLambdaDhdl[i]     = lambdaDhdlBase[i] + neighborLambdaDhdlNoise[i];
-        }
-
         int      umbrellaGridpointIndex = bias.state().coordState().umbrellaGridpoint();
         awh_dvec coordValue = { bias.getGridCoordValue(umbrellaGridpointIndex)[0], 0, 0, 0 };
 
