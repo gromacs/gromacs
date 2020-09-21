@@ -374,10 +374,12 @@ public:
     //! Standard virtual destructor
     virtual ~ICheckpointHelperClient() = default;
 
-    //! Write checkpoint
-    virtual void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr) = 0;
-    //! Read checkpoint
-    virtual void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr) = 0;
+    //! Write checkpoint (CheckpointData object only passed on master rank)
+    virtual void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                                     const t_commrec*                   cr) = 0;
+    //! Read checkpoint (CheckpointData object only passed on master rank)
+    virtual void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                        const t_commrec*                  cr) = 0;
     //! Get unique client id
     [[nodiscard]] virtual const std::string& clientID() = 0;
 };

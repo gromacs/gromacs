@@ -134,7 +134,9 @@ void CheckpointHelper::writeCheckpoint(Step step, Time time)
     WriteCheckpointDataHolder checkpointDataHolder;
     for (const auto& [key, client] : clients_)
     {
-        client->writeCheckpoint(checkpointDataHolder.checkpointData(key), cr_);
+        client->saveCheckpointState(
+                MASTER(cr_) ? std::make_optional(checkpointDataHolder.checkpointData(key)) : std::nullopt,
+                cr_);
     }
 
     mdoutf_write_to_trajectory_files(fplog_, cr_, trajectoryElement_->outf_, MDOF_CPT,
@@ -177,7 +179,7 @@ void CheckpointHelperBuilder::registerClient(ICheckpointHelperClient* client)
     clientsMap_[key] = client;
     if (resetFromCheckpoint_)
     {
-        if (!checkpointDataHolder_->keyExists(key))
+        if (MASTER(cr_) && !checkpointDataHolder_->keyExists(key))
         {
             throw SimulationAlgorithmSetupError(
                     formatString(
@@ -186,7 +188,9 @@ void CheckpointHelperBuilder::registerClient(ICheckpointHelperClient* client)
                             key.c_str(), key.c_str())
                             .c_str());
         }
-        client->readCheckpoint(checkpointDataHolder_->checkpointData(key), cr_);
+        client->restoreCheckpointState(
+                MASTER(cr_) ? std::make_optional(checkpointDataHolder_->checkpointData(key)) : std::nullopt,
+                cr_);
     }
 }
 

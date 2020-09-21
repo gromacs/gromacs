@@ -107,9 +107,10 @@ public:
                                      const TemperatureCouplingData& temperatureCouplingData) = 0;
 
     //! Write private data to checkpoint
-    virtual void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr) = 0;
+    virtual void writeCheckpoint(std::optional<WriteCheckpointData> checkpointData,
+                                 const t_commrec*                   cr) = 0;
     //! Read private data from checkpoint
-    virtual void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr) = 0;
+    virtual void readCheckpoint(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) = 0;
 
     //! Standard virtual destructor
     virtual ~ITemperatureCouplingImpl() = default;
@@ -177,11 +178,13 @@ public:
     }
 
     //! No data to write to checkpoint
-    void writeCheckpoint(WriteCheckpointData gmx_unused checkpointData, const t_commrec gmx_unused* cr) override
+    void writeCheckpoint(std::optional<WriteCheckpointData> gmx_unused checkpointData,
+                         const t_commrec gmx_unused* cr) override
     {
     }
     //! No data to read from checkpoints
-    void readCheckpoint(ReadCheckpointData gmx_unused checkpointData, const t_commrec gmx_unused* cr) override
+    void readCheckpoint(std::optional<ReadCheckpointData> gmx_unused checkpointData,
+                        const t_commrec gmx_unused* cr) override
     {
     }
 
@@ -320,35 +323,45 @@ constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count
 } // namespace
 
 template<CheckpointDataOperation operation>
-void VelocityScalingTemperatureCoupling::doCheckpointData(CheckpointData<operation>* checkpointData,
-                                                          const t_commrec*           cr)
+void VelocityScalingTemperatureCoupling::doCheckpointData(CheckpointData<operation>* checkpointData)
+{
+    checkpointVersion(checkpointData, "VRescaleThermostat version", c_currentVersion);
+
+    checkpointData->arrayRef("thermostat integral",
+                             makeCheckpointArrayRef<operation>(temperatureCouplingIntegral_));
+}
+
+void VelocityScalingTemperatureCoupling::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                                                             const t_commrec*                   cr)
 {
     if (MASTER(cr))
     {
-        checkpointVersion(checkpointData, "VRescaleThermostat version", c_currentVersion);
-
-        checkpointData->arrayRef("thermostat integral",
-                                 makeCheckpointArrayRef<operation>(temperatureCouplingIntegral_));
+        doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
-    if (operation == CheckpointDataOperation::Read && DOMAINDECOMP(cr))
+    temperatureCouplingImpl_->writeCheckpoint(
+            checkpointData
+                    ? std::make_optional(checkpointData->subCheckpointData("thermostat impl"))
+                    : std::nullopt,
+            cr);
+}
+
+void VelocityScalingTemperatureCoupling::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                                                const t_commrec* cr)
+{
+    if (MASTER(cr))
+    {
+        doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
+    }
+    if (DOMAINDECOMP(cr))
     {
         dd_bcast(cr->dd, temperatureCouplingIntegral_.size() * sizeof(double),
                  temperatureCouplingIntegral_.data());
     }
-}
-
-void VelocityScalingTemperatureCoupling::writeCheckpoint(WriteCheckpointData checkpointData,
-                                                         const t_commrec*    cr)
-{
-    doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
-    temperatureCouplingImpl_->writeCheckpoint(checkpointData.subCheckpointData("thermostat impl"), cr);
-}
-
-void VelocityScalingTemperatureCoupling::readCheckpoint(ReadCheckpointData checkpointData,
-                                                        const t_commrec*   cr)
-{
-    doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
-    temperatureCouplingImpl_->readCheckpoint(checkpointData.subCheckpointData("thermostat impl"), cr);
+    temperatureCouplingImpl_->readCheckpoint(
+            checkpointData
+                    ? std::make_optional(checkpointData->subCheckpointData("thermostat impl"))
+                    : std::nullopt,
+            cr);
 }
 
 const std::string& VelocityScalingTemperatureCoupling::clientID()

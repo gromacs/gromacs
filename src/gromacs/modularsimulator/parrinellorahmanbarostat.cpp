@@ -239,31 +239,35 @@ constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count
 } // namespace
 
 template<CheckpointDataOperation operation>
-void ParrinelloRahmanBarostat::doCheckpointData(CheckpointData<operation>* checkpointData,
-                                                const t_commrec*           cr)
+void ParrinelloRahmanBarostat::doCheckpointData(CheckpointData<operation>* checkpointData)
+{
+    checkpointVersion(checkpointData, "ParrinelloRahmanBarostat version", c_currentVersion);
+
+    checkpointData->tensor("box velocity", boxVelocity_);
+    checkpointData->tensor("relative box vector", boxRel_);
+}
+
+void ParrinelloRahmanBarostat::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                                                   const t_commrec*                   cr)
 {
     if (MASTER(cr))
     {
-        checkpointVersion(checkpointData, "ParrinelloRahmanBarostat version", c_currentVersion);
-
-        checkpointData->tensor("box velocity", boxVelocity_);
-        checkpointData->tensor("relative box vector", boxRel_);
+        doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
-    if (operation == CheckpointDataOperation::Read && DOMAINDECOMP(cr))
+}
+
+void ParrinelloRahmanBarostat::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                                      const t_commrec*                  cr)
+{
+    if (MASTER(cr))
+    {
+        doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
+    }
+    if (DOMAINDECOMP(cr))
     {
         dd_bcast(cr->dd, sizeof(boxVelocity_), boxVelocity_);
         dd_bcast(cr->dd, sizeof(boxRel_), boxRel_);
     }
-}
-
-void ParrinelloRahmanBarostat::writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr)
-{
-    doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
-}
-
-void ParrinelloRahmanBarostat::readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr)
-{
-    doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
 }
 
 const std::string& ParrinelloRahmanBarostat::clientID()

@@ -133,10 +133,10 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
 
     if (DOMAINDECOMP(cr) && MASTER(cr))
     {
-        xGlobal_.reserveWithPadding(totalNumAtoms_);
-        previousXGlobal_.reserveWithPadding(totalNumAtoms_);
-        vGlobal_.reserveWithPadding(totalNumAtoms_);
-        fGlobal_.reserveWithPadding(totalNumAtoms_);
+        xGlobal_.resizeWithPadding(totalNumAtoms_);
+        previousXGlobal_.resizeWithPadding(totalNumAtoms_);
+        vGlobal_.resizeWithPadding(totalNumAtoms_);
+        fGlobal_.resizeWithPadding(totalNumAtoms_);
     }
 
     if (!inputrec->bContinuation)
@@ -508,6 +508,7 @@ void StatePropagatorData::Element::doCheckpointData(CheckpointData<operation>* c
     }
     if (MASTER(cr))
     {
+        GMX_ASSERT(checkpointData, "Master needs a valid pointer to a CheckpointData object");
         checkpointVersion(checkpointData, "StatePropagatorData version", c_currentVersion);
 
         checkpointData->arrayRef("positions", makeCheckpointArrayRef<operation>(xGlobalRef));
@@ -519,14 +520,48 @@ void StatePropagatorData::Element::doCheckpointData(CheckpointData<operation>* c
     }
 }
 
-void StatePropagatorData::Element::writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr)
+void StatePropagatorData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                                                       const t_commrec*                   cr)
 {
-    doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
+    doCheckpointData<CheckpointDataOperation::Write>(
+            checkpointData ? &checkpointData.value() : nullptr, cr);
 }
 
-void StatePropagatorData::Element::readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr)
+/*!
+ * \brief Update the legacy global state
+ *
+ * When restoring from checkpoint, data will be distributed during domain decomposition at setup stage.
+ * Domain decomposition still uses the legacy global t_state object so make sure it's up-to-date.
+ */
+static void updateGlobalState(t_state*                      globalState,
+                              const PaddedHostVector<RVec>& x,
+                              const PaddedHostVector<RVec>& v,
+                              const tensor                  box,
+                              int                           ddpCount,
+                              int                           ddpCountCgGl,
+                              const std::vector<int>&       cgGl)
 {
-    doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
+    globalState->x = x;
+    globalState->v = v;
+    copy_mat(box, globalState->box);
+    globalState->ddp_count       = ddpCount;
+    globalState->ddp_count_cg_gl = ddpCountCgGl;
+    globalState->cg_gl           = cgGl;
+}
+
+void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                                          const t_commrec*                  cr)
+{
+    doCheckpointData<CheckpointDataOperation::Read>(checkpointData ? &checkpointData.value() : nullptr, cr);
+
+    // Copy data to global state to be distributed by DD at setup stage
+    if (DOMAINDECOMP(cr) && MASTER(cr))
+    {
+        updateGlobalState(statePropagatorData_->globalState_, statePropagatorData_->xGlobal_,
+                          statePropagatorData_->vGlobal_, statePropagatorData_->box_,
+                          statePropagatorData_->ddpCount_, statePropagatorData_->ddpCountCgGl_,
+                          statePropagatorData_->cgGl_);
+    }
 }
 
 const std::string& StatePropagatorData::Element::clientID()

@@ -124,40 +124,39 @@ constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count
 } // namespace
 
 template<CheckpointDataOperation operation>
-void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operation>* checkpointData,
-                                                           const t_commrec*           cr)
+void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operation>* checkpointData)
+{
+    checkpointVersion(checkpointData, "FreeEnergyPerturbationData version", c_currentVersion);
+
+    checkpointData->scalar("current FEP state", &freeEnergyPerturbationData_->currentFEPState_);
+    checkpointData->arrayRef("lambda vector",
+                             makeCheckpointArrayRef<operation>(freeEnergyPerturbationData_->lambda_));
+}
+
+void FreeEnergyPerturbationData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                                                              const t_commrec*                   cr)
 {
     if (MASTER(cr))
     {
-        checkpointVersion(checkpointData, "FreeEnergyPerturbationData version", c_currentVersion);
-
-        checkpointData->scalar("current FEP state", &freeEnergyPerturbationData_->currentFEPState_);
-        checkpointData->arrayRef("lambda vector",
-                                 makeCheckpointArrayRef<operation>(freeEnergyPerturbationData_->lambda_));
+        doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
-    if (operation == CheckpointDataOperation::Read)
+}
+
+void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                                                 const t_commrec* cr)
+{
+    if (MASTER(cr))
     {
-        if (DOMAINDECOMP(cr))
-        {
-            dd_bcast(cr->dd, sizeof(int), &freeEnergyPerturbationData_->currentFEPState_);
-            dd_bcast(cr->dd, freeEnergyPerturbationData_->lambda_.size() * sizeof(real),
-                     freeEnergyPerturbationData_->lambda_.data());
-        }
-        update_mdatoms(freeEnergyPerturbationData_->mdAtoms_->mdatoms(),
-                       freeEnergyPerturbationData_->lambda_[efptMASS]);
+        doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-}
-
-void FreeEnergyPerturbationData::Element::writeCheckpoint(WriteCheckpointData checkpointData,
-                                                          const t_commrec*    cr)
-{
-    doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
-}
-
-void FreeEnergyPerturbationData::Element::readCheckpoint(ReadCheckpointData checkpointData,
-                                                         const t_commrec*   cr)
-{
-    doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
+    if (DOMAINDECOMP(cr))
+    {
+        dd_bcast(cr->dd, sizeof(int), &freeEnergyPerturbationData_->currentFEPState_);
+        dd_bcast(cr->dd, freeEnergyPerturbationData_->lambda_.size() * sizeof(real),
+                 freeEnergyPerturbationData_->lambda_.data());
+    }
+    update_mdatoms(freeEnergyPerturbationData_->mdAtoms_->mdatoms(),
+                   freeEnergyPerturbationData_->lambda_[efptMASS]);
 }
 
 const std::string& FreeEnergyPerturbationData::Element::clientID()
