@@ -73,12 +73,13 @@ compiler_group.add_argument('--icc', type=int, nargs='?', const=19, default=None
 # TODO currently the installation merely gets the latest beta version of oneAPI,
 # not a specific version. GROMACS probably doesn't need to address that until
 # oneAPI makes an official release.
-compiler_group.add_argument('--oneapi', type=str, nargs='?', const="", default="2021.1-beta08",
+compiler_group.add_argument('--oneapi', type=str, nargs='?', const="2021.1-beta08", default=None,
                             help='Select Intel oneAPI package version.')
 
 linux_group = parser.add_mutually_exclusive_group()
-linux_group.add_argument('--ubuntu', type=str, nargs='?', const='20.04', default='20.04',
-                         help='Select Ubuntu Linux base image. (default: ubuntu 20.04)')
+# Ubuntu 20+ is not yet tested. See issue #3680
+linux_group.add_argument('--ubuntu', type=str, nargs='?', const='18.04', default='18.04',
+                         help='Select Ubuntu Linux base image. (default: ubuntu 18.04)')
 linux_group.add_argument('--centos', type=str, nargs='?', const='7', default=None,
                          help='Select Centos Linux base image.')
 

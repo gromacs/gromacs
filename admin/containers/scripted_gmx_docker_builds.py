@@ -174,6 +174,7 @@ def get_llvm_packages(args) -> typing.Iterable[str]:
     # If we use the package version of LLVM, we need to install extra packages for it.
     if (args.llvm is not None) and (args.tsan is None):
         return ['libomp-dev',
+                'libomp5',
                 'clang-format-' + str(args.llvm),
                 'clang-tidy-' + str(args.llvm)]
     else:
@@ -475,7 +476,7 @@ def add_documentation_dependencies(input_args,
         return
     output_stages['main'] += hpccm.primitives.shell(
         commands=['sed -i \'/\"XPS\"/d;/\"PDF\"/d;/\"PS\"/d;/\"EPS\"/d;/disable ghostscript format types/d\' /etc/ImageMagick-6/policy.xml'])
-    output_stages['main'] += hpccm.building_blocks.pip(pip='pip3', packages=['sphinx==1.6.1'])
+    output_stages['main'] += hpccm.building_blocks.pip(pip='pip3', packages=['sphinx==1.6.1', 'gcovr'])
     if input_args.doxygen == '1.8.5':
         doxygen_commit = 'ed4ed873ab0e7f15116e2052119a6729d4589f7a'
         output_stages['main'] += hpccm.building_blocks.generic_autotools(

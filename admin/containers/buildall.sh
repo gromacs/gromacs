@@ -51,7 +51,7 @@ tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.17.2 --llvm --doxygen | docker build -t $tag -
 
 echo "Run the following to upload the updated images."
-echo docker login
+echo "docker login"
 for tag in "${tags[@]}"; do
-  echo docker push $tag
+  echo "docker push $tag"
 done
