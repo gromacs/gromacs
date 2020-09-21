@@ -583,7 +583,7 @@ MACRO(PARSE_ADD_LATEX_ARGUMENTS command)
   ENDIF (LATEX_DEFAULT_ARGS)
 
   IF (LATEX_DEFAULT_ARGS)
-    LATEX_USAGE(${command} "Invalid or depricated arguments: ${LATEX_DEFAULT_ARGS}")
+    LATEX_USAGE(${command} "Invalid or deprecated arguments: ${LATEX_DEFAULT_ARGS}")
   ENDIF (LATEX_DEFAULT_ARGS)
 
   # Backward compatibility between 1.6.0 and 1.6.1.

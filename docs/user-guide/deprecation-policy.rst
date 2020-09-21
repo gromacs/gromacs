@@ -14,3 +14,12 @@ external tool providers to prepare for such changes, and contact the
 |Gromacs| developers to see how they might be affected and how best to
 adapt. There is a :ref:`current list <deprecated-functionality>`
 of deprecated functionality.
+
+When environment variables are deprecated, it is up to the user to make
+sure that their scripts are updated accordingly for the new release. In
+cases where it is sensible, the development team should do the effort to
+keep the old environment variables working for one extra release cycle,
+before fully removing them. The user should be informed about this future
+deprecation with a warning. If keeping the old environment variable is
+not possible or highly problematic, setting the removed environment
+variable should be triggering a warning during one release cycle.
