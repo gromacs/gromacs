@@ -242,11 +242,12 @@ Awh::Awh(FILE*                 fplog,
                 }
                 double conversionFactor = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
                 pullCoordIndex.push_back(awhDimParams.coordIndex);
-                dimParams.emplace_back(conversionFactor, awhDimParams.forceConstant, beta);
+                dimParams.push_back(DimParams::pullDimParams(conversionFactor,
+                                                             awhDimParams.forceConstant, beta));
             }
             else
             {
-                dimParams.emplace_back(awhDimParams.forceConstant, beta, numFepLambdaStates_);
+                dimParams.push_back(DimParams::fepLambdaDimParams(numFepLambdaStates_, beta));
             }
         }
 
@@ -318,7 +319,7 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
         int      numLambdaDimsCounted = 0;
         for (int d = 0; d < biasCts.bias_.ndim(); d++)
         {
-            if (!biasCts.bias_.isFepLambdaDimension(d))
+            if (biasCts.bias_.dimParams()[d].isPullDimension())
             {
                 coordValue[d] = get_pull_coord_value(
                         pull_, biasCts.pullCoordIndex_[d - numLambdaDimsCounted], &pbc);
@@ -355,7 +356,7 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
         numLambdaDimsCounted = 0;
         for (int d = 0; d < biasCts.bias_.ndim(); d++)
         {
-            if (!biasCts.bias_.dimParams()[d].isFepLambdaDimension())
+            if (biasCts.bias_.dimParams()[d].isPullDimension())
             {
                 apply_external_pull_coord_force(pull_, biasCts.pullCoordIndex_[d - numLambdaDimsCounted],
                                                 biasForce[d], masses, forceWithVirial);

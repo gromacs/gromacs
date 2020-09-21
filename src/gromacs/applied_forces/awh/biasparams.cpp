@@ -125,12 +125,12 @@ int64_t calcCheckCoveringInterval(const AwhParams&              awhParams,
     for (size_t d = 0; d < gridAxis.size(); d++)
     {
         int numSamplesCover;
-        if (!dimParams[d].isFepLambdaDimension())
+        if (dimParams[d].isPullDimension())
         {
             GMX_RELEASE_ASSERT(
-                    dimParams[d].betak > 0,
+                    dimParams[d].pullDimParams().betak > 0,
                     "Inverse temperature (beta) and force constant (k) should be positive.");
-            double sigma = 1.0 / std::sqrt(dimParams[d].betak);
+            double sigma = 1.0 / std::sqrt(dimParams[d].pullDimParams().betak);
 
             /* The additional sample is here because to cover a discretized
             axis of length sigma one needs two samples, one for each
@@ -141,7 +141,7 @@ int64_t calcCheckCoveringInterval(const AwhParams&              awhParams,
         }
         else
         {
-            numSamplesCover = dimParams[d].numFepLambdaStates;
+            numSamplesCover = dimParams[d].fepDimParams().numFepLambdaStates;
         }
         /* The minimum number of samples needed for simultaneously
         covering all axes is limited by the axis requiring most
@@ -269,9 +269,11 @@ double getInitialHistogramSizeEstimate(const std::vector<DimParams>& dimParams,
             crossingTime += awhBiasParams.dimParams[d].diffusion / (axisLength * axisLength);
             /* The sigma of the Gaussian distribution in the umbrella */
             double sigma = 1.;
-            if (dimParams[d].betak != 0)
+            if (dimParams[d].isPullDimension())
             {
-                sigma /= std::sqrt(dimParams[d].betak);
+                GMX_RELEASE_ASSERT(dimParams[d].pullDimParams().betak != 0,
+                                   "beta*k cannot be zero");
+                sigma /= std::sqrt(dimParams[d].pullDimParams().betak);
             }
             x.push_back(sigma / axisLength);
         }

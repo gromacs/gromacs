@@ -49,6 +49,7 @@
 #ifndef GMX_AWH_DIMPARAMS_H
 #define GMX_AWH_DIMPARAMS_H
 
+#include <variant>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -70,38 +71,71 @@ typedef int awh_ivec[c_biasMaxNumDim];
  */
 struct DimParams
 {
+    //! Type for storing dimension parameters for pull type dimensions
+    struct PullDimParams
+    {
+        const double k;     /**< Force constant (kJ/mol/nm^2) for each coordinate dimension. */
+        const double betak; /**< Inverse variance (1/nm^2) for each coordinate dimension. */
+        const double userCoordUnitsToInternal; /**< Conversion factor coordinate units. */
+    };
+
+    //! Type for storing dimension parameters for free-energy lamdba type dimensions
+    struct FepDimParams
+    {
+        const double beta;               /**< 1/(k_B T). */
+        const int    numFepLambdaStates; /**< Number of lambda points in this dimension. */
+    };
+
+private:
     /*! \brief
-     * Constructor.
+     * Private constructor called by public builder functions for PullDimParams and FepLambdaDimParams.
+     */
+    DimParams(double conversionFactor, std::variant<PullDimParams, FepDimParams> dimParams) :
+        dimParams(std::move(dimParams)),
+        userCoordUnitsToInternal(conversionFactor)
+    {
+    }
+
+public:
+    /*! \brief
+     * Builder function for pull dimension parameters.
      *
      * \param[in] conversionFactor  Conversion factor from user coordinate units to bias internal
      * units (=DEG2RAD for angles).
      * \param[in] forceConstant     The harmonic force constant.
      * \param[in] beta              1/(k_B T).
      */
-    DimParams(double conversionFactor, double forceConstant, double beta) :
-        k(forceConstant),
-        beta(beta),
-        betak(beta * forceConstant),
-        userCoordUnitsToInternal(conversionFactor),
-        numFepLambdaStates(0)
+    static DimParams pullDimParams(double conversionFactor, double forceConstant, double beta)
     {
+        PullDimParams pullDimParams = { forceConstant, forceConstant * beta };
+
+        return DimParams(conversionFactor, pullDimParams);
     }
 
     /*! \brief
-     * Constructor for lambda dimension.
+     * Builder function for FEP lambda dimension parameters.
      *
-     * \param[in] forceConstant       The harmonic force constant.
-     * \param[in] beta                1/(k_B T).
      * \param[in] numFepLambdaStates  Number of lambda states in the system.
+     * \param[in] beta                1/(k_B T).
      */
-    DimParams(double forceConstant, double beta, int numFepLambdaStates) :
-        k(forceConstant),
-        beta(beta),
-        betak(beta * forceConstant),
-        userCoordUnitsToInternal(1.0),
-        numFepLambdaStates(numFepLambdaStates)
+    static DimParams fepLambdaDimParams(int numFepLambdaStates, double beta)
     {
+        FepDimParams fepDimParams = { beta, numFepLambdaStates };
+
+        return DimParams(1.0, fepDimParams);
     }
+
+    //! Returns whether this dimension is coupled to a pull coordinate.
+    bool isPullDimension() const { return std::holds_alternative<PullDimParams>(dimParams); }
+
+    //! Returns whether this dimension has lambda states and thereby is a dimension coupled to lambda.
+    bool isFepLambdaDimension() const { return std::holds_alternative<FepDimParams>(dimParams); }
+
+    //! Returns pull dimension parameters, only call for pull dimensions
+    const PullDimParams& pullDimParams() const { return std::get<PullDimParams>(dimParams); }
+
+    //! Returns FEP dimension parameters, only call for FEP dimensions
+    const FepDimParams& fepDimParams() const { return std::get<FepDimParams>(dimParams); }
 
     /*! \brief Convert internal coordinate units to external, user coordinate units.
      *
@@ -117,17 +151,10 @@ struct DimParams
      */
     double scaleUserInputToInternal(double value) const { return value * userCoordUnitsToInternal; }
 
-    /*! \brief Returns if this dimension has lambda states and thereby is a dimension coupled to lambda.
-     *
-     *  \returns true if this dimension is related to the lambda state of the system.
-     */
-    bool isFepLambdaDimension() const { return numFepLambdaStates > 0; }
-
-    const double k;     /**< Force constant (kJ/mol/nm^2) for each coordinate dimension. */
-    const double beta;  /**< 1/(k_B T). */
-    const double betak; /**< Inverse variance (1/nm^2) for each coordinate dimension. */
-    const double userCoordUnitsToInternal; /**< Conversion factor coordinate units. */
-    const double numFepLambdaStates;       /**< Number of lambda points in this dimension. */
+    //! Parameters for pull dimensions, either type pull or free-energy lambda
+    const std::variant<PullDimParams, FepDimParams> dimParams;
+    //! Conversion factor for ordinate units
+    const double userCoordUnitsToInternal;
 };
 
 } // namespace gmx

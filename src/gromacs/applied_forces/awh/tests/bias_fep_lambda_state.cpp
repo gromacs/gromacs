@@ -104,7 +104,7 @@ static void randomArrayFill(ArrayRef<double>           array,
 }
 
 //! Helper function to set up the C-style AWH parameters for the test
-static AwhFepLambdaStateTestParameters getAwhTestParameters(int eawhgrowth, int eawhpotential)
+static AwhFepLambdaStateTestParameters getAwhFepLambdaTestParameters(int eawhgrowth, int eawhpotential)
 {
     AwhFepLambdaStateTestParameters params;
 
@@ -133,10 +133,9 @@ static AwhFepLambdaStateTestParameters getAwhTestParameters(int eawhgrowth, int 
     awhBiasParams.shareGroup           = 0;
     awhBiasParams.equilibrateHistogram = FALSE;
 
-    double  k    = 1000;
     int64_t seed = 93471803;
 
-    params.dimParams.emplace_back(k, params.beta, numLambdaStates);
+    params.dimParams.push_back(DimParams::fepLambdaDimParams(numLambdaStates, params.beta));
 
     AwhParams& awhParams = params.awhParams;
 
@@ -192,7 +191,8 @@ public:
         /* Set up a basic AWH setup with a single, 1D bias with parameters
          * such that we can measure the effects of different parameters.
          */
-        const AwhFepLambdaStateTestParameters params = getAwhTestParameters(eawhgrowth, eawhpotential);
+        const AwhFepLambdaStateTestParameters params =
+                getAwhFepLambdaTestParameters(eawhgrowth, eawhpotential);
 
         seed_ = params.awhParams.seed;
 
@@ -309,7 +309,7 @@ INSTANTIATE_TEST_CASE_P(WithParameters,
 TEST(BiasFepLambdaStateTest, DetectsCovering)
 {
     const AwhFepLambdaStateTestParameters params =
-            getAwhTestParameters(eawhgrowthEXP_LINEAR, eawhpotentialCONVOLVED);
+            getAwhFepLambdaTestParameters(eawhgrowthEXP_LINEAR, eawhpotentialCONVOLVED);
 
     const double mdTimeStep = 0.1;
 

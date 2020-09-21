@@ -138,8 +138,8 @@ public:
         const AwhParams&       awhParams     = params.awhParams;
         const AwhBiasParams&   awhBiasParams = awhParams.awhBiasParams[0];
         std::vector<DimParams> dimParams;
-        dimParams.emplace_back(1.0, 15.0, params.beta);
-        dimParams.emplace_back(1.0, 15.0, params.beta);
+        dimParams.push_back(DimParams::pullDimParams(1.0, 15.0, params.beta));
+        dimParams.push_back(DimParams::pullDimParams(1.0, 15.0, params.beta));
         BiasGrid   grid(dimParams, awhBiasParams.dimParams);
         BiasParams biasParams(awhParams, awhBiasParams, dimParams, 1.0, 1.0,
                               BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);

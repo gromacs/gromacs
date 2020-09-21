@@ -119,7 +119,7 @@ static AwhTestParameters getAwhTestParameters(int eawhgrowth, int eawhpotential)
     double  k          = 1000;
     int64_t seed       = 93471803;
 
-    params.dimParams.emplace_back(convFactor, k, params.beta);
+    params.dimParams.push_back(DimParams::pullDimParams(convFactor, k, params.beta));
 
     AwhParams& awhParams = params.awhParams;
 
@@ -259,7 +259,7 @@ TEST_P(BiasTest, ForcesBiasPmf)
      * In taking this deviation we lose a lot of precision, so we should
      * compare against k*max(coord) instead of the instantaneous force.
      */
-    const double kCoordMax = bias.dimParams()[0].k * coordMaxValue;
+    const double kCoordMax = bias.dimParams()[0].pullDimParams().k * coordMaxValue;
 
     constexpr int ulpTol = 10;
 

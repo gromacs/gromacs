@@ -247,7 +247,7 @@ double biasedLogWeightFromPoint(const std::vector<DimParams>&  dimParams,
                 {
                     const int pointLambdaIndex     = grid.point(pointIndex).coordValue[d];
                     const int gridpointLambdaIndex = grid.point(gridpointIndex).coordValue[d];
-                    logWeight -= dimParams[d].beta
+                    logWeight -= dimParams[d].fepDimParams().beta
                                  * (neighborLambdaEnergies[pointLambdaIndex]
                                     - neighborLambdaEnergies[gridpointLambdaIndex]);
                 }
@@ -255,7 +255,7 @@ double biasedLogWeightFromPoint(const std::vector<DimParams>&  dimParams,
             else
             {
                 double dev = getDeviationFromPointAlongGridAxis(grid, d, pointIndex, value[d]);
-                logWeight -= 0.5 * dimParams[d].betak * dev * dev;
+                logWeight -= 0.5 * dimParams[d].pullDimParams().betak * dev * dev;
             }
         }
     }
@@ -489,7 +489,7 @@ double BiasState::calcUmbrellaForceAndPotential(const std::vector<DimParams>& di
         {
             double deviation =
                     getDeviationFromPointAlongGridAxis(grid, d, point, coordState_.coordValue()[d]);
-            double k = dimParams[d].k;
+            double k = dimParams[d].pullDimParams().k;
 
             /* Force from harmonic potential 0.5*k*dev^2 */
             force[d] = -k * deviation;
@@ -1006,7 +1006,8 @@ bool BiasState::isSamplingRegionCovered(const BiasParams&             params,
         }
         else
         {
-            weightThreshold *= grid.axis(d).spacing() * std::sqrt(dimParams[d].betak * 0.5 * M_1_PI);
+            weightThreshold *= grid.axis(d).spacing()
+                               * std::sqrt(dimParams[d].pullDimParams().betak * 0.5 * M_1_PI);
         }
     }
 

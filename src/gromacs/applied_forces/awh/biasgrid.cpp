@@ -827,12 +827,12 @@ BiasGrid::BiasGrid(const std::vector<DimParams>& dimParams, const AwhDimParams* 
                     c_numPointsPerSigma >= 1.0,
                     "The number of points per sigma should be at least 1.0 to get a uniformly "
                     "covering the reaction using Gaussians");
-            double pointDensity = std::sqrt(dimParams[d].betak) * c_numPointsPerSigma;
+            double pointDensity = std::sqrt(dimParams[d].pullDimParams().betak) * c_numPointsPerSigma;
             axis_.emplace_back(origin, end, period[d], pointDensity);
         }
         else
         {
-            axis_.emplace_back(origin, end, 0, dimParams[d].numFepLambdaStates, true);
+            axis_.emplace_back(origin, end, 0, dimParams[d].fepDimParams().numFepLambdaStates, true);
         }
         numPoints *= axis_[d].numPoints();
     }

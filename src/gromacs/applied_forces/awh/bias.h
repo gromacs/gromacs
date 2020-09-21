@@ -359,15 +359,6 @@ public:
                            [](const auto& dimParam) { return dimParam.isFepLambdaDimension(); });
     }
 
-    /*! \brief Returns whether the specified dimension is a free energy lambda
-     * state dimension.
-     *
-     * \param[in] dim      The dimension to check.
-     *
-     * \returns true if the specified dimension is a free energy lambda state dimension.
-     */
-    bool isFepLambdaDimension(int dim) const;
-
     /*! \brief
      * Returns whether we should sample the coordinate.
      *

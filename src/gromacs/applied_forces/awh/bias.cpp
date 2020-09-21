@@ -450,13 +450,6 @@ int Bias::writeToEnergySubblocks(t_enxsubblock* subblock) const
     return writer_->writeToEnergySubblocks(*this, subblock);
 }
 
-bool Bias::isFepLambdaDimension(int dim) const
-{
-    GMX_ASSERT(dim < ndim(), "Requested dimension out of range.");
-
-    return dimParams_[dim].isFepLambdaDimension();
-}
-
 bool Bias::isSampleCoordStep(const int64_t step) const
 {
     return params_.isSampleCoordStep(step);

@@ -86,8 +86,8 @@ TEST(biasGridTest, neighborhood)
 
     /* Set up dimParams to get about 15 points along each dimension */
     std::vector<DimParams> dimParams;
-    dimParams.emplace_back(conversionFactor, 1 / (beta * 0.7 * 0.7), beta);
-    dimParams.emplace_back(conversionFactor, 1 / (beta * 0.1 * 0.1), beta);
+    dimParams.push_back(DimParams::pullDimParams(conversionFactor, 1 / (beta * 0.7 * 0.7), beta));
+    dimParams.push_back(DimParams::pullDimParams(conversionFactor, 1 / (beta * 0.1 * 0.1), beta));
 
     BiasGrid grid(dimParams, awhDimParams.data());
 
