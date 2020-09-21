@@ -108,8 +108,8 @@ int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
                                             || (getenv("GMX_OCL_NB_ANA_EWALD") != nullptr);
     const bool forceTabulatedEwaldLegacy = (getenv("GMX_CUDA_NB_TAB_EWALD") != nullptr)
                                            || (getenv("GMX_OCL_NB_TAB_EWALD") != nullptr);
-    const bool forceTwinCutoffEwaldLegacy = (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == nullptr)
-                                            || (getenv("GMX_OCL_NB_EWALD_TWINCUT") == nullptr);
+    const bool forceTwinCutoffEwaldLegacy = (getenv("GMX_CUDA_NB_EWALD_TWINCUT") != nullptr)
+                                            || (getenv("GMX_OCL_NB_EWALD_TWINCUT") != nullptr);
 
     printEnviromnentVariableDeprecationMessage(forceAnalyticalEwaldLegacy, "NB_ANA_EWALD");
     printEnviromnentVariableDeprecationMessage(forceTabulatedEwaldLegacy, "NB_TAB_EWALD");
