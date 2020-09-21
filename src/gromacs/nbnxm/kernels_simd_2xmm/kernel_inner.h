@@ -895,9 +895,7 @@
     fiz_S2 = fiz_S2 + tz_S2;
 
     /* Decrement j atom force */
-    decrHsimd(f + ajx, tx_S0 + tx_S2);
-    decrHsimd(f + ajy, ty_S0 + ty_S2);
-    decrHsimd(f + ajz, tz_S0 + tz_S2);
+    decr3Hsimd<STRIDE>(f + aj * DIM, tx_S0 + tx_S2, ty_S0 + ty_S2, tz_S0 + tz_S2);
 }
 
 #undef rinv_ex_S0
