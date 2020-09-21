@@ -70,43 +70,64 @@ using PinnedMemoryCheckerTest = ::testing::Test;
 
 TEST_F(PinnedMemoryCheckerTest, DefaultContainerIsRecognized)
 {
-    HostVector<real> dummy(3, 1.5);
-    changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
-    EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
+    /* Note that this tests can be executed even on hosts with no GPUs.
+     * However, the checks for pending CUDA errors run cudaGetLastError(...),
+     * which itself returns cudaErrorNoDevice in this case. This causes the
+     * tests to crash. The conditionals in these tests should be removed
+     * when a proper work-around for this problem is in place.
+     */
+    if (getTestHardwareEnvironment()->hasCompatibleDevices())
+    {
+        HostVector<real> dummy(3, 1.5);
+        changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
+        EXPECT_FALSE(isHostMemoryPinned(dummy.data()));
+    }
 }
 
 TEST_F(PinnedMemoryCheckerTest, PinnedContainerIsRecognized)
 {
-    HostVector<real> dummy(3, 1.5);
-    changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
+    if (getTestHardwareEnvironment()->hasCompatibleDevices())
+    {
+        HostVector<real> dummy(3, 1.5);
+        changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
+        EXPECT_TRUE(isHostMemoryPinned(dummy.data()));
+    }
 }
 
 TEST_F(PinnedMemoryCheckerTest, PinningChangesAreRecognized)
 {
-    HostVector<real> dummy(3, 1.5);
-    changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory starts pinned";
-    changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
-    EXPECT_FALSE(isHostMemoryPinned(dummy.data())) << "memory is now unpinned";
-    changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory is pinned again";
+    if (getTestHardwareEnvironment()->hasCompatibleDevices())
+    {
+        HostVector<real> dummy(3, 1.5);
+        changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
+        EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory starts pinned";
+        changePinningPolicy(&dummy, PinningPolicy::CannotBePinned);
+        EXPECT_FALSE(isHostMemoryPinned(dummy.data())) << "memory is now unpinned";
+        changePinningPolicy(&dummy, PinningPolicy::PinnedIfSupported);
+        EXPECT_TRUE(isHostMemoryPinned(dummy.data())) << "memory is pinned again";
+    }
 }
 
 TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
 {
-    real* dummy;
-    snew(dummy, 3);
-    EXPECT_FALSE(isHostMemoryPinned(dummy));
-    sfree(dummy);
+    if (getTestHardwareEnvironment()->hasCompatibleDevices())
+    {
+        real* dummy;
+        snew(dummy, 3);
+        EXPECT_FALSE(isHostMemoryPinned(dummy));
+        sfree(dummy);
+    }
 }
 
 TEST_F(PinnedMemoryCheckerTest, PinnedCBufferIsRecognized)
 {
-    real* dummy = nullptr;
-    pmalloc(reinterpret_cast<void**>(&dummy), 3 * sizeof(real));
-    EXPECT_TRUE(isHostMemoryPinned(dummy));
-    pfree(dummy);
+    if (getTestHardwareEnvironment()->hasCompatibleDevices())
+    {
+        real* dummy = nullptr;
+        pmalloc(reinterpret_cast<void**>(&dummy), 3 * sizeof(real));
+        EXPECT_TRUE(isHostMemoryPinned(dummy));
+        pfree(dummy);
+    }
 }
 
 } // namespace

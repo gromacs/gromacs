@@ -82,6 +82,7 @@ public:
     {
         return testDeviceList_;
     }
+    bool hasCompatibleDevices() const { return !testDeviceList_.empty(); }
     //! Get available hardware information.
     const gmx_hw_info_t* hwinfo() const { return hardwareInfo_; }
 };
