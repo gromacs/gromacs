@@ -77,6 +77,10 @@
     CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DCMAKE_INCLUDE_PATH=/opt/intel/oneapi/compiler/latest/linux/include/sycl -DCMAKE_PREFIX_PATH=/opt/intel/oneapi/compiler/latest/linux
     CMAKE_EXTRA_OPTIONS: -DGMX_FFT_LIBRARY=mkl
   before_script:
+    # Necessary to override gitlab default 'set -e' which breaks Intel's
+    # setvar.sh script
+    - set +e
+    - source /opt/intel/oneapi/setvars.sh
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache

@@ -299,11 +299,6 @@ gromacs:oneapi-2021.1-beta08-opencl:configure:
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master
   variables:
     COMPILER_MAJOR_VERSION: 2021
-  before_script:
-    # Necessary to override gitlab default 'set -e' which breaks Intel's
-    # setvar.sh script
-    - set +e
-    - source /opt/intel/oneapi/setvars.sh
 
 gromacs:clang-UBSAN:configure:
   extends:
@@ -390,11 +385,6 @@ gromacs:oneapi-2021.1-beta08-opencl:release:configure:
   variables:
     COMPILER_MAJOR_VERSION: 2021
     RELEASE_BUILD_DIR: release-builds-oneapi
-  before_script:
-    # Necessary to override gitlab default 'set -e' which breaks Intel's
-    # setvar.sh script
-    - set +e
-    - source /opt/intel/oneapi/setvars.sh
 
 # Jobs running during build stage
 
@@ -521,16 +511,11 @@ gromacs:oneapi-2021.1-beta08-opencl:build:
     - .variables:default
     - .gromacs:base:build
     - .use-ccache
-    - .before_script:default
+    - .use-oneapi:base
     - .rules:merge-requests
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master
   needs:
     - job: gromacs:oneapi-2021.1-beta08-opencl:configure
-  before_script:
-    # Necessary to override gitlab default 'set -e' which breaks Intel's
-    # setvar.sh script
-    - set +e
-    - source /opt/intel/oneapi/setvars.sh
 
 gromacs:clang-9-mpi:build:
   extends:
@@ -605,7 +590,6 @@ gromacs:oneapi-2021.1-beta08-opencl:release:build:
     - .gromacs:base:build
     - .use-oneapi:base
     - .use-opencl
-    - .before_script:default
     - .use-ccache
     - .rules:nightly-only-for-release
   stage: release-build
@@ -615,11 +599,6 @@ gromacs:oneapi-2021.1-beta08-opencl:release:build:
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master
   needs:
     - job: gromacs:oneapi-2021.1-beta08-opencl:release:configure
-  before_script:
-    # Necessary to override gitlab default 'set -e' which breaks Intel's
-    # setvar.sh script
-    - set +e
-    - source /opt/intel/oneapi/setvars.sh
 
 # Jobs running during test stage
 
@@ -770,15 +749,11 @@ gromacs:clang-UBSAN:test:
 gromacs:oneapi-2021.1-beta08-opencl:test:
   extends:
     - .gromacs:base:test
+    - .use-oneapi:base
     - .rules:merge-requests
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master
   needs:
     - job: gromacs:oneapi-2021.1-beta08-opencl:build
-  before_script:
-    # Necessary to override gitlab default 'set -e' which breaks Intel's
-    # setvar.sh script
-    - set +e
-    - source /opt/intel/oneapi/setvars.sh
 
 gromacs:clang-9-mpi:test:
   extends:
@@ -876,16 +851,12 @@ gromacs:clang-9:regressiontest:
 gromacs:oneapi-2021.1-beta08-opencl:regressiontest:
   extends:
     - .gromacs:base:regressiontest
+    - .use-oneapi:base
     - .rules:merge-requests
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master
   needs:
     - job: gromacs:oneapi-2021.1-beta08-opencl:build
     - job: regressiontests:prepare
-  before_script:
-    # Necessary to override gitlab default 'set -e' which breaks Intel's
-    # setvar.sh script
-    - set +e
-    - source /opt/intel/oneapi/setvars.sh
 
 gromacs:gcc-8-cuda-11.0:release:test:
   extends:
@@ -951,6 +922,7 @@ gromacs:clang-8-cuda-10.1:release:test:
 gromacs:oneapi-2021.1-beta08-opencl:release:test:
   extends:
     - .gromacs:base:test
+    - .use-oneapi:base
     - .rules:nightly-only-for-release
   stage: release-tests
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master
@@ -959,11 +931,6 @@ gromacs:oneapi-2021.1-beta08-opencl:release:test:
   needs:
     - job: gromacs:oneapi-2021.1-beta08-opencl:release:configure
     - job: gromacs:oneapi-2021.1-beta08-opencl:release:build
-  before_script:
-    # Necessary to override gitlab default 'set -e' which breaks Intel's
-    # setvar.sh script
-    - set +e
-    - source /opt/intel/oneapi/setvars.sh
 
 gromacs:gcc-7:release:regressiontest:
   extends:
@@ -1020,6 +987,7 @@ gromacs:clang-8-cuda-10.1:release:regressiontest:
 gromacs:oneapi-2021.1-beta08-opencl:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
+    - .use-oneapi:base
     - .rules:nightly-only-for-release
   stage: release-tests
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master
@@ -1031,8 +999,3 @@ gromacs:oneapi-2021.1-beta08-opencl:release:regressiontest:
   needs:
     - job: gromacs:oneapi-2021.1-beta08-opencl:release:build
     - job: regressiontests:package
-  before_script:
-    # Necessary to override gitlab default 'set -e' which breaks Intel's
-    # setvar.sh script
-    - set +e
-    - source /opt/intel/oneapi/setvars.sh
