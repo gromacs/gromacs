@@ -108,6 +108,8 @@ std::string getDeviceCompatibilityDescription(const std::vector<std::unique_ptr<
 void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
                                  gmx::ISerializer*                                      serializer)
 {
+    GMX_RELEASE_ASSERT(c_canSerializeDeviceInformation,
+                       "DeviceInformation for OpenCL/SYCL can not be serialized");
     int numDevices = deviceInfoList.size();
     serializer->doInt(&numDevices);
     for (auto& deviceInfo : deviceInfoList)
@@ -118,6 +120,8 @@ void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInforma
 
 std::vector<std::unique_ptr<DeviceInformation>> deserializeDeviceInformations(gmx::ISerializer* serializer)
 {
+    GMX_RELEASE_ASSERT(c_canSerializeDeviceInformation,
+                       "DeviceInformation for OpenCL/SYCL can not be deserialized");
     int numDevices = 0;
     serializer->doInt(&numDevices);
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList(numDevices);

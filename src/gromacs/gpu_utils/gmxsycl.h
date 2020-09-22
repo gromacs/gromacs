@@ -1,8 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,41 +32,30 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- *  \brief Defines the CPU stubs for the device management.
+/*! \libinternal \file
+ * \brief
+ * Wraps the complexity of including SYCL in GROMACS.
  *
- *  \author Anca Hamuraru <anca@streamcomputing.eu>
- *  \author Dimitrios Karkoulis <dimitris.karkoulis@gmail.com>
- *  \author Teemu Virolainen <teemu@streamcomputing.eu>
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
- *  \author Szilárd Páll <pall.szilard@gmail.com>
- *  \author Artem Zhmurov <zhmurov@gmail.com>
+ * SYCL headers use symbol DIM as a template parameter, which gets broken by macro DIM defined
+ * in gromacs/math/vectypes.h. Here, we include the SYCL header while temporary undefining this macro.
  *
- * \ingroup module_hardware
+ * \inlibraryapi
  */
-#include "gmxpre.h"
 
-#include "device_management.h"
+#ifndef GMX_GPU_UTILS_GMXSYCL_H
+#define GMX_GPU_UTILS_GMXSYCL_H
 
-#include "gromacs/utility/fatalerror.h"
 
-#include "device_information.h"
+#ifdef DIM
+#    if DIM != 3
+#        error "The workaround here assumes we use DIM=3."
+#    else
+#        undef DIM
+#        include <CL/sycl.hpp>
+#        define DIM 3
+#    endif
+#else
+#    include <CL/sycl.hpp>
+#endif
 
-std::vector<std::unique_ptr<DeviceInformation>> findDevices()
-{
-    return {};
-}
-
-void setActiveDevice(const DeviceInformation& /* deviceInfo */) {}
-
-void releaseDevice(DeviceInformation* /* deviceInfo */) {}
-
-std::string getDeviceInformationString(const DeviceInformation& /* deviceInfo */)
-{
-    gmx_fatal(FARGS, "Device information requested in CPU build.");
-}
-
-bool isDeviceDetectionFunctional(std::string* /* errorMessage */)
-{
-    return false;
-}
+#endif

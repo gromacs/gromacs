@@ -65,7 +65,7 @@ if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
     gmx_check_source_compiles_with_flags(
         "int main() { return 0; }"
         "-fno-sycl"
-	"CXX"
+        "CXX"
         DISABLE_SYCL_CXX_FLAGS_RESULT)
 
     if(DISABLE_SYCL_CXX_FLAGS_RESULT)

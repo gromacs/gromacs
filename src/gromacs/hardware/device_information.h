@@ -55,10 +55,17 @@
 #if GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
 #endif
+
+#if GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gmxsycl.h"
+#endif
+
 #include "gromacs/utility/enumerationhelpers.h"
 
 //! Constant used to help minimize preprocessed code
 static constexpr bool c_binarySupportsGpus = (GMX_GPU != 0);
+static constexpr bool c_canSerializeDeviceInformation =
+        (!GMX_GPU_OPENCL && !GMX_GPU_SYCL); /*NOLINT(misc-redundant-expression)*/
 
 //! Possible results of the GPU detection/check.
 enum class DeviceStatus : int
@@ -147,6 +154,8 @@ struct DeviceInformation
     DeviceVendor   deviceVendor;        //!< Device vendor.
     size_t         maxWorkItemSizes[3]; //!< Workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES).
     size_t         maxWorkGroupSize;    //!< Workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE).
+#elif GMX_GPU_SYCL
+    cl::sycl::device syclDevice;
 #endif
 };
 

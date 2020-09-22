@@ -152,9 +152,17 @@ static bool runningOnCompatibleHWForNvidia(const DeviceInformation& deviceInfo)
  */
 static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
 {
-    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    if (getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
         // Assume the device is compatible because checking has been disabled.
+        return DeviceStatus::Compatible;
+    }
+    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    {
+        fprintf(stderr,
+                "Environment variable GMX_OCL_DISABLE_COMPATIBILITY_CHECK is deprecated and will "
+                "be removed in release 2022. Please use GMX_GPU_DISABLE_COMPATIBILITY_CHECK "
+                "instead.\n");
         return DeviceStatus::Compatible;
     }
 

@@ -253,6 +253,10 @@ Performance and Run Control
         runtime permits this variable to be different for different ranks. Cannot be used
         in conjunction with ``mdrun -gputasks``. Has all the same requirements as ``mdrun -gputasks``.
 
+``GMX_GPU_DISABLE_COMPATIBILITY_CHECK``
+        Disables the hardware compatibility check in OpenCL and SYCL. Useful for developers
+        and allows testing the OpenCL/SYCL kernels on non-supported platforms without source code modification.
+
 ``GMX_IGNORE_FSYNC_FAILURE_ENV``
         allow :ref:`gmx mdrun` to continue even if
         a file is missing.
@@ -474,11 +478,6 @@ compilation of OpenCL kernels, but they are also used in device selection.
         kernels from a custom location. Use it only if you want to
         override |Gromacs| default behavior, or if you want to test
         your own kernels.
-
-``GMX_OCL_DISABLE_COMPATIBILITY_CHECK``
-        Disables the hardware compatibility check. Useful for developers
-        and allows testing the OpenCL kernels on non-supported platforms
-        (like Intel iGPUs) without source code modification.
 
 ``GMX_OCL_SHOW_DIAGNOSTICS``
         Use Intel OpenCL extension to show additional runtime performance
