@@ -102,10 +102,22 @@ gmx_add_gtest_executable(${exename}
     CPP_SOURCE_FILES
         ewaldsurfaceterm.cpp
         orires.cpp
-        pmetest.cpp
         simulator.cpp
         swapcoords.cpp
         tabulated_bonded_interactions.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
+    )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+
+
+set(testname "MdrunPmeTests")
+set(exename "mdrun-pme-test")
+
+gmx_add_gtest_executable(${exename}
+    CPP_SOURCE_FILES
+        pmetest.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
     )
