@@ -45,6 +45,8 @@ gmx_add_unit_test(MathUnitTests math-test
         invertmatrix.cpp
         matrix.cpp
         multidimarray.cpp
+        neldermead.cpp
+        optimization.cpp
         paddedvector.cpp
         vectypes.cpp
         )
