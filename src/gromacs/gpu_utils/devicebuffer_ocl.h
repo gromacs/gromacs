@@ -268,13 +268,14 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
 template<typename T>
 static bool checkDeviceBuffer(DeviceBuffer<T> buffer, int requiredSize)
 {
-    size_t size;
-    int    retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size), &size, nullptr);
+    const size_t requiredSizeBytes = requiredSize * sizeof(T);
+    size_t       sizeBytes;
+    cl_int retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(sizeBytes), &sizeBytes, nullptr);
     GMX_ASSERT(retval == CL_SUCCESS,
                gmx::formatString("clGetMemObjectInfo failed with error code #%d", retval).c_str());
-    GMX_ASSERT(static_cast<int>(size) >= requiredSize,
+    GMX_ASSERT(sizeBytes >= requiredSizeBytes,
                "Number of atoms in device buffer is smaller then required size.");
-    return retval == CL_SUCCESS && static_cast<int>(size) >= requiredSize;
+    return retval == CL_SUCCESS && sizeBytes >= requiredSizeBytes;
 }
 
 //! Device texture wrapper.
