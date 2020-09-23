@@ -100,7 +100,6 @@ public:
                      std::unique_ptr<CheckpointHandler> checkpointHandler,
                      int                                initStep,
                      TrajectoryElement*                 trajectoryElement,
-                     int                                globalNumAtoms,
                      FILE*                              fplog,
                      t_commrec*                         cr,
                      ObservablesHistory*                observablesHistory,
@@ -145,8 +144,6 @@ private:
     const Step initStep_;
     //! The last step of the simulation
     Step lastStep_;
-    //! The total number of atoms
-    const int globalNumAtoms_;
     //! Whether a checkpoint is written on the last step
     const bool writeFinalCheckpoint_;
 
@@ -158,12 +155,6 @@ private:
 
     //! Pointer to the trajectory element - to use file pointer
     TrajectoryElement* trajectoryElement_;
-
-    //! A local t_state object to gather data in
-    //! {
-    std::unique_ptr<t_state> localState_;
-    t_state*                 localStateInstance_;
-    //! }
 
     // Access to ISimulator data
     //! Handles logging.

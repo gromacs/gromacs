@@ -110,6 +110,12 @@ void done_mdoutf(gmx_mdoutf_t of);
  * the master node only when necessary. Without domain decomposition
  * only data from state_local is used and state_global is ignored.
  *
+ * Note that the mdoutf_write_checkpoint function below allows to
+ * write only the checkpoint file, and does no data gathering.
+ * Except for the modular simulator checkpointing,  the
+ * mdoutf_write_to_trajectory_files function is used for
+ * _all trajectory / checkpoint writing_.
+ *
  * \param[in] fplog                           File handler to log file.
  * \param[in] cr                              Communication record.
  * \param[in] of                              File handler to trajectory file.
@@ -135,6 +141,33 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
                                       ObservablesHistory*            observablesHistory,
                                       gmx::ArrayRef<const gmx::RVec> f_local,
                                       gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData);
+
+/*! \brief Routine allowing to write checkpoint files directly.
+ *
+ * Unlike mdoutf_write_to_trajectory_files, this will only write a checkpoint file,
+ * and it will not gather the state over the different ranks.
+ *
+ * This should only be called if no other trajectory file writing is needed, and
+ * the global state has all required information. Currently, this is only used by
+ * the modular checkpointing facility.
+ *
+ * \param[in] of                              File handler to trajectory file.
+ * \param[in] fplog                           File handler to log file.
+ * \param[in] cr                              Communication record.
+ * \param[in] step                            The current time step.
+ * \param[in] t                               The current time.
+ * \param[in] state_global                    Pointer to the global state object.
+ * \param[in] observablesHistory              Pointer to the ObservableHistory object.
+ * \param[in] modularSimulatorCheckpointData  CheckpointData object used by modular simulator.
+ */
+void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
+                             FILE*                           fplog,
+                             const t_commrec*                cr,
+                             int64_t                         step,
+                             double                          t,
+                             t_state*                        state_global,
+                             ObservablesHistory*             observablesHistory,
+                             gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData);
 
 /*! \brief Get the output interval of box size of uncompressed TNG output.
  * Returns 0 if no uncompressed TNG file is open.

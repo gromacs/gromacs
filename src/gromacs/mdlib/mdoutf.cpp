@@ -478,6 +478,31 @@ static void write_checkpoint(const char*                     fn,
 #endif /* end GMX_FAHCORE block */
 }
 
+void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
+                             FILE*                           fplog,
+                             const t_commrec*                cr,
+                             int64_t                         step,
+                             double                          t,
+                             t_state*                        state_global,
+                             ObservablesHistory*             observablesHistory,
+                             gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData)
+{
+    fflush_tng(of->tng);
+    fflush_tng(of->tng_low_prec);
+    /* Write the checkpoint file.
+     * When simulations share the state, an MPI barrier is applied before
+     * renaming old and new checkpoint files to minimize the risk of
+     * checkpoint files getting out of sync.
+     */
+    ivec one_ivec = { 1, 1, 1 };
+    write_checkpoint(of->fn_cpt, of->bKeepAndNumCPT, fplog, cr,
+                     DOMAINDECOMP(cr) ? cr->dd->numCells : one_ivec,
+                     DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes, of->eIntegrator,
+                     of->simulation_part, of->bExpanded, of->elamstats, step, t, state_global,
+                     observablesHistory, *(of->mdModulesNotifier), modularSimulatorCheckpointData,
+                     of->simulationsShareState, of->mastersComm);
+}
+
 void mdoutf_write_to_trajectory_files(FILE*                           fplog,
                                       const t_commrec*                cr,
                                       gmx_mdoutf_t                    of,
@@ -534,20 +559,8 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
     {
         if (mdof_flags & MDOF_CPT)
         {
-            fflush_tng(of->tng);
-            fflush_tng(of->tng_low_prec);
-            /* Write the checkpoint file.
-             * When simulations share the state, an MPI barrier is applied before
-             * renaming old and new checkpoint files to minimize the risk of
-             * checkpoint files getting out of sync.
-             */
-            ivec one_ivec = { 1, 1, 1 };
-            write_checkpoint(of->fn_cpt, of->bKeepAndNumCPT, fplog, cr,
-                             DOMAINDECOMP(cr) ? cr->dd->numCells : one_ivec,
-                             DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes, of->eIntegrator,
-                             of->simulation_part, of->bExpanded, of->elamstats, step, t,
-                             state_global, observablesHistory, *(of->mdModulesNotifier),
-                             modularSimulatorCheckpointData, of->simulationsShareState, of->mastersComm);
+            mdoutf_write_checkpoint(of, fplog, cr, step, t, state_global, observablesHistory,
+                                    modularSimulatorCheckpointData);
         }
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))

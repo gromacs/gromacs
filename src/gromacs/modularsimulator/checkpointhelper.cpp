@@ -61,7 +61,6 @@ CheckpointHelper::CheckpointHelper(std::vector<std::tuple<std::string, ICheckpoi
                                    std::unique_ptr<CheckpointHandler> checkpointHandler,
                                    int                                initStep,
                                    TrajectoryElement*                 trajectoryElement,
-                                   int                                globalNumAtoms,
                                    FILE*                              fplog,
                                    t_commrec*                         cr,
                                    ObservablesHistory*                observablesHistory,
@@ -72,28 +71,14 @@ CheckpointHelper::CheckpointHelper(std::vector<std::tuple<std::string, ICheckpoi
     checkpointHandler_(std::move(checkpointHandler)),
     initStep_(initStep),
     lastStep_(-1),
-    globalNumAtoms_(globalNumAtoms),
     writeFinalCheckpoint_(writeFinalCheckpoint),
     trajectoryElement_(trajectoryElement),
-    localState_(nullptr),
     fplog_(fplog),
     cr_(cr),
     observablesHistory_(observablesHistory),
     walltime_accounting_(walltime_accounting),
     state_global_(state_global)
 {
-    if (DOMAINDECOMP(cr))
-    {
-        localState_ = std::make_unique<t_state>();
-        dd_init_local_state(cr->dd, state_global, localState_.get());
-        localStateInstance_ = localState_.get();
-    }
-    else
-    {
-        state_change_natoms(state_global, state_global->natoms);
-        localStateInstance_ = state_global;
-    }
-
     if (!observablesHistory_->energyHistory)
     {
         observablesHistory_->energyHistory = std::make_unique<energyhistory_t>();
@@ -129,8 +114,6 @@ void CheckpointHelper::scheduleTask(Step step, Time time, const RegisterRunFunct
 
 void CheckpointHelper::writeCheckpoint(Step step, Time time)
 {
-    localStateInstance_->flags = 0;
-
     WriteCheckpointDataHolder checkpointDataHolder;
     for (const auto& [key, client] : clients_)
     {
@@ -139,9 +122,11 @@ void CheckpointHelper::writeCheckpoint(Step step, Time time)
                 cr_);
     }
 
-    mdoutf_write_to_trajectory_files(fplog_, cr_, trajectoryElement_->outf_, MDOF_CPT,
-                                     globalNumAtoms_, step, time, localStateInstance_, state_global_,
-                                     observablesHistory_, ArrayRef<RVec>(), &checkpointDataHolder);
+    if (MASTER(cr_))
+    {
+        mdoutf_write_checkpoint(trajectoryElement_->outf_, fplog_, cr_, step, time, state_global_,
+                                observablesHistory_, &checkpointDataHolder);
+    }
 }
 
 std::optional<SignallerCallback> CheckpointHelper::registerLastStepCallback()

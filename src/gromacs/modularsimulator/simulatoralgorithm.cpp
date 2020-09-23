@@ -539,10 +539,9 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                 legacySimulatorData_->mdrunOptions.checkpointOptions.period));
         algorithm.checkpointHelper_ = checkpointHelperBuilder_.build(
                 legacySimulatorData_->inputrec->init_step, trajectoryElement.get(),
-                legacySimulatorData_->top_global->natoms, legacySimulatorData_->fplog,
-                legacySimulatorData_->cr, legacySimulatorData_->observablesHistory,
-                legacySimulatorData_->walltime_accounting, legacySimulatorData_->state_global,
-                legacySimulatorData_->mdrunOptions.writeConfout);
+                legacySimulatorData_->fplog, legacySimulatorData_->cr,
+                legacySimulatorData_->observablesHistory, legacySimulatorData_->walltime_accounting,
+                legacySimulatorData_->state_global, legacySimulatorData_->mdrunOptions.writeConfout);
         registerWithInfrastructureAndSignallers(algorithm.checkpointHelper_.get());
     }
 
