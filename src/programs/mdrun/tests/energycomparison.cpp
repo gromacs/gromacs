@@ -77,8 +77,10 @@ EnergyTermsToCompare EnergyComparison::defaultEnergyTermsToCompare()
     };
 };
 
-EnergyComparison::EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare) :
-    energyTermsToCompare_(energyTermsToCompare)
+EnergyComparison::EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare,
+                                   FramesToCompare             framesToCompare) :
+    energyTermsToCompare_(energyTermsToCompare),
+    framesToCompare_(framesToCompare)
 {
 }
 
@@ -95,6 +97,12 @@ std::vector<std::string> EnergyComparison::getEnergyNames() const
 
 void EnergyComparison::operator()(const EnergyFrame& reference, const EnergyFrame& test) const
 {
+    if (framesToCompare_ == FramesToCompare::OnlyFirstFrame && firstFrameHasBeenCompared_)
+    {
+        // Nothing should be compared
+        return;
+    }
+
     SCOPED_TRACE("Comparing energy reference frame " + reference.frameName() + " and test frame "
                  + test.frameName());
     for (auto referenceIt = reference.begin(); referenceIt != reference.end(); ++referenceIt)
@@ -114,6 +122,7 @@ void EnergyComparison::operator()(const EnergyFrame& reference, const EnergyFram
             ADD_FAILURE() << "Could not find energy component from reference frame in test frame";
         }
     }
+    firstFrameHasBeenCompared_ = true;
 }
 
 void checkEnergiesAgainstReferenceData(const std::string&          energyFilename,
@@ -124,7 +133,7 @@ void checkEnergiesAgainstReferenceData(const std::string&          energyFilenam
 
     if (thisRankChecks)
     {
-        EnergyComparison energyComparison(energyTermsToCompare);
+        EnergyComparison energyComparison(energyTermsToCompare, FramesToCompare::AllFrames);
         auto energyReader = openEnergyFileToReadTerms(energyFilename, energyComparison.getEnergyNames());
 
         std::unordered_map<std::string, TestReferenceChecker> checkers;

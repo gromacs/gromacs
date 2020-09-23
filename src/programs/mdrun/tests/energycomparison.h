@@ -47,6 +47,8 @@
 
 #include "testutils/testasserts.h"
 
+#include "comparison_helpers.h"
+
 namespace gmx
 {
 
@@ -69,7 +71,7 @@ public:
     //! Defaults for energy comparisons
     static EnergyTermsToCompare defaultEnergyTermsToCompare();
     //! Constructor
-    EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare);
+    EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare, FramesToCompare framesToCompare);
     /*! \brief Return the names of energies that will be compared
      *
      * This function can be used to provide an input for
@@ -89,8 +91,18 @@ public:
      * key. */
     void operator()(const EnergyFrame& reference, const EnergyFrame& test) const;
 
+private:
     //! Energy terms to match with given tolerances.
     EnergyTermsToCompare energyTermsToCompare_;
+    //! Which frames should be compared.
+    FramesToCompare framesToCompare_ = FramesToCompare::AllFrames;
+    /*! \brief Whether the first frame has been compared yet
+     *
+     * This field is mutable because the need to update the flag
+     * after the first frame is merely an implementation detail,
+     * rather than a proper change of internal state triggered
+     * by the caller. */
+    mutable bool firstFrameHasBeenCompared_ = false;
 };
 
 /*! \brief Check a subset of the energies found in an energy file

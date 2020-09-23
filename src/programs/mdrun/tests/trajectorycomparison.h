@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 #define GMX_PROGRAMS_MDRUN_TESTS_TRAJECTORYCOMPARISON_H
 
 #include "testutils/testasserts.h"
+
+#include "comparison_helpers.h"
 
 namespace gmx
 {
@@ -97,6 +99,8 @@ struct TrajectoryFrameMatchSettings
     ComparisonConditions velocitiesComparison = ComparisonConditions::CompareIfBothFound;
     //! Whether forces must be compared.
     ComparisonConditions forcesComparison = ComparisonConditions::CompareIfBothFound;
+    //! Which frames will be compared
+    FramesToCompare framesToCompare = FramesToCompare::AllFrames;
 };
 
 /*! \internal
@@ -124,10 +128,19 @@ public:
     /*! \brief Compare reference with test given the \c
      * matchSettings_ within \c tolerances_ */
     void operator()(const TrajectoryFrame& reference, const TrajectoryFrame& test) const;
+
+private:
     //! Specifies expected behavior in comparisons
     TrajectoryFrameMatchSettings matchSettings_;
     //! Trajectory fields to match with given tolerances.
     TrajectoryTolerances tolerances_;
+    /*! \brief Whether the first frame has been compared yet
+     *
+     * This field is mutable because the need to update the flag
+     * after the first frame is merely an implementation detail,
+     * rather than a proper change of internal state triggered
+     * by the caller. */
+    mutable bool firstFrameHasBeenCompared_ = false;
 };
 
 } // namespace test

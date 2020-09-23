@@ -106,7 +106,8 @@ public:
     //! Names for the output files from the reference mdrun call
     ReferenceFileNames referenceFileNames_ = { fileManager_.getTemporaryFilePath("reference.edr") };
     //! Functor for energy comparison
-    EnergyComparison energyComparison_{ EnergyComparison::defaultEnergyTermsToCompare() };
+    EnergyComparison energyComparison_{ EnergyComparison::defaultEnergyTermsToCompare(),
+                                        FramesToCompare::AllFrames };
     //! Names of energies compared by energyComparison_
     std::vector<std::string> namesOfEnergiesToMatch_ = energyComparison_.getEnergyNames();
 };

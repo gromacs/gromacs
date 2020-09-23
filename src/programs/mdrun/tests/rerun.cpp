@@ -105,7 +105,8 @@ const TrajectoryFrameMatchSettings MdrunRerunTest::trajectoryMatchSettings = {
     true,
     ComparisonConditions::MustCompare,
     ComparisonConditions::NoComparison,
-    ComparisonConditions::MustCompare
+    ComparisonConditions::MustCompare,
+    FramesToCompare::AllFrames
 };
 
 void executeRerunTest(TestFileManager*            fileManager,

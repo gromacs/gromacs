@@ -90,7 +90,7 @@ void compareEnergies(const std::string&          edr1Name,
 {
     // Build the functor that will compare energy frames on the chosen
     // energy terms.
-    EnergyComparison energyComparison(energyTermsToCompare);
+    EnergyComparison energyComparison(energyTermsToCompare, FramesToCompare::AllFrames);
 
     // Build the manager that will present matching pairs of frames to compare.
     //

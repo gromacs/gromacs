@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -252,6 +252,11 @@ TrajectoryComparison::TrajectoryComparison(const TrajectoryFrameMatchSettings& m
 
 void TrajectoryComparison::operator()(const TrajectoryFrame& reference, const TrajectoryFrame& test) const
 {
+    if (matchSettings_.framesToCompare == FramesToCompare::OnlyFirstFrame && firstFrameHasBeenCompared_)
+    {
+        // Nothing should be compared
+        return;
+    }
     SCOPED_TRACE("Comparing trajectory reference frame " + reference.frameName()
                  + " and test frame " + test.frameName());
     EXPECT_EQ(reference.step(), test.step());
@@ -260,6 +265,7 @@ void TrajectoryComparison::operator()(const TrajectoryFrame& reference, const Tr
     compareCoordinates(reference, test, matchSettings_, tolerances_.coordinates);
     compareVelocities(reference, test, matchSettings_, tolerances_.velocities);
     compareForces(reference, test, matchSettings_, tolerances_.forces);
+    firstFrameHasBeenCompared_ = true;
 }
 
 } // namespace test

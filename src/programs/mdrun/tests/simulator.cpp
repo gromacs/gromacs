@@ -157,7 +157,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
                                                           true,
                                                           ComparisonConditions::MustCompare,
                                                           ComparisonConditions::MustCompare,
-                                                          ComparisonConditions::MustCompare };
+                                                          ComparisonConditions::MustCompare,
+                                                          FramesToCompare::AllFrames };
     TrajectoryTolerances trajectoryTolerances = TrajectoryComparison::s_defaultTrajectoryTolerances;
     if (simulationName != "argon12")
     {
