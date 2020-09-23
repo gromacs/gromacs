@@ -382,8 +382,9 @@ static inline cl_kernel select_nbnxn_kernel(NbnxmGpu* nb, int eeltype, int evdwt
     if (nullptr == kernel_ptr[0])
     {
         *kernel_ptr = clCreateKernel(nb->dev_rundata->program, kernel_name_to_run, &cl_error);
-        GMX_ASSERT(cl_error == CL_SUCCESS,
-                   ("clCreateKernel failed: " + ocl_get_error_string(cl_error)).c_str());
+        GMX_ASSERT(cl_error == CL_SUCCESS, ("clCreateKernel failed: " + ocl_get_error_string(cl_error)
+                                            + " for kernel named " + kernel_name_to_run)
+                                                   .c_str());
     }
 
     return *kernel_ptr;
