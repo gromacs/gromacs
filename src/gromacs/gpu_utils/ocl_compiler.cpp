@@ -450,11 +450,15 @@ cl_program compileProgram(FILE*              fplog,
                 // Failing to read from the cache is not a critical error
                 formatExceptionMessageToFile(fplog, e);
             }
+            fprintf(fplog, "OpenCL binary cache file %s is present, will load kernels.\n",
+                    cacheFilename.c_str());
         }
         else
         {
             fprintf(fplog,
-                    "No OpenCL binary cache file was present, so will compile kernels normally.\n");
+                    "No OpenCL binary cache file was present for %s, so will compile kernels "
+                    "normally.\n",
+                    kernelBaseFilename.c_str());
         }
     }
     if (program == nullptr)

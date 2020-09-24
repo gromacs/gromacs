@@ -139,8 +139,8 @@ cl_program makeProgramFromCache(const std::string& filename, cl_context context,
                                                    nullptr, &cl_error);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not create OpenCL program, error was "
-                                + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not create OpenCL program from the cache file " + filename
+                                + ", error was " + ocl_get_error_string(cl_error)));
     }
 
     return program;

@@ -207,8 +207,9 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
         }
         catch (gmx::GromacsException& e)
         {
-            e.prependContext(gmx::formatString("Failed to compile NBNXN kernels for GPU #%s\n",
-                                               nb->deviceContext_->deviceInfo().device_name));
+            e.prependContext(gmx::formatString(
+                    "Failed to compile/load nbnxm kernels for GPU #%d %s\n",
+                    nb->deviceContext_->deviceInfo().id, nb->deviceContext_->deviceInfo().device_name));
             throw;
         }
     }
