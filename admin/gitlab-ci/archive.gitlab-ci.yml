@@ -256,8 +256,17 @@ archive:nightly-webpage:
     - job: webpage:build
   variables:
     BUILD_DIR: build-docs
+  before_script:
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan www.gromacs.org > ~/.ssh/known_hosts # Force overwrite the known hosts so we only have that one key in it.
+    - chmod 644 ~/.ssh/known_hosts
   script:
     - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
+    - rsync --chmod=u+rwX,g+rwX,o+rX -av $BUILD_DIR/docs/html/* $BUILD_DIR/docs/html/.[a-z]* pbauer@www.gromacs.org:/var/www/manual/nightly/
+
   artifacts:
     when: always
     paths:
