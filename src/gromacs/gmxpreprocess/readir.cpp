@@ -3268,11 +3268,12 @@ static void checkAndUpdateVcmFreezeGroupConsistency(SimulationGroups* groups,
             if (numFrozenDims == DIM)
             {
                 /* Do not remove COM motion for this fully frozen atom */
-                if (groups->groups[SimulationAtomGroupType::MassCenterVelocityRemoval].empty())
+                if (groups->groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval].empty())
                 {
-                    groups->groups[SimulationAtomGroupType::MassCenterVelocityRemoval].resize(numAtoms, 0);
+                    groups->groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval].resize(
+                            numAtoms, 0);
                 }
-                groups->groups[SimulationAtomGroupType::MassCenterVelocityRemoval][a] = vcmRestGroup;
+                groups->groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval][a] = vcmRestGroup;
                 numFullyFrozenVcmAtoms++;
             }
             else if (numFrozenDims > 0)

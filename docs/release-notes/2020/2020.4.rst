@@ -70,6 +70,14 @@ Only check for RDTSCP on x86 platforms
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix crash of grompp when the whole system is frozen
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the whole system would be frozen, grompp would crash with
+a segmentation fault.
+
+:issue:`3683`
+
 Fixes the unexpected change in molecule indexing in output after simulation
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
