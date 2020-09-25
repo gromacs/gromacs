@@ -254,6 +254,8 @@ CpuInfo::Vendor detectX86Vendor()
 
 /*! \brief Detect second AVX-512 FMA from the processor name
  *
+ * Should only be called for processors already determined to support AVX-512.
+ *
  *  \param [in] brand     x86 processor name
  *  \param [in] model     x86 model
  *  \return               True if second FMA present
@@ -437,10 +439,13 @@ void detectX86Features(std::string* brand, int* family, int* model, int* steppin
         setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512BW, ebx, 30);
         setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512VL, ebx, 31);
 
-        // There is no CPUID bit for this...
-        if (detectProcCpuInfoSecondAvx512FMA(*brand, *model))
+        if (features->count(CpuInfo::Feature::X86_Avx512F) != 0)
         {
-            features->insert(CpuInfo::Feature::X86_Avx512secondFMA);
+            // Only checking if the CPU supports AVX-512. There is no CPUID bit for this.
+            if (detectProcCpuInfoSecondAvx512FMA(*brand, *model))
+            {
+                features->insert(CpuInfo::Feature::X86_Avx512secondFMA);
+            }
         }
     }
 
