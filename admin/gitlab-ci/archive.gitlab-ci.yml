@@ -36,7 +36,7 @@ regressiontests:prepare:
   # Always clone the default version for this branch, master in this case
   script:
     - export REGTESTBRANCH=master
-    - if [[ -z $REGRESSIONTESTBRANCH ]] ; then
+    - if [[ ! -z $REGRESSIONTESTBRANCH ]] ; then
       export REGTESTBRANCH=$REGRESSIONTESTBRANCH ;
       echo "Using $REGTESTBRANCH instead of default" ;
       fi
