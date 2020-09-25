@@ -99,8 +99,8 @@ struct TrajectoryFrameMatchSettings
     ComparisonConditions velocitiesComparison = ComparisonConditions::CompareIfBothFound;
     //! Whether forces must be compared.
     ComparisonConditions forcesComparison = ComparisonConditions::CompareIfBothFound;
-    //! Which frames will be compared
-    FramesToCompare framesToCompare = FramesToCompare::AllFrames;
+    //! How many frames will be compared.
+    MaxNumFrames maxNumTrajectoryFrames = MaxNumFrames::compareAllFrames();
 };
 
 /*! \internal
@@ -134,13 +134,13 @@ private:
     TrajectoryFrameMatchSettings matchSettings_;
     //! Trajectory fields to match with given tolerances.
     TrajectoryTolerances tolerances_;
-    /*! \brief Whether the first frame has been compared yet
+    /*! \brief The number of frames that have been compared until now
      *
      * This field is mutable because the need to update the flag
-     * after the first frame is merely an implementation detail,
+     * when checking frames is merely an implementation detail,
      * rather than a proper change of internal state triggered
      * by the caller. */
-    mutable bool firstFrameHasBeenCompared_ = false;
+    mutable unsigned int numComparedFrames_ = 0;
 };
 
 } // namespace test

@@ -49,12 +49,25 @@ namespace gmx
 namespace test
 {
 
-//! Enumeration controlling which trajectory frames are compared
-enum class FramesToCompare : int
+/*! \internal
+ * \brief Named struct indicating the max number of frames to be compared */
+struct MaxNumFrames
 {
-    AllFrames,
-    OnlyFirstFrame, // e.g. because step-0 quantities are most useful to compare
-    Count
+    //! Explicit constructor
+    explicit MaxNumFrames(unsigned int maxFrame) : maxFrame_(maxFrame) {}
+
+    //! Implicit conversion to int - struct can be used like underlying type
+    operator unsigned int() const { return maxFrame_; }
+
+    //! Return a MaxNumFrames that will try to compare all frames
+    [[nodiscard]] static MaxNumFrames compareAllFrames()
+    {
+        return MaxNumFrames(std::numeric_limits<decltype(maxFrame_)>::max());
+    }
+
+private:
+    //! Internal value
+    const unsigned int maxFrame_;
 };
 
 } // namespace test

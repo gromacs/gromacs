@@ -302,6 +302,12 @@ public:
      */
     void checkUnusedEntries();
 
+    /*! \brief Disables checking for unused entries
+     *
+     * \see checkUnusedEntries()
+     */
+    void disableUnusedEntriesCheck();
+
     /*! \brief
      * Checks whether a data item is present.
      *

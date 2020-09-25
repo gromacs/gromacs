@@ -252,7 +252,7 @@ TrajectoryComparison::TrajectoryComparison(const TrajectoryFrameMatchSettings& m
 
 void TrajectoryComparison::operator()(const TrajectoryFrame& reference, const TrajectoryFrame& test) const
 {
-    if (matchSettings_.framesToCompare == FramesToCompare::OnlyFirstFrame && firstFrameHasBeenCompared_)
+    if (numComparedFrames_ >= matchSettings_.maxNumTrajectoryFrames)
     {
         // Nothing should be compared
         return;
@@ -265,7 +265,7 @@ void TrajectoryComparison::operator()(const TrajectoryFrame& reference, const Tr
     compareCoordinates(reference, test, matchSettings_, tolerances_.coordinates);
     compareVelocities(reference, test, matchSettings_, tolerances_.velocities);
     compareForces(reference, test, matchSettings_, tolerances_.forces);
-    firstFrameHasBeenCompared_ = true;
+    numComparedFrames_++;
 }
 
 } // namespace test

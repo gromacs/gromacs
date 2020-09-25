@@ -107,7 +107,7 @@ public:
     ReferenceFileNames referenceFileNames_ = { fileManager_.getTemporaryFilePath("reference.edr") };
     //! Functor for energy comparison
     EnergyComparison energyComparison_{ EnergyComparison::defaultEnergyTermsToCompare(),
-                                        FramesToCompare::AllFrames };
+                                        MaxNumFrames::compareAllFrames() };
     //! Names of energies compared by energyComparison_
     std::vector<std::string> namesOfEnergiesToMatch_ = energyComparison_.getEnergyNames();
 };

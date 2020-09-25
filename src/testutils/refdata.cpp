@@ -756,6 +756,14 @@ void TestReferenceChecker::checkUnusedEntries()
     }
 }
 
+void TestReferenceChecker::disableUnusedEntriesCheck()
+{
+    if (impl_->compareRootEntry_)
+    {
+        impl_->compareRootEntry_->setCheckedIncludingChildren();
+    }
+}
+
 
 bool TestReferenceChecker::checkPresent(bool bPresent, const char* id)
 {
