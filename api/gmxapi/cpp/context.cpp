@@ -81,11 +81,71 @@
 namespace gmxapi
 {
 
-MpiContextManager::MpiContextManager(MPI_Comm communicator) :
-    communicator_(std::make_unique<MPI_Comm>(communicator))
+// Support some tag dispatch. Warning: These are just aliases (not strong types).
+/*!
+ * \brief Logical helper alias to convert preprocessor constant to type.
+ *
+ * \tparam Value Provide the GMX\_LIB\_MPI macro.
+ */
+template<bool Value>
+using hasLibraryMpi = std::bool_constant<Value>;
+using gmxThreadMpi  = hasLibraryMpi<false>;
+using gmxLibMpi     = hasLibraryMpi<true>;
+using MpiType       = std::conditional_t<GMX_LIB_MPI, gmxLibMpi, gmxThreadMpi>;
+
+using MpiContextInitializationError = BasicException<struct MpiContextInitialization>;
+
+
+/*!
+ * \brief Helpers to evaluate the correct precondition for the library build.
+ *
+ * TODO: (#3650) Consider distinct MpiContextManager types for clearer definition of preconditions.
+ */
+namespace
 {
-    GMX_ASSERT(*communicator_ == MPI_COMM_NULL ? !GMX_LIB_MPI : GMX_LIB_MPI,
-               "Invalid communicator value for this library configuration.");
+
+[[maybe_unused]] MPI_Comm validCommunicator(const MPI_Comm& communicator, const gmxThreadMpi&)
+{
+    if (communicator != MPI_COMM_NULL)
+    {
+        throw MpiContextInitializationError(
+                "Provided communicator must be MPI_COMM_NULL for GROMACS built without MPI "
+                "library.");
+    }
+    return communicator;
+}
+
+[[maybe_unused]] MPI_Comm validCommunicator(const MPI_Comm& communicator, const gmxLibMpi&)
+{
+    if (communicator == MPI_COMM_NULL)
+    {
+        throw MpiContextInitializationError("MPI-enabled GROMACS requires a valid communicator.");
+    }
+    return communicator;
+}
+
+/*!
+ * \brief Return the communicator if it is appropriate for the environment.
+ *
+ * \throws MpiContextInitializationError if communicator does not match the
+ *  MpiContextManager precondition for the current library configuration.
+ */
+MPI_Comm validCommunicator(const MPI_Comm& communicator)
+{
+    return validCommunicator(communicator, MpiType());
+}
+
+//! \brief Provide a reasonable default value.
+MPI_Comm validCommunicator()
+{
+    return GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
+}
+
+} // anonymous namespace
+
+MpiContextManager::MpiContextManager(MPI_Comm communicator) :
+    communicator_(std::make_unique<MPI_Comm>(validCommunicator(communicator)))
+{
     // Safely increments the GROMACS MPI initialization counter after checking
     // whether the MPI library is already initialized. After this call, MPI_Init
     // or MPI_Init_thread has been called exactly once.
@@ -110,10 +170,7 @@ MpiContextManager::~MpiContextManager()
     }
 }
 
-MpiContextManager::MpiContextManager() :
-    MpiContextManager(GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL)
-{
-}
+MpiContextManager::MpiContextManager() : MpiContextManager(validCommunicator()) {}
 
 MPI_Comm MpiContextManager::communicator() const
 {
@@ -126,7 +183,7 @@ MPI_Comm MpiContextManager::communicator() const
 
 ContextImpl::~ContextImpl() = default;
 
-Context createContext(const ResourceAssignment& resources)
+[[maybe_unused]] static Context createContext(const ResourceAssignment& resources, const gmxLibMpi&)
 {
     CommHandle handle;
     resources.applyCommunicator(&handle);
@@ -139,6 +196,22 @@ Context createContext(const ResourceAssignment& resources)
     GMX_ASSERT(impl, "ContextImpl creation method should not be able to return null.");
     auto context = Context(impl);
     return context;
+}
+
+[[maybe_unused]] static Context createContext(const ResourceAssignment& resources, const gmxThreadMpi&)
+{
+    if (resources.size() > 1)
+    {
+        throw UsageError("Only one thread-MPI Simulation per Context is supported.");
+    }
+    // Thread-MPI Context does not yet have a need for user-provided resources.
+    // However, see #3650.
+    return createContext();
+}
+
+Context createContext(const ResourceAssignment& resources)
+{
+    return createContext(resources, hasLibraryMpi<GMX_LIB_MPI>());
 }
 
 Context createContext()
