@@ -315,13 +315,18 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         auto mdModules = std::make_unique<MDModules>();
 
         const char* desc[] = { "gmxapi placeholder text" };
-        if (options_.updateFromCommandLine(argc, argv.data(), desc) == 0)
+
+        // LegacyMdrunOptions needs to be kept alive for the life of ContextImpl,
+        // so we use a data member for now.
+        gmx::LegacyMdrunOptions& options = options_;
+        if (options.updateFromCommandLine(argc, argv.data(), desc) == 0)
         {
             return nullptr;
         }
 
         ArrayRef<const std::string> multiSimDirectoryNames =
-                opt2fnsIfOptionSet("-multidir", ssize(options_.filenames), options_.filenames.data());
+                opt2fnsIfOptionSet("-multidir", ssize(options.filenames), options.filenames.data());
+
 
         // The SimulationContext is necessary with gmxapi so that
         // resources owned by the client code can have suitable
@@ -335,39 +340,39 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         SimulationContext simulationContext(communicator, multiSimDirectoryNames);
 
 
-        StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
-        LogFilePtr       logFileGuard     = nullptr;
-        gmx_multisim_t*  ms               = simulationContext.multiSimulation_.get();
-        std::tie(startingBehavior, logFileGuard) =
-                handleRestart(findIsSimulationMasterRank(ms, simulationContext.simulationCommunicator_),
-                              communicator, ms, options_.mdrunOptions.appendingBehavior,
-                              ssize(options_.filenames), options_.filenames.data());
+        StartingBehavior startingBehavior        = StartingBehavior::NewSimulation;
+        LogFilePtr       logFileGuard            = nullptr;
+        gmx_multisim_t*  ms                      = simulationContext.multiSimulation_.get();
+        std::tie(startingBehavior, logFileGuard) = handleRestart(
+                findIsSimulationMasterRank(ms, simulationContext.simulationCommunicator_),
+                simulationContext.simulationCommunicator_, ms, options.mdrunOptions.appendingBehavior,
+                ssize(options.filenames), options.filenames.data());
 
         auto builder = MdrunnerBuilder(std::move(mdModules),
                                        compat::not_null<SimulationContext*>(&simulationContext));
-        builder.addSimulationMethod(options_.mdrunOptions, options_.pforce, startingBehavior);
-        builder.addDomainDecomposition(options_.domdecOptions);
+        builder.addSimulationMethod(options.mdrunOptions, options.pforce, startingBehavior);
+        builder.addDomainDecomposition(options.domdecOptions);
         // \todo pass by value
-        builder.addNonBonded(options_.nbpu_opt_choices[0]);
+        builder.addNonBonded(options.nbpu_opt_choices[0]);
         // \todo pass by value
-        builder.addElectrostatics(options_.pme_opt_choices[0], options_.pme_fft_opt_choices[0]);
-        builder.addBondedTaskAssignment(options_.bonded_opt_choices[0]);
-        builder.addUpdateTaskAssignment(options_.update_opt_choices[0]);
-        builder.addNeighborList(options_.nstlist_cmdline);
-        builder.addReplicaExchange(options_.replExParams);
+        builder.addElectrostatics(options.pme_opt_choices[0], options.pme_fft_opt_choices[0]);
+        builder.addBondedTaskAssignment(options.bonded_opt_choices[0]);
+        builder.addUpdateTaskAssignment(options.update_opt_choices[0]);
+        builder.addNeighborList(options.nstlist_cmdline);
+        builder.addReplicaExchange(options.replExParams);
         // Need to establish run-time values from various inputs to provide a resource handle to Mdrunner
-        builder.addHardwareOptions(options_.hw_opt);
+        builder.addHardwareOptions(options.hw_opt);
 
         // \todo File names are parameters that should be managed modularly through further factoring.
-        builder.addFilenames(options_.filenames);
+        builder.addFilenames(options.filenames);
         // TODO: Remove `s` and `-cpi` from LegacyMdrunOptions before launch(). #3652
-        auto simulationInput = makeSimulationInput(options_);
+        auto simulationInput = makeSimulationInput(options);
         builder.addInput(simulationInput);
 
         // Note: The gmx_output_env_t life time is not managed after the call to parse_common_args.
         // \todo Implement lifetime management for gmx_output_env_t.
         // \todo Output environment should be configured outside of Mdrunner and provided as a resource.
-        builder.addOutputEnvironment(options_.oenv);
+        builder.addOutputEnvironment(options.oenv);
         builder.addLogFile(logFileGuard.get());
 
         // Note, creation is not mature enough to be exposed in the external API yet.
