@@ -35,19 +35,19 @@
 # This list file provides the Gromacs::gmxapi cmake target.
 
 target_sources(gmxapi PRIVATE
-            context.cpp
-            exceptions.cpp
-            gmxapi.cpp
-            md.cpp
-            mdmodule.cpp
-            mdsignals.cpp
-            session.cpp
-            status.cpp
-            system.cpp
-            version.cpp
-            workflow.cpp
-            tpr.cpp
-            )
+               context.cpp
+               exceptions.cpp
+               gmxapi.cpp
+               md.cpp
+               mdmodule.cpp
+               mdsignals.cpp
+               session.cpp
+               status.cpp
+               system.cpp
+               version.cpp
+               workflow.cpp
+               tpr.cpp
+               )
 set_target_properties(gmxapi PROPERTIES POSITION_INDEPENDENT_CODE ON)
 gmx_target_compile_options(gmxapi)
 target_compile_definitions(gmxapi PRIVATE HAVE_CONFIG_H)

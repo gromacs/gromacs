@@ -67,6 +67,7 @@ set_target_properties(gmxapi PROPERTIES
 # The include directory should be mostly empty so that we can use it internally as
 # the public interface include directory during build and testing.
 configure_file(include/gmxapiversion.h.in include/gmxapi/version.h)
+configure_file(include/multiprocessingresources.cmakein.h include/gmxapi/mpi/multiprocessingresources.h)
 target_include_directories(gmxapi PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
@@ -89,4 +90,6 @@ install(DIRECTORY include/gmxapi
 # Install "configured" files from the build tree.
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/version.h
         DESTINATION include/gmxapi)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/mpi/multiprocessingresources.h
+        DESTINATION include/gmxapi/mpi)
 

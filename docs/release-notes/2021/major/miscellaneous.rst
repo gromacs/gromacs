@@ -31,6 +31,15 @@ change outside of the users direct control we have removed the support for
 automatically setting booleans. GMX_BUILD_HELP and GMX_HWLOC are now
 disabled by default, while GMX_LOAD_PLUGINS is enabled by default.
 
+gmxapi C++ interface
+""""""""""""""""""""
+
+``gmxapi::Context`` is now created with ``gmxapi::createContext()``, which allows
+the client to provide an MPI communicator for the library to use instead of its default
+(e.g MPI_COMM_WORLD). MPI-enabled clients may use the :file:`gmxapi/mpi/gmxapi_mpi.h`
+template header and the ``assignResource()`` helper to generate the argument to
+``createContext``.
+
 Unification of several CUDA and OpenCL environment variables
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
