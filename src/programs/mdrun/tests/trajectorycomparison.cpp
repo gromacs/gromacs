@@ -38,6 +38,7 @@
  * produced by mdrun.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_mdrun_integration_tests
  */
 #include "gmxpre.h"
@@ -45,12 +46,17 @@
 #include "trajectorycomparison.h"
 
 #include <gmock/gmock.h>
+#include <gtest/gtest-spi.h>
 
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/strconvert.h"
 
+#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
+
+#include "trajectoryreader.h"
 
 namespace gmx
 {
@@ -266,6 +272,162 @@ void TrajectoryComparison::operator()(const TrajectoryFrame& reference, const Tr
     compareVelocities(reference, test, matchSettings_, tolerances_.velocities);
     compareForces(reference, test, matchSettings_, tolerances_.forces);
     numComparedFrames_++;
+}
+
+/*! \brief Return whether the \c comparisonConditions and emptiness of
+ * the test frame means that a comparison should be attempted.
+ *
+ * This allows the framework to determine whether it is an error if a
+ * comparison cannot be made. */
+static bool shouldDoComparison(ArrayRef<const RVec> values, ComparisonConditions comparisonConditions)
+{
+    if (comparisonConditions == ComparisonConditions::NoComparison)
+    {
+        return false;
+    }
+    if (values.empty())
+    {
+        // Empty array ref is only acceptable if comparison is not required
+        if (comparisonConditions != ComparisonConditions::CompareIfTestFound
+            && comparisonConditions != ComparisonConditions::CompareIfBothFound)
+        {
+            ADD_FAILURE() << "Test frame lacked quantity for required comparison";
+        }
+        return false;
+    }
+    return true;
+}
+
+/*! \brief Compares the positions from \c frame to reference data
+ * according to the \c matchSettings and \c tolerance.
+ */
+static void checkPositionsAgainstReference(const TrajectoryFrame&              frame,
+                                           const TrajectoryFrameMatchSettings& matchSettings,
+                                           const TrajectoryTolerances&         tolerance,
+                                           TestReferenceChecker*               checker)
+{
+    SCOPED_TRACE("Comparing positions");
+    if (shouldDoComparison(frame.x(), matchSettings.coordinatesComparison))
+    {
+        auto positions = frame.x();
+        if (frame.hasBox() && (matchSettings.handlePbcIfPossible || matchSettings.requirePbcHandling))
+        {
+            positions = putAtomsInBox(frame);
+        }
+        if (!frame.hasBox() && matchSettings.requirePbcHandling)
+        {
+            ADD_FAILURE() << "Comparing positions required PBC handling, "
+                             "but the test frame did not have a box";
+            return;
+        }
+        checker->setDefaultTolerance(tolerance.coordinates);
+        std::string id = frame.frameName() + " X";
+        checker->checkSequence(std::begin(positions), std::end(positions), id.c_str());
+    }
+}
+
+/*! \brief Compares the velocities from \c frame to reference data
+ * according to the \c matchSettings and \c tolerance.
+ */
+static void checkVelocitiesAgainstReference(const TrajectoryFrame&              frame,
+                                            const TrajectoryFrameMatchSettings& matchSettings,
+                                            const TrajectoryTolerances&         tolerance,
+                                            TestReferenceChecker*               checker)
+{
+    SCOPED_TRACE("Comparing velocities");
+    if (shouldDoComparison(frame.v(), matchSettings.velocitiesComparison))
+    {
+        checker->setDefaultTolerance(tolerance.velocities);
+        std::string id = frame.frameName() + " V";
+        checker->checkSequence(std::begin(frame.v()), std::end(frame.v()), id.c_str());
+    }
+}
+
+/*! \brief Compares the forces from \c frame to reference data
+ * according to the \c matchSettings and \c tolerance.
+ */
+static void checkForcesAgainstReference(const TrajectoryFrame&              frame,
+                                        const TrajectoryFrameMatchSettings& matchSettings,
+                                        const TrajectoryTolerances&         tolerance,
+                                        TestReferenceChecker*               checker)
+{
+    SCOPED_TRACE("Comparing forces");
+    if (shouldDoComparison(frame.f(), matchSettings.forcesComparison))
+    {
+        checker->setDefaultTolerance(tolerance.forces);
+        std::string id = frame.frameName() + " F";
+        checker->checkSequence(std::begin(frame.f()), std::end(frame.f()), id.c_str());
+    }
+}
+
+/*! \brief Compares the box from \c frame to reference data
+ * according to the \c matchSettings and \c tolerance.
+ */
+static void checkBoxAgainstReference(const TrajectoryFrame&              frame,
+                                     const TrajectoryFrameMatchSettings& matchSettings,
+                                     const TrajectoryTolerances&         tolerance,
+                                     TestReferenceChecker*               checker)
+{
+    SCOPED_TRACE("Comparing box");
+    if (!matchSettings.mustCompareBox)
+    {
+        return;
+    }
+    if (!frame.hasBox())
+    {
+        ADD_FAILURE() << "Comparing the box was required, "
+                         "but the test frame did not have one";
+        return;
+    }
+    checker->setDefaultTolerance(tolerance.box);
+    // Do the comparison
+    for (int d = 0; d < DIM; ++d)
+    {
+        for (int dd = 0; dd < DIM; ++dd)
+        {
+            checker->checkReal(
+                    frame.box()[d][dd],
+                    (frame.frameName() + " Box[" + toString(d) + "][" + toString(dd) + "]").c_str());
+        }
+    }
+}
+
+void TrajectoryComparison::operator()(const TrajectoryFrame& frame, TestReferenceChecker* checker) const
+{
+    SCOPED_TRACE("Comparing trajectory frame " + frame.frameName() + " against reference data");
+    checkBoxAgainstReference(frame, matchSettings_, tolerances_, checker);
+    checkPositionsAgainstReference(frame, matchSettings_, tolerances_, checker);
+    checkVelocitiesAgainstReference(frame, matchSettings_, tolerances_, checker);
+    checkForcesAgainstReference(frame, matchSettings_, tolerances_, checker);
+}
+
+void checkTrajectoryAgainstReferenceData(const std::string&          trajectoryFilename,
+                                         const TrajectoryComparison& trajectoryComparison,
+                                         TestReferenceChecker*       checker)
+{
+    checkTrajectoryAgainstReferenceData(trajectoryFilename, trajectoryComparison, checker,
+                                        MaxNumFrames::compareAllFrames());
+}
+
+void checkTrajectoryAgainstReferenceData(const std::string&          trajectoryFilename,
+                                         const TrajectoryComparison& trajectoryComparison,
+                                         TestReferenceChecker*       checker,
+                                         MaxNumFrames                maxNumFrames)
+{
+    ;
+    TrajectoryFrameReader reader(trajectoryFilename);
+    unsigned int          counter = 0;
+    for (counter = 0; counter < maxNumFrames && reader.readNextFrame(); counter++)
+    {
+        auto frame = reader.frame();
+        trajectoryComparison(frame, checker);
+    }
+
+    if (counter == maxNumFrames && reader.readNextFrame())
+    {
+        // There would have been at least one more frame!
+        checker->disableUnusedEntriesCheck();
+    }
 }
 
 } // namespace test
