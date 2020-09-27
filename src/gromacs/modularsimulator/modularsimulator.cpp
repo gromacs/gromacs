@@ -177,6 +177,16 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                          bool                             doEssentialDynamics,
                                          bool                             doMembed)
 {
+    auto conditionalAssert = [exitOnFailure](bool condition, const char* message) {
+        if (exitOnFailure)
+        {
+            GMX_RELEASE_ASSERT(condition, message);
+        }
+        return condition;
+    };
+
+    bool isInputCompatible = true;
+
     // GMX_USE_MODULAR_SIMULATOR allows to use modular simulator also for non-standard uses,
     // such as the leap-frog integrator
     const auto modularSimulatorExplicitlyTurnedOn = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
@@ -198,20 +208,6 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             "GMX_DISABLE_MODULAR_SIMULATOR=ON, "
             "as the Parrinello-Rahman barostat is not implemented in the legacy simulator. Unset "
             "GMX_DISABLE_MODULAR_SIMULATOR or use a different pressure control algorithm.");
-
-    // If the user has asked for the modular simulator, then we must
-    // exit when the modular simulator can't run their simulation.
-    exitOnFailure = exitOnFailure || modularSimulatorExplicitlyTurnedOn;
-
-    auto conditionalAssert = [exitOnFailure](bool condition, const char* message) {
-        if (exitOnFailure)
-        {
-            GMX_RELEASE_ASSERT(condition, message);
-        }
-        return condition;
-    };
-
-    bool isInputCompatible = true;
 
     isInputCompatible =
             isInputCompatible
