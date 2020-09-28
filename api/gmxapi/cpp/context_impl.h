@@ -46,6 +46,7 @@
 
 #include "gromacs/mdrun/legacymdrunoptions.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"
@@ -54,23 +55,39 @@ namespace gmxapi
 {
 
 /*!
- * \brief Provide RAII management of communications resource state.
+ * \brief Provide RAII management of library MPI context.
  *
  * To acquire an MpiContextManager is to have assurance that any external MPI
  * environment is ready to use. When the MpiContextManager is released or
  * goes out of scope, the destructor finalizes the resources.
  *
+ * It is plausible that one or more ranks may not participate in an API session,
+ * but we have not historically handled such use cases at this level.
+ * For GROMACS built with an MPI library, the root communicator in the MpiContextManager
+ * must be valid. For other builds (e.g. tMPI), the communicator member must be MPI_COMM_NULL.
+ *
+ * If the client provides a communicator, the client promises to maintain the validity
+ * of the communicator for the life of the MpiContextManager.
+ *
  * Note that thread-MPI chooses the number of ranks and constructs its
  * MPI communicator internally, so does not and is unlikely to ever
  * participate here.
  *
- * \todo There is no resource for logging or reporting errors during initialization
+ * \todo Log errors during set up or tear down.
+ * There is no resource for logging or reporting errors during initialization or when misused.
  *
  * \ingroup gmxapi
  */
 class MpiContextManager
 {
 public:
+    /*!
+     * \brief Default constructor.
+     *
+     * Construct a valid instance with an appropriate default value for the
+     * base communicator. (Note that appropriate default value depends on whether
+     * the library was compiled with an external MPI library.)
+     */
     MpiContextManager();
 
     ~MpiContextManager();
@@ -85,13 +102,33 @@ public:
     //! \}
 
     /*!
-     * \brief Move semantics are non-trivial.
+     * \brief Transfer ownership of the managed GROMACS MPI context.
      *
      * \{
      */
-    MpiContextManager(MpiContextManager&&) noexcept = delete;
-    MpiContextManager& operator=(MpiContextManager&&) noexcept = delete;
+    MpiContextManager(MpiContextManager&& source) noexcept = default;
+    MpiContextManager& operator=(MpiContextManager&& source) noexcept = default;
     //! \}
+
+    /*!
+     * \brief Get the communicator for this context.
+     *
+     * \return Communicator with an appropriate initialized state for the current library
+     * configuration.
+     *
+     * \throws gmxapi::UsageError if MpiContextManager is in an invalid state, such as after
+     *  being moved from.
+     */
+    [[nodiscard]] MPI_Comm communicator() const;
+
+private:
+    /*!
+     * \brief The resources provided by this manager.
+     *
+     * A valid MpiContextManager has a value for communicator_ that is appropriate
+     * for the library configuration.
+     */
+    std::unique_ptr<MPI_Comm> communicator_;
 };
 
 /*!
@@ -127,7 +164,7 @@ public:
      *
      * \return ownership of a new object
      */
-    static std::shared_ptr<ContextImpl> create();
+    static std::shared_ptr<ContextImpl> create(MpiContextManager&& mpi);
 
     /*!
      * \brief Copy disallowed because Session state would become ambiguous.
@@ -206,6 +243,15 @@ public:
      * Part of the ContextImpl invariant establishes a point where MPI initialization status is
      * known.
      *
+     * Note that the MpiContextManager invariant is dependent on configure-time options to the
+     * GROMACS library. Specifically, MpiContextManager::communicator() is guaranteed to be
+     * MPI_COMM_NULL if and only if the library was built without an external MPI library.
+     * This is confusing and we should split either this class or the
+     * MpiContextManager class. Another alternative would be to use a std::optional here and to
+     * allow the std::unique_ptr<MpiContextManager> provided to ContextImpl::create() to be null,
+     * but that means a slight change of documented behavior protocol. See #3688 and #3650 for
+     * follow up.
+     *
      * To ensure the MpiContextManager is initialized only once, we use a const member that must
      * be initialized at construction.
      */
@@ -218,7 +264,7 @@ private:
      * Don't use this. Use create() to get a shared pointer right away.
      * Otherwise, shared_from_this() is potentially dangerous.
      */
-    explicit ContextImpl() noexcept(std::is_nothrow_constructible_v<gmx::LegacyMdrunOptions>);
+    explicit ContextImpl(MpiContextManager&& mpi) noexcept(std::is_nothrow_constructible_v<gmx::LegacyMdrunOptions>);
 };
 
 

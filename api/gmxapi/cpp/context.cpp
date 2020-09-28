@@ -81,19 +81,40 @@
 namespace gmxapi
 {
 
-MpiContextManager::MpiContextManager()
+MpiContextManager::MpiContextManager() :
+    communicator_(std::make_unique<MPI_Comm>(GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL))
 {
+    // Safely increments the GROMACS MPI initialization counter after checking
+    // whether the MPI library is already initialized. After this call, MPI_Init
+    // or MPI_Init_thread has been called exactly once.
     gmx::init(nullptr, nullptr);
     GMX_RELEASE_ASSERT(!GMX_LIB_MPI || gmx_mpi_initialized(),
                        "MPI should be initialized before reaching this point.");
+    if (this->communicator() != MPI_COMM_NULL)
+    {
+        // Synchronise at the point of acquiring a MpiContextManager.
+        gmx_barrier(this->communicator());
+    }
 };
 
 MpiContextManager::~MpiContextManager()
 {
-    // This is always safe to call. It is a no-op if
-    // thread-MPI, and if the constructor completed then the
-    // MPI library is initialized with reference counting.
-    gmx::finalize();
+    if (communicator_)
+    {
+        // This is always safe to call. It is a no-op if
+        // thread-MPI, and if the constructor completed then the
+        // MPI library is initialized with reference counting.
+        gmx::finalize();
+    }
+}
+
+MPI_Comm MpiContextManager::communicator() const
+{
+    if (!communicator_)
+    {
+        throw UsageError("Invalid MpiContextManager. Accessed after `move`?");
+    }
+    return *communicator_;
 }
 
 ContextImpl::~ContextImpl() = default;
@@ -101,24 +122,27 @@ ContextImpl::~ContextImpl() = default;
 Context createContext()
 {
     MpiContextManager contextmanager;
-    auto              impl = ContextImpl::create();
+    auto              impl = ContextImpl::create(std::move(contextmanager));
     GMX_ASSERT(impl, "ContextImpl creation method should not be able to return null.");
     auto context = Context(impl);
     return context;
 }
 
-ContextImpl::ContextImpl() noexcept(std::is_nothrow_constructible_v<gmx::LegacyMdrunOptions>) :
-    mpi_(MpiContextManager())
+ContextImpl::ContextImpl(MpiContextManager&& mpi) noexcept(std::is_nothrow_constructible_v<gmx::LegacyMdrunOptions>) :
+    mpi_(std::move(mpi))
 {
+    // Confirm our understanding of the MpiContextManager invariant.
+    GMX_ASSERT(mpi_.communicator() == MPI_COMM_NULL ? !GMX_LIB_MPI : GMX_LIB_MPI,
+               "Precondition is an appropriate communicator for the library environment.");
     // Make sure we didn't change the data members and overlook implementation details.
     GMX_ASSERT(session_.expired(),
                "This implementation assumes an expired weak_ptr at initialization.");
 }
 
-std::shared_ptr<ContextImpl> ContextImpl::create()
+std::shared_ptr<ContextImpl> ContextImpl::create(MpiContextManager&& mpi)
 {
     std::shared_ptr<ContextImpl> impl;
-    impl.reset(new ContextImpl());
+    impl.reset(new ContextImpl(std::move(mpi)));
     return impl;
 }
 
@@ -204,7 +228,10 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         // lifetime. The gmx wrapper binary uses the same infrastructure,
         // but the lifetime is now trivially that of the invocation of the
         // wrapper binary.
-        auto              communicator = GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
+        auto communicator = mpi_.communicator();
+        // Confirm the precondition for simulationContext().
+        GMX_ASSERT(communicator == MPI_COMM_NULL ? !GMX_LIB_MPI : GMX_LIB_MPI,
+                   "Context communicator does not have an appropriate value for the environment.");
         SimulationContext simulationContext(communicator, multiSimDirectoryNames);
 
 
@@ -273,7 +300,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
 }
 
 // As of gmxapi 0.0.3 there is only one Context type
-Context::Context() : Context{ ContextImpl::create() }
+Context::Context() : Context{ ContextImpl::create(MpiContextManager()) }
 {
     GMX_ASSERT(impl_, "Context requires a non-null implementation member.");
 }
