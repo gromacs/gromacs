@@ -849,13 +849,11 @@ void gmx::LegacySimulator::do_md()
         }
 
         // Allocate or re-size GPU halo exchange object, if necessary
-        if (bNS && havePPDomainDecomposition(cr) && simulationWork.useGpuHaloExchange
-            && useGpuForNonbonded && is1D(*cr->dd))
+        if (bNS && havePPDomainDecomposition(cr) && simulationWork.useGpuHaloExchange && useGpuForNonbonded)
         {
             GMX_RELEASE_ASSERT(fr->deviceStreamManager != nullptr,
                                "GPU device manager has to be initialized to use GPU "
                                "version of halo exchange.");
-            // TODO remove need to pass local stream into GPU halo exchange - Issue #3093
             constructGpuHaloExchange(mdlog, *cr, *fr->deviceStreamManager, wcycle);
         }
 

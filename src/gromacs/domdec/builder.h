@@ -79,7 +79,6 @@ public:
                                t_commrec*           cr,
                                const DomdecOptions& options,
                                const MdrunOptions&  mdrunOptions,
-                               bool                 prefer1D,
                                const gmx_mtop_t&    mtop,
                                const t_inputrec&    ir,
                                const matrix         box,

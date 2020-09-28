@@ -82,6 +82,7 @@ public:
      * does not yet support virial steps.
      *
      * \param [inout] dd                       domdec structure
+     * \param [in]    dimIndex                 the dimension index for this instance
      * \param [in]    mpi_comm_mysim           communicator used for simulation
      * \param [in]    deviceContext            GPU device context
      * \param [in]    streamLocal              local NB CUDA stream.
@@ -90,6 +91,7 @@ public:
      * \param [in]    wcycle                   The wallclock counter
      */
     GpuHaloExchange(gmx_domdec_t*        dd,
+                    int                  dimIndex,
                     MPI_Comm             mpi_comm_mysim,
                     const DeviceContext& deviceContext,
                     const DeviceStream&  streamLocal,

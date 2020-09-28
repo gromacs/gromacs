@@ -2865,7 +2865,6 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
 
     ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
-    ddSettings.request1D           = bool(dd_getenv(mdlog, "GMX_DD_1D", 0));
     ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
     ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
     ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
@@ -2904,63 +2903,6 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
 
 gmx_domdec_t::gmx_domdec_t(const t_inputrec& ir) : unitCellInfo(ir) {}
 
-/*! \brief Return whether the simulation described can run a 1D DD.
- *
- * The GPU halo exchange code requires 1D DD. Such a DD
- * generally requires a larger box than other possible decompositions
- * with the same rank count, so the calling code might need to decide
- * what is the most appropriate way to run the simulation based on
- * whether such a DD is possible.
- *
- * This function works like init_domain_decomposition(), but will not
- * give a fatal error, and only uses \c cr for communicating between
- * ranks.
- *
- * It is safe to call before thread-MPI spawns ranks, so that
- * thread-MPI can decide whether and how to trigger the GPU halo
- * exchange code path. The number of PME ranks, if any, should be set
- * in \c options.numPmeRanks.
- */
-static bool canMake1DDomainDecomposition(const DDSettings&              ddSettingsOriginal,
-                                         DDRole                         ddRole,
-                                         MPI_Comm                       communicator,
-                                         const int                      numRanksRequested,
-                                         const DomdecOptions&           options,
-                                         const gmx_mtop_t&              mtop,
-                                         const t_inputrec&              ir,
-                                         const matrix                   box,
-                                         gmx::ArrayRef<const gmx::RVec> xGlobal)
-{
-    // Ensure we don't write any output from this checking routine
-    gmx::MDLogger dummyLogger;
-
-    DDSystemInfo systemInfo =
-            getSystemInfo(dummyLogger, ddRole, communicator, options, mtop, ir, box, xGlobal);
-
-    DDSettings ddSettings = ddSettingsOriginal;
-    ddSettings.request1D  = true;
-    const real gridSetupCellsizeLimit =
-            getDDGridSetupCellSizeLimit(dummyLogger, !isDlbDisabled(ddSettings.initialDlbState),
-                                        options.dlbScaling, ir, systemInfo.cellsizeLimit);
-    gmx_ddbox_t ddbox = { 0 };
-    DDGridSetup ddGridSetup =
-            getDDGridSetup(dummyLogger, ddRole, communicator, numRanksRequested, options, ddSettings,
-                           systemInfo, gridSetupCellsizeLimit, mtop, ir, box, xGlobal, &ddbox);
-
-    const bool canMake1DDD = (ddGridSetup.numDomains[XX] != 0);
-
-    return canMake1DDD;
-}
-
-bool is1D(const gmx_domdec_t& dd)
-{
-    const int maxDimensionSize = std::max(dd.numCells[XX], std::max(dd.numCells[YY], dd.numCells[ZZ]));
-    const int  productOfDimensionSizes      = dd.numCells[XX] * dd.numCells[YY] * dd.numCells[ZZ];
-    const bool decompositionHasOneDimension = (maxDimensionSize == productOfDimensionSizes);
-
-    return decompositionHasOneDimension;
-}
-
 namespace gmx
 {
 
@@ -2975,7 +2917,6 @@ public:
          t_commrec*           cr,
          const DomdecOptions& options,
          const MdrunOptions&  mdrunOptions,
-         bool                 prefer1D,
          const gmx_mtop_t&    mtop,
          const t_inputrec&    ir,
          const matrix         box,
@@ -3023,7 +2964,6 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
                                        t_commrec*           cr,
                                        const DomdecOptions& options,
                                        const MdrunOptions&  mdrunOptions,
-                                       const bool           prefer1D,
                                        const gmx_mtop_t&    mtop,
                                        const t_inputrec&    ir,
                                        const matrix         box,
@@ -3037,14 +2977,6 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
     GMX_LOG(mdlog_.info).appendTextFormatted("\nInitializing Domain Decomposition on %d ranks", cr_->sizeOfDefaultCommunicator);
 
     ddSettings_ = getDDSettings(mdlog_, options_, mdrunOptions, ir_);
-
-    if (prefer1D
-        && canMake1DDomainDecomposition(ddSettings_, MASTER(cr_) ? DDRole::Master : DDRole::Agent,
-                                        cr->mpiDefaultCommunicator, cr_->sizeOfDefaultCommunicator,
-                                        options_, mtop_, ir_, box, xGlobal))
-    {
-        ddSettings_.request1D = true;
-    }
 
     if (ddSettings_.eFlop > 1)
     {
@@ -3118,12 +3050,11 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&      mdlo
                                                        t_commrec*           cr,
                                                        const DomdecOptions& options,
                                                        const MdrunOptions&  mdrunOptions,
-                                                       const bool           prefer1D,
                                                        const gmx_mtop_t&    mtop,
                                                        const t_inputrec&    ir,
                                                        const matrix         box,
                                                        ArrayRef<const RVec> xGlobal) :
-    impl_(new Impl(mdlog, cr, options, mdrunOptions, prefer1D, mtop, ir, box, xGlobal))
+    impl_(new Impl(mdlog, cr, options, mdrunOptions, mtop, ir, box, xGlobal))
 {
 }
 
@@ -3227,9 +3158,8 @@ void constructGpuHaloExchange(const gmx::MDLogger&            mdlog,
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedNonLocal),
                        "Non-local non-bonded stream should be valid when using "
                        "GPU halo exchange.");
-    int gpuHaloExchangeSize = 0;
-    int pulseStart          = 0;
-    if (cr.dd->gpuHaloExchange.empty())
+
+    if (cr.dd->gpuHaloExchange[0].empty())
     {
         GMX_LOG(mdlog.warning)
                 .asParagraph()
@@ -3238,17 +3168,13 @@ void constructGpuHaloExchange(const gmx::MDLogger&            mdlog,
                         "by the "
                         "GMX_GPU_DD_COMMS environment variable.");
     }
-    else
+
+    for (int d = 0; d < cr.dd->ndim; d++)
     {
-        gpuHaloExchangeSize = static_cast<int>(cr.dd->gpuHaloExchange.size());
-        pulseStart          = gpuHaloExchangeSize - 1;
-    }
-    if (cr.dd->comm->cd[0].numPulses() > gpuHaloExchangeSize)
-    {
-        for (int pulse = pulseStart; pulse < cr.dd->comm->cd[0].numPulses(); pulse++)
+        for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
         {
-            cr.dd->gpuHaloExchange.push_back(std::make_unique<gmx::GpuHaloExchange>(
-                    cr.dd, cr.mpi_comm_mysim, deviceStreamManager.context(),
+            cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
+                    cr.dd, d, cr.mpi_comm_mysim, deviceStreamManager.context(),
                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
                     deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedNonLocal), pulse, wcycle));
         }
@@ -3259,9 +3185,12 @@ void reinitGpuHaloExchange(const t_commrec&              cr,
                            const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            const DeviceBuffer<gmx::RVec> d_forcesBuffer)
 {
-    for (int pulse = 0; pulse < cr.dd->comm->cd[0].numPulses(); pulse++)
+    for (int d = 0; d < cr.dd->ndim; d++)
     {
-        cr.dd->gpuHaloExchange[pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        {
+            cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+        }
     }
 }
 
@@ -3269,16 +3198,22 @@ void communicateGpuHaloCoordinates(const t_commrec&      cr,
                                    const matrix          box,
                                    GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
-    for (int pulse = 0; pulse < cr.dd->comm->cd[0].numPulses(); pulse++)
+    for (int d = 0; d < cr.dd->ndim; d++)
     {
-        cr.dd->gpuHaloExchange[pulse]->communicateHaloCoordinates(box, coordinatesReadyOnDeviceEvent);
+        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        {
+            cr.dd->gpuHaloExchange[d][pulse]->communicateHaloCoordinates(box, coordinatesReadyOnDeviceEvent);
+        }
     }
 }
 
 void communicateGpuHaloForces(const t_commrec& cr, bool accumulateForces)
 {
-    for (int pulse = cr.dd->comm->cd[0].numPulses() - 1; pulse >= 0; pulse--)
+    for (int d = cr.dd->ndim - 1; d >= 0; d--)
     {
-        cr.dd->gpuHaloExchange[pulse]->communicateHaloForces(accumulateForces);
+        for (int pulse = cr.dd->comm->cd[d].numPulses() - 1; pulse >= 0; pulse--)
+        {
+            cr.dd->gpuHaloExchange[d][pulse]->communicateHaloForces(accumulateForces);
+        }
     }
 }

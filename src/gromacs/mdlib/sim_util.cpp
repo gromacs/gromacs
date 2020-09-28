@@ -1150,7 +1150,7 @@ void do_force(FILE*                               fplog,
     // operations were checked before construction, so here we can
     // just use it and assert upon any conditions.
     const bool ddUsesGpuDirectCommunication =
-            ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange.empty()));
+            ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty()));
     GMX_ASSERT(!ddUsesGpuDirectCommunication || stepWork.useGpuXBufferOps,
                "Must use coordinate buffer ops with GPU halo exchange");
     const bool useGpuForcesHaloExchange = ddUsesGpuDirectCommunication && stepWork.useGpuFBufferOps;
@@ -1886,7 +1886,7 @@ void do_force(FILE*                               fplog,
             }
             if (useGpuForcesHaloExchange)
             {
-                dependencyList.push_back(cr->dd->gpuHaloExchange[0]->getForcesReadyOnDeviceEvent());
+                dependencyList.push_back(cr->dd->gpuHaloExchange[0][0]->getForcesReadyOnDeviceEvent());
             }
             nbv->atomdata_add_nbat_f_to_f_gpu(AtomLocality::Local, stateGpu->getForces(), pmeForcePtr,
                                               dependencyList, stepWork.useGpuPmeFReduction,

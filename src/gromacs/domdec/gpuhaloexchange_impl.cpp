@@ -62,6 +62,7 @@ class GpuHaloExchange::Impl
 
 /*!\brief Constructor stub. */
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
+                                 int /* dimIndex */,
                                  MPI_Comm /* mpi_comm_mysim */,
                                  const DeviceContext& /* deviceContext */,
                                  const DeviceStream& /*streamLocal */,

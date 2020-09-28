@@ -1157,7 +1157,6 @@ int Mdrunner::mdrunner()
                           useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes),
                           *hwinfo->cpuInfo);
 
-    const bool prefer1DAnd1PulseDD = (devFlags.enableGpuHaloExchange && useGpuForNonbonded);
     // This builder is necessary while we have multi-part construction
     // of DD. Before DD is constructed, we use the existence of
     // the builder object to indicate that further construction of DD
@@ -1166,7 +1165,7 @@ int Mdrunner::mdrunner()
     if (useDomainDecomposition)
     {
         ddBuilder = std::make_unique<DomainDecompositionBuilder>(
-                mdlog, cr, domdecOptions, mdrunOptions, prefer1DAnd1PulseDD, mtop, *inputrec, box,
+                mdlog, cr, domdecOptions, mdrunOptions, mtop, *inputrec, box,
                 positionsFromStatePointer(globalState.get()));
     }
     else

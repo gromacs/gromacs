@@ -156,13 +156,6 @@ bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
 /*! \brief Return whether update groups are used */
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd);
 
-/*! \brief Return whether the DD has a single dimension
- *
- * The GPU halo exchange code requires a 1D DD, and its setup code can
- * use the returned value to understand what it should do.
- */
-bool is1D(const gmx_domdec_t& dd);
-
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE*                           fplog,
                      gmx_domdec_t*                   dd,
