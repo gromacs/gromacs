@@ -275,10 +275,11 @@ bool detectProcCpuInfoSecondAvx512FMA(const std::string& brand, int model)
             {
                 return false;
             }
-            // detect Gold 5120 and below
+            // detect Gold 5xxx - can be corrected once Cooper Lake is added
             else if (brand.find("Gold") == 17 && brand.find('5') == 22)
             {
-                return (brand.find("22") == 24);
+                return (brand.find("53") == 22 || // detect Cooper Lake
+                        brand.find("22") == 24);  // detect 5[12]22
             }
         }
         return true;
@@ -438,6 +439,9 @@ void detectX86Features(std::string* brand, int* family, int* model, int* steppin
         setFeatureFromBit(features, CpuInfo::Feature::X86_Sha, ebx, 29);
         setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512BW, ebx, 30);
         setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512VL, ebx, 31);
+
+        executeX86CpuID(0x7, 0x1, &eax, &ebx, &ecx, &edx);
+        setFeatureFromBit(features, CpuInfo::Feature::X86_Avx512BF16, eax, 5);
 
         if (features->count(CpuInfo::Feature::X86_Avx512F) != 0)
         {
@@ -1106,6 +1110,7 @@ const std::string& CpuInfo::featureString(Feature f)
         { Feature::X86_Avx512CD, "avx512cd" },
         { Feature::X86_Avx512BW, "avx512bw" },
         { Feature::X86_Avx512VL, "avx512vl" },
+        { Feature::X86_Avx512BF16, "avx512bf16" },
         { Feature::X86_Avx512secondFMA, "avx512secondFMA" },
         { Feature::X86_Clfsh, "clfsh" },
         { Feature::X86_Cmov, "cmov" },
