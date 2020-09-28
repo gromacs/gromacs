@@ -42,7 +42,7 @@
  * \author "M. Eric Irrgang <ericirrgang@gmail.com"
  */
 
-#include "gmxapi/mpi/multiprocessingresources.h"
+#include "gmxapi/mpi/resourceassignment.h"
 
 #include "config.h"
 

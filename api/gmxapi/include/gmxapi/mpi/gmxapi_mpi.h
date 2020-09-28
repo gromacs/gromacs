@@ -43,7 +43,7 @@
 #include "gmxapi/context.h"
 #include "gmxapi/exceptions.h"
 
-#include "gmxapi/mpi/multiprocessingresources.h"
+#include "gmxapi/mpi/resourceassignment.h"
 
 /*! \file
  * \brief Provide details of any MPI implementation used when building the library.
@@ -83,12 +83,14 @@ public:
      * Create an abstract wrapper for client-provided values with which to initialize
      * simulation resources. When this wrapper is used, the client is responsible for providing
      * a valid communicator that will remain valid for the life of the consumer.
+     *
+     * \throws UsageError if client has not provided a valid communicator.
      */
     explicit ResourceAssignmentImpl(const CommT& communicator) : communicator_{ communicator }
     {
         if (communicator_ == MPI_COMM_NULL)
         {
-            throw UsageError("Null communicator cannot be lent.");
+            throw UsageError("Cannot assign a Null communicator.");
         }
         int flag = 0;
         MPI_Initialized(&flag);
@@ -100,7 +102,7 @@ public:
 
     [[nodiscard]] int size() const override
     {
-        assert(communicator_ != MPI_COMM_NULL && "Resource invariant implies a valid communicator.");
+        assert(communicator_ != MPI_COMM_NULL && "Class invariant broken: invalid communicator.");
         int size = 0;
         MPI_Comm_size(communicator_, &size);
         return size;
@@ -108,7 +110,7 @@ public:
 
     [[nodiscard]] int rank() const override
     {
-        assert(communicator_ != MPI_COMM_NULL && "Resource invariant implies a valid communicator.");
+        assert(communicator_ != MPI_COMM_NULL && "Class invariant broken: invalid communicator.");
         // This default value will never be read, but the compiler can't tell
         // that it is initialized by the MPI call.
         int rank = -1;
@@ -118,7 +120,7 @@ public:
 
     void applyCommunicator(CommHandle* dst) const override
     {
-        assert(communicator_ != MPI_COMM_NULL && "Resource invariant implies a valid communicator.");
+        assert(communicator_ != MPI_COMM_NULL && "Class invariant broken: invalid communicator.");
         offerComm(communicator_, dst);
     }
 
@@ -127,6 +129,9 @@ public:
 
 /*!
  * \brief Template header utility for connecting to MPI implementations.
+ *
+ * The client provides a communicator for work executed within the scope of the Context.
+ * Client remains responsible for freeing the communicator and finalizing the MPI environment.
  *
  * To use this helper function, the client software build environment must be
  * configured for an MPI implementation compatible with the target GROMACS library.
@@ -144,14 +149,13 @@ public:
  *
  * \see createContext(std::unique_ptr<ResourceAssignment> resources)
  *
- * The client provides a communicator for work executed within the scope of the Context.
- * Client remains responsible for freeing the communicator and finalizing the MPI environment.
- *
  * The communicator resource type is a template parameter because MPI_Comm is commonly a C
  * typedef that varies between implementations, so we do not want to couple our
  * API to it, but we cannot forward-declare it.
  *
  * See also https://gitlab.com/gromacs/gromacs/-/issues/3650
+ *
+ * \throws UsageError if the provided resource is not usable.
  */
 template<typename CommT>
 std::unique_ptr<ResourceAssignment> assignResource(CommT communicator)

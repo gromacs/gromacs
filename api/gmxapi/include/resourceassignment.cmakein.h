@@ -33,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMXAPI_MULTIPROCESSINGRESOURCES_H
-#define GMXAPI_MULTIPROCESSINGRESOURCES_H
+#ifndef GMXAPI_RESOURCEASSIGNMENT_H
+#define GMXAPI_RESOURCEASSIGNMENT_H
 
 /*! \file
  * \brief Provide build-specific overloads for client-MPI-dependent stuff.
@@ -132,4 +132,4 @@ void offerComm(MPI_Comm src, CommHandle* dst);
 
 } // end namespace gmxapi
 
-#endif // GMXAPI_MULTIPROCESSINGRESOURCES_H
+#endif // GMXAPI_RESOURCEASSIGNMENT_H

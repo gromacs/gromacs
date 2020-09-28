@@ -67,7 +67,7 @@
 #include "gromacs/utility/init.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "gmxapi/mpi/multiprocessingresources.h"
+#include "gmxapi/mpi/resourceassignment.h"
 #include "gmxapi/exceptions.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
@@ -89,9 +89,14 @@ namespace gmxapi
  */
 template<bool Value>
 using hasLibraryMpi = std::bool_constant<Value>;
-using gmxThreadMpi  = hasLibraryMpi<false>;
-using gmxLibMpi     = hasLibraryMpi<true>;
-using MpiType       = std::conditional_t<GMX_LIB_MPI, gmxLibMpi, gmxThreadMpi>;
+/* Note that a no-MPI build still uses the tMPI headers to define MPI_Comm for the
+ * gmx::SimulationContext definition. The dispatching in this file accounts for
+ * these two definitions of SimulationContext. gmxThreadMpi here does not imply
+ * that the library was necessarily compiled with thread-MPI enabled.
+ */
+using gmxThreadMpi = hasLibraryMpi<false>;
+using gmxLibMpi    = hasLibraryMpi<true>;
+using MpiType      = std::conditional_t<GMX_LIB_MPI, gmxLibMpi, gmxThreadMpi>;
 
 using MpiContextInitializationError = BasicException<struct MpiContextInitialization>;
 
@@ -228,7 +233,7 @@ ContextImpl::ContextImpl(MpiContextManager&& mpi) noexcept(std::is_nothrow_const
 {
     // Confirm our understanding of the MpiContextManager invariant.
     GMX_ASSERT(mpi_.communicator() == MPI_COMM_NULL ? !GMX_LIB_MPI : GMX_LIB_MPI,
-               "Precondition is an appropriate communicator for the library environment.");
+               "Precondition violated: inappropriate communicator for the library environment.");
     // Make sure we didn't change the data members and overlook implementation details.
     GMX_ASSERT(session_.expired(),
                "This implementation assumes an expired weak_ptr at initialization.");

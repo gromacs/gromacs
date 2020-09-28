@@ -87,18 +87,24 @@ public:
      * Construct a valid instance with an appropriate default value for the
      * base communicator. (Note that appropriate default value depends on whether
      * the library was compiled with an external MPI library.)
+     *
+     * \throws BasicException if library cannot be initialized.
      */
     MpiContextManager();
 
     /*!
-     * \brief Borrow a communicator and ensure that MPI is initialized, if applicable.
+     * \brief Allow the communicator to be specified.
+     *
+     * Supports use cases in which a client provides a non-default communicator.
+     * Ensures that library environment is properly initialized and finalized,
+     * whether or not an externally managed communicator has been provided.
      *
      * \param communicator Optional communicator representing a client-managed MPI environment.
      *
-     *
-     *
      * Note that the communicator must be MPI_COMM_NULL if and only if GROMACS was built without an
      * external MPI library.
+     *
+     * \throws BasicException if library cannot be initialized.
      *
      * \todo (#3650?) Decide whether to exclude this from tMPI environments or find a sensible invariant.
      */
@@ -281,7 +287,18 @@ private:
     explicit ContextImpl(MpiContextManager&& mpi) noexcept(std::is_nothrow_constructible_v<gmx::LegacyMdrunOptions>);
 };
 
-
+/*!
+ * \brief Allow client code to hold a library communicator.
+ *
+ * MPI-enabled client code and thread-MPI GROMACS libraries cannot share headers
+ * in which MPI symbols (such as MPI_Comm) are defined. This class allows a
+ * client to refer to a library communicator opaquely. See gmxapi::offerComm().
+ *
+ * In the initial gmxapi::ResourceAssignment implementation, CommHandle objects
+ * are the only possible recipients of assigned resources. If future implementations
+ * allow richer resource assignment, CommHandle may be superseded by a more
+ * elaborate interface. Otherwise, all we need is this simple type proxy.
+ */
 class CommHandle
 {
 public:
