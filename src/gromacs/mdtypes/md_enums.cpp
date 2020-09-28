@@ -99,9 +99,9 @@ const char* etcoupl_names[etcNR + 1] = {
     "No", "Berendsen", "Nose-Hoover", "yes", "Andersen", "Andersen-massive", "V-rescale", nullptr
 }; /* yes is alias for berendsen */
 
-const char* epcoupl_names[epcNR + 1] = {
-    "No", "Berendsen", "Parrinello-Rahman", "Isotropic", "MTTK", nullptr
-}; /* isotropic is alias for berendsen */
+const char* epcoupl_names[epcNR + 1] = { "No",        "Berendsen", "Parrinello-Rahman",
+                                         "Isotropic", "MTTK",      "C-rescale",
+                                         nullptr }; /* isotropic is alias for berendsen */
 
 const char* epcoupltype_names[epctNR + 1] = { "Isotropic", "Semiisotropic", "Anisotropic",
                                               "Surface-Tension", nullptr };

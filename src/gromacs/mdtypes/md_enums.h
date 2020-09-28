@@ -115,6 +115,7 @@ enum
     epcPARRINELLORAHMAN,
     epcISOTROPIC,
     epcMTTK,
+    epcCRESCALE,
     epcNR
 };
 //! String corresponding to pressure coupling algorithm

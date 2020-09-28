@@ -90,6 +90,12 @@ void UpdateConstrainGpu::scaleCoordinates(const matrix /* scalingMatrix */)
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
+void UpdateConstrainGpu::scaleVelocities(const matrix /* scalingMatrix */)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
+}
+
 void UpdateConstrainGpu::set(DeviceBuffer<RVec> /* d_x */,
                              DeviceBuffer<RVec> /* d_v */,
                              const DeviceBuffer<RVec> /* d_f */,

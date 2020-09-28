@@ -572,7 +572,7 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
             state->flags |= (1 << estVETA);
             state->flags |= (1 << estVOL0);
         }
-        if (ir->epc == epcBERENDSEN)
+        if (ir->epc == epcBERENDSEN || ir->epc == epcCRESCALE)
         {
             state->flags |= (1 << estBAROS_INT);
         }

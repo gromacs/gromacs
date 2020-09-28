@@ -46,3 +46,9 @@ It is now possible to control the lambda state of a free energy perturbation
 simulation using the Accelerated Weight Histogram method. This can be used
 as one of multiple AWH dimensions, where the other(s) are coupled to pull
 coordinates.
+
+Stochastic cell rescaling barostat
+""""""""""""""""""""""""""""""""""
+
+Implementation of the stochastic cell rescaling barostat. This is a first-order,
+stochastic barostat, that can be used both for equilibration and production.

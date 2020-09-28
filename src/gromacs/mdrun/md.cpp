@@ -73,6 +73,7 @@
 #include "gromacs/imd/imd.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/functions.h"
+#include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/checkpointhandler.h"
@@ -379,9 +380,11 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(
                 ir->etc != etcNOSEHOOVER,
                 "Nose-Hoover temperature coupling is not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(ir->epc == epcNO || ir->epc == epcPARRINELLORAHMAN || ir->epc == epcBERENDSEN,
-                           "Only Parrinello-Rahman and Berendsen pressure coupling are supported "
-                           "with the GPU update.\n");
+        GMX_RELEASE_ASSERT(
+                ir->epc == epcNO || ir->epc == epcPARRINELLORAHMAN || ir->epc == epcBERENDSEN
+                        || ir->epc == epcCRESCALE,
+                "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are supported "
+                "with the GPU update.\n");
         GMX_RELEASE_ASSERT(!mdatoms->haveVsites,
                            "Virtual sites are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ed == nullptr,
@@ -1455,9 +1458,18 @@ void gmx::LegacySimulator::do_md()
 
         const bool doBerendsenPressureCoupling =
                 (inputrec->epc == epcBERENDSEN && do_per_step(step, inputrec->nstpcouple));
-        if (useGpuForUpdate && (doBerendsenPressureCoupling || doParrinelloRahman))
+        const bool doCRescalePressureCoupling =
+                (inputrec->epc == epcCRESCALE && do_per_step(step, inputrec->nstpcouple));
+        if (useGpuForUpdate
+            && (doBerendsenPressureCoupling || doCRescalePressureCoupling || doParrinelloRahman))
         {
             integrator->scaleCoordinates(pressureCouplingMu);
+            if (doCRescalePressureCoupling)
+            {
+                matrix pressureCouplingInvMu;
+                gmx::invertBoxMatrix(pressureCouplingMu, pressureCouplingInvMu);
+                integrator->scaleVelocities(pressureCouplingInvMu);
+            }
             integrator->setPbc(PbcType::Xyz, state->box);
         }
 

@@ -127,6 +127,14 @@ public:
      */
     void scaleCoordinates(const matrix scalingMatrix);
 
+    /*! \brief Scale velocities on the GPU for the pressure coupling.
+     *
+     * After pressure coupling step, the box size may change. In the C-Rescale algorithm, velocities should be scaled.
+     *
+     * \param[in] scalingMatrix Velocities scaling matrix.
+     */
+    void scaleVelocities(const matrix scalingMatrix);
+
     /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
      *
      * \param[in,out]  d_x                 Device buffer with coordinates.

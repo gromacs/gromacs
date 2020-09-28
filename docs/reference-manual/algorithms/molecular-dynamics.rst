@@ -1255,6 +1255,57 @@ Berendsen pressure control algorithm yields a simulation with the
 correct average pressure, it does not yield the exact NPT ensemble, and
 it is not yet clear exactly what errors this approximation may yield.
 
+Stochastic cell rescaling
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The stochastic cell rescaling algorithm is a variant of the Berendsen
+algorithm that allows correct fluctuations to be sampled. Similarly
+to the Berendsen algorithm, it rescales the coordinates and box vectors
+every step, or every :math:`n_\mathrm{PC}` steps
+with the effect of a first-order kinetic relaxation of the
+pressure towards a given reference pressure :math:`P_0`.
+At variance with the Berendsen algorithm, the rescaling matrix is calculated
+including a stochastic term that makes volume fluctuations correct.
+
+The isotropic version can be easily written in term of the strain
+:math:`\epsilon=\log(V/V_0)` that is evolved according to the following equation
+of motion
+
+.. math:: \mbox{d}\epsilon=-\frac{\beta}{\tau_p}(P_0-P)\mbox{d}t + \sqrt{\frac{2k_BT\beta}{V\tau_p}}\mbox{d}W
+          :label: eqnstochasticcellrescaling
+
+
+Here, :math:`\beta` is the isothermal compressibility of the system.
+It suffices to take a rough estimate because the value of :math:`\beta` only influences
+the non-critical time constant of the pressure relaxation without affecting
+the volume distribution itself. For water at 1 atm and 300 K
+:math:`\beta = 4.6 \times 10^{-10}`
+Pa\ :math:`^{-1} = 4.6 \times 10^{-5}` bar\ :math:`^{-1}`, which is
+:math:`7.6 \times 10^{-4}` MD units (see chapter :ref:`defunits`). Most
+other liquids have similar values.
+
+Another difference with respect to the Berendsen algorithm is that
+velocities are scaled with a factor that is the reciprocal of the
+scaling factor for positions.
+
+A semi-isotropic implementation is also provided. By defining the variables
+:math:`\epsilon_{xy}=\log(A/A_0)` and :math:`\epsilon_z=\log(L/L_0)`,
+where :math:`A` and :math:`L` are the area of the simulation box in the
+:math:`xy` plane and its height, respectively, the following equations
+can be obtained:
+
+.. math:: \mbox{d}\epsilon_{xy}=-\frac{2\beta}{3\tau_p}(P_0-\frac{\gamma}{L}-\frac{P_{xx}+P_{yy}}{2})\mbox{d}t+\sqrt{\frac{4k_BT\beta}{3V\tau_p}}\mbox{d}W_{xy}
+          :label: eqnstochasticcellrescalingxy
+
+.. math:: \mbox{d}\epsilon_z=-\frac{\beta}{3\tau_p}(P_0-P_{zz})\mbox{d}t + \sqrt{\frac{2k_BT\beta}{3V\tau_p}}\mbox{d}W_z
+          :label: eqnstochasticcellrescalingz
+
+Here :math:`\gamma` is the external surface tension and :math:`P_{xx}`,
+:math:`P_{yy}`, and :math:`P_{zz}` the components of the internal pressure.
+
+More detailed explanations can be found in the original reference \ :ref:`184 <refBernetti2020>`.
+
+
 Parrinello-Rahman pressure coupling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

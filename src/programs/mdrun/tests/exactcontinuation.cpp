@@ -461,12 +461,13 @@ INSTANTIATE_TEST_CASE_P(
                            ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
                            ::testing::Values("no")));
 
-INSTANTIATE_TEST_CASE_P(NPH,
-                        MdrunNoAppendContinuationIsExact,
-                        ::testing::Combine(::testing::Values("argon12"),
-                                           ::testing::Values("md", "md-vv"),
-                                           ::testing::Values("no"),
-                                           ::testing::Values("berendsen", "parrinello-rahman")));
+INSTANTIATE_TEST_CASE_P(
+        NPH,
+        MdrunNoAppendContinuationIsExact,
+        ::testing::Combine(::testing::Values("argon12"),
+                           ::testing::Values("md", "md-vv"),
+                           ::testing::Values("no"),
+                           ::testing::Values("berendsen", "parrinello-rahman", "C-rescale")));
 
 INSTANTIATE_TEST_CASE_P(
         NPT,
@@ -474,7 +475,7 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::Combine(::testing::Values("argon12"),
                            ::testing::Values("md", "md-vv"),
                            ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
-                           ::testing::Values("berendsen", "parrinello-rahman")));
+                           ::testing::Values("berendsen", "parrinello-rahman", "C-rescale")));
 
 INSTANTIATE_TEST_CASE_P(MTTK,
                         MdrunNoAppendContinuationIsExact,

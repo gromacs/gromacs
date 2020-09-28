@@ -326,7 +326,7 @@ std::vector<PropagationParameters> propagationParametersWithCoupling()
                 {
                     continue;
                 }
-                for (std::string pcoupl : { "no", "Berendsen", "Parrinello-Rahman" })
+                for (std::string pcoupl : { "no", "Berendsen", "Parrinello-Rahman", "C-rescale" })
                 {
                     // VV supports few algorithm combinations
                     if (integrator == "md-vv")
@@ -393,7 +393,7 @@ std::vector<PropagationParameters> propagationParametersWithConstraints()
                 {
                     continue;
                 }
-                for (std::string pcoupl : { "no", "Parrinello-Rahman" })
+                for (std::string pcoupl : { "no", "Parrinello-Rahman", "C-rescale" })
                 {
                     // VV supports few algorithm combinations
                     if (integrator == "md-vv")

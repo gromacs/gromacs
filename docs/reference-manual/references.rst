@@ -2596,4 +2596,17 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
 .. raw:: html
 
+   <div id="ref-Bernetti2020">
+
+.. _refBernetti2020:
+
+:sup:`184` Bernetti, M. and Bussi, G.,
+"Pressure control using stochastic cell rescaling", *J. Chem. Phys.*, **153**, 114107 (2020).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
    </div>

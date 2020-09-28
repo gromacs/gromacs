@@ -167,6 +167,25 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
     deviceStream_.synchronize();
 }
 
+void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
+{
+    ScalingMatrix mu;
+    mu.xx = scalingMatrix[XX][XX];
+    mu.yy = scalingMatrix[YY][YY];
+    mu.zz = scalingMatrix[ZZ][ZZ];
+    mu.yx = scalingMatrix[YY][XX];
+    mu.zx = scalingMatrix[ZZ][XX];
+    mu.zy = scalingMatrix[ZZ][YY];
+
+    const auto kernelArgs = prepareGpuKernelArguments(
+            scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, &numAtoms_, &d_v_, &mu);
+    launchGpuKernel(scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, deviceStream_,
+                    nullptr, "scaleCoordinates_kernel", kernelArgs);
+    // TODO: Although this only happens on the pressure coupling steps, this synchronization
+    //       can affect the perfornamce if nstpcouple is small.
+    deviceStream_.synchronize();
+}
+
 UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
                                const gmx_mtop_t&     mtop,
                                const DeviceContext&  deviceContext,
@@ -261,6 +280,11 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDev
 void UpdateConstrainGpu::scaleCoordinates(const matrix scalingMatrix)
 {
     impl_->scaleCoordinates(scalingMatrix);
+}
+
+void UpdateConstrainGpu::scaleVelocities(const matrix scalingMatrix)
+{
+    impl_->scaleVelocities(scalingMatrix);
 }
 
 void UpdateConstrainGpu::set(DeviceBuffer<RVec>            d_x,
