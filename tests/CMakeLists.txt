@@ -1,7 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016, The GROMACS development team.
+# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,10 +40,10 @@ option(REGRESSIONTEST_DOWNLOAD
 
 if(REGRESSIONTEST_DOWNLOAD)
     if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)
-        set(REGRESSIONTEST_URL http://gerrit.gromacs.org/snapshot/${REGRESSIONTEST_BRANCH})
+        set(REGRESSIONTEST_URL https://gitlab.com/gromacs/gromacs-regressiontests/-/archive/${REGRESSIONTEST_BRANCH}/gromacs-regressiontests-${REGRESSIONTEST_BRANCH}.tar.gz)
         # REGRESSIONTEST_PATH for dev trees is set later based on the dirname found in the tar
     else()
-        set(REGRESSIONTEST_URL http://gerrit.gromacs.org/download/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
+        set(REGRESSIONTEST_URL http://ftp.gromacs.org/regressiontests/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
         set(REGRESSIONTEST_PATH
             "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"
             CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
