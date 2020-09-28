@@ -60,9 +60,8 @@ namespace gmxapi
 {
 
 // Forward declaration
-class MpiContextManager; // Locally defined in session.cpp
-class ContextImpl;       // locally defined in context.cpp
-class SignalManager;     // defined in mdsignals_impl.h
+class ContextImpl;   // locally defined in context.cpp
+class SignalManager; // defined in mdsignals_impl.h
 
 /*!
  * \brief Implementation class for executing sessions.
@@ -202,17 +201,11 @@ private:
      * \brief Extend the life of the owning context.
      *
      * The session will get handles for logging, UI status messages,
-     * and other facilities through this interface.
+     * and other facilities through this interface. This is a facility
+     * provided by the client to the Session implementation during
+     * Context.launch().
      */
     std::shared_ptr<ContextImpl> context_;
-
-    /*!
-     * \brief RAII management of gmx::init() and gmx::finalize()
-     *
-     * Uses smart pointer to avoid exposing type definition.
-     * \todo Not fully implemented.
-     */
-    std::unique_ptr<MpiContextManager> mpiContextManager_;
 
     /*!
      * \brief Simulation runner object.
@@ -224,6 +217,10 @@ private:
 
     /*!
      * \brief An active session owns the resources it is using.
+     *
+     * This encapsulate details of the run time context that the
+     * Session makes available to the simulator, tied to the
+     * lifetime of the Session.
      */
     gmx::SimulationContext simulationContext_;
 

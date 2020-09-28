@@ -54,15 +54,20 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/init.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "gmxapi/mpi/multiprocessingresources.h"
 #include "gmxapi/exceptions.h"
 #include "gmxapi/session.h"
 #include "gmxapi/status.h"
@@ -76,15 +81,44 @@
 namespace gmxapi
 {
 
-ContextImpl::ContextImpl()
+MpiContextManager::MpiContextManager()
 {
+    gmx::init(nullptr, nullptr);
+    GMX_RELEASE_ASSERT(!GMX_LIB_MPI || gmx_mpi_initialized(),
+                       "MPI should be initialized before reaching this point.");
+};
+
+MpiContextManager::~MpiContextManager()
+{
+    // This is always safe to call. It is a no-op if
+    // thread-MPI, and if the constructor completed then the
+    // MPI library is initialized with reference counting.
+    gmx::finalize();
+}
+
+ContextImpl::~ContextImpl() = default;
+
+Context createContext()
+{
+    MpiContextManager contextmanager;
+    auto              impl = ContextImpl::create();
+    GMX_ASSERT(impl, "ContextImpl creation method should not be able to return null.");
+    auto context = Context(impl);
+    return context;
+}
+
+ContextImpl::ContextImpl() noexcept(std::is_nothrow_constructible_v<gmx::LegacyMdrunOptions>) :
+    mpi_(MpiContextManager())
+{
+    // Make sure we didn't change the data members and overlook implementation details.
     GMX_ASSERT(session_.expired(),
                "This implementation assumes an expired weak_ptr at initialization.");
 }
 
-std::shared_ptr<gmxapi::ContextImpl> ContextImpl::create()
+std::shared_ptr<ContextImpl> ContextImpl::create()
 {
-    std::shared_ptr<ContextImpl> impl = std::make_shared<ContextImpl>();
+    std::shared_ptr<ContextImpl> impl;
+    impl.reset(new ContextImpl());
     return impl;
 }
 
@@ -164,14 +198,13 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
 
         ArrayRef<const std::string> multiSimDirectoryNames =
                 opt2fnsIfOptionSet("-multidir", ssize(options_.filenames), options_.filenames.data());
-        // Set up the communicator, where possible (see docs for
-        // SimulationContext).
-        MPI_Comm communicator = GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
+
         // The SimulationContext is necessary with gmxapi so that
         // resources owned by the client code can have suitable
         // lifetime. The gmx wrapper binary uses the same infrastructure,
         // but the lifetime is now trivially that of the invocation of the
         // wrapper binary.
+        auto              communicator = GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
         SimulationContext simulationContext(communicator, multiSimDirectoryNames);
 
 

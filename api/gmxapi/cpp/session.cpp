@@ -57,60 +57,6 @@
 namespace gmxapi
 {
 
-/*!
- * \brief Provide RAII management of communications resource state.
- *
- * To acquire an MpiContextManager is to have assurance that any external MPI
- * environment is ready to use. When the MpiContextManager is released or
- * goes out of scope, the destructor finalizes the resources.
- *
- * Note that thread-MPI chooses the number of ranks and constructs its
- * MPI communicator internally, so does not and is unlikely to ever
- * participate here.
- *
- * \todo There is no resource for logging or reporting errors during initialization
- * \todo Remove this class by managing the MPI context with mpi4py and so
- *       configuring the SimulationContext externally
- *
- * \ingroup gmxapi
- */
-class MpiContextManager
-{
-public:
-    MpiContextManager()
-    {
-        gmx::init(nullptr, nullptr);
-        GMX_RELEASE_ASSERT(!GMX_LIB_MPI || gmx_mpi_initialized(),
-                           "MPI should be initialized before reaching this point.");
-    };
-
-    ~MpiContextManager()
-    {
-        // This is always safe to call. It is a no-op if
-        // thread-MPI, and if the constructor completed then the
-        // MPI library is initialized with reference counting.
-        gmx::finalize();
-    }
-
-    /*!
-     * \brief Exclusive ownership of a scoped context means copying is impossible.
-     *
-     * \{
-     */
-    MpiContextManager(const MpiContextManager&) = delete;
-    MpiContextManager& operator=(const MpiContextManager&) = delete;
-    //! \}
-
-    /*!
-     * \brief Move semantics are trivial.
-     *
-     * \{
-     */
-    MpiContextManager(MpiContextManager&&) noexcept = default;
-    MpiContextManager& operator=(MpiContextManager&&) noexcept = default;
-    //! \}
-};
-
 SignalManager::SignalManager(gmx::StopHandlerBuilder* stopHandlerBuilder) :
     state_(std::make_shared<gmx::StopSignal>(gmx::StopSignal::noSignal))
 {
@@ -185,12 +131,10 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl> context,
                          gmx::SimulationContext&&     simulationContext,
                          gmx::LogFilePtr              fplog) :
     context_(std::move(context)),
-    mpiContextManager_(std::make_unique<MpiContextManager>()),
     simulationContext_(std::move(simulationContext)),
     logFilePtr_(std::move(fplog))
 {
     GMX_ASSERT(context_, "SessionImpl invariant implies valid ContextImpl handle.");
-    GMX_ASSERT(mpiContextManager_, "SessionImpl invariant implies valid MpiContextManager guard.");
 
     // \todo Session objects can have logic specialized for the runtime environment.
 
