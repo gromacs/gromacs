@@ -97,6 +97,7 @@ set(exename "mdrun-test")
 
 gmx_add_gtest_executable(
     ${exename}
+    dispersion_correction.cpp
     orires.cpp
     pmetest.cpp
     simulator.cpp

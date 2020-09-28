@@ -34,6 +34,14 @@ due to illegal or incorrect memory usage.
 
 :issue:`3635`
 
+Fix assertion failure with LJ-PME and dispersion correction
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With vdw-type=PME and dispersion correction, mdrun would exit with
+an assertion failure during PME tuning.
+
+:issue:`3677`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
