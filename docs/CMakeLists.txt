@@ -552,6 +552,12 @@ if (SPHINX_FOUND)
     endif ()
 
     gmx_add_sphinx_source_files(
+            FILES
+            nblib/index.rst
+            nblib/guide-to-writing-MD-programs.rst
+    )
+
+    gmx_add_sphinx_source_files(
         FILES
         ${REFERENCEMANUAL_SPHINX_FILES_GENERAL})
     if (IMAGE_CONVERT_POSSIBLE)

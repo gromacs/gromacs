@@ -25,6 +25,7 @@ Welcome to the |Gromacs| documentation!
            how-to/index
            reference-manual/index
            gmxapi/index
+	   nblib/index
            dev-manual/index
         
         ==================
@@ -46,6 +47,7 @@ Welcome to the |Gromacs| documentation!
             how-to/index
             reference-manual/index
             gmxapi/index
+	    nblib/index
             dev-manual/index
 
 
