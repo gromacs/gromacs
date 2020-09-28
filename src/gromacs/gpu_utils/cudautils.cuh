@@ -174,7 +174,7 @@ static inline bool haveStreamTasksCompleted(const DeviceStream& deviceStream)
         return false;
     }
 
-    GMX_ASSERT(stat != cudaErrorInvalidResourceHandle, "Stream idnetifier not valid");
+    GMX_ASSERT(stat != cudaErrorInvalidResourceHandle, "Stream identifier not valid");
 
     // cudaSuccess and cudaErrorNotReady are the expected return values
     CU_RET_ERR(stat, "Unexpected cudaStreamQuery failure");
