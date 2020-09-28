@@ -34,63 +34,36 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic nblib box tests
+ * Implements nblib ParticleType
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#include <cmath>
-
-#include "nblib/box.h"
-#include "nblib/exception.h"
-
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-
-using gmx::test::defaultRealTolerance;
+#include "nblib/particletype.h"
 
 namespace nblib
 {
 
-TEST(NBlibTest, CubicBoxCannotHaveNaN)
+ParticleType::ParticleType(ParticleTypeName name, Mass mass) : name_(std::move(name)), mass_(mass)
 {
-    real number = NAN;
-    EXPECT_THROW(Box box(number), InputException);
 }
 
-TEST(NBlibTest, CubicBoxCannotHaveInf)
+ParticleTypeName ParticleType::name() const
 {
-    real number = INFINITY;
-    EXPECT_THROW(Box box(number), InputException);
+    return name_;
 }
 
-TEST(NBlibTest, RectangularBoxCannotHaveNaN)
+Mass ParticleType::mass() const
 {
-    real number = NAN;
-    EXPECT_THROW(Box box(number, real(1.), real(1.)), InputException);
+    return mass_;
 }
 
-TEST(NBlibTest, RectangularBoxCannotHaveInf)
+bool operator==(const ParticleType& a, const ParticleType& b)
 {
-    real number = INFINITY;
-    EXPECT_THROW(Box box(number, real(1.), real(1.)), InputException);
-}
-
-TEST(NBlibTest, CubicBoxWorks)
-{
-    real              length = 3;
-    Box::LegacyMatrix ref    = { { length, 0, 0 }, { 0, length, 0 }, { 0, 0, length } };
-    Box               test   = Box(length);
-
-    for (int i = 0; i < dimSize; ++i)
-    {
-        for (int j = 0; j < dimSize; ++j)
-        {
-            EXPECT_REAL_EQ_TOL(ref[i][j], test.legacyMatrix()[i][j], defaultRealTolerance());
-        }
-    }
+    return a.name() == b.name() && a.mass() == b.mass();
 }
 
 } // namespace nblib

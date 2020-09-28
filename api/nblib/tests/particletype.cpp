@@ -34,63 +34,37 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic nblib box tests
+ * This implements basic nblib AtomType tests
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
  */
 #include <cmath>
 
-#include "nblib/box.h"
-#include "nblib/exception.h"
+#include "nblib/particletype.h"
+#include "nblib/tests/testsystems.h"
 
-#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
-
-using gmx::test::defaultRealTolerance;
 
 namespace nblib
 {
 
-TEST(NBlibTest, CubicBoxCannotHaveNaN)
+TEST(NBlibTest, ParticleTypeNameCanBeConstructed)
 {
-    real number = NAN;
-    EXPECT_THROW(Box box(number), InputException);
+    ArAtom       arAtom;
+    ParticleType argonAtom(arAtom.particleTypeName, arAtom.mass);
+    EXPECT_EQ(ParticleTypeName(argonAtom.name()), arAtom.particleTypeName);
 }
 
-TEST(NBlibTest, CubicBoxCannotHaveInf)
+TEST(NBlibTest, ParticleTypeMassCanBeConstructed)
 {
-    real number = INFINITY;
-    EXPECT_THROW(Box box(number), InputException);
-}
-
-TEST(NBlibTest, RectangularBoxCannotHaveNaN)
-{
-    real number = NAN;
-    EXPECT_THROW(Box box(number, real(1.), real(1.)), InputException);
-}
-
-TEST(NBlibTest, RectangularBoxCannotHaveInf)
-{
-    real number = INFINITY;
-    EXPECT_THROW(Box box(number, real(1.), real(1.)), InputException);
-}
-
-TEST(NBlibTest, CubicBoxWorks)
-{
-    real              length = 3;
-    Box::LegacyMatrix ref    = { { length, 0, 0 }, { 0, length, 0 }, { 0, 0, length } };
-    Box               test   = Box(length);
-
-    for (int i = 0; i < dimSize; ++i)
-    {
-        for (int j = 0; j < dimSize; ++j)
-        {
-            EXPECT_REAL_EQ_TOL(ref[i][j], test.legacyMatrix()[i][j], defaultRealTolerance());
-        }
-    }
+    ArAtom       arAtom;
+    ParticleType argonAtom(arAtom.particleTypeName, arAtom.mass);
+    EXPECT_EQ(argonAtom.mass(), arAtom.mass);
 }
 
 } // namespace nblib

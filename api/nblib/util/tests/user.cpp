@@ -34,63 +34,90 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic nblib box tests
+ * This implements basic nblib utility tests
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include <cmath>
+#include <vector>
 
-#include "nblib/box.h"
-#include "nblib/exception.h"
+#include "nblib/tests/testhelpers.h"
+#include "nblib/util/user.h"
 
-#include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
-using gmx::test::defaultRealTolerance;
 
 namespace nblib
 {
-
-TEST(NBlibTest, CubicBoxCannotHaveNaN)
+namespace test
 {
-    real number = NAN;
-    EXPECT_THROW(Box box(number), InputException);
+namespace
+{
+
+TEST(NBlibTest, checkNumericValues)
+{
+    std::vector<Vec3> vec;
+    vec.emplace_back(1., 1., 1.);
+    vec.emplace_back(2., 2., 2.);
+
+    bool ret = checkNumericValues(vec);
+    EXPECT_EQ(ret, true);
 }
 
-TEST(NBlibTest, CubicBoxCannotHaveInf)
+TEST(NBlibTest, checkNumericValuesHasNan)
 {
-    real number = INFINITY;
-    EXPECT_THROW(Box box(number), InputException);
+    std::vector<Vec3> vec;
+    vec.emplace_back(1., 1., 1.);
+    vec.emplace_back(2., 2., 2.);
+
+    vec.emplace_back(NAN, NAN, NAN);
+
+    bool ret = checkNumericValues(vec);
+    EXPECT_EQ(ret, false);
 }
 
-TEST(NBlibTest, RectangularBoxCannotHaveNaN)
+TEST(NBlibTest, checkNumericValuesHasInf)
 {
-    real number = NAN;
-    EXPECT_THROW(Box box(number, real(1.), real(1.)), InputException);
+    std::vector<Vec3> vec;
+    vec.emplace_back(1., 1., 1.);
+    vec.emplace_back(2., 2., 2.);
+
+    vec.emplace_back(INFINITY, INFINITY, INFINITY);
+
+    bool ret = checkNumericValues(vec);
+    EXPECT_EQ(ret, false);
 }
 
-TEST(NBlibTest, RectangularBoxCannotHaveInf)
+
+TEST(NBlibTest, GeneratedVelocitiesAreCorrect)
 {
-    real number = INFINITY;
-    EXPECT_THROW(Box box(number, real(1.), real(1.)), InputException);
+    constexpr size_t  N = 10;
+    std::vector<real> masses(N, 1.0);
+    std::vector<Vec3> velocities;
+    velocities = generateVelocity(300.0, 1, masses);
+
+    Vector3DTest velocitiesTest;
+    velocitiesTest.testVectors(velocities, "generated-velocities");
+}
+TEST(NBlibTest, generateVelocitySize)
+{
+    constexpr int     N = 10;
+    std::vector<real> masses(N, 1.0);
+    auto              out = generateVelocity(300.0, 1, masses);
+    EXPECT_EQ(out.size(), N);
 }
 
-TEST(NBlibTest, CubicBoxWorks)
+TEST(NBlibTest, generateVelocityCheckNumbers)
 {
-    real              length = 3;
-    Box::LegacyMatrix ref    = { { length, 0, 0 }, { 0, length, 0 }, { 0, 0, length } };
-    Box               test   = Box(length);
-
-    for (int i = 0; i < dimSize; ++i)
-    {
-        for (int j = 0; j < dimSize; ++j)
-        {
-            EXPECT_REAL_EQ_TOL(ref[i][j], test.legacyMatrix()[i][j], defaultRealTolerance());
-        }
-    }
+    constexpr int     N = 10;
+    std::vector<real> masses(N, 1.0);
+    auto              out = generateVelocity(300.0, 1, masses);
+    bool              ret = checkNumericValues(out);
+    EXPECT_EQ(ret, true);
 }
 
+} // namespace
+} // namespace test
 } // namespace nblib

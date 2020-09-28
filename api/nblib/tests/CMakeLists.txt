@@ -42,10 +42,10 @@
 # in multiple test executables across the repository.
 gmx_add_unit_test_library(nblib_test_infrastructure
         testhelpers.cpp
-        )
+        testsystems.cpp
+    )
 target_include_directories(nblib_test_infrastructure PRIVATE ${PROJECT_SOURCE_DIR}/api)
 target_include_directories(nblib_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
-
 
 set(testname "NbLibSetupTests")
 set(exename "nblib-setup-test")
@@ -54,7 +54,11 @@ gmx_add_gtest_executable(
     ${exename}
     CPP_SOURCE_FILES
     # files with code for tests
-    box.cpp
+        box.cpp
+        interactions.cpp
+        particletype.cpp
+        molecules.cpp
+        topology.cpp
     )
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
 target_include_directories(${exename} PRIVATE ${PROJECT_SOURCE_DIR}/api)

@@ -88,7 +88,13 @@ add_library(nblib SHARED "")
 target_sources(nblib
         PRIVATE
         box.cpp
+        interactions.cpp
+        molecules.cpp
+        particletype.cpp
+        topologyhelpers.cpp
+        topology.cpp
         )
+
 
 set_target_properties(nblib
         PROPERTIES

@@ -175,6 +175,26 @@ private:
     ParticleTypesInteractions particleTypesInteractions_;
 };
 
+//! utility function to extract Particle quantities and expand them to the full
+//! array of length numParticles()
+template<class F>
+inline auto expandQuantity(const Topology& topology, F&& particleTypeExtractor)
+{
+    using ValueType = decltype((std::declval<ParticleType>().*std::declval<F>())());
+
+    std::vector<ValueType> ret;
+    ret.reserve(topology.numParticles());
+
+    const std::vector<ParticleType>& particleTypes = topology.getParticleTypes();
+
+    for (size_t id : topology.getParticleTypeIdOfAllParticles())
+    {
+        ret.push_back((particleTypes[id].*particleTypeExtractor)());
+    }
+
+    return ret;
+}
+
 } // namespace nblib
 
 #endif // NBLIB_TOPOLOGY_H

@@ -38,18 +38,15 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
+set(testname "NbLibUtilTests")
+set(exename "nblib-util-test")
 
-target_sources(nblib
-        PRIVATE
+gmx_add_gtest_executable(
+        ${exename}
+        CPP_SOURCE_FILES
         user.cpp
-        )
+)
+target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
+gmx_register_gtest_test(${testname} ${exename})
+add_dependencies(check-nblib ${exename})
 
-if(GMX_INSTALL_NBLIB_API)
-    install(FILES
-            user.h
-            DESTINATION include/nblib/util)
-endif()
-
-if(BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
