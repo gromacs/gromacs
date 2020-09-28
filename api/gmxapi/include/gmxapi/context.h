@@ -123,7 +123,7 @@ public:
     /*!
      * \brief Get a handle to a new default context object.
      */
-    Context();
+    Context() = delete;
     ~Context();
 
     /*!

@@ -90,6 +90,20 @@ public:
      */
     MpiContextManager();
 
+    /*!
+     * \brief Borrow a communicator and ensure that MPI is initialized, if applicable.
+     *
+     * \param communicator Optional communicator representing a client-managed MPI environment.
+     *
+     *
+     *
+     * Note that the communicator must be MPI_COMM_NULL if and only if GROMACS was built without an
+     * external MPI library.
+     *
+     * \todo (#3650?) Decide whether to exclude this from tMPI environments or find a sensible invariant.
+     */
+    explicit MpiContextManager(MPI_Comm communicator);
+
     ~MpiContextManager();
 
     /*!

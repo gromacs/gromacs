@@ -35,6 +35,7 @@
 # This list file provides the Gromacs::gmxapi cmake target.
 
 target_sources(gmxapi PRIVATE
+               multiprocessingresources.cpp
                context.cpp
                exceptions.cpp
                gmxapi.cpp

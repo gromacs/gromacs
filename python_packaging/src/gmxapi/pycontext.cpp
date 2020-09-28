@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,7 +74,7 @@ std::shared_ptr<gmxapi::Context> PyContext::get() const
 }
 
 PyContext::PyContext() :
-    context_{ std::make_shared<gmxapi::Context>() },
+    context_{ std::make_shared<gmxapi::Context>(gmxapi::createContext()) },
     workNodes_{ std::make_shared<gmxapi::MDWorkSpec>() }
 {
     assert(context_);

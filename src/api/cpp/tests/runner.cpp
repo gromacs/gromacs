@@ -61,7 +61,7 @@ TEST_F(GmxApiTest, RunnerBasicMD)
     auto system = gmxapi::fromTprFile(runner_.tprFileName_);
 
     {
-        auto           context = std::make_shared<gmxapi::Context>();
+        auto           context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
         gmxapi::MDArgs args    = makeMdArgs();
         // TODO the command line arguments should be set through the
         // usual command line options settings for the tests
@@ -82,7 +82,7 @@ TEST_F(GmxApiTest, RunnerBasicMD)
  */
 TEST_F(GmxApiTest, RunnerReinitialize)
 {
-    auto           context = std::make_shared<gmxapi::Context>();
+    auto           context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
     gmxapi::MDArgs args    = makeMdArgs();
 
     makeTprFile(20);
@@ -140,7 +140,7 @@ TEST_F(GmxApiTest, RunnerContinuedMD)
     auto system = gmxapi::fromTprFile(runner_.tprFileName_);
 
     {
-        auto context = std::make_shared<gmxapi::Context>();
+        auto context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
 
         {
             EXPECT_TRUE(context != nullptr);

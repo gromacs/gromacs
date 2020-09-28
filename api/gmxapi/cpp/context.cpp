@@ -81,9 +81,11 @@
 namespace gmxapi
 {
 
-MpiContextManager::MpiContextManager() :
-    communicator_(std::make_unique<MPI_Comm>(GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL))
+MpiContextManager::MpiContextManager(MPI_Comm communicator) :
+    communicator_(std::make_unique<MPI_Comm>(communicator))
 {
+    GMX_ASSERT(*communicator_ == MPI_COMM_NULL ? !GMX_LIB_MPI : GMX_LIB_MPI,
+               "Invalid communicator value for this library configuration.");
     // Safely increments the GROMACS MPI initialization counter after checking
     // whether the MPI library is already initialized. After this call, MPI_Init
     // or MPI_Init_thread has been called exactly once.
@@ -108,6 +110,11 @@ MpiContextManager::~MpiContextManager()
     }
 }
 
+MpiContextManager::MpiContextManager() :
+    MpiContextManager(GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL)
+{
+}
+
 MPI_Comm MpiContextManager::communicator() const
 {
     if (!communicator_)
@@ -118,6 +125,21 @@ MPI_Comm MpiContextManager::communicator() const
 }
 
 ContextImpl::~ContextImpl() = default;
+
+Context createContext(const ResourceAssignment& resources)
+{
+    CommHandle handle;
+    resources.applyCommunicator(&handle);
+    if (handle.communicator == MPI_COMM_NULL)
+    {
+        throw UsageError("MPI-enabled Simulator contexts require a valid communicator.");
+    }
+    auto contextmanager = MpiContextManager(handle.communicator);
+    auto impl           = ContextImpl::create(std::move(contextmanager));
+    GMX_ASSERT(impl, "ContextImpl creation method should not be able to return null.");
+    auto context = Context(impl);
+    return context;
+}
 
 Context createContext()
 {
@@ -239,9 +261,9 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         LogFilePtr       logFileGuard     = nullptr;
         gmx_multisim_t*  ms               = simulationContext.multiSimulation_.get();
         std::tie(startingBehavior, logFileGuard) =
-                handleRestart(findIsSimulationMasterRank(ms, communicator), communicator, ms,
-                              options_.mdrunOptions.appendingBehavior, ssize(options_.filenames),
-                              options_.filenames.data());
+                handleRestart(findIsSimulationMasterRank(ms, simulationContext.simulationCommunicator_),
+                              communicator, ms, options_.mdrunOptions.appendingBehavior,
+                              ssize(options_.filenames), options_.filenames.data());
 
         auto builder = MdrunnerBuilder(std::move(mdModules),
                                        compat::not_null<SimulationContext*>(&simulationContext));
@@ -299,12 +321,6 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
     return launchedSession;
 }
 
-// As of gmxapi 0.0.3 there is only one Context type
-Context::Context() : Context{ ContextImpl::create(MpiContextManager()) }
-{
-    GMX_ASSERT(impl_, "Context requires a non-null implementation member.");
-}
-
 std::shared_ptr<Session> Context::launch(const Workflow& work)
 {
     return impl_->launch(work);
@@ -312,7 +328,10 @@ std::shared_ptr<Session> Context::launch(const Workflow& work)
 
 Context::Context(std::shared_ptr<ContextImpl> impl) : impl_{ std::move(impl) }
 {
-    GMX_ASSERT(impl_, "Context requires a non-null implementation member.");
+    if (!impl_)
+    {
+        throw UsageError("Context requires a non-null implementation member.");
+    }
 }
 
 void Context::setMDArgs(const MDArgs& mdArgs)

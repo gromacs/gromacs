@@ -51,6 +51,7 @@
 add_library(gmxapi-testsupport INTERFACE)
 target_include_directories(gmxapi-testsupport INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# TODO: Test tMPI build in a MPI-enabled client context.
 gmx_add_gtest_executable(gmxapi-test
     CPP_SOURCE_FILES
         restraint.cpp
@@ -84,6 +85,7 @@ set_tests_properties(GmxapiExternalInterfaceTests PROPERTIES
 if (GMX_MPI)
     gmx_add_gtest_executable(gmxapi-mpi-test MPI
                              CPP_SOURCE_FILES
+                             context.cpp
                              restraint.cpp
                              runner.cpp
                              status.cpp

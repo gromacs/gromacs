@@ -180,7 +180,7 @@ TEST_F(GmxApiTest, ApiRunnerStopSignalClient)
     const int nsteps = 1;
     makeTprFile(nsteps);
     auto system  = gmxapi::fromTprFile(runner_.tprFileName_);
-    auto context = std::make_shared<gmxapi::Context>();
+    auto context = std::make_shared<gmxapi::Context>(gmxapi::createContext());
 
     // Check assumptions about basic simulation behavior.
     {
