@@ -11,12 +11,13 @@
     KUBERNETES_CPU_LIMIT: 2
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     PLUGIN_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PLUGIN_MPI_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
     EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
   script:
     - source $INSTALL_DIR/bin/GMXRC
-    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash admin/ci-scripts/build-and-test-sample_restraint-2020.sh
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint-2020.sh
   artifacts:
     reports:
       junit:

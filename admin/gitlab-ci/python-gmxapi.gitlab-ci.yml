@@ -13,6 +13,7 @@
     KUBERNETES_CPU_LIMIT: 2
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     PY_UNIT_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PY_MPI_UNIT_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
     PY_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-JUnitTestResults.xml
@@ -20,7 +21,7 @@
     EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
   script:
     - source $INSTALL_DIR/bin/GMXRC
-    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash admin/ci-scripts/build-and-test-py-gmxapi-0.1.sh
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-py-gmxapi-0.1.sh
   # Note that the XML output is concatenated when multiple reports are produced
   # by a single job. If this presents problems, we may have to split the tests
   # into multiple jobs. In particular, test names will appear once for MPI and
@@ -81,13 +82,17 @@ gmxapi-0.1:clang-8:py-3.8.2:
   image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
   stage: test
   variables:
+    KUBERNETES_CPU_LIMIT: 2
+    KUBERNETES_CPU_REQUEST: 2
+    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     PY_UNIT_TEST_XML: $CI_PROJECT_DIR/py-JUnitTestResults.xml
     PY_MPI_UNIT_TEST_XML: $CI_PROJECT_DIR/py-mpi-JUnitTestResults.xml
     PY_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-JUnitTestResults.xml
     PY_MPI_ACCEPTANCE_TEST_XML: $CI_PROJECT_DIR/gmxapi-acceptance-mpi-JUnitTestResults.xml
   script:
     - source $INSTALL_DIR/bin/GMXRC
-    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR bash admin/ci-scripts/build-and-test-py-gmxapi-0.2.sh
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-py-gmxapi-0.2.sh
   artifacts:
     reports:
       junit:

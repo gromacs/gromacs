@@ -48,6 +48,7 @@ PROGRAM=(`which python` -m mpi4py -m pytest \
 if [ -x `which mpiexec` ]; then
     PYTHONDONTWRITEBYTECODE=1 \
     mpiexec --allow-run-as-root \
+      -x OMP_NUM_THREADS=1 \
       --mca opal_warn_on_missing_libcuda 0 \
       --mca orte_base_help_aggregate 0 \
       -n 1 ${PROGRAM[@]} --junitxml=$PLUGIN_MPI_TEST_XML : \
@@ -68,6 +69,7 @@ PROGRAM=(`which python` -m mpi4py -m pytest \
 if [ -x `which mpiexec` ]; then
     PYTHONDONTWRITEBYTECODE=1 \
     mpiexec --allow-run-as-root \
+      -x OMP_NUM_THREADS=1 \
       --mca opal_warn_on_missing_libcuda 0 \
       --mca orte_base_help_aggregate 0 \
       -n 1 ${PROGRAM[@]} --junitxml=$PLUGIN_MPI_TEST_XML : \
