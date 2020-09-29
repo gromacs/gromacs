@@ -83,6 +83,8 @@ public:
     ArrayRef<const real> constLambdaView();
     //! Get the current FEP state
     int currentFEPState();
+    //! Update MDAtoms (public because it's called by DomDec - see #3700)
+    void updateMDAtoms();
 
     //! The element taking part in the simulator loop
     class Element;
@@ -128,8 +130,8 @@ public:
     //! Update lambda and mdatoms
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
 
-    //! No setup needed
-    void elementSetup() override{};
+    //! Update the MdAtoms object
+    void elementSetup() override;
 
     //! No teardown needed
     void elementTeardown() override{};

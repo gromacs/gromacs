@@ -57,6 +57,7 @@ struct t_nrnb;
 namespace gmx
 {
 class Constraints;
+class FreeEnergyPerturbationData;
 class ImdSession;
 class MDAtoms;
 class MDLogger;
@@ -90,6 +91,7 @@ public:
     DomDecHelper(bool                            isVerbose,
                  int                             verbosePrintInterval,
                  StatePropagatorData*            statePropagatorData,
+                 FreeEnergyPerturbationData*     freeEnergyPerturbationData,
                  TopologyHolder*                 topologyHolder,
                  CheckBondedInteractionsCallback checkBondedInteractionsCallback,
                  int                             nstglobalcomm,
@@ -136,10 +138,20 @@ private:
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
+    //! Pointer to the free energy data
+    FreeEnergyPerturbationData* freeEnergyPerturbationData_;
     //! Pointer to the topology
     TopologyHolder* topologyHolder_;
     //! Pointer to the ComputeGlobalsHelper object - to ask for # of bonded interaction checking
     CheckBondedInteractionsCallback checkBondedInteractionsCallback_;
+
+    //! Helper function unifying the DD partitioning calls in setup() and run()
+    void partitionSystem(bool                     verbose,
+                         bool                     isMasterState,
+                         int                      nstglobalcomm,
+                         gmx_wallcycle*           wcycle,
+                         std::unique_ptr<t_state> localState,
+                         t_state*                 globalState);
 
     // Access to ISimulator data
     //! Handles logging.

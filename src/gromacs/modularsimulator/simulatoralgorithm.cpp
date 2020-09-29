@@ -500,7 +500,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
         algorithm.domDecHelper_ = std::make_unique<DomDecHelper>(
                 legacySimulatorData_->mdrunOptions.verbose,
                 legacySimulatorData_->mdrunOptions.verboseStepPrintInterval,
-                algorithm.statePropagatorData_.get(), algorithm.topologyHolder_.get(),
+                algorithm.statePropagatorData_.get(), algorithm.freeEnergyPerturbationData_.get(),
+                algorithm.topologyHolder_.get(),
                 globalCommunicationHelper_.moveCheckBondedInteractionsCallback(),
                 globalCommunicationHelper_.nstglobalcomm(), legacySimulatorData_->fplog,
                 legacySimulatorData_->cr, legacySimulatorData_->mdlog, legacySimulatorData_->constr,

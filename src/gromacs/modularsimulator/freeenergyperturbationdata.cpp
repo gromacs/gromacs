@@ -72,7 +72,6 @@ FreeEnergyPerturbationData::FreeEnergyPerturbationData(FILE* fplog, const t_inpu
     // available on master. We have the lambda vector available everywhere, so we pass a `true`
     // for isMaster on all ranks. See #3647.
     initialize_lambdas(fplog_, *inputrec_, true, &currentFEPState_, lambda_);
-    update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 
 void FreeEnergyPerturbationData::Element::scheduleTask(Step step,
@@ -89,7 +88,7 @@ void FreeEnergyPerturbationData::updateLambdas(Step step)
 {
     // at beginning of step (if lambdas change...)
     lambda_ = currentLambdas(step, *(inputrec_->fepvals), currentFEPState_);
-    update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
+    updateMDAtoms();
 }
 
 ArrayRef<real> FreeEnergyPerturbationData::lambdaView()
@@ -105,6 +104,11 @@ ArrayRef<const real> FreeEnergyPerturbationData::constLambdaView()
 int FreeEnergyPerturbationData::currentFEPState()
 {
     return currentFEPState_;
+}
+
+void FreeEnergyPerturbationData::updateMDAtoms()
+{
+    update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 
 namespace
@@ -155,8 +159,6 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
         dd_bcast(cr->dd, freeEnergyPerturbationData_->lambda_.size() * sizeof(real),
                  freeEnergyPerturbationData_->lambda_.data());
     }
-    update_mdatoms(freeEnergyPerturbationData_->mdAtoms_->mdatoms(),
-                   freeEnergyPerturbationData_->lambda_[efptMASS]);
 }
 
 const std::string& FreeEnergyPerturbationData::Element::clientID()
@@ -169,6 +171,11 @@ FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEne
     freeEnergyPerturbationData_(freeEnergyPerturbationElement),
     lambdasChange_(deltaLambda != 0)
 {
+}
+
+void FreeEnergyPerturbationData::Element::elementSetup()
+{
+    freeEnergyPerturbationData_->updateMDAtoms();
 }
 
 FreeEnergyPerturbationData::Element* FreeEnergyPerturbationData::element()
