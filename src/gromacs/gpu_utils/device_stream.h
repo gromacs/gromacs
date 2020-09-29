@@ -87,29 +87,16 @@ enum class DeviceStreamPriority : int
 class DeviceStream
 {
 public:
-    //! Default constructor
-    DeviceStream();
-    //! Destructor
-    ~DeviceStream();
-
-    /*! \brief Initialize
-     *
-     * \param[in] deviceContext  Device context (not used in CUDA).
-     * \param[in] priority       Stream priority: high or normal.
-     * \param[in] useTiming      If the timing should be enabled (not used in CUDA).
-     */
-    void init(const DeviceContext& deviceContext, DeviceStreamPriority priority, bool useTiming);
-
     /*! \brief Construct and init.
      *
      * \param[in] deviceContext  Device context (only used in OpenCL).
      * \param[in] priority       Stream priority: high or normal (only used in CUDA).
      * \param[in] useTiming      If the timing should be enabled (only used in OpenCL).
      */
-    DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming)
-    {
-        init(deviceContext, priority, useTiming);
-    }
+    DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, bool useTiming);
+
+    //! Destructor
+    ~DeviceStream();
 
     /*! \brief Check if the underlying stream is valid.
      *

@@ -48,14 +48,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-DeviceStream::DeviceStream()
-{
-    stream_ = nullptr;
-}
-
-void DeviceStream::init(const DeviceContext& /* deviceContext */,
-                        DeviceStreamPriority priority,
-                        const bool /* useTiming */)
+DeviceStream::DeviceStream(const DeviceContext& /* deviceContext */,
+                           DeviceStreamPriority priority,
+                           const bool /* useTiming */)
 {
     cudaError_t stat;
 
