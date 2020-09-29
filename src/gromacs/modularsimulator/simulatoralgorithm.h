@@ -81,6 +81,11 @@ class TopologyHolder;
  * runs the simulation by, in turn, building a task list from the elements
  * for a predefined number of steps, then running the task list, and repeating
  * until the stop criterion is fulfilled.
+ *
+ * The simulator algorithm is owning all elements involved in the simulation
+ * and is hence controlling their lifetime. This ensures that pointers and
+ * callbacks exchanged between elements remain valid throughout the duration
+ * of the simulation run.
  */
 class ModularSimulatorAlgorithm final
 {

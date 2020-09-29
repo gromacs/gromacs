@@ -82,16 +82,16 @@ class SimulatorComparisonTest :
 
 TEST_P(SimulatorComparisonTest, WithinTolerances)
 {
-    auto params              = GetParam();
-    auto mdpParams           = std::get<0>(params);
-    auto simulationName      = std::get<0>(mdpParams);
-    auto integrator          = std::get<1>(mdpParams);
-    auto tcoupling           = std::get<2>(mdpParams);
-    auto pcoupling           = std::get<3>(mdpParams);
-    auto environmentVariable = std::get<1>(params);
+    const auto& params              = GetParam();
+    const auto& mdpParams           = std::get<0>(params);
+    const auto& simulationName      = std::get<0>(mdpParams);
+    const auto& integrator          = std::get<1>(mdpParams);
+    const auto& tcoupling           = std::get<2>(mdpParams);
+    const auto& pcoupling           = std::get<3>(mdpParams);
+    const auto& environmentVariable = std::get<1>(params);
 
     // TODO At some point we should also test PME-only ranks.
-    int numRanksAvailable = getNumberOfTestMpiRanks();
+    const int numRanksAvailable = getNumberOfTestMpiRanks();
     if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
     {
         fprintf(stdout,
@@ -109,7 +109,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         return;
     }
 
-    auto hasConservedField = !(tcoupling == "no" && pcoupling == "no");
+    const auto hasConservedField = !(tcoupling == "no" && pcoupling == "no");
 
     SCOPED_TRACE(formatString(
             "Comparing two simulations of '%s' "
@@ -118,8 +118,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), pcoupling.c_str(),
             environmentVariable.c_str()));
 
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(),
-                                                tcoupling.c_str(), pcoupling.c_str());
+    const auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(),
+                                                      tcoupling.c_str(), pcoupling.c_str());
 
     EnergyTermsToCompare energyTermsToCompare{ {
             { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 100, 80) },
@@ -152,13 +152,13 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     }
 
     // Specify how trajectory frame matching must work.
-    TrajectoryFrameMatchSettings trajectoryMatchSettings{ true,
-                                                          true,
-                                                          true,
-                                                          ComparisonConditions::MustCompare,
-                                                          ComparisonConditions::MustCompare,
-                                                          ComparisonConditions::MustCompare,
-                                                          MaxNumFrames::compareAllFrames() };
+    const TrajectoryFrameMatchSettings trajectoryMatchSettings{ true,
+                                                                true,
+                                                                true,
+                                                                ComparisonConditions::MustCompare,
+                                                                ComparisonConditions::MustCompare,
+                                                                ComparisonConditions::MustCompare,
+                                                                MaxNumFrames::compareAllFrames() };
     TrajectoryTolerances trajectoryTolerances = TrajectoryComparison::s_defaultTrajectoryTolerances;
     if (simulationName != "argon12")
     {
@@ -167,13 +167,13 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
 
     // Build the functor that will compare reference and test
     // trajectory frames in the chosen way.
-    TrajectoryComparison trajectoryComparison{ trajectoryMatchSettings, trajectoryTolerances };
+    const TrajectoryComparison trajectoryComparison{ trajectoryMatchSettings, trajectoryTolerances };
 
     // Set file names
-    auto simulator1TrajectoryFileName = fileManager_.getTemporaryFilePath("sim1.trr");
-    auto simulator1EdrFileName        = fileManager_.getTemporaryFilePath("sim1.edr");
-    auto simulator2TrajectoryFileName = fileManager_.getTemporaryFilePath("sim2.trr");
-    auto simulator2EdrFileName        = fileManager_.getTemporaryFilePath("sim2.edr");
+    const auto simulator1TrajectoryFileName = fileManager_.getTemporaryFilePath("sim1.trr");
+    const auto simulator1EdrFileName        = fileManager_.getTemporaryFilePath("sim1.edr");
+    const auto simulator2TrajectoryFileName = fileManager_.getTemporaryFilePath("sim2.trr");
+    const auto simulator2EdrFileName        = fileManager_.getTemporaryFilePath("sim2.edr");
 
     // Run grompp
     runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr");
@@ -182,7 +182,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     runGrompp(&runner_);
 
     // Backup current state of environment variable and unset it
-    char* environmentVariableBackup = getenv(environmentVariable.c_str());
+    const char* environmentVariableBackup = getenv(environmentVariable.c_str());
     gmxUnsetenv(environmentVariable.c_str());
 
     // Do first mdrun

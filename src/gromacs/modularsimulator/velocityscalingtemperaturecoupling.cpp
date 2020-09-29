@@ -437,11 +437,16 @@ const std::string& VelocityScalingTemperatureCoupling::clientID()
 
 real VelocityScalingTemperatureCoupling::conservedEnergyContribution() const
 {
-    return (reportPreviousConservedEnergy_ == ReportPreviousStepConservedEnergy::Yes)
-                   ? std::accumulate(temperatureCouplingIntegralPreviousStep_.begin(),
-                                     temperatureCouplingIntegralPreviousStep_.end(), 0.0)
-                   : std::accumulate(temperatureCouplingIntegral_.begin(),
-                                     temperatureCouplingIntegral_.end(), 0.0);
+    if (reportPreviousConservedEnergy_ == ReportPreviousStepConservedEnergy::Yes)
+    {
+        return std::accumulate(temperatureCouplingIntegralPreviousStep_.begin(),
+                               temperatureCouplingIntegralPreviousStep_.end(), 0.0);
+    }
+    else
+    {
+        return std::accumulate(temperatureCouplingIntegral_.begin(),
+                               temperatureCouplingIntegral_.end(), 0.0);
+    }
 }
 
 ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
@@ -455,6 +460,7 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
         UseFullStepKE                         useFullStepKE,
         ReportPreviousStepConservedEnergy     reportPreviousStepConservedEnergy)
 {
+    // Element is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     auto* element = builderHelper->storeElement(std::make_unique<VelocityScalingTemperatureCoupling>(
             legacySimulatorData->inputrec->nsttcouple, offset, useFullStepKE, reportPreviousStepConservedEnergy,
             legacySimulatorData->inputrec->ld_seed, legacySimulatorData->inputrec->opts.ngtc,
@@ -462,6 +468,7 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
             legacySimulatorData->inputrec->opts.ref_t, legacySimulatorData->inputrec->opts.tau_t,
             legacySimulatorData->inputrec->opts.nrdf, energyData, legacySimulatorData->inputrec->etc));
     auto* thermostat = static_cast<VelocityScalingTemperatureCoupling*>(element);
+    // Capturing pointer is safe because lifetime is handled by caller
     builderHelper->registerThermostat([thermostat](const PropagatorThermostatConnection& connection) {
         thermostat->connectWithPropagator(connection);
     });
