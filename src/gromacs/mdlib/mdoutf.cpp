@@ -432,6 +432,15 @@ void mdoutf_write_to_trajectory_files(FILE*                    fplog,
                                nullptr, nullptr);
             }
         }
+
+#if GMX_FAHCORE
+        /* Write a FAH checkpoint after writing any other data.  We may end up
+           checkpointing twice but it's fast so it's ok. */
+        if ((mdof_flags & ~MDOF_CPT))
+        {
+            fcCheckpoint();
+        }
+#endif
     }
 }
 

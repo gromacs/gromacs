@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -160,15 +160,11 @@ static void push_ps(FILE* fp)
 }
 
 #if GMX_FAHCORE
-/* don't use pipes!*/
-#    define popen fah_fopen
-#    define pclose fah_fclose
-#    define SKIP_FFOPS 1
-#else
 #    ifdef gmx_ffclose
 #        undef gmx_ffclose
 #    endif
-#    if (!HAVE_PIPES && !defined(__native_client__))
+#endif
+#if (!HAVE_PIPES && !defined(__native_client__))
 static FILE* popen(const char* nm, const char* mode)
 {
     gmx_impl("Sorry no pipes...");
@@ -182,14 +178,10 @@ static int pclose(FILE* fp)
 
     return 0;
 }
-#    endif /* !HAVE_PIPES && !defined(__native_client__) */
-#endif     /* GMX_FAHCORE */
+#endif /* !HAVE_PIPES && !defined(__native_client__) */
 
 int gmx_ffclose(FILE* fp)
 {
-#ifdef SKIP_FFOPS
-    return fclose(fp);
-#else
     t_pstack *ps, *tmp;
     int       ret = 0;
 
@@ -238,7 +230,6 @@ int gmx_ffclose(FILE* fp)
     }
 
     return ret;
-#endif
 }
 
 
@@ -291,7 +282,7 @@ gmx_off_t gmx_ftell(FILE* stream)
 
 int gmx_truncate(const std::string& filename, gmx_off_t length)
 {
-#if GMX_NATIVE_WINDOWS
+#if GMX_NATIVE_WINDOWS && !GMX_FAHCORE
     FILE* fp = fopen(filename.c_str(), "rb+");
     if (fp == NULL)
     {
@@ -417,9 +408,6 @@ void make_backup(const std::string& name)
 
 FILE* gmx_ffopen(const std::string& file, const char* mode)
 {
-#ifdef SKIP_FFOPS
-    return fopen(file, mode);
-#else
     FILE*    ff = nullptr;
     gmx_bool bRead;
     int      bs;
@@ -494,7 +482,6 @@ FILE* gmx_ffopen(const std::string& file, const char* mode)
         }
     }
     return ff;
-#endif
 }
 
 namespace gmx
@@ -613,6 +600,10 @@ int gmx_file_rename(const char* oldname, const char* newname)
 #else
     if (MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
     {
+#    if GMX_FAHCORE
+        /* This just lets the F@H checksumming system know about the rename */
+        fcRename(oldname, newname);
+#    endif
         return 0;
     }
     else
@@ -683,33 +674,28 @@ int gmx_fsync(FILE* fp)
 {
     int rc = 0;
 
-#if GMX_FAHCORE
-    /* the fahcore defines its own os-independent fsync */
-    rc = fah_fsync(fp);
-#else /* GMX_FAHCORE */
     {
         int fn;
 
         /* get the file number */
-#    if HAVE_FILENO
+#if HAVE_FILENO
         fn = fileno(fp);
-#    elif HAVE__FILENO
+#elif HAVE__FILENO
         fn = _fileno(fp);
-#    else
+#else
         fn = -1;
-#    endif
+#endif
 
         /* do the actual fsync */
         if (fn >= 0)
         {
-#    if HAVE_FSYNC
+#if HAVE_FSYNC
             rc = fsync(fn);
-#    elif HAVE__COMMIT
+#elif HAVE__COMMIT
             rc = _commit(fn);
-#    endif
+#endif
         }
     }
-#endif /* GMX_FAHCORE */
 
     /* We check for these error codes this way because POSIX requires them
        to be defined, and using anything other than macros is unlikely: */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,28 +117,6 @@ void do_md_trajectory_writing(FILE*                    fplog,
         mdof_flags |= MDOF_LAMBDA_COMPRESSED;
     }
 
-#if GMX_FAHCORE
-    if (bLastStep)
-    {
-        /* Enforce writing positions and velocities at end of run */
-        mdof_flags |= (MDOF_X | MDOF_V);
-    }
-    if (MASTER(cr))
-    {
-        fcReportProgress(ir->nsteps, step);
-    }
-
-#    if defined(__native_client__)
-    fcCheckin(MASTER(cr));
-#    endif
-
-    /* sync bCPT and fc record-keeping */
-    if (bCPT && MASTER(cr))
-    {
-        fcRequestCheckPoint();
-    }
-#endif
-
     if (mdof_flags != 0)
     {
         wallcycle_start(mdoutf_get_wcycle(outf), ewcTRAJ);
@@ -204,4 +182,10 @@ void do_md_trajectory_writing(FILE*                    fplog,
         }
         wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);
     }
+#if GMX_FAHCORE
+    if (MASTER(cr))
+    {
+        fcWriteVisFrame(ir->ePBC, state_global->box, top_global, state_global->x.rvec_array());
+    }
+#endif
 }
