@@ -88,9 +88,14 @@ add_library(nblib SHARED "")
 target_sources(nblib
         PRIVATE
         box.cpp
+        forcecalculator.cpp
+        gmxcalculator.cpp
+        gmxsetup.cpp
+        integrator.cpp
         interactions.cpp
         molecules.cpp
         particletype.cpp
+        simulationstate.cpp
         topologyhelpers.cpp
         topology.cpp
         )

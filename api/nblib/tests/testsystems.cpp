@@ -241,5 +241,112 @@ Topology ArgonTopologyBuilder::argonTopology()
     return topologyBuilder_.buildTopology();
 }
 
+ArgonSimulationStateBuilder::ArgonSimulationStateBuilder() :
+    box_(6.05449),
+    topology_(ArgonTopologyBuilder(12).argonTopology())
+{
+
+    coordinates_ = {
+        { 0.794, 1.439, 0.610 }, { 1.397, 0.673, 1.916 }, { 0.659, 1.080, 0.573 },
+        { 1.105, 0.090, 3.431 }, { 1.741, 1.291, 3.432 }, { 1.936, 1.441, 5.873 },
+        { 0.960, 2.246, 1.659 }, { 0.382, 3.023, 2.793 }, { 0.053, 4.857, 4.242 },
+        { 2.655, 5.057, 2.211 }, { 4.114, 0.737, 0.614 }, { 5.977, 5.104, 5.217 },
+    };
+
+    velocities_ = {
+        { 0.0055, -0.1400, 0.2127 },   { 0.0930, -0.0160, -0.0086 }, { 0.1678, 0.2476, -0.0660 },
+        { 0.1591, -0.0934, -0.0835 },  { -0.0317, 0.0573, 0.1453 },  { 0.0597, 0.0013, -0.0462 },
+        { 0.0484, -0.0357, 0.0168 },   { 0.0530, 0.0295, -0.2694 },  { -0.0550, -0.0896, 0.0494 },
+        { -0.0799, -0.2534, -0.0079 }, { 0.0436, -0.1557, 0.1849 },  { -0.0214, 0.0446, 0.0758 },
+    };
+    forces_ = {
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+    };
+}
+
+void ArgonSimulationStateBuilder::setCoordinate(int particleNum, int dimension, real value)
+{
+    if (dimension < 0 or dimension > 2)
+    {
+        throw InputException("Must provide a valid dimension\n");
+    }
+    coordinates_.at(particleNum)[dimension] = value;
+}
+
+void ArgonSimulationStateBuilder::setVelocity(int particleNum, int dimension, real value)
+{
+    if (dimension < 0 or dimension > 2)
+    {
+        throw InputException("Must provide a valid dimension\n");
+    }
+    velocities_.at(particleNum)[dimension] = value;
+}
+
+SimulationState ArgonSimulationStateBuilder::setupSimulationState()
+{
+    return SimulationState(coordinates_, velocities_, forces_, box_, topology_);
+}
+
+const Topology& ArgonSimulationStateBuilder::topology() const
+{
+    return topology_;
+}
+
+Box& ArgonSimulationStateBuilder::box()
+{
+    return box_;
+}
+
+std::vector<Vec3>& ArgonSimulationStateBuilder::coordinates()
+{
+    return coordinates_;
+}
+
+std::vector<Vec3>& ArgonSimulationStateBuilder::velocities()
+{
+    return velocities_;
+}
+
+SpcMethanolSimulationStateBuilder::SpcMethanolSimulationStateBuilder() :
+    box_(3.01000),
+    topology_(SpcMethanolTopologyBuilder().buildTopology(1, 1))
+{
+    coordinates_ = {
+        { 1.970, 1.460, 1.209 }, // Me1
+        { 1.978, 1.415, 1.082 }, // O2
+        { 1.905, 1.460, 1.030 }, // H3
+        { 1.555, 1.511, 0.703 }, // Ow
+        { 1.498, 1.495, 0.784 }, // Hw1
+        { 1.496, 1.521, 0.623 }, // Hw2
+    };
+
+    velocities_ = {
+        { -0.8587, -0.1344, -0.0643 }, { 0.0623, -0.1787, 0.0036 }, { -0.5020, -0.9564, 0.0997 },
+        { 0.869, 1.245, 1.665 },       { 0.169, 0.275, 1.565 },     { 0.269, 2.275, 1.465 },
+    };
+
+    forces_ = {
+        { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 },
+        { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 }, { 0.000, 0.000, 0.000 },
+    };
+}
+
+SimulationState SpcMethanolSimulationStateBuilder::setupSimulationState()
+{
+    return SimulationState(coordinates_, velocities_, forces_, box_, topology_);
+}
+
+std::vector<Vec3>& SpcMethanolSimulationStateBuilder::coordinates()
+{
+    return coordinates_;
+}
+
+std::vector<Vec3>& SpcMethanolSimulationStateBuilder::velocities()
+{
+    return velocities_;
+}
 
 } // namespace nblib

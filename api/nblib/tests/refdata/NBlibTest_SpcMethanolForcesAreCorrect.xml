@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="SPC-methanol forces">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">-0.38183025207307253</Real>
+      <Real Name="Y">0.87922789140299651</Real>
+      <Real Name="Z">-6.1406494302583212</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">8.3033346966856811</Real>
+      <Real Name="Y">-7.3388265216240605</Real>
+      <Real Name="Z">27.783758884487042</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-9.4221671563754512</Real>
+      <Real Name="Y">6.2920799125341684</Real>
+      <Real Name="Z">-33.986135630631082</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">27.494322535207331</Real>
+      <Real Name="Y">8.3914914141170893</Real>
+      <Real Name="Z">39.693768750211909</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-19.009852871290562</Real>
+      <Real Name="Y">-5.3975006967248795</Real>
+      <Real Name="Z">-15.545639878395072</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-6.983806952153925</Real>
+      <Real Name="Y">-2.8264719997053138</Real>
+      <Real Name="Z">-11.805102695414478</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

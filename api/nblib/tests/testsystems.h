@@ -158,5 +158,65 @@ private:
     TopologyBuilder topologyBuilder_;
 };
 
+//! \internal \brief Build simulation state for the argon example
+class ArgonSimulationStateBuilder
+{
+public:
+    ArgonSimulationStateBuilder();
+
+    //! Set coordinates of particles in the defined system
+    void setCoordinate(int particleNum, int dimension, real value);
+
+    //! Set particle velocities
+    void setVelocity(int particleNum, int dimension, real value);
+
+    //! Setup simulation state
+    SimulationState setupSimulationState();
+
+    //! Get the topology
+    const Topology& topology() const;
+
+    //! Get the box bounding the system
+    Box& box();
+
+    //! Get current coordinates
+    std::vector<Vec3>& coordinates();
+
+    //! Get current velocities
+    std::vector<Vec3>& velocities();
+
+private:
+    std::vector<Vec3> coordinates_;
+    std::vector<Vec3> velocities_;
+    std::vector<Vec3> forces_;
+
+    Box      box_;
+    Topology topology_;
+};
+
+//! \internal \brief Build simulation state for the SPC-Methanol example
+class SpcMethanolSimulationStateBuilder
+{
+public:
+    SpcMethanolSimulationStateBuilder();
+
+    //! Setup simulation state
+    SimulationState setupSimulationState();
+
+    //! Get current coordinates
+    std::vector<Vec3>& coordinates();
+
+    //! Get current velocities
+    std::vector<Vec3>& velocities();
+
+private:
+    std::vector<Vec3> coordinates_;
+    std::vector<Vec3> velocities_;
+    std::vector<Vec3> forces_;
+
+    Box      box_;
+    Topology topology_;
+};
+
 } // namespace nblib
 #endif // NBLIB_TESTSYSTEMS_H
