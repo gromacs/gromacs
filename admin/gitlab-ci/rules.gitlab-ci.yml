@@ -51,6 +51,12 @@
   if: '$CI_PIPELINE_SOURCE == "schedule"'
   when: always
 
+# Exclude from selective "schedule" pipelines, e.g. just those
+# that should run the post-merge-acceptance jobs.
+.rules-element:if-post-merge-acceptance-then-never: &if-post-merge-acceptance-then-never
+  if: '$POST_MERGE_ACCEPTANCE'
+  when: never
+
 # Include in pipelines triggered in the merge request process.
 .rules-element:if-mr-then-always: &if-mr-then-always
   if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -62,6 +68,19 @@
 .rules-element:if-mr-then-never: &if-mr-then-never
   if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   when: never
+
+# Include job when running for merge request or when pushing to protected branch.
+.rules-element:if-post-merge-acceptance-or-mr-then-always: &if-post-merge-acceptance-or-mr-then-always
+  if: '$CI_PIPELINE_SOURCE == "merge_request_event" ||
+       ($CI_PIPELINE_SOURCE == "push" &&
+        ($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "release-*"))'
+  when: always
+
+# Include job only for post submit push
+.rules-element:if-post-merge-acceptance-then-always: &if-post-merge-acceptance-then-always
+  if: '$CI_PIPELINE_SOURCE == "push" &&
+        ($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "release-*")'
+  when: always
 
 # When composing a rule set, note that the first matching rule is applied.
 # If you want later rules to be evaluated, you must make sure that the *if*
@@ -79,22 +98,46 @@
 .rules:basic-push:
   rules:
     - *if-release-then-never
+    - *if-mr-then-never
+    - *if-post-merge-acceptance-then-never
     - *if-web-then-always
     - *if-push-then-always
     - *if-schedule-then-always
+
+# Jobs to run after successful merge of a new commit.
+# Only run on GROMACS infrastructure and only when merging into
+# the master or release branches.
+.rules:post-merge-acceptance:
+  rules:
+    - *if-not-gromacs-then-never
+    - *if-release-then-never
     - *if-mr-then-never
+    - *if-post-merge-acceptance-then-always
+    - *if-web-then-always
+    - *if-schedule-then-always
 
 # Jobs that run for merge requests and schedules, but not when GROMACS_RELEASE
-# is set. Excludes non-gromacs projects.
+# is set. Excludes non-GROMACS projects.
 # More elaborate rule sets for merge requests should be based on the same sequence.
 .rules:merge-requests:
   rules:
     - *if-not-gromacs-then-never
     - *if-release-then-never
-    - *if-web-then-always
     - *if-push-then-never
+    - *if-post-merge-acceptance-then-never
+    - *if-web-then-always
     - *if-schedule-then-always
     - *if-mr-then-always
+
+# Jobs running both in post submit and for merge requests
+# Excludes non-GROMACS projects.
+.rules:merge-and-post-merge-acceptance:
+  rules:
+    - *if-not-gromacs-then-never
+    - *if-release-then-never
+    - *if-web-then-always
+    - *if-schedule-then-always
+    - *if-post-merge-acceptance-or-mr-then-always
 
 # Jobs that run for merge requests and schedules for branch `master`,
 # but not when GROMACS_RELEASE is set.
@@ -103,6 +146,7 @@
   rules:
     - *if-not-gromacs-then-never
     - *if-release-then-never
+    - *if-post-merge-acceptance-then-never
     - *if-web-then-always
     # This rule catches "push" and other events in branches other than `master`
     # but allows merge_request_events for merge requests targeting master.
@@ -118,6 +162,7 @@
   rules:
     - *if-not-gromacs-then-never
     - *if-release-then-never
+    - *if-post-merge-acceptance-then-never
     # This next rule catches "push" and other events in branches other than `release-2020`
     # but allows merge_request_events for merge requests targeting `release-2020`.
     # This rule is before "web" so the web interface won't include jobs that can't succeed
@@ -139,6 +184,7 @@
   rules:
     - *if-not-gromacs-then-never
     - *if-not-release-then-never
+    - *if-post-merge-acceptance-then-never
     - *if-web-then-always
     - *if-schedule-then-always
 
@@ -148,5 +194,6 @@
   rules:
     - *if-not-gromacs-then-never
     - *if-release-then-never
+    - *if-post-merge-acceptance-then-never
     - *if-web-then-always
     - *if-schedule-then-always

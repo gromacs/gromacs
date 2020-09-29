@@ -121,6 +121,15 @@ environment to jobs that run under the ``schedules``
 Nightly scheduled pipelines run against ``master`` and *release* branches in
 the GROMACS repository.
 
+Running post-merge-acceptance pipelines
+"""""""""""""""""""""""""""""""""""""""
+
+The Gitlab CI for |Gromacs| runs a set of jobs by default only after a MR has been
+accepted and the resulting commit is included in the target branch if it is ``master``
+or one of the *release* branches. Those jobs can be triggered manually using the
+``POST_MERGE_ACCEPTANCE`` input variable documented below when executing a new pipeline
+through the Gitlab web interface.
+
 Global templates
 ~~~~~~~~~~~~~~~~
 
@@ -236,6 +245,12 @@ Other important variable keys are as follows.
         Use this commit to the regressiontests rather than the head on master to 
         allow for merge requests that require updated regression tests with 
         valid CI tests.
+
+    POST_MERGE_ACCEPTANCE
+        Read-only environment variable that indicates that only jobs scheduled to
+        run after a commit has been merged into its target branch should be executed.
+        Can be set to run pipelines through the web interface or as schedules.
+        For use please see the *rules* mix-ins in :file:`admin/gitlab-ci/global.gitlab-ci.yml`.
 
 
 .. todo:: Define common variables.

@@ -221,7 +221,7 @@ gromacs:gcc-7:configure:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-opencl
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
   variables:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -233,7 +233,7 @@ gromacs:gcc-8-cuda-11.0:configure:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-cuda
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
@@ -245,7 +245,7 @@ gromacs:gcc-8-cuda-11.0:configureMPI:
     - .use-gcc:base
     - .use-cuda
     - .use-mpi
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
@@ -255,7 +255,7 @@ gromacs:clang-TSAN:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.13.0-llvm-8-tsan-master
   variables:
     COMPILER_MAJOR_VERSION: 8
@@ -316,7 +316,7 @@ gromacs:clang-UBSAN:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.13.0-llvm-8-tsan-master
   variables:
     COMPILER_MAJOR_VERSION: 8
@@ -440,7 +440,7 @@ gromacs:gcc-7:build:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
   needs:
     - job: gromacs:gcc-7:configure
@@ -452,7 +452,7 @@ gromacs:gcc-8-cuda-11.0:build:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   needs:
     - job: gromacs:gcc-8-cuda-11.0:configure
@@ -463,7 +463,7 @@ gromacs:gcc-8-cuda-11.0:buildMPI:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   needs:
     - job: gromacs:gcc-8-cuda-11.0:configureMPI
@@ -474,7 +474,7 @@ gromacs:clang-TSAN:build:
     - .gromacs:base:build
     - .use-clang:base
     - .use-ccache
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.13.0-llvm-8-tsan-master
   needs:
     - job: gromacs:clang-TSAN:configure
@@ -498,7 +498,7 @@ gromacs:clang-UBSAN:build:
     - .gromacs:base:build
     - .use-clang:base
     - .use-ccache
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.13.0-llvm-8-tsan-master
   tags:
     - k8s-scilifelab
@@ -732,7 +732,7 @@ gromacs:gcc-8-cuda-11.0:test:
 gromacs:gcc-8-cuda-11.0:test-gpucommupd:
   extends:
     - .gromacs:base:test
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -756,7 +756,7 @@ gromacs:clang-8:test:
 gromacs:clang-TSAN:test:
   extends:
     - .gromacs:base:test
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.13.0-llvm-8-tsan-master
   needs:
     - job: gromacs:clang-TSAN:build
@@ -778,7 +778,7 @@ gromacs:clang-UBSAN:test:
   extends:
     - .gromacs:base:test
     - .use-clang:base
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.13.0-llvm-8-tsan-master
   tags:
     - k8s-scilifelab
@@ -807,7 +807,7 @@ gromacs:clang-9-mpi:test:
 gromacs:gcc-7:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
@@ -842,7 +842,7 @@ gromacs:gcc-8-cuda-11.0:regressiontest:
 gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-tMPI:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -867,7 +867,7 @@ gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-tMPI:
 gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -904,7 +904,7 @@ gromacs:clang-8:regressiontest:
 gromacs:clang-TSAN:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.13.0-llvm-8-tsan-master
   tags:
     - k8s-scilifelab
