@@ -103,7 +103,7 @@ public:
     /*! \brief
      * Return pointer to event recorded when forces are ready
      */
-    void* getForcesReadySynchronizer();
+    GpuEventSynchronizer* getForcesReadySynchronizer();
 
 private:
     class Impl;

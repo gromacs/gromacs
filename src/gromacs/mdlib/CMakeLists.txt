@@ -45,6 +45,7 @@ if(GMX_GPU_CUDA)
        lincs_gpu.cu
        settle_gpu.cu
        update_constrain_gpu_impl.cu
+       gpuforcereduction_impl.cu
        )
 endif()
 

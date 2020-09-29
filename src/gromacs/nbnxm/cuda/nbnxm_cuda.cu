@@ -894,78 +894,9 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
-/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format.
- *
- * NOTE: When the total force device buffer is reallocated and its size increases, it is cleared in
- *       Local stream. Hence, if accumulateForce is true, NonLocal stream should start accumulating
- *       forces only after Local stream already done so.
- */
-void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLocality,
-                               DeviceBuffer<gmx::RVec>                    totalForcesDevice,
-                               NbnxmGpu*                                  nb,
-                               void*                                      pmeForcesDevice,
-                               gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
-                               int                                        atomStart,
-                               int                                        numAtoms,
-                               bool                                       useGpuFPmeReduction,
-                               bool                                       accumulateForce)
+void* getGpuForces(NbnxmGpu* nb)
 {
-    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-    GMX_ASSERT(numAtoms != 0, "Cannot call function with no atoms");
-    GMX_ASSERT(totalForcesDevice, "Need a valid totalForcesDevice pointer");
-
-    const InteractionLocality iLocality    = gpuAtomToInteractionLocality(atomLocality);
-    const DeviceStream&       deviceStream = *nb->deviceStreams[iLocality];
-    cu_atomdata_t*            adat         = nb->atdat;
-
-    size_t gmx_used_in_debug numDependency = static_cast<size_t>((useGpuFPmeReduction == true))
-                                             + static_cast<size_t>((accumulateForce == true));
-    GMX_ASSERT(numDependency >= dependencyList.size(),
-               "Mismatching number of dependencies and call signature");
-
-    // Enqueue wait on all dependencies passed
-    for (auto const synchronizer : dependencyList)
-    {
-        synchronizer->enqueueWaitEvent(deviceStream);
-    }
-
-    /* launch kernel */
-
-    KernelLaunchConfig config;
-    config.blockSize[0] = c_bufOpsThreadsPerBlock;
-    config.blockSize[1] = 1;
-    config.blockSize[2] = 1;
-    config.gridSize[0]  = ((numAtoms + 1) + c_bufOpsThreadsPerBlock - 1) / c_bufOpsThreadsPerBlock;
-    config.gridSize[1]  = 1;
-    config.gridSize[2]  = 1;
-    config.sharedMemorySize = 0;
-
-    auto kernelFn = accumulateForce ? nbnxn_gpu_add_nbat_f_to_f_kernel<true, false>
-                                    : nbnxn_gpu_add_nbat_f_to_f_kernel<false, false>;
-
-    if (useGpuFPmeReduction)
-    {
-        GMX_ASSERT(pmeForcesDevice, "Need a valid pmeForcesDevice pointer");
-        kernelFn = accumulateForce ? nbnxn_gpu_add_nbat_f_to_f_kernel<true, true>
-                                   : nbnxn_gpu_add_nbat_f_to_f_kernel<false, true>;
-    }
-
-    const float3* d_fNB    = adat->f;
-    const float3* d_fPme   = static_cast<float3*>(pmeForcesDevice);
-    float3*       d_fTotal = asFloat3(totalForcesDevice);
-    const int*    d_cell   = nb->cell;
-
-    const auto kernelArgs = prepareGpuKernelArguments(kernelFn, config, &d_fNB, &d_fPme, &d_fTotal,
-                                                      &d_cell, &atomStart, &numAtoms);
-
-    launchGpuKernel(kernelFn, config, deviceStream, nullptr, "FbufferOps", kernelArgs);
-
-    if (atomLocality == AtomLocality::Local)
-    {
-        GMX_ASSERT(nb->localFReductionDone != nullptr,
-                   "localFReductionDone has to be a valid pointer");
-        nb->localFReductionDone->markEvent(deviceStream);
-    }
+    return nb->atdat->f;
 }
 
 } // namespace Nbnxm

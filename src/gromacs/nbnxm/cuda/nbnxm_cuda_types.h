@@ -158,12 +158,6 @@ struct NbnxmGpu
     bool bUseTwoStreams = false;
     /*! \brief atom data */
     cu_atomdata_t* atdat = nullptr;
-    /*! \brief f buf ops cell index mapping */
-    int* cell = nullptr;
-    /*! \brief number of indices in cell buffer */
-    int ncell = 0;
-    /*! \brief number of indices allocated in cell buffer */
-    int ncell_alloc = 0;
     /*! \brief array of atom indices */
     int* atomIndices = nullptr;
     /*! \brief size of atom indices */
@@ -213,14 +207,6 @@ struct NbnxmGpu
      * local/nonlocal, if there is bonded GPU work, both flags
      * will be true. */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork = { { false } };
-
-    /*! \brief Pointer to event synchronizer triggered when the local
-     * GPU buffer ops / reduction is complete
-     *
-     * \note That the synchronizer is managed outside of this module
-     * in StatePropagatorDataGpu.
-     */
-    GpuEventSynchronizer* localFReductionDone = nullptr;
 
     /*! \brief Event triggered when non-local coordinate buffer
      * has been copied from device to host. */

@@ -1468,31 +1468,6 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
     }
 }
 
-/* Add the force array(s) from nbnxn_atomdata_t to f */
-void reduceForcesGpu(const gmx::AtomLocality                    locality,
-                     DeviceBuffer<RVec>                         totalForcesDevice,
-                     const Nbnxm::GridSet&                      gridSet,
-                     void*                                      pmeForcesDevice,
-                     gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
-                     NbnxmGpu*                                  gpu_nbv,
-                     bool                                       useGpuFPmeReduction,
-                     bool                                       accumulateForce)
-{
-    int atomsStart = 0;
-    int numAtoms   = 0;
-
-    nbnxn_get_atom_range(locality, gridSet, &atomsStart, &numAtoms);
-
-    if (numAtoms == 0)
-    {
-        /* The are no atoms for this reduction, avoid some overhead */
-        return;
-    }
-
-    Nbnxm::nbnxn_gpu_add_nbat_f_to_f(locality, totalForcesDevice, gpu_nbv, pmeForcesDevice, dependencyList,
-                                     atomsStart, numAtoms, useGpuFPmeReduction, accumulateForce);
-}
-
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, gmx::ArrayRef<gmx::RVec> fshift)
 {
     gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers = nbat.out;

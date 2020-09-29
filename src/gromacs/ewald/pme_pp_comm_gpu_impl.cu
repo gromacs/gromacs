@@ -154,9 +154,9 @@ void* PmePpCommGpu::Impl::getGpuForceStagingPtr()
     return static_cast<void*>(d_pmeForces_);
 }
 
-void* PmePpCommGpu::Impl::getForcesReadySynchronizer()
+GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
 {
-    return static_cast<void*>(&forcesReadySynchronizer_);
+    return &forcesReadySynchronizer_;
 }
 
 PmePpCommGpu::PmePpCommGpu(MPI_Comm             comm,
@@ -193,7 +193,7 @@ void* PmePpCommGpu::getGpuForceStagingPtr()
     return impl_->getGpuForceStagingPtr();
 }
 
-void* PmePpCommGpu::getForcesReadySynchronizer()
+GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()
 {
     return impl_->getForcesReadySynchronizer();
 }

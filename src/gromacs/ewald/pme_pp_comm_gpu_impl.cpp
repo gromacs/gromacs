@@ -110,7 +110,7 @@ void* PmePpCommGpu::getGpuForceStagingPtr()
     return nullptr;
 }
 
-void* PmePpCommGpu::getForcesReadySynchronizer()
+GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

@@ -115,7 +115,7 @@ public:
     /*! \brief
      * Return pointer to event recorded when forces are ready
      */
-    void* getForcesReadySynchronizer();
+    GpuEventSynchronizer* getForcesReadySynchronizer();
 
 private:
     //! GPU context handle (not used in CUDA)

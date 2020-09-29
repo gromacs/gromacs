@@ -381,26 +381,6 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
  */
 void reduceForces(nbnxn_atomdata_t* nbat, gmx::AtomLocality locality, const Nbnxm::GridSet& gridSet, rvec* totalForce);
 
-/*! \brief Reduce forces on the GPU
- *
- * \param[in]  locality             If the reduction should be performed on local or non-local atoms.
- * \param[out] totalForcesDevice    Device buffer to accumulate resulting force.
- * \param[in]  gridSet              The grids data.
- * \param[in]  pmeForcesDevice      Device buffer with PME forces.
- * \param[in]  dependencyList       List of synchronizers that represent the dependencies the reduction task needs to sync on.
- * \param[in]  gpu_nbv              The NBNXM GPU data structure.
- * \param[in]  useGpuFPmeReduction  Whether PME forces should be added.
- * \param[in]  accumulateForce      Whether there are usefull data already in the total force buffer.
- */
-void reduceForcesGpu(gmx::AtomLocality                          locality,
-                     DeviceBuffer<gmx::RVec>                    totalForcesDevice,
-                     const Nbnxm::GridSet&                      gridSet,
-                     void*                                      pmeForcesDevice,
-                     gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
-                     NbnxmGpu*                                  gpu_nbv,
-                     bool                                       useGpuFPmeReduction,
-                     bool                                       accumulateForce);
-
 //! Add the fshift force stored in nbat to fshift
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, gmx::ArrayRef<gmx::RVec> fshift);
 

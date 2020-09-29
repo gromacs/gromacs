@@ -321,8 +321,6 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
     nb->ncxy_na_alloc         = 0;
     nb->ncxy_ind              = 0;
     nb->ncxy_ind_alloc        = 0;
-    nb->ncell                 = 0;
-    nb->ncell_alloc           = 0;
 
     if (debug)
     {
@@ -655,29 +653,6 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
     nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::Local);
     // ...and this call instructs the nonlocal stream to wait on that event:
     nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
-
-    return;
-}
-
-/* Initialization for F buffer operations on GPU. */
-void nbnxn_gpu_init_add_nbat_f_to_f(const int*                  cell,
-                                    NbnxmGpu*                   gpu_nbv,
-                                    int                         natoms_total,
-                                    GpuEventSynchronizer* const localReductionDone)
-{
-
-    const DeviceStream& deviceStream = *gpu_nbv->deviceStreams[InteractionLocality::Local];
-
-    GMX_ASSERT(localReductionDone, "localReductionDone should be a valid pointer");
-    gpu_nbv->localFReductionDone = localReductionDone;
-
-    if (natoms_total > 0)
-    {
-        reallocateDeviceBuffer(&gpu_nbv->cell, natoms_total, &gpu_nbv->ncell, &gpu_nbv->ncell_alloc,
-                               *gpu_nbv->deviceContext_);
-        copyToDeviceBuffer(&gpu_nbv->cell, cell, 0, natoms_total, deviceStream,
-                           GpuApiCallBehavior::Async, nullptr);
-    }
 
     return;
 }

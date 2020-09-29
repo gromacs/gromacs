@@ -49,6 +49,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+#include "locality.h"
+
 /* Abstract type for PME that is defined only in the routine that use them. */
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
@@ -64,6 +66,7 @@ namespace gmx
 {
 class DeviceStreamManager;
 class GpuBonded;
+class GpuForceReduction;
 class ForceProviders;
 class StatePropagatorDataGpu;
 class PmePpCommGpu;
@@ -325,6 +328,9 @@ struct t_forcerec
 
     /* For PME-PP GPU communication */
     std::unique_ptr<gmx::PmePpCommGpu> pmePpCommGpu;
+
+    /* For GPU force reduction (on both local and non-local atoms) */
+    gmx::EnumerationArray<gmx::AtomLocality, std::unique_ptr<gmx::GpuForceReduction>> gpuForceReduction;
 };
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

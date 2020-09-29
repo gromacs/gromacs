@@ -95,6 +95,7 @@
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/gpuforcereduction.h"
 #include "gromacs/mdlib/makeconstraints.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -1670,6 +1671,16 @@ int Mdrunner::mdrunner()
              */
             dd_init_bondeds(fplog, cr->dd, mtop, vsite.get(), inputrec.get(),
                             domdecOptions.checkBondedInteractions, fr->cginfo_mb);
+        }
+
+        if (runScheduleWork.simulationWork.useGpuBufferOps)
+        {
+            fr->gpuForceReduction[gmx::AtomLocality::Local] = std::make_unique<gmx::GpuForceReduction>(
+                    deviceStreamManager->context(),
+                    deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedLocal));
+            fr->gpuForceReduction[gmx::AtomLocality::NonLocal] = std::make_unique<gmx::GpuForceReduction>(
+                    deviceStreamManager->context(),
+                    deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedNonLocal));
         }
 
         std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
