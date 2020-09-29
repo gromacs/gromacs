@@ -459,8 +459,11 @@ typedef std::function<void(Step)> PropagatorCallback;
  */
 struct PropagatorThermostatConnection
 {
-    std::function<void(int)>            setNumVelocityScalingVariables;
-    std::function<ArrayRef<real>()>     getViewOnVelocityScaling;
+    //! Function variable for setting velocity scaling variables.
+    std::function<void(int)> setNumVelocityScalingVariables;
+    //! Function variable for receiving view on velocity scaling.
+    std::function<ArrayRef<real>()> getViewOnVelocityScaling;
+    //! Function variable for callback.
     std::function<PropagatorCallback()> getVelocityScalingCallback;
 };
 
@@ -469,7 +472,9 @@ struct PropagatorThermostatConnection
  */
 struct PropagatorBarostatConnection
 {
-    std::function<ArrayRef<rvec>()>     getViewOnPRScalingMatrix;
+    //! Function variable for receiving view on pressure scaling matrix.
+    std::function<ArrayRef<rvec>()> getViewOnPRScalingMatrix;
+    //! Function variable for callback.
     std::function<PropagatorCallback()> getPRScalingCallback;
 };
 

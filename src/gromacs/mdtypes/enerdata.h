@@ -140,7 +140,7 @@ public:
                                         gmx::ArrayRef<const real>   lambda,
                                         const t_lambda&             fepvals);
 
-    /* !\brief Accumulates the kinetic and constraint free-energy contributions
+    /*! \brief Accumulates the kinetic and constraint free-energy contributions
      *
      * \param[in] energyTerms  List of energy terms, pass \p term in \p gmx_enerdata_t
      * \param[in] dhdlMass     The mass dependent contribution to dH/dlambda
@@ -186,6 +186,12 @@ private:
 //! Struct for accumulating all potential energy terms and some kinetic energy terms
 struct gmx_enerdata_t
 {
+    /*! \brief
+     * Constructor with specific number of energy groups and lambdas.
+     *
+     * \param[in] numEnergyGroups Number of energy groups used.
+     * \param[in] numFepLambdas   Number of free energy lambdas, zero if none.
+     */
     gmx_enerdata_t(int numEnergyGroups, int numFepLambdas);
 
     //! The energies for all different interaction types

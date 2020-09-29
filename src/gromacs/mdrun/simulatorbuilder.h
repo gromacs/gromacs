@@ -82,9 +82,13 @@ enum class StartingBehavior;
 class StopHandlerBuilder;
 class VirtualSitesHandler;
 
+/*! \brief
+ * Simulation configuation settings.
+ */
 struct SimulatorConfig
 {
 public:
+    //! Build from settings for this simulation.
     SimulatorConfig(const MdrunOptions&    mdrunOptions,
                     StartingBehavior       startingBehavior,
                     MdrunScheduleWorkload* runScheduleWork) :
@@ -95,20 +99,24 @@ public:
     }
     // TODO: Specify copy and move semantics.
 
-    const MdrunOptions&    mdrunOptions_;
-    StartingBehavior       startingBehavior_;
+    //! Handle to user options.
+    const MdrunOptions& mdrunOptions_;
+    //! How are we starting the simulation.
+    StartingBehavior startingBehavior_;
+    //! How are we scheduling the tasks for this simulation.
     MdrunScheduleWorkload* runScheduleWork_;
 };
 
 
-// TODO: Reconsider the name.
+/*! \brief
+ * Data for a specific simulation state.
+ *
+ * \todo Think of a better name and annoy people that forget
+ *       to add documentation for their code.
+ */
 struct SimulatorStateData
 {
-    t_state*            globalState_p;
-    ObservablesHistory* observablesHistory_p;
-    gmx_enerdata_t*     enerdata_p;
-    gmx_ekindata_t*     ekindata_p;
-
+    //! Build collection of current state data.
     SimulatorStateData(t_state*            globalState,
                        ObservablesHistory* observablesHistory,
                        gmx_enerdata_t*     enerdata,
@@ -120,12 +128,28 @@ struct SimulatorStateData
     {
     }
 
+    //! Can perform copy of current state.
     SimulatorStateData(const SimulatorStateData& simulatorStateData) = default;
+
+    //! Handle to global state of the simulation.
+    t_state* globalState_p;
+    //! Handle to current simulation history.
+    ObservablesHistory* observablesHistory_p;
+    //! Handle to collected data for energy groups.
+    gmx_enerdata_t* enerdata_p;
+    //! Handle to collected data for kinectic energy.
+    gmx_ekindata_t* ekindata_p;
 };
 
+/*! \brief
+ * Collection of environmental information for a simulation.
+ *
+ * \todo Fix doxygen checks.
+ */
 class SimulatorEnv
 {
 public:
+    //! Build from current simulation environment.
     SimulatorEnv(FILE*             fplog,
                  t_commrec*        commRec,
                  gmx_multisim_t*   multisimCommRec,
@@ -139,16 +163,25 @@ public:
     {
     }
 
-    FILE*                   fplog_;
-    t_commrec*              commRec_;
-    const gmx_multisim_t*   multisimCommRec_;
-    const MDLogger&         logger_;
+    //! Handle to log file.
+    FILE* fplog_;
+    //! Handle to communication record.
+    t_commrec* commRec_;
+    //! Handle to multisim communication record.
+    const gmx_multisim_t* multisimCommRec_;
+    //! Handle to propper logging framework.
+    const MDLogger& logger_;
+    //! Handle to file output handling.
     const gmx_output_env_t* outputEnv_;
 };
 
+/*! \brief
+ * Collection of profiling information.
+ */
 class Profiling
 {
 public:
+    //! Build profiling information collection.
     Profiling(t_nrnb* nrnb, gmx_walltime_accounting* walltimeAccounting, gmx_wallcycle* wallCycle) :
         nrnb(nrnb),
         wallCycle(wallCycle),
@@ -156,14 +189,21 @@ public:
     {
     }
 
-    t_nrnb*                  nrnb;
-    gmx_wallcycle*           wallCycle;
+    //! Handle to datastructure.
+    t_nrnb* nrnb;
+    //! Handle to wallcycle stuff.
+    gmx_wallcycle* wallCycle;
+    //! Handle to wallcycle time accounting stuff.
     gmx_walltime_accounting* walltimeAccounting;
 };
 
+/*! \brief
+ * Collection of constraint parameters.
+ */
 class ConstraintsParam
 {
 public:
+    //! Build collection with handle to actual objects.
     ConstraintsParam(Constraints* constraints, gmx_enfrot* enforcedRotation, VirtualSitesHandler* vSite) :
         constr(constraints),
         enforcedRotation(enforcedRotation),
@@ -171,14 +211,21 @@ public:
     {
     }
 
-    Constraints*         constr;
-    gmx_enfrot*          enforcedRotation;
+    //! Handle to constraint object.
+    Constraints* constr;
+    //! Handle to information about using enforced rotation.
+    gmx_enfrot* enforcedRotation;
+    //! Handle to vsite stuff.
     VirtualSitesHandler* vsite;
 };
 
+/*! \brief
+ * Collection of legacy input information.
+ */
 class LegacyInput
 {
 public:
+    //! Build collection from legacy input data.
     LegacyInput(int filenamesSize, const t_filenm* filenamesData, t_inputrec* inputRec, t_forcerec* forceRec) :
         numFile(filenamesSize),
         filenames(filenamesData),
@@ -186,21 +233,30 @@ public:
         forceRec(forceRec)
     {
     }
-    int             numFile;
+
+    //! Number of input files.
+    int numFile;
+    //! File names.
     const t_filenm* filenames;
-    t_inputrec*     inputrec;
-    t_forcerec*     forceRec;
+    //! Handle to simulation input record.
+    t_inputrec* inputrec;
+    //! Handle to simulation force record.
+    t_forcerec* forceRec;
 };
 
 /*! \brief SimulatorBuilder parameter type for InteractiveMD.
  *
  * Conveys a non-owning pointer to implementation details.
+ *
+ * \todo If adding doxygen stubs actual add the full stub.
  */
 class InteractiveMD
 {
 public:
+    //! Create handle to IMD information.
     explicit InteractiveMD(ImdSession* imdSession) : imdSession(imdSession) {}
 
+    //! Internal handle to IMD info.
     ImdSession* imdSession;
 };
 
@@ -225,36 +281,55 @@ public:
     pull_t* pull_work;
 };
 
-/*!
- * \brief Parameter type for IonSwapping SimulatorBuilder component.
+/*! \brief
+ * Parameter type for IonSwapping SimulatorBuilder component.
  *
  * Conveys a non-owning pointer to implementation details.
+ *
+ * \todo Add full information.
  */
 class IonSwapping
 {
 public:
+    //! Create handle.
     IonSwapping(t_swap* ionSwap) : ionSwap(ionSwap) {}
+
+    //! Internal storage for handle.
     t_swap* ionSwap;
 };
 
+/*! \brief
+ * Collection of handles to topology information.
+ */
 class TopologyData
 {
 public:
+    //! Build collection from simulation data.
     TopologyData(gmx_mtop_t* globalTopology, MDAtoms* mdAtoms) :
         top_global(globalTopology),
         mdAtoms(mdAtoms)
     {
     }
+
+    //! Handle to global simulation topology.
     gmx_mtop_t* top_global;
-    MDAtoms*    mdAtoms;
+    //! Handle to information about MDAtoms.
+    MDAtoms* mdAtoms;
 };
 
-// Design note: The client may own the BoxDeformation via std::unique_ptr, but we are not
-// transferring ownership at this time. (Maybe be the subject of future changes.)
+/*! \brief
+ * Handle to information about the box.
+ *
+ * Design note: The client may own the BoxDeformation via std::unique_ptr, but we are not
+ * transferring ownership at this time. (May be the subject of future changes.)
+ */
 class BoxDeformationHandle
 {
 public:
+    //! Build handle to box stuff.
     BoxDeformationHandle(BoxDeformation* boxDeformation) : deform(boxDeformation) {}
+
+    //! Internal storage for handle.
     BoxDeformation* deform;
 };
 
@@ -365,6 +440,8 @@ public:
 private:
     // Note: we use std::unique_ptr instead of std::optional because we want to
     // allow for opaque types at the discretion of the module developer.
+    /*! \brief Collection of handles to  individual information. */
+    /*! \{ */
     std::unique_ptr<SimulatorConfig>           simulatorConfig_;
     std::unique_ptr<MembedHolder>              membedHolder_;
     std::unique_ptr<StopHandlerBuilder>        stopHandlerBuilder_;
@@ -382,6 +459,7 @@ private:
     std::unique_ptr<BoxDeformationHandle>      boxDeformation_;
     //! Contains checkpointing data for the modular simulator
     std::unique_ptr<ReadCheckpointDataHolder> modularSimulatorCheckpointData_;
+    /*! \} */
 };
 
 } // namespace gmx

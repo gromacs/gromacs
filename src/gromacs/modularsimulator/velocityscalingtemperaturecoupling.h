@@ -75,6 +75,7 @@ enum class ReportPreviousStepConservedEnergy
     Count
 };
 
+//! Typedef to match current use of ints as types.
 using TemperatureCouplingType = int;
 
 /*! \internal

@@ -317,7 +317,10 @@ void do_constrain_first(FILE*                     log,
                         const matrix              box,
                         real                      lambda);
 
-/* the dvdlambda contribution to be added to the bonded interactions */
+/*! \brief Constrain velocities only.
+ *
+ * The dvdlambda contribution has to be added to the bonded interactions
+ */
 void constrain_velocities(gmx::Constraints* constr,
                           bool              do_log,
                           bool              do_ene,
@@ -327,7 +330,10 @@ void constrain_velocities(gmx::Constraints* constr,
                           gmx_bool          computeVirial,
                           tensor            constraintsVirial);
 
-/* the dvdlambda contribution to be added to the bonded interactions */
+/*! \brief Constraint coordinates.
+ *
+ * The dvdlambda contribution has to be added to the bonded interactions
+ */
 void constrain_coordinates(gmx::Constraints*         constr,
                            bool                      do_log,
                            bool                      do_ene,

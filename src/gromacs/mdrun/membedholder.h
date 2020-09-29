@@ -65,17 +65,34 @@ namespace gmx
 class MembedHolder
 {
 public:
+    //! Build holder from input information.
     explicit MembedHolder(int nfile, const t_filenm fnm[]);
+    //! Move is possible.
     MembedHolder(MembedHolder&& holder) noexcept;
+    //! Move assignment is possible.
     MembedHolder& operator=(MembedHolder&& holder) noexcept;
-
+    //! Copy is not allowed.
     MembedHolder(const MembedHolder&) = delete;
+    //! Copy assignment is not allowed.
     MembedHolder& operator=(const MembedHolder&) = delete;
 
     ~MembedHolder();
 
+    //! Get information about membed being used.
     [[nodiscard]] bool doMembed() const { return doMembed_; }
 
+    /*! \brief
+     * Fully initialize underlying datastructure.
+     *
+     * \param[in] fplog Handle to log file.
+     * \param[in] nfile How many input files are there.
+     * \param[in] fnm   Input file collection datastructure.
+     * \param[in,out] mtop  Handle to mtop, can be modified.
+     * \param[in,out] inputrec Handle to inputrec, can be modified.
+     * \param[in,out] state    Simulation state information, can be modified.
+     * \param[in,out] cr       Communication information.
+     * \param[out]    cpt      Some kind of checkpoint information.
+     */
     void initializeMembed(FILE*          fplog,
                           int            nfile,
                           const t_filenm fnm[],
@@ -85,11 +102,14 @@ public:
                           t_commrec*     cr,
                           real*          cpt);
 
+    //! Get handle to membed object.
     gmx_membed_t* membed();
 
 private:
-    gmx_membed_t* membed_   = nullptr;
-    bool          doMembed_ = false;
+    //! Pointer to membed object. TODO replace with unique_ptr or get rid of this.
+    gmx_membed_t* membed_ = nullptr;
+    //! Whether membed is being used.
+    bool doMembed_ = false;
 };
 
 } // namespace gmx

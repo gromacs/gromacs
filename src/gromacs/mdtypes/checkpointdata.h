@@ -55,7 +55,6 @@ namespace gmx
 class ISerializer;
 
 /*! \libinternal
- * \ingroup module_modularsimulator
  * \brief The operations on CheckpointData
  *
  * This enum defines the two modes of operation on CheckpointData objects,
@@ -63,6 +62,8 @@ class ISerializer;
  * in turn enables clients to write a single function for read and write
  * access, eliminating the risk of having read and write functions getting
  * out of sync.
+ *
+ * \ingroup module_modularsimulator
  */
 enum class CheckpointDataOperation
 {
@@ -72,7 +73,6 @@ enum class CheckpointDataOperation
 };
 
 /*! \internal
- * \ingroup module_modularsimulator
  * \brief Get an ArrayRef whose const-ness is defined by the checkpointing operation
  *
  * \tparam operation  Whether we are reading or writing
@@ -81,6 +81,8 @@ enum class CheckpointDataOperation
  * \return            The ArrayRef
  *
  * \see ArrayRef
+ *
+ * \ingroup module_modularsimulator
  */
 template<CheckpointDataOperation operation, typename T>
 ArrayRef<std::conditional_t<operation == CheckpointDataOperation::Write || std::is_const<T>::value, const typename T::value_type, typename T::value_type>>
@@ -142,8 +144,9 @@ struct IsSerializableEnum<T, false>
 template<CheckpointDataOperation operation>
 class CheckpointData;
 
-// Shortcuts
-using ReadCheckpointData  = CheckpointData<CheckpointDataOperation::Read>;
+//! Convenience shortcut for reading checkpoint data.
+using ReadCheckpointData = CheckpointData<CheckpointDataOperation::Read>;
+//! Convenience shortcut for writing checkpoint data.
 using WriteCheckpointData = CheckpointData<CheckpointDataOperation::Write>;
 
 template<>
