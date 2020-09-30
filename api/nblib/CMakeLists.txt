@@ -137,6 +137,7 @@ if(GMX_INSTALL_NBLIB_API)
             DESTINATION include/nblib)
 endif()
 
+add_subdirectory(samples)
 add_subdirectory(util)
 
 if(BUILD_TESTING)
