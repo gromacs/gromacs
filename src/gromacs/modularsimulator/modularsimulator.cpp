@@ -185,8 +185,6 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
         return condition;
     };
 
-    bool isInputCompatible = true;
-
     // GMX_USE_MODULAR_SIMULATOR allows to use modular simulator also for non-standard uses,
     // such as the leap-frog integrator
     const auto modularSimulatorExplicitlyTurnedOn = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
@@ -209,11 +207,9 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             "as the Parrinello-Rahman barostat is not implemented in the legacy simulator. Unset "
             "GMX_DISABLE_MODULAR_SIMULATOR or use a different pressure control algorithm.");
 
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(
-                       inputrec->eI == eiMD || inputrec->eI == eiVV,
-                       "Only integrators md and md-vv are supported by the modular simulator.");
+    bool isInputCompatible = conditionalAssert(
+            inputrec->eI == eiMD || inputrec->eI == eiVV,
+            "Only integrators md and md-vv are supported by the modular simulator.");
     isInputCompatible = isInputCompatible
                         && conditionalAssert(inputrec->eI != eiMD || modularSimulatorExplicitlyTurnedOn,
                                              "Set GMX_USE_MODULAR_SIMULATOR=ON to use the modular "
