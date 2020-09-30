@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,7 @@ struct t_nrnb;
 namespace gmx
 {
 class Constraints;
+class FreeEnergyPerturbationElement;
 class ImdSession;
 class MDAtoms;
 class MDLogger;
@@ -90,6 +91,7 @@ public:
     DomDecHelper(bool                               isVerbose,
                  int                                verbosePrintInterval,
                  StatePropagatorData*               statePropagatorData,
+                 FreeEnergyPerturbationElement*     freeEnergyPerturbationElement,
                  TopologyHolder*                    topologyHolder,
                  CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback,
                  int                                nstglobalcomm,
@@ -135,10 +137,20 @@ private:
 
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
+    //! Pointer to the free energy element
+    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
     //! Pointer to the topology
     TopologyHolder* topologyHolder_;
     //! Pointer to the ComputeGlobalsHelper object - to ask for # of bonded interaction checking
     CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback_;
+
+    //! Helper function unifying the DD partitioning calls in setup() and run()
+    void partitionSystem(bool                     verbose,
+                         bool                     isMasterState,
+                         int                      nstglobalcomm,
+                         gmx_wallcycle*           wcycle,
+                         std::unique_ptr<t_state> localState,
+                         t_state*                 globalState);
 
     // Access to ISimulator data
     //! Handles logging.

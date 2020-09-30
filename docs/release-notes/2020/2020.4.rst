@@ -42,6 +42,12 @@ an assertion failure during PME tuning.
 
 :issue:`3677`
 
+Bug fix for FEP calculations with modular simulator and domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When using the modular simulator, domain decomposition and free energy
+calculations with perturbed masses, the simulation would always be
+performed using the masses at lambda=0 instead of the actual lambda value.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

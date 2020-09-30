@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 
 namespace gmx
@@ -65,7 +66,7 @@ FreeEnergyPerturbationElement::FreeEnergyPerturbationElement(FILE*             f
     lambda_.fill(0);
     lambda0_.fill(0);
     initialize_lambdas(fplog_, *inputrec_, true, &currentFEPState_, lambda_, lambda0_.data());
-    update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
+    updateMDAtoms();
 }
 
 void FreeEnergyPerturbationElement::scheduleTask(Step step,
@@ -83,7 +84,7 @@ void FreeEnergyPerturbationElement::updateLambdas(Step step)
 {
     // at beginning of step (if lambdas change...)
     setCurrentLambdasLocal(step, inputrec_->fepvals, lambda0_.data(), lambda_, currentFEPState_);
-    update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
+    updateMDAtoms();
 }
 
 ArrayRef<real> FreeEnergyPerturbationElement::lambdaView()
@@ -99,6 +100,11 @@ ArrayRef<const real> FreeEnergyPerturbationElement::constLambdaView()
 int FreeEnergyPerturbationElement::currentFEPState()
 {
     return currentFEPState_;
+}
+
+void FreeEnergyPerturbationElement::updateMDAtoms()
+{
+    update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 
 void FreeEnergyPerturbationElement::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)

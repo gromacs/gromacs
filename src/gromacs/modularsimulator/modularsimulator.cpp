@@ -450,8 +450,9 @@ void ModularSimulator::constructElementsAndSignallers()
                    "interactions.");
         domDecHelper_ = std::make_unique<DomDecHelper>(
                 mdrunOptions.verbose, mdrunOptions.verboseStepPrintInterval, statePropagatorDataPtr,
-                topologyHolder_.get(), std::move(checkBondedInteractionsCallback), nstglobalcomm_, fplog,
-                cr, mdlog, constr, inputrec, mdAtoms, nrnb, wcycle, fr, vsite, imdSession, pull_work);
+                freeEnergyPerturbationElementPtr, topologyHolder_.get(),
+                std::move(checkBondedInteractionsCallback), nstglobalcomm_, fplog, cr, mdlog,
+                constr, inputrec, mdAtoms, nrnb, wcycle, fr, vsite, imdSession, pull_work);
         neighborSearchSignallerBuilder.registerSignallerClient(compat::make_not_null(domDecHelper_.get()));
     }
 
