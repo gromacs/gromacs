@@ -6,7 +6,6 @@ clang-tidy:configure-push:
     - .use-clang:base
     - .rules:basic-push
   image: gromacs/cmake-3.11.4-llvm-8-openmpi:2020
-  tags: []
   variables:
     COMPILER_MAJOR_VERSION: 8
     BUILD_DIR: build-clang-tidy
@@ -18,7 +17,6 @@ clang-tidy:configure-schedule:
     - .use-clang:base
     - .rules:nightly-not-for-release
   image: gromacs/cmake-3.11.4-llvm-8-openmpi:2020
-  tags: []
   variables:
     COMPILER_MAJOR_VERSION: 8
     BUILD_DIR: build-clang-tidy
@@ -44,7 +42,6 @@ clang-tidy:test:
     - .rules:basic-push
   stage: source-check
   image: gromacs/cmake-3.11.4-llvm-8-openmpi:2020
-  tags: []
   needs:
     - job: clang-tidy:configure-push
   variables:
@@ -53,8 +50,10 @@ clang-tidy:test:
     EXTRA_INSTALLS: clang-tidy-$COMPILER_MAJOR_VERSION
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
-    KUBERNETES_MEMORY_LIMIT: 4Gi
+    KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
+    # Make sure that a Python interpreter can be found for `/bin/env python`
+    - test -x /usr/bin/python || update-alternatives --install /usr/bin/python python /usr/bin/python3 1
     - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git release-2020 && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
     - HEAD_REV=$(git show -s --pretty=format:"%h" HEAD)
     - if [[ "$REV" == "$HEAD_REV" ]] ; then
@@ -78,12 +77,11 @@ clang-format:
   cache: {}
   stage: pre-build
   image: gromacs/ci-docs-llvm:2020
-  tags: []
   variables:
     COMPILER_MAJOR_VERSION: 7
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     EXTRA_INSTALLS: clang-format-$COMPILER_MAJOR_VERSION
   script:
     - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git release-2020 && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
@@ -109,11 +107,10 @@ copyright-check:
   cache: {}
   stage: pre-build
   image: gromacs/ci-docs-llvm:2020
-  tags: []
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
   script:
     - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git release-2020 && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
     - HEAD_REV=$(git show -s --pretty=format:"%h" HEAD)
@@ -144,21 +141,22 @@ check-source:
     - .rules:basic-push
   cache: {}
   stage: source-check
-  tags: []
   needs:
     - job: docs:build
       artifacts: true
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     BUILD_DIR: build-docs
   script:
     - cd $BUILD_DIR
     - cmake --build . --target check-source
     - awk '/warning.*include style.*order/,/You can use.*rst|^$/' docs/doxygen/check-source.log | tee doxygenError.txt || true
+    - awk '/warning:.*includes/,/unnecessarily|^$/' docs/doxygen/check-source.log | tee -a doxygenError.txt || true
     - awk '/Traceback/,/.*rror|^$/' docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee -a doxygenError.txt || true
     - awk '/warning:/,/in doxygen.*|^$/' docs/doxygen/doxygen*log | tee -a doxygenError.txt || true
+    - grep -i "unused cycle suppression" docs/doxygen/check-source.log | tee -a doxygenError.txt || true
     - if [ -s doxygenError.txt ] ; then echo "Found errors while running doxygen"; exit 1; fi
   artifacts:
     name: docs-artifacts-$CI_COMMIT_REF_SLUG
@@ -178,7 +176,7 @@ linkchecker:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     BUILD_DIR: build-docs
   script:
     - cd $BUILD_DIR

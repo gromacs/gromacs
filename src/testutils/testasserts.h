@@ -56,6 +56,8 @@
 #ifndef GMX_TESTUTILS_TESTASSERTS_H
 #define GMX_TESTUTILS_TESTASSERTS_H
 
+#include "config.h"
+
 #include <string>
 
 #include <gtest/gtest.h>

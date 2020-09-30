@@ -44,7 +44,6 @@ src/gromacs/tables/cubicsplinetable.h: warning: includes "simd.h" unnecessarily
 src/gromacs/tables/quadraticsplinetable.h: warning: includes "simd.h" unnecessarily
 
 # These are specific to Folding@Home, and easiest to suppress here
-*: warning: includes non-local file as "corewrap.h"
 src/gmxpre.h: warning: includes non-local file as "swindirect.h"
 
 # New external API (see https://redmine.gromacs.org/issues/2586) has some unresolved

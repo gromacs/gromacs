@@ -9,11 +9,10 @@ simple-build:
     - .rules:basic-push
   stage: pre-build
   image: gromacs/cmake-3.9.6-gcc-5-cuda-9.0-openmpi:2020
-  tags: []
   variables:
     KUBERNETES_CPU_LIMIT: 8
     KUBERNETES_CPU_REQUEST: 4
-    KUBERNETES_MEMORY_LIMIT: 8Gi
+    KUBERNETES_MEMORY_REQUEST: 8Gi
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
     CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
@@ -53,8 +52,8 @@ simple-build:
       2>&1 | tee cmakeLog.log
     - awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
     - if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; cat cmakeErrors.log ; exit 1; fi
-    - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
-    - cmake --build . --target tests -- -j8 2>&1 | tee testBuildLogFile.log
+    - cmake --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
+    - cmake --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
       | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
@@ -87,10 +86,10 @@ simple-build:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     CMAKE_COMPILER_SCRIPT: ""
     CMAKE_EXTRA_OPTIONS: ""
-    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AUTO"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
@@ -139,10 +138,10 @@ simple-build:
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     CMAKE_COMPILER_SCRIPT: ""
     CMAKE_EXTRA_OPTIONS: ""
-    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AUTO"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
@@ -221,7 +220,7 @@ gromacs:gcc-7:configure:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
   variables:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -233,7 +232,7 @@ gromacs:gcc-6:configure:
     - .gromacs:base:configure
     - .use-gcc:base
     - .use-opencl
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
   variables:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
@@ -244,7 +243,7 @@ gromacs:clang-TSAN:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
   variables:
     COMPILER_MAJOR_VERSION: 8
@@ -304,7 +303,7 @@ gromacs:gcc-6:release:configure:
     COMPILER_MAJOR_VERSION: 6
     RELEASE_BUILD_DIR: release-builds-gcc
     CMAKE_EXTRA_OPTIONS: "-DGMX_BUILD_MDRUN_ONLY=ON"
-    CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_REGRESSIONTEST_OPTIONS: ""
   dependencies:
     - archive:package
@@ -355,7 +354,7 @@ gromacs:clang-8:release:configure:
   variables:
     COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-clang
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
 
 # Jobs running during build stage
 
@@ -363,13 +362,14 @@ gromacs:clang-8:release:configure:
   stage: build
   script:
     - cd $BUILD_DIR
-    - cmake --build . -- -j8 2>&1 | tee buildLogFile.log
-    - cmake --build . --target tests -- -j8 2>&1 | tee testBuildLogFile.log
+    - cmake --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
+    - cmake --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
       | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
     - cmake --build . --target install 2>&1 | tee installBuildLogFile.log
     - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
+    - for file in `find . -mindepth 1 -name "*.o" ! -type l` ; do echo $file ; rm $file ; done 2>&1 > remove-build-objects.log
     - cd ..
   artifacts:
     when: always
@@ -398,7 +398,7 @@ gromacs:gcc-7:build:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
   needs:
     - job: gromacs:gcc-7:configure
@@ -410,7 +410,7 @@ gromacs:gcc-6:build:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
   needs:
     - job: gromacs:gcc-6:configure
@@ -421,7 +421,7 @@ gromacs:clang-TSAN:build:
     - .gromacs:base:build
     - .use-clang:base
     - .use-ccache
-    - .rules:merge-requests
+    - .rules:merge-and-post-merge-acceptance
   image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
   needs:
     - job: gromacs:clang-TSAN:configure
@@ -434,6 +434,8 @@ gromacs:clang-ASAN:build:
     - .use-ccache
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:configure
 
@@ -445,6 +447,8 @@ gromacs:clang-static-analyzer:build:
     - .use-ccache
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-static-analyzer:configure
 
@@ -564,6 +568,9 @@ gromacs:clang-8:release:build:
   extends:
     - .variables:default
   variables:
+    KUBERNETES_CPU_LIMIT: 4
+    KUBERNETES_CPU_REQUEST: 4
+    KUBERNETES_MEMORY_REQUEST: 4Gi
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 1
@@ -598,6 +605,9 @@ gromacs:gcc-7:test:
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:build
 
@@ -609,6 +619,8 @@ gromacs:gcc-6:test:
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-6:build
 
@@ -623,7 +635,7 @@ gromacs:clang-8:test:
 gromacs:clang-TSAN:test:
   extends:
     - .gromacs:base:test
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
   needs:
     - job: gromacs:clang-TSAN:build
@@ -636,6 +648,8 @@ gromacs:clang-ASAN:test:
   image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
   variables:
     CTEST_RUN_MODE: "ExperimentalMemCheck"
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:build
 
@@ -650,7 +664,7 @@ gromacs:clang-3.6:test:
 gromacs:gcc-7:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
@@ -658,6 +672,9 @@ gromacs:gcc-7:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:build
     - job: regressiontests:prepare
@@ -673,6 +690,8 @@ gromacs:gcc-6:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-6:build
     - job: regressiontests:prepare
@@ -682,6 +701,8 @@ gromacs:clang-8:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-8:build
     - job: regressiontests:prepare
@@ -689,8 +710,10 @@ gromacs:clang-8:regressiontest:
 gromacs:clang-TSAN:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:merge-requests
+    - .rules:post-merge-acceptance
   image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-TSAN:build
     - job: regressiontests:prepare
@@ -701,6 +724,8 @@ gromacs:clang-ASAN:regressiontest:
     - .use-clang:base
     - .rules:merge-requests
   image: gromacs/cmake-3.15.7-llvm-8-tsan:2020
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-ASAN:build
     - job: regressiontests:prepare
@@ -714,6 +739,8 @@ gromacs:clang-3.6:regressiontest:
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_OMP_RANK_NUMBER: 0
     REGRESSIONTEST_PARALLEL: "-np"
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-3.6:build
     - job: regressiontests:prepare
@@ -725,7 +752,11 @@ gromacs:gcc-6:release:test:
   stage: release-tests
   image: gromacs/cmake-3.9.6-gcc-6-cuda-10.1-nvidiaopencl-clfft-openmpi:2020
   variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-gcc
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-6:release:configure
     - job: gromacs:gcc-6:release:build
@@ -738,6 +769,11 @@ gromacs:gcc-7:release:test:
   image: gromacs/cmake-3.9.6-gcc-7-amdopencl-clfft-openmpi:2020
   variables:
     BUILD_DIR: release-builds-gcc
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:gcc-7:release:configure
     - job: gromacs:gcc-7:release:build
@@ -761,7 +797,11 @@ gromacs:clang-8:release:test:
   stage: release-tests
   image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi:2020
   variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-clang
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-8:release:configure
     - job: gromacs:clang-8:release:build
@@ -789,6 +829,8 @@ gromacs:clang-3.6:release:regressiontest:
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_OMP_RANK_NUMBER: 0
     REGRESSIONTEST_PARALLEL: "-np"
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-3.6:release:build
     - job: regressiontests:package
@@ -806,7 +848,8 @@ gromacs:clang-8:release:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-
+  tags:
+    - k8s-scilifelab
   needs:
     - job: gromacs:clang-8:release:build
     - job: regressiontests:package

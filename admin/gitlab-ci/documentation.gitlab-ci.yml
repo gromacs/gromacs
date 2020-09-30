@@ -12,9 +12,8 @@
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     CMAKE_COMPILER_SCRIPT: "-DCMAKE_C_COMPILER=clang-7 -DCMAKE_CXX_COMPILER=clang++-7"
-    CMAKE_EXTRA_OPTIONS: ""
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
     CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=OFF"
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
@@ -79,9 +78,8 @@
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
-    KUBERNETES_MEMORY_LIMIT: 2Gi
+    KUBERNETES_MEMORY_REQUEST: 2Gi
     CMAKE_COMPILER_SCRIPT: "-DCMAKE_C_COMPILER=clang-7 -DCMAKE_CXX_COMPILER=clang++-7"
-    CMAKE_EXTRA_OPTIONS: ""
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
     CMAKE_MPI_OPTIONS: "-DGMX_THREAD_MPI=ON"
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
@@ -178,7 +176,6 @@ docs:configure:
   extends:
     - .docs:configure
     - .rules:basic-push
-  tags: []
   variables:
     BUILD_DIR: build-docs
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
@@ -206,7 +203,6 @@ docs:build:
     - .before_script:default
     - .rules:basic-push
   stage: documentation
-  tags: []
   needs:
     - job: docs:configure
   variables:
@@ -231,7 +227,7 @@ docs:build:
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
-    KUBERNETES_MEMORY_LIMIT: 4Gi
+    KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
     - cd $BUILD_DIR
     - cmake --build . --target manual -- -j4 | tee docs/manual/all-output.log
@@ -263,7 +259,6 @@ webpage:build:
     - .webpage:build
     - .rules:basic-push
   stage: post-test
-  tags: []
   needs:
     - job: docs:build
     - job: check-source
@@ -276,6 +271,8 @@ webpage:configure:
     - .docs:configure:release
     - .rules:nightly-only-for-release
   cache: {}
+  tags:
+    - k8s-scilifelab
   dependencies:
     - archive:package
     - regressiontests:package
@@ -293,6 +290,8 @@ webpage:dependencies:
     - .before_script:default
     - .rules:nightly-only-for-release
   stage: release-build
+  tags:
+    - k8s-scilifelab
   needs:
     - job: webpage:configure
   variables:
@@ -302,9 +301,11 @@ webpage:build:release:
   extends:
     - .webpage:build
     - .rules:nightly-only-for-release
+  stage: release-prepare-deploy
+  tags:
+    - k8s-scilifelab
   dependencies:
     - webpage:dependencies
     - webpage:configure
-  stage: release-prepare-deploy
   variables:
     BUILD_DIR: release-doc-builds
