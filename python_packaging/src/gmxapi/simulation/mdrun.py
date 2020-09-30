@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -261,8 +261,12 @@ class LegacyImplementationSubscription(object):
                                                                       ensemble_rank,
                                                                       self.workdir
                                                                       ))
-                    # TODO: We have not exposed the ability to pass any run time parameters to mdrun.
-                    work = workflow.from_tpr(tpr_filenames)
+                    # TODO: Normalize the way we pass run time parameters to mdrun.
+                    # See also #3573
+                    kwargs = getattr(resource_manager, 'mdrun_kwargs', {})
+                    for key, value in kwargs.items():
+                        logger.debug('Adding mdrun run time argument: {}'.format(key + '=' + str(value)))
+                    work = workflow.from_tpr(tpr_filenames, **kwargs)
                     self.workspec = work.workspec
                     context = LegacyContext(work=self.workspec, workdir_list=workdir_list, communicator=ensemble_comm)
                     self.simulation_module_context = context

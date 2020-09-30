@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,12 @@ import os
 import pytest
 
 import gmxapi as gmx
+
+# TODO: (#3573) Normalize the handling of run-time arguments.
+from gmxapi.simulation.mdrun import ResourceManager as _ResourceManager
+# Note that *threads* argument causes errors for MPI-enabled GROMACS.
+# Ref #3563 and #3573
+_ResourceManager.mdrun_kwargs = {'threads': 2}
 
 # Configure the `logging` module before proceeding any further.
 gmx.logger.setLevel(logging.WARNING)
