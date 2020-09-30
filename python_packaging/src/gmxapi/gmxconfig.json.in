@@ -1,4 +1,5 @@
 {
     "gmx_executable": "@_gmx_executable@",
-    "gmx_bindir": "@_gmx_bindir@"
+    "gmx_bindir": "@_gmx_bindir@",
+    "gmx_mpi_type": @_gmx_mpi_type@
 }

@@ -110,11 +110,13 @@ add_library(Gromacs::gmxapi ALIAS gmxapi )
 
 include(CMakePackageConfigHelpers)
 
+get_target_property(_mpi Gromacs::gmxapi MPI)
 configure_package_config_file(
     cmake/gmxapi-config.cmake.in
     "${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config.cmake"
     INSTALL_DESTINATION share/cmake/gmxapi/
 )
+unset(_mpi)
 get_target_property(GMXAPI_RELEASE gmxapi RELEASE)
 write_basic_package_version_file(
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/gmxapi-config-version.cmake

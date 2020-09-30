@@ -61,6 +61,26 @@ set_target_properties(gmxapi PROPERTIES
                       VERSION_PATCH ${GMXAPI_PATCH}
                       RELEASE ${GMXAPI_RELEASE})
 
+
+if (GMX_LIB_MPI)
+    # GROMACS is built against an MPI library.
+    # Clarification should be possible with resolution of #3672.
+    set(_gmx_mpi_type "library")
+elseif(GMX_THREAD_MPI)
+    # GROMACS is built with its internal thread-MPI implementation.
+    set(_gmx_mpi_type "tmpi")
+else()
+    # GROMACS is built without MPI or thread-MPI.
+    set(_gmx_mpi_type "none")
+endif ()
+define_property(TARGET PROPERTY MPI
+                BRIEF_DOCS "MPI capability of the GROMACS library."
+                FULL_DOCS "Values of 'library', 'tmpi', or 'none' indicate the configure-time options of the GROMACS
+                 library build.")
+set_target_properties(gmxapi PROPERTIES
+                      MPI ${_gmx_mpi_type})
+unset(_gmx_mpi_type)
+
 ##########################
 # Define public interface.
 #
