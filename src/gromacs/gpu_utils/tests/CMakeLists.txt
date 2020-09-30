@@ -47,6 +47,9 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test HARDWARE_DETECTION
         hostallocator.cpp
         pinnedmemorychecker.cpp
         typecasts.cpp
+        
+    GPU_CPP_SOURCE_FILES
+        device_buffer.cpp
 
     CUDA_CU_SOURCE_FILES
         devicetransfers.cu
