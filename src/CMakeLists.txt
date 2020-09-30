@@ -59,8 +59,8 @@ file(GENERATE
     )
 
 ####
-set(IGNORED_CLANG_ALL_WARNINGS
-    "-Wno-c++98-compat -Wno-c++98-compat-pedantic" #No intention of C++98 compability
+list(APPEND IGNORED_CLANG_ALL_WARNINGS
+    "-Wno-c++98-compat" "-Wno-c++98-compat-pedantic" #No intention of C++98 compability
     "-Wno-source-uses-openmp" #Don't warn for no-omp build
     "-Wno-c++17-extensions"   #Allowed in attributes (compilers are required to ignore unknown attributes)
     "-Wno-documentation-unknown-command" #Custom commands are used
@@ -92,7 +92,6 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-old-style-cast"
     "-Wno-conversion"
     "-Wno-double-promotion")
-string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
 
 option(GMX_CLANG_TIDY "Use clang-tidy" OFF)
 if (GMX_CLANG_TIDY)

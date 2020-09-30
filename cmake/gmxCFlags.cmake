@@ -442,13 +442,6 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3;/wd161;/wd177;/wd411;/wd593;/wd981;/wd1418;/wd14
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
         endif()
-        if(GMX_GPU_CUDA)
-            # CUDA header cuda_runtime_api.h in at least CUDA 10.1
-            # uses 0 where nullptr would be preferable, and this is
-            # the simplest way to avoid seeing it when it can't be
-            # readily fixed.
-            GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-zero-as-null-pointer-constant" GMXC_CXXFLAGS)
-        endif()
         GMX_TEST_CXXFLAG(CXXFLAGS_WARN_NO_MISSING_FIELD_INITIALIZERS "-Wno-missing-field-initializers" GMXC_CXXFLAGS)
     endif()
 

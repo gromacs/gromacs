@@ -156,6 +156,26 @@ list(APPEND GMX_CUDA_NVCC_FLAGS "-use_fast_math")
 # assemble the CUDA host compiler flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${CUDA_HOST_COMPILER_OPTIONS}")
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # CUDA header cuda_runtime_api.h in at least CUDA 10.1 uses 0
+    # where nullptr would be preferable. GROMACS can't fix these, so
+    # must suppress them.
+    GMX_TEST_CXXFLAG(CXXFLAGS_NO_ZERO_AS_NULL_POINTER_CONSTANT "-Wno-zero-as-null-pointer-constant" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
+    if (CUDA_VERSION VERSION_LESS 11.0)
+        # CUDA header crt/math_functions.h before CUDA 11.0 used
+        # throw() specifications that are deprecated in more recent
+        # C++ versions. GROMACS can't fix these, so must suppress
+        # them.
+        GMX_TEST_CXXFLAG(CXXFLAGS_NO_DEPRECATED_DYNAMIC_EXCEPTION_SPEC "-Wno-deprecated-dynamic-exception-spec" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
+    endif()
+    # Add these flags to those used for the host compiler. The
+    # "-Xcompiler" prefix directs nvcc to only use them for host
+    # compilation, which is all that is needed in this case.
+    foreach(_flag ${NVCC_CLANG_SUPPRESSIONS_CXXFLAGS})
+        list(APPEND GMX_CUDA_NVCC_FLAGS "-Xcompiler ${_flag}")
+    endforeach()
+endif()
+
 string(TOUPPER "${CMAKE_BUILD_TYPE}" _build_type)
 gmx_check_if_changed(_cuda_nvcc_executable_or_flags_changed CUDA_NVCC_EXECUTABLE CUDA_NVCC_FLAGS CUDA_NVCC_FLAGS_${_build_type})
 
