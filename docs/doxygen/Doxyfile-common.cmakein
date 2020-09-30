@@ -51,6 +51,8 @@ PREDEFINED            += gmx_inline=inline
 # and that does not have unnecessary function declarations.
 PREDEFINED            += __STDC__ YYMALLOC=malloc YYFREE=free
 
+EXTRA_PACKAGES        += amssymb
+
 JAVADOC_AUTOBRIEF      = YES
 BUILTIN_STL_SUPPORT    = YES
 INLINE_INHERITED_MEMB  = YES
