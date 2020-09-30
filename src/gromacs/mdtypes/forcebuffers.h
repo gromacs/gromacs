@@ -66,7 +66,14 @@ class ForceBuffersView
 {
 public:
     //! Constructor, creates a view to \p force
-    ForceBuffersView(const ArrayRefWithPadding<RVec>& force) : force_(force) {}
+    ForceBuffersView(const ArrayRefWithPadding<RVec>& force,
+                     const ArrayRefWithPadding<RVec>& forceMtsCombined,
+                     const bool                       useForceMtsCombined) :
+        force_(force),
+        forceMtsCombined_(forceMtsCombined),
+        useForceMtsCombined_(useForceMtsCombined)
+    {
+    }
 
     //! Copy constructor deleted to avoid creating non-const from const
     ForceBuffersView(const ForceBuffersView& o) = delete;
@@ -91,23 +98,57 @@ public:
     //! Returns an ArrayRefWithPadding to the force buffer
     ArrayRefWithPadding<RVec> forceWithPadding() { return force_; }
 
+    //! Returns a const arrayref to the MTS force buffer without padding
+    ArrayRef<const RVec> forceMtsCombined() const
+    {
+        GMX_ASSERT(useForceMtsCombined_, "Need the MTS buffer");
+        return forceMtsCombined_.unpaddedConstArrayRef();
+    }
+
+    //! Returns an arrayref to the MTS force buffer without padding
+    ArrayRef<RVec> forceMtsCombined()
+    {
+        GMX_ASSERT(useForceMtsCombined_, "Need the MTS buffer");
+        return forceMtsCombined_.unpaddedArrayRef();
+    }
+
+    //! Returns an ArrayRefWithPadding to the MTS force buffer
+    ArrayRefWithPadding<RVec> forceMtsCombinedWithPadding()
+    {
+        GMX_ASSERT(useForceMtsCombined_, "Need the MTS buffer");
+        return forceMtsCombined_;
+    }
+
 private:
     //! The force buffer
     ArrayRefWithPadding<RVec> force_;
+    //! The force buffer for combined fast and slow forces with MTS
+    ArrayRefWithPadding<RVec> forceMtsCombined_;
+    //! Wether we use forceMtsCombined_
+    bool useForceMtsCombined_;
 };
 
 /*! \libinternal \brief Object that holds the force buffers
  *
+ * Contains a normal force buffer and optionally a force buffer for combined fast and slow
+ * forces for use with multiple time stepping.
  * More buffers can be added when needed. Those should also be added
  * to ForceBuffersView.
- * Can be pinned for efficient transfer to/from GPUs.
+ * The force buffer (not forceMtsCombined) can be pinned for efficient transfer to/from GPUs.
  * All access happens through the ForceBuffersView object.
  */
 class ForceBuffers
 {
 public:
-    //! Constructor, creates an empty force buffer with pinning not active
-    ForceBuffers(PinningPolicy pinningPolicy = PinningPolicy::CannotBePinned);
+    //! Constructor, creates an empty force buffer with pinning not active and no MTS force buffer
+    ForceBuffers();
+
+    /*! \brief Constructor, with options for using the MTS force buffer and the pinning policy
+     *
+     * \param[in] useForceMtsCombined  Whether to enable use of the forceMtsCombined buffer
+     * \param[in] pinningPolicy        The pinning policy for the force (not MTS) buffer
+     */
+    ForceBuffers(bool useForceMtsCombined, PinningPolicy pinningPolicy);
 
     //! Copy constructor deleted, but could be implemented
     ForceBuffers(const ForceBuffers& o) = delete;
@@ -141,8 +182,12 @@ public:
 private:
     //! The force buffer
     PaddedHostVector<RVec> force_;
+    //! Force buffer with combined fast and slow forces for use with multiple time stepping
+    PaddedHostVector<RVec> forceMtsCombined_;
     //! The view to the force buffer
     ForceBuffersView view_;
+    //! Wether we use forceMtsCombined_
+    bool useForceMtsCombined_;
 };
 
 } // namespace gmx

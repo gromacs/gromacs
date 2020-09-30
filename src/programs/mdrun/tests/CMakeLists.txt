@@ -101,6 +101,7 @@ set(exename "mdrun-test")
 gmx_add_gtest_executable(${exename}
     CPP_SOURCE_FILES
         ewaldsurfaceterm.cpp
+        multiple_time_stepping.cpp
         orires.cpp
         simulator.cpp
         swapcoords.cpp

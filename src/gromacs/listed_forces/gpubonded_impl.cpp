@@ -149,6 +149,10 @@ bool inputSupportsGpuBondeds(const t_inputrec& ir, const gmx_mtop_t& mtop, std::
     {
         errorReasons.emplace_back("MiMiC");
     }
+    if (ir.useMts)
+    {
+        errorReasons.emplace_back("Cannot run with multiple time stepping");
+    }
     if (ir.opts.ngener > 1)
     {
         errorReasons.emplace_back("Cannot run with multiple energy groups");

@@ -588,6 +588,11 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         }
     }
 
+    if (inputrec.useMts)
+    {
+        errorMessage += "Multiple time stepping is not supported.\n";
+    }
+
     if (inputrec.eConstrAlg == econtSHAKE && hasAnyConstraints && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0)
     {
         errorMessage += "SHAKE constraints are not supported.\n";

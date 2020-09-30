@@ -90,6 +90,8 @@ struct t_gromppopts
     bool  bGenPairs;
     real  tempi;
     int   seed;
+    int   numMtsLevels;
+    char* mtsLevel2Forces;
     bool  bOrire;
     bool  bMorse;
     char* wall_atomtype[2];

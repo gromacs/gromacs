@@ -120,6 +120,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -330,9 +331,9 @@ void gmx::LegacySimulator::do_md()
     const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
     const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
-    ForceBuffers f(((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
-                           ? PinningPolicy::PinnedIfSupported
-                           : PinningPolicy::CannotBePinned);
+    ForceBuffers f(fr->useMts, ((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
+                                       ? PinningPolicy::PinnedIfSupported
+                                       : PinningPolicy::CannotBePinned);
     if (DOMAINDECOMP(cr))
     {
         stateInstance = std::make_unique<t_state>();
@@ -919,6 +920,10 @@ void gmx::LegacySimulator::do_md()
         force_flags = (GMX_FORCE_STATECHANGED | ((inputrecDynamicBox(ir)) ? GMX_FORCE_DYNAMICBOX : 0)
                        | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
                        | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (bDoFEP ? GMX_FORCE_DHDL : 0));
+        if (fr->useMts && !do_per_step(step, ir->nstfout))
+        {
+            force_flags |= GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE;
+        }
 
         if (shellfc)
         {
@@ -1300,13 +1305,31 @@ void gmx::LegacySimulator::do_md()
         }
         else
         {
-            upd.update_coords(*ir, step, mdatoms, state, f.view().forceWithPadding(), fcdata, ekind,
-                              M, etrtPOSITION, cr, constr != nullptr);
+            /* With multiple time stepping we need to do an additional normal
+             * update step to obtain the virial, as the actual MTS integration
+             * using an acceleration where the slow forces are multiplied by mtsFactor.
+             * Using that acceleration would result in a virial with the slow
+             * force contribution would be a factor mtsFactor too large.
+             */
+            if (fr->useMts && bCalcVir && constr != nullptr)
+            {
+                upd.update_for_constraint_virial(*ir, *mdatoms, *state, f.view().forceWithPadding(), *ekind);
+
+                constrain_coordinates(constr, do_log, do_ene, step, state,
+                                      upd.xp()->arrayRefWithPadding(), &dvdl_constr, bCalcVir, shake_vir);
+            }
+
+            ArrayRefWithPadding<const RVec> forceCombined =
+                    (fr->useMts && step % ir->mtsLevels[1].stepFactor == 0)
+                            ? f.view().forceMtsCombinedWithPadding()
+                            : f.view().forceWithPadding();
+            upd.update_coords(*ir, step, mdatoms, state, forceCombined, fcdata, ekind, M,
+                              etrtPOSITION, cr, constr != nullptr);
 
             wallcycle_stop(wcycle, ewcUPDATE);
 
-            constrain_coordinates(constr, do_log, do_ene, step, state,
-                                  upd.xp()->arrayRefWithPadding(), &dvdl_constr, bCalcVir, shake_vir);
+            constrain_coordinates(constr, do_log, do_ene, step, state, upd.xp()->arrayRefWithPadding(),
+                                  &dvdl_constr, bCalcVir && !fr->useMts, shake_vir);
 
             upd.update_sd_second_half(*ir, step, &dvdl_constr, mdatoms, state, cr, nrnb, wcycle,
                                       constr, do_log, do_ene);

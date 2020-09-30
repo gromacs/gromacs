@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,51 +32,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_MULTIPLETIMESTEPPING_H
+#define GMX_MULTIPLETIMESTEPPING_H
 
-/*! \internal \file
- * \brief
- * Implements the PairlistParams constructor
- *
- * \author Berk Hess <hess@kth.se>
- * \ingroup module_nbnxm
- */
+#include <bitset>
 
-#include "gmxpre.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
-#include "pairlistparams.h"
+struct t_inputrec;
 
-#include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/utility/gmxassert.h"
-
-#include "nbnxm_geometry.h"
-
-
-PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
-                               const bool              haveFep,
-                               const real              rlist,
-                               const bool              haveMultipleDomains) :
-    haveFep(haveFep),
-    rlistOuter(rlist),
-    rlistInner(rlist),
-    haveMultipleDomains(haveMultipleDomains),
-    useDynamicPruning(false),
-    mtsFactor(1),
-    nstlistPrune(-1),
-    numRollingPruningParts(1),
-    lifetime(-1)
+namespace gmx
 {
-    if (!Nbnxm::kernelTypeUsesSimplePairlist(kernelType))
-    {
-        pairlistType = PairlistType::HierarchicalNxN;
-    }
-    else
-    {
-        switch (Nbnxm::JClusterSizePerKernelType[kernelType])
-        {
-            case 2: pairlistType = PairlistType::Simple4x2; break;
-            case 4: pairlistType = PairlistType::Simple4x4; break;
-            case 8: pairlistType = PairlistType::Simple4x8; break;
-            default: GMX_RELEASE_ASSERT(false, "Kernel type does not have a pairlist type");
-        }
-    }
-}
+
+//! Force group available for selection for multiple time step integration
+enum class MtsForceGroups : int
+{
+    LongrangeNonbonded, //!< PME-mesh or Ewald for electrostatics and/or LJ
+    Nonbonded,          //!< Non-bonded pair interactions
+    Pair,               //!< Bonded pair interactions
+    Dihedral,           //!< Dihedrals, including cmap (not restraints)
+    Angle,              //! Bonded angle potentials (not restraints)
+    Count               //! The number of groups above
+};
+
+static const gmx::EnumerationArray<MtsForceGroups, std::string> mtsForceGroupNames = {
+    "longrange-nonbonded", "nonbonded", "pair", "dihedral", "angle"
+};
+
+//! Setting for a single level for multiple time step integration
+struct MtsLevel
+{
+    //! The force group selection for this level;
+    std::bitset<static_cast<int>(MtsForceGroups::Count)> forceGroups;
+    //! The factor between the base, fastest, time step and the time step for this level
+    int stepFactor;
+};
+
+/*! \brief Returns the interval in steps at which the non-bonded pair forces are calculated
+ *
+ * Note: returns 1 when multiple time-stepping is not activated.
+ */
+int nonbondedMtsFactor(const t_inputrec& ir);
+
+//! (Release) Asserts that all multiple time-stepping requirements on \p ir are fulfilled
+void assertMtsRequirements(const t_inputrec& ir);
+
+} // namespace gmx
+
+#endif /* GMX_MULTIPLETIMESTEPPING_H */

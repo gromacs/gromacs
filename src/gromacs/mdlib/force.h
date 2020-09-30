@@ -76,6 +76,19 @@ class StepWorkload;
 class VirtualSitesHandler;
 } // namespace gmx
 
+/* Perform the force and, if requested, energy computation
+ *
+ * Without multiple time stepping the force is returned in force->force().
+ *
+ * With multiple time stepping the behavior depends on the integration step.
+ * At fast steps (step % mtsFactor != 0), the fast force is returned in
+ * force->force(). The force->forceMtsCombined() buffer is unused.
+ * At slow steps, the normal force is returned in force->force(),
+ * unless the \p GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE is set in \p legacyFlags.
+ * A MTS-combined force, F_fast + mtsFactor*F_slow, is always returned in
+ * force->forceMtsCombined(). This forceMts can be used directly in a standard
+ * leap-frog integrator to do multiple time stepping.
+ */
 void do_force(FILE*                               log,
               const t_commrec*                    cr,
               const gmx_multisim_t*               ms,

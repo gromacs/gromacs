@@ -64,7 +64,7 @@ TEST(ForceBuffers, ConstructsUnpinned)
 
 TEST(ForceBuffers, ConstructsPinned)
 {
-    ForceBuffers forceBuffers(PinningPolicy::PinnedIfSupported);
+    ForceBuffers forceBuffers(false, PinningPolicy::PinnedIfSupported);
 
     EXPECT_EQ(forceBuffers.pinningPolicy(), PinningPolicy::PinnedIfSupported);
 }
@@ -123,7 +123,7 @@ TEST(ForceBuffers, CopyWorks)
 
 TEST(ForceBuffers, CopyDoesNotPin)
 {
-    ForceBuffers forceBuffers(PinningPolicy::PinnedIfSupported);
+    ForceBuffers forceBuffers(false, PinningPolicy::PinnedIfSupported);
 
     ForceBuffers forceBuffersCopy;
     forceBuffersCopy = forceBuffers;

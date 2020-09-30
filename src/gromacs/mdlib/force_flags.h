@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,8 @@
 #define GMX_FORCE_ENERGY (1u << 9u)
 /* Calculate dHdl */
 #define GMX_FORCE_DHDL (1u << 10u)
+/* Tells whether only the MTS combined force buffer is needed and not the normal force buffer */
+#define GMX_FORCE_DO_NOT_NEED_NORMAL_FORCE (1u << 11u)
 
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)

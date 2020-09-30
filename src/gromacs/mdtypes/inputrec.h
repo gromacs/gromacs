@@ -41,6 +41,7 @@
 #include <cstdio>
 
 #include <memory>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -59,6 +60,7 @@ namespace gmx
 class Awh;
 struct AwhParams;
 class KeyValueTreeObject;
+struct MtsLevel;
 } // namespace gmx
 
 enum class PbcType;
@@ -348,6 +350,10 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     double init_t;
     //! Time step (ps)
     double delta_t;
+    //! Whether we use multiple time stepping
+    bool useMts;
+    //! The multiple time stepping levels
+    std::vector<gmx::MtsLevel> mtsLevels;
     //! Precision of x in compressed trajectory file
     real x_compression_precision;
     //! Requested fourier_spacing, when nk? not set

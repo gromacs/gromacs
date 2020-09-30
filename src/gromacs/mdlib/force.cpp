@@ -122,7 +122,8 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
     /* Do long-range electrostatics and/or LJ-PME
      * and compute PME surface terms when necessary.
      */
-    if (computePmeOnCpu || fr->ic->eeltype == eelEWALD || haveEwaldSurfaceTerm)
+    if ((computePmeOnCpu || fr->ic->eeltype == eelEWALD || haveEwaldSurfaceTerm)
+        && stepWork.computeNonbondedForces)
     {
         int  status = 0;
         real Vlr_q = 0, Vlr_lj = 0;

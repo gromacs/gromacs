@@ -101,7 +101,8 @@ void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
     wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
     wallcycle_sub_start_nocount(wcycle_, ewcsLAUNCH_GPU_NONBONDED);
 
-    const bool stepIsEven = (pairlistSets().numStepsWithPairlist(step) % 2 == 0);
+    const bool stepIsEven =
+            (pairlistSets().numStepsWithPairlist(step) % (2 * pairlistSets().params().mtsFactor) == 0);
 
     Nbnxm::gpu_launch_kernel_pruneonly(
             gpu_nbv, stepIsEven ? gmx::InteractionLocality::Local : gmx::InteractionLocality::NonLocal,

@@ -130,6 +130,8 @@ struct PairlistParams
     bool haveMultipleDomains;
     //! Are we using dynamic pair-list pruning
     bool useDynamicPruning;
+    //! The interval in steps for computing non-bonded interactions, =1 without MTS
+    int mtsFactor;
     //! Pair-list dynamic pruning interval
     int nstlistPrune;
     //! The number parts to divide the pair-list into for rolling pruning, a value of 1 gives no rolling pruning

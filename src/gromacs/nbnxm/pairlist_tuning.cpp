@@ -59,6 +59,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
@@ -152,25 +153,33 @@ void increaseNstlist(FILE*               fp,
     const char* dd_err  = "Can not increase nstlist because of domain decomposition limitations";
     char        buf[STRLEN];
 
+    /* When most of the computation, and in particular the non-bondeds is only
+     * performed every ir->mtsFactor steps due to multiple time stepping,
+     * we scale all nstlist values by this factor.
+     */
+    const int mtsFactor = gmx::nonbondedMtsFactor(*ir);
+
     if (nstlist_cmdline <= 0)
     {
-        if (ir->nstlist == 1)
+        if (ir->nstlist <= mtsFactor)
         {
-            /* The user probably set nstlist=1 for a reason,
-             * don't mess with the settings.
+            /* The user probably set nstlist<=mtsFactor for a reason,
+             * don't mess with the settings, except when < mtsFactor.
              */
+            ir->nstlist = mtsFactor;
+
             return;
         }
 
         /* With a GPU and fixed nstlist suggest tuning nstlist */
-        if (fp != nullptr && useOrEmulateGpuForNonbondeds && ir->nstlist < nstlist_try[0]
+        if (fp != nullptr && useOrEmulateGpuForNonbondeds && ir->nstlist < nstlist_try[0] * mtsFactor
             && !supportsDynamicPairlistGenerationInterval(*ir))
         {
             fprintf(fp, nstl_gpu, ir->nstlist);
         }
 
         nstlist_ind = 0;
-        while (nstlist_ind < NNSTL && ir->nstlist >= nstlist_try[nstlist_ind])
+        while (nstlist_ind < NNSTL && ir->nstlist >= nstlist_try[nstlist_ind] * mtsFactor)
         {
             nstlist_ind++;
         }
@@ -249,10 +258,10 @@ void increaseNstlist(FILE*               fp,
     VerletbufListSetup listSetup = verletbufGetSafeListSetup(listType);
 
     /* Allow rlist to make the list a given factor larger than the list
-     * would be with the reference value for nstlist (10).
+     * would be with the reference value for nstlist (10*mtsFactor).
      */
     nstlist_prev = ir->nstlist;
-    ir->nstlist  = nbnxnReferenceNstlist;
+    ir->nstlist  = nbnxnReferenceNstlist * mtsFactor;
     const real rlistWithReferenceNstlist =
             calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
     ir->nstlist = nstlist_prev;
@@ -273,11 +282,12 @@ void increaseNstlist(FILE*               fp,
     {
         if (nstlist_cmdline <= 0)
         {
-            ir->nstlist = nstlist_try[nstlist_ind];
+            ir->nstlist = nstlist_try[nstlist_ind] * mtsFactor;
         }
 
         /* Set the pair-list buffer size in ir */
-        rlist_new = calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup);
+        rlist_new = calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - mtsFactor,
+                                         -1, listSetup);
 
         /* Does rlist fit in the box? */
         bBox = (gmx::square(rlist_new) < max_cutoff2(ir->pbcType, box));
@@ -394,7 +404,17 @@ static void setDynamicPairlistPruningParameters(const t_inputrec*          ir,
                                                 const interaction_const_t* ic,
                                                 PairlistParams*            listParams)
 {
-    listParams->lifetime = ir->nstlist - 1;
+    /* When applying multiple time stepping to the non-bonded forces,
+     * we only compute them every mtsFactor steps, so all parameters here
+     * should be a multiple of mtsFactor.
+     */
+    listParams->mtsFactor = gmx::nonbondedMtsFactor(*ir);
+
+    const int mtsFactor = listParams->mtsFactor;
+
+    GMX_RELEASE_ASSERT(ir->nstlist % mtsFactor == 0, "nstlist should be a multiple of mtsFactor");
+
+    listParams->lifetime = ir->nstlist - mtsFactor;
 
     /* When nstlistPrune was set by the user, we need to execute one loop
      * iteration to determine rlistInner.
@@ -407,9 +427,9 @@ static void setDynamicPairlistPruningParameters(const t_inputrec*          ir,
     {
         /* Dynamic pruning on the GPU is performed on the list for
          * the next step on the coordinates of the current step,
-         * so the list lifetime is nstlistPrune (not the usual nstlist-1).
+         * so the list lifetime is nstlistPrune (not the usual nstlist-mtsFactor).
          */
-        int listLifetime         = tunedNstlistPrune - (useGpuList ? 0 : 1);
+        int listLifetime         = tunedNstlistPrune - (useGpuList ? 0 : mtsFactor);
         listParams->nstlistPrune = tunedNstlistPrune;
         listParams->rlistInner   = calcVerletBufferSize(*mtop, det(box), *ir, tunedNstlistPrune,
                                                       listLifetime, -1, listSetup);
@@ -418,7 +438,7 @@ static void setDynamicPairlistPruningParameters(const t_inputrec*          ir,
          * every c_nbnxnGpuRollingListPruningInterval steps,
          * so keep nstlistPrune a multiple of the interval.
          */
-        tunedNstlistPrune += useGpuList ? c_nbnxnGpuRollingListPruningInterval : 1;
+        tunedNstlistPrune += (useGpuList ? c_nbnxnGpuRollingListPruningInterval : 1) * mtsFactor;
     } while (!userSetNstlistPrune && tunedNstlistPrune < ir->nstlist
              && listParams->rlistInner == interactionCutoff);
 

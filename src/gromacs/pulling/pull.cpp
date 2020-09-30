@@ -1988,6 +1988,10 @@ struct pull_t* init_pull(FILE*                     fplog,
                           epull_names[epullUMBRELLA]);
             }
 
+            GMX_RELEASE_ASSERT(
+                    !ir->useMts,
+                    "Constraint pulling can not be combined with multiple time stepping");
+
             pull->bConstraint = TRUE;
         }
         else

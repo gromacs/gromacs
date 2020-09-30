@@ -166,6 +166,16 @@ public:
                                gmx::Constraints* constr,
                                bool              do_log,
                                bool              do_ene);
+
+    /*! \brief Performs a leap-frog update without updating \p state so the constrain virial
+     * can be computed.
+     */
+    void update_for_constraint_virial(const t_inputrec&                                inputRecord,
+                                      const t_mdatoms&                                 md,
+                                      const t_state&                                   state,
+                                      const gmx::ArrayRefWithPadding<const gmx::RVec>& f,
+                                      const gmx_ekindata_t&                            ekind);
+
     /*! \brief Update pre-computed constants that depend on the reference temperature for coupling.
      *
      * This could change e.g. in simulated annealing.

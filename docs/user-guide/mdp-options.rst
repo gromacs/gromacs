@@ -231,6 +231,45 @@ Run control
          same simulation. This option is generally useful to set only
          when coping with a crashed simulation where files were lost.
 
+.. mdp:: mts
+
+   .. mdp-value:: no
+
+      Evaluate all forces at every integration step.
+
+   .. mdp-value:: yes
+
+      Use a multiple timing-stepping integrator to evaluate some forces, as specified
+      by :mdp:`mts-level2-forces` every :mdp:`mts-level2-factor` integration
+      steps. All other forces are evaluated at every step.
+
+.. mdp:: mts-levels
+
+        (2)
+	The number of levels for the multiple time-stepping scheme.
+	Currently only 2 is supported.
+
+.. mdp:: mts-level2-forces
+
+   (longrange-nonbonded nonbonded pair dihedral)
+   A list of force groups that will be evaluated only every
+   :mdp:`mts-level2-factor` steps. Supported entries are:
+   ``longrange-nonbonded``, ``nonbonded``, ``pair``, ``dihedral`` and
+   ``angle``. With ``pair`` the listed pair forces (such as 1-4) are
+   selected. With ``dihedral`` all dihedrals are selected, including cmap.
+   All other forces, including all restraints, are evaluated and
+   integrated every step. When PME or Ewald is used for electrostatics
+   and/or LJ interactions, ``longrange-nonbonded`` has to be entered here.
+   The default value should work well for most standard atomistic simulations
+   and in particular for replacing virtual site treatment for increasing
+   the time step.
+
+.. mdp:: mts-level2-factor
+
+      (2) [steps]
+      Interval for computing the forces in level 2 of the multiple time-stepping
+      scheme
+
 .. mdp:: comm-mode
 
    .. mdp-value:: Linear
@@ -1649,7 +1688,8 @@ pull-coord2-vec, pull-coord2-k, and so on.
       Center of mass pulling using a constraint between the reference
       group and one or more groups. The setup is identical to the
       option umbrella, except for the fact that a rigid constraint is
-      applied instead of a harmonic potential.
+      applied instead of a harmonic potential. Note that this type is
+      not supported in combination with multiple time stepping.
 
    .. mdp-value:: constant-force
 

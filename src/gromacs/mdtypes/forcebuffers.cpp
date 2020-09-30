@@ -49,7 +49,19 @@
 namespace gmx
 {
 
-ForceBuffers::ForceBuffers(PinningPolicy pinningPolicy) : force_({}, { pinningPolicy }), view_({})
+ForceBuffers::ForceBuffers() :
+    force_({}),
+    forceMtsCombined_({}),
+    view_({}, {}, false),
+    useForceMtsCombined_(false)
+{
+}
+
+ForceBuffers::ForceBuffers(const bool useForceMtsCombined, const PinningPolicy pinningPolicy) :
+    force_({}, { pinningPolicy }),
+    forceMtsCombined_({}),
+    view_({}, {}, useForceMtsCombined),
+    useForceMtsCombined_(useForceMtsCombined)
 {
 }
 
@@ -72,7 +84,12 @@ PinningPolicy ForceBuffers::pinningPolicy() const
 void ForceBuffers::resize(int numAtoms)
 {
     force_.resizeWithPadding(numAtoms);
-    view_ = ForceBuffersView(force_.arrayRefWithPadding());
+    if (useForceMtsCombined_)
+    {
+        forceMtsCombined_.resizeWithPadding(numAtoms);
+    }
+    view_ = ForceBuffersView(force_.arrayRefWithPadding(), forceMtsCombined_.arrayRefWithPadding(),
+                             useForceMtsCombined_);
 }
 
 } // namespace gmx

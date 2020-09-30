@@ -44,6 +44,7 @@
 #include "decidesimulationworkload.h"
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/taskassignment/decidegpuusage.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/utility/arrayref.h"
@@ -61,15 +62,19 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
 {
     SimulationWorkload simulationWorkload;
     simulationWorkload.computeNonbonded = !disableNonbondedCalculation;
-    simulationWorkload.computeMuTot     = inputrecNeedMutot(&inputrec);
-    simulationWorkload.useCpuNonbonded  = !useGpuForNonbonded;
-    simulationWorkload.useGpuNonbonded  = useGpuForNonbonded;
-    simulationWorkload.useCpuPme        = (pmeRunMode == PmeRunMode::CPU);
+    simulationWorkload.computeNonbondedAtMtsLevel1 =
+            simulationWorkload.computeNonbonded && inputrec.useMts
+            && inputrec.mtsLevels.back().forceGroups[static_cast<int>(MtsForceGroups::Nonbonded)];
+    simulationWorkload.computeMuTot    = inputrecNeedMutot(&inputrec);
+    simulationWorkload.useCpuNonbonded = !useGpuForNonbonded;
+    simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
+    simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
-    simulationWorkload.useGpuPmeFft       = (pmeRunMode == PmeRunMode::Mixed);
-    simulationWorkload.useGpuBonded       = useGpuForBonded;
-    simulationWorkload.useGpuUpdate       = useGpuForUpdate;
-    simulationWorkload.useGpuBufferOps    = devFlags.enableGpuBufferOps || useGpuForUpdate;
+    simulationWorkload.useGpuPmeFft    = (pmeRunMode == PmeRunMode::Mixed);
+    simulationWorkload.useGpuBonded    = useGpuForBonded;
+    simulationWorkload.useGpuUpdate    = useGpuForUpdate;
+    simulationWorkload.useGpuBufferOps = (devFlags.enableGpuBufferOps || useGpuForUpdate)
+                                         && !simulationWorkload.computeNonbondedAtMtsLevel1;
     simulationWorkload.useGpuHaloExchange = devFlags.enableGpuHaloExchange;
     simulationWorkload.useGpuPmePpCommunication =
             devFlags.enableGpuPmePPComm && (pmeRunMode == PmeRunMode::GPU);
