@@ -103,6 +103,7 @@ SimulationRunner::SimulationRunner(TestFileManager* fileManager) :
     mtxFileName_(fileManager->getTemporaryFilePath(".mtx")),
 
     nsteps_(-2),
+    mdpSource_(SimulationRunnerMdpSource::Undefined),
     fileManager_(*fileManager)
 {
 #if GMX_LIB_MPI
@@ -129,6 +130,9 @@ void SimulationRunner::useStringAsMdpFile(const char* mdpString)
 
 void SimulationRunner::useStringAsMdpFile(const std::string& mdpString)
 {
+    GMX_RELEASE_ASSERT(mdpSource_ != SimulationRunnerMdpSource::File,
+                       "Cannot mix .mdp file from database with options set via string.");
+    mdpSource_        = SimulationRunnerMdpSource::String;
     mdpInputContents_ = mdpString;
 }
 
@@ -156,10 +160,29 @@ void SimulationRunner::useGroFromDatabase(const char* name)
     groFileName_ = gmx::test::TestFileManager::getInputFilePath((std::string(name) + ".gro").c_str());
 }
 
+void SimulationRunner::useTopGroAndMdpFromFepTestDatabase(const std::string& name)
+{
+    GMX_RELEASE_ASSERT(mdpSource_ != SimulationRunnerMdpSource::String,
+                       "Cannot mix .mdp file from database with options set via string.");
+    mdpSource_   = SimulationRunnerMdpSource::File;
+    topFileName_ = gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/topol.top");
+    groFileName_ = gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/conf.gro");
+    mdpFileName_ =
+            gmx::test::TestFileManager::getInputFilePath("freeenergy/" + name + "/grompp.mdp");
+}
+
 int SimulationRunner::callGromppOnThisRank(const CommandLine& callerRef)
 {
-    const std::string mdpInputFileName(fileManager_.getTemporaryFilePath("input.mdp"));
-    gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpInputContents_);
+    std::string mdpInputFileName;
+    if (mdpSource_ == SimulationRunnerMdpSource::File)
+    {
+        mdpInputFileName = mdpFileName_;
+    }
+    else
+    {
+        mdpInputFileName = fileManager_.getTemporaryFilePath("input.mdp");
+        gmx::TextWriter::writeFileFromString(mdpInputFileName, mdpInputContents_);
+    }
 
     CommandLine caller;
     caller.append("grompp");
@@ -261,6 +284,10 @@ int SimulationRunner::callMdrun(const CommandLine& callerRef)
     caller.addOption("-mtx", mtxFileName_);
     caller.addOption("-o", fullPrecisionTrajectoryFileName_);
     caller.addOption("-x", reducedPrecisionTrajectoryFileName_);
+    if (!dhdlFileName_.empty())
+    {
+        caller.addOption("-dhdl", dhdlFileName_);
+    }
 
     caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
 

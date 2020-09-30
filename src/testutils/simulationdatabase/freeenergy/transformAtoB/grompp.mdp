@@ -1,0 +1,144 @@
+; RUN CONTROL PARAMETERS
+integrator               = md-vv
+; Start time and timestep in ps
+tinit                    = 0.0
+dt                       = 0.001
+nsteps                   = 20
+; For exact run continuation or redoing part of a run
+init-step                = 0
+; Part index is updated automatically on checkpointing (keeps files separate)
+simulation-part          = 1
+; mode for center of mass motion removal
+comm-mode                = Linear
+; number of steps for center of mass motion removal
+nstcomm                  = 1
+; group(s) for center of mass motion removal
+comm-grps                = 
+
+; OUTPUT CONTROL OPTIONS
+; Output frequency for coords (x), velocities (v) and forces (f)
+nstxout                  = 20
+nstvout                  = 20
+nstfout                  = 20
+; Output frequency for energies to log file and energy file
+nstlog                   = 5
+nstcalcenergy            = 1
+nstenergy                = 1
+; Output frequency and precision for .xtc file
+nstxout-compressed       = 0
+compressed-x-precision   = 1000
+; This selects the subset of atoms for the compressed
+; trajectory file. You can select multiple groups. By
+; default, all atoms will be written.
+compressed-x-grps        = 
+; Selection of energy groups
+energygrps               = 
+
+; NEIGHBORSEARCHING PARAMETERS
+; cut-off scheme (Verlet: particle based cut-offs)
+cutoff-scheme            = Verlet
+; nblist update frequency
+nstlist                  = 10
+; Periodic boundary conditions: xyz, no, xy
+pbc                      = xyz
+periodic-molecules       = no
+; Allowed energy error due to the Verlet buffer in kJ/mol/ps per atom,
+; a value of -1 means: use rlist
+verlet-buffer-tolerance  = 0.005
+; nblist cut-off        
+rlist                    = 1.0
+; long-range cut-off for switched potentials
+
+; OPTIONS FOR ELECTROSTATICS AND VDW
+; Method for doing electrostatics
+coulomb_type             = pme
+coulomb-modifier         = Potential-shift-Verlet
+rcoulomb_switch          = 0.99
+rcoulomb                 = 1.0
+; Relative dielectric constant for the medium and the reaction field
+epsilon_r                = 1.0
+epsilon-rf               = 0
+; Method for doing Van der Waals
+vdw_type                 = Cut-off
+vdw-modifier             = Force-switch
+; cut-off lengths       
+rvdw_switch              = 0.8
+rvdw                     = 1
+; Apply long range dispersion corrections for Energy and Pressure
+dispcorr                 = enerpres
+; Extension of the potential lookup tables beyond the cut-off
+table-extension          = 1
+; Separate tables between energy group pairs
+energygrp-table          = 
+; Spacing for the PME/PPPM FFT grid
+fourierspacing           = 0.12
+; EWALD/PME/PPPM parameters
+pme-order                = 4
+ewald_rtol               = 1e-6
+ewald-geometry           = 3d
+epsilon-surface          = 0
+
+; OPTIONS FOR WEAK COUPLING ALGORITHMS
+; Temperature coupling  
+tcoupl                   = berendsen
+nsttcouple               = 1
+nh-chain-length          = 10
+print-nose-hoover-chain-variables = no
+; Groups to couple separately
+tc-grps                  = system
+; Time constant (ps) and reference temperature (K)
+tau_t                    = 0.1
+ref_t                    = 298
+; pressure coupling     
+Pcoupl                   = no
+
+; GENERATE VELOCITIES FOR STARTUP RUN
+gen-vel                  = no
+
+; OPTIONS FOR BONDS    
+constraints              = h-bonds
+; Type of constraint algorithm
+constraint-algorithm     = Lincs
+; Do not constrain the start configuration
+continuation             = no
+; Highest order in the expansion of the constraint coupling matrix
+lincs-order              = 8
+; Number of iterations in the final step of LINCS. 1 is fine for
+; normal simulations, but use 2 to conserve energy in NVE runs.
+; For energy minimization with constraints it should be 4 to 8.
+lincs-iter               = 2
+; Lincs will write a warning to the stderr if in one step a bond
+; rotates over more degrees than
+lincs-warnangle          = 30
+; Convert harmonic bonds to morse potentials
+morse                    = no
+
+; Free energy variables
+free-energy              = yes
+couple-moltype           = 
+couple-lambda0           = vdw-q
+couple-lambda1           = vdw-q
+couple-intramol          = no
+init-lambda-state        = 4
+delta-lambda             = 0
+nstdhdl                  = 5
+fep-lambdas              = 0.0 0.25 0.5 0.75 1.0
+mass-lambdas             = 
+coul-lambdas             = 
+vdw-lambdas              = 
+bonded-lambdas           = 
+restraint-lambdas        = 
+temperature-lambdas      = 
+calc-lambda-neighbors    = 1
+init-lambda-weights      = 
+dhdl-print-energy        = no
+sc-alpha                 = 0.5
+sc-power                 = 1
+sc-r-power               = 6
+sc-sigma                 = 0.3
+sc-coul                  = no
+separate-dhdl-file       = no
+dhdl-derivatives         = yes
+dh_hist_size             = 0
+dh_hist_spacing          = 0.1
+

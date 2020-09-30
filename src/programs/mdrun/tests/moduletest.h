@@ -61,6 +61,21 @@ namespace test
 {
 
 /*! \internal
+ * \brief How the mdp file of the SimulationRunner is defined
+ */
+enum class SimulationRunnerMdpSource
+{
+    //! The default behavior. Will result in an empty mdp file.
+    Undefined,
+    //! Mdp options are set via string using SimulationRunner::useStringAsMdpFile
+    String,
+    //! Mdp options are read from a file set in SimulationRunner::useTopGroAndMdpFromFepTestDatabase
+    File,
+    //! Signals the last enum entry
+    Count
+};
+
+/*! \internal
  * \brief Helper object for running grompp and mdrun in
  * integration tests of mdrun functionality
  *
@@ -105,6 +120,8 @@ public:
     void useTopGroAndNdxFromDatabase(const std::string& name);
     //! Use a standard .gro file as input to grompp
     void useGroFromDatabase(const char* name);
+    //! Use .top, .gro, and .mdp from FEP test database
+    void useTopGroAndMdpFromFepTestDatabase(const std::string& name);
     //! Calls grompp (on rank 0, with a customized command line) to prepare for the mdrun test
     int callGrompp(const CommandLine& callerRef);
     //! Convenience wrapper for a default call to \c callGrompp
@@ -136,6 +153,7 @@ public:
      */
     std::string topFileName_;
     std::string groFileName_;
+    std::string mdpFileName_;
     std::string fullPrecisionTrajectoryFileName_;
     std::string reducedPrecisionTrajectoryFileName_;
     std::string groOutputFileName_;
@@ -147,8 +165,11 @@ public:
     std::string mtxFileName_;
     std::string cptFileName_;
     std::string swapFileName_;
+    std::string dhdlFileName_;
     int         nsteps_;
     //@}
+    //! How the mdp options are defined
+    SimulationRunnerMdpSource mdpSource_;
     //! What will be written into a temporary mdp file before the grompp call
     std::string mdpInputContents_;
 

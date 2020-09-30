@@ -230,7 +230,8 @@ private:
 /*! \libinternal \brief
  * Handles comparison to test reference data.
  *
- * Every check*() method takes an id string as the last parameter.  This id is
+ * Every check*() method takes an id string as th
+ * e last parameter.  This id is
  * used to uniquely identify the value in the reference data, and it makes the
  * output XML more human-friendly and more robust to errors.  The id can be
  * NULL; in this case, multiple elements with no id are created, and they will
