@@ -12,7 +12,7 @@ several new features are available for running simulations. We are extremely
 interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
-* New |Gromacs| logo!
+* Cool quote autogenerator
 
 
 .. Note to developers!
