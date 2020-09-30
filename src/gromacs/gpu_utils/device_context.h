@@ -53,6 +53,9 @@
 #if GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
 #endif
+#if GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gmxsycl.h"
+#endif
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/utility/classhelpers.h"
@@ -85,6 +88,18 @@ public:
 private:
     //! OpenCL context object
     cl_context context_ = nullptr;
+#endif
+
+#if GMX_GPU_SYCL
+public:
+    //! Const getter
+    const cl::sycl::context& context() const { return context_; }
+    //! Getter
+    cl::sycl::context& context() { return context_; }
+
+private:
+    //! SYCL context object
+    cl::sycl::context context_;
 #endif
 
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);

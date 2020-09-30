@@ -80,6 +80,15 @@ elseif (GMX_GPU_OPENCL)
         pme_gpu_internal.cpp
         pme_gpu_timings.cpp
         )
+elseif (GMX_GPU_SYCL)
+    # SYCL-TODO: proper implementation
+    gmx_add_libgromacs_sources(
+        pme_gpu_program_impl.cpp
+        )
+    _gmx_add_files_to_property(SYCL_SOURCES
+        pme_gpu_program_impl.cpp
+        pme_gpu_program.cpp
+        )
 else()
     gmx_add_libgromacs_sources(
         # Files that implement stubs

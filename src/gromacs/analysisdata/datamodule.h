@@ -213,7 +213,7 @@ public:
      * This method is called after frameFinished(), but with an additional
      * constraint that it is always called in serial and with an increasing
      * \p frameIndex.  Parallel data modules need this to serialize their
-     * data for downsteam serial modules; AnalysisDataModuleSerial provides
+     * data for downstream serial modules; AnalysisDataModuleSerial provides
      * an empty implementation, as there frameFinished() can be used for
      * the same purpose.
      */

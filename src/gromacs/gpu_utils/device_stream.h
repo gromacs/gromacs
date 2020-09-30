@@ -53,6 +53,8 @@
 
 #elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
+#elif GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gmxsycl.h"
 #endif
 #include "gromacs/utility/classhelpers.h"
 
@@ -73,7 +75,7 @@ enum class DeviceStreamPriority : int
 /*! \libinternal \brief Declaration of platform-agnostic device stream/queue.
  *
  * The command stream (or command queue) is a sequence of operations that are executed
- * in they order they were issued. Several streams may co-exist to represent concurency.
+ * in they order they were issued. Several streams may co-exist to represent concurrency.
  * This class declares the interfaces, that are exposed to platform-agnostic code and
  * it should be implemented for each compute architecture (e.g. CUDA and OpenCL).
  *
@@ -89,9 +91,9 @@ class DeviceStream
 public:
     /*! \brief Construct and init.
      *
-     * \param[in] deviceContext  Device context (only used in OpenCL).
+     * \param[in] deviceContext  Device context (only used in OpenCL and SYCL).
      * \param[in] priority       Stream priority: high or normal (only used in CUDA).
-     * \param[in] useTiming      If the timing should be enabled (only used in OpenCL).
+     * \param[in] useTiming      If the timing should be enabled (only used in OpenCL and SYCL).
      */
     DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, bool useTiming);
 
@@ -104,25 +106,41 @@ public:
      */
     bool isValid() const;
 
-    //! Synchronize the steam
+    //! Synchronize the stream
     void synchronize() const;
 
 #if GMX_GPU_CUDA
 
     //! Getter
     cudaStream_t stream() const;
-    //! Setter (temporary, will be removed in the follow-up)
-    void setStream(cudaStream_t stream) { stream_ = stream; }
 
 private:
     cudaStream_t stream_ = nullptr;
+#elif GMX_GPU_SYCL
 
+    /*! \brief
+     * Getter for the underlying \c cl::sycl:queue object.
+     *
+     * Returns a copy instead of const-reference, because it's impossible to submit to or wait
+     * on a \c const cl::sycl::queue. SYCL standard guarantees that operating on copy is
+     * equivalent to operating on the original queue.
+     *
+     * \throws std::bad_optional_access if the stream is not valid.
+     *
+     * \returns A copy of the internal \c cl::sycl:queue.
+     */
+    cl::sycl::queue stream() const { return cl::sycl::queue(stream_); }
+    //! Getter. Can throw std::bad_optional_access if the stream is not valid.
+    cl::sycl::queue& stream() { return stream_; }
+    //! Synchronize the stream. Non-const version of \c ::synchronize() for SYCL that does not do unnecessary copying.
+    void synchronize();
+
+private:
+    cl::sycl::queue stream_;
 #elif GMX_GPU_OPENCL || defined DOXYGEN
 
     //! Getter
     cl_command_queue stream() const;
-    //! Setter (temporary, will be removed in the follow-up)
-    void setStream(cl_command_queue stream) { stream_ = stream; }
 
 private:
     cl_command_queue stream_ = nullptr;

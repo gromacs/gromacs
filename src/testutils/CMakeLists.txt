@@ -82,6 +82,11 @@ else()
     add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 endif()
 
+if (GMX_GPU_SYCL)
+    set_source_files_properties(test_device.cpp
+      PROPERTIES COMPILE_FLAGS "${SYCL_CXX_FLAGS}")
+endif()
+
 gmx_target_compile_options(testutils)
 target_compile_definitions(testutils PRIVATE HAVE_CONFIG_H)
 target_include_directories(testutils SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)

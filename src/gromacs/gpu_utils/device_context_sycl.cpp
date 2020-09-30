@@ -37,33 +37,22 @@
  * \brief Implements the DeviceContext for SYCL builds.
  *
  * \author Erik Lindahl <erik.lindahl@gmail.com>
+ * \author Andrey Alekseenko <al42and@gmail.com>
  *
  * \ingroup module_gpu_utils
  */
 #include "gmxpre.h"
 
-#include <vector>
-
-#include <CL/sycl.hpp>
-
 #include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/gmxsycl.h"
+#include "gromacs/hardware/device_information.h"
 
 
-//! Constructor.
-DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(deviceInfo)
+//! Constructor
+DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) :
+    deviceInfo_(deviceInfo),
+    context_(cl::sycl::context(deviceInfo.syclDevice))
 {
-    // This code is just a meaningless placeholder for now, but to actually test that
-    // compilation with and without SYCL works, and that the correct flags are set, it's
-    // important to have a file that actually contains SYCL code.
-    std::vector<cl::sycl::platform> platforms = cl::sycl::platform::get_platforms();
-    if (platforms.size() > 0)
-    {
-        for (const auto& platform : platforms)
-        {
-            printf("Found SYCL platform %s.\n",
-                   platform.get_info<cl::sycl::info::platform::name>().c_str());
-        }
-    }
 }
 
 //! Destructor

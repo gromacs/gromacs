@@ -63,7 +63,12 @@ elseif(GMX_GPU_SYCL)
         device_context_sycl.cpp
         device_stream_sycl.cpp
         )
-    _gmx_add_files_to_property(SYCL_SOURCES device_context_sycl.cpp device_stream_sycl.cpp)
+    _gmx_add_files_to_property(SYCL_SOURCES
+        device_context_manager.cpp
+        device_context_sycl.cpp
+        device_stream_manager.cpp
+        device_stream_sycl.cpp
+        )
 else()
     gmx_add_libgromacs_sources(
         device_context.cpp
