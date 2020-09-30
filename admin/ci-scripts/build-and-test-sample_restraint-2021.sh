@@ -65,7 +65,7 @@ pushd python_packaging/sample_restraint
     make install
   popd
 
-  python -m pytest $PWD/tests --junitxml=$PLUGIN_TEST_XML
+  python -m pytest $PWD/tests --junitxml=$PLUGIN_TEST_XML --threads=2
 
   # Note: Multiple pytest processes getting --junitxml output file argument
   # may cause problems, so we set the option on only one of the launched processes.
@@ -73,7 +73,8 @@ pushd python_packaging/sample_restraint
   # https://www.open-mpi.org/doc/v3.0/man1/mpiexec.1.php
   PROGRAM=(`which python` -m mpi4py -m pytest \
           -p no:cacheprovider \
-          $PWD/tests)
+          $PWD/tests \
+          --threads=1)
   # shellcheck disable=SC2068
   if [ -x `which mpiexec` ]; then
       PYTHONDONTWRITEBYTECODE=1 \

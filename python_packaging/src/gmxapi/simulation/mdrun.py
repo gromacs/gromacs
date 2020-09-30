@@ -261,8 +261,7 @@ class LegacyImplementationSubscription(object):
                                                                       ensemble_rank,
                                                                       self.workdir
                                                                       ))
-                    # TODO: Normalize the way we pass run time parameters to mdrun.
-                    # See also #3573
+                    # TODO: (#3718) Normalize the way we pass run time parameters to mdrun.
                     kwargs = getattr(resource_manager, 'mdrun_kwargs', {})
                     for key, value in kwargs.items():
                         logger.debug('Adding mdrun run time argument: {}'.format(key + '=' + str(value)))

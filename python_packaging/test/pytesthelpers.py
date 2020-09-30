@@ -39,10 +39,8 @@ Define the ``withmpi_only`` test decorator.
 
 import pytest
 
-# TODO: (#3573) Normalize the handling of run-time arguments.
+# TODO: (#3718) Normalize the handling of run-time arguments.
 from gmxapi.simulation.mdrun import ResourceManager as _ResourceManager
-# Note that *threads* argument causes errors for MPI-enabled GROMACS.
-# Ref #3563 and #3573
 _ResourceManager.mdrun_kwargs = {'threads': 2}
 
 withmpi_only = None

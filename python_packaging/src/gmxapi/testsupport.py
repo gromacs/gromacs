@@ -90,13 +90,18 @@ def pytest_runtest_setup(item):
 
 
 def pytest_addoption(parser):
-    """Add a command-line user option for the pytest invocation."""
+    """Add command-line user options for the pytest invocation."""
     parser.addoption(
         '--rm',
         action='store',
         default='always',
         choices=['always', 'never', 'success'],
         help='Remove temporary directories "always", "never", or on "success".'
+    )
+    parser.addoption(
+        '--threads',
+        type=int,
+        help='Maximum number of threads per process per gmxapi session.'
     )
 
 
@@ -112,6 +117,46 @@ def remove_tempdir(request) -> RmOption:
     """pytest fixture to get access to the --rm CLI option."""
     arg = request.config.getoption('--rm')
     return RmOption(arg)
+
+@pytest.fixture(scope='session')
+def gmxconfig():
+    try:
+        from importlib.resources import open_text
+        with open_text('gmxapi', 'gmxconfig.json') as textfile:
+            config = json.load(textfile)
+    except ImportError:
+        # TODO: Remove this when we require Python 3.7
+        try:
+            # A backport of importlib.resources is available as importlib_resources
+            # with a somewhat different interface.
+            from importlib_resources import files, as_file
+
+            source = files('gmxapi').joinpath('gmxconfig.json')
+            with as_file(source) as gmxconfig:
+                with open(gmxconfig, 'r') as fp:
+                    config = json.load(fp)
+        except ImportError:
+            config = None
+    yield config
+
+@pytest.fixture(scope='session')
+def mdrun_kwargs(request, gmxconfig):
+    """pytest fixture to provide a mdrun_kwargs dictionary for the mdrun ResourceManager.
+    """
+    from gmxapi.simulation.mdrun import ResourceManager as _ResourceManager
+    if gmxconfig is None:
+        raise RuntimeError('--threads argument requires a usable gmxconfig.json')
+    arg = request.config.getoption('--threads')
+    if arg is None:
+        return {}
+    mpi_type = gmxconfig['gmx_mpi_type']
+    if mpi_type is not None and mpi_type == "tmpi":
+        kwargs = {'threads': int(arg)}
+    else:
+        kwargs = {}
+    # TODO: (#3718) Normalize the handling of run-time arguments.
+    _ResourceManager.mdrun_kwargs = dict(**kwargs)
+    return kwargs
 
 
 @contextmanager
@@ -212,29 +257,14 @@ def cleandir(remove_tempdir: RmOption):
 
 class GmxBin:
     """Represent the detected GROMACS installation."""
-    def __init__(self):
+    def __init__(self, gmxconfig):
         # Try to use package resources to locate the "gmx" binary wrapper.
-        try:
-            from importlib.resources import open_text
-            with open_text('gmxapi', 'gmxconfig.json') as textfile:
-                config = json.load(textfile)
-                gmxbindir = config.get('gmx_bindir', None)
-                command = config.get('gmx_executable', None)
-        except ImportError:
-            try:
-                # A backport of importlib.resources is available as importlib_resources
-                # with a somewhat different interface.
-                from importlib_resources import files, as_file
-
-                source = files('gmxapi').joinpath('gmxconfig.json')
-                with as_file(source) as gmxconfig:
-                    with open(gmxconfig, 'r') as fp:
-                        config = json.load(fp)
-                        gmxbindir = config.get('gmx_bindir', None)
-                        command = config.get('gmx_executable', None)
-            except ImportError:
-                gmxbindir = None
-                command = None
+        if gmxconfig is not None:
+            gmxbindir = gmxconfig.get('gmx_bindir', None)
+            command = gmxconfig.get('gmx_executable', None)
+        else:
+            gmxbindir = None
+            command = None
 
         # TODO: Remove fall-back when we can rely on gmxconfig.json via importlib.resources in Py 3.7+.
         allowed_command_names = ['gmx', 'gmx_mpi']
@@ -266,12 +296,9 @@ class GmxBin:
         return self._bindir
 
 
-_gmx = GmxBin()
-
-
 @pytest.fixture(scope='session')
-def gmxcli():
-    command = _gmx.command()
+def gmxcli(gmxconfig):
+    command = GmxBin(gmxconfig).command()
     if command is None:
         message = "Tests need 'gmx' command line tool, but could not find it on the path."
         raise RuntimeError(message)

@@ -48,11 +48,6 @@ import pytest
 
 import gmxapi as gmx
 
-# TODO: (#3573) Normalize the handling of run-time arguments.
-from gmxapi.simulation.mdrun import ResourceManager as _ResourceManager
-# Note that *threads* argument causes errors for MPI-enabled GROMACS.
-# Ref #3563 and #3573
-_ResourceManager.mdrun_kwargs = {'threads': 2}
 
 # Configure the `logging` module before proceeding any further.
 gmx.logger.setLevel(logging.WARNING)
@@ -78,7 +73,7 @@ formatter = logging.Formatter(rank_tag + '%(name)s:%(levelname)s: %(message)s')
 
 
 @pytest.mark.usefixtures('cleandir')
-def test_run_from_tpr(spc_water_box):
+def test_run_from_tpr(spc_water_box, mdrun_kwargs):
     assert os.path.exists(spc_water_box)
 
     md = gmx.mdrun(spc_water_box)
@@ -88,7 +83,7 @@ def test_run_from_tpr(spc_water_box):
 
 @pytest.mark.withmpi_only
 @pytest.mark.usefixtures('cleandir')
-def test_run_trivial_ensemble(spc_water_box, caplog):
+def test_run_trivial_ensemble(spc_water_box, caplog, mdrun_kwargs):
     from mpi4py import MPI
     current_rank = MPI.COMM_WORLD.Get_rank()
     with caplog.at_level(logging.DEBUG):
@@ -124,7 +119,7 @@ def test_run_trivial_ensemble(spc_water_box, caplog):
 
 
 @pytest.mark.usefixtures('cleandir')
-def test_run_from_read_tpr_op(spc_water_box, caplog):
+def test_run_from_read_tpr_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
         caplog.handler.setFormatter(formatter)
         with caplog.at_level(logging.DEBUG, 'gmxapi'):
@@ -137,7 +132,7 @@ def test_run_from_read_tpr_op(spc_water_box, caplog):
 
 
 @pytest.mark.usefixtures('cleandir')
-def test_run_from_modify_input_op(spc_water_box, caplog):
+def test_run_from_modify_input_op(spc_water_box, caplog, mdrun_kwargs):
     with caplog.at_level(logging.DEBUG):
 
         simulation_input = gmx.read_tpr(spc_water_box)
