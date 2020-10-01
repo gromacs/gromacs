@@ -1980,9 +1980,9 @@ void get_ir(const char*     mdparin,
         opts->numMtsLevels = get_eint(&inp, "mts-levels", 2, wi);
         ir->mtsLevels.resize(2);
         gmx::MtsLevel& mtsLevel = ir->mtsLevels[1];
-        setStringEntry(&inp, "mts-level2-forces", opts->mtsLevel2Forces,
-                       "longrange-nonbonded nonbonded pair dihedral");
-        mtsLevel.stepFactor = get_eint(&inp, "mts-level2-factor", 2, wi);
+        opts->mtsLevel2Forces   = setStringEntry(&inp, "mts-level2-forces",
+                                               "longrange-nonbonded nonbonded pair dihedral");
+        mtsLevel.stepFactor     = get_eint(&inp, "mts-level2-factor", 2, wi);
 
         // We clear after reading without dynamics to not force the user to remove MTS mdp options
         if (!EI_DYNAMICS(ir->eI))

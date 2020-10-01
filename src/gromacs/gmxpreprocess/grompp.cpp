@@ -1762,7 +1762,6 @@ int gmx_grompp(int argc, char* argv[])
         "interpret the output messages before attempting to bypass them with",
         "this option."
     };
-    t_gromppopts*                        opts;
     std::vector<MoleculeInformation>     mi;
     std::unique_ptr<MoleculeInformation> intermolecular_interactions;
     int                                  nvsite, comb;
@@ -1832,10 +1831,10 @@ int gmx_grompp(int argc, char* argv[])
     gmx::MDModules mdModules;
     t_inputrec     irInstance;
     t_inputrec*    ir = &irInstance;
-    snew(opts, 1);
+    t_gromppopts   optsInstance;
+    t_gromppopts*  opts = &optsInstance;
     snew(opts->include, STRLEN);
     snew(opts->define, STRLEN);
-    snew(opts->mtsLevel2Forces, STRLEN);
 
     gmx::LoggerBuilder builder;
     builder.addTargetStream(gmx::MDLogger::LogLevel::Info, &gmx::TextOutputFile::standardOutput());
@@ -2390,8 +2389,6 @@ int gmx_grompp(int argc, char* argv[])
     sfree(opts->wall_atomtype[0]);
     sfree(opts->wall_atomtype[1]);
     sfree(opts->include);
-    sfree(opts->mtsLevel2Forces);
-    sfree(opts);
     for (auto& mol : mi)
     {
         // Some of the contents of molinfo have been stolen, so

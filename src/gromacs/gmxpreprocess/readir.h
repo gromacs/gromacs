@@ -39,6 +39,8 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
+#include <string>
+
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
@@ -82,23 +84,23 @@ enum
 
 struct t_gromppopts
 {
-    int   warnings;
-    int   nshake;
-    char* include;
-    char* define;
-    bool  bGenVel;
-    bool  bGenPairs;
-    real  tempi;
-    int   seed;
-    int   numMtsLevels;
-    char* mtsLevel2Forces;
-    bool  bOrire;
-    bool  bMorse;
-    char* wall_atomtype[2];
-    char* couple_moltype;
-    int   couple_lam0;
-    int   couple_lam1;
-    bool  bCoupleIntra;
+    int         warnings     = 0;
+    int         nshake       = 0;
+    char*       include      = nullptr;
+    char*       define       = nullptr;
+    bool        bGenVel      = false;
+    bool        bGenPairs    = false;
+    real        tempi        = 0;
+    int         seed         = 0;
+    int         numMtsLevels = 0;
+    std::string mtsLevel2Forces;
+    bool        bOrire           = false;
+    bool        bMorse           = false;
+    char*       wall_atomtype[2] = { nullptr, nullptr };
+    char*       couple_moltype   = nullptr;
+    int         couple_lam0      = 0;
+    int         couple_lam1      = 0;
+    bool        bCoupleIntra     = false;
 };
 
 /*! \brief Initialise object to hold strings parsed from an .mdp file */
