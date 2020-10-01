@@ -170,8 +170,23 @@ gmx_add_gtest_executable(${exename} MPI
         mimic.cpp
         multisim.cpp
         multisimtest.cpp
-        pmetest.cpp
         replicaexchange.cpp
+        pmetest.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
+        )
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)
+
+# Tests that only make sense to run with multiple ranks and/or real
+# MPI are implemented here. Special case for slow PME tests
+set(testname "MdrunMpiPmeTests")
+set(exename "mdrun-mpi-pme-test")
+
+gmx_add_gtest_executable(${exename} MPI
+    CPP_SOURCE_FILES
+        # files with code for tests
+        pmetest.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
         )
