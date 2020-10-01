@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,40 +32,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GPU_UTILS_GPUTRAITS_H
-#define GMX_GPU_UTILS_GPUTRAITS_H
-
 /*! \libinternal \file
- *  \brief Declares the GPU type traits for non-GPU builds.
+ *  \brief Implements the DeviceBuffer type and routines for SYCL.
  *
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
- *  \author Artem Zhmurov <zhmurov@gmail.com>
+ *  This CPP file is only used to explicitly instantiate some templates.
  *
- * \inlibraryapi
- * \ingroup module_gpu_utils
+ *  \author Andrey Alekseenko <al42and@gmail.com>
+ *
+ *  \inlibraryapi
  */
+#include "gmxpre.h"
 
-#include "config.h"
+#include "devicebuffer_sycl.h"
 
-#if GMX_GPU_CUDA
-
-#    include "gromacs/gpu_utils/gputraits.cuh"
-
-#elif GMX_GPU_OPENCL
-
-#    include "gromacs/gpu_utils/gputraits_ocl.h"
-
-#elif GMX_GPU_SYCL
-
-#    include "gromacs/gpu_utils/gputraits_sycl.h"
-
-#else
-
-using DeviceTexture = void*;
-
-//! \brief Single GPU call timing event
-using CommandEvent = void*;
-
-#endif // GMX_GPU
-
-#endif // GMX_GPU_UTILS_GPUTRAITS_H
+template struct DeviceBuffer<gmx::RVec>;

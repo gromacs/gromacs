@@ -43,7 +43,7 @@
 
 #include "config.h"
 
-#if GMX_GPU && !GMX_GPU_SYCL
+#if GMX_GPU
 #    include <numeric>
 
 #    include <gmock/gmock.h>
@@ -213,4 +213,4 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
 } // namespace test
 } // namespace gmx
 
-#endif // GMX_GPU && !GMX_GPU_SYCL
+#endif // GMX_GPU

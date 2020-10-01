@@ -60,10 +60,12 @@ elseif(GMX_GPU_CUDA)
         )
 elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
+        devicebuffer_sycl.cpp
         device_context_sycl.cpp
         device_stream_sycl.cpp
         )
     _gmx_add_files_to_property(SYCL_SOURCES
+        devicebuffer_sycl.cpp
         device_context_manager.cpp
         device_context_sycl.cpp
         device_stream_manager.cpp

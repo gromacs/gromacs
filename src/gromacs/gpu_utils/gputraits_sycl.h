@@ -32,40 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GPU_UTILS_GPUTRAITS_H
-#define GMX_GPU_UTILS_GPUTRAITS_H
+#ifndef GMX_GPU_UTILS_GPUTRAITS_SYCL_H
+#define GMX_GPU_UTILS_GPUTRAITS_SYCL_H
 
 /*! \libinternal \file
- *  \brief Declares the GPU type traits for non-GPU builds.
+ *  \brief Declares the SYCL type traits.
  *
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
- *  \author Artem Zhmurov <zhmurov@gmail.com>
+ *  \author Andrey Alekseenko <al42and@gmail.com>
  *
  * \inlibraryapi
  * \ingroup module_gpu_utils
  */
 
-#include "config.h"
+#include <cstddef>
 
-#if GMX_GPU_CUDA
-
-#    include "gromacs/gpu_utils/gputraits.cuh"
-
-#elif GMX_GPU_OPENCL
-
-#    include "gromacs/gpu_utils/gputraits_ocl.h"
-
-#elif GMX_GPU_SYCL
-
-#    include "gromacs/gpu_utils/gputraits_sycl.h"
-
-#else
+#include "gromacs/gpu_utils/gmxsycl.h"
 
 using DeviceTexture = void*;
 
-//! \brief Single GPU call timing event
+//! \brief Single GPU call timing event, not used with SYCL
 using CommandEvent = void*;
 
-#endif // GMX_GPU
+/*! \internal \brief
+ * GPU kernels scheduling description. This is same in OpenCL/CUDA.
+ * Provides reasonable defaults, one typically only needs to set the GPU stream
+ * and non-1 work sizes.
+ */
+struct KernelLaunchConfig
+{
+    //! Work groups (CUDA blocks) counts
+    size_t gridSize[3] = { 1, 1, 1 };
+    //! Per work group (CUDA block) thread counts
+    size_t blockSize[3] = { 1, 1, 1 };
+    //! Shared memory size in bytes
+    size_t sharedMemorySize = 0;
+};
 
-#endif // GMX_GPU_UTILS_GPUTRAITS_H
+/*! \brief Sets whether device code can use arrays that are embedded in structs.
+ * \todo Probably can, must check
+ */
+#define c_canEmbedBuffers false
+
+#endif
