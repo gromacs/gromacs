@@ -43,6 +43,8 @@
 #ifndef GMX_PROGRAMS_MDRUN_TESTS_COMPARISON_HELPERS_H
 #define GMX_PROGRAMS_MDRUN_TESTS_COMPARISON_HELPERS_H
 
+#include <limits>
+
 namespace gmx
 {
 
