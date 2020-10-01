@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,6 +84,21 @@ template<int align>
 static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double*, SimdDInt32)
 {
     // Nothing to do. Termination of recursion.
+}
+
+/* This is an internal helper function used by decr3Hsimd(...).
+ */
+inline void gmx_simdcall decrHsimd(double* m, SimdDouble a)
+{
+    __m256d t;
+
+    assert(std::size_t(m) % 32 == 0);
+
+    a.simdInternal_ = _mm512_add_pd(a.simdInternal_,
+                                    _mm512_shuffle_f64x2(a.simdInternal_, a.simdInternal_, 0xEE));
+    t               = _mm256_load_pd(m);
+    t               = _mm256_sub_pd(t, _mm512_castpd512_pd256(a.simdInternal_));
+    _mm256_store_pd(m, t);
 }
 } // namespace
 
@@ -348,19 +363,12 @@ static inline void gmx_simdcall incrDualHsimd(double* m0, double* m1, SimdDouble
     _mm256_store_pd(m1, x);
 }
 
-static inline void gmx_simdcall decrHsimd(double* m, SimdDouble a)
+static inline void gmx_simdcall decr3Hsimd(double* m, SimdDouble a0, SimdDouble a1, SimdDouble a2)
 {
-    __m256d t;
-
-    assert(std::size_t(m) % 32 == 0);
-
-    a.simdInternal_ = _mm512_add_pd(a.simdInternal_,
-                                    _mm512_shuffle_f64x2(a.simdInternal_, a.simdInternal_, 0xEE));
-    t               = _mm256_load_pd(m);
-    t               = _mm256_sub_pd(t, _mm512_castpd512_pd256(a.simdInternal_));
-    _mm256_store_pd(m, t);
+    decrHsimd(m, a0);
+    decrHsimd(m + GMX_SIMD_DOUBLE_WIDTH / 2, a1);
+    decrHsimd(m + GMX_SIMD_DOUBLE_WIDTH, a2);
 }
-
 
 template<int align>
 static inline void gmx_simdcall gatherLoadTransposeHsimd(const double*      base0,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -736,27 +736,40 @@ static inline void gmx_simdcall incrDualHsimd(double* m0, double* m1, SimdDouble
     }
 }
 
-/*! \brief Add the two halves of a SIMD double, subtract the sum from
- *         half-SIMD-width consecutive doubles in memory.
+/*! \brief Add the two halves of three SIMD doubles, subtract the sum from
+ *         three half-SIMD-width consecutive doubles in memory.
  *
  * \param m  half-width aligned memory, from which sum of the halves will be subtracted.
- * \param a  SIMD variable. Upper & lower halves will first be added.
+ * \param a0 SIMD variable. Upper & lower halves will first be added.
+ * \param a1 SIMD variable. Upper & lower halves will second be added.
+ * \param a2 SIMD variable. Upper & lower halves will third be added.
  *
- * If the SIMD width is 8 and contains [a b c d e f g h], the
- * memory will be modified to [m[0]-(a+e) m[1]-(b+f) m[2]-(c+g) m[3]-(d+h)].
+ * If the SIMD width is 8 and the vectors contain [a0 b0 c0 d0 e0 f0 g0 h0],
+ * [a1 b1 c1 d1 e1 f1 g1 g1] and [a2 b2 c2 d2 e2 f2 g2 h2], the
+ * memory will be modified to [m[0]-(a0+e0) m[1]-(b0+f0) m[2]-(c0+g0) m[3]-(d0+h0)
+ *                             m[4]-(a1+e1) m[5]-(b1+f1) m[6]-(c1+g1) m[7]-(d1+h1)
+ *                             m[8]-(a2+e2) m[9]-(b2+f2) m[10]-(c2+g2) m[11]-(d2+h2)].
  *
  * The memory must be aligned to half SIMD width.
  *
  * Available if \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE is 1.
  */
-static inline void gmx_simdcall decrHsimd(double* m, SimdDouble a)
+static inline void gmx_simdcall decr3Hsimd(double* m, SimdDouble a0, SimdDouble a1, SimdDouble a2)
 {
-    // Make sure the memory pointer is aligned to half double SIMD width
     assert(std::size_t(m) % (GMX_SIMD_DOUBLE_WIDTH / 2 * sizeof(double)) == 0);
-
-    for (std::size_t i = 0; i < a.simdInternal_.size() / 2; i++)
+    for (std::size_t i = 0; i < a0.simdInternal_.size() / 2; i++)
     {
-        m[i] -= a.simdInternal_[i] + a.simdInternal_[a.simdInternal_.size() / 2 + i];
+        m[i] -= a0.simdInternal_[i] + a0.simdInternal_[a0.simdInternal_.size() / 2 + i];
+    }
+    for (std::size_t i = 0; i < a1.simdInternal_.size() / 2; i++)
+    {
+        m[a1.simdInternal_.size() / 2 + i] -=
+                a1.simdInternal_[i] + a1.simdInternal_[a1.simdInternal_.size() / 2 + i];
+    }
+    for (std::size_t i = 0; i < a2.simdInternal_.size() / 2; i++)
+    {
+        m[a2.simdInternal_.size() + i] -=
+                a2.simdInternal_[i] + a2.simdInternal_[a2.simdInternal_.size() / 2 + i];
     }
 }
 

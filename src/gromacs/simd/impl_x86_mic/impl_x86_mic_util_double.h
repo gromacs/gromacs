@@ -51,6 +51,25 @@
 namespace gmx
 {
 
+namespace
+{
+/* This is an internal helper function used by decr3Hsimd(...).
+ */
+inline void gmx_simdcall decrHsimd(double* m, SimdDouble a)
+{
+    __m512d t;
+
+    assert(std::size_t(m) % 32 == 0);
+
+    t               = _mm512_extload_pd(m, _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE);
+    a.simdInternal_ = _mm512_add_pd(
+            a.simdInternal_,
+            _mm512_castps_pd(_mm512_permute4f128_ps(_mm512_castpd_ps(a.simdInternal_), _MM_PERM_BADC)));
+    t = _mm512_sub_pd(t, a.simdInternal_);
+    _mm512_mask_packstorelo_pd(m, _mm512_int2mask(0x0F), t);
+}
+} // namespace
+
 // On MIC it is better to use scatter operations, so we define the load routines
 // that use a SIMD offset variable first.
 
@@ -361,18 +380,12 @@ static inline void gmx_simdcall incrDualHsimd(double* m0, double* m1, SimdDouble
     _mm512_mask_packstorelo_pd(m1, _mm512_int2mask(0xF0), x);
 }
 
-static inline void gmx_simdcall decrHsimd(double* m, SimdDouble a)
+static inline void gmx_simdcall decr3Hsimd(double* m, SimdDouble a0, SimdDouble a1, SimdDouble a2)
 {
-    __m512d t;
-
     assert(std::size_t(m) % 32 == 0);
-
-    t               = _mm512_extload_pd(m, _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE);
-    a.simdInternal_ = _mm512_add_pd(
-            a.simdInternal_,
-            _mm512_castps_pd(_mm512_permute4f128_ps(_mm512_castpd_ps(a.simdInternal_), _MM_PERM_BADC)));
-    t = _mm512_sub_pd(t, a.simdInternal_);
-    _mm512_mask_packstorelo_pd(m, _mm512_int2mask(0x0F), t);
+    decrHsimd(m, a0);
+    decrHsimd(m + GMX_SIMD_DOUBLE_WIDTH / 2, a1);
+    decrHsimd(m + GMX_SIMD_DOUBLE_WIDTH, a2);
 }
 
 

@@ -85,6 +85,21 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float*, SimdF
 {
     // Nothing to do. Termination of recursion.
 }
+
+/* This is an internal helper function used by decr3Hsimd(...).
+ */
+inline void gmx_simdcall decrHsimd(float* m, SimdFloat a)
+{
+    __m256 t;
+
+    assert(std::size_t(m) % 32 == 0);
+
+    a.simdInternal_ = _mm512_add_ps(a.simdInternal_,
+                                    _mm512_shuffle_f32x4(a.simdInternal_, a.simdInternal_, 0xEE));
+    t               = _mm256_load_ps(m);
+    t               = _mm256_sub_ps(t, _mm512_castps512_ps256(a.simdInternal_));
+    _mm256_store_ps(m, t);
+}
 } // namespace
 
 template<int align, typename... Targs>
@@ -384,17 +399,11 @@ static inline void gmx_simdcall incrDualHsimd(float* m0, float* m1, SimdFloat a)
     _mm256_store_ps(m1, x);
 }
 
-static inline void gmx_simdcall decrHsimd(float* m, SimdFloat a)
+static inline void gmx_simdcall decr3Hsimd(float* m, SimdFloat a0, SimdFloat a1, SimdFloat a2)
 {
-    __m256 t;
-
-    assert(std::size_t(m) % 32 == 0);
-
-    a.simdInternal_ = _mm512_add_ps(a.simdInternal_,
-                                    _mm512_shuffle_f32x4(a.simdInternal_, a.simdInternal_, 0xEE));
-    t               = _mm256_load_ps(m);
-    t               = _mm256_sub_ps(t, _mm512_castps512_ps256(a.simdInternal_));
-    _mm256_store_ps(m, t);
+    decrHsimd(m, a0);
+    decrHsimd(m + GMX_SIMD_FLOAT_WIDTH / 2, a1);
+    decrHsimd(m + GMX_SIMD_FLOAT_WIDTH, a2);
 }
 
 

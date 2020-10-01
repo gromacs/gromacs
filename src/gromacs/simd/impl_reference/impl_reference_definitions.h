@@ -190,20 +190,8 @@ namespace gmx
 //! \brief 1 if float half-register load/store/reduce utils present, otherwise 0
 #define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT 1
 
-/*! \brief 1 if implementation provides single decr3Hsimd()
- *
- *  Only used in simd.h to selectively override the generic implementation.
- */
-#define GMX_SIMD_HAVE_HSIMD_UTIL_DECR3_FLOAT 0
-
 //! \brief 1 if double half-register load/store/reduce utils present, otherwise 0
 #define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE 1
-
-/*! \brief 1 if implementation provides double decr3Hsimd()
- *
- *  Only used in simd.h to selectively override the generic implementation.
- */
-#define GMX_SIMD_HAVE_HSIMD_UTIL_DECR3_DOUBLE 0
 
 #ifdef GMX_SIMD_REF_FLOAT_WIDTH
 #    define GMX_SIMD_FLOAT_WIDTH GMX_SIMD_REF_FLOAT_WIDTH

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -810,11 +810,11 @@ TEST_F(SimdFloatingpointUtilTest, incrDualHsimdOverlapping)
     }
 }
 
-TEST_F(SimdFloatingpointUtilTest, decrHsimd)
+TEST_F(SimdFloatingpointUtilTest, decr3Hsimd)
 {
-    SimdReal               v0;
-    real                   ref[GMX_SIMD_REAL_WIDTH / 2];
-    int                    i;
+    SimdReal               v0, v1, v2;
+    real                   ref[3 * GMX_SIMD_REAL_WIDTH / 2];
+    int                    i, j;
     FloatingPointTolerance tolerance(defaultRealTolerance());
 
     // Point p to the upper half of val1_
@@ -823,11 +823,23 @@ TEST_F(SimdFloatingpointUtilTest, decrHsimd)
     {
         ref[i] = val0_[i] - (val1_[i] + p[i]);
     }
+    p = val2_ + GMX_SIMD_REAL_WIDTH / 2;
+    for (j = 0; j < GMX_SIMD_REAL_WIDTH / 2; i++, j++)
+    {
+        ref[i] = val0_[i] - (val2_[j] + p[j]);
+    }
+    p = val3_ + GMX_SIMD_REAL_WIDTH / 2;
+    for (j = 0; j < GMX_SIMD_REAL_WIDTH / 2; i++, j++)
+    {
+        ref[i] = val0_[i] - (val3_[j] + p[j]);
+    }
 
     v0 = load<SimdReal>(val1_);
-    decrHsimd(val0_, v0);
+    v1 = load<SimdReal>(val2_);
+    v2 = load<SimdReal>(val3_);
+    decr3Hsimd(val0_, v0, v1, v2);
 
-    for (i = 0; i < GMX_SIMD_REAL_WIDTH / 2; i++)
+    for (i = 0; i < 3 * GMX_SIMD_REAL_WIDTH / 2; i++)
     {
         EXPECT_REAL_EQ_TOL(ref[i], val0_[i], tolerance);
     }

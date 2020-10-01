@@ -66,10 +66,8 @@
 
 #define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT 1
 #define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE 1
-#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT 0 // No need for half-simd, width is 4
-#define GMX_SIMD_HAVE_HSIMD_UTIL_DECR3_FLOAT 0
+#define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT 0  // No need for half-simd, width is 4
 #define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE 0 // No need for half-simd, width is 2
-#define GMX_SIMD_HAVE_HSIMD_UTIL_DECR3_DOUBLE 0
 
 #define GMX_SIMD4_HAVE_FLOAT 1
 #define GMX_SIMD4_HAVE_DOUBLE 1 // Uses 256-bit avx for SIMD4-double
