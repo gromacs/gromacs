@@ -73,7 +73,6 @@ public:
         // being called after markEvent() but before waitForEvent() / enqueueWaitEvent().
         if (event_)
         {
-            ensureReferenceCount(event_, 1);
             clReleaseEvent(event_);
         }
     }
@@ -129,8 +128,6 @@ public:
 private:
     inline void releaseEvent()
     {
-        // Reference count can't be checked after the event's released, it seems (segfault on NVIDIA).
-        ensureReferenceCount(event_, 1);
         cl_int clError = clReleaseEvent(event_);
         if (CL_SUCCESS != clError)
         {
