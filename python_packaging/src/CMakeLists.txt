@@ -47,8 +47,7 @@ cmake_minimum_required(VERSION 3.13.0)
 # Reference https://scikit-build.readthedocs.io/en/latest/generators.html#macosx
 # and https://github.com/MacPython/wiki/wiki/Spinning-wheels
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14 CACHE STRING
-    "OS X deployment target below 10.14 does not use modern standard library"
-    FORCE)
+    "OS X deployment target below 10.14 does not use modern standard library")
 set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
     "OS X should build Python package for 64-bit architecture"
     FORCE)

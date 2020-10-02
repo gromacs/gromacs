@@ -46,8 +46,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     # Providing a default value >=10.14 helps to find modern C++ compatibility,
     # such as by defaulting to the Clang libc++ instead of libstdc++.
     set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14 CACHE STRING
-        "OS X deployment target affects default SDK version and compiler flags."
-        FORCE)
+        "OS X deployment target affects default SDK version and compiler flags.")
     # By default, limit the binary architecture to a single 64-bit build.
     set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
         "OS X architecture affects the compatibility of the (potentially fat) binaries produced."
