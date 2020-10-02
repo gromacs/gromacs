@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -129,6 +129,17 @@ TEST_F(ReadTest, get_ereal_WarnsAboutString)
     inputField_.front().value_.assign("hello");
     get_ereal(&inputField_, "test", 2, wi_);
     ASSERT_TRUE(warning_errors_exist(wi_));
+}
+
+TEST_F(ReadTest, setStringEntry_ReturnsCorrectString)
+{
+    const std::string name        = "name";
+    const std::string definition  = "definition";
+    const std::string returnValue = setStringEntry(&inputField_, name, definition);
+    // The definition should be returned
+    EXPECT_EQ(returnValue, definition);
+    // The name should not be returned
+    EXPECT_NE(returnValue, name);
 }
 
 } // namespace testing
