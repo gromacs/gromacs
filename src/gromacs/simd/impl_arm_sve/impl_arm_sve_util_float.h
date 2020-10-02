@@ -341,9 +341,9 @@ static inline void gmx_simdcall incrDualHsimd(float* m0, float* m1, SimdFloat a)
 
 static inline void gmx_simdcall decr3Hsimd(float* m, SimdFloat a0, SimdFloat a1, SimdFloat a2)
 {
-    svbool_t    pg  = SVE_FLOAT_MASK;
+    svbool_t    pg  = svptrue_b32();
     svbool_t    pg2 = SVE_FLOAT_HALF_MASK;
-    svfloat32_t v0, v1, v2;
+    svfloat32_t v0, v1, v2, v3;
     v0 = svld1_f32(pg, m);
     v1 = svext_f32(a0.simdInternal_, a1.simdInternal_, GMX_SIMD_FLOAT_WIDTH / 2);
     v2 = svsel_f32(pg2, a0.simdInternal_, a1.simdInternal_);
