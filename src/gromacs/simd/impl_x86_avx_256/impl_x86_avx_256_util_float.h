@@ -51,18 +51,15 @@
 namespace gmx
 {
 
-namespace
-{
 /* This is an internal helper function used by decr3Hsimd(...).
  */
-inline void gmx_simdcall decrHsimd(float* m, SimdFloat a)
+static inline void gmx_simdcall decrHsimd(float* m, SimdFloat a)
 {
     assert(std::size_t(m) % 16 == 0);
     __m128 asum = _mm_add_ps(_mm256_castps256_ps128(a.simdInternal_),
                              _mm256_extractf128_ps(a.simdInternal_, 0x1));
     _mm_store_ps(m, _mm_sub_ps(_mm_load_ps(m), asum));
 }
-} // namespace
 
 /* This is an internal helper function used by the three functions storing,
  * incrementing, or decrementing data. Do NOT use it outside this file.
