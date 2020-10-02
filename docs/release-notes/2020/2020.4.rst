@@ -48,6 +48,43 @@ When using the modular simulator, domain decomposition and free energy
 calculations with perturbed masses, the simulation would always be
 performed using the masses at lambda=0 instead of the actual lambda value.
 
+
+Bug fix for RDRAND not always returning random numbers on Ryzen
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On AMD Ryzen 3000 series CPUs, the hardware random number generator (RDRAND)
+can behave incorrectly, always returning -1 (0xFFFFFFFF). If this hardware bug
+is detected at runtime, |Gromacs| will switch to its software-based pseudo-random
+number generator instead.
+
+While many motherboard vendors have been distributing firmware updates that
+contain microcode fixes and most motherboards are sold with these factory-installed,
+there can still be some systems affected that didn't receive the updates.
+
+Affected simulations: all simulations that rely on random number generation
+for the correctness of assumptions or that of results are affected.
+A list of affected algorithms can be found below:
+
+#.  Seeding in `gmx grompp` is affected if no user supplied seed is used (e.g. if ``-1``
+    is used to ask |Gromacs| to generate a seed). This can affect Langevin/Stochastic dynamics
+    anything Monte-Carlo related and the generation of random velocities.
+#.  Decision when to exchange replicated during replica exchange simulations.
+#.  Simulations using the random components from ``AWH``.
+#.  Some analysis and preparation tools might be affected, e.g. free volume calculation,
+    ion placement, WHAM, normal mode analysis and PME error estimates.
+
+.. AKA  https://xkcd.com/221/
+
+Diagnosing: to aid detecting the error, run ``gmx mdrun -debug 1`` which will
+produce a debug log, typically called ``gmx.debug``. This file will contain
+the following message if the processor the program ran on is affected:
+
+-   Hardware random number generator (RDRAND) returned -1 (0xFFFFFFFF) twice in
+    a row. This may be due to a known bug in AND Ryzen microcode. Will use
+    pseudo-random numbers generator (PRNG) instead.
+
+For more information on the issue, please check
+`this website <https://arstechnica.com/gadgets/2019/10/how-a-months-old-amd-microcode-bug-destroyed-my-weekend/>`_.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
