@@ -1616,7 +1616,11 @@ class FunctionMockerBase : public UntypedFunctionMockerBase {
       implicit_sequence->AddExpectation(Expectation(untyped_expectation));
     }
 
+#ifndef __clang_analyzer__
     return *expectation;
+#else
+    return nullptr;
+#endif
   }
 
   // The current spec (either default action spec or expectation spec)

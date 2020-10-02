@@ -85,7 +85,7 @@ cxx_library(gmock
             "${cxx_strict}"
 #            "${gtest_dir}/src/gtest-all.cc"
             src/gmock-all.cc)
-target_link_libraries(gmock gtest)
+target_link_libraries(gmock PUBLIC gtest)
 
 #cxx_library(gmock_main
 #            "${cxx_strict}"
