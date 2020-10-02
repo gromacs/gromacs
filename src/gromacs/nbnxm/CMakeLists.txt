@@ -64,6 +64,9 @@ file (GLOB NBNXM_SOURCES
 if(GMX_GPU_CUDA)
     add_subdirectory(cuda)
     gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
+    _gmx_add_files_to_property(CUDA_SOURCES
+        nbnxm_gpu_data_mgmt.cpp
+	)
 endif()
 
 if(GMX_GPU_OPENCL)

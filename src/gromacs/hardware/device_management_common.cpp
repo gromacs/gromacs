@@ -48,7 +48,10 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "device_information.h"
@@ -95,6 +98,35 @@ getCompatibleDevices(const std::vector<std::unique_ptr<DeviceInformation>>& devi
         }
     }
     return compatibleDeviceInfoList;
+}
+
+std::vector<int> getCompatibleDeviceIds(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList)
+{
+    // Possible minor over-allocation here, but not important for anything
+    std::vector<int> compatibleDeviceIds;
+    compatibleDeviceIds.reserve(deviceInfoList.size());
+    for (const auto& deviceInfo : deviceInfoList)
+    {
+        if (deviceInfo->status == DeviceStatus::Compatible)
+        {
+            compatibleDeviceIds.emplace_back(deviceInfo->id);
+        }
+    }
+    return compatibleDeviceIds;
+}
+
+bool deviceIdIsCompatible(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
+                          const int                                              deviceId)
+{
+    auto foundIt = std::find_if(deviceInfoList.begin(), deviceInfoList.end(),
+                                [deviceId](auto& deviceInfo) { return deviceInfo->id == deviceId; });
+    if (foundIt == deviceInfoList.end())
+    {
+        GMX_THROW(gmx::RangeError(gmx::formatString(
+                "Device ID %d did not correspond to any of the %zu detected device(s)", deviceId,
+                deviceInfoList.size())));
+    }
+    return (*foundIt)->status == DeviceStatus::Compatible;
 }
 
 std::string getDeviceCompatibilityDescription(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,

@@ -131,7 +131,7 @@ bool canComputeOnDevice();
  */
 std::vector<std::unique_ptr<DeviceInformation>> findDevices();
 
-/*! \brief Return a container of the detected GPU ids that are compatible.
+/*! \brief Return a container of device-information handles that are compatible.
  *
  * This function filters the result of the detection for compatible
  * GPUs, based on the previously run compatibility tests.
@@ -142,6 +142,31 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices();
  */
 std::vector<std::reference_wrapper<DeviceInformation>>
 getCompatibleDevices(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList);
+
+/*! \brief Return a container of the IDs of the compatible GPU ids.
+ *
+ * This function filters the result of the detection for compatible
+ * GPUs, based on the previously run compatibility tests.
+ *
+ * \param[in] deviceInfoList An information on available devices.
+ *
+ * \return  Vector of compatible GPU ids.
+ */
+std::vector<int> getCompatibleDeviceIds(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList);
+
+/*! \brief Return whether \c deviceId is found in \c deviceInfoList and is compatible
+ *
+ * This function filters the result of the detection for compatible
+ * GPUs, based on the previously run compatibility tests.
+ *
+ * \param[in] deviceInfoList An information on available devices.
+ *
+ * \throws RangeError If \c deviceId does not match the id of any device in \c deviceInfoList
+ *
+ * \return  Whether \c deviceId is compatible.
+ */
+bool deviceIdIsCompatible(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
+                          int                                                    deviceId);
 
 /*! \brief Set the active GPU.
  *

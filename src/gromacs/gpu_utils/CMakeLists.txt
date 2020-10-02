@@ -58,6 +58,9 @@ elseif(GMX_GPU_CUDA)
         pinning.cu
         pmalloc_cuda.cu
         )
+    _gmx_add_files_to_property(CUDA_SOURCES
+        device_stream_manager.cpp
+	)
 elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         devicebuffer_sycl.cpp

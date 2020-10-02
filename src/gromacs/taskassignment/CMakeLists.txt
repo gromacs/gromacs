@@ -32,6 +32,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Note that this is a higher-level module that should not need
+# special compilation to suit e.g. GPU or MPI dependencies.
+# If you find you want to do that, consider a preliminary
+# refactoring.
 gmx_add_libgromacs_sources(
     decidegpuusage.cpp
     decidesimulationworkload.cpp
@@ -41,10 +45,6 @@ gmx_add_libgromacs_sources(
     taskassignment.cpp
     usergpuids.cpp
     )
-
-if (GMX_GPU_SYCL)
-    _gmx_add_files_to_property(SYCL_SOURCES usergpuids.cpp)
-endif()
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

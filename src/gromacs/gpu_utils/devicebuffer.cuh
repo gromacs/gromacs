@@ -227,7 +227,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
  * \returns Whether the device buffer can be set.
  */
 template<typename T>
-static bool checkDeviceBuffer(DeviceBuffer<T> buffer, gmx_unused int requiredSize)
+gmx_unused static bool checkDeviceBuffer(DeviceBuffer<T> buffer, gmx_unused int requiredSize)
 {
     GMX_ASSERT(buffer != nullptr, "The device pointer is nullptr");
     return buffer != nullptr;

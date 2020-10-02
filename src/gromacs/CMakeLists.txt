@@ -282,9 +282,25 @@ if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KN
     set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
 endif()
 
+# Do any special handling needed for .cpp files that use
+# CUDA runtime headers
+if (GMX_GPU_CUDA AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # CUDA header cuda_runtime_api.h in at least CUDA 10.1 uses 0
+    # where nullptr would be preferable. GROMACS can't fix these, so
+    # must suppress them.
+    GMX_TEST_CXXFLAG(CXXFLAGS_NO_ZERO_AS_NULL_POINTER_CONSTANT "-Wno-zero-as-null-pointer-constant" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
+
+    get_property(CUDA_SOURCES GLOBAL PROPERTY CUDA_SOURCES)
+    foreach(_compile_flag ${NVCC_CLANG_SUPPRESSIONS_CXXFLAGS})
+        set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS ${_compile_flag})
+    endforeach()
+endif()
+
 # Only add the -fsycl flag to sources that really need it
-get_property(SYCL_SOURCES GLOBAL PROPERTY SYCL_SOURCES)
-set_source_files_properties(${SYCL_SOURCES} PROPERTIES COMPILE_FLAGS "${SYCL_CXX_FLAGS}")
+if (GMX_GPU_SYCL)
+    get_property(SYCL_SOURCES GLOBAL PROPERTY SYCL_SOURCES)
+    set_source_files_properties(${SYCL_SOURCES} PROPERTIES COMPILE_FLAGS "${SYCL_CXX_FLAGS}")
+endif()
 
 gmx_setup_tng_for_libgromacs()
 
