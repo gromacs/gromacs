@@ -301,6 +301,24 @@ bool decideWhetherToUseGpuForUpdate(bool                           isDomainDecom
                                     const gmx::MDLogger&           mdlog);
 
 
+/*! \brief Decide whether to use GPU for halo exchange.
+ *
+ * \param[in]  devFlags                     GPU development / experimental feature flags.
+ * \param[in]  havePPDomainDecomposition    Whether PP domain decomposition is in use.
+ * \param[in]  useGpuForNonbonded           Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  useModularSimulator          Whether modularsimulator is in use.
+ * \param[in]  doRerun                      Whether this is a rerun.
+ * \param[in]  haveEnergyMinimization       Whether energy minimization is in use.
+ *
+ * \returns    Whether halo exchange can be run on GPU.
+ */
+bool decideWhetherToUseGpuForHalo(const DevelopmentFeatureFlags& devFlags,
+                                  bool                           havePPDomainDecomposition,
+                                  bool                           useGpuForNonbonded,
+                                  bool                           useModularSimulator,
+                                  bool                           doRerun,
+                                  bool                           haveEnergyMinimization);
+
 } // namespace gmx
 
 #endif

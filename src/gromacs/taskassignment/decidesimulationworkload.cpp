@@ -58,7 +58,8 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
                                             bool                           useGpuForNonbonded,
                                             PmeRunMode                     pmeRunMode,
                                             bool                           useGpuForBonded,
-                                            bool                           useGpuForUpdate)
+                                            bool                           useGpuForUpdate,
+                                            bool                           useGpuDirectHalo)
 {
     SimulationWorkload simulationWorkload;
     simulationWorkload.computeNonbonded = !disableNonbondedCalculation;
@@ -75,7 +76,7 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
     simulationWorkload.useGpuUpdate    = useGpuForUpdate;
     simulationWorkload.useGpuBufferOps = (devFlags.enableGpuBufferOps || useGpuForUpdate)
                                          && !simulationWorkload.computeNonbondedAtMtsLevel1;
-    simulationWorkload.useGpuHaloExchange = devFlags.enableGpuHaloExchange;
+    simulationWorkload.useGpuHaloExchange = useGpuDirectHalo;
     simulationWorkload.useGpuPmePpCommunication =
             devFlags.enableGpuPmePPComm && (pmeRunMode == PmeRunMode::GPU);
     simulationWorkload.useGpuDirectCommunication =

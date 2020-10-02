@@ -1259,10 +1259,15 @@ int Mdrunner::mdrunner()
     }
 
     MdrunScheduleWorkload runScheduleWork;
+
+    bool useGpuDirectHalo = decideWhetherToUseGpuForHalo(
+            devFlags, havePPDomainDecomposition(cr), useGpuForNonbonded, useModularSimulator,
+            doRerun, EI_ENERGY_MINIMIZATION(inputrec->eI));
+
     // Also populates the simulation constant workload description.
-    runScheduleWork.simulationWork =
-            createSimulationWorkload(*inputrec, disableNonbondedCalculation, devFlags,
-                                     useGpuForNonbonded, pmeRunMode, useGpuForBonded, useGpuForUpdate);
+    runScheduleWork.simulationWork = createSimulationWorkload(
+            *inputrec, disableNonbondedCalculation, devFlags, useGpuForNonbonded, pmeRunMode,
+            useGpuForBonded, useGpuForUpdate, useGpuDirectHalo);
 
     std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
 

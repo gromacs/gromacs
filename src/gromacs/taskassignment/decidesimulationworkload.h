@@ -67,6 +67,7 @@ struct DevelopmentFeatureFlags;
  * \param[in] useGpuForBonded    Whether bonded interactions are calculated on GPU(s).
  * \param[in] useGpuForUpdate    Whether coordinate update and constraint solving is performed on
  *                               GPU(s).
+ * \param[in] useGpuDirectHalo   Whether halo exchange is performed directly between GPUs.
  * \returns Simulation lifetime constant workload description.
  */
 SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
@@ -75,7 +76,8 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
                                             bool                           useGpuForNonbonded,
                                             PmeRunMode                     pmeRunMode,
                                             bool                           useGpuForBonded,
-                                            bool                           useGpuForUpdate);
+                                            bool                           useGpuForUpdate,
+                                            bool                           useGpuDirectHalo);
 
 } // namespace gmx
 

@@ -911,6 +911,8 @@ static StepWorkload setupStepWorkload(const int                     legacyFlags,
     flags.useGpuFBufferOps = simulationWork.useGpuBufferOps && !flags.computeVirial;
     flags.useGpuPmeFReduction = flags.computeSlowForces && flags.useGpuFBufferOps && simulationWork.useGpuPme
                                 && (rankHasPmeDuty || simulationWork.useGpuPmePpCommunication);
+    flags.useGpuXHalo = simulationWork.useGpuHaloExchange;
+    flags.useGpuFHalo = simulationWork.useGpuHaloExchange && flags.useGpuFBufferOps;
 
     return flags;
 }
@@ -1037,12 +1039,10 @@ static void combineMtsForces(const int      numAtoms,
  * \param [in] runScheduleWork               Schedule workload flag structure
  * \param [in] cr                            Communication record object
  * \param [in] fr                            Force record object
- * \param [in] ddUsesGpuDirectCommunication  Whether GPU direct communication is in use
  */
 static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
                                     const t_commrec*            cr,
-                                    t_forcerec*                 fr,
-                                    bool                        ddUsesGpuDirectCommunication)
+                                    t_forcerec*                 fr)
 {
 
     nonbonded_verlet_t*          nbv      = fr->nbv.get();
@@ -1075,13 +1075,13 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
     }
 
     if ((runScheduleWork->domainWork.haveCpuLocalForceWork || havePPDomainDecomposition(cr))
-        && !ddUsesGpuDirectCommunication)
+        && !runScheduleWork->simulationWork.useGpuHaloExchange)
     {
         fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(
                 stateGpu->getForcesReadyOnDeviceEvent(AtomLocality::Local, true));
     }
 
-    if (ddUsesGpuDirectCommunication)
+    if (runScheduleWork->simulationWork.useGpuHaloExchange)
     {
         fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(
                 cr->dd->gpuHaloExchange[0][0]->getForcesReadyOnDeviceEvent());
@@ -1246,17 +1246,6 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    // TODO Update this comment when introducing SimulationWorkload
-    //
-    // The conditions for gpuHaloExchange e.g. using GPU buffer
-    // operations were checked before construction, so here we can
-    // just use it and assert upon any conditions.
-    const bool ddUsesGpuDirectCommunication =
-            ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty()));
-    GMX_ASSERT(!ddUsesGpuDirectCommunication || stepWork.useGpuXBufferOps,
-               "Must use coordinate buffer ops with GPU halo exchange");
-    const bool useGpuForcesHaloExchange = ddUsesGpuDirectCommunication && stepWork.useGpuFBufferOps;
-
     // Copy coordinate from the GPU if update is on the GPU and there
     // are forces to be computed on the CPU, or for the computation of
     // virial, or if host-side data will be transferred from this task
@@ -1265,7 +1254,12 @@ void do_force(FILE*                               fplog,
     // hence copy is not needed.
     const bool haveHostPmePpComms =
             !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication;
-    const bool haveHostHaloExchangeComms = havePPDomainDecomposition(cr) && !ddUsesGpuDirectCommunication;
+
+    GMX_ASSERT(simulationWork.useGpuHaloExchange
+                       == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
+               "The GPU halo exchange is active, but it has not been constructed.");
+    const bool haveHostHaloExchangeComms =
+            havePPDomainDecomposition(cr) && !simulationWork.useGpuHaloExchange;
 
     bool gmx_used_in_debug haveCopiedXFromGpu = false;
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
@@ -1383,7 +1377,7 @@ void do_force(FILE*                               fplog,
 
         if (simulationWork.useGpuBufferOps)
         {
-            setupGpuForceReductions(runScheduleWork, cr, fr, ddUsesGpuDirectCommunication);
+            setupGpuForceReductions(runScheduleWork, cr, fr);
         }
     }
     else if (!EI_TPI(inputrec->eI) && stepWork.computeNonbondedForces)
@@ -1466,14 +1460,14 @@ void do_force(FILE*                               fplog,
             // to location in do_md where GPU halo exchange is
             // constructed at partitioning, after above stateGpu
             // re-initialization has similarly been refactored
-            if (ddUsesGpuDirectCommunication)
+            if (simulationWork.useGpuHaloExchange)
             {
                 reinitGpuHaloExchange(*cr, stateGpu->getCoordinates(), stateGpu->getForces());
             }
         }
         else
         {
-            if (ddUsesGpuDirectCommunication)
+            if (stepWork.useGpuXHalo)
             {
                 // The following must be called after local setCoordinates (which records an event
                 // when the coordinate data has been copied to the device).
@@ -1496,7 +1490,7 @@ void do_force(FILE*                               fplog,
 
             if (stepWork.useGpuXBufferOps)
             {
-                if (!useGpuPmeOnThisRank && !ddUsesGpuDirectCommunication)
+                if (!useGpuPmeOnThisRank && !stepWork.useGpuXHalo)
                 {
                     stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
                 }
@@ -1706,7 +1700,7 @@ void do_force(FILE*                               fplog,
     }
 
     // TODO Force flags should include haveFreeEnergyWork for this domain
-    if (ddUsesGpuDirectCommunication && (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork))
+    if (stepWork.useGpuXHalo && (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork))
     {
         /* Wait for non-local coordinate data to be copied from device */
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
@@ -1792,7 +1786,7 @@ void do_force(FILE*                               fplog,
 
     GMX_ASSERT(!(nonbondedAtMtsLevel1 && stepWork.useGpuFBufferOps),
                "The schedule below does not allow for nonbonded MTS with GPU buffer ops");
-    GMX_ASSERT(!(nonbondedAtMtsLevel1 && useGpuForcesHaloExchange),
+    GMX_ASSERT(!(nonbondedAtMtsLevel1 && stepWork.useGpuFHalo),
                "The schedule below does not allow for nonbonded MTS with GPU halo exchange");
     // Will store the amount of cycles spent waiting for the GPU that
     // will be later used in the DLB accounting.
@@ -1832,9 +1826,10 @@ void do_force(FILE*                               fplog,
                                               AtomLocality::NonLocal);
                 }
 
+
                 fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->execute();
 
-                if (!useGpuForcesHaloExchange)
+                if (!stepWork.useGpuFHalo)
                 {
                     // copy from GPU input for dd_move_f()
                     stateGpu->copyForcesFromGpu(forceOutMtsLevel0.forceWithShiftForces().force(),
@@ -1878,7 +1873,8 @@ void do_force(FILE*                               fplog,
 
         if (stepWork.computeForces)
         {
-            if (useGpuForcesHaloExchange)
+
+            if (stepWork.useGpuFHalo)
             {
                 if (domainWork.haveCpuLocalForceWork)
                 {
@@ -2004,7 +2000,7 @@ void do_force(FILE*                               fplog,
             // - copy is not perfomed if GPU force halo exchange is active, because it would overwrite the result
             //   of the halo exchange. In that case the copy is instead performed above, before the exchange.
             //   These should be unified.
-            if (haveLocalForceContribInCpuBuffer && !useGpuForcesHaloExchange)
+            if (haveLocalForceContribInCpuBuffer && !stepWork.useGpuFHalo)
             {
                 // Note: AtomLocality::All is used for the non-DD case because, as in this
                 // case copyForcesToGpu() uses a separate stream, it allows overlap of

@@ -714,4 +714,15 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
             || (updateTarget == TaskTarget::Auto && devFlags.forceGpuUpdateDefault));
 }
 
+bool decideWhetherToUseGpuForHalo(const DevelopmentFeatureFlags& devFlags,
+                                  bool                           havePPDomainDecomposition,
+                                  bool                           useGpuForNonbonded,
+                                  bool                           useModularSimulator,
+                                  bool                           doRerun,
+                                  bool                           haveEnergyMinimization)
+{
+    return havePPDomainDecomposition && devFlags.enableGpuHaloExchange && useGpuForNonbonded
+           && !useModularSimulator && !doRerun && !haveEnergyMinimization;
+}
+
 } // namespace gmx
