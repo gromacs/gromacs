@@ -56,7 +56,7 @@ class DeviceContext;
 namespace gmx
 {
 
-/*! \libinternal
+/*! \internal
  * \brief Manages the force reduction directly in GPU memory
  *
  * Manages the reduction of multiple GPU force buffers into a single

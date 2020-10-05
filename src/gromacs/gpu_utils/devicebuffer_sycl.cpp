@@ -32,14 +32,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  *  \brief Implements the DeviceBuffer type and routines for SYCL.
  *
  *  This CPP file is only used to explicitly instantiate some templates.
  *
  *  \author Andrey Alekseenko <al42and@gmail.com>
  *
- *  \inlibraryapi
+ *  \ingroup module_gpu_utils
  */
 #include "gmxpre.h"
 

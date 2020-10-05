@@ -71,7 +71,8 @@ typedef int awh_ivec[c_biasMaxNumDim];
  */
 struct DimParams
 {
-    //! Type for storing dimension parameters for pull type dimensions
+    /*! \internal \brief Type for storing dimension parameters for pull type dimensions
+     */
     struct PullDimParams
     {
         const double k;     /**< Force constant (kJ/mol/nm^2) for each coordinate dimension. */
@@ -79,7 +80,8 @@ struct DimParams
         const double userCoordUnitsToInternal; /**< Conversion factor coordinate units. */
     };
 
-    //! Type for storing dimension parameters for free-energy lamdba type dimensions
+    /*! \internal \brief Type for storing dimension parameters for free-energy lamdba type dimensions
+     */
     struct FepDimParams
     {
         const double beta;               /**< 1/(k_B T). */

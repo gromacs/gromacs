@@ -167,7 +167,8 @@ void printStringNoNewline(std::vector<t_inpfile>* inp, const char* line);
 //! Replace for macro STYPE, checks for existing string entry and if possible replaces it
 void setStringEntry(std::vector<t_inpfile>* inp, const char* name, char* newName, const char* def);
 
-/*! Returns a string value and sets the value in \p inp
+/*! \brief
+ * Returns a string value and sets the value in \p inp
  *
  * The value is either from \p inp when \p name is found or \p def otherwise.
  *

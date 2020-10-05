@@ -42,6 +42,8 @@
 #ifndef GMX_SIMD_IMPL_ARM_SVE_DEFINITIONS_H
 #define GMX_SIMD_IMPL_ARM_SVE_DEFINITIONS_H
 
+#include "config.h"
+
 #define GMX_SIMD 1
 #define GMX_SIMD_HAVE_FLOAT 1
 #define GMX_SIMD_HAVE_DOUBLE 1

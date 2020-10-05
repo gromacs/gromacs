@@ -154,14 +154,15 @@ getCompatibleDevices(const std::vector<std::unique_ptr<DeviceInformation>>& devi
  */
 std::vector<int> getCompatibleDeviceIds(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList);
 
-/*! \brief Return whether \c deviceId is found in \c deviceInfoList and is compatible
+/*! \brief Return whether \p deviceId is found in \p deviceInfoList and is compatible
  *
  * This function filters the result of the detection for compatible
  * GPUs, based on the previously run compatibility tests.
  *
  * \param[in] deviceInfoList An information on available devices.
+ * \param[in] deviceId       The device ID to find in the list.
  *
- * \throws RangeError If \c deviceId does not match the id of any device in \c deviceInfoList
+ * \throws RangeError If \p deviceId does not match the id of any device in \c deviceInfoList
  *
  * \return  Whether \c deviceId is compatible.
  */
