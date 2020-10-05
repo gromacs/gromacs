@@ -52,6 +52,12 @@ configure with ``GMX_USE_RDTSCP=off``. Non-x86 platforms are
 unaffected, except that they will no longer report that RDTSCP is
 disabled (because that is self-evident).
 
+Bundle muparser
+"""""""""""""""
+
+|Gromacs| now bundles MuParser version 2.3. It is also possible
+to link to an external provided library.
+
 armv8+sve support (ARM_SVE)
 """""""""""""""""""""""""""
 Support for ARM Scalable Vector Extensions (SVE) has been added.
