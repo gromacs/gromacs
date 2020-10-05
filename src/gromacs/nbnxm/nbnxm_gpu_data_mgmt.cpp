@@ -72,7 +72,7 @@ void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
                                     NBParamGpu*                  nbp,
                                     const DeviceContext&         deviceContext)
 {
-    if (!nbp->coulomb_tab)
+    if (nbp->coulomb_tab)
     {
         destroyParamLookupTable(&nbp->coulomb_tab, nbp->coulomb_tab_texobj);
     }
