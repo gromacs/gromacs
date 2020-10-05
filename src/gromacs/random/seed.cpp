@@ -66,8 +66,7 @@ static bool checkIfRandomDeviceIsFunctional(std::random_device* rd)
         {
             fprintf(debug,
                     "Hardware random number generator (RDRAND) returned -1 (0xFFFFFFFF) twice in\n"
-                    "a row. This may be due to a known bug in AND Ryzen microcode. Will use\n"
-                    "pseudo-random numbers generator (PRNG) instead.");
+                    "a row. This may be due to a known bug in AMD Ryzen microcode.");
         }
         return false;
     }
@@ -85,6 +84,11 @@ static bool checkIfRandomDeviceIsFunctional(std::random_device* rd)
  */
 static inline uint64_t getNextRandomNumber(bool useRdrand, std::random_device* rd)
 {
+    if (debug && !useRdrand)
+    {
+        fprintf(debug,
+                "Will use pseudo-random number generator (PRNG) rather than hardware device.");
+    }
     return useRdrand ? static_cast<uint64_t>((*rd)()) : static_cast<uint64_t>(rand());
 }
 
