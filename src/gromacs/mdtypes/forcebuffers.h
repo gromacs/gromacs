@@ -125,7 +125,7 @@ private:
     //! The force buffer for combined fast and slow forces with MTS
     ArrayRefWithPadding<RVec> forceMtsCombined_;
     //! Wether we use forceMtsCombined_
-    bool useForceMtsCombined_;
+    gmx_used_in_debug bool useForceMtsCombined_;
 };
 
 /*! \libinternal \brief Object that holds the force buffers
