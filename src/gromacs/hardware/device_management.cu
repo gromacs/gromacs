@@ -288,9 +288,10 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         memset(&prop, 0, sizeof(cudaDeviceProp));
         stat = cudaGetDeviceProperties(&prop, i);
 
-        deviceInfoList[i]       = std::make_unique<DeviceInformation>();
-        deviceInfoList[i]->id   = i;
-        deviceInfoList[i]->prop = prop;
+        deviceInfoList[i]               = std::make_unique<DeviceInformation>();
+        deviceInfoList[i]->id           = i;
+        deviceInfoList[i]->prop         = prop;
+        deviceInfoList[i]->deviceVendor = DeviceVendor::Nvidia;
 
         const DeviceStatus checkResult = (stat != cudaSuccess) ? DeviceStatus::NonFunctional
                                                                : checkDeviceStatus(*deviceInfoList[i]);

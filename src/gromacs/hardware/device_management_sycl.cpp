@@ -198,9 +198,10 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
         size_t i = deviceInfos.size() - 1;
 
-        deviceInfos[i]->id         = i;
-        deviceInfos[i]->syclDevice = syclDevice;
-        deviceInfos[i]->status     = checkDevice(i, *deviceInfos[i]);
+        deviceInfos[i]->id           = i;
+        deviceInfos[i]->syclDevice   = syclDevice;
+        deviceInfos[i]->status       = checkDevice(i, *deviceInfos[i]);
+        deviceInfos[i]->deviceVendor = DeviceVendor::Unknown;
     }
     return deviceInfos;
 }
