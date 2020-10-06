@@ -80,13 +80,7 @@ namespace gmx
 namespace test
 {
 
-/*! \brief
- * Initialize and apply SHAKE constraints.
- *
- * \param[in] testData        Test data structure.
- * \param[in] pbc             Periodic boundary data.
- */
-void applyShake(ConstraintsTestData* testData, t_pbc gmx_unused pbc)
+void ShakeConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_pbc /* pbc */)
 {
     shakedata shaked;
     make_shake_sblock_serial(&shaked, testData->idef_.get(), testData->numAtoms_);
@@ -98,13 +92,7 @@ void applyShake(ConstraintsTestData* testData, t_pbc gmx_unused pbc)
     EXPECT_TRUE(success) << "Test failed with a false return value in SHAKE.";
 }
 
-/*! \brief
- * Initialize and apply LINCS constraints.
- *
- * \param[in] testData        Test data structure.
- * \param[in] pbc             Periodic boundary data.
- */
-void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
+void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_pbc pbc)
 {
 
     Lincs* lincsd;
@@ -150,14 +138,9 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
 }
 
 #if !GMX_GPU_CUDA
-/*! \brief
- * Stub for GPU version of LINCS constraints to satisfy compiler.
- *
- * \param[in] testData        Test data structure.
- * \param[in] pbc             Periodic boundary data.
- */
-void applyLincsGpu(ConstraintsTestData gmx_unused* testData, t_pbc gmx_unused pbc)
+void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* /* testData */, t_pbc /* pbc */)
 {
+    GMX_UNUSED_VALUE(testDevice_);
     FAIL() << "Dummy LINCS CUDA function was called instead of the real one.";
 }
 #endif // !GMX_GPU_CUDA

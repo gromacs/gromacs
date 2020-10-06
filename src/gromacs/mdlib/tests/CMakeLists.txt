@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(MdlibUnitTest mdlib-test
+gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
     CPP_SOURCE_FILES
         calc_verletbuf.cpp
         constr.cpp

@@ -33,11 +33,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief SHAKE and LINCS tests header.
+ * \brief SHAKE and LINCS tests runners.
  *
- * Contains description and constructor for the test data accumulating object,
- * declares CPU- and GPU-based functions used to apply SHAKE or LINCS on the
- * test data.
+ * Declares test runner class for constraints. The test runner abstract class is used
+ * to unify the interfaces for different constraints methods, running on different
+ * hardware.  This allows to run the same test on the same data using different
+ * implementations of the parent class, that inherit its interfaces.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \ingroup module_mdlib
@@ -45,6 +46,10 @@
 
 #ifndef GMX_MDLIB_TESTS_CONSTRTESTRUNNERS_H
 #define GMX_MDLIB_TESTS_CONSTRTESTRUNNERS_H
+
+#include <gtest/gtest.h>
+
+#include "testutils/test_device.h"
 
 #include "constrtestdata.h"
 
@@ -55,18 +60,92 @@ namespace gmx
 namespace test
 {
 
-/*! \brief Apply SHAKE constraints to the test data.
- */
-void applyShake(ConstraintsTestData* testData, t_pbc pbc);
-/*! \brief Apply LINCS constraints to the test data.
- */
-void applyLincs(ConstraintsTestData* testData, t_pbc pbc);
-/*! \brief Apply GPU version of LINCS constraints to the test data.
+/* \brief Constraints test runner interface.
  *
- * All the data is copied to the GPU device, then LINCS is applied and
- * the resulting coordinates are copied back.
+ * Wraps the actual implementation of constraints algorithm into common interface.
  */
-void applyLincsGpu(ConstraintsTestData* testData, t_pbc pbc);
+class IConstraintsTestRunner
+{
+public:
+    //! Virtual destructor.
+    virtual ~IConstraintsTestRunner() {}
+    /*! \brief Abstract constraining function. Should be overriden.
+     *
+     * \param[in] testData             Test data structure.
+     * \param[in] pbc                  Periodic boundary data.
+     */
+    virtual void applyConstraints(ConstraintsTestData* testData, t_pbc pbc) = 0;
+
+    /*! \brief Get the name of the implementation.
+     *
+     * \return "<algorithm> on <device>", depending on the actual implementation used. E.g., "LINCS on #0: NVIDIA GeForce GTX 1660 SUPER".
+     */
+    virtual std::string name() = 0;
+};
+
+// Runner for the CPU implementation of SHAKE constraints algorithm.
+class ShakeConstraintsRunner : public IConstraintsTestRunner
+{
+public:
+    //! Default constructor.
+    ShakeConstraintsRunner() {}
+    /*! \brief Apply SHAKE constraints to the test data.
+     *
+     * \param[in] testData             Test data structure.
+     * \param[in] pbc                  Periodic boundary data.
+     */
+    void applyConstraints(ConstraintsTestData* testData, t_pbc pbc) override;
+    /*! \brief Get the name of the implementation.
+     *
+     * \return "SHAKE" string;
+     */
+    std::string name() override { return "SHAKE on CPU"; }
+};
+
+// Runner for the CPU implementation of LINCS constraints algorithm.
+class LincsConstraintsRunner : public IConstraintsTestRunner
+{
+public:
+    //! Default constructor.
+    LincsConstraintsRunner() {}
+    /*! \brief Apply LINCS constraints to the test data on the CPU.
+     *
+     * \param[in] testData             Test data structure.
+     * \param[in] pbc                  Periodic boundary data.
+     */
+    void applyConstraints(ConstraintsTestData* testData, t_pbc pbc) override;
+    /*! \brief Get the name of the implementation.
+     *
+     * \return "LINCS" string;
+     */
+    std::string name() override { return "LINCS on CPU"; }
+};
+
+// Runner for the GPU implementation of LINCS constraints algorithm.
+class LincsDeviceConstraintsRunner : public IConstraintsTestRunner
+{
+public:
+    /*! \brief Constructor. Keeps a copy of the hardware context.
+     *
+     * \param[in] testDevice The device hardware context to be used by the runner.
+     */
+    LincsDeviceConstraintsRunner(const TestDevice& testDevice) : testDevice_(testDevice) {}
+    /*! \brief Apply LINCS constraints to the test data on the GPU.
+     *
+     * \param[in] testData             Test data structure.
+     * \param[in] pbc                  Periodic boundary data.
+     */
+    void applyConstraints(ConstraintsTestData* testData, t_pbc pbc) override;
+    /*! \brief Get the name of the implementation.
+     *
+     * \return "LINCS_GPU" string;
+     */
+    std::string name() override { return "LINCS on " + testDevice_.description(); }
+
+private:
+    //! Test device to be used in the runner.
+    const TestDevice& testDevice_;
+};
 
 } // namespace test
 } // namespace gmx

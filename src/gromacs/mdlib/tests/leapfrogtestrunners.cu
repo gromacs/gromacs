@@ -64,11 +64,11 @@ namespace gmx
 namespace test
 {
 
-void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
+void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
 {
-    DeviceInformation   deviceInfo;
-    const DeviceContext deviceContext(deviceInfo);
-    const DeviceStream  deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
+    const DeviceContext& deviceContext = testDevice_.deviceContext();
+    const DeviceStream&  deviceStream  = testDevice_.deviceStream();
+    setActiveDevice(testDevice_.deviceInfo());
 
     int numAtoms = testData->numAtoms_;
 

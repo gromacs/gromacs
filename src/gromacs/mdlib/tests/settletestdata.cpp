@@ -73,6 +73,7 @@ namespace test
 {
 
 SettleTestData::SettleTestData(int numSettles) :
+    numSettles_(numSettles),
     x_(c_waterPositions.size()),
     xPrime_(c_waterPositions.size()),
     v_(c_waterPositions.size())

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,17 +33,22 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Declaration of the SETTLE tests runners.
+ * \brief SETTLE tests runners.
  *
- * Declares the functions that do the buffer management and apply
- * SETTLE constraints ("test runners").
+ * Declares test runner class for SETTLE algorithm. The test runners abstract
+ * class is used to unify the interfaces for CPU and GPU implementations of the
+ * SETTLE algorithm. This allows to run the same test on the same data using
+ * different implementations of the parent class, that inherit its interfaces.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \ingroup module_mdlib
  */
-
 #ifndef GMX_MDLIB_TESTS_SETTLETESTRUNNERS_H
 #define GMX_MDLIB_TESTS_SETTLETESTRUNNERS_H
+
+#include <gtest/gtest.h>
+
+#include "testutils/test_device.h"
 
 #include "settletestdata.h"
 
@@ -54,39 +59,103 @@ namespace gmx
 namespace test
 {
 
-/*! \brief Apply SETTLE using CPU version of the algorithm
+/* \brief SETTLE test runner interface.
  *
- * Initializes SETTLE object, applies algorithm, destroys the object. The coordinates, velocities
- * and virial are updated in the testData object.
- *
- * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
- * \param[in]     pbc               Periodic boundary setup.
- * \param[in]     updateVelocities  If the velocities should be updated.
- * \param[in]     calcVirial        If the virial should be computed.
- * \param[in]     testDescription   Brief description that will be printed in case of test failure.
+ * Wraps the actual implementation of SETTLE into common interface.
  */
-void applySettle(SettleTestData*    testData,
-                 t_pbc              pbc,
-                 bool               updateVelocities,
-                 bool               calcVirial,
-                 const std::string& testDescription);
+class ISettleTestRunner
+{
+public:
+    //! Virtual destructor.
+    virtual ~ISettleTestRunner() {}
 
-/*! \brief Apply SETTLE using GPU version of the algorithm
- *
- * Initializes SETTLE object, copied data to the GPU, applies algorithm, copies the data back,
- * destroys the object. The coordinates, velocities and virial are updated in the testData object.
- *
- * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
- * \param[in]     pbc               Periodic boundary setup.
- * \param[in]     updateVelocities  If the velocities should be updated.
- * \param[in]     calcVirial        If the virial should be computed.
- * \param[in]     testDescription   Brief description that will be printed in case of test failure.
- */
-void applySettleGpu(SettleTestData*    testData,
-                    t_pbc              pbc,
-                    bool               updateVelocities,
-                    bool               calcVirial,
-                    const std::string& testDescription);
+    /*! \brief Apply SETTLE using CPU version of the algorithm
+     *
+     * Initializes SETTLE object, applies algorithm, destroys the object. The coordinates, velocities
+     * and virial are updated in the testData object.
+     *
+     * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
+     * \param[in]     pbc               Periodic boundary setup.
+     * \param[in]     updateVelocities  If the velocities should be updated.
+     * \param[in]     calcVirial        If the virial should be computed.
+     * \param[in]     testDescription   Brief description that will be printed in case of test failure.
+     */
+    virtual void applySettle(SettleTestData*    testData,
+                             t_pbc              pbc,
+                             bool               updateVelocities,
+                             bool               calcVirial,
+                             const std::string& testDescription) = 0;
+    /*! \brief Get the hardware description
+     *
+     * \returns A string, describing hardware used by the runner.
+     */
+    virtual std::string hardwareDescription() = 0;
+};
+
+// Runner for the CPU implementation of SETTLE.
+class SettleHostTestRunner : public ISettleTestRunner
+{
+public:
+    //! Default constructor.
+    SettleHostTestRunner() {}
+    /*! \brief Apply SETTLE using CPU version of the algorithm
+     *
+     * Initializes SETTLE object, applies algorithm, destroys the object. The coordinates, velocities
+     * and virial are updated in the testData object.
+     *
+     * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
+     * \param[in]     pbc               Periodic boundary setup.
+     * \param[in]     updateVelocities  If the velocities should be updated.
+     * \param[in]     calcVirial        If the virial should be computed.
+     * \param[in]     testDescription   Brief description that will be printed in case of test failure.
+     */
+    void applySettle(SettleTestData*    testData,
+                     t_pbc              pbc,
+                     bool               updateVelocities,
+                     bool               calcVirial,
+                     const std::string& testDescription) override;
+    /*! \brief Get the hardware description
+     *
+     * \returns "CPU" string.
+     */
+    std::string hardwareDescription() override { return "CPU"; }
+};
+
+// Runner for the GPU implementation of SETTLE.
+class SettleDeviceTestRunner : public ISettleTestRunner
+{
+public:
+    /*! \brief Constructor. Keeps a copy of the hardware context.
+     *
+     * \param[in] testDevice The device hardware context to be used by the runner.
+     */
+    SettleDeviceTestRunner(const TestDevice& testDevice) : testDevice_(testDevice) {}
+    /*! \brief Apply SETTLE using GPU version of the algorithm
+     *
+     * Initializes SETTLE object, copied data to the GPU, applies algorithm, copies the data back,
+     * destroys the object. The coordinates, velocities and virial are updated in the testData object.
+     *
+     * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
+     * \param[in]     pbc               Periodic boundary setup.
+     * \param[in]     updateVelocities  If the velocities should be updated.
+     * \param[in]     calcVirial        If the virial should be computed.
+     * \param[in]     testDescription   Brief description that will be printed in case of test failure.
+     */
+    void applySettle(SettleTestData*    testData,
+                     t_pbc              pbc,
+                     bool               updateVelocities,
+                     bool               calcVirial,
+                     const std::string& testDescription) override;
+    /*! \brief Get the hardware description
+     *
+     * \returns A string with GPU description.
+     */
+    std::string hardwareDescription() override { return testDevice_.description(); }
+
+private:
+    //! Test test device to be used in the runner.
+    const TestDevice& testDevice_;
+};
 
 } // namespace test
 } // namespace gmx

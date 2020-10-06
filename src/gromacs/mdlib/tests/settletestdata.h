@@ -62,6 +62,8 @@ namespace test
 class SettleTestData
 {
 public:
+    //! Number of settles
+    int numSettles_;
     //! Initial (undisturbed) positions
     PaddedVector<gmx::RVec> x_;
     //! Updated water atom positions to constrain

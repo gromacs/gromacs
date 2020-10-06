@@ -62,17 +62,11 @@ namespace gmx
 namespace test
 {
 
-/*! \brief
- * Initialize and apply LINCS constraints on GPU.
- *
- * \param[in] testData        Test data structure.
- * \param[in] pbc             Periodic boundary data.
- */
-void applyLincsGpu(ConstraintsTestData* testData, t_pbc pbc)
+void LincsDeviceConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_pbc pbc)
 {
-    DeviceInformation   deviceInfo;
-    const DeviceContext deviceContext(deviceInfo);
-    const DeviceStream  deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
+    const DeviceContext& deviceContext = testDevice_.deviceContext();
+    const DeviceStream&  deviceStream  = testDevice_.deviceStream();
+    setActiveDevice(testDevice_.deviceInfo());
 
     auto lincsGpu = std::make_unique<LincsGpu>(testData->ir_.nLincsIter, testData->ir_.nProjOrder,
                                                deviceContext, deviceStream);

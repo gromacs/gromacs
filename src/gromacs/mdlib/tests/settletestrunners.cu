@@ -56,35 +56,26 @@
 #include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/utility/unique_cptr.h"
 
+#include "testutils/test_device.h"
+
 namespace gmx
 {
 namespace test
 {
 
-/*! \brief Apply SETTLE using GPU version of the algorithm.
- *
- * Initializes SETTLE object, copied data to the GPU, applies algorithm, copies the data back,
- * destroys the object. The coordinates, velocities and virial are updated in the testData object.
- *
- * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
- * \param[in]     pbc               Periodic boundary setup.
- * \param[in]     updateVelocities  If the velocities should be updated.
- * \param[in]     calcVirial        If the virial should be computed.
- * \param[in]     testDescription   Brief description that will be printed in case of test failure.
- */
-void applySettleGpu(SettleTestData*  testData,
-                    const t_pbc      pbc,
-                    const bool       updateVelocities,
-                    const bool       calcVirial,
-                    gmx_unused const std::string& testDescription)
+void SettleDeviceTestRunner::applySettle(SettleTestData* testData,
+                                         const t_pbc     pbc,
+                                         const bool      updateVelocities,
+                                         const bool      calcVirial,
+                                         const std::string& /* testDescription */)
 {
     // These should never fail since this function should only be called if CUDA is enabled and
     // there is a CUDA-capable device available.
     GMX_RELEASE_ASSERT(GMX_GPU_CUDA, "CUDA version of SETTLE was called from non-CUDA build.");
 
-    DeviceInformation   deviceInfo;
-    const DeviceContext deviceContext(deviceInfo);
-    const DeviceStream  deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
+    const DeviceContext& deviceContext = testDevice_.deviceContext();
+    const DeviceStream&  deviceStream  = testDevice_.deviceStream();
+    setActiveDevice(testDevice_.deviceInfo());
 
     auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, deviceContext, deviceStream);
 

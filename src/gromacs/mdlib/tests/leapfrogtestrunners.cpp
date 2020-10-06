@@ -70,7 +70,7 @@ namespace gmx
 namespace test
 {
 
-void integrateLeapFrogSimple(LeapFrogTestData* testData, int numSteps)
+void LeapFrogHostTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
 {
     testData->state_.x.resizeWithPadding(testData->numAtoms_);
     testData->state_.v.resizeWithPadding(testData->numAtoms_);
@@ -105,8 +105,9 @@ void integrateLeapFrogSimple(LeapFrogTestData* testData, int numSteps)
 
 #if !GMX_GPU_CUDA
 
-void integrateLeapFrogGpu(gmx_unused LeapFrogTestData* testData, gmx_unused int numSteps)
+void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* /* testData */, int /* numSteps */)
 {
+    GMX_UNUSED_VALUE(testDevice_);
     FAIL() << "Dummy Leap-Frog CUDA function was called instead of the real one.";
 }
 
