@@ -339,15 +339,15 @@ private:
  * Thus all options should be internally consistent and consistent
  * with the hardware, except that ntmpi could be larger than #GPU.
  */
-int get_nthreads_mpi(const gmx_hw_info_t*    hwinfo,
-                     gmx_hw_opt_t*           hw_opt,
-                     const std::vector<int>& gpuIdsToUse,
-                     bool                    nonbondedOnGpu,
-                     bool                    pmeOnGpu,
-                     const t_inputrec*       inputrec,
-                     const gmx_mtop_t*       mtop,
-                     const gmx::MDLogger&    mdlog,
-                     bool                    doMembed)
+int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
+                     gmx_hw_opt_t*        hw_opt,
+                     const int            numDevicesToUse,
+                     bool                 nonbondedOnGpu,
+                     bool                 pmeOnGpu,
+                     const t_inputrec*    inputrec,
+                     const gmx_mtop_t*    mtop,
+                     const gmx::MDLogger& mdlog,
+                     bool                 doMembed)
 {
     int nthreads_hw, nthreads_tot_max, nrank, ngpu;
     int min_atoms_per_mpi_rank;
@@ -432,7 +432,7 @@ int get_nthreads_mpi(const gmx_hw_info_t*    hwinfo,
 
     /* nonbondedOnGpu might be false e.g. because this simulation
      * is a rerun with energy groups. */
-    ngpu = (nonbondedOnGpu ? gmx::ssize(gpuIdsToUse) : 0);
+    ngpu = (nonbondedOnGpu ? numDevicesToUse : 0);
 
     nrank = get_tmpi_omp_thread_division(hwinfo, *hw_opt, nthreads_tot_max, ngpu);
 

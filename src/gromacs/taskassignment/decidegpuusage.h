@@ -101,20 +101,24 @@ class MDAtoms;
  * user. So we need to consider this before any automated choice of
  * the number of thread-MPI ranks.
  *
- * \param[in]  nonbondedTarget             The user's choice for mdrun -nb for where to assign short-ranged nonbonded interaction tasks.
- * \param[in]  gpuIdsToUse                 The compatible GPUs that the user permitted us to use.
- * \param[in]  userGpuTaskAssignment       The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  emulateGpuNonbonded         Whether we will emulate GPU calculation of nonbonded interactions.
- * \param[in]  buildSupportsNonbondedOnGpu Whether GROMACS was built with GPU support.
- * \param[in]  nonbondedOnGpuIsUseful      Whether computing nonbonded interactions on a GPU is useful for this calculation.
- * \param[in]  numRanksPerSimulation       The number of ranks in each simulation.
+ * \param[in] nonbondedTarget              The user's choice for mdrun -nb for where to assign
+ *                                         short-ranged nonbonded interaction tasks.
+ * \param[in] numDevicesToUse              Number of compatible GPUs that the user permitted
+ *                                         us to use.
+ * \param[in] userGpuTaskAssignment        The user-specified assignment of GPU tasks to device IDs.
+ * \param[in] emulateGpuNonbonded          Whether we will emulate GPU calculation of nonbonded
+ *                                         interactions.
+ * \param[in] buildSupportsNonbondedOnGpu  Whether GROMACS was built with GPU support.
+ * \param[in] nonbondedOnGpuIsUseful       Whether computing nonbonded interactions on a GPU is
+ *                                         useful for this calculation.
+ * \param[in] numRanksPerSimulation        The number of ranks in each simulation.
  *
  * \returns    Whether the simulation will run nonbonded tasks on GPUs.
  *
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              nonbondedTarget,
-                                                     const std::vector<int>& gpuIdsToUse,
+                                                     int                     numDevicesToUse,
                                                      const std::vector<int>& userGpuTaskAssignment,
                                                      EmulateGpuNonbonded     emulateGpuNonbonded,
                                                      bool buildSupportsNonbondedOnGpu,
@@ -132,7 +136,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
  * \param[in]  pmeTarget                 The user's choice for mdrun -pme for where to assign
  *                                       long-ranged PME nonbonded interaction tasks.
- * \param[in]  gpuIdsToUse               The compatible GPUs that the user permitted us to use.
+ * \param[in]  numDevicesToUse           The number of compatible GPUs that the user permitted us to use.
  * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
@@ -145,7 +149,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuForNonbonded,
                                                TaskTarget              pmeTarget,
-                                               const std::vector<int>& gpuIdsToUse,
+                                               int                     numDevicesToUse,
                                                const std::vector<int>& userGpuTaskAssignment,
                                                const gmx_hw_info_t&    hardwareInfo,
                                                const t_inputrec&       inputrec,

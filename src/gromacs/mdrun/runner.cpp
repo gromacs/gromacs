@@ -781,6 +781,7 @@ int Mdrunner::mdrunner()
     gmx_print_detected_hardware(fplog, isSimulationMasterRank && isMasterSim(ms), mdlog, hwinfo);
 
     std::vector<int> gpuIdsToUse = makeGpuIdsToUse(hwinfo->deviceInfoList, hw_opt.gpuIdsAvailable);
+    const int        numDevicesToUse = gmx::ssize(gpuIdsToUse);
 
     // Print citation requests after all software/hardware printing
     pleaseCiteGromacs(fplog);
@@ -823,12 +824,12 @@ int Mdrunner::mdrunner()
             // the number of GPUs to choose the number of ranks.
             auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
             useGpuForNonbonded         = decideWhetherToUseGpusForNonbondedWithThreadMpi(
-                    nonbondedTarget, gpuIdsToUse, userGpuTaskAssignment, emulateGpuNonbonded,
+                    nonbondedTarget, numDevicesToUse, userGpuTaskAssignment, emulateGpuNonbonded,
                     canUseGpuForNonbonded,
                     gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, GMX_THREAD_MPI),
                     hw_opt.nthreads_tmpi);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi(
-                    useGpuForNonbonded, pmeTarget, gpuIdsToUse, userGpuTaskAssignment, *hwinfo,
+                    useGpuForNonbonded, pmeTarget, numDevicesToUse, userGpuTaskAssignment, *hwinfo,
                     *inputrec, hw_opt.nthreads_tmpi, domdecOptions.numPmeRanks);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -839,7 +840,7 @@ int Mdrunner::mdrunner()
          * prevent any possible subsequent checks from working
          * correctly. */
         hw_opt.nthreads_tmpi =
-                get_nthreads_mpi(hwinfo, &hw_opt, gpuIdsToUse, useGpuForNonbonded, useGpuForPme,
+                get_nthreads_mpi(hwinfo, &hw_opt, numDevicesToUse, useGpuForNonbonded, useGpuForPme,
                                  inputrec.get(), &mtop, mdlog, membedHolder.doMembed());
 
         // Now start the threads for thread MPI.
@@ -1285,7 +1286,7 @@ int Mdrunner::mdrunner()
     // where appropriate.
     if (!userGpuTaskAssignment.empty())
     {
-        gpuTaskAssignments.logPerformanceHints(mdlog, ssize(gpuIdsToUse));
+        gpuTaskAssignments.logPerformanceHints(mdlog, numDevicesToUse);
     }
 
     if (PAR(cr))

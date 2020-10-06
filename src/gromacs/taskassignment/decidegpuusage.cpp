@@ -109,7 +109,7 @@ const char* g_specifyEverythingFormatString =
 } // namespace
 
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        nonbondedTarget,
-                                                     const std::vector<int>& gpuIdsToUse,
+                                                     const int               numDevicesToUse,
                                                      const std::vector<int>& userGpuTaskAssignment,
                                                      const EmulateGpuNonbonded emulateGpuNonbonded,
                                                      const bool buildSupportsNonbondedOnGpu,
@@ -145,15 +145,13 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
     // Because this is thread-MPI, we already know about the GPUs that
     // all potential ranks can use, and can use that in a global
     // decision that will later be consistent.
-    auto haveGpus = !gpuIdsToUse.empty();
-
     // If we get here, then the user permitted or required GPUs.
-    return haveGpus;
+    return (numDevicesToUse > 0);
 }
 
 bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuForNonbonded,
                                                const TaskTarget        pmeTarget,
-                                               const std::vector<int>& gpuIdsToUse,
+                                               const int               numDevicesToUse,
                                                const std::vector<int>& userGpuTaskAssignment,
                                                const gmx_hw_info_t&    hardwareInfo,
                                                const t_inputrec&       inputrec,
@@ -222,7 +220,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
     {
         // PME can run well on a GPU shared with NB, and we permit
         // mdrun to default to try that.
-        return !gpuIdsToUse.empty();
+        return numDevicesToUse > 0;
     }
 
     if (numRanksPerSimulation < 1)
@@ -230,7 +228,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
         // Full automated mode for thread-MPI (the default). PME can
         // run well on a GPU shared with NB, and we permit mdrun to
         // default to it if there is only one GPU available.
-        return (gpuIdsToUse.size() == 1);
+        return (numDevicesToUse == 1);
     }
 
     // Not enough support for PME on GPUs for anything else
