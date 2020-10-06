@@ -205,7 +205,7 @@ rst_epilog += """
 .. _gmx-manual-parent-dir: ../manual-{gmx_version_string}.pdf
 .. |gmx-source-package-ftp| replace:: As ftp ftp://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
 .. |gmx-source-package-http| replace:: As http http://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
-.. |gmx-regressiontests-package| replace:: http://gerrit.gromacs.org/download/regressiontests-{regressiontest_version}.tar.gz
+.. |gmx-regressiontests-package| replace:: http://ftp.gromacs.org/pub/regressiontests/regressiontests-{regressiontest_version}.tar.gz
 .. _up-to-date installation instructions: http://manual.gromacs.org/documentation/current/install-guide/index.html
 .. _CUDA: http://www.nvidia.com/object/cuda_home_new.html
 .. _OpenCL: https://www.khronos.org/opencl/
