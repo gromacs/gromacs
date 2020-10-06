@@ -61,30 +61,6 @@
 namespace gmx
 {
 
-/*! \brief Returns an DeviceVendor value corresponding to the input OpenCL vendor name.
- *
- *  \returns               DeviceVendor value for the input vendor name
- */
-static DeviceVendor getDeviceVendor(const char* vendorName)
-{
-    if (vendorName)
-    {
-        if (strstr(vendorName, "NVIDIA"))
-        {
-            return DeviceVendor::Nvidia;
-        }
-        else if (strstr(vendorName, "AMD") || strstr(vendorName, "Advanced Micro Devices"))
-        {
-            return DeviceVendor::Amd;
-        }
-        else if (strstr(vendorName, "Intel"))
-        {
-            return DeviceVendor::Intel;
-        }
-    }
-    return DeviceVendor::Unknown;
-}
-
 /*! \brief Return true if executing on compatible OS for AMD OpenCL.
  *
  * This is assumed to be true for OS X version of at least 10.10.4 and
@@ -482,7 +458,7 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
                                     &(deviceInfoList[device_index]->adress_bits), nullptr);
 
                     deviceInfoList[device_index]->deviceVendor =
-                            gmx::getDeviceVendor(deviceInfoList[device_index]->vendorName);
+                            getDeviceVendor(deviceInfoList[device_index]->vendorName);
 
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t),
                                     &deviceInfoList[device_index]->maxWorkItemSizes, nullptr);

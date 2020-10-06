@@ -84,6 +84,27 @@ bool canComputeOnDevice()
     return canComputeOnDevice;
 }
 
+DeviceVendor getDeviceVendor(const char* vendorName)
+{
+    if (vendorName)
+    {
+        if (strstr(vendorName, "NVIDIA"))
+        {
+            return DeviceVendor::Nvidia;
+        }
+        else if (strstr(vendorName, "AMD") || strstr(vendorName, "Advanced Micro Devices"))
+        {
+            return DeviceVendor::Amd;
+        }
+        else if (strstr(vendorName, "Intel"))
+        {
+            return DeviceVendor::Intel;
+        }
+    }
+    return DeviceVendor::Unknown;
+}
+
+
 std::vector<std::reference_wrapper<DeviceInformation>>
 getCompatibleDevices(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList)
 {
