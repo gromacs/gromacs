@@ -73,17 +73,6 @@ bool isDeviceDetectionEnabled()
     }
 }
 
-bool canComputeOnDevice()
-{
-    bool canComputeOnDevice = false;
-    if (canPerformDeviceDetection(nullptr))
-    {
-        std::vector<std::unique_ptr<DeviceInformation>> devInfos = findDevices();
-        canComputeOnDevice = !getCompatibleDevices(devInfos).empty();
-    }
-    return canComputeOnDevice;
-}
-
 DeviceVendor getDeviceVendor(const char* vendorName)
 {
     if (vendorName)

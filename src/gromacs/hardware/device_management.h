@@ -104,12 +104,6 @@ bool isDeviceDetectionEnabled();
  */
 bool isDeviceDetectionFunctional(std::string* errorMessage);
 
-/*! \brief Checks if one can compute on the GPU
- *
- * \returns  True if the build supports GPUs and there are at least one available.
- */
-bool canComputeOnDevice();
-
 /*! \brief Returns an DeviceVendor value corresponding to the input OpenCL vendor name.
  *
  *  \returns               DeviceVendor value for the input vendor name
