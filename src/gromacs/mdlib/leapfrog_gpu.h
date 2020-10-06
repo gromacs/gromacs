@@ -41,10 +41,16 @@
  * \ingroup module_mdlib
  * \inlibraryapi
  */
-#ifndef GMX_MDLIB_LEAPFROG_GPU_CUH
-#define GMX_MDLIB_LEAPFROG_GPU_CUH
+#ifndef GMX_MDLIB_LEAPFROG_GPU_H
+#define GMX_MDLIB_LEAPFROG_GPU_H
 
-#include "gromacs/gpu_utils/gputraits.cuh"
+#include "config.h"
+
+#if GMX_GPU_CUDA
+#    include "gromacs/gpu_utils/devicebuffer.cuh"
+#    include "gromacs/gpu_utils/gputraits.cuh"
+#endif
+
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
@@ -57,6 +63,31 @@ struct t_grp_tcstat;
 
 namespace gmx
 {
+
+
+/*! \brief Sets the number of different temperature coupling values
+ *
+ *  This is needed to template the kernel
+ *  \todo Unify with similar enum in CPU update module
+ */
+enum class NumTempScaleValues
+{
+    None,    //!< No temperature coupling
+    Single,  //!< Single T-scaling value (one group)
+    Multiple //!< Multiple T-scaling values, need to use T-group indices
+};
+
+/*! \brief Different variants of the Parrinello-Rahman velocity scaling
+ *
+ *  This is needed to template the kernel
+ *  \todo Unify with similar enum in CPU update module
+ */
+enum class VelocityScalingType
+{
+    None,     //!< Do not apply velocity scaling (not a PR-coupling run or step)
+    Diagonal, //!< Apply velocity scaling using a diagonal matrix
+    Full      //!< Apply velocity scaling using a full matrix
+};
 
 class LeapFrogGpu
 {
@@ -86,10 +117,10 @@ public:
      * \param[in]     dtPressureCouple         Period between pressure coupling steps
      * \param[in]     prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
      */
-    void integrate(const float3*                     d_x,
-                   float3*                           d_xp,
-                   float3*                           d_v,
-                   const float3*                     d_f,
+    void integrate(const DeviceBuffer<float3>        d_x,
+                   DeviceBuffer<float3>              d_xp,
+                   DeviceBuffer<float3>              d_v,
+                   const DeviceBuffer<float3>        d_f,
                    const real                        dt,
                    const bool                        doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
@@ -127,7 +158,7 @@ private:
     int numAtoms_;
 
     //! 1/mass for all atoms (GPU)
-    real* d_inverseMasses_;
+    DeviceBuffer<float> d_inverseMasses_;
     //! Current size of the reciprocal masses array
     int numInverseMasses_ = -1;
     //! Maximum size of the reciprocal masses array
@@ -141,7 +172,7 @@ private:
      */
     gmx::HostVector<float> h_lambdas_;
     //! Device-side temperature scaling factors
-    float* d_lambdas_;
+    DeviceBuffer<float> d_lambdas_;
     //! Current size of the array with temperature scaling factors (lambdas)
     int numLambdas_ = -1;
     //! Maximum size of the array with temperature scaling factors (lambdas)
@@ -149,7 +180,7 @@ private:
 
 
     //! Array that maps atom index onto the temperature scaling group to get scaling parameter
-    unsigned short* d_tempScaleGroups_;
+    DeviceBuffer<unsigned short> d_tempScaleGroups_;
     //! Current size of the temperature coupling groups array
     int numTempScaleGroups_ = -1;
     //! Maximum size of the temperature coupling groups array

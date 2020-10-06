@@ -50,7 +50,7 @@
 
 #if GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/devicebuffer.cuh"
-#    include "gromacs/mdlib/leapfrog_gpu.cuh"
+#    include "gromacs/mdlib/leapfrog_gpu.h"
 #endif
 
 #include "gromacs/hardware/device_information.h"

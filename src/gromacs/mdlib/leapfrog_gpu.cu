@@ -46,7 +46,7 @@
  */
 #include "gmxpre.h"
 
-#include "leapfrog_gpu.cuh"
+#include "leapfrog_gpu.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -74,30 +74,6 @@ namespace gmx
 constexpr static int c_threadsPerBlock = 256;
 //! Maximum number of threads in a block (for __launch_bounds__)
 constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
-
-/*! \brief Sets the number of different temperature coupling values
- *
- *  This is needed to template the kernel
- *  \todo Unify with similar enum in CPU update module
- */
-enum class NumTempScaleValues
-{
-    None,    //!< No temperature coupling
-    Single,  //!< Single T-scaling value (one group)
-    Multiple //!< Multiple T-scaling values, need to use T-group indices
-};
-
-/*! \brief Different variants of the Parrinello-Rahman velocity scaling
- *
- *  This is needed to template the kernel
- *  \todo Unify with similar enum in CPU update module
- */
-enum class VelocityScalingType
-{
-    None,     //!< Do not apply velocity scaling (not a PR-coupling run or step)
-    Diagonal, //!< Apply velocity scaling using a diagonal matrix
-    Full      //!< Apply velocity scaling using a full matrix
-};
 
 /*! \brief Main kernel for Leap-Frog integrator.
  *
@@ -261,10 +237,10 @@ inline auto selectLeapFrogKernelPtr(bool                doTemperatureScaling,
     return kernelPtr;
 }
 
-void LeapFrogGpu::integrate(const float3*                     d_x,
-                            float3*                           d_xp,
-                            float3*                           d_v,
-                            const float3*                     d_f,
+void LeapFrogGpu::integrate(const DeviceBuffer<float3>        d_x,
+                            DeviceBuffer<float3>              d_xp,
+                            DeviceBuffer<float3>              d_v,
+                            const DeviceBuffer<float3>        d_f,
                             const real                        dt,
                             const bool                        doTemperatureScaling,
                             gmx::ArrayRef<const t_grp_tcstat> tcstat,

@@ -62,7 +62,7 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
-#include "gromacs/mdlib/leapfrog_gpu.cuh"
+#include "gromacs/mdlib/leapfrog_gpu.h"
 #include "gromacs/mdlib/lincs_gpu.cuh"
 #include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/mdlib/update_constrain_gpu.h"
