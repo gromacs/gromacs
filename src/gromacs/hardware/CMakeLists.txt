@@ -62,6 +62,7 @@ elseif(GMX_GPU_SYCL)
         device_management_sycl.cpp
         # Must add these files so they can include device_information.h
         device_management.cpp
+        device_management_common.cpp
         detecthardware.cpp
 	)
 else()
