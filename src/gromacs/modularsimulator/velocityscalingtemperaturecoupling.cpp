@@ -56,6 +56,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "modularsimulator.h"
 #include "simulatoralgorithm.h"
@@ -271,6 +272,172 @@ private:
     ArrayRef<real> lambdaStartVelocities_;
 };
 
+// Prepare NoseHooverTemperatureCoupling checkpoint data
+namespace
+{
+/*!
+ * \brief Enum describing the contents NoseHoover writes to modular checkpoint
+ *
+ * When changing the checkpoint content, add a new element just above Count, and adjust the
+ * checkpoint functionality.
+ */
+enum class NHCheckpointVersion
+{
+    Base, //!< First version of modular checkpointing
+    Count //!< Number of entries. Add new versions right above this!
+};
+constexpr auto c_nhCurrentVersion = NHCheckpointVersion(int(NHCheckpointVersion::Count) - 1);
+} // namespace
+
+/*! \internal
+ * \brief Implements the Nose-Hoover temperature coupling
+ */
+class NoseHooverTemperatureCoupling final : public ITemperatureCouplingImpl
+{
+public:
+    //! Apply the Nose-Hoover temperature control
+    real apply(Step gmx_unused                step,
+               int                            temperatureGroup,
+               real                           currentKineticEnergy,
+               real                           currentTemperature,
+               const TemperatureCouplingData& thermostatData) override
+    {
+        return applyLeapFrog(
+                step, temperatureGroup, currentKineticEnergy, currentTemperature, thermostatData);
+    }
+
+    /*! \brief Apply for leap-frog
+     *
+     * This is called after the force calculation, before coordinate update
+     *
+     * We expect system to be at x(t), v(t-dt/2), f(t), T(t-dt/2)
+     * Internal variables are at xi(t-dt), v_xi(t-dt)
+     * Force on xi is calculated at time of system temperature
+     * After calling this, we will have xi(t), v_xi(t)
+     * The thermostat integral returned is a function of xi and v_xi,
+     * and hence at time t.
+     *
+     * This performs an update of the thermostat variables calculated as
+     *     a_xi(t-dt/2) = (T_sys(t-dt/2) - T_ref) / mass_xi;
+     *     v_xi(t) = v_xi(t-dt) + dt_xi * a_xi(t-dt/2);
+     *     xi(t) = xi(t-dt) + dt_xi * (v_xi(t-dt) + v_xi(t))/2;
+     *
+     * This will be followed by leap-frog integration of coordinates, calculated as
+     *     v(t-dt/2) *= - 0.5 * dt * v_xi(t);  // scale previous velocities
+     *     v(t+dt/2) = update_leapfrog_v(v(t-dt/2), f(t));  // do whatever LF does
+     *     v(t+dt/2) *= 1 / (1 + 0.5 * dt * v_xi(t))  // scale new velocities
+     *     x(t+dt) = update_leapfrog_x(x(t), v(t+dt/2));  // do whatever LF does
+     */
+    real applyLeapFrog(Step gmx_unused                step,
+                       int                            temperatureGroup,
+                       real                           currentKineticEnergy,
+                       real                           currentTemperature,
+                       const TemperatureCouplingData& thermostatData)
+    {
+        if (!(thermostatData.couplingTime[temperatureGroup] >= 0
+              && thermostatData.numDegreesOfFreedom[temperatureGroup] > 0 && currentKineticEnergy > 0))
+        {
+            lambdaStartVelocities_[temperatureGroup] = 1.0;
+            lambdaEndVelocities_[temperatureGroup]   = 1.0;
+            return thermostatData.temperatureCouplingIntegral[temperatureGroup];
+        }
+
+        const auto oldXiVelocity = xiVelocities_[temperatureGroup];
+        const auto xiAcceleration =
+                invXiMass_[temperatureGroup]
+                * (currentTemperature - thermostatData.referenceTemperature[temperatureGroup]);
+        xiVelocities_[temperatureGroup] += thermostatData.couplingTimeStep * xiAcceleration;
+        xi_[temperatureGroup] += thermostatData.couplingTimeStep
+                                 * (oldXiVelocity + xiVelocities_[temperatureGroup]) * 0.5;
+        lambdaStartVelocities_[temperatureGroup] =
+                (1 - 0.5 * thermostatData.couplingTimeStep * xiVelocities_[temperatureGroup]);
+        lambdaEndVelocities_[temperatureGroup] =
+                1. / (1 + 0.5 * thermostatData.couplingTimeStep * xiVelocities_[temperatureGroup]);
+
+        // Current value of the thermostat integral
+        return 0.5 * c_boltz * thermostatData.numDegreesOfFreedom[temperatureGroup]
+                       * (xiVelocities_[temperatureGroup] * xiVelocities_[temperatureGroup])
+                       / invXiMass_[temperatureGroup]
+               + thermostatData.numDegreesOfFreedom[temperatureGroup] * xi_[temperatureGroup]
+                         * c_boltz * thermostatData.referenceTemperature[temperatureGroup];
+    }
+
+    //! Connect with propagator - Nose-Hoover scales start and end step velocities
+    void connectWithPropagator(const PropagatorThermostatConnection& connectionData,
+                               int                                   numTemperatureGroups) override
+    {
+        connectionData.setNumVelocityScalingVariables(numTemperatureGroups,
+                                                      ScaleVelocities::PreStepAndPostStep);
+        lambdaStartVelocities_ = connectionData.getViewOnStartVelocityScaling();
+        lambdaEndVelocities_   = connectionData.getViewOnEndVelocityScaling();
+    }
+
+    //! Constructor
+    NoseHooverTemperatureCoupling(int                  numTemperatureGroups,
+                                  ArrayRef<const real> referenceTemperature,
+                                  ArrayRef<const real> couplingTime)
+    {
+        xi_.resize(numTemperatureGroups, 0.0);
+        xiVelocities_.resize(numTemperatureGroups, 0.0);
+        invXiMass_.resize(numTemperatureGroups, 0.0);
+        for (auto temperatureGroup = 0; temperatureGroup < numTemperatureGroups; ++temperatureGroup)
+        {
+            if (referenceTemperature[temperatureGroup] > 0 && couplingTime[temperatureGroup] > 0)
+            {
+                // Note: This mass definition is equal to legacy md
+                //       legacy md-vv divides the mass by ndof * kB
+                invXiMass_[temperatureGroup] = 1.0
+                                               / (gmx::square(couplingTime[temperatureGroup] / M_2PI)
+                                                  * referenceTemperature[temperatureGroup]);
+            }
+        }
+    }
+
+    //! Helper function to read from / write to CheckpointData
+    template<CheckpointDataOperation operation>
+    void doCheckpointData(CheckpointData<operation>* checkpointData)
+    {
+        checkpointVersion(checkpointData, "Nose-Hoover version", c_nhCurrentVersion);
+        checkpointData->arrayRef("xi", makeCheckpointArrayRef<operation>(xi_));
+        checkpointData->arrayRef("xi velocities", makeCheckpointArrayRef<operation>(xiVelocities_));
+    }
+
+    //! Write thermostat dof to checkpoint
+    void writeCheckpoint(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override
+    {
+        if (MASTER(cr))
+        {
+            doCheckpointData(&checkpointData.value());
+        }
+    }
+    //! Read thermostat dof from checkpoint
+    void readCheckpoint(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override
+    {
+        if (MASTER(cr))
+        {
+            doCheckpointData(&checkpointData.value());
+        }
+        if (DOMAINDECOMP(cr))
+        {
+            dd_bcast(cr->dd, xi_.size() * sizeof(real), xi_.data());
+            dd_bcast(cr->dd, xiVelocities_.size() * sizeof(real), xiVelocities_.data());
+        }
+    }
+
+private:
+    //! The thermostat degree of freedom
+    std::vector<real> xi_;
+    //! Velocity of the thermostat dof
+    std::vector<real> xiVelocities_;
+    //! Inverse mass of the thermostat dof
+    std::vector<real> invXiMass_;
+
+    //! View on the scaling factor of the propagator (pre-step velocities)
+    ArrayRef<real> lambdaStartVelocities_;
+    //! View on the scaling factor of the propagator (post-step velocities)
+    ArrayRef<real> lambdaEndVelocities_;
+};
+
 VelocityScalingTemperatureCoupling::VelocityScalingTemperatureCoupling(
         int                               nstcouple,
         int                               offset,
@@ -304,6 +471,11 @@ VelocityScalingTemperatureCoupling::VelocityScalingTemperatureCoupling(
     else if (couplingType == TemperatureCoupling::Berendsen)
     {
         temperatureCouplingImpl_ = std::make_unique<BerendsenTemperatureCoupling>();
+    }
+    else if (couplingType == TemperatureCoupling::NoseHoover)
+    {
+        temperatureCouplingImpl_ = std::make_unique<NoseHooverTemperatureCoupling>(
+                numTemperatureGroups_, referenceTemperature_, couplingTime_);
     }
     else
     {

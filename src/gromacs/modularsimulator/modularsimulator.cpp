@@ -112,7 +112,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         builder->add<ForceElement>();
         builder->add<StatePropagatorData::Element>();
         if (legacySimulatorData_->inputrec->etc == TemperatureCoupling::VRescale
-            || legacySimulatorData_->inputrec->etc == TemperatureCoupling::Berendsen)
+            || legacySimulatorData_->inputrec->etc == TemperatureCoupling::Berendsen
+            || legacySimulatorData_->inputrec->etc == TemperatureCoupling::NoseHoover)
         {
             builder->add<VelocityScalingTemperatureCoupling>(-1,
                                                              UseFullStepKE::No,
@@ -230,9 +231,11 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible = isInputCompatible
                         && conditionalAssert(inputrec->etc == TemperatureCoupling::No
                                                      || inputrec->etc == TemperatureCoupling::VRescale
-                                                     || inputrec->etc == TemperatureCoupling::Berendsen,
-                                             "Only v-rescale and Berendsen thermostat are "
-                                             "supported by the modular simulator.");
+                                                     || inputrec->etc == TemperatureCoupling::Berendsen
+                                                     || (inputrec->etc == TemperatureCoupling::NoseHoover
+                                                         && inputrec->eI == IntegrationAlgorithm::MD),
+                                             "Only v-rescale, Berendsen and Nose-Hoover "
+                                             "thermostats are supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(

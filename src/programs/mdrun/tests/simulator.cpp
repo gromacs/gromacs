@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -247,11 +247,12 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
         SimulatorsAreEquivalentDefaultLegacy,
         SimulatorComparisonTest,
-        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                              ::testing::Values("md"),
-                                              ::testing::Values("no", "v-rescale", "berendsen"),
-                                              ::testing::Values("no", "Parrinello-Rahman")),
-                           ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
+        ::testing::Combine(
+                ::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                   ::testing::Values("md"),
+                                   ::testing::Values("no", "v-rescale", "berendsen", "nose-hoover"),
+                                   ::testing::Values("no", "Parrinello-Rahman")),
+                ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #else
 INSTANTIATE_TEST_CASE_P(
         DISABLED_SimulatorsAreEquivalentDefaultModular,
@@ -264,11 +265,12 @@ INSTANTIATE_TEST_CASE_P(
 INSTANTIATE_TEST_CASE_P(
         DISABLED_SimulatorsAreEquivalentDefaultLegacy,
         SimulatorComparisonTest,
-        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                              ::testing::Values("md"),
-                                              ::testing::Values("no", "v-rescale", "berendsen"),
-                                              ::testing::Values("no", "Parrinello-Rahman")),
-                           ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
+        ::testing::Combine(
+                ::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                   ::testing::Values("md"),
+                                   ::testing::Values("no", "v-rescale", "berendsen", "nose-hoover"),
+                                   ::testing::Values("no", "Parrinello-Rahman")),
+                ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #endif
 
 } // namespace
