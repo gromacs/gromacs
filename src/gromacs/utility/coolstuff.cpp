@@ -1528,6 +1528,60 @@ std::string getCoolQuote()
         { "Everything what mathematicians were saying for the last 50 years is slowly catching up "
           "with us.",
           "David van der Spoel" },
+        { "I tend to consider myself as a scientist.",
+          "Emmanuelle Charpentier, when asked about the importance of two women sharing the Nobel "
+          "Prize for Chemistry" },
+        { "I identified myself very early on as a scientist rather than a student - as someone "
+          "creating knowledge rather than simply absorbing it.",
+          "Emmanuelle Charpentier" },
+        { "Look, I don't want to compete, so let's divide up physics between us. I'll take auroras "
+          "and you take the rest of the universe.",
+          "Joan Feynman to her brother Richard" },
+        { "There are three kinds of men. The one that learns by reading. The few who learn by "
+          "observation. The rest of them have to pee on the electric fence for themselves.",
+          "Will Rogers" },
+        { "I can't help but think the model is ungrateful for all that nice data I gave it. Jerk.",
+          "Kate Stafford" },
+        { "What do you call an acid with an attitude? A-mean-oh acid.", "Anonymous" },
+        { "Science grows like a weed every year.", "Kary Mullis" },
+        { "A good sign these days when you're listening to someone talk about this epidemic is the "
+          "number of times they say 'We don't know yet'. The more of those, the better.",
+          "Derek Lowe" },
+        { "Nullis in verba [Nobody's word is final].", "Motto of the Royal Society" },
+        { "Calling a system 'non-linear' is like calling all wild animals 'non-elephants'.",
+          "Stan Ulam" },
+        { "Given enough eyeballs, all bugs are shallow.",
+          "Linus Torvalds, on the power of open source" },
+        { "If every study was groundbreaking, we'd end up with a bunch of holes in the ground and "
+          "nothing built.",
+          "Anonymous" },
+        { "Expertise is not inherently good.", "Joe Jordan" },
+        { "I couldn't give a shit about ribosomes.",
+          "Björn Forsberg, presenting his thesis, including two papers on ribosomes" },
+        { "Here's something fun to do: Next time you approach a conversation say 'I want to talk "
+          "to someone technical... Oh! There's a woman!' and walk straight over to her.",
+          "Patty Lopez" },
+        { "After a few talks we usually sit down to do some work... or drinking.", "Mike Klein" },
+        { "The message here is that Thermodynamic Integration sucks.", "Berk Hess" },
+        { "Enthusiasm is the mother of effort, and without it nothing great was ever achieved.",
+          "Ralph Waldo Emerson" },
+        { "Our hands are tied by physics.", "Christian Blau" },
+        { "If all it takes to motivate you is a fancy picture and quote, you probably have a very "
+          "easy job. The type of job computers will soon be doing.",
+          "Anonymous" },
+        { "At school I had a teacher that didn't like me and I didn't like him. At the end of the "
+          "year he decided to fail me. The ironic thing is that the topic was chemistry. I have "
+          "the distinction of being the only Chemistry Laurate who failed the topic in high "
+          "school.",
+          "Thomas Lindahl" },
+        { "Chemistry: It tends to be a messy science.",
+          "Gunnar von Heijne, former chair of the Nobel Committee for chemistry" },
+        { "Computers are incredibly fast, accurate and stupid. Humans are incredibly slow, "
+          "inaccurate and... also stupid.",
+          "Anonymous" },
+        { "Schrödinger's backup: The condition of any backup is unknown until a restore is "
+          "attempted.",
+          "Anonymous" }
     };
 
     if (beCool())
