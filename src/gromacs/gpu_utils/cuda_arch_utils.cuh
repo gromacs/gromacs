@@ -93,9 +93,15 @@ static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
 #    if GMX_PTX_ARCH <= 370 // CC 3.x
 #        define GMX_CUDA_MAX_BLOCKS_PER_MP 16
 #        define GMX_CUDA_MAX_THREADS_PER_MP 2048
-#    else // CC 5.x, 6.x
+#    elif GMX_PTX_ARCH == 750 // CC 7.5, lower limits compared to 7.0
+#        define GMX_CUDA_MAX_BLOCKS_PER_MP 16
+#        define GMX_CUDA_MAX_THREADS_PER_MP 1024
+#    elif GMX_PTX_ARCH == 860 // CC 8.6, lower limits compared to 8.0
+#        define GMX_CUDA_MAX_BLOCKS_PER_MP 16
+#        define GMX_CUDA_MAX_THREADS_PER_MP 1536
+#    else // CC 5.x, 6.x, 7.0, 8.0
 /* Note that this final branch covers all future architectures (current gen
- * is 6.x as of writing), hence assuming that these *currently defined* upper
+ * is 8.x as of writing), hence assuming that these *currently defined* upper
  * limits will not be lowered.
  */
 #        define GMX_CUDA_MAX_BLOCKS_PER_MP 32
