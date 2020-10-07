@@ -168,7 +168,7 @@ void initTestOptions(IOptionsContainer* options);
     {                                                                                                                  \
     public:                                                                                                            \
         name() { ::gmx::test::registerTestOptions(#name, this); }                                                      \
-        virtual void initOptions(::gmx::IOptionsContainer*(options));                                                  \
+        void initOptions(::gmx::IOptionsContainer*(options)) override;                                                 \
     };                                                                                                                 \
                                                                                                                        \
     static gmx_unused name s_##name##Instance;                                                                         \

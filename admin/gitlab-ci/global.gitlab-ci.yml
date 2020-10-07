@@ -82,6 +82,7 @@
     # setvar.sh script
     - set +e
     - source /opt/intel/oneapi/setvars.sh
+    - set -e
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache

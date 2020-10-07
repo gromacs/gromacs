@@ -42,9 +42,9 @@ tag="gromacs/cmake-3.13.0-llvm-9-amdopencl-openmpi-master"
 tags[${#tags[@]}]=$tag
 python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl amd --mpi openmpi --ubuntu 18.04 | docker build -t $tag -
 
-tag="gromacs/cmake-3.17.2-oneapi-2021.1-beta08-master"
+tag="gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master"
 tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.17.2 --oneapi 2021.1-beta08 | docker build -t $tag -
+python3 $SCRIPT --cmake 3.17.2 --oneapi 2021.1-beta09 | docker build -t $tag -
 
 tag="gromacs/ci-docs-llvm-master"
 tags[${#tags[@]}]=$tag

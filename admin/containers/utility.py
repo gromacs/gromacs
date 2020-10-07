@@ -72,8 +72,10 @@ compiler_group.add_argument('--icc', type=int, nargs='?', const=19, default=None
                                  'Some checking is implemented to avoid incompatible combinations')
 # TODO currently the installation merely gets the latest beta version of oneAPI,
 # not a specific version. GROMACS probably doesn't need to address that until
-# oneAPI makes an official release.
-compiler_group.add_argument('--oneapi', type=str, nargs='?', const="2021.1-beta08", default=None,
+# oneAPI makes an official release. Also, the resulting container is a mix
+# of packages with different betaXY version numbers, which hopefully works and
+# is what Intel intends...
+compiler_group.add_argument('--oneapi', type=str, nargs='?', const="2021.1-beta09", default=None,
                             help='Select Intel oneAPI package version.')
 
 linux_group = parser.add_mutually_exclusive_group()

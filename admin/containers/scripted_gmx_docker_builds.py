@@ -343,13 +343,18 @@ def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[st
     oneapi_stage = hpccm.Stage()
     oneapi_stage += hpccm.primitives.baseimage(image=base_image_tag(input_args), _as='oneapi-build')
 
+    version = str(input_args.oneapi)
+
     # Add required components for the next stage (both for hpccm and Intel's setvars.sh script)
     oneapi_stage += hpccm.building_blocks.packages(ospackages=['wget', 'gnupg2', 'ca-certificates', 'lsb-release'])
     oneapi_stage += hpccm.building_blocks.packages(
         apt_keys=['https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB'],
         apt_repositories=['deb https://apt.repos.intel.com/oneapi all main'],
         # Add minimal packages (not the whole HPC toolkit!)
-        ospackages=['intel-oneapi-dpcpp-compiler', 'intel-oneapi-icc', 'intel-oneapi-mkl', 'intel-oneapi-mkl-devel']
+        ospackages=['intel-oneapi-dpcpp-cpp-compiler-pro-{}'.format(version),
+            'intel-oneapi-openmp-{}'.format(version),
+            'intel-oneapi-mkl-{}'.format(version),
+            'intel-oneapi-mkl-devel-{}'.format(version)]
     )
     # Ensure that all bash shells on the final container will have access to oneAPI
     oneapi_stage += hpccm.primitives.shell(
