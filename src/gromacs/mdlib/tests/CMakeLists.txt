@@ -44,6 +44,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         leapfrog.cpp
         leapfrogtestdata.cpp
         leapfrogtestrunners.cpp
+        leapfrogtestrunners_gpu.cpp
         settle.cpp
         settletestdata.cpp
         settletestrunners.cpp
@@ -53,6 +54,5 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         updategroupscog.cpp
     CUDA_CU_SOURCE_FILES
         constrtestrunners.cu
-        leapfrogtestrunners.cu
         settletestrunners.cu
         )

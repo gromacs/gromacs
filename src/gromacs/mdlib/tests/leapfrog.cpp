@@ -51,14 +51,8 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
-
-#include <assert.h>
-
 #include <cmath>
 
-#include <algorithm>
-#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -216,7 +210,8 @@ TEST_P(LeapFrogTest, SimpleIntegration)
     // Add runners for CPU version
     runners.emplace_back(std::make_unique<LeapFrogHostTestRunner>());
     // If using CUDA, add runners for the GPU version for each available GPU
-    if (GMX_GPU_CUDA)
+    const bool addGpuRunners = HAVE_GPU_LEAPFROG;
+    if (addGpuRunners)
     {
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {

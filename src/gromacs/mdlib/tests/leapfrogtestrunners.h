@@ -46,11 +46,15 @@
 #ifndef GMX_MDLIB_TESTS_LEAPFROGTESTRUNNERS_H
 #define GMX_MDLIB_TESTS_LEAPFROGTESTRUNNERS_H
 
+#include "config.h"
+
 #include "gromacs/math/vec.h"
 
 #include "testutils/test_device.h"
 
 #include "leapfrogtestdata.h"
+
+#define HAVE_GPU_LEAPFROG (GMX_GPU_CUDA)
 
 namespace gmx
 {
