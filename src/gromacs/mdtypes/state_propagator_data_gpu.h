@@ -50,6 +50,8 @@
 #ifndef GMX_MDTYPES_STATE_PROPAGATOR_DATA_GPU_H
 #define GMX_MDTYPES_STATE_PROPAGATOR_DATA_GPU_H
 
+#include <tuple>
+
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vectypes.h"

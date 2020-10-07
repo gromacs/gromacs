@@ -73,13 +73,13 @@
 .rules-element:if-post-merge-acceptance-or-mr-then-always: &if-post-merge-acceptance-or-mr-then-always
   if: '$CI_PIPELINE_SOURCE == "merge_request_event" ||
        ($CI_PIPELINE_SOURCE == "push" &&
-        ($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "release-*"))'
+        $CI_COMMIT_REF_NAME == "master")'
   when: always
 
 # Include job only for post submit push
 .rules-element:if-post-merge-acceptance-then-always: &if-post-merge-acceptance-then-always
   if: '$CI_PIPELINE_SOURCE == "push" &&
-        ($CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "release-*")'
+       $CI_COMMIT_REF_NAME == "master"'
   when: always
 
 # When composing a rule set, note that the first matching rule is applied.

@@ -89,10 +89,6 @@
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/txtdump.h"
 
-#if GMX_FAHCORE
-#    include "corewrap.h"
-#endif
-
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
@@ -2349,6 +2345,22 @@ void write_checkpoint_data(t_fileio*                         fp,
     }
 
     do_cpt_footer(gmx_fio_getxdr(fp), headerContents.file_version);
+#if GMX_FAHCORE
+    /* Always FAH checkpoint immediately after a Gromacs checkpoint.
+     *
+     * Note that it is critical that we save a FAH checkpoint directly
+     * after writing a Gromacs checkpoint.  If the program dies, either
+     * by the machine powering off suddenly or the process being,
+     * killed, FAH can recover files that have only appended data by
+     * truncating them to the last recorded length.  The Gromacs
+     * checkpoint does not just append data, it is fully rewritten each
+     * time so a crash between moving the new Gromacs checkpoint file in
+     * to place and writing a FAH checkpoint is not recoverable.  Thus
+     * the time between these operations must be kept as short a
+     * possible.
+     */
+    fcCheckpoint();
+#endif
 }
 
 static void check_int(FILE* fplog, const char* type, int p, int f, gmx_bool* mm)

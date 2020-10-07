@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
+ * Copyright (c) 2013,2014,2015,2016,2018, The GROMACS development team.
  * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -82,10 +82,7 @@ void init(int* argc, char*** argv) // NOLINT(readability-non-const-parameter)
     }
     else
     {
-#    if GMX_FAHCORE
-        fah_MPI_Init(argc, argv);
-#    else
-#        if GMX_OPENMP
+#    if GMX_OPENMP
         /* Formally we need to use MPI_Init_thread and ask for MPI_THREAD_FUNNELED
          * level of thread support when using OpenMP. However, in practice we
          * have never seen any problems with just using MPI_Init(), and some MPI
@@ -114,9 +111,8 @@ void init(int* argc, char*** argv) // NOLINT(readability-non-const-parameter)
                     "the MPI library. Keep your fingers crossed.");
             MPI_Init(argc, argv);
         }
-#        else
+#    else
         MPI_Init(argc, argv);
-#        endif
 #    endif
     }
     // Bump the counter to record this initialization event

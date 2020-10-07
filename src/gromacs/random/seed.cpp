@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,24 +38,76 @@
 #include "seed.h"
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/fatalerror.h"
 
 namespace gmx
 {
 
+
+/*! \brief Check if the RDRAND random device functioning correctly
+ *
+ * Due to a bug in AMD Ryzen microcode, RDRAND may always return -1 (0xFFFFFFFF).
+ * To avoid that, fall back to using PRNG instead of RDRAND if this happens.
+ *
+ * \param[in] rd Random device to check.
+ *
+ * \returns The result of the checks.
+ */
+static bool checkIfRandomDeviceIsFunctional(std::random_device* rd)
+{
+    uint64_t randomNumber1 = static_cast<uint64_t>((*rd)());
+    uint64_t randomNumber2 = static_cast<uint64_t>((*rd)());
+
+    // Due to a bug in AMD Ryzen microcode, RDRAND may always return -1 (0xFFFFFFFF).
+    // To avoid that, fall back to using PRNG instead of RDRAND if this happens.
+    if (randomNumber1 == 0xFFFFFFFF && randomNumber2 == 0xFFFFFFFF)
+    {
+        if (debug)
+        {
+            fprintf(debug,
+                    "Hardware random number generator (RDRAND) returned -1 (0xFFFFFFFF) twice in\n"
+                    "a row. This may be due to a known bug in AMD Ryzen microcode.");
+        }
+        return false;
+    }
+    return true;
+}
+
+/*! \brief Get the next pure or pseudo-random number
+ *
+ * Returns the next random number taken from the hardware generator or from standard PRNG.
+ *
+ * \param[in] useRdrand  Whether the hardware source of random numbers should be used.
+ * \param[in] rd         Pointer to the random device to use.
+ *
+ * \return Random or pseudo-random number.
+ */
+static inline uint64_t getNextRandomNumber(bool useRdrand, std::random_device* rd)
+{
+    if (debug && !useRdrand)
+    {
+        fprintf(debug,
+                "Will use pseudo-random number generator (PRNG) rather than hardware device.");
+    }
+    return useRdrand ? static_cast<uint64_t>((*rd)()) : static_cast<uint64_t>(rand());
+}
+
 uint64_t makeRandomSeed()
 {
     std::random_device rd;
-    uint64_t           result;
-    std::size_t        deviceBits = std::numeric_limits<std::random_device::result_type>::digits;
-    std::size_t        resultBits = std::numeric_limits<uint64_t>::digits;
 
-    result = static_cast<uint64_t>(rd());
+    bool useRdrand = checkIfRandomDeviceIsFunctional(&rd);
 
-    for (std::size_t bits = deviceBits; bits < resultBits; bits += deviceBits)
+    const std::size_t resultBits = std::numeric_limits<uint64_t>::digits;
+    const std::size_t numBitsInRandomNumber =
+            useRdrand ? std::numeric_limits<std::random_device::result_type>::digits
+                      : std::numeric_limits<int>::digits;
+
+    uint64_t result = getNextRandomNumber(useRdrand, &rd);
+    for (std::size_t bits = numBitsInRandomNumber; bits < resultBits; bits += numBitsInRandomNumber)
     {
-        result = (result << deviceBits) | static_cast<uint64_t>(rd());
+        result = (result << numBitsInRandomNumber) | getNextRandomNumber(useRdrand, &rd);
     }
-
     return result;
 }
 

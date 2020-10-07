@@ -171,10 +171,6 @@
 #include "replicaexchange.h"
 #include "simulatorbuilder.h"
 
-#if GMX_FAHCORE
-#    include "corewrap.h"
-#endif
-
 namespace gmx
 {
 
@@ -209,7 +205,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
     devFlags.enableGpuBufferOps =
             GMX_GPU_CUDA && useGpuForNonbonded && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
     devFlags.enableGpuHaloExchange = GMX_GPU_CUDA && GMX_THREAD_MPI && getenv("GMX_GPU_DD_COMMS") != nullptr;
-    devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr);
+    devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr) || GMX_FAHCORE;
     devFlags.enableGpuPmePPComm =
             GMX_GPU_CUDA && GMX_THREAD_MPI && getenv("GMX_GPU_PME_PP_COMMS") != nullptr;
 
@@ -1046,13 +1042,6 @@ int Mdrunner::mdrunner()
         }
     }
 
-#if GMX_FAHCORE
-    if (MASTER(cr))
-    {
-        fcRegisterSteps(inputrec->nsteps, inputrec->init_step);
-    }
-#endif
-
     /* NMR restraints must be initialized before load_checkpoint,
      * since with time averaging the history is added to t_state.
      * For proper consistency check we therefore need to extend
@@ -1076,6 +1065,21 @@ int Mdrunner::mdrunner()
     auto deform = prepareBoxDeformation(
             globalState != nullptr ? globalState->box : box, MASTER(cr) ? DDRole::Master : DDRole::Agent,
             PAR(cr) ? NumRanks::Multiple : NumRanks::Single, cr->mpi_comm_mygroup, *inputrec);
+
+#if GMX_FAHCORE
+    /* We have to remember the generation's first step before reading checkpoint.
+       This way, we can report to the F@H core both the generation's first step
+       and the restored first step, thus making it able to distinguish between
+       an interruption/resume and start of the n-th generation simulation.
+       Having this information, the F@H core can correctly calculate and report
+       the progress.
+     */
+    int gen_first_step = 0;
+    if (MASTER(cr))
+    {
+        gen_first_step = inputrec->init_step;
+    }
+#endif
 
     ObservablesHistory observablesHistory = {};
 
@@ -1119,6 +1123,13 @@ int Mdrunner::mdrunner()
             mdlog    = logOwner.logger();
         }
     }
+
+#if GMX_FAHCORE
+    if (MASTER(cr))
+    {
+        fcRegisterSteps(inputrec->nsteps + inputrec->init_step, gen_first_step);
+    }
+#endif
 
     if (mdrunOptions.numStepsCommandline > -2)
     {

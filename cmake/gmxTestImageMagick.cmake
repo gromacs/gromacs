@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ function(GMX_TEST_IMAGEMAGICK VARIABLE)
             else()
                 set(type_ "STATUS")
             endif()
-            MESSAGE(${type_} "Could not convert sample image, ImageMagick convert can not be used. A possible way to fix it can be found here: https://alexvanderbist.com/posts/2018/fixing-imagick-error-unauthorized")
+            MESSAGE(${type_} "Could not convert sample image, ImageMagick convert can not be used. A possible way to fix it can be found here: https://alexvanderbist.com/2018/fixing-imagick-error-unauthorized")
             set(value_ OFF)
         endif()
         FILE(REMOVE_RECURSE ${TEMPDIR})

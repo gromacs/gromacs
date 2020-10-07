@@ -1,7 +1,7 @@
 GROMACS 2020.4 release notes
 ----------------------------
 
-This version was released on TODO, 2020. These release notes
+This version was released on October 6th, 2020. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2020.3 version, to fix known issues. It also incorporates all
 fixes made in version 2019.6 and earlier, which you can find described
@@ -16,14 +16,101 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Bug fix for the GPU version of LINCS in multiple domain case
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Increase in the maximum number of coupled constraints in the
+domain did not trigger memory re-allocation, which is now fixed.
+This can happen, e.g. when big molecule enters the domain, previously
+occupied by smaller molecules. The bug does not affect the single
+domain case.
+
+Fix index handling of N-body virtual sites with domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Incorrect indexing would be used to handle N-body virtual sites in
+the domain decomposition code. This would usually lead to crashes
+due to illegal or incorrect memory usage.
+
+:issue:`3635`
+
+Fix assertion failure with LJ-PME and dispersion correction
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With vdw-type=PME and dispersion correction, mdrun would exit with
+an assertion failure during PME tuning.
+
+:issue:`3677`
+
+Bug fix for FEP calculations with modular simulator and domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+When using the modular simulator, domain decomposition and free energy
+calculations with perturbed masses, the simulation would always be
+performed using the masses at lambda=0 instead of the actual lambda value.
+
+
+Added workaround for RDRAND not always returning random numbers on Ryzen
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On AMD Ryzen 3000 series CPUs, the hardware random number generator (RDRAND)
+can behave incorrectly, always returning -1 (0xFFFFFFFF). When this hardware bug
+is detected at runtime, |Gromacs| will switch to its software-based pseudo-random
+number generator instead.
+
+While many motherboard vendors have been distributing firmware updates that
+contain microcode fixes and most motherboards are sold with these factory-installed,
+there can still be some systems affected that didn't receive the updates.
+
+In case you ran simulations on one of these systems, in theory all random
+number seeding could be affected (see below for algorithms), since it would
+mean the same seed is used. Even this should be fine for virtually all individual
+simulations since the generated numbers are still random. The most likely case that would
+be seriously affected is if you use identical starting conformations and start many
+simulations with different random seeds generated automatically (instead of
+manually selecting your seeds) - then the Ryzen hardware bug could mean all
+your simulations actually get the same generated initial velocities, or the same stochastic
+changes, etc. depending which algorithms you are using.
+
+A list of affected algorithms can be found below:
+
+#.  Seeding in `gmx grompp` is affected if no user supplied seed is used (e.g. if ``-1``
+    is used to ask |Gromacs| to generate a seed). This can affect Langevin/Stochastic dynamics,
+    v-rescale thermostat, anything Monte-Carlo related and the generation of random velocities.
+#.  Decision when to exchange replicas during replica exchange simulations.
+#.  Simulations using the random components from ``AWH``.
+#.  Some analysis and preparation tools might be affected, e.g. free volume calculation,
+    ion placement, WHAM, normal mode analysis and PME error estimates.
+
+.. AKA  https://xkcd.com/221/
+
+Diagnosing: to aid detecting the error, run ``gmx mdrun -debug 1`` with |Gromacs| 2020.4 or later,
+which will produce a debug log, typically called ``gmx.debug``. This file will contain
+the following message if the processor the program ran on is affected:
+
+-   Hardware random number generator (RDRAND) returned -1 (0xFFFFFFFF) twice in
+    a row. This may be due to a known bug in AMD Ryzen microcode.
+    Will use pseudo-random number generator (PRNG) rather than hardware device.
+
+Earlier releases will fail SeedTest.makeRandomSeed test from unit tests suite on the affected systems.
+To check, run ``make check`` in your build folder. You can also find a sample testing code at the link below.
+
+For more information on the issue, please check
+`this website <https://arstechnica.com/gadgets/2019/10/how-a-months-old-amd-microcode-bug-destroyed-my-weekend/>`_.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix default output with gmx trjcat -demux
+"""""""""""""""""""""""""""""""""""""""""
+
+Files would not be written when using default file name output.
+
+:issue:`3653`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 CUDA 11.0 supported
-^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""
 
 A build with CUDA 11.0 now configures and passes tests.
 Building with CUDA 11.0 means that hardware with CC 3.0 is no longer supported,
@@ -31,8 +118,27 @@ while CC 8.0 can now be used.
 
 :issue:`3632`
 
+Fix building with MSVC
+""""""""""""""""""""""
+
+The build would fail due to a missing header.
+
+:issue:`3669`
+
+Only check for RDTSCP on x86 platforms
+""""""""""""""""""""""""""""""""""""""
+
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fix crash of grompp when the whole system is frozen
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the whole system would be frozen, grompp would crash with
+a segmentation fault.
+
+:issue:`3683`
 
 Fixes the unexpected change in molecule indexing in output after simulation
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

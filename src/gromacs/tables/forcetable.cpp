@@ -1409,11 +1409,6 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
     GMX_RELEASE_ASSERT(ic->vdwtype != evdwUSER || tabfn,
                        "With VdW user tables we need a table file name");
 
-    if (tabfn == nullptr)
-    {
-        return std::unique_ptr<t_forcetable>(nullptr);
-    }
-
     t_forcetable* fullTable = make_tables(fp, ic, tabfn, rtab, 0);
     /* Copy the contents of the table to one that has just dispersion
      * and repulsion, to improve cache performance. We want the table

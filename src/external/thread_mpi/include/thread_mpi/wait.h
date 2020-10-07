@@ -41,7 +41,17 @@
 
 #if TMPI_WAIT_FOR_NO_ONE
 
-#if !(defined( _WIN32 ) || defined( _WIN64 ) )
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if GMX_FAHCORE
+// This lets F@H throttle CPU usage
+#define TMPI_YIELD_WAIT_DATA
+#define TMPI_YIELD_WAIT_DATA_INIT(data)
+#define TMPI_YIELD_WAIT(data) fcYieldWait()
+
+#elif !(defined( _WIN32 ) || defined( _WIN64 ) )
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
