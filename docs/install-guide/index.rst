@@ -1054,10 +1054,14 @@ are individual failed tests it could be a sign of a compiler bug, or
 that a tolerance is just a tiny bit too tight. Check the output files
 the script directs you too, and try a different or newer compiler if
 the errors appear to be real. If you cannot get it to pass the
-regression tests, you might try dropping a line to the gmx-users
-mailing list, but then you should include a detailed description of
+regression tests, you might try dropping a line to the
+`|Gromacs| users forum <https://gromacs.bioexcel.eu/c/gromacs-user-forum>`__,
+but then you should include a detailed description of
 your hardware, and the output of ``gmx mdrun -version`` (which contains
 valuable diagnostic information in the header).
+
+Testing for MDRUN_ONLY executables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A build with ``-DGMX_BUILD_MDRUN_ONLY`` cannot be tested with
 ``make check`` from the build tree, because most of the tests
@@ -1072,18 +1076,23 @@ directory:
 
     mkdir build-normal
     cd build-normal
-    cmake .. -DCMAKE_INSTALL_PREFIX=/your/installation/prefix/here
+    # First, build and install normally to allow full testing of the standalone simulator.
+    cmake .. -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=/your/installation/prefix/here
     make -j 4
     make install
     cd ..
     mkdir build-mdrun-only
     cd build-mdrun-only
-    cmake .. -DGMX_MPI=ON -DGMX_GPU=CUDA -DGMX_BUILD_MDRUN_ONLY=ON -DCMAKE_INSTALL_PREFIX=/your/installation/prefix/here
+    # Next, build and install the GMX_BUILD_MDRUN_ONLY version (optional).
+    cmake .. -DGMX_MPI=ON -DGMX_BUILD_MDRUN_ONLY=ON -DCMAKE_INSTALL_PREFIX=/your/installation/prefix/here
     make -j 4
     make install
     cd /to/your/unpacked/regressiontests
     source /your/installation/prefix/here/bin/GMXRC
     ./gmxtest.pl all -np 2
+
+Non-standard suffix
+~~~~~~~~~~~~~~~~~~~
 
 If your mdrun program has been suffixed in a non-standard way, then
 the ``./gmxtest.pl -mdrun`` option will let you specify that name to the
@@ -1092,6 +1101,9 @@ double-precision version. You can use ``./gmxtest.pl -crosscompiling``
 to stop the test harness attempting to check that the programs can
 be run. You can use ``./gmxtest.pl -mpirun srun`` if your command to
 run an MPI program is called ``srun``.
+
+Running MPI-enabled tests
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``make check`` target also runs integration-style tests that may run
 with MPI if ``GMX_MPI=ON`` was set. To make these work with various possible
