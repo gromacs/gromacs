@@ -99,6 +99,23 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(DeviceBuffer<T> const& src)
 template<typename T>
 DeviceBuffer<T>& DeviceBuffer<T>::operator=(DeviceBuffer<T>&& src) noexcept = default;
 
+/*! \brief Dummy assignment operator to allow compilation of some cross-platform code.
+ *
+ * A hacky way to make SYCL implementation of DeviceBuffer compatible with details of CUDA and
+ * OpenCL implementations.
+ *
+ * \todo Should be removed after DeviceBuffer refactoring.
+ *
+ * \tparam T Type of buffer content.
+ * \param nullPtr \c std::nullptr. Not possible to assign any other pointers.
+ */
+template<typename T>
+DeviceBuffer<T>& DeviceBuffer<T>::operator=(std::nullptr_t nullPtr)
+{
+    buffer_.reset(nullPtr);
+    return *this;
+}
+
 #endif // #ifndef DOXYGEN
 
 /*! \libinternal \brief

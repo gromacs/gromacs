@@ -110,8 +110,14 @@ struct DeviceBuffer
     //! Helper function to get the size in bytes of a single element
     static constexpr size_t elementSize() { return sizeof(ValueType); }
 
-    // static_case<void*> is used in MPI+CUDA code, this stub is necessary for compilation.
-    explicit operator void*() const { throw; }
+    // Both explicit and implicit casts to void* are used in MPI+CUDA code, this stub is necessary for compilation.
+    operator void*() const { throw; }
+
+    //! Allow implicit conversion to bool to check buffer status for compatibility with other implementations.
+    operator bool() const { return buffer_.get() != nullptr; }
+
+    //! An assignment operator to allow resetting buffer by assigning nullptr to it. Necessery for compilation.
+    DeviceBuffer& operator=(std::nullptr_t nullPtr);
 };
 
 // Must explicitly instantiate for some types.

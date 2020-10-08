@@ -76,7 +76,7 @@ class StepWorkload;
  *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
  *  should match the order of enumerated types below.
  */
-enum eelType
+enum eelType : int
 {
     eelTypeCUT,
     eelTypeRF,
@@ -96,7 +96,7 @@ enum eelType
  * nbnxn_cuda_ocl.cpp/.cu by the nb_*_kfunc_ptr function pointer table
  * should match the order of enumerated types below.
  */
-enum evdwType
+enum evdwType : int
 {
     evdwTypeCUT,
     evdwTypeCUTCOMBGEOM,
