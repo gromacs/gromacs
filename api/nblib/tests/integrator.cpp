@@ -77,13 +77,9 @@ TEST(NBlibTest, IntegratorWorks)
     topologyBuilder.addParticleTypesInteractions(interactions);
     Topology topology = topologyBuilder.buildTopology();
 
-    std::vector<Vec3> x(numAtoms);
-    std::vector<Vec3> v(numAtoms);
-    std::vector<Vec3> f(numAtoms);
-
-    f[0][XX] = 1.0;
-    f[0][YY] = 2.0;
-    f[0][ZZ] = 0.0;
+    std::vector<Vec3> x(numAtoms, { 0.0, 0.0, 0.0 });
+    std::vector<Vec3> v(numAtoms, { 0.0, 0.0, 0.0 });
+    std::vector<Vec3> f(numAtoms, { 1.0, 2.0, 0.0 });
 
     Box box(100);
 
