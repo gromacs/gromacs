@@ -33,14 +33,27 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- *  \brief Implements a GpuEventSynchronizer class for OpenCL.
+ *  \brief Implements a GpuEventSynchronizer class for SYCL.
  *
- *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *  This implementation relies on SYCL_INTEL_enqueue_barrier proposal,
+ *  https://github.com/intel/llvm/blob/sycl/sycl/doc/extensions/EnqueueBarrier/enqueue_barrier.asciidoc
+ *
+ *  Using event-based synchronization is not recommended for SYCL.
+ *  SYCL queues are out-of-order and rely on data dependencies, allowing only to wait
+ *  for a specific kernel (by capturing the \c event returned from \c queue.submit) or for all
+ *  the tasks in the queue (\c queue.wait).
+ *
+ *  \author Erik Lindahl <erik.lindahl@gmail.com>
+ *  \author Andrey Alekseenko <al42and@gmail.com>
  * \inlibraryapi
  */
 #ifndef GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_SYCL_H
 #define GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_SYCL_H
 
+#include <optional>
+
+#include "gromacs/gpu_utils/device_stream.h"
+#include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -51,20 +64,28 @@
  * This can be repeated as necessary, but the current implementation does not allow waiting on
  * completed event more than once, expecting only exact pairs of markEvent(stream); waitForEvent().
  * The class generally attempts to track the correctness of its state transitions, but
- * please note that calling waitForEvent() right after the construction will fail with OpenCL but succeed with CUDA.
+ * please note that calling waitForEvent() right after the construction will fail with OpenCL
+ * and SYCL but succeed with CUDA.
  *
  * Another possible mode of operation can be implemented if needed:
- * multiple calls to waitForEvent() after a single markEvent(). For this, clReleaseEvent() call
+ * multiple calls to waitForEvent() after a single markEvent(). For this, event.reset() call
  * from waitForEvent() should instead happen conditionally at the beginning of markEvent(), replacing
- * the GMX_ASSERT(). This was tested to work both with CUDA and NVidia OpenCL, but not with AMD/Intel OpenCl.
+ * the GMX_ASSERT(). This was tested to work both with CUDA, NVidia OpenCL, and Intel SYCL,
+ * but not with AMD/Intel OpenCl.
+ *
+ *  \warning This class is offered for uniformity with other GPU implementations, but expect it to
+ *  be deprecated in the future.
+ *
  */
 class GpuEventSynchronizer
 {
 public:
-    //! A constructor
-    GpuEventSynchronizer() {}
-    //! A destructor
-    ~GpuEventSynchronizer() {}
+    //! A constructor.
+    GpuEventSynchronizer() = default;
+    //! A constructor from an existing event.
+    GpuEventSynchronizer(const cl::sycl::event& event) : event_(event) {}
+    //! A destructor.
+    ~GpuEventSynchronizer() = default;
     //! No copying
     GpuEventSynchronizer(const GpuEventSynchronizer&) = delete;
     //! No assignment
@@ -72,30 +93,36 @@ public:
     //! Moving is disabled but can be considered in the future if needed
     GpuEventSynchronizer(GpuEventSynchronizer&&) = delete;
 
-    /*! \brief Marks the synchronization point in the \p stream.
-     * Should be called first and then followed by waitForEvent().
+    /*! \brief Marks the synchronization point in the \p deviceStream.
+     * Should be called first and then followed by waitForEvent() or enqueueWaitEvent().
      */
-    inline void markEvent(const DeviceStream& /* deviceStream */)
+    inline void markEvent(const DeviceStream& deviceStream)
     {
-        // SYCL-TODO
+        GMX_ASSERT(!event_.has_value(), "Do not call markEvent more than once!");
+        // Relies on SYCL_INTEL_enqueue_barrier
+        event_ = deviceStream.stream().submit_barrier();
     }
-    /*! \brief Synchronizes the host thread on the marked event. */
+    /*! \brief Synchronizes the host thread on the marked event.
+     * As in the OpenCL implementation, the event is released.
+     */
     inline void waitForEvent()
     {
-        // SYCL-TODO
+        event_->wait_and_throw();
+        event_.reset();
     }
-    /*! \brief Enqueues a wait for the recorded event in stream \p stream
-     *
-     *  After enqueue, the associated event is released, so this method should
-     *  be only called once per markEvent() call.
+    /*! \brief Enqueues a wait for the recorded event in stream \p deviceStream.
+     * As in the OpenCL implementation, the event is released.
      */
-    inline void enqueueWaitEvent(const DeviceStream& /* deviceStream */)
+    inline void enqueueWaitEvent(const DeviceStream& deviceStream)
     {
-        // SYCL-TODO
+        // Relies on SYCL_INTEL_enqueue_barrier
+        const std::vector<cl::sycl::event> waitlist{ event_.value() };
+        deviceStream.stream().submit_barrier(waitlist);
+        event_.reset();
     }
 
 private:
-    // SYCL-TODO
+    std::optional<cl::sycl::event> event_ = std::nullopt;
 };
 
 #endif // !defined DOXYGEN
