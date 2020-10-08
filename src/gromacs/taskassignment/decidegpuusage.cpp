@@ -319,7 +319,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
 
     // If we get here, then the user permitted GPUs, which we should
     // use for nonbonded interactions.
-    return gpusWereDetected;
+    return buildSupportsNonbondedOnGpu && gpusWereDetected;
 }
 
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,

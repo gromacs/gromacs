@@ -79,5 +79,9 @@ bool buildSupportsNonbondedOnGpu(std::string* error)
     {
         errorReasons.emplace_back("non-GPU build of GROMACS");
     }
+    if (GMX_GPU_SYCL)
+    {
+        errorReasons.emplace_back("SYCL build of GROMACS");
+    }
     return addMessageIfNotSupported(errorReasons, error);
 }

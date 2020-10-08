@@ -163,6 +163,10 @@ bool pme_gpu_supports_build(std::string* error)
     {
         errorReasons.emplace_back("a non-GPU build");
     }
+    if (GMX_GPU_SYCL)
+    {
+        errorReasons.emplace_back("SYCL build"); // SYCL-TODO
+    }
     return addMessageIfNotSupported(errorReasons, error);
 }
 
@@ -235,7 +239,10 @@ static bool pme_gpu_check_restrictions(const gmx_pme_t* pme, std::string* error)
     {
         errorReasons.emplace_back("non-GPU build of GROMACS");
     }
-
+    if (GMX_GPU_SYCL)
+    {
+        errorReasons.emplace_back("SYCL build of GROMACS"); // SYCL-TODO
+    }
     return addMessageIfNotSupported(errorReasons, error);
 }
 

@@ -118,10 +118,9 @@ static DeviceStatus isDeviceCompatible(const cl::sycl::device& syclDevice)
 static bool isDeviceFunctional(const cl::sycl::device& syclDevice, std::string* errorMessage)
 {
     static const int numThreads = 8;
-    cl::sycl::queue  queue;
     try
     {
-        queue = cl::sycl::queue(syclDevice);
+        cl::sycl::queue          queue(syclDevice);
         cl::sycl::buffer<int, 1> buffer(numThreads);
         queue.submit([&](cl::sycl::handler& cgh) {
                  auto d_buffer = buffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
@@ -202,7 +201,7 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfos[i]->syclDevice = syclDevice;
         deviceInfos[i]->status     = checkDevice(i, *deviceInfos[i]);
         deviceInfos[i]->deviceVendor =
-                getDeviceVendor(syclDevice.get_info<sycl::info::device::vendor>());
+                getDeviceVendor(syclDevice.get_info<sycl::info::device::vendor>().c_str());
     }
     return deviceInfos;
 }

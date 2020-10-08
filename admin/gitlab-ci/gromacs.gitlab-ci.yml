@@ -312,6 +312,16 @@ gromacs:oneapi-2021.1-beta09-opencl:configure:
   variables:
     COMPILER_MAJOR_VERSION: 2021
 
+gromacs:oneapi-2021.1-beta09-sycl:configure:
+  extends:
+   - .gromacs:base:configure
+   - .use-oneapi:base
+   - .use-sycl
+   - .rules:merge-and-post-merge-acceptance
+  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  variables:
+    COMPILER_MAJOR_VERSION: 2021
+
 gromacs:clang-UBSAN:configure:
   extends:
     - .gromacs:base:configure
@@ -539,6 +549,17 @@ gromacs:oneapi-2021.1-beta09-opencl:build:
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:configure
+
+gromacs:oneapi-2021.1-beta09-sycl:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-ccache
+    - .use-oneapi:base
+    - .rules:merge-and-post-merge-acceptance
+  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  needs:
+    - job: gromacs:oneapi-2021.1-beta09-sycl:configure
 
 gromacs:clang-9-mpi:build:
   extends:
@@ -794,6 +815,15 @@ gromacs:oneapi-2021.1-beta09-opencl:test:
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:build
 
+gromacs:oneapi-2021.1-beta09-sycl:test:
+  extends:
+    - .gromacs:base:test
+    - .use-oneapi:base
+    - .rules:post-merge-acceptance
+  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  needs:
+    - job: gromacs:oneapi-2021.1-beta09-sycl:build
+
 gromacs:clang-9-mpi:test:
   extends:
     - .gromacs:base:test
@@ -946,6 +976,16 @@ gromacs:oneapi-2021.1-beta09-opencl:regressiontest:
   image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:build
+    - job: regressiontests:prepare
+
+gromacs:oneapi-2021.1-beta09-sycl:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-oneapi:base
+    - .rules:post-merge-acceptance
+  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  needs:
+    - job: gromacs:oneapi-2021.1-beta09-sycl:build
     - job: regressiontests:prepare
 
 gromacs:gcc-8-cuda-11.0:release:test:

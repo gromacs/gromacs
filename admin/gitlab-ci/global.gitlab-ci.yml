@@ -52,6 +52,11 @@
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
     CMAKE_GPU_OPTIONS: -DGMX_GPU=OpenCL
 
+.use-sycl:
+  variables:
+    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
+    CMAKE_GPU_OPTIONS: -DGMX_GPU=SYCL
+
 # Base definition for using gcc.
 .use-gcc:base:
   variables:
