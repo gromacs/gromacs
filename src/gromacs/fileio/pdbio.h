@@ -142,7 +142,6 @@ int read_pdbfile(FILE*            in,
                  rvec             x[],
                  PbcType*         pbcType,
                  matrix           box,
-                 gmx_bool         bChange,
                  gmx_conect       conect);
 /* Function returns number of atoms found.
  * pbcType and gmx_conect structure may be NULL.

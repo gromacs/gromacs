@@ -26,14 +26,14 @@
   <CompiledSelections Name="Compiled">
     <Selection Name="Selection1">
       <Sequence Name="Atoms">
-        <Int Name="Length">2</Int>
-        <Int>4</Int>
+        <Int Name="Length">1</Int>
         <Int>7</Int>
       </Sequence>
     </Selection>
     <Selection Name="Selection2">
       <Sequence Name="Atoms">
-        <Int Name="Length">0</Int>
+        <Int Name="Length">1</Int>
+        <Int>4</Int>
       </Sequence>
     </Selection>
     <Selection Name="Selection3">

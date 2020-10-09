@@ -708,7 +708,7 @@ static gmx_bool pdb_next_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
     /* the other pointers in atoms should not be accessed if these are NULL */
     snew(symtab, 1);
     open_symtab(symtab);
-    na = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &pbcType, boxpdb, TRUE, nullptr);
+    na = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &pbcType, boxpdb, nullptr);
     free_symtab(symtab);
     sfree(symtab);
     setTrxFramePbcType(fr, pbcType);

@@ -15,3 +15,12 @@ existing include paths and add GMX_DOUBLE define to interface
 definitions. The target now gets exported into the Gromacs namespace.
 
 :issue:`3468`
+
+Fixed unsolicited changing of atom names in pdb file
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Remove functions to change atoms names when reading 
+and writing pdb files. This affected naming of
+H atoms in particular.
+
+:issue:`3469`
