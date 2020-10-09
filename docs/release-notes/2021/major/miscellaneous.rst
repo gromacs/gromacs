@@ -48,3 +48,10 @@ The environment variables that had exactly the same meaning in OpenCL and CUDA w
 * GMX_CUDA_NB_ANA_EWALD and GMX_OCL_NB_ANA_EWALD into GMX_GPU_NB_ANA_EWALD
 * GMX_CUDA_NB_TAB_EWALD and GMX_OCL_NB_TAB_EWALD into GMX_GPU_NB_TAB_EWALD
 * GMX_CUDA_NB_EWALD_TWINCUT and GMX_OCL_NB_EWALD_TWINCUT into GMX_GPU_NB_EWALD_TWINCUT
+
+Dysfunctional parts of the QMMM interface has been removed
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Currently, GROMACS supports QM/MM officially only via MiMiC. All other QM/MM
+support has been untested and likely dysfunctional for years and has now been removed from .mdp
+input and output, resulting in smaller .mdp output files from grompp.

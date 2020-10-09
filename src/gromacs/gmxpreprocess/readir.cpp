@@ -110,8 +110,6 @@ struct gmx_inputrec_strings
     std::vector<std::string> pullGroupNames;
     std::vector<std::string> rotateGroupNames;
     char anneal[STRLEN], anneal_npoints[STRLEN], anneal_time[STRLEN], anneal_temp[STRLEN];
-    char QMmethod[STRLEN], QMbasis[STRLEN], QMcharge[STRLEN], QMmult[STRLEN], bSH[STRLEN],
-            CASorbitals[STRLEN], CASelectrons[STRLEN], SAon[STRLEN], SAoff[STRLEN], SAsteps[STRLEN];
 };
 
 static gmx_inputrec_strings* inputrecStrings = nullptr;
@@ -2131,29 +2129,8 @@ void get_ir(const char*     mdparin,
     /* QMMM */
     printStringNewline(&inp, "OPTIONS FOR QMMM calculations");
     ir->bQMMM = (get_eeenum(&inp, "QMMM", yesno_names, wi) != 0);
-    printStringNoNewline(&inp, "Groups treated Quantum Mechanically");
+    printStringNoNewline(&inp, "Groups treated with MiMiC");
     setStringEntry(&inp, "QMMM-grps", inputrecStrings->QMMM, nullptr);
-    printStringNoNewline(&inp, "QM method");
-    setStringEntry(&inp, "QMmethod", inputrecStrings->QMmethod, nullptr);
-    printStringNoNewline(&inp, "QMMM scheme");
-    const char* noQMMMSchemeName = "normal";
-    get_eeenum(&inp, "QMMMscheme", &noQMMMSchemeName, wi);
-    printStringNoNewline(&inp, "QM basisset");
-    setStringEntry(&inp, "QMbasis", inputrecStrings->QMbasis, nullptr);
-    printStringNoNewline(&inp, "QM charge");
-    setStringEntry(&inp, "QMcharge", inputrecStrings->QMcharge, nullptr);
-    printStringNoNewline(&inp, "QM multiplicity");
-    setStringEntry(&inp, "QMmult", inputrecStrings->QMmult, nullptr);
-    printStringNoNewline(&inp, "Surface Hopping");
-    setStringEntry(&inp, "SH", inputrecStrings->bSH, nullptr);
-    printStringNoNewline(&inp, "CAS space options");
-    setStringEntry(&inp, "CASorbitals", inputrecStrings->CASorbitals, nullptr);
-    setStringEntry(&inp, "CASelectrons", inputrecStrings->CASelectrons, nullptr);
-    setStringEntry(&inp, "SAon", inputrecStrings->SAon, nullptr);
-    setStringEntry(&inp, "SAoff", inputrecStrings->SAoff, nullptr);
-    setStringEntry(&inp, "SAsteps", inputrecStrings->SAsteps, nullptr);
-    printStringNoNewline(&inp, "Scale factor for MM charges");
-    get_ereal(&inp, "MMChargeScaleFactor", 1.0, wi);
 
     /* Simulated annealing */
     printStringNewline(&inp, "SIMULATED ANNEALING");
