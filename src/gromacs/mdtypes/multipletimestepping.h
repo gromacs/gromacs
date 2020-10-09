@@ -37,6 +37,7 @@
 
 #include <bitset>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
 struct t_inputrec;
@@ -51,12 +52,14 @@ enum class MtsForceGroups : int
     Nonbonded,          //!< Non-bonded pair interactions
     Pair,               //!< Bonded pair interactions
     Dihedral,           //!< Dihedrals, including cmap (not restraints)
-    Angle,              //! Bonded angle potentials (not restraints)
-    Count               //! The number of groups above
+    Angle,              //!< Bonded angle potentials (not restraints)
+    Pull,               //!< COM pulling
+    Awh,                //!< Accelerated weight histogram method
+    Count               //!< The number of groups above
 };
 
 static const gmx::EnumerationArray<MtsForceGroups, std::string> mtsForceGroupNames = {
-    "longrange-nonbonded", "nonbonded", "pair", "dihedral", "angle"
+    "longrange-nonbonded", "nonbonded", "pair", "dihedral", "angle", "pull", "awh"
 };
 
 //! Setting for a single level for multiple time step integration
@@ -66,6 +69,18 @@ struct MtsLevel
     std::bitset<static_cast<int>(MtsForceGroups::Count)> forceGroups;
     //! The factor between the base, fastest, time step and the time step for this level
     int stepFactor;
+};
+
+/*! \brief Returns the MTS level at which a force group is to be computed
+ *
+ * \param[in] mtsLevels  List of force groups for each MTS level, can be empty without MTS
+ * \param[in] mtsForceGroup  The force group to query the MTS level for
+ */
+static inline int forceGroupMtsLevel(ArrayRef<const MtsLevel> mtsLevels, const MtsForceGroups mtsForceGroup)
+{
+    GMX_ASSERT(mtsLevels.empty() || mtsLevels.size() == 2, "Only 0 or 2 MTS levels are supported");
+
+    return (mtsLevels.empty() || mtsLevels[0].forceGroups[static_cast<int>(mtsForceGroup)]) ? 0 : 1;
 };
 
 /*! \brief Returns the interval in steps at which the non-bonded pair forces are calculated

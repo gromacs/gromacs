@@ -48,6 +48,7 @@
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
@@ -75,6 +76,58 @@ const char* eawhcoordprovider_names[eawhcoordproviderNR + 1] = { "pull", "fep-la
 
 namespace
 {
+
+/*! \brief
+ * Check multiple time-stepping consistency between AWH and pull and/or FEP
+ *
+ * \param[in] inputrec  Inputput parameter struct.
+ * \param[in,out] wi    Struct for bookeeping warnings.
+ */
+void checkMtsConsistency(const t_inputrec& inputrec, warninp_t wi)
+{
+    if (!inputrec.useMts)
+    {
+        return;
+    }
+
+    GMX_RELEASE_ASSERT(inputrec.mtsLevels.size() == 2, "Only 2 MTS levels supported here");
+
+    bool usesPull = false;
+    bool usesFep  = false;
+    for (int b = 0; b < inputrec.awhParams->numBias; b++)
+    {
+        const auto& biasParams = inputrec.awhParams->awhBiasParams[b];
+        for (int d = 0; d < biasParams.ndim; d++)
+        {
+            switch (biasParams.dimParams[d].eCoordProvider)
+            {
+                case eawhcoordproviderPULL: usesPull = true; break;
+                case eawhcoordproviderFREE_ENERGY_LAMBDA: usesFep = true; break;
+                default: GMX_RELEASE_ASSERT(false, "Unsupported coord provider");
+            }
+        }
+    }
+    const int awhMtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, MtsForceGroups::Awh);
+    if (usesPull && forceGroupMtsLevel(inputrec.mtsLevels, MtsForceGroups::Pull) != awhMtsLevel)
+    {
+        warning_error(wi,
+                      "When AWH is applied to pull coordinates, pull and AWH should be computed at "
+                      "the same MTS level");
+    }
+    if (usesFep && awhMtsLevel != ssize(inputrec.mtsLevels) - 1)
+    {
+        warning_error(wi,
+                      "When AWH is applied to the free-energy lambda with MTS, AWH should be "
+                      "computed at the slow MTS level");
+    }
+
+    if (inputrec.awhParams->nstSampleCoord % inputrec.mtsLevels[awhMtsLevel].stepFactor != 0)
+    {
+        warning_error(wi,
+                      "With MTS applied to AWH, awh-nstsample should be a multiple of mts-factor");
+    }
+}
+
 /*! \brief
  * Check the parameters of an AWH bias pull dimension.
  *
@@ -750,6 +803,8 @@ AwhParams* readAwhParams(std::vector<t_inpfile>* inp, warninp_t wi)
 void checkAwhParams(const AwhParams* awhParams, const t_inputrec* ir, warninp_t wi)
 {
     std::string opt;
+
+    checkMtsConsistency(*ir, wi);
 
     opt = "awh-nstout";
     if (awhParams->nstOut <= 0)

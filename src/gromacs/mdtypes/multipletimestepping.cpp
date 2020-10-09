@@ -67,10 +67,9 @@ void assertMtsRequirements(const t_inputrec& ir)
 
     GMX_RELEASE_ASSERT(ir.mtsLevels[0].stepFactor == 1, "Base MTS step should be 1");
 
-    GMX_RELEASE_ASSERT(
-            (!EEL_FULL(ir.coulombtype) && !EVDW_PME(ir.vdwtype))
-                    || ir.mtsLevels.back().forceGroups[static_cast<int>(MtsForceGroups::LongrangeNonbonded)],
-            "Long-range nonbondeds should be in the highest MTS level");
+    GMX_RELEASE_ASSERT((!EEL_FULL(ir.coulombtype) && !EVDW_PME(ir.vdwtype))
+                               || forceGroupMtsLevel(ir.mtsLevels, MtsForceGroups::LongrangeNonbonded) > 0,
+                       "Long-range nonbondeds should be in the highest MTS level");
 
     for (const auto& mtsLevel : ir.mtsLevels)
     {

@@ -254,9 +254,9 @@ Run control
    (longrange-nonbonded nonbonded pair dihedral)
    A list of force groups that will be evaluated only every
    :mdp:`mts-level2-factor` steps. Supported entries are:
-   ``longrange-nonbonded``, ``nonbonded``, ``pair``, ``dihedral`` and
-   ``angle``. With ``pair`` the listed pair forces (such as 1-4) are
-   selected. With ``dihedral`` all dihedrals are selected, including cmap.
+   ``longrange-nonbonded``, ``nonbonded``, ``pair``, ``dihedral``, ``angle``,
+   ``pull`` and ``awh``. With ``pair`` the listed pair forces (such as 1-4)
+   are selected. With ``dihedral`` all dihedrals are selected, including cmap.
    All other forces, including all restraints, are evaluated and
    integrated every step. When PME or Ewald is used for electrostatics
    and/or LJ interactions, ``longrange-nonbonded`` has to be entered here.
@@ -2092,13 +2092,15 @@ AWH adaptive biasing
    .. mdp-value:: pull
 
       The pull module is providing the reaction coordinate for this dimension.
+      With multiple time-stepping, AWH and pull should be in the same MTS level.
 
    .. mdp-value:: fep-lambda
 
       The free energy lambda state is the reaction coordinate for this dimension.
       The lambda states to use are specified by :mdp:`fep-lambdas`, :mdp:`vdw-lambdas`,
       :mdp:`coul-lambdas` etc. This is not compatible with delta-lambda. It also requires
-      calc-lambda-neighbors to be -1.
+      calc-lambda-neighbors to be -1. With multiple time-stepping, AWH should
+      be in the slow level.
 
 .. mdp:: awh1-dim1-coord-index
 

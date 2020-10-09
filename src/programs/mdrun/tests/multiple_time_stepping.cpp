@@ -90,6 +90,8 @@ TEST_P(MtsComparisonTest, WithinTolerances)
     SCOPED_TRACE(formatString("Comparing for '%s' no MTS with MTS scheme '%s'",
                               simulationName.c_str(), mtsScheme.c_str()));
 
+    const bool isPullTest = (mtsScheme.find("pull") != std::string::npos);
+
     const int numSteps         = 4;
     auto      sharedMdpOptions = gmx::formatString(
             "integrator   = md\n"
@@ -97,12 +99,27 @@ TEST_P(MtsComparisonTest, WithinTolerances)
             "nsteps       = %d\n"
             "verlet-buffer-tolerance = -1\n"
             "rlist        = 1.0\n"
-            "coulomb-type = PME\n"
+            "coulomb-type = %s\n"
             "vdw-type     = cut-off\n"
             "rcoulomb     = 0.9\n"
             "rvdw         = 0.9\n"
             "constraints  = h-bonds\n",
-            numSteps);
+            numSteps, isPullTest ? "reaction-field" : "PME");
+
+    if (isPullTest)
+    {
+        sharedMdpOptions +=
+                "pull                 = yes\n"
+                "pull-ngroups         = 2\n"
+                "pull-group1-name     = FirstWaterMolecule\n"
+                "pull-group2-name     = SecondWaterMolecule\n"
+                "pull-ncoords         = 1\n"
+                "pull-coord1-type     = umbrella\n"
+                "pull-coord1-geometry = distance\n"
+                "pull-coord1-groups   = 1 2\n"
+                "pull-coord1-init     = 1\n"
+                "pull-coord1-k        = 10000\n";
+    }
 
     // set nstfout to > numSteps so we only write forces at step 0
     const int nstfout       = 2 * numSteps;
@@ -188,6 +205,10 @@ INSTANTIATE_TEST_CASE_P(
         ::testing::Combine(::testing::Values("ala"),
                            ::testing::Values("longrange-nonbonded",
                                              "longrange-nonbonded nonbonded pair dihedral")));
+
+INSTANTIATE_TEST_CASE_P(MultipleTimeSteppingIsNearSingleTimeSteppingPull,
+                        MtsComparisonTest,
+                        ::testing::Combine(::testing::Values("spc2"), ::testing::Values("pull")));
 
 } // namespace
 } // namespace test

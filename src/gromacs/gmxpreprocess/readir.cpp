@@ -311,6 +311,19 @@ static void setupMtsLevels(gmx::ArrayRef<gmx::MtsLevel> mtsLevels,
         {
             checkMtsRequirement(ir, "nstdhdl", ir.fepvals->nstdhdl, wi);
         }
+
+        if (ir.bPull)
+        {
+            const int pullMtsLevel = gmx::forceGroupMtsLevel(ir.mtsLevels, gmx::MtsForceGroups::Pull);
+            if (ir.pull->nstxout % ir.mtsLevels[pullMtsLevel].stepFactor != 0)
+            {
+                warning_error(wi, "pull-nstxout should be a multiple of mts-factor");
+            }
+            if (ir.pull->nstfout % ir.mtsLevels[pullMtsLevel].stepFactor != 0)
+            {
+                warning_error(wi, "pull-nstfout should be a multiple of mts-factor");
+            }
+        }
     }
 }
 
