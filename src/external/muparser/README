@@ -1,3 +1,6 @@
 muparser files
 ==============
 Used from https://github.com/beltoforion/muparser/releases/tag/v2.3.2.
+
+Minor modifications exist to avoid compiler warnings, e.g. from
+attempting to return a size_t in an int.

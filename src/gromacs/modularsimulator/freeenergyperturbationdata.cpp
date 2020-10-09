@@ -156,7 +156,7 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
     if (DOMAINDECOMP(cr))
     {
         dd_bcast(cr->dd, sizeof(int), &freeEnergyPerturbationData_->currentFEPState_);
-        dd_bcast(cr->dd, freeEnergyPerturbationData_->lambda_.size() * sizeof(real),
+        dd_bcast(cr->dd, ssize(freeEnergyPerturbationData_->lambda_) * int(sizeof(real)),
                  freeEnergyPerturbationData_->lambda_.data());
     }
 }

@@ -55,6 +55,10 @@ function(gmx_manage_muparser)
         # Ensure that the objects can be used in both STATIC and SHARED
         # libraries.
         set_target_properties(muparser_objlib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        if (WIN32)
+            # Avoid muParser assuming DLL export attributes should be added
+            target_compile_definitions(muparser_objlib PRIVATE MUPARSER_STATIC)
+        endif()
 
         # Create an INTERFACE (ie. fake) library for muparser, that
         # libgromacs can depend on. The generator expression for the

@@ -226,7 +226,8 @@ public:
                              / temperatureCouplingData.couplingTime[temperatureGroup])
                                     * (temperatureCouplingData.referenceTemperature[temperatureGroup] / currentTemperature
                                        - 1.0));
-        lambdaStartVelocities_[temperatureGroup] = std::max<real>(std::min<real>(lambda, 1.25), 0.8);
+        lambdaStartVelocities_[temperatureGroup] =
+                std::max<real>(std::min<real>(lambda, 1.25_real), 0.8_real);
         if (debug)
         {
             fprintf(debug, "TC: group %d: T: %g, Lambda: %g\n", temperatureGroup,
@@ -420,7 +421,7 @@ void VelocityScalingTemperatureCoupling::restoreCheckpointState(std::optional<Re
     }
     if (DOMAINDECOMP(cr))
     {
-        dd_bcast(cr->dd, temperatureCouplingIntegral_.size() * sizeof(double),
+        dd_bcast(cr->dd, ssize(temperatureCouplingIntegral_) * int(sizeof(double)),
                  temperatureCouplingIntegral_.data());
     }
     temperatureCouplingImpl_->readCheckpoint(
