@@ -57,9 +57,7 @@ MockThreadAffinityAccess::MockThreadAffinityAccess() : supported_(true)
 {
     using ::testing::_;
     using ::testing::Return;
-#ifndef __clang_analyzer__
     ON_CALL(*this, setCurrentThreadAffinityToCore(_)).WillByDefault(Return(true));
-#endif
 }
 
 MockThreadAffinityAccess::~MockThreadAffinityAccess() {}

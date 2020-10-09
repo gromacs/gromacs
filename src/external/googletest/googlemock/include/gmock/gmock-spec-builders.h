@@ -1607,6 +1607,9 @@ class FunctionMockerBase : public UntypedFunctionMockerBase {
     Mock::RegisterUseByOnCallOrExpectCall(MockObject(), file, line);
     TypedExpectation<F>* const expectation =
         new TypedExpectation<F>(this, file, line, source_text, m);
+#ifndef __clang_analyzer__
+    /* clang-analyzer thinks the destructor of untyped_expectation will destroy the object.
+     * Apparently, that's not the case, but to simplify our life we skip this whole segment. */
     const linked_ptr<ExpectationBase> untyped_expectation(expectation);
     untyped_expectations_.push_back(untyped_expectation);
 
@@ -1615,12 +1618,9 @@ class FunctionMockerBase : public UntypedFunctionMockerBase {
     if (implicit_sequence != NULL) {
       implicit_sequence->AddExpectation(Expectation(untyped_expectation));
     }
-
-#ifndef __clang_analyzer__
-    return *expectation;
-#else
-    return nullptr;
 #endif
+
+    return *expectation;
   }
 
   // The current spec (either default action spec or expectation spec)

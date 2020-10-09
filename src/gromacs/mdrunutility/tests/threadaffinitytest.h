@@ -112,11 +112,7 @@ public:
     void expectAffinitySetThatFails(int core)
     {
         using ::testing::Return;
-#ifndef __clang_analyzer__
         EXPECT_CALL(affinityAccess_, setCurrentThreadAffinityToCore(core)).WillOnce(Return(false));
-#else
-        GMX_UNUSED_VALUE(core);
-#endif
     }
 
     void expectWarningMatchingRegex(const char* re) { expectWarningMatchingRegexIf(re, true); }
