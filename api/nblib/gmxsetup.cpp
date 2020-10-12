@@ -79,7 +79,7 @@ static Nbnxm::KernelType translateBenchmarkEnum(const SimdKernels& kernel)
  */
 static void checkKernelSetup(const NBKernelOptions& options)
 {
-    if (options.nbnxmSimd >= SimdKernels::Count && options.nbnxmSimd == SimdKernels::SimdAuto)
+    if (options.nbnxmSimd >= SimdKernels::Count || options.nbnxmSimd == SimdKernels::SimdAuto)
     {
         throw InputException("Need a valid kernel SIMD type");
     }

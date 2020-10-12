@@ -100,6 +100,7 @@ target_sources(nblib
         topology.cpp
         )
 
+gmx_target_compile_options(nblib)
 
 set_target_properties(nblib
         PROPERTIES

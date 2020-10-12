@@ -43,6 +43,7 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
+#include "nblib/util/internal.h"
 #include "nblib/util/user.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
