@@ -47,6 +47,7 @@
 #include "shake.h"
 
 #include <cmath>
+#include <cstdlib>
 
 #include <algorithm>
 
