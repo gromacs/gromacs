@@ -411,7 +411,7 @@ else()
             -D VERSION_CMAKEIN=${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
             -D VERSION_OUT=${VERSION_INFO_CMAKE_FILE}
             -D VERSION_STRING_OF_FORK=${GMX_VERSION_STRING_OF_FORK}
-            -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfoRelease.cmake
+            -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfoWithoutGit.cmake
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMENT "Generating release version information")
     list(APPEND VERSION_INFO_DEPS release-version-info)
