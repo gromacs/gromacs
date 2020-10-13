@@ -96,7 +96,7 @@ void checkAwhParams(const AwhParams* awhParams, const t_inputrec* inputrec, warn
  * \note This function currently relies on the function set_pull_init to have been called.
  */
 void setStateDependentAwhParams(AwhParams*           awhParams,
-                                const pull_params_t* pull_params,
+                                const pull_params_t& pull_params,
                                 pull_t*              pull_work,
                                 const matrix         box,
                                 PbcType              pbcType,

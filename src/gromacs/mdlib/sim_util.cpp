@@ -548,7 +548,7 @@ static bool haveSpecialForces(const t_inputrec&          inputrec,
 {
 
     return ((computeForces && forceProviders.hasForceProvider()) || // forceProviders
-            (inputrec.bPull && pull_have_potential(pull_work)) ||   // pull
+            (inputrec.bPull && pull_have_potential(*pull_work)) ||  // pull
             inputrec.bRot ||                                        // enforced rotation
             (ed != nullptr) ||                                      // flooding
             (inputrec.bIMD && computeForces));                      // IMD
@@ -623,7 +623,7 @@ static void computeSpecialForces(FILE*                          fplog,
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
 
-    if (inputrec->bPull && pull_have_potential(pull_work))
+    if (inputrec->bPull && pull_have_potential(*pull_work))
     {
         const int mtsLevel = forceGroupMtsLevel(inputrec->mtsLevels, gmx::MtsForceGroups::Pull);
         if (mtsLevel == 0 || stepWork.computeSlowForces)
@@ -1642,7 +1642,7 @@ void do_force(FILE*                               fplog,
 
     ForceOutputs* forceOutNonbonded = nonbondedAtMtsLevel1 ? forceOutMtsLevel1 : &forceOutMtsLevel0;
 
-    if (inputrec->bPull && pull_have_constraint(pull_work))
+    if (inputrec->bPull && pull_have_constraint(*pull_work))
     {
         clear_pull_forces(pull_work);
     }

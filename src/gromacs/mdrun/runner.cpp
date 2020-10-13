@@ -1630,7 +1630,7 @@ int Mdrunner::mdrunner()
         if (inputrec->bPull)
         {
             /* Initialize pull code */
-            pull_work = init_pull(fplog, inputrec->pull, inputrec.get(), &mtop, cr, &atomSets,
+            pull_work = init_pull(fplog, inputrec->pull.get(), inputrec.get(), &mtop, cr, &atomSets,
                                   inputrec->fepvals->init_lambda);
             if (inputrec->pull->bXOutAverage || inputrec->pull->bFOutAverage)
             {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,10 @@
 #ifndef GMX_MDTYPES_PULL_PARAMS_H
 #define GMX_MDTYPES_PULL_PARAMS_H
 
+#include <array>
+#include <string>
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -56,56 +60,54 @@
 /*! \cond INTERNAL */
 
 /*! \brief Struct that defines a pull group */
-typedef struct
+struct t_pull_group
 {
-    int   nat;     /**< Number of atoms in the pull group */
-    int*  ind;     /**< The global atoms numbers */
-    int   nweight; /**< The number of weights (0 or nat) */
-    real* weight;  /**< Weights (use all 1 when weight==NULL) */
-    int   pbcatom; /**< The reference atom for pbc (global number) */
-    int   pbcatom_input; /**< The reference atom for pbc (global number) as specified in the input parameters */
-} t_pull_group;
+    std::vector<int>  ind;     /**< The global atoms numbers */
+    std::vector<real> weight;  /**< Weights (use all 1 when weight==NULL) */
+    int               pbcatom; /**< The reference atom for pbc (global number) */
+    int               pbcatom_input; /**< The reference atom for pbc (global number) as specified in the input parameters */
+};
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */
 static const int c_pullCoordNgroupMax = 6;
 
 /*! \brief Struct that defines a pull coordinate */
-typedef struct
+struct t_pull_coord
 {
-    int      eType; /**< The pull type: umbrella, constraint, ... */
-    char*    externalPotentialProvider; /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
-    int      eGeom;                       /**< The pull geometry */
-    int      ngroup;                      /**< The number of groups, depends on eGeom */
-    int      group[c_pullCoordNgroupMax]; /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
-    ivec     dim;                         /**< Used to select components for constraint */
-    rvec     origin;                      /**< The origin for the absolute reference */
-    rvec     vec;                         /**< The pull vector, direction or position */
-    gmx_bool bStart;                      /**< Set init based on the initial structure */
-    real     init;                        /**< Initial reference displacement (nm) or (deg) */
-    real     rate;                        /**< Rate of motion (nm/ps) or (deg/ps) */
-    real     k; /**< Force constant (kJ/(mol nm^2) or kJ/(mol rad^2) for umbrella pull type, or kJ/(mol nm) or kJ/(mol rad) for constant force pull type */
-    real     kB; /**< Force constant for state B */
-} t_pull_coord;
+    int                                   eType; /**< The pull type: umbrella, constraint, ... */
+    std::string                           externalPotentialProvider; /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
+    int                                   eGeom;  /**< The pull geometry */
+    int                                   ngroup; /**< The number of groups, depends on eGeom */
+    std::array<int, c_pullCoordNgroupMax> group; /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
+    gmx::IVec                             dim;   /**< Used to select components for constraint */
+    gmx::RVec                             origin; /**< The origin for the absolute reference */
+    gmx::RVec                             vec;    /**< The pull vector, direction or position */
+    bool                                  bStart; /**< Set init based on the initial structure */
+    real                                  init; /**< Initial reference displacement (nm) or (deg) */
+    real                                  rate; /**< Rate of motion (nm/ps) or (deg/ps) */
+    real                                  k; /**< Force constant (kJ/(mol nm^2) or kJ/(mol rad^2) for umbrella pull type, or kJ/(mol nm) or kJ/(mol rad) for constant force pull type */
+    real                                  kB; /**< Force constant for state B */
+};
 
 /*! \brief Struct containing all pull parameters */
-typedef struct pull_params_t
+struct pull_params_t
 {
-    int      ngroup;         /**< Number of pull groups */
-    int      ncoord;         /**< Number of pull coordinates */
-    real     cylinder_r;     /**< Radius of cylinder for dynamic COM (nm) */
-    real     constr_tol;     /**< Absolute tolerance for constraints in (nm) */
-    gmx_bool bPrintCOM;      /**< Print coordinates of COM for each coord */
-    gmx_bool bPrintRefValue; /**< Print the reference value for each coord */
-    gmx_bool bPrintComp; /**< Print cartesian components for each coord with geometry=distance */
-    gmx_bool bSetPbcRefToPrevStepCOM; /**< Use the COM of each group from the previous step as reference */
-    int      nstxout;                 /**< Output interval for pull x */
-    int      nstfout;                 /**< Output interval for pull f */
-    bool     bXOutAverage; /**< Write the average coordinate during the output interval */
-    bool     bFOutAverage; /**< Write the average force during the output interval */
+    int  ngroup;         /**< Number of pull groups */
+    int  ncoord;         /**< Number of pull coordinates */
+    real cylinder_r;     /**< Radius of cylinder for dynamic COM (nm) */
+    real constr_tol;     /**< Absolute tolerance for constraints in (nm) */
+    bool bPrintCOM;      /**< Print coordinates of COM for each coord */
+    bool bPrintRefValue; /**< Print the reference value for each coord */
+    bool bPrintComp;     /**< Print cartesian components for each coord with geometry=distance */
+    bool bSetPbcRefToPrevStepCOM; /**< Use the COM of each group from the previous step as reference */
+    int  nstxout;                 /**< Output interval for pull x */
+    int  nstfout;                 /**< Output interval for pull f */
+    bool bXOutAverage;            /**< Write the average coordinate during the output interval */
+    bool bFOutAverage;            /**< Write the average force during the output interval */
 
-    t_pull_group* group; /**< groups to pull/restrain/etc/ */
-    t_pull_coord* coord; /**< the pull coordinates */
-} pull_params_t;
+    std::vector<t_pull_group> group; /**< groups to pull/restrain/etc/ */
+    std::vector<t_pull_coord> coord; /**< the pull coordinates */
+};
 
 /*! \endcond */
 

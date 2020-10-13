@@ -329,20 +329,20 @@ bool pullCheckPbcWithinGroup(const pull_t&                  pull,
  *
  * \param[in] pull     The pull data structure.
  */
-gmx_bool pull_have_potential(const struct pull_t* pull);
+bool pull_have_potential(const pull_t& pull);
 
 
 /*! \brief Returns if we have pull coordinates with constraint pulling.
  *
  * \param[in] pull     The pull data structure.
  */
-gmx_bool pull_have_constraint(const struct pull_t* pull);
+bool pull_have_constraint(const pull_t& pull);
 
 /*! \brief Returns if inputrec has pull coordinates with constraint pulling.
  *
  * \param[in] pullParameters  Pulling input parameters from input record.
  */
-bool pull_have_constraint(const pull_params_t* pullParameters);
+bool pull_have_constraint(const pull_params_t& pullParameters);
 
 /*! \brief Returns the maxing distance for pulling
  *

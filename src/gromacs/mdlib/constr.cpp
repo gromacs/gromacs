@@ -672,7 +672,7 @@ bool Constraints::Impl::apply(bool                      bLog,
 
     if (econq == ConstraintVariable::Positions)
     {
-        if (ir.bPull && pull_have_constraint(pull_work))
+        if (ir.bPull && pull_have_constraint(*pull_work))
         {
             if (EI_DYNAMICS(ir.eI))
             {

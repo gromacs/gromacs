@@ -275,28 +275,6 @@ gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec* ir)
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }
 
-static void done_pull_group(t_pull_group* pgrp)
-{
-    if (pgrp->nat > 0)
-    {
-        sfree(pgrp->ind);
-        sfree(pgrp->weight);
-    }
-}
-
-static void done_pull_params(pull_params_t* pull)
-{
-    int i;
-
-    for (i = 0; i < pull->ngroup + 1; i++)
-    {
-        done_pull_group(pull->group);
-    }
-
-    sfree(pull->group);
-    sfree(pull->coord);
-}
-
 static void done_lambdas(t_lambda* fep)
 {
     if (fep->n_lambda > 0)
@@ -349,11 +327,6 @@ void done_inputrec(t_inputrec* ir)
     sfree(ir->expandedvals);
     sfree(ir->simtempvals);
 
-    if (ir->pull)
-    {
-        done_pull_params(ir->pull);
-        sfree(ir->pull);
-    }
     done_t_rot(ir->rot);
     delete ir->params;
 }
@@ -486,8 +459,8 @@ static void pr_pull_group(FILE* fp, int indent, int g, const t_pull_group* pgrp)
     pr_indent(fp, indent);
     fprintf(fp, "pull-group %d:\n", g);
     indent += 2;
-    pr_ivec_block(fp, indent, "atom", pgrp->ind, pgrp->nat, TRUE);
-    pr_rvec(fp, indent, "weight", pgrp->weight, pgrp->nweight, TRUE);
+    pr_ivec_block(fp, indent, "atom", pgrp->ind.data(), pgrp->ind.size(), TRUE);
+    pr_rvec(fp, indent, "weight", pgrp->weight.data(), pgrp->weight.size(), TRUE);
     PI("pbcatom", pgrp->pbcatom);
 }
 
@@ -500,7 +473,7 @@ static void pr_pull_coord(FILE* fp, int indent, int c, const t_pull_coord* pcrd)
     PS("type", EPULLTYPE(pcrd->eType));
     if (pcrd->eType == epullEXTERNAL)
     {
-        PS("potential-provider", pcrd->externalPotentialProvider);
+        PS("potential-provider", pcrd->externalPotentialProvider.c_str());
     }
     PS("geometry", EPULLGEOM(pcrd->eGeom));
     for (g = 0; g < pcrd->ngroup; g++)
@@ -629,29 +602,29 @@ static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPf
     PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
 };
 
-static void pr_pull(FILE* fp, int indent, const pull_params_t* pull)
+static void pr_pull(FILE* fp, int indent, const pull_params_t& pull)
 {
     int g;
 
-    PR("pull-cylinder-r", pull->cylinder_r);
-    PR("pull-constr-tol", pull->constr_tol);
-    PS("pull-print-COM", EBOOL(pull->bPrintCOM));
-    PS("pull-print-ref-value", EBOOL(pull->bPrintRefValue));
-    PS("pull-print-components", EBOOL(pull->bPrintComp));
-    PI("pull-nstxout", pull->nstxout);
-    PI("pull-nstfout", pull->nstfout);
-    PS("pull-pbc-ref-prev-step-com", EBOOL(pull->bSetPbcRefToPrevStepCOM));
-    PS("pull-xout-average", EBOOL(pull->bXOutAverage));
-    PS("pull-fout-average", EBOOL(pull->bFOutAverage));
-    PI("pull-ngroups", pull->ngroup);
-    for (g = 0; g < pull->ngroup; g++)
+    PR("pull-cylinder-r", pull.cylinder_r);
+    PR("pull-constr-tol", pull.constr_tol);
+    PS("pull-print-COM", EBOOL(pull.bPrintCOM));
+    PS("pull-print-ref-value", EBOOL(pull.bPrintRefValue));
+    PS("pull-print-components", EBOOL(pull.bPrintComp));
+    PI("pull-nstxout", pull.nstxout);
+    PI("pull-nstfout", pull.nstfout);
+    PS("pull-pbc-ref-prev-step-com", EBOOL(pull.bSetPbcRefToPrevStepCOM));
+    PS("pull-xout-average", EBOOL(pull.bXOutAverage));
+    PS("pull-fout-average", EBOOL(pull.bFOutAverage));
+    PI("pull-ngroups", pull.ngroup);
+    for (g = 0; g < pull.ngroup; g++)
     {
-        pr_pull_group(fp, indent, g, &pull->group[g]);
+        pr_pull_group(fp, indent, g, &pull.group[g]);
     }
-    PI("pull-ncoords", pull->ncoord);
-    for (g = 0; g < pull->ncoord; g++)
+    PI("pull-ncoords", pull.ncoord);
+    for (g = 0; g < pull.ncoord; g++)
     {
-        pr_pull_coord(fp, indent, g, &pull->coord[g]);
+        pr_pull_coord(fp, indent, g, &pull.coord[g]);
     }
 }
 
@@ -995,7 +968,7 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         PS("pull", EBOOL(ir->bPull));
         if (ir->bPull)
         {
-            pr_pull(fp, indent, ir->pull);
+            pr_pull(fp, indent, *ir->pull);
         }
 
         /* AWH BIASING */
@@ -1476,14 +1449,12 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
     gmx::compareKeyValueTrees(&writer, *ir1->params, *ir2->params, ftol, abstol);
 }
 
-void comp_pull_AB(FILE* fp, pull_params_t* pull, real ftol, real abstol)
+void comp_pull_AB(FILE* fp, const pull_params_t& pull, real ftol, real abstol)
 {
-    int i;
-
-    for (i = 0; i < pull->ncoord; i++)
+    for (int i = 0; i < pull.ncoord; i++)
     {
         fprintf(fp, "comparing pull coord %d\n", i);
-        cmp_real(fp, "pull-coord->k", -1, pull->coord[i].k, pull->coord[i].kB, ftol, abstol);
+        cmp_real(fp, "pull-coord->k", -1, pull.coord[i].k, pull.coord[i].kB, ftol, abstol);
     }
 }
 

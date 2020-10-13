@@ -241,20 +241,16 @@ static void do_pullgrp_tpx_pre95(gmx::ISerializer* serializer, t_pull_group* pgr
 {
     rvec tmp;
 
-    serializer->doInt(&pgrp->nat);
-    if (serializer->reading())
-    {
-        snew(pgrp->ind, pgrp->nat);
-    }
-    serializer->doIntArray(pgrp->ind, pgrp->nat);
-    serializer->doInt(&pgrp->nweight);
-    if (serializer->reading())
-    {
-        snew(pgrp->weight, pgrp->nweight);
-    }
-    serializer->doRealArray(pgrp->weight, pgrp->nweight);
+    int numAtoms = pgrp->ind.size();
+    serializer->doInt(&numAtoms);
+    pgrp->ind.resize(numAtoms);
+    serializer->doIntArray(pgrp->ind.data(), numAtoms);
+    int numWeights = pgrp->weight.size();
+    serializer->doInt(&numWeights);
+    pgrp->weight.resize(numWeights);
+    serializer->doRealArray(pgrp->weight.data(), numWeights);
     serializer->doInt(&pgrp->pbcatom);
-    serializer->doRvec(&pcrd->vec);
+    serializer->doRvec(&pcrd->vec.as_vec());
     clear_rvec(pcrd->origin);
     serializer->doRvec(&tmp);
     pcrd->init = tmp[0];
@@ -265,18 +261,14 @@ static void do_pullgrp_tpx_pre95(gmx::ISerializer* serializer, t_pull_group* pgr
 
 static void do_pull_group(gmx::ISerializer* serializer, t_pull_group* pgrp)
 {
-    serializer->doInt(&pgrp->nat);
-    if (serializer->reading())
-    {
-        snew(pgrp->ind, pgrp->nat);
-    }
-    serializer->doIntArray(pgrp->ind, pgrp->nat);
-    serializer->doInt(&pgrp->nweight);
-    if (serializer->reading())
-    {
-        snew(pgrp->weight, pgrp->nweight);
-    }
-    serializer->doRealArray(pgrp->weight, pgrp->nweight);
+    int numAtoms = pgrp->ind.size();
+    serializer->doInt(&numAtoms);
+    pgrp->ind.resize(numAtoms);
+    serializer->doIntArray(pgrp->ind.data(), numAtoms);
+    int numWeights = pgrp->weight.size();
+    serializer->doInt(&numWeights);
+    pgrp->weight.resize(numWeights);
+    serializer->doRealArray(pgrp->weight.data(), numWeights);
     serializer->doInt(&pgrp->pbcatom);
 }
 
@@ -308,14 +300,14 @@ static void do_pull_coord(gmx::ISerializer* serializer,
             }
             else
             {
-                pcrd->externalPotentialProvider = nullptr;
+                pcrd->externalPotentialProvider.clear();
             }
         }
         else
         {
             if (serializer->reading())
             {
-                pcrd->externalPotentialProvider = nullptr;
+                pcrd->externalPotentialProvider.clear();
             }
         }
         /* Note that we try to support adding new geometries without
@@ -326,7 +318,7 @@ static void do_pull_coord(gmx::ISerializer* serializer,
         serializer->doInt(&pcrd->ngroup);
         if (pcrd->ngroup <= c_pullCoordNgroupMax)
         {
-            serializer->doIntArray(pcrd->group, pcrd->ngroup);
+            serializer->doIntArray(pcrd->group.data(), pcrd->ngroup);
         }
         else
         {
@@ -342,7 +334,7 @@ static void do_pull_coord(gmx::ISerializer* serializer,
 
             pcrd->ngroup = 0;
         }
-        serializer->doIvec(&pcrd->dim);
+        serializer->doIvec(&pcrd->dim.as_vec());
     }
     else
     {
@@ -359,7 +351,7 @@ static void do_pull_coord(gmx::ISerializer* serializer,
                 serializer->doInt(&pcrd->group[2]);
                 serializer->doInt(&pcrd->group[3]);
             }
-            serializer->doIvec(&pcrd->dim);
+            serializer->doIvec(&pcrd->dim.as_vec());
         }
         else
         {
@@ -368,8 +360,8 @@ static void do_pull_coord(gmx::ISerializer* serializer,
             copy_ivec(dimOld, pcrd->dim);
         }
     }
-    serializer->doRvec(&pcrd->origin);
-    serializer->doRvec(&pcrd->vec);
+    serializer->doRvec(&pcrd->origin.as_vec());
+    serializer->doRvec(&pcrd->vec.as_vec());
     if (file_version >= tpxv_PullCoordTypeGeom)
     {
         serializer->doBool(&pcrd->bStart);
@@ -775,11 +767,8 @@ static void do_pull(gmx::ISerializer* serializer, pull_params_t* pull, int file_
     {
         pull->bSetPbcRefToPrevStepCOM = FALSE;
     }
-    if (serializer->reading())
-    {
-        snew(pull->group, pull->ngroup);
-        snew(pull->coord, pull->ncoord);
-    }
+    pull->group.resize(pull->ngroup);
+    pull->coord.resize(pull->ncoord);
     if (file_version < 95)
     {
         /* epullgPOS for position pulling, before epullgDIRPBC was removed */
@@ -803,7 +792,7 @@ static void do_pull(gmx::ISerializer* serializer, pull_params_t* pull, int file_
             }
         }
 
-        pull->bPrintCOM = (pull->group[0].nat > 0);
+        pull->bPrintCOM = (!pull->group[0].ind.empty());
     }
     else
     {
@@ -1488,9 +1477,9 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         {
             if (serializer->reading())
             {
-                snew(ir->pull, 1);
+                ir->pull = std::make_unique<pull_params_t>();
             }
-            do_pull(serializer, ir->pull, file_version, ePullOld);
+            do_pull(serializer, ir->pull.get(), file_version, ePullOld);
         }
     }
 

@@ -610,7 +610,7 @@ void pull_calc_coms(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc
                  * Note that with constraint pulling the mass does matter, but
                  * in that case a check group mass != 0 has been done before.
                  */
-                if (pgrp->params.nat == 1 && pgrp->atomSet.numAtomsLocal() == 1
+                if (pgrp->params.ind.size() == 1 && pgrp->atomSet.numAtomsLocal() == 1
                     && masses[pgrp->atomSet.localIndex()[0]] == 0)
                 {
                     GMX_ASSERT(xp == nullptr,
@@ -724,7 +724,7 @@ void pull_calc_coms(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc
         pgrp = &pull->group[g];
         if (pgrp->needToCalcCom)
         {
-            GMX_ASSERT(pgrp->params.nat > 0,
+            GMX_ASSERT(!pgrp->params.ind.empty(),
                        "Normal pull groups should have atoms, only group 0, which should have "
                        "bCalcCom=FALSE has nat=0");
 
@@ -1049,7 +1049,7 @@ void initPullComFromPrevStep(const t_commrec* cr, pull_t* pull, const real* mass
 
         if (pgrp->needToCalcCom && pgrp->epgrppbc == epgrppbcPREVSTEPCOM)
         {
-            GMX_ASSERT(pgrp->params.nat > 1,
+            GMX_ASSERT(pgrp->params.ind.size() > 1,
                        "Groups with no atoms, or only one atom, should not "
                        "use the COM from the previous step as reference.");
 

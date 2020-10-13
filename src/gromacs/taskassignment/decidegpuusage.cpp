@@ -640,7 +640,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
     {
         errorMessage += "Essential dynamics is not supported.\n";
     }
-    if (inputrec.bPull && pull_have_constraint(inputrec.pull))
+    if (inputrec.bPull && pull_have_constraint(*inputrec.pull))
     {
         errorMessage += "Constraints pulling is not supported.\n";
     }

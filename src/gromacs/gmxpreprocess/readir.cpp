@@ -45,6 +45,7 @@
 #include <cstdlib>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
 #include "gromacs/applied_forces/awh/read_params.h"
@@ -2209,8 +2210,8 @@ void get_ir(const char*     mdparin,
     ir->bPull = (get_eeenum(&inp, "pull", yesno_names, wi) != 0);
     if (ir->bPull)
     {
-        snew(ir->pull, 1);
-        inputrecStrings->pullGroupNames = read_pullparams(&inp, ir->pull, wi);
+        ir->pull                        = std::make_unique<pull_params_t>();
+        inputrecStrings->pullGroupNames = read_pullparams(&inp, ir->pull.get(), wi);
 
         if (ir->useMts)
         {
@@ -3072,7 +3073,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, char** gnames)
          * belong to different TC or VCM groups it is anyhow difficult
          * to determine the optimal nrdf assignment.
          */
-        pull = ir->pull;
+        pull = ir->pull.get();
 
         for (int i = 0; i < pull->ncoord; i++)
         {
@@ -3089,7 +3090,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, char** gnames)
 
                 pgrp = &pull->group[pull->coord[i].group[j]];
 
-                if (pgrp->nat > 0)
+                if (!pgrp->ind.empty())
                 {
                     /* Subtract 1/2 dof from each group */
                     int ai = pgrp->ind[0];
@@ -3756,9 +3757,9 @@ void do_index(const char*                   mdparin,
 
     if (ir->bPull)
     {
-        make_pull_groups(ir->pull, inputrecStrings->pullGroupNames, defaultIndexGroups, gnames);
+        process_pull_groups(ir->pull->group, inputrecStrings->pullGroupNames, defaultIndexGroups, gnames);
 
-        make_pull_coords(ir->pull);
+        checkPullCoords(ir->pull->group, ir->pull->coord);
     }
 
     if (ir->bRot)

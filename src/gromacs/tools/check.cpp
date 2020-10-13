@@ -125,7 +125,7 @@ static void comp_tpx(const char* fn1, const char* fn2, gmx_bool bRMSD, real ftol
         {
             if (ir[0]->bPull)
             {
-                comp_pull_AB(stdout, ir[0]->pull, ftol, abstol);
+                comp_pull_AB(stdout, *ir[0]->pull, ftol, abstol);
             }
             compareMtopAB(stdout, mtop[0], ftol, abstol);
         }

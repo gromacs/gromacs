@@ -138,7 +138,7 @@ void checkMtsConsistency(const t_inputrec& inputrec, warninp_t wi)
  */
 void checkPullDimParams(const std::string&   prefix,
                         AwhDimParams*        dimParams,
-                        const pull_params_t* pull_params,
+                        const pull_params_t& pull_params,
                         warninp_t            wi)
 {
     if (dimParams->coordIndex < 0)
@@ -148,18 +148,18 @@ void checkPullDimParams(const std::string&   prefix,
                   "Note that the pull coordinate indexing starts at 1.",
                   prefix.c_str());
     }
-    if (dimParams->coordIndex >= pull_params->ncoord)
+    if (dimParams->coordIndex >= pull_params.ncoord)
     {
         gmx_fatal(FARGS,
                   "The given AWH coordinate index (%d) is larger than the number of pull "
                   "coordinates (%d)",
-                  dimParams->coordIndex + 1, pull_params->ncoord);
+                  dimParams->coordIndex + 1, pull_params.ncoord);
     }
-    if (pull_params->coord[dimParams->coordIndex].rate != 0)
+    if (pull_params.coord[dimParams->coordIndex].rate != 0)
     {
         auto message = formatString(
                 "Setting pull-coord%d-rate (%g) is incompatible with AWH biasing this coordinate",
-                dimParams->coordIndex + 1, pull_params->coord[dimParams->coordIndex].rate);
+                dimParams->coordIndex + 1, pull_params.coord[dimParams->coordIndex].rate);
         warning_error(wi, message);
     }
 
@@ -178,7 +178,7 @@ void checkPullDimParams(const std::string&   prefix,
     }
 
     /* Grid params for each axis */
-    int eGeom = pull_params->coord[dimParams->coordIndex].eGeom;
+    int eGeom = pull_params.coord[dimParams->coordIndex].eGeom;
 
     /* Check that the requested interval is in allowed range */
     if (eGeom == epullgDIST)
@@ -412,7 +412,7 @@ void checkDimParams(const std::string& prefix, AwhDimParams* dimParams, const t_
                       "AWH biasing along a pull dimension is only compatible with COM pulling "
                       "turned on");
         }
-        checkPullDimParams(prefix, dimParams, ir->pull, wi);
+        checkPullDimParams(prefix, dimParams, *ir->pull, wi);
     }
     else if (dimParams->eCoordProvider == eawhcoordproviderFREE_ENERGY_LAMBDA)
     {
@@ -1068,7 +1068,7 @@ static void setStateDependentAwhPullDimParams(AwhDimParams*        dimParams,
 }
 
 void setStateDependentAwhParams(AwhParams*           awhParams,
-                                const pull_params_t* pull_params,
+                                const pull_params_t& pull_params,
                                 pull_t*              pull_work,
                                 const matrix         box,
                                 PbcType              pbcType,
@@ -1107,7 +1107,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
             AwhDimParams* dimParams = &awhBiasParams->dimParams[d];
             if (dimParams->eCoordProvider == eawhcoordproviderPULL)
             {
-                setStateDependentAwhPullDimParams(dimParams, k, d, pull_params, pull_work, pbc,
+                setStateDependentAwhPullDimParams(dimParams, k, d, &pull_params, pull_work, pbc,
                                                   compressibility, wi);
             }
             else

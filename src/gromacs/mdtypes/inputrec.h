@@ -515,7 +515,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Do we do COM pulling?
     gmx_bool bPull;
     //! The data for center of mass pulling
-    pull_params_t* pull;
+    std::unique_ptr<pull_params_t> pull;
 
     /* AWH bias data */
     //! Whether to use AWH biasing for PMF calculations
@@ -620,7 +620,7 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
 
 void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real ftol, real abstol);
 
-void comp_pull_AB(FILE* fp, pull_params_t* pull, real ftol, real abstol);
+void comp_pull_AB(FILE* fp, const pull_params_t& pull, real ftol, real abstol);
 
 
 gmx_bool inputrecDeform(const t_inputrec* ir);

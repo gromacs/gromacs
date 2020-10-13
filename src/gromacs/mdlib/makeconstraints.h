@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,7 +106,7 @@ std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t& mtop,
     GMX_RELEASE_ASSERT(!ir.bPull || pull_work != nullptr,
                        "When COM pulling is active, it must be initialized before constraints are "
                        "initialized");
-    bool doPullingWithConstraints = ir.bPull && pull_have_constraint(pull_work);
+    bool doPullingWithConstraints = ir.bPull && pull_have_constraint(*pull_work);
     if (numConstraints + numSettles == 0 && !doPullingWithConstraints && !doEssentialDynamics)
     {
         // No work, so don't make a Constraints object.
