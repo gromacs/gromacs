@@ -300,9 +300,15 @@ void gmx::LegacySimulator::do_md()
 
     gstat = global_stat_init(ir);
 
+    const auto& simulationWork     = runScheduleWork->simulationWork;
+    const bool  useGpuForPme       = simulationWork.useGpuPme;
+    const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
+    const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
+    const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
+
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fplog, top_global, constr ? constr->numFlexibleConstraints() : 0,
-                                 ir->nstcalcenergy, DOMAINDECOMP(cr));
+                                 ir->nstcalcenergy, DOMAINDECOMP(cr), useGpuForPme);
 
     {
         double io = compute_io(ir, top_global->natoms, *groups, energyOutput.numEnergyTerms(), 1);
@@ -316,16 +322,9 @@ void gmx::LegacySimulator::do_md()
     std::unique_ptr<t_state> stateInstance;
     t_state*                 state;
 
-
     gmx_localtop_t top(top_global->ffparams);
 
     auto mdatoms = mdAtoms->mdatoms();
-
-    const auto& simulationWork     = runScheduleWork->simulationWork;
-    const bool  useGpuForPme       = simulationWork.useGpuPme;
-    const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
-    const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
-    const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
     ForceBuffers f(fr->useMts, ((useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
                                        ? PinningPolicy::PinnedIfSupported

@@ -253,7 +253,12 @@ static void predict_shells(FILE*                   fplog,
     }
 }
 
-gmx_shellfc_t* init_shell_flexcon(FILE* fplog, const gmx_mtop_t* mtop, int nflexcon, int nstcalcenergy, bool usingDomainDecomposition)
+gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
+                                  const gmx_mtop_t* mtop,
+                                  int               nflexcon,
+                                  int               nstcalcenergy,
+                                  bool              usingDomainDecomposition,
+                                  bool              usingPmeOnGpu)
 {
     gmx_shellfc_t* shfc;
 
@@ -532,6 +537,16 @@ gmx_shellfc_t* init_shell_flexcon(FILE* fplog, const gmx_mtop_t* mtop, int nflex
              *    track of the shell displacements and thus the velocity.
              */
             shfc->predictShells = false;
+        }
+    }
+
+    /* shfc->x is used as a coordinate buffer for the sim_util's `do_force` function, and
+     * when using PME it must be pinned. */
+    if (usingPmeOnGpu)
+    {
+        for (i = 0; i < 2; i++)
+        {
+            changePinningPolicy(&shfc->x[i], gmx::PinningPolicy::PinnedIfSupported);
         }
     }
 

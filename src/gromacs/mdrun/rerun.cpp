@@ -112,6 +112,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/mdtypes/observableshistory.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mimic/utilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -129,7 +130,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "legacysimulator.h"
 #include "replicaexchange.h"
@@ -294,7 +294,8 @@ void gmx::LegacySimulator::do_rerun()
 
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fplog, top_global, constr ? constr->numFlexibleConstraints() : 0,
-                                 ir->nstcalcenergy, DOMAINDECOMP(cr));
+                                 ir->nstcalcenergy, DOMAINDECOMP(cr),
+                                 runScheduleWork->simulationWork.useGpuPme);
 
     {
         double io = compute_io(ir, top_global->natoms, *groups, energyOutput.numEnergyTerms(), 1);

@@ -399,8 +399,9 @@ static void init_em(FILE*                fplog,
     {
         GMX_ASSERT(shellfc != nullptr, "With NM we always support shells");
 
-        *shellfc = init_shell_flexcon(stdout, top_global, constr ? constr->numFlexibleConstraints() : 0,
-                                      ir->nstcalcenergy, DOMAINDECOMP(cr));
+        *shellfc =
+                init_shell_flexcon(stdout, top_global, constr ? constr->numFlexibleConstraints() : 0,
+                                   ir->nstcalcenergy, DOMAINDECOMP(cr), thisRankHasDuty(cr, DUTY_PME));
     }
     else
     {

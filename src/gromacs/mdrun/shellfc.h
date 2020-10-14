@@ -72,14 +72,23 @@ class MdrunScheduleWorkload;
 class VirtualSitesHandler;
 } // namespace gmx
 
-/* Initialization function, also predicts the initial shell postions.
- * Returns a pointer to an initialized shellfc object.
+/*! \brief Initialization function, also predicts the initial shell positions.
+ *
+ * \param fplog Pointer to the log stream. Can be set to \c nullptr to disable verbose log.
+ * \param mtop Pointer to a global system topology object.
+ * \param nflexcon Number of flexible constraints.
+ * \param nstcalcenergy How often are energies calculated. Must be provided for sanity check.
+ * \param usingDomainDecomposition Whether domain decomposition is used. Must be provided for sanity check.
+ * \param usingPmeOnGpu Set to true if GPU will be used for PME calculations. Necessary for proper buffer initialization.
+ *
+ * \returns a pointer to an initialized \c shellfc object.
  */
 gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                   const gmx_mtop_t* mtop,
                                   int               nflexcon,
                                   int               nstcalcenergy,
-                                  bool              usingDomainDecomposition);
+                                  bool              usingDomainDecomposition,
+                                  bool              usingPmeOnGpu);
 
 /* Optimize shell positions */
 void relax_shell_flexcon(FILE*                               log,

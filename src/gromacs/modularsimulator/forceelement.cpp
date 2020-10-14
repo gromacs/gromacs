@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "energydata.h"
@@ -93,7 +94,8 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                                 globalTopology,
                                 constr ? constr->numFlexibleConstraints() : 0,
                                 inputrec->nstcalcenergy,
-                                DOMAINDECOMP(cr))),
+                                DOMAINDECOMP(cr),
+                                runScheduleWork->simulationWork.useGpuPme)),
     doShellFC_(shellfc_ != nullptr),
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
