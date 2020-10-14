@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,18 +49,22 @@
 #define GMX_TESTUTILS_TESTMATCHERS_H
 
 #include <memory>
+#include <ostream>
+#include <tuple>
 
 #include <gmock/gmock.h>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
-
-#include "testutils/testasserts.h"
 
 namespace gmx
 {
+template<typename T>
+class BasicVector;
+
 namespace test
 {
+
+class FloatingPointTolerance;
 
 /*! \brief Make matcher for floats for use with GoogleMock that compare
  * equal when \c tolerance is satisifed.
@@ -96,7 +100,7 @@ testing::Matcher<std::tuple<real, real>> RealEq(const FloatingPointTolerance& to
  *
  *   EXPECT_THAT(testRVecs, Pointwise(RVecEq(tolerance), referenceRVecs));
  */
-testing::Matcher<std::tuple<RVec, RVec>> RVecEq(const FloatingPointTolerance& tolerance);
+testing::Matcher<std::tuple<BasicVector<real>, BasicVector<real>>> RVecEq(const FloatingPointTolerance& tolerance);
 
 } // namespace test
 } // namespace gmx

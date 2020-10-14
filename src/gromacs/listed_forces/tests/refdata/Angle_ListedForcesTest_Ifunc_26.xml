@@ -1,38 +1,40 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <FunctionType Name="G96ANGLES">
+  <FunctionType Name="UREY_BRADLEY">
     <FEP Name="No">
-      <Real Name="Epot ">498125.34538738325</Real>
+      <Real Name="Epot ">9860.1743948700041</Real>
       <Real Name="dVdlambda ">0</Real>
-      <Vector Name="Central shift forces">
-        <Real Name="X">0</Real>
-        <Real Name="Y">-3.637978807091713e-12</Real>
-        <Real Name="Z">0</Real>
-      </Vector>
       <Sequence Name="Forces">
         <Int Name="Length">4</Int>
         <Vector>
-          <Real Name="X">16747.371188545843</Real>
-          <Real Name="Y">-26734.979425290359</Real>
-          <Real Name="Z">0</Real>
+          <Real Name="X">-1465.5870841179496</Real>
+          <Real Name="Y">4074.7982980216202</Real>
+          <Real Name="Z">-798.30882378528554</Real>
         </Vector>
         <Vector>
-          <Real Name="X">3988.9350381792437</Real>
-          <Real Name="Y">69693.93550687992</Real>
-          <Real Name="Z">0</Real>
+          <Real Name="X">8010.9417951651058</Real>
+          <Real Name="Y">-6232.0682469665298</Real>
+          <Real Name="Z">-4688.3343455315126</Real>
         </Vector>
         <Vector>
-          <Real Name="X">-13515.625099291279</Real>
-          <Real Name="Y">-36868.161487543934</Real>
-          <Real Name="Z">0</Real>
+          <Real Name="X">-8031.5108745884772</Real>
+          <Real Name="Y">6221.5266115090999</Real>
+          <Real Name="Z">4663.9613111201325</Real>
         </Vector>
         <Vector>
-          <Real Name="X">-7220.6811274338088</Real>
-          <Real Name="Y">-6090.7945940456275</Real>
-          <Real Name="Z">0</Real>
+          <Real Name="X">1486.1561635413213</Real>
+          <Real Name="Y">-4064.2566625641912</Real>
+          <Real Name="Z">822.68185819666553</Real>
         </Vector>
       </Sequence>
+      <Shift-Forces Name="Shift-forces">
+        <Vector Name="Central">
+          <Real Name="X">4.5474735088646412e-13</Real>
+          <Real Name="Y">4.5474735088646412e-13</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Shift-Forces>
     </FEP>
   </FunctionType>
 </ReferenceData>

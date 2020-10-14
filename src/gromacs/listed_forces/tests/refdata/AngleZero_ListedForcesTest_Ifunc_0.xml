@@ -5,11 +5,6 @@
     <FEP Name="No">
       <Real Name="Epot ">84.797965428018102</Real>
       <Real Name="dVdlambda ">0</Real>
-      <Vector Name="Central shift forces">
-        <Real Name="X">-2.1316282072803006e-14</Real>
-        <Real Name="Y">-1.7763568394002505e-15</Real>
-        <Real Name="Z">0</Real>
-      </Vector>
       <Sequence Name="Forces">
         <Int Name="Length">4</Int>
         <Vector>
@@ -33,6 +28,13 @@
           <Real Name="Z">-166.17852018005416</Real>
         </Vector>
       </Sequence>
+      <Shift-Forces Name="Shift-forces">
+        <Vector Name="Central">
+          <Real Name="X">-2.1316282072803006e-14</Real>
+          <Real Name="Y">-1.7763568394002505e-15</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Shift-Forces>
     </FEP>
   </FunctionType>
 </ReferenceData>

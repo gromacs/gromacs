@@ -36,6 +36,11 @@
  * \brief
  * Implements test of bonded force routines
  *
+ *
+ * \todo We should re-work this. For example, a harmonic bond
+ * has so few computations that force components should be
+ * accurate to a small *and computed* relative error.
+ *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_listed_forces
  */
@@ -59,6 +64,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
@@ -67,6 +73,8 @@
 #include "testutils/testasserts.h"
 
 namespace gmx
+{
+namespace test
 {
 namespace
 {
@@ -95,19 +103,15 @@ struct OutputQuantities
  * \param[in] output  The output from the test to check
  * \param[in] bondedKernelFlavor  Flavor for determining what output to check
  */
-void checkOutput(test::TestReferenceChecker* checker,
-                 const OutputQuantities&     output,
-                 const BondedKernelFlavor    bondedKernelFlavor)
+void checkOutput(TestReferenceChecker*    checker,
+                 const OutputQuantities&  output,
+                 const BondedKernelFlavor bondedKernelFlavor)
 {
     if (computeEnergy(bondedKernelFlavor))
     {
         checker->checkReal(output.energy, "Epot ");
         // Should still be zero when not doing FEP, so may as well test it.
         checker->checkReal(output.dvdlambda, "dVdlambda ");
-    }
-    if (computeVirial(bondedKernelFlavor))
-    {
-        checker->checkVector(output.fshift[CENTRAL], "Central shift forces");
     }
     checker->checkSequence(std::begin(output.f), std::end(output.f), "Forces");
 }
@@ -527,13 +531,14 @@ class ListedForcesTest :
     public ::testing::TestWithParam<std::tuple<iListInput, PaddedVector<RVec>, PbcType>>
 {
 protected:
-    matrix                     box_;
-    t_pbc                      pbc_;
-    PaddedVector<RVec>         x_;
-    PbcType                    pbcType_;
-    iListInput                 input_;
-    test::TestReferenceData    refData_;
-    test::TestReferenceChecker checker_;
+    matrix                 box_;
+    t_pbc                  pbc_;
+    PaddedVector<RVec>     x_;
+    PbcType                pbcType_;
+    iListInput             input_;
+    TestReferenceData      refData_;
+    TestReferenceChecker   checker_;
+    FloatingPointTolerance shiftForcesTolerance_ = defaultRealTolerance();
     ListedForcesTest() : checker_(refData_.rootChecker())
     {
         input_   = std::get<0>(GetParam());
@@ -545,17 +550,33 @@ protected:
         // We need quite specific tolerances here since angle functions
         // etc. are not very precise and reproducible.
         test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(
-                input_.ftoler, 1.0e-6, input_.dtoler, 1.0e-12, 10000, 100, false));
+                input_.ftoler, input_.dtoler, 1.0e-6, 1.0e-12, 10000, 100, false));
         checker_.setDefaultTolerance(tolerance);
+        // The SIMD acos() is only accurate to 2-3 ULP, so the angles
+        // computed by it and the non-SIMD code paths (that use
+        // std::acos) differ by enough to require quite large
+        // tolerances for the shift forces in mixed precision.
+        float singleShiftForcesAbsoluteTolerance =
+                ((input_.ftype == F_POLARIZATION) || (input_.ftype == F_ANHARM_POL)
+                                 || (IS_ANGLE(input_.ftype))
+                         ? 5e-3
+                         : 5e-5);
+        // Note that std::numeric_limits isn't required by the standard to
+        // have an implementation for uint64_t(!) but this is likely to
+        // work because that type is likely to be a typedef for one of
+        // the other numerical types that happens to be 64-bits wide.
+        shiftForcesTolerance_ = FloatingPointTolerance(singleShiftForcesAbsoluteTolerance, 1e-8, 1e-6,
+                                                       1e-12, std::numeric_limits<uint64_t>::max(),
+                                                       std::numeric_limits<uint64_t>::max(), false);
     }
-    void testOneIfunc(test::TestReferenceChecker* checker, const std::vector<t_iatom>& iatoms, const real lambda)
+    void testOneIfunc(TestReferenceChecker* checker, const std::vector<t_iatom>& iatoms, const real lambda)
     {
-        SCOPED_TRACE(std::string("Testing PBC ") + c_pbcTypeNames[pbcType_]);
+        SCOPED_TRACE(std::string("Testing PBC type: ") + c_pbcTypeNames[pbcType_]);
         std::vector<int>  ddgatindex = { 0, 1, 2, 3 };
         std::vector<real> chargeA    = { 1.5, -2.0, 1.5, -1.0 };
         t_mdatoms         mdatoms    = { 0 };
         mdatoms.chargeA              = chargeA.data();
-        /* Here we run both the standard, plain-C force+shift-forcs+energy+free-energy
+        /* Here we run both the standard, plain-C force+shift-forces+energy+free-energy
          * kernel flavor and the potentially optimized, with SIMD and less output,
          * force only kernels. Note that we also run the optimized kernel for free-energy
          * input when lambda=0, as the force output should match the non free-energy case.
@@ -567,6 +588,7 @@ protected:
         }
         for (const auto flavor : flavors)
         {
+            SCOPED_TRACE("Testing bonded kernel flavor: " + c_bondedKernelFlavorStrings[flavor]);
             OutputQuantities output;
             output.energy =
                     calculateSimpleBond(input_.ftype, iatoms.size(), iatoms.data(), &input_.iparams,
@@ -577,11 +599,23 @@ protected:
             // and bonded functions.
             EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0))) << "dvdlambda was " << output.dvdlambda;
             checkOutput(checker, output, flavor);
+            auto shiftForcesChecker = checker->checkCompound("Shift-Forces", "Shift-forces");
+            if (computeVirial(flavor))
+            {
+                shiftForcesChecker.setDefaultTolerance(shiftForcesTolerance_);
+                shiftForcesChecker.checkVector(output.fshift[CENTRAL], "Central");
+            }
+            else
+            {
+                // Permit omitting to compare shift forces with
+                // reference data when that is useless.
+                shiftForcesChecker.disableUnusedEntriesCheck();
+            }
         }
     }
     void testIfunc()
     {
-        test::TestReferenceChecker thisChecker =
+        TestReferenceChecker thisChecker =
                 checker_.checkCompound("FunctionType", interaction_function[input_.ftype].name)
                         .checkCompound("FEP", (input_.fep ? "Yes" : "No"));
         std::vector<t_iatom> iatoms;
@@ -610,7 +644,7 @@ TEST_P(ListedForcesTest, Ifunc)
 
 //! Function types for testing bonds. Add new terms at the end.
 std::vector<iListInput> c_InputBonds = {
-    { iListInput().setHarmonic(F_BONDS, 0.15, 500.0) },
+    { iListInput(2e-6F, 1e-8).setHarmonic(F_BONDS, 0.15, 500.0) },
     { iListInput(2e-6F, 1e-8).setHarmonic(F_BONDS, 0.15, 500.0, 0.17, 400.0) },
     { iListInput(1e-4F, 1e-8).setHarmonic(F_G96BONDS, 0.15, 50.0) },
     { iListInput().setHarmonic(F_G96BONDS, 0.15, 50.0, 0.17, 40.0) },
@@ -685,11 +719,42 @@ std::vector<iListInput> c_InputAnglesZeroAngle = {
     { iListInput(2e-3, 1e-8).setHarmonic(F_ANGLES, 0.0, 50.0) },
 };
 
-//! Coordinates for testing
+} // namespace
+} // namespace test
+
+//! Print an RVec to \c os
+static void PrintTo(const RVec& value, std::ostream* os)
+{
+    *os << value[XX] << " " << value[YY] << " " << value[ZZ] << std::endl;
+}
+
+//! Print a padded vector of RVec to \c os
+static void PrintTo(const PaddedVector<RVec>& vector, std::ostream* os)
+{
+    if (vector.empty())
+    {
+        *os << "Empty vector" << std::endl;
+    }
+    else
+    {
+        *os << "Vector of RVec containing:" << std::endl;
+        std::for_each(vector.begin(), vector.end(), [os](const RVec& v) { PrintTo(v, os); });
+    }
+}
+
+namespace test
+{
+namespace
+{
+
+/*! \brief Coordinates for testing
+ *
+ * Taken from a butane molecule, so we have some
+ * normal-sized bonds and angles to test.
+ *
+ * \todo Test also some weirder values */
 std::vector<PaddedVector<RVec>> c_coordinatesForTests = {
-    { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.2 }, { 0.005, 0.0, 0.1 }, { -0.001, 0.1, 0.0 } },
-    { { 0.5, 0.0, 0.0 }, { 0.5, 0.0, 0.15 }, { 0.5, 0.07, 0.22 }, { 0.5, 0.18, 0.22 } },
-    { { -0.1143, -0.0282, 0.0 }, { 0.0, 0.0434, 0.0 }, { 0.1185, -0.0138, 0.0 }, { -0.0195, 0.1498, 0.0 } }
+    { { 1.382, 1.573, 1.482 }, { 1.281, 1.559, 1.596 }, { 1.292, 1.422, 1.663 }, { 1.189, 1.407, 1.775 } }
 };
 
 //! Coordinates for testing bonds with zero length
@@ -749,6 +814,9 @@ INSTANTIATE_TEST_CASE_P(AngleZero,
                                            ::testing::ValuesIn(c_coordinatesForTestsZeroAngle),
                                            ::testing::ValuesIn(c_pbcForTests)));
 #endif
+
 } // namespace
+
+} // namespace test
 
 } // namespace gmx

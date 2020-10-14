@@ -48,6 +48,8 @@
 #ifndef GMX_LISTED_FORCES_BONDED_H
 #define GMX_LISTED_FORCES_BONDED_H
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -57,6 +59,12 @@ struct t_fcdata;
 struct t_mdatom;
 struct t_nrnb;
 struct t_pbc;
+
+namespace gmx
+{
+template<typename EnumType, typename DataType, EnumType ArraySize>
+struct EnumerationArray;
+} // namespace gmx
 
 /*! \brief Calculate bond-angle. No PBC is taken into account (use mol-shift) */
 real bond_angle(const rvec          xi,
@@ -130,6 +138,9 @@ enum class BondedKernelFlavor
     ForcesAndEnergy,          //!< Compute forces and energy (no SIMD)
     Count                     //!< The number of flavors
 };
+
+//! Helper strings for human-readable messages
+extern const gmx::EnumerationArray<BondedKernelFlavor, std::string, BondedKernelFlavor::Count> c_bondedKernelFlavorStrings;
 
 /*! \brief Returns whether the energy should be computed */
 static constexpr inline bool computeEnergy(const BondedKernelFlavor flavor)

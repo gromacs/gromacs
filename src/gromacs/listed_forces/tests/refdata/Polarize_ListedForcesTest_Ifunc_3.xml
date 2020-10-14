@@ -1,38 +1,40 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <FunctionType Name="POLARIZATION">
+  <FunctionType Name="ANHARM_POL">
     <FEP Name="No">
-      <Real Name="Epot ">71.870154443958413</Real>
+      <Real Name="Epot ">9061.4988273934287</Real>
       <Real Name="dVdlambda ">0</Real>
-      <Vector Name="Central shift forces">
-        <Real Name="X">0</Real>
-        <Real Name="Y">0</Real>
-        <Real Name="Z">0</Real>
-      </Vector>
       <Sequence Name="Forces">
         <Int Name="Length">4</Int>
         <Vector>
-          <Real Name="X">0</Real>
-          <Real Name="Y">0</Real>
-          <Real Name="Z">694.67728822190975</Real>
+          <Real Name="X">-43184.534653411836</Real>
+          <Real Name="Y">-5985.9751004729342</Real>
+          <Real Name="Z">48742.94010385104</Real>
         </Vector>
         <Vector>
-          <Real Name="X">0</Real>
-          <Real Name="Y">182.35278815825134</Real>
-          <Real Name="Z">-512.32450006365843</Real>
+          <Real Name="X">45830.486683690593</Real>
+          <Real Name="Y">-26968.15473118033</Real>
+          <Real Name="Z">-32626.686828516977</Real>
         </Vector>
         <Vector>
-          <Real Name="X">0</Real>
-          <Real Name="Y">-54.995285317567891</Real>
-          <Real Name="Z">-182.35278815825134</Real>
+          <Real Name="X">-13661.730289437786</Real>
+          <Real Name="Y">31349.890279348561</Real>
+          <Real Name="Z">-4137.931284792221</Real>
         </Vector>
         <Vector>
-          <Real Name="X">0</Real>
-          <Real Name="Y">-127.35750284068345</Real>
-          <Real Name="Z">0</Real>
+          <Real Name="X">11015.778259159028</Real>
+          <Real Name="Y">1604.2395523047028</Real>
+          <Real Name="Z">-11978.321990541845</Real>
         </Vector>
       </Sequence>
+      <Shift-Forces Name="Shift-forces">
+        <Vector Name="Central">
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Shift-Forces>
     </FEP>
   </FunctionType>
 </ReferenceData>

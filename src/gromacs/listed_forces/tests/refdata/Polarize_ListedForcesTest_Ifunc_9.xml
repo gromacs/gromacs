@@ -1,38 +1,40 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <FunctionType Name="ANHARM_POL">
+  <FunctionType Name="WATERPOL">
     <FEP Name="No">
-      <Real Name="Epot ">10827.481927136052</Real>
+      <Real Name="Epot ">14717.237650282059</Real>
       <Real Name="dVdlambda ">0</Real>
-      <Vector Name="Central shift forces">
-        <Real Name="X">0</Real>
-        <Real Name="Y">0</Real>
-        <Real Name="Z">0</Real>
-      </Vector>
       <Sequence Name="Forces">
         <Int Name="Length">4</Int>
         <Vector>
+          <Real Name="X">-37707.951551295511</Real>
+          <Real Name="Y">-32432.745893860392</Real>
+          <Real Name="Z">57245.750282536748</Real>
+        </Vector>
+        <Vector>
           <Real Name="X">0</Real>
           <Real Name="Y">0</Real>
-          <Real Name="Z">85527.567242573539</Real>
+          <Real Name="Z">0</Real>
         </Vector>
         <Vector>
-          <Real Name="X">1202.4530362509595</Real>
+          <Real Name="X">0</Real>
           <Real Name="Y">0</Real>
-          <Real Name="Z">-109576.62796759274</Real>
+          <Real Name="Z">0</Real>
         </Vector>
         <Vector>
-          <Real Name="X">-1844.0698225446922</Real>
-          <Real Name="Y">10693.613104895545</Real>
-          <Real Name="Z">13355.447620123645</Real>
-        </Vector>
-        <Vector>
-          <Real Name="X">641.61678629373273</Real>
-          <Real Name="Y">-10693.613104895545</Real>
-          <Real Name="Z">10693.613104895545</Real>
+          <Real Name="X">37707.951551295511</Real>
+          <Real Name="Y">32432.745893860392</Real>
+          <Real Name="Z">-57245.750282536748</Real>
         </Vector>
       </Sequence>
+      <Shift-Forces Name="Shift-forces">
+        <Vector Name="Central">
+          <Real Name="X">0</Real>
+          <Real Name="Y">0</Real>
+          <Real Name="Z">0</Real>
+        </Vector>
+      </Shift-Forces>
     </FEP>
   </FunctionType>
 </ReferenceData>
