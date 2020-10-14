@@ -80,7 +80,12 @@ TEST(NBlibTest, SpcMethanolForcesAreCorrect)
     gmx::ArrayRef<Vec3> forces(simState.forces());
     ASSERT_NO_THROW(forceCalculator.compute(simState.coordinates(), forces));
 
-    Vector3DTest forcesOutputTest;
+    /* Use higher-than-usual tolerance for forces. Some of the particles in the test systems are
+     * very close to each other, and, for example, the distance between the first two particles
+     * is approx. 0.13 and already has relative uncertainty around 1e-6. */
+    gmx::test::FloatingPointTolerance forceTolerance(1.0e-5, 1.0e-9, 1e-4, 1.0e-9, 1000, 1000, true);
+
+    Vector3DTest forcesOutputTest(forceTolerance);
     forcesOutputTest.testVectors(forces, "SPC-methanol forces");
 }
 

@@ -76,6 +76,12 @@ public:
         checker_.setDefaultTolerance(tolerance);
     }
 
+    explicit Vector3DTest(const gmx::test::FloatingPointTolerance& tolerance) :
+        checker_(refData_.rootChecker())
+    {
+        checker_.setDefaultTolerance(tolerance);
+    }
+
     //! Compare a given input vector of cartesians with the reference data
     void testVectors(gmx::ArrayRef<Vec3> forces, const std::string& testString)
     {
