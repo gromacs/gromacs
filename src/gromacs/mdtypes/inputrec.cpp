@@ -478,7 +478,7 @@ static void pr_pull_coord(FILE* fp, int indent, int c, const t_pull_coord* pcrd)
     PS("geometry", EPULLGEOM(pcrd->eGeom));
     for (g = 0; g < pcrd->ngroup; g++)
     {
-        char buf[10];
+        char buf[STRLEN];
 
         sprintf(buf, "group[%d]", g);
         PI(buf, pcrd->group[g]);
