@@ -314,15 +314,19 @@ void BiasState::calcConvolvedPmf(const std::vector<DimParams>& dimParams,
         const GridPoint& point             = grid.point(m);
         for (auto& neighbor : point.neighbor)
         {
-            /* The negative PMF is a positive bias. */
-            double biasNeighbor = -pmf[neighbor];
+            /* Do not convolve the bias along a lambda axis - only use the pmf from the current point */
+            if (!pointsHaveDifferentLambda(grid, m, neighbor))
+            {
+                /* The negative PMF is a positive bias. */
+                double biasNeighbor = -pmf[neighbor];
 
-            /* Add the convolved PMF weights for the neighbors of this point.
-               Note that this function only adds point within the target > 0 region.
-               Sum weights, take the logarithm last to get the free energy. */
-            double logWeight = biasedLogWeightFromPoint(dimParams, points_, grid, neighbor,
-                                                        biasNeighbor, point.coordValue, {}, m);
-            freeEnergyWeights += std::exp(logWeight);
+                /* Add the convolved PMF weights for the neighbors of this point.
+                Note that this function only adds point within the target > 0 region.
+                Sum weights, take the logarithm last to get the free energy. */
+                double logWeight = biasedLogWeightFromPoint(dimParams, points_, grid, neighbor,
+                                                            biasNeighbor, point.coordValue, {}, m);
+                freeEnergyWeights += std::exp(logWeight);
+            }
         }
 
         GMX_RELEASE_ASSERT(freeEnergyWeights > 0,
