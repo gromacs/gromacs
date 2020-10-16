@@ -1089,8 +1089,10 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
     if ((runScheduleWork->domainWork.haveCpuLocalForceWork || havePPDomainDecomposition(cr))
         && !runScheduleWork->simulationWork.useGpuHaloExchange)
     {
+        auto forcesReadyLocality = havePPDomainDecomposition(cr) ? AtomLocality::Local : AtomLocality::All;
+        const bool useGpuForceBufferOps = true;
         fr->gpuForceReduction[gmx::AtomLocality::Local]->addDependency(
-                stateGpu->getForcesReadyOnDeviceEvent(AtomLocality::Local, true));
+                stateGpu->getForcesReadyOnDeviceEvent(forcesReadyLocality, useGpuForceBufferOps));
     }
 
     if (runScheduleWork->simulationWork.useGpuHaloExchange)
