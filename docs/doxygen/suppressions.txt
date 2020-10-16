@@ -37,6 +37,9 @@ src/gromacs/nbnxm/kernels_simd_4xm/kernel_common.h: warning: should include "nbn
 # This seems to be a false positive
 src/gromacs/nbnxm/cuda/nbnxm_cuda_types.h: error: NbnxmGpu: is in internal file(s), but appears in public documentation
 
+# False positive caused by forward-declaration of BasicVector in src/testutils/refdata.h
+src/gromacs/math/vectypes.h: error: gmx::BasicVector: is in library file(s), but appears in public documentation
+
 # Temporary while we change the SIMD implementation
 src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"
 

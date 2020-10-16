@@ -288,7 +288,8 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet gmx_unused& gridSet,
  * \param[in,out] gpu_nbv          The nonbonded data GPU structure.
  * \param[in]     d_x              Device-side coordinates in plain rvec format.
  * \param[in]     xReadyOnDevice   Event synchronizer indicating that the coordinates are ready in
- * the device memory. \param[in]     locality         Copy coordinates for local or non-local atoms.
+ * the device memory.
+ * \param[in]     locality         Copy coordinates for local or non-local atoms.
  * \param[in]     gridId           Index of the grid being converted.
  * \param[in]     numColumnsMax    Maximum number of columns in the grid.
  */

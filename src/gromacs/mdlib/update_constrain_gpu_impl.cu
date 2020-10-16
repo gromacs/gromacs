@@ -72,7 +72,7 @@ namespace gmx
 {
 /*!\brief Number of CUDA threads in a block
  *
- * \todo Check if using smaller block size will lead to better prformance.
+ * \todo Check if using smaller block size will lead to better performance.
  */
 constexpr static int c_threadsPerBlock = 256;
 //! Maximum number of threads in a block (for __launch_bounds__)
@@ -163,7 +163,7 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
     launchGpuKernel(scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, deviceStream_,
                     nullptr, "scaleCoordinates_kernel", kernelArgs);
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
-    //       can affect the perfornamce if nstpcouple is small.
+    //       can affect the performance if nstpcouple is small.
     deviceStream_.synchronize();
 }
 
@@ -182,7 +182,7 @@ void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
     launchGpuKernel(scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, deviceStream_,
                     nullptr, "scaleCoordinates_kernel", kernelArgs);
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
-    //       can affect the perfornamce if nstpcouple is small.
+    //       can affect the performance if nstpcouple is small.
     deviceStream_.synchronize();
 }
 

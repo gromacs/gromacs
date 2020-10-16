@@ -69,7 +69,6 @@ struct gmx_wallclock_gpu_nbnxn_t;
 //! Define 1/sqrt(pi)
 #define M_FLOAT_1_SQRTPI 0.564189583547756f
 
-/*! @} */
 /*! \brief Constants for platform-dependent defaults for the prune kernel's j4 processing concurrency.
  *
  *  Initialized using macros that can be overridden at compile-time (using #GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY).

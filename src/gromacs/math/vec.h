@@ -636,9 +636,9 @@ std::remove_const_t<T> norm2(T* v)
 {
     return ::norm2(v);
 }
+/*! \} */
 
 } // namespace gmx
 
-/*! \} */
 
 #endif

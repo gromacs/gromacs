@@ -69,7 +69,7 @@ namespace gmx
 
 /*!\brief Number of CUDA threads in a block
  *
- * \todo Check if using smaller block size will lead to better prformance.
+ * \todo Check if using smaller block size will lead to better performance.
  */
 constexpr static int c_threadsPerBlock = 256;
 //! Maximum number of threads in a block (for __launch_bounds__)

@@ -68,7 +68,7 @@ namespace gmx
 /*! \addtogroup module_simd */
 /*! \{ */
 
-/* \name Higher-level SIMD utility functions, double precision.
+/*! \name Higher-level SIMD utility functions, double precision.
  *
  * These include generic functions to work with triplets of data, typically
  * coordinates, and a few utility functions to load and update data in the

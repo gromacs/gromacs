@@ -105,7 +105,7 @@ void warning_error(warninp_t wi, const std::string& s);
  * This is intended for use where there is no way to produce a data
  * structure that would prevent execution from segfaulting. */
 [[noreturn]] void warning_error_and_exit(warninp_t wi, const char* s, int f_errno, const char* file, int line);
-//! \copydoc warning_error_and_exit(warninp_t, const char *, int, const char *, int);
+//! \copydoc warning_error_and_exit(warninp_t,const char *,int,const char *,int)
 [[noreturn]] void
 warning_error_and_exit(warninp_t wi, const std::string& s, int f_errno, const char* file, int line);
 

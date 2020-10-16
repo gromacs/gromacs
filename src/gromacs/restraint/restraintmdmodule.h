@@ -76,16 +76,14 @@ public:
     /*!
      * \brief Wrap a restraint potential as an MDModule
      *
-     * \param restraint shared ownership of an object for calculating restraint forces.
-     * \return new wrapper object sharing ownership of restraint.
-     *
      * Consumers of the interfaces provided by an IMDModule do not extend the lifetime
      * of the interface objects returned by mdpOptionProvider(), outputProvider(), or
      * registered via initForceProviders(). Calling code must keep this object alive
      * as long as those interfaces are needed (probably the duration of an MD run).
      *
-     * \param restraint handle to object to wrap
+     * \param restraint shared ownership of an object for calculating restraint forces
      * \param sites list of sites for the framework to pass to the restraint
+     * \return new wrapper object sharing ownership of restraint
      */
     static std::unique_ptr<RestraintMDModule> create(std::shared_ptr<gmx::IRestraintPotential> restraint,
                                                      const std::vector<int>& sites);

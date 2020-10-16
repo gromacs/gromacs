@@ -602,7 +602,7 @@ static inline SimdSetZeroProxy gmx_simdcall setZero()
 
 namespace internal
 {
-// TODO: Don't foward function but properly rename them and use proper traits
+// TODO: Don't forward function but properly rename them and use proper traits
 template<typename T>
 struct Simd4Traits
 {
@@ -756,7 +756,7 @@ using Simd4NReal = Simd4NFloat;
 
 } // namespace gmx
 
-// \}          end of module_simd
+//! \}          end of module_simd
 
 //! \endcond   end of condition libapi
 

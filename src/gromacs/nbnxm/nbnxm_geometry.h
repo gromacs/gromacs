@@ -52,7 +52,7 @@
 #include "pairlist.h"
 
 
-/*! \copybrief Returns the base-2 log of n.
+/*! \brief Returns the base-2 log of n.
  * *
  * Generates a fatal error when n is not an integer power of 2.
  */

@@ -293,7 +293,14 @@ private:
     iterator end_;
 };
 
-//! \copydoc ArrayRef::fromArray()
+/*! \brief
+ * Constructs a reference to a C array.
+ *
+ * \param[in] begin  Pointer to the beginning of array.
+ * \param[in] size   Number of elements in array.
+ *
+ * Passed array must remain valid for the lifetime of this object.
+ */
 //! \related ArrayRef
 template<typename T>
 ArrayRef<T> arrayRefFromArray(T* begin, size_t size)
@@ -301,7 +308,7 @@ ArrayRef<T> arrayRefFromArray(T* begin, size_t size)
     return ArrayRef<T>(begin, begin + size);
 }
 
-//! \copydoc ArrayRef::fromArray()
+//! \copydoc arrayRefFromArray
 //! \related ArrayRef
 template<typename T>
 ArrayRef<const T> constArrayRefFromArray(const T* begin, size_t size)

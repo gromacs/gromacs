@@ -64,7 +64,7 @@ public:
      * \param[in] kernelShapeParameters determine the shape of the spreading kernel
      */
     explicit Impl(const GaussianSpreadKernelParameters::Shape& kernelShapeParameters);
-    //! \copydoc DensityFittingForce::evaluateForce(const DensitySpreadKernelParameters::PositionAndAmplitude & localParameters, basic_mdspan<const float, dynamicExtents3D> densityDerivative)
+    //! \copydoc DensityFittingForce::evaluateForce
     RVec evaluateForce(const GaussianSpreadKernelParameters::PositionAndAmplitude& localParameters,
                        basic_mdspan<const float, dynamicExtents3D> densityDerivative);
     //! The width of the Gaussian in lattice spacing units

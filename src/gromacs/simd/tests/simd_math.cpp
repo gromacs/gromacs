@@ -448,13 +448,12 @@ void SimdMathTest::generateTestPointsTest()
 
 // Actual math function tests below
 
-
-namespace
-{
-
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
+
+namespace
+{
 
 // Reference data is selected based on test name, so make the test name precision-dependent
 #        if GMX_DOUBLE

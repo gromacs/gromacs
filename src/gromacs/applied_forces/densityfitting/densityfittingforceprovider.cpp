@@ -146,7 +146,7 @@ void DensityFittingForceProviderState::broadcastState(MPI_Comm communicator, boo
 class DensityFittingForceProvider::Impl
 {
 public:
-    //! \copydoc DensityFittingForceProvider(const DensityFittingParameters &parameters)
+    //! \copydoc DensityFittingForceProvider::DensityFittingForceProvider
     Impl(const DensityFittingParameters&             parameters,
          basic_mdspan<const float, dynamicExtents3D> referenceDensity,
          const TranslateAndScale&                    transformationToDensityLattice,

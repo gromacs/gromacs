@@ -94,7 +94,7 @@
 /*! \brief
  * CUDA only
  * Atom limit above which it is advantageous to turn on the
- * recalcuating of the splines in the gather and using less threads per atom in the spline and spread
+ * recalculating of the splines in the gather and using less threads per atom in the spline and spread
  */
 constexpr int c_pmeGpuPerformanceAtomLimit = 23000;
 

@@ -5050,7 +5050,7 @@ static inline SimdFloat gmx_simdcall expSingleAccuracy(SimdFloat x)
 
 /*! \brief SIMD pow(x,y), only targeting single accuracy.
  *
- * \copydetails pow(SimdFloat)
+ * \copydetails pow(SimdFloat,SimdFloat)
  */
 template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall powSingleAccuracy(SimdFloat x, SimdFloat y)

@@ -65,7 +65,7 @@ namespace gmx
  *
  * Output data contains a column for each data set in the input data, and a
  * frame for each column in the input data.  If different data sets have
- * different number of columns, the frame count accomodates the largest data
+ * different number of columns, the frame count accommodates the largest data
  * set.  Other columns are padded with zero values that are additionally marked
  * as missing.
  * Each value in the output data is the average of the corresponding

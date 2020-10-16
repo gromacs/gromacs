@@ -228,7 +228,7 @@ public:
     //! \}
 
     PaddedVector() : storage_(), unpaddedEnd_(begin()) {}
-    /*! \brief Constructor that specifes the initial size. */
+    /*! \brief Constructor that specifies the initial size. */
     explicit PaddedVector(size_type count, const allocator_type& allocator = Allocator()) :
         storage_(count, allocator),
         unpaddedEnd_(begin() + count)
@@ -237,7 +237,7 @@ public:
         // the padding elements are added
         resizeWithPadding(count);
     }
-    /*! \brief Constructor that specifes the initial size and an element to copy. */
+    /*! \brief Constructor that specifies the initial size and an element to copy. */
     explicit PaddedVector(size_type count, value_type const& v, const allocator_type& allocator = Allocator()) :
         storage_(count, v, allocator),
         unpaddedEnd_(begin() + count)

@@ -36,7 +36,7 @@ the right-hand term.
 .. figure:: plots/free2.*
             :width: 6.00000cm
 
-            Free energy cycles. **B:** to calculate
+            Free energy cycles. **B:** to calculate
             :math:`\Delta G_{12}`, the free energy difference for binding of
             inhibitors **I** respectively **I**\ :math:`^{\prime}` to enzyme
             **E**.

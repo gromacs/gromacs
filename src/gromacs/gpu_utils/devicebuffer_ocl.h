@@ -60,7 +60,7 @@
  *
  * \tparam        ValueType            Raw value type of the \p buffer.
  * \param[in,out] buffer               Pointer to the device-side buffer.
- * \param[in]     numValues            Number of values to accomodate.
+ * \param[in]     numValues            Number of values to accommodate.
  * \param[in]     deviceContext        The buffer's device context-to-be.
  */
 template<typename ValueType>
