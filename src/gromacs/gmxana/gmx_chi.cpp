@@ -1318,7 +1318,7 @@ int gmx_chi(int argc, char* argv[])
         "This causes (usually small) discrepancies with the output of other "
         "tools like [gmx-rama].",
         "[TT]-r0[tt] option does not work properly",
-        "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had "
+        "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had ",
         "multiplicity 3, with the 3rd (g(+)) always having probability 0"
     };
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,10 +67,9 @@ static void plot_rama(FILE* out, t_xrama* xr)
 int gmx_rama(int argc, char* argv[])
 {
     const char* desc[] = {
-        "[THISMODULE] selects the [GRK]phi[grk]/[GRK]psi[grk] dihedral combinations from "
-        "your topology file",
-        "and computes these as a function of time.",
-        "Using simple Unix tools such as [IT]grep[it] you can select out", "specific residues."
+        "[THISMODULE] selects the [GRK]phi[grk]/[GRK]psi[grk] dihedral combinations from ",
+        "your topology file and computes these as a function of time.",
+        "Using simple Unix tools such as [IT]grep[it] you can select out specific residues."
     };
 
     FILE*             out;

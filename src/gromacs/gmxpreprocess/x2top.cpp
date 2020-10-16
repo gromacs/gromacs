@@ -383,7 +383,7 @@ int gmx_x2top(int argc, char* argv[])
     const char* bugs[] = {
         "The atom type selection is primitive. Virtually no chemical knowledge is used",
         "Periodic boundary conditions screw up the bonding", "No improper dihedrals are generated",
-        "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in "
+        "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in",
         "the data directory). Please extend it and send the results back to the GROMACS crew."
     };
     FILE*                                 fp;
