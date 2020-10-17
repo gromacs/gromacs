@@ -1583,7 +1583,9 @@ std::string getCoolQuote()
           "Anonymous" },
         { "Schrödinger's backup: The condition of any backup is unknown until a restore is "
           "attempted.",
-          "Anonymous" }
+          "Anonymous" },
+        { "If my PhD doesn't allow me to be right on the internet, what is it even good for?",
+          "Martin Vögele" }
     };
 
     if (beCool())
