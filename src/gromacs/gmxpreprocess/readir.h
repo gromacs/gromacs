@@ -43,6 +43,7 @@
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
@@ -87,23 +88,22 @@ enum
 
 struct t_gromppopts
 {
-    int         warnings     = 0;
-    int         nshake       = 0;
-    char*       include      = nullptr;
-    char*       define       = nullptr;
-    bool        bGenVel      = false;
-    bool        bGenPairs    = false;
-    real        tempi        = 0;
-    int         seed         = 0;
-    int         numMtsLevels = 0;
-    std::string mtsLevel2Forces;
-    bool        bOrire           = false;
-    bool        bMorse           = false;
-    char*       wall_atomtype[2] = { nullptr, nullptr };
-    char*       couple_moltype   = nullptr;
-    int         couple_lam0      = 0;
-    int         couple_lam1      = 0;
-    bool        bCoupleIntra     = false;
+    int                warnings  = 0;
+    int                nshake    = 0;
+    char*              include   = nullptr;
+    char*              define    = nullptr;
+    bool               bGenVel   = false;
+    bool               bGenPairs = false;
+    real               tempi     = 0;
+    int                seed      = 0;
+    gmx::GromppMtsOpts mtsOpts;
+    bool               bOrire           = false;
+    bool               bMorse           = false;
+    char*              wall_atomtype[2] = { nullptr, nullptr };
+    char*              couple_moltype   = nullptr;
+    int                couple_lam0      = 0;
+    int                couple_lam1      = 0;
+    bool               bCoupleIntra     = false;
 };
 
 /*! \brief Initialise object to hold strings parsed from an .mdp file */

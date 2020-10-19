@@ -232,102 +232,6 @@ static void process_interaction_modifier(int* eintmod)
     }
 }
 
-static void checkMtsRequirement(const t_inputrec& ir, const char* param, const int nstValue, warninp_t wi)
-{
-    GMX_RELEASE_ASSERT(ir.mtsLevels.size() >= 2, "Need at least two levels for MTS");
-    const int mtsFactor = ir.mtsLevels.back().stepFactor;
-    if (nstValue % mtsFactor != 0)
-    {
-        auto message = gmx::formatString(
-                "With MTS, %s = %d should be a multiple of mts-factor = %d", param, nstValue, mtsFactor);
-        warning_error(wi, message.c_str());
-    }
-}
-
-static void setupMtsLevels(gmx::ArrayRef<gmx::MtsLevel> mtsLevels,
-                           const t_inputrec&            ir,
-                           const t_gromppopts&          opts,
-                           warninp_t                    wi)
-{
-    if (!(ir.eI == eiMD || ir.eI == eiSD1))
-    {
-        auto message = gmx::formatString(
-                "Multiple time stepping is only supported with integrators %s and %s",
-                ei_names[eiMD], ei_names[eiSD1]);
-        warning_error(wi, message.c_str());
-    }
-    if (opts.numMtsLevels != 2)
-    {
-        warning_error(wi, "Only mts-levels = 2 is supported");
-    }
-    else
-    {
-        const std::vector<std::string> inputForceGroups = gmx::splitString(opts.mtsLevel2Forces);
-        auto&                          forceGroups      = mtsLevels[1].forceGroups;
-        for (const auto& inputForceGroup : inputForceGroups)
-        {
-            bool found     = false;
-            int  nameIndex = 0;
-            for (const auto& forceGroupName : gmx::mtsForceGroupNames)
-            {
-                if (gmx::equalCaseInsensitive(inputForceGroup, forceGroupName))
-                {
-                    forceGroups.set(nameIndex);
-                    found = true;
-                }
-                nameIndex++;
-            }
-            if (!found)
-            {
-                auto message =
-                        gmx::formatString("Unknown MTS force group '%s'", inputForceGroup.c_str());
-                warning_error(wi, message.c_str());
-            }
-        }
-
-        if (mtsLevels[1].stepFactor <= 1)
-        {
-            gmx_fatal(FARGS, "mts-factor should be larger than 1");
-        }
-
-        // Make the level 0 use the complement of the force groups of group 1
-        mtsLevels[0].forceGroups = ~mtsLevels[1].forceGroups;
-        mtsLevels[0].stepFactor  = 1;
-
-        if ((EEL_FULL(ir.coulombtype) || EVDW_PME(ir.vdwtype))
-            && !mtsLevels[1].forceGroups[static_cast<int>(gmx::MtsForceGroups::LongrangeNonbonded)])
-        {
-            warning_error(wi,
-                          "With long-range electrostatics and/or LJ treatment, the long-range part "
-                          "has to be part of the mts-level2-forces");
-        }
-
-        if (ir.nstcalcenergy > 0)
-        {
-            checkMtsRequirement(ir, "nstcalcenergy", ir.nstcalcenergy, wi);
-        }
-        checkMtsRequirement(ir, "nstenergy", ir.nstenergy, wi);
-        checkMtsRequirement(ir, "nstlog", ir.nstlog, wi);
-        if (ir.efep != efepNO)
-        {
-            checkMtsRequirement(ir, "nstdhdl", ir.fepvals->nstdhdl, wi);
-        }
-
-        if (ir.bPull)
-        {
-            const int pullMtsLevel = gmx::forceGroupMtsLevel(ir.mtsLevels, gmx::MtsForceGroups::Pull);
-            if (ir.pull->nstxout % ir.mtsLevels[pullMtsLevel].stepFactor != 0)
-            {
-                warning_error(wi, "pull-nstxout should be a multiple of mts-factor");
-            }
-            if (ir.pull->nstfout % ir.mtsLevels[pullMtsLevel].stepFactor != 0)
-            {
-                warning_error(wi, "pull-nstfout should be a multiple of mts-factor");
-            }
-        }
-    }
-}
-
 void check_ir(const char*                   mdparin,
               const gmx::MdModulesNotifier& mdModulesNotifier,
               t_inputrec*                   ir,
@@ -350,6 +254,19 @@ void check_ir(const char*                   mdparin,
     t_expanded* expand = ir->expandedvals;
 
     set_warning_line(wi, mdparin, -1);
+
+    /* We cannot check MTS requirements with an invalid MTS setup
+     * and we will already have generated errors with an invalid MTS setup.
+     */
+    if (gmx::haveValidMtsSetup(*ir))
+    {
+        std::vector<std::string> errorMessages = gmx::checkMtsRequirements(*ir);
+
+        for (const auto& errorMessage : errorMessages)
+        {
+            warning_error(wi, errorMessage.c_str());
+        }
+    }
 
     if (ir->coulombtype == eelRF_NEC_UNSUPPORTED)
     {
@@ -1989,18 +1906,17 @@ void get_ir(const char*     mdparin,
     ir->useMts = (get_eeenum(&inp, "mts", yesno_names, wi) != 0);
     if (ir->useMts)
     {
-        opts->numMtsLevels = get_eint(&inp, "mts-levels", 2, wi);
+        gmx::GromppMtsOpts& mtsOpts = opts->mtsOpts;
+        mtsOpts.numLevels           = get_eint(&inp, "mts-levels", 2, wi);
         ir->mtsLevels.resize(2);
-        gmx::MtsLevel& mtsLevel = ir->mtsLevels[1];
-        opts->mtsLevel2Forces   = setStringEntry(&inp, "mts-level2-forces",
-                                               "longrange-nonbonded nonbonded pair dihedral");
-        mtsLevel.stepFactor     = get_eint(&inp, "mts-level2-factor", 2, wi);
+        mtsOpts.level2Forces = setStringEntry(&inp, "mts-level2-forces",
+                                              "longrange-nonbonded nonbonded pair dihedral");
+        mtsOpts.level2Factor = get_eint(&inp, "mts-level2-factor", 2, wi);
 
         // We clear after reading without dynamics to not force the user to remove MTS mdp options
         if (!EI_DYNAMICS(ir->eI))
         {
             ir->useMts = false;
-            ir->mtsLevels.clear();
         }
     }
     printStringNoNewline(&inp, "mode for center of mass motion removal");
@@ -2755,7 +2671,13 @@ void get_ir(const char*     mdparin,
     /* Set up MTS levels, this needs to happen before checking AWH parameters */
     if (ir->useMts)
     {
-        setupMtsLevels(ir->mtsLevels, *ir, *opts, wi);
+        std::vector<std::string> errorMessages;
+        ir->mtsLevels = gmx::setupMtsLevels(opts->mtsOpts, &errorMessages);
+
+        for (const auto& errorMessage : errorMessages)
+        {
+            warning_error(wi, errorMessage.c_str());
+        }
     }
 
     if (ir->bDoAwh)
@@ -4182,7 +4104,7 @@ static void check_combination_rules(const t_inputrec* ir, const gmx_mtop_t* mtop
 void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_t wi)
 {
     // Not meeting MTS requirements should have resulted in a fatal error, so we can assert here
-    gmx::assertMtsRequirements(*ir);
+    GMX_ASSERT(gmx::checkMtsRequirements(*ir).empty(), "All MTS requirements should be met here");
 
     char                      err_buf[STRLEN];
     int                       i, m, c, nmol;

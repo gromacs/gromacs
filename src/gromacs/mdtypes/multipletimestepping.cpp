@@ -36,8 +36,13 @@
 
 #include "multipletimestepping.h"
 
+#include <optional>
+
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/mdtypes/pull_params.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -56,41 +61,163 @@ int nonbondedMtsFactor(const t_inputrec& ir)
     }
 }
 
-void assertMtsRequirements(const t_inputrec& ir)
+std::vector<MtsLevel> setupMtsLevels(const GromppMtsOpts& mtsOpts, std::vector<std::string>* errorMessages)
 {
-    if (!ir.useMts)
+    std::vector<MtsLevel> mtsLevels;
+
+    if (mtsOpts.numLevels != 2)
     {
-        return;
-    }
-
-    GMX_RELEASE_ASSERT(ir.mtsLevels.size() >= 2, "Need at least two levels for MTS");
-
-    GMX_RELEASE_ASSERT(ir.mtsLevels[0].stepFactor == 1, "Base MTS step should be 1");
-
-    GMX_RELEASE_ASSERT((!EEL_FULL(ir.coulombtype) && !EVDW_PME(ir.vdwtype))
-                               || forceGroupMtsLevel(ir.mtsLevels, MtsForceGroups::LongrangeNonbonded) > 0,
-                       "Long-range nonbondeds should be in the highest MTS level");
-
-    for (const auto& mtsLevel : ir.mtsLevels)
-    {
-        const int mtsFactor = mtsLevel.stepFactor;
-        GMX_RELEASE_ASSERT(ir.nstcalcenergy % mtsFactor == 0,
-                           "nstcalcenergy should be a multiple of mtsFactor");
-        GMX_RELEASE_ASSERT(ir.nstenergy % mtsFactor == 0,
-                           "nstenergy should be a multiple of mtsFactor");
-        GMX_RELEASE_ASSERT(ir.nstlog % mtsFactor == 0, "nstlog should be a multiple of mtsFactor");
-        GMX_RELEASE_ASSERT(ir.epc == epcNO || ir.nstpcouple % mtsFactor == 0,
-                           "nstpcouple should be a multiple of mtsFactor");
-        GMX_RELEASE_ASSERT(ir.efep == efepNO || ir.fepvals->nstdhdl % mtsFactor == 0,
-                           "nstdhdl should be a multiple of mtsFactor");
-        if (ir.mtsLevels.back().forceGroups[static_cast<int>(gmx::MtsForceGroups::Nonbonded)])
+        if (errorMessages)
         {
-            GMX_RELEASE_ASSERT(ir.nstlist % ir.mtsLevels.back().stepFactor == 0,
-                               "With multiple time stepping for the non-bonded pair interactions, "
-                               "nstlist should be a "
-                               "multiple of mtsFactor");
+            errorMessages->push_back("Only mts-levels = 2 is supported");
         }
     }
+    else
+    {
+        mtsLevels.resize(2);
+
+        const std::vector<std::string> inputForceGroups = gmx::splitString(mtsOpts.level2Forces);
+        auto&                          forceGroups      = mtsLevels[1].forceGroups;
+        for (const auto& inputForceGroup : inputForceGroups)
+        {
+            bool found     = false;
+            int  nameIndex = 0;
+            for (const auto& forceGroupName : gmx::mtsForceGroupNames)
+            {
+                if (gmx::equalCaseInsensitive(inputForceGroup, forceGroupName))
+                {
+                    forceGroups.set(nameIndex);
+                    found = true;
+                }
+                nameIndex++;
+            }
+            if (!found && errorMessages)
+            {
+                errorMessages->push_back(
+                        gmx::formatString("Unknown MTS force group '%s'", inputForceGroup.c_str()));
+            }
+        }
+
+        // Make the level 0 use the complement of the force groups of group 1
+        mtsLevels[0].forceGroups = ~mtsLevels[1].forceGroups;
+        mtsLevels[0].stepFactor  = 1;
+
+        mtsLevels[1].stepFactor = mtsOpts.level2Factor;
+
+        if (errorMessages && mtsLevels[1].stepFactor <= 1)
+        {
+            errorMessages->push_back("mts-factor should be larger than 1");
+        }
+    }
+
+    return mtsLevels;
+}
+
+bool haveValidMtsSetup(const t_inputrec& ir)
+{
+    return (ir.useMts && ir.mtsLevels.size() == 2 && ir.mtsLevels[1].stepFactor > 1);
+}
+
+namespace
+{
+
+//! Checks whether \p nstValue is a multiple of the largest MTS step, returns an error string for parameter \p param when this is not the case
+std::optional<std::string> checkMtsInterval(ArrayRef<const MtsLevel> mtsLevels, const char* param, const int nstValue)
+{
+    GMX_RELEASE_ASSERT(mtsLevels.size() >= 2, "Need at least two levels for MTS");
+
+    const int mtsFactor = mtsLevels.back().stepFactor;
+    if (nstValue % mtsFactor == 0)
+    {
+        return {};
+    }
+    else
+    {
+        return gmx::formatString("With MTS, %s = %d should be a multiple of mts-factor = %d", param,
+                                 nstValue, mtsFactor);
+    }
+}
+
+} // namespace
+
+std::vector<std::string> checkMtsRequirements(const t_inputrec& ir)
+{
+    std::vector<std::string> errorMessages;
+
+    if (!ir.useMts)
+    {
+        return errorMessages;
+    }
+
+    GMX_RELEASE_ASSERT(haveValidMtsSetup(ir), "MTS setup should be valid here");
+
+    ArrayRef<const MtsLevel> mtsLevels = ir.mtsLevels;
+
+    if (!(ir.eI == eiMD || ir.eI == eiSD1))
+    {
+        errorMessages.push_back(gmx::formatString(
+                "Multiple time stepping is only supported with integrators %s and %s",
+                ei_names[eiMD], ei_names[eiSD1]));
+    }
+
+    if ((EEL_FULL(ir.coulombtype) || EVDW_PME(ir.vdwtype))
+        && forceGroupMtsLevel(ir.mtsLevels, MtsForceGroups::LongrangeNonbonded) == 0)
+    {
+        errorMessages.emplace_back(
+                "With long-range electrostatics and/or LJ treatment, the long-range part "
+                "has to be part of the mts-level2-forces");
+    }
+
+    std::optional<std::string> mesg;
+    if (ir.nstcalcenergy > 0)
+    {
+        if ((mesg = checkMtsInterval(mtsLevels, "nstcalcenergy", ir.nstcalcenergy)))
+        {
+            errorMessages.push_back(mesg.value());
+        }
+    }
+    if ((mesg = checkMtsInterval(mtsLevels, "nstenergy", ir.nstenergy)))
+    {
+        errorMessages.push_back(mesg.value());
+    }
+    if ((mesg = checkMtsInterval(mtsLevels, "nstlog", ir.nstlog)))
+    {
+        errorMessages.push_back(mesg.value());
+    }
+    if ((mesg = checkMtsInterval(mtsLevels, "nstfout", ir.nstfout)))
+    {
+        errorMessages.push_back(mesg.value());
+    }
+    if (ir.efep != efepNO)
+    {
+        if ((mesg = checkMtsInterval(mtsLevels, "nstdhdl", ir.fepvals->nstdhdl)))
+        {
+            errorMessages.push_back(mesg.value());
+        }
+    }
+    if (mtsLevels.back().forceGroups[static_cast<int>(gmx::MtsForceGroups::Nonbonded)])
+    {
+        if ((mesg = checkMtsInterval(mtsLevels, "nstlist", ir.nstlist)))
+        {
+            errorMessages.push_back(mesg.value());
+        }
+    }
+
+    if (ir.bPull)
+    {
+        const int pullMtsLevel  = gmx::forceGroupMtsLevel(ir.mtsLevels, gmx::MtsForceGroups::Pull);
+        const int mtsStepFactor = ir.mtsLevels[pullMtsLevel].stepFactor;
+        if (ir.pull->nstxout % mtsStepFactor != 0)
+        {
+            errorMessages.emplace_back("pull-nstxout should be a multiple of mts-factor");
+        }
+        if (ir.pull->nstfout % mtsStepFactor != 0)
+        {
+            errorMessages.emplace_back("pull-nstfout should be a multiple of mts-factor");
+        }
+    }
+
+    return errorMessages;
 }
 
 } // namespace gmx

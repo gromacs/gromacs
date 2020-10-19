@@ -1163,7 +1163,8 @@ void init_forcerec(FILE*                            fp,
 
     if (fr->useMts)
     {
-        gmx::assertMtsRequirements(*ir);
+        GMX_ASSERT(gmx::checkMtsRequirements(*ir).empty(),
+                   "All MTS requirements should be met here");
     }
 
     const bool haveDirectVirialContributionsFast =
