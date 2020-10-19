@@ -36,6 +36,7 @@
 if (GMX_BUILD_UNITTESTS)
     gmx_add_unit_test(CompatibilityHelpersTests compat-test
         CPP_SOURCE_FILES
+            mp11.cpp
             pointers.cpp
             )
     # Maintainer note: The files here may be borrowed from other projects, and
