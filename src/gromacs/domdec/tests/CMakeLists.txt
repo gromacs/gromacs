@@ -37,3 +37,8 @@ gmx_add_unit_test(DomDecTests domdec-test
         hashedmap.cpp
         localatomsetmanager.cpp
         )
+
+gmx_add_mpi_unit_test(DomDecMpiTests domdec-mpi-test 4
+    CPP_SOURCE_FILES
+        haloexchange_mpi.cpp
+        )
