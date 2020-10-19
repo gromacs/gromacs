@@ -12,7 +12,13 @@ several new features are available for running simulations. We are extremely
 interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
-* Cool quote autogenerator
+* Support for multiple time stepping, allowing for simple near doubling of simulation speed and is intended to replace the virtual site treatment
+* Ability to use stochastic cell rescaling barostat for equilibration and production simulations
+* Preliminary support for using SYCL as accelerator framework
+* Support for performing free energy perturbation with AWH
+* Support PME offloading to GPU for free energy simulations
+* Support for ARM SVE and Fujitsu A64FX (contribution by Research Organization for Information Science and Technology (RIST))
+* New nonbonded interaction API with NB-LIB (in collaboration with PRACE)
 
 
 .. Note to developers!
