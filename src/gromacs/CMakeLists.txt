@@ -332,8 +332,6 @@ set_target_properties(libgromacs PROPERTIES
 
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
-gmx_manage_muparser()
-target_link_libraries(libgromacs PRIVATE muparser)
 
 # Make sure we fix "everything" found by more recent versions of clang.
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "7")

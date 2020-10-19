@@ -396,9 +396,6 @@
 /* Define if we have lmfit support */
 #cmakedefine01 HAVE_LMFIT
 
-/* Define if we have muparser support */
-#cmakedefine01 HAVE_MUPARSER
-
 /* Build using clang analyzer */
 #cmakedefine01 GMX_CLANG_ANALYZER
 

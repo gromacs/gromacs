@@ -567,8 +567,6 @@ include(gmxManageTNG)
 
 include(gmxManageLmfit)
 
-include(gmxManageMuparser)
-
 if(GMX_GPU)
 
     string(TOUPPER "${GMX_GPU}" _gmx_gpu_uppercase)
