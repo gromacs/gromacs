@@ -911,50 +911,21 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
                 {
                     switch (hb[resind].hack[j].tp)
                     {
-                        /* TODO: this may be wrong...order is not guaranteed */
-                        case 9:                                   /* COOH terminus */
-                            if (bDrude)
+                        case 8:                                   /* COOH terminus */
+                            /* jal - not for Drude systems, since these atoms will be
+                             * Drudes and lone pairs. */
+                            if (bDrude) /* NASTY HACK - FIX ME!!! */
                             {
-                                /* C DC OT1 DOT1 LPT1 LPT2 OT2 DOT2 LPT3 LPT4 H */
-                                /* 0 1  2   3    4    5    6   7    8    9    10 */
-                                add_param(psb, i, i+1, NULL, NULL);   /* C-DC */
-                                add_param(psb, i, i+2, NULL, NULL);   /* C-OT1 */
-                                add_param(psb, i+2, i+3, NULL, NULL); /* OT1-DOT1 */
-                                add_param(psb, i, i+6, NULL, NULL);   /* C-OT2 */
-                                add_param(psb, i+6, i+7, NULL, NULL); /* OT2-DOT2 */
-                                add_param(psb, i+6, i+10, NULL, NULL); /* OT2-H */
-                                break;
+                                add_param(psb, i, i+6, NULL, NULL);   /* C-OT1 */
                             }
-                            else
+                        case 9:
+                            if (!bDrude)
                             {
                                 add_param(psb, i, i+1, NULL, NULL);   /* C-O  */
                                 add_param(psb, i, i+2, NULL, NULL);   /* C-OA */
                                 add_param(psb, i+2, i+3, NULL, NULL); /* OA-H */
                                 break;
                             }
-                        case 8:                                     /* COO- terminus for Drude FF */
-                            /* C DC OT1 DOT1 LPT1 LPT2 OT2 DOT2 LPT3 LPT4 */
-                            /* 0 1  2   3    4    5    6   7    8    9    */
-                            if (bDrude)
-                            {
-                                add_param(psb, i, i+1, NULL, NULL);     /* C-DC */
-                                add_param(psb, i, i+2, NULL, NULL);     /* C-OT1 */
-                                add_param(psb, i+2, i+3, NULL, NULL);   /* OT1-DOT1 */
-                                add_param(psb, i, i+6, NULL, NULL);     /* C-OT2 */
-                                add_param(psb, i+6, i+7, NULL, NULL);   /* OT2-DOT2 */
-                                break;
-                            }
-                            /* otherwise fall through */
-                        case 4:                                     /* NH3 terminus for Drude FF */
-                            if (bDrude)
-                            {
-                                add_param(psb, i, i+1, NULL, NULL); /* N - DN */
-                                add_param(psb, i, i+2, NULL, NULL); /* N - H1 */
-                                add_param(psb, i, i+3, NULL, NULL); /* N - H2 */
-                                add_param(psb, i, i+4, NULL, NULL); /* N - H3 */
-                                break;
-                            }
-                            /* otherwise fall through */
                         default:
                             for (k = 0; (k < hb[resind].hack[j].nr); k++)
                             {

@@ -53,4 +53,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 
 void construct_drude_lp_excl(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_excls *excls);
 
+/* TESTING */
+void gen_drude_lp_excl(t_params plist[], t_atoms *atoms, t_excls *excls);
+
 #endif

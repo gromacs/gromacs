@@ -816,188 +816,171 @@ static void get_atomnames_min(int n, char **anm,
     }
 }
 
-/* Generate exclusions for Drudes and LP based on the two input atoms
- * that are identified as real atoms in gen_pad() */
-static void gen_drude_lp_excl(t_params plist[], t_atoms *atoms, t_excls *excls, int ai, int aj)
+/* Generate exclusions for Drudes and lone pairs, inheriting them from their parent atoms */ 
+static void gen_drude_lp_excl(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_excls *excls)
 {
-    int i, j, f;
+    int i, j, i1, j1, k, l1, l2, m, f, ai, aj;
+    int nbd;
+    int *nlp;
+    ivec *lp;     /* this is a bit of a hack, but we shouldn't need more than 3 LP on a given atom */
 
-    /* The two atoms passed to this function are already excluded from one another, 
-     * so here we only build exclusions explicitly involving Drudes and LP, so we
-     * do the same operations on both atoms */
+    snew(nlp, atoms->nr);
+    snew(lp, atoms->nr);
 
-    /* Always check against atoms->nr to make sure the atom is in bounds to avoid seg faults */
+    /* This function does some copying, basically.
+     * We loop over all vsite functions to find the host atom and add the lone pairs (vsites)
+     * explicitly to the exclusion list for that host atom. This is important for later, because
+     * any atom that excludes the lone pair host has to also exclude the lone pairs. So while this
+     * is redundant for the host atom, is is necessary. We then copy 1-4 Drudes into the exclusion
+     * list for the atom separated by "4" bonds. Drude bonds are not the same as actual topological
+     * bonds and do not count the same was as nrexcl. If an atom is within 3 bonds, its Drude is, too,
+     * which makes it a special case. At the end, we go back and copy all the excl lists of the parent
+     * atoms to the relevant Drudes and lone pairs. */
 
-    if ((aj+1) < atoms->nr)
+    /* first, loop over vsite functions and explicitly add the lone pairs to the host atom's excls */   
+    for (f = F_VSITE2; f <= F_VSITE4FDN; f++)
     {
-        /* Polarizable atom found */
-        if (is_d(atoms, (aj+1)))
+        for (i = 0; i < plist[f].nr; i++)
         {
-            /* atom - Drude */
-            srenew(excls[ai].e, excls[ai].nr+1);
-            excls[ai].e[excls[ai].nr] = (aj+1);
-            excls[ai].nr++;
-            /* Drude - Drude */
-            if ((ai+1) < atoms->nr)
-            {
-                if (is_d(atoms, (ai+1)))
-                {
-                    srenew(excls[ai+1].e, excls[ai+1].nr+1);
-                    excls[ai+1].e[excls[ai+1].nr] = (aj+1);
-                    excls[ai+1].nr++;
-                }
-            }
-            /* Here, we loop over all possible vsite function types and add
-             * an exclusion if the parent atom (plist[F_*].param[i].aj()) is aj */
-            for (f = F_VSITE2; f <= F_VSITE4FDN; f++)
-            {
-                for (i = 0; i < plist[f].nr; i++)
-                {
-                    /* atom aj is a host atom of at least one LP */
-                    if (aj == plist[f].param[i].aj())
-                    {
-                        /* atom - LP */
-                        /* index ai() in plist is the actual LP, not to be confused
-                         * with ai, which is the atom onto which we are adding exclusions */
-                        srenew(excls[ai].e, excls[ai].nr+1);
-                        excls[ai].e[excls[ai].nr] = plist[f].param[i].ai();
-                        excls[ai].nr++;
-                        /* Drude - LP */
-                        if ((ai+1) < atoms->nr)
-                        {
-                            if (is_d(atoms, (ai+1)))
-                            {
-                                srenew(excls[ai+1].e, excls[ai+1].nr+1);
-                                excls[ai+1].e[excls[ai+1].nr] = plist[f].param[i].ai();
-                                excls[ai+1].nr++;
-                            }
-                        }
-                        /* LP with Drude on host atom */
-                        if ((aj+1) < atoms->nr)
-                        {
-                            if (is_d(atoms, (aj+1)))
-                            {
-                                srenew(excls[aj+1].e, excls[aj+1].nr+1);
-                                excls[aj+1].e[excls[aj+1].nr] = plist[f].param[i].ai();
-                                excls[aj+1].nr++;
-                            }
-                        }
-                        /* LP with the host atom */
-                        srenew(excls[aj].e, excls[aj].nr+1);
-                        excls[aj].e[excls[aj].nr] = plist[f].param[i].ai();
-                        excls[aj].nr++;
-                        /* LP - LP */
-                        /* By looping over all combinations, we take care of LP-LP on same atom,
-                         * and all combinations of LP-LP on excluded atoms */ 
-                        /* TODO: TESTING, was j=0 */
-                        for (j = i; j < plist[f].nr; j++)
-                        {
-                            /* we know that aj is a LP host, so if param.aj() is ai,
-                             * then we have a LP-LP combination that needs an exclusion */ 
-                            if ((ai == plist[f].param[j].aj()) || (aj == plist[f].param[j].aj()))
-                            {
-                                /* no need to exclude self */
-                                if (plist[f].param[i].ai() != plist[f].param[j].ai())
-                                {
-                                    srenew(excls[plist[f].param[i].ai()].e, excls[plist[f].param[i].ai()].nr+1);
-                                    excls[plist[f].param[i].ai()].e[excls[plist[f].param[i].ai()].nr] = plist[f].param[j].ai();
-                                    excls[plist[f].param[i].ai()].nr++;
-                                }
-                            }
-                        }
-                    }
-                }   /* end of i-loop */
-            }   /* end of f-loop */
+            ai = plist[f].param[i].ai();    /* the vsite */
+            aj = plist[f].param[i].aj();    /* the host atom */
+            /* add the lone pair to the exclusion list for the atom */
+            srenew(excls[aj].e, excls[aj].nr+1);
+            excls[aj].e[excls[aj].nr] = ai; 
+            excls[aj].nr++;
+            /* we also record how many LP there are on the atom, and their indices for use later */
+            lp[aj][nlp[aj]] = ai;
+            nlp[aj]++;            
         }
     }
 
-    /* This check shouldn't be necessary as ai < aj due to number swap in
-     * construct_drude_lp(), but just in case */
-    if ((ai+1) < atoms->nr)
+    /* In the case of multiple LP on a single atom, add those excls here */
+    for (i = 0; i < atoms->nr; i++)
     {
-        /* Polarizable atom found */
-        if (is_d(atoms, (ai+1)))
+        if (nlp[i] > 1)
         {
-            /* Drude - atom */
-            srenew(excls[ai+1].e, excls[ai+1].nr+1);
-            excls[ai+1].e[excls[ai+1].nr] = aj;
-            excls[ai+1].nr++;
-            /* Drude - Drude */
-            if ((aj+1) < atoms->nr)
+            for (j = 0; j < nlp[i]; j++)
             {
-                if (is_d(atoms, (aj+1)))
+                excls[lp[i][j]].nr = 0; /* LP have no excls to start with, so initialize */
+                for (k = j+1; k < nlp[i]; k++)
                 {
-                    srenew(excls[aj+1].e, excls[aj+1].nr+1);
-                    excls[aj+1].e[excls[aj+1].nr] = (ai+1);
-                    excls[aj+1].nr++;
+                    /* debug */
+                    fprintf(stderr, "Adding %s - %s excl\n", *(atoms->atomname[lp[i][j]]), *(atoms->atomname[lp[i][k]]));
+                    srenew(excls[lp[i][j]].e, excls[lp[i][j]].nr+1);
+                    excls[lp[i][j]].e[excls[lp[i][j]].nr] = lp[i][k];
+                    excls[lp[i][j]].nr++;
                 }
             }
-            /* as above, loop over vsite function types */
-            for (f = F_VSITE2; f <= F_VSITE4FDN; f++)
-            {
-                for (i = 0; i < plist[f].nr; i++)
-                {
-                    /* atom ai is a host atom of at least one LP */
-                    if (ai == plist[f].param[i].aj())
-                    {
-                        /* LP - atom */
-                        /* index ai() in plist is the actual LP, not to be confused
-                         * with ai, which is the atom onto which we are adding exclusions */
-                        srenew(excls[aj].e, excls[aj].nr+1);
-                        excls[aj].e[excls[aj].nr] = plist[f].param[i].ai();
-                        excls[aj].nr++;
-                        /* LP - Drude */
-                        if ((aj+1) < atoms->nr)
-                        {
-                            if (is_d(atoms, (aj+1)))
-                            {
-                                srenew(excls[aj+1].e, excls[aj+1].nr+1);
-                                excls[aj+1].e[excls[aj+1].nr] = plist[f].param[i].ai();
-                                excls[aj+1].nr++;
-                            }
-                        }
-                        /* LP with Drude on host atom */
-                        if ((ai+1) < atoms->nr)
-                        {
-                            if (is_d(atoms, (ai+1)))
-                            {
-                                srenew(excls[ai+1].e, excls[ai+1].nr+1);
-                                excls[ai+1].e[excls[ai+1].nr] = plist[f].param[i].ai();
-                                excls[ai+1].nr++;
-                            }
-                        }
-                        /* LP with the host atom */
-                        srenew(excls[ai].e, excls[ai].nr+1);
-                        excls[ai].e[excls[ai].nr] = plist[f].param[i].ai();
-                        excls[ai].nr++;
-                        /* LP - LP, as above */
-                        /* TODO: TESTING, was j=0 */
-                        for (j = i; j < plist[f].nr; j++)
-                        {
-                            /* check for self and excluded LP-LP interactions */
-                            if ((aj == plist[f].param[j].aj()) || (ai == plist[f].param[j].aj()))
-                            {
-                                /* no need to exclude self */
-                                if (plist[f].param[i].ai() != plist[f].param[j].ai())
-                                {
-                                    srenew(excls[plist[f].param[i].ai()].e, excls[plist[f].param[i].ai()].nr+1);
-                                    excls[plist[f].param[i].ai()].e[excls[plist[f].param[i].ai()].nr] = plist[f].param[j].ai();
-                                    excls[plist[f].param[i].ai()].nr++;
-                                }
-                            }
-                        }
-                    }
-                }   /* end i-loop */
-            }   /* end f-loop */
         }
     }
+
+    /* Now, add Drudes and LP that will be within 3 "real" bonds away from atom i */
+    /* We need to consider nbd <= 3 because sometimes a real atom will be 2 bonds
+     * away from a Drude or LP that needs to be excluded then from the Drude on that real atom
+     * nbd must be > 0 since nb_dist can return -1 if the listed atoms are not within the 
+     * neighbor list but we need to consider anything <= 3 that is actually bonded */
+    for (i = 0; i < atoms->nr-1; i++)
+    {
+        for (j = i+1; j < atoms->nr; j++)
+        {
+            nbd = nb_dist(nnb, i, j);
+            if ((nbd > 0 ) && (nbd <= 3) && (is_real_atom(atoms, i) && is_real_atom(atoms, j)))
+            {
+                /* loop over the first neighbors of atom j, and if it is a Drude, add it to excls of atom i */
+                for (k = 0; (k < nnb->nrexcl[j][1]); k++)
+                {   
+                    j1 = nnb->a[j][1][k];
+                    if (is_d(atoms, j1))
+                    {   
+                        srenew(excls[i].e, excls[i].nr+1);
+                        excls[i].e[excls[i].nr] = j1;
+                        excls[i].nr++;
+                    }
+                }
+                /* likewise with first neighbors of i */
+                for (k = 0; (k < nnb->nrexcl[i][1]); k++)
+                {
+                    i1 = nnb->a[i][1][k];
+                    if (is_d(atoms, i1))
+                    {
+                        srenew(excls[j].e, excls[j].nr+1);
+                        excls[j].e[excls[j].nr] = i1;
+                        excls[j].nr++;
+                    }
+                }
+                /* add LP(j) - i excls */
+                if (nlp[j] > 0)
+                {
+                    for (k = 0; k < nlp[j]; k++)
+                    {
+                        srenew(excls[i].e, excls[i].nr+1);
+                        excls[i].e[excls[i].nr] = lp[j][k];
+                        excls[i].nr++;
+                    }
+                }
+                /* add LP(i) - j excls */
+                if (nlp[i] > 0)
+                {
+                    for (k = 0; k < nlp[i]; k++)
+                    {
+                        srenew(excls[j].e, excls[j].nr+1);
+                        excls[j].e[excls[j].nr] = lp[i][k];
+                        excls[j].nr++;
+                    }
+                }
+                /* if relevant, add LP(i) - LP(j) exclusions */
+                if ((nlp[i] > 0) && (nlp[j] > 0))
+                {
+                    for (l1 = 0; l1 < nlp[i]; l1++)
+                    {
+                        for (l2 = 0; l2 < nlp[j]; l2++)
+                        {
+                            srenew(excls[lp[i][l1]].e, excls[lp[i][l1]].nr+1);
+                            excls[lp[i][l1]].e[excls[lp[i][l1]].nr] = lp[j][l2];
+                            excls[lp[i][l1]].nr++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /* Now, loop over all bonds to search for Drudes so the exclusion lists can be copied */ 
+    for (i = 0; i < plist[F_BONDS].nr; i++)
+    {
+        j = NOTSET;     /* set to the index of the atom */
+        k = NOTSET;     /* set to the the index of the Drude */
+        if (is_d(atoms, plist[F_BONDS].param[i].ai()))
+        {
+            k = plist[F_BONDS].param[i].ai();
+            j = plist[F_BONDS].param[i].aj();
+        }
+        if (is_d(atoms, plist[F_BONDS].param[i].aj()))
+        {
+            j = plist[F_BONDS].param[i].ai();
+            k = plist[F_BONDS].param[i].aj();
+        }
+        /* if we have found a Drude in the bond list of the atom, copy its exclusions */
+        if ((k != NOTSET) && (j != NOTSET))
+        {
+            srenew(excls[k].e, excls[j].nr);
+            excls[k].nr = excls[j].nr;
+            for (m = 0; m < excls[j].nr; m++)
+            {
+                excls[k].e[m] = excls[j].e[m];
+            }
+        }
+    }
+
+    sfree(nlp);
+    sfree(lp);
 }
 
 /* Uses the nnb structure to generate bonded exclusions, and subsequently
  * calls gen_drude_lp_excl to update t_excls */
 void construct_drude_lp_excl(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_excls *excls)
 {
-    int i, j, i1, i2, itmp;
+    int i, j;
 
     int nre, nrs, nrx;  /* counters */
     int j_index;        /* just a counter */
@@ -1070,27 +1053,13 @@ void construct_drude_lp_excl(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_
 
     /* Now, we are ready to generate the Drude and LP exclusions, which are
      * the same as those of the parent atoms */
+    gen_drude_lp_excl(nnb, plist, atoms, excls);
+
     for (i = 0; i < atoms->nr; i++)
     {
-        /* loop over the exclusions for each atom */
-        for (j = 0; j < excls[i].nr; j++)
+        if (excls[i].nr > 1)
         {
-            i1 = i;
-            i2 = excls[i].e[j];
-
-            if (i1 > i2)
-            {
-                itmp = i1;
-                i1   = i2;
-                i2   = itmp;
-            }
-            /* H - H exclusions are already in excls[], so we just need to deal with
-             * any heavy atoms here */
-            if ((is_real_atom(atoms, i1) && is_real_atom(atoms, i2)) &&
-                !(is_hydro(atoms, i1) && is_hydro(atoms, i2)))
-            {
-                gen_drude_lp_excl(plist, atoms, excls, i1, i2);
-            }
+            qsort(excls[i].e, excls[i].nr, (size_t)sizeof(int), int_comp);
         }
     }
 
@@ -1214,7 +1183,7 @@ static void gen_excls(t_atoms *atoms, t_excls *excls, t_hackblock hb[],
         }
     }
 
-     if (debug)
+    if (debug)
     {
         fprintf(debug, "At end of gen_excl:\n");
         for (a = 0; a < atoms->nr; a++)
@@ -1336,10 +1305,13 @@ void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
     }
 }
 
-/* Generate pairs for Drudes and LP */
-static void gen_drude_lp_pairs(t_params plist[], t_atoms *atoms, t_param *pai, int *npai, int ai, int aj)
+/* Generate pairs for Drudes and LP, provided the heavy atoms that are 3 bonds apart */
+static void gen_drude_lp_pairs(t_nextnb *nnb, t_params plist[], t_atoms *atoms, t_param *pai, int *npai, int ai, int aj)
 {
-    int i, j, f;
+    int i, i1, j, j1, f;
+    int *lpi, *lpj;     /* arrays for lone pair indices */
+    int nri, nrj;       /* lone pair indices */
+    gmx_bool bDrudei, bDrudej;
 
     if (debug)
     {
@@ -1349,179 +1321,155 @@ static void gen_drude_lp_pairs(t_params plist[], t_atoms *atoms, t_param *pai, i
     /* The two atoms passed to the function are real atoms, so we only need
      * to build any pair that actually involves a Drude or LP */
 
-    /* Always check against atoms->nr to avoid seg faults */
+    /* The logic is similar to Drude and lone pair exclusion generation, except here we simplify by
+     * passing two atoms that we know are already engaged in a pair interaction, so we need to check
+     * ai and aj to see if they have Drudes or lone pairs attached to them. If they do, add them to the
+     * pair list for the other atom. */ 
 
-    if ((aj+1) < atoms->nr)
+    i1 = NOTSET;
+    j1 = NOTSET;
+    bDrudei = FALSE;
+    bDrudej = FALSE;
+    /* loop over first neighbors of ai and aj, look for Drudes */
+    for (i = 0; ((i < nnb->nrexcl[ai][1]) && !bDrudei); i++)
     {
-        /* Polarizable atom found */
-        if (is_d(atoms, (aj+1)))
+        i1 = nnb->a[ai][1][i];
+        if (is_d(atoms, i1))
         {
-            if (debug)
-            {
-                fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[ai]), *(atoms->atomname[aj+1]));
-            }
-            /* atom - Drude */
-            pai[(*npai)].ai() = ai;
-            pai[(*npai)].aj() = aj+1;
+            bDrudei = TRUE;
+            /* Add Drude on ai to pairs of aj */
+            pai[(*npai)].ai() = aj;
+            pai[(*npai)].aj() = i1;
             pai[(*npai)].c0() = NOTSET;
             pai[(*npai)].c1() = NOTSET;
             set_p_string(&(pai[(*npai)]), "");
             (*npai)++;
-            /* Drude - Drude */
-            if ((ai+1) < atoms->nr)
-            {
-                if (is_d(atoms, (ai+1)))
-                {
-                    if (debug)
-                    {
-                        fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[ai+1]), *(atoms->atomname[aj+1]));
-                    }
-                    pai[(*npai)].ai() = ai+1;
-                    pai[(*npai)].aj() = aj+1;
-                    pai[(*npai)].c0() = NOTSET;
-                    pai[(*npai)].c1() = NOTSET;
-                    set_p_string(&(pai[(*npai)]), "");
-                    (*npai)++;
-                }
-            }
-            /* loop over all possible vsite functions to add LP pairs */
-            for (f = F_VSITE2; f <= F_VSITE4FDN; f++)
-            {
-                if (debug)
-                {
-                    fprintf(debug, " Found %d LP in plist\n", plist[f].nr);
-                }
-                for (i = 0; i < plist[f].nr; i++)
-                {
-                    /* atom aj is a host atom of at least one LP */
-                    if (aj == plist[f].param[i].aj())
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[ai]), *(atoms->atomname[plist[f].param[i].ai()]));
-                        }
-                        /* atom - LP */
-                        pai[(*npai)].ai() = ai;
-                        pai[(*npai)].aj() = plist[f].param[i].ai();
-                        pai[(*npai)].c0() = NOTSET;
-                        pai[(*npai)].c1() = NOTSET;
-                        set_p_string(&(pai[(*npai)]), "");
-                        (*npai)++;
-                        /* Drude - LP */
-                        if ((ai+1) < atoms->nr)
-                        {
-                            if (is_d(atoms, (ai+1)))
-                            {
-                                if (debug)
-                                {
-                                    fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[ai+1]), *(atoms->atomname[plist[f].param[i].ai()]));
-                                }
-                                pai[(*npai)].ai() = ai+1;
-                                pai[(*npai)].aj() = plist[f].param[i].ai();
-                                pai[(*npai)].c0() = NOTSET;
-                                pai[(*npai)].c1() = NOTSET;
-                                set_p_string(&(pai[(*npai)]), "");
-                                (*npai)++;
-                            }
-                        }
-                        /* LP - LP */
-                        /* Unlike with exclusions, we only need to set pairs for interatomic LP */
-                        for (j = (i+1); j < plist[f].nr; j++)
-                        {
-                            if (ai == plist[f].param[j].aj())
-                            {
-                                if (debug)
-                                {
-                                    fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[plist[f].param[i].ai()]), *(atoms->atomname[plist[f].param[j].ai()]));
-                                }
-                                pai[(*npai)].ai() = plist[f].param[i].ai();
-                                pai[(*npai)].aj() = plist[f].param[j].ai();
-                                pai[(*npai)].c0() = NOTSET;
-                                pai[(*npai)].c1() = NOTSET;
-                                set_p_string(&(pai[(*npai)]), "");
-                                (*npai)++;
-                            }
-                        }
-                    }
-                }
-            }   /* end of i-loop */
         }
     }
 
-    if ((ai+1) < atoms->nr)
+    for (j = 0; ((j < nnb->nrexcl[aj][1]) && !bDrudej); j++)
     {
-        /* Polarizable atom found */
-        if (is_d(atoms, (ai+1)))
+        j1 = nnb->a[aj][1][j];
+        if (is_d(atoms, j1))
         {
-            if (debug)
-            {
-                fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[aj]), *(atoms->atomname[ai+1]));
-            }
-            /* atom - Drude */
-            /* NOTE: we do not need to do Drude-Drude here because it is redundant with above */
-            pai[(*npai)].ai() = aj;
-            pai[(*npai)].aj() = ai+1;
+            bDrudej = TRUE;
+            /* Add Drude on aj to pairs of ai */
+            pai[(*npai)].ai() = ai;
+            pai[(*npai)].aj() = j1;
             pai[(*npai)].c0() = NOTSET;
             pai[(*npai)].c1() = NOTSET;
             set_p_string(&(pai[(*npai)]), "");
             (*npai)++;
-            /* loop over all possible vsite functions to add LP exclusions */
-            for (f = F_VSITE2; f <= F_VSITE4FDN; f++)
+        }
+    }
+
+    /* add Drude-Drude pair if needed */
+    if ((bDrudei == TRUE) && (bDrudej == TRUE))
+    {
+        pai[(*npai)].ai() = i1;
+        pai[(*npai)].aj() = j1;
+        pai[(*npai)].c0() = NOTSET;
+        pai[(*npai)].c1() = NOTSET;
+        set_p_string(&(pai[(*npai)]), "");
+        (*npai)++;
+    }
+
+    /* Now, loop over vsite functions to see if either ai or aj are host atoms for lone pairs
+     * Since there may be several lone pairs on each atom, save them in an array for each
+     * to loop back over later to add the pairs */
+    nri = 0;
+    nrj = 0;
+    snew(lpi, 1);
+    snew(lpj, 1);
+    for (f = F_VSITE2; f <= F_VSITE4FDN; f++)
+    {
+        for (i = 0; i < plist[f].nr; i++)
+        {
+            if (ai == plist[f].param[i].aj())
             {
-                for (i = 0; i < plist[f].nr; i++)
-                {
-                    /* atom ai is a host atom of at least one LP */
-                    if (ai == plist[f].param[i].aj())
-                    {
-                        if (debug)
-                        {
-                            fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[aj]), *(atoms->atomname[plist[f].param[i].ai()]));
-                        }
-                        /* atom - LP */
-                        pai[(*npai)].ai() = aj;
-                        pai[(*npai)].aj() = plist[f].param[i].ai();
-                        pai[(*npai)].c0() = NOTSET;
-                        pai[(*npai)].c1() = NOTSET;
-                        set_p_string(&(pai[(*npai)]), "");
-                        (*npai)++;
-                        /* Drude - LP */
-                        if ((aj+1) < atoms->nr)
-                        {
-                            if (is_d(atoms, (aj+1)))
-                            {
-                                if (debug)
-                                {
-                                    fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[aj+1]), *(atoms->atomname[plist[f].param[i].ai()]));
-                                }
-                                pai[(*npai)].ai() = aj+1;
-                                pai[(*npai)].aj() = plist[f].param[i].ai();
-                                pai[(*npai)].c0() = NOTSET;
-                                pai[(*npai)].c1() = NOTSET;
-                                set_p_string(&(pai[(*npai)]), "");
-                                (*npai)++;
-                            }
-                        }
-                        /* LP - LP */
-                        /* Unlike with exclusions, we only need to set pairs for interatomic LP */
-                        for (j = (i+1); j < plist[f].nr; j++)
-                        {
-                            if ((aj == plist[f].param[j].aj()))
-                            {
-                                if (debug)
-                                {
-                                    fprintf(debug, "  gen pair: %s-%s\n", *(atoms->atomname[plist[f].param[i].ai()]), *(atoms->atomname[plist[f].param[j].ai()]));
-                                }
-                                pai[(*npai)].ai() = plist[f].param[i].ai();
-                                pai[(*npai)].aj() = plist[f].param[j].ai();
-                                pai[(*npai)].c0() = NOTSET;
-                                pai[(*npai)].c1() = NOTSET;
-                                set_p_string(&(pai[(*npai)]), "");
-                                (*npai)++;
-                            }
-                        }
-                    }
-                }
-            }   /* end of i-loop */
+                srenew(lpi, (nri+1));
+                lpi[nri] = plist[f].param[i].ai();
+                nri++;
+            }
+            if (aj == plist[f].param[i].aj())
+            {
+                srenew(lpj, (nrj+1));
+                lpj[nrj] = plist[f].param[i].ai();
+                nrj++;
+            }
+        }
+    }
+
+    /* Atom - LP pairs */
+    if (nri > 0)
+    {
+        /* add lone pairs to pair list for aj */
+        for (i = 0; i < nri; i++)
+        {
+            pai[(*npai)].ai() = aj;
+            pai[(*npai)].aj() = lpi[i];
+            pai[(*npai)].c0() = NOTSET;
+            pai[(*npai)].c1() = NOTSET;
+            set_p_string(&(pai[(*npai)]), "");
+            (*npai)++;
+        }
+    }
+
+    if (nrj > 0)
+    {
+        /* add lone pairs to pair list for ai */
+        for (i = 0; i < nrj; i++)
+        {
+            pai[(*npai)].ai() = ai;
+            pai[(*npai)].aj() = lpj[i];
+            pai[(*npai)].c0() = NOTSET;
+            pai[(*npai)].c1() = NOTSET;
+            set_p_string(&(pai[(*npai)]), "");
+            (*npai)++;
+        }
+    }
+
+    /* Drude - LP pairs */
+    if (bDrudei == TRUE)
+    {
+        for (i = 0; i < nrj; i++)
+        {
+            pai[(*npai)].ai() = i1;
+            pai[(*npai)].aj() = lpj[i];
+            pai[(*npai)].c0() = NOTSET;
+            pai[(*npai)].c1() = NOTSET;
+            set_p_string(&(pai[(*npai)]), "");
+            (*npai)++;
+        }
+    }
+
+    if (bDrudej == TRUE)
+    {
+        for (i = 0; i < nri; i++)
+        {
+            pai[(*npai)].ai() = j1;
+            pai[(*npai)].aj() = lpi[i];
+            pai[(*npai)].c0() = NOTSET;
+            pai[(*npai)].c1() = NOTSET;
+            set_p_string(&(pai[(*npai)]), "");
+            (*npai)++;
+        }
+    }
+
+    /* LP - LP pairs */
+    if ((nri > 0) && (nrj > 0))
+    {
+        for (i = 0; i < nri; i++)
+        {
+            for (j = 0; j < nrj; j++)
+            {
+                pai[(*npai)].ai() = lpi[i];
+                pai[(*npai)].aj() = lpj[j];
+                pai[(*npai)].c0() = NOTSET;
+                pai[(*npai)].c1() = NOTSET;
+                set_p_string(&(pai[(*npai)]), "");
+                (*npai)++;
+            }
         }
     }
 }
@@ -1937,7 +1885,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
                                                         maxpai += ninc;
                                                         srenew(pai, maxpai);
                                                     }
-                                                    gen_drude_lp_pairs(plist, atoms, pai, &npai, i1, i2);
+                                                    gen_drude_lp_pairs(nnb, plist, atoms, pai, &npai, i1, i2);
                                                 }
                                             }
                                         }
@@ -2119,7 +2067,7 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
     cppar(pai, npai, plist, F_LJ14);
 
     /* Remove all exclusions which are within nrexcl */
-    /* Leave all assigned exclusions in case of Drude? TESTING */
+    /* Leave all assigned exclusions in case of Drude - special case */
     if (!bDrude)
     {
         clean_excls(nnb, rtp[0].nrexcl, excls);
