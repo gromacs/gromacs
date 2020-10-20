@@ -22,5 +22,12 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix building on OSX
+"""""""""""""""""""
+
+The code wouldn't compile due to a missing include.
+
+:issue:`3730`
+
 Miscellaneous
 ^^^^^^^^^^^^^
