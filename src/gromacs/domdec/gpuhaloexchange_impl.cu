@@ -132,6 +132,8 @@ __global__ void unpackRecvBufKernel(float3* __restrict__ data,
 
 void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_forcesBuffer)
 {
+    wallcycle_start(wcycle_, ewcDOMDEC);
+    wallcycle_sub_start(wcycle_, ewcsDD_GPU);
 
     d_x_ = d_coordinatesBuffer;
     d_f_ = d_forcesBuffer;
@@ -209,6 +211,9 @@ void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_fo
                  MPI_BYTE, sendRankF_, 0, mpi_comm_mysim_, MPI_STATUS_IGNORE);
 #endif
 
+    wallcycle_sub_stop(wcycle_, ewcsDD_GPU);
+    wallcycle_stop(wcycle_, ewcDOMDEC);
+
     return;
 }
 
@@ -216,13 +221,13 @@ void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix          box
                                                        GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
 
+    wallcycle_start(wcycle_, ewcLAUNCH_GPU);
     if (pulse_ == 0)
     {
         // ensure stream waits until coordinate data is available on device
         coordinatesReadyOnDeviceEvent->enqueueWaitEvent(nonLocalStream_);
     }
 
-    wallcycle_start(wcycle_, ewcLAUNCH_GPU);
     wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_MOVEX);
 
     // launch kernel to pack send buffer
