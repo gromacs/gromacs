@@ -104,7 +104,7 @@ DensitySimilarityInnerProduct::DensitySimilarityInnerProduct(density referenceDe
     const auto numVoxels = gradient_.asConstView().mapping().required_span_size();
     /* the gradient for the inner product measure of fit is constant and does not
      * depend on the compared density, so it is pre-computed here */
-    std::transform(begin(referenceDensity_), end(referenceDensity), begin(gradient_),
+    std::transform(begin(referenceDensity_), end(referenceDensity_), begin(gradient_),
                    [numVoxels](float x) { return x / numVoxels; });
 }
 
@@ -227,7 +227,7 @@ struct CrossCorrelationEvaluationHelperValues
     real referenceSquaredSum = 0;
     //! The sum of the squared compared density voxel values
     real comparisonSquaredSum = 0;
-    //! The covariance of the refernce and the compared density
+    //! The covariance of the reference and the compared density
     real covariance = 0;
 };
 
@@ -267,7 +267,7 @@ CrossCorrelationEvaluationHelperValues evaluateHelperValues(DensitySimilarityMea
 class CrossCorrelationGradientAtVoxel
 {
 public:
-    //! Set up the gradident calculation with pre-computed values
+    //! Set up the gradient calculation with pre-computed values
     CrossCorrelationGradientAtVoxel(const CrossCorrelationEvaluationHelperValues& preComputed) :
         prefactor_(evaluatePrefactor(preComputed.comparisonSquaredSum, preComputed.referenceSquaredSum)),
         comparisonPrefactor_(preComputed.covariance / preComputed.comparisonSquaredSum),
@@ -344,7 +344,7 @@ real DensitySimilarityCrossCorrelation::similarity(density comparedDensity)
 
     // To avoid numerical instability due to large squared density value sums
     // division is re-written to avoid multiplying two large numbers
-    // as product of two seperate divisions of smaller numbers
+    // as product of two separate divisions of smaller numbers
     const real covarianceSqrt = sqrt(fabs(helperValues.covariance));
     const int  sign           = helperValues.covariance > 0 ? 1 : -1;
     return sign * (covarianceSqrt / sqrt(helperValues.referenceSquaredSum))
