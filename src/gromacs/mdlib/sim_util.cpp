@@ -1332,14 +1332,9 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
 
+#if 0
     /* TODO: REMOVE */
     /* NON-LOCAL FORCES ARE BAD HERE */
-    if (DOMAINDECOMP(cr) && shellfc)
-    {
-        dd_print_f_shells(cr->dd, f, "after do_force_lowlevel");
-    }
-
-    /* TODO: REMOVE */
     for (i=0; i<mdatoms->homenr; i++)
     {
         if (mdatoms->ptype[i] == eptShell)
@@ -1349,6 +1344,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                     f[i][XX], f[i][YY], f[i][ZZ]);
         }
     }
+#endif
 
     cycles_force += wallcycle_stop(wcycle, ewcFORCE);
 
