@@ -111,7 +111,7 @@ gmxapi-0.1:clang-8:py-3.8.2:
 gmxapi-0.2:gcc-7:gmx2021:py-3.6.10:
   extends:
     - .gmxapi-0.2:gcc-7:gmx2021
-    - .rules:merge-requests:master
+    - .rules:merge-requests:release-2021
   variables:
     VENVPATH: "/root/venv/py3.6"
     PY_VER: "3.6.10"
@@ -119,7 +119,7 @@ gmxapi-0.2:gcc-7:gmx2021:py-3.6.10:
 gmxapi-0.2:gcc-7:gmx2021:py-3.7.7:
   extends:
     - .gmxapi-0.2:gcc-7:gmx2021
-    - .rules:merge-requests:master
+    - .rules:merge-requests:release-2021
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
@@ -127,7 +127,7 @@ gmxapi-0.2:gcc-7:gmx2021:py-3.7.7:
 gmxapi-0.2:gcc-7:gmx2021:py-3.8.2:
   extends:
     - .gmxapi-0.2:gcc-7:gmx2021
-    - .rules:merge-requests:master
+    - .rules:merge-requests:release-2021
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
