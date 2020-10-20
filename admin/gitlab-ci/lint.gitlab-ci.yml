@@ -55,7 +55,7 @@ clang-tidy:test:
     # Make sure that a Python interpreter can be found for `/bin/env python`
     - test -x /usr/bin/python || update-alternatives --install /usr/bin/python python /usr/bin/python3 1
     # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
-    - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
+    - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git release-2021 && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
     - HEAD_REV=$(git show -s --pretty=format:"%h" HEAD)
     - if [[ "$REV" == "$HEAD_REV" ]] ; then
         REV="HEAD~1" ;
@@ -85,8 +85,7 @@ clang-format:
     KUBERNETES_MEMORY_REQUEST: 2Gi
     EXTRA_INSTALLS: clang-format-$COMPILER_MAJOR_VERSION
   script:
-    # TODO (issue #3272) `master` is not appropriate for use on release-xxxx branches, how should we handle that?
-    - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git master && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
+    - REV=$(git fetch -q https://gitlab.com/gromacs/gromacs.git release-2021 && git show -s --pretty=format:"%h" `git merge-base FETCH_HEAD HEAD`)
     - HEAD_REV=$(git show -s --pretty=format:"%h" HEAD)
     - if [[ "$REV" == "$HEAD_REV" ]] ; then
         REV="HEAD~1" ;
