@@ -75,7 +75,12 @@ set(IGNORED_CLANG_ALL_WARNINGS
 string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
 
 set(TESTUTILS_DIR ${PROJECT_SOURCE_DIR}/src/testutils)
-include(${PROJECT_SOURCE_DIR}/src/testutils/TestMacros.cmake)
+if (BUILD_TESTING)
+    if(NOT GMX_DEVELOPER_BUILD)
+        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
+    endif()
+    include(${TESTUTILS_DIR}/TestMacros.cmake)
+endif()
 
 # this allows all nblib tests to be run with "make check-nblib"
 add_custom_target(check-nblib
