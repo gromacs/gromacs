@@ -166,13 +166,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # where nullptr would be preferable. GROMACS can't fix these, so
     # must suppress them.
     GMX_TEST_CXXFLAG(CXXFLAGS_NO_ZERO_AS_NULL_POINTER_CONSTANT "-Wno-zero-as-null-pointer-constant" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
-    if (CUDA_VERSION VERSION_LESS 11.0)
-        # CUDA header crt/math_functions.h before CUDA 11.0 used
-        # throw() specifications that are deprecated in more recent
-        # C++ versions. GROMACS can't fix these, so must suppress
-        # them.
-        GMX_TEST_CXXFLAG(CXXFLAGS_NO_DEPRECATED_DYNAMIC_EXCEPTION_SPEC "-Wno-deprecated-dynamic-exception-spec" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
-    endif()
+
+    # CUDA header crt/math_functions.h in at least CUDA 10.x and 11.1
+    # used throw() specifications that are deprecated in more recent
+    # C++ versions. GROMACS can't fix these, so must suppress them.
+    GMX_TEST_CXXFLAG(CXXFLAGS_NO_DEPRECATED_DYNAMIC_EXCEPTION_SPEC "-Wno-deprecated-dynamic-exception-spec" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
+
     # Add these flags to those used for the host compiler. The
     # "-Xcompiler" prefix directs nvcc to only use them for host
     # compilation, which is all that is needed in this case.
