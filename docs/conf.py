@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -192,7 +192,7 @@ rst_epilog += """
 .. _Jenkins: http://jenkins-ci.org
 .. _webpage: http://www.gromacs.org
 .. _ftp site: ftp://ftp.gromacs.org/pub/gromacs/
-.. _tutorials: http://www.gromacs.org/Documentation/Tutorials
+.. _tutorials: http://www.mdtutorials.com/gmx/
 .. _redmine: http://redmine.gromacs.org
 .. _gerrit: http://gerrit.gromacs.org
 .. _download: ../download.html
