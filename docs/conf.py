@@ -193,8 +193,7 @@ rst_epilog += """
 .. _webpage: http://www.gromacs.org
 .. _ftp site: ftp://ftp.gromacs.org/pub/gromacs/
 .. _tutorials: http://www.mdtutorials.com/gmx/
-.. _redmine: http://redmine.gromacs.org
-.. _gerrit: http://gerrit.gromacs.org
+.. _GitLab: https://gitlab.org/gromacs/gromacs
 .. _download: ../download.html
 .. |thisyear| replace:: {thisyear_string}
 """.format(gmx_version_string=gmx_version_string, regressiontest_version=regressiontest_version, thisyear_string=thisyear_string)

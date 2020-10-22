@@ -25,7 +25,7 @@ Several tools have their own individual pages and are listed below.
 Change management
 -----------------
 
-|Gromacs| change management is supported by the following tools.
+|Gromacs| change management uses git and `GitLab`_ for code uploading and testing as well as issues tracking.
 (For change submission guidelines, refer to :doc:`contribute`.)
 
 git
@@ -35,23 +35,19 @@ git
 
   Other basic tutorial material for ``git`` can be found on the `web <https://git-scm.com/doc/ext>`__.
 
-Gerrit
+GitLab
   All code changes go through a code review system at
-  http://gerrit.gromacs.org.
+  https://gitlab.com/gromacs/gromacs.
 
-Jenkins
-  All changes pushed to Gerrit are automatically compiled and otherwise
-  checked on various platforms using a continuous integration system at
-  http://jenkins.gromacs.org.
-  :doc:`jenkins` documents how Jenkins interacts with the build system,
-  providing information on how to replicate the builds Jenkins does (e.g., to
-  diagnose issues).
+Continuous Integration
+  All changes pushed to GitLab are automatically compiled and otherwise
+  checked on various platforms using a continuous integration system.
   :doc:`releng/index` provides more information on the technical implementation
   of the builds.
 
-Redmine
+Issue tracking
   Bugs and issues, as well as some random features and discussions,
-  are tracked at http://redmine.gromacs.org.
+  are tracked at https://gitlab.com/gromacs/gromacs/issues.
 
 .. _Git Tips & Tricks: http://www.gromacs.org/index.php?title=Developer_Zone/Git/Git_Tips_%26_Tricks
 

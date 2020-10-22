@@ -225,21 +225,21 @@ Guide for reviewing
 -  Check adherence to the :ref:`GROMACS coding
    standards <style-guidelines>`;
 -  We should try to ensure that commits that implement bugfixes (as
-   well as important features and tasks) get a `Redmine`_ entry created
+   well as important features and tasks) get a `GitLab`_ entry created
    and linked. The linking is done **automatically** by
-   `Redmine`_ **if the commit message contains** keyword
+   `GitLab`_ **if the commit message contains** keyword
    "#issueID", the valid syntax is explained below.
 -  If the commit is a **bugfix**\ :
 
    -  if present in Redmine it has to contain a valid reference to the
       issue;
    -  if it's a **major bug**, there has to be a bug report filed in
-      `Redmine`_  (with urgent or
+      `GitLab`_  (with urgent or
       immediate priority) and referenced appropriately.
 
 -  If the commit is a **feature/task** implementation:
 
-   -  if it's present in `Redmine`_ it
+   -  if it's present in `GitLab`_ it
       has to contain a valid reference to the issue;
    -  If no current issue is currently present and the change
       would benefit of one for future explanation on why it was
@@ -293,7 +293,7 @@ How do I link fixes with Redmine issues?
 ----------------------------------------
 
 The linking of commits that relate to an existing issue is
-done automatically by `Redmine`_ if
+done automatically by `GitLab`_ if
 the git commit message contains a reference to the Redmine entry
 through the issueID, the numeric ID of the respective issue (bug,
 feature, task). The general syntax of a git comit reference is [keyword]
