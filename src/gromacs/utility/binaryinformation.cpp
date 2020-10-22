@@ -165,9 +165,9 @@ void printCopyright(gmx::TextWriter* writer)
     writer->writeLine(formatCentered(78, "GROMACS is written by:"));
     for (int i = 0; i < NCONTRIBUTORS;)
     {
-        for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
+        for (int j = 0; j < 3 && i < NCONTRIBUTORS; ++j, ++i)
         {
-            const int            width = 18;
+            const int            width = 26;
             std::array<char, 30> buf;
             const int            offset = centeringOffset(width, strlen(Contributors[i]));
             GMX_RELEASE_ASSERT(static_cast<int>(strlen(Contributors[i])) + offset < gmx::ssize(buf),
