@@ -105,9 +105,12 @@ static __global__ void reduceKernel(const float3* __restrict__ gm_nbnxmForce,
     return;
 }
 
-GpuForceReduction::Impl::Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStream) :
+GpuForceReduction::Impl::Impl(const DeviceContext& deviceContext,
+                              const DeviceStream&  deviceStream,
+                              gmx_wallcycle*       wcycle) :
     deviceContext_(deviceContext),
-    deviceStream_(deviceStream){};
+    deviceStream_(deviceStream),
+    wcycle_(wcycle){};
 
 void GpuForceReduction::Impl::reinit(float3*               baseForcePtr,
                                      const int             numAtoms,
@@ -123,10 +126,13 @@ void GpuForceReduction::Impl::reinit(float3*               baseForcePtr,
     accumulate_       = accumulate;
     completionMarker_ = completionMarker;
     cellInfo_.cell    = cell.data();
+
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
     reallocateDeviceBuffer(&cellInfo_.d_cell, numAtoms_, &cellInfo_.cellSize,
                            &cellInfo_.cellSizeAlloc, deviceContext_);
     copyToDeviceBuffer(&cellInfo_.d_cell, &(cellInfo_.cell[atomStart]), 0, numAtoms_, deviceStream_,
                        GpuApiCallBehavior::Async, nullptr);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 
     dependencyList_.clear();
 };
@@ -150,6 +156,8 @@ void GpuForceReduction::Impl::addDependency(GpuEventSynchronizer* const dependen
 
 void GpuForceReduction::Impl::execute()
 {
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_NB_F_BUF_OPS);
 
     if (numAtoms_ == 0)
     {
@@ -191,12 +199,17 @@ void GpuForceReduction::Impl::execute()
     {
         completionMarker_->markEvent(deviceStream_);
     }
+
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_NB_F_BUF_OPS);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 GpuForceReduction::Impl::~Impl(){};
 
-GpuForceReduction::GpuForceReduction(const DeviceContext& deviceContext, const DeviceStream& deviceStream) :
-    impl_(new Impl(deviceContext, deviceStream))
+GpuForceReduction::GpuForceReduction(const DeviceContext& deviceContext,
+                                     const DeviceStream&  deviceStream,
+                                     gmx_wallcycle*       wcycle) :
+    impl_(new Impl(deviceContext, deviceStream, wcycle))
 {
 }
 

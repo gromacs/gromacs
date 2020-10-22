@@ -57,7 +57,8 @@ class GpuForceReduction::Impl
 };
 
 GpuForceReduction::GpuForceReduction(const DeviceContext& /* deviceContext */,
-                                     const DeviceStream& /* deviceStream */) :
+                                     const DeviceStream& /* deviceStream */,
+                                     gmx_wallcycle* /*wcycle*/) :
     impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub has been called instead of the correct implementation.");
