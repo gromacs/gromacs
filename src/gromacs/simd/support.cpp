@@ -94,28 +94,6 @@ const std::string& simdString(SimdType s)
     return name.at(s);
 }
 
-namespace
-{
-
-
-//! Helper to detect correct AMD Zen architecture.
-bool cpuIsAmdZen1(const CpuInfo& cpuInfo)
-{
-    // Both Zen/Zen+/Zen2 have family==23
-    // Model numbers for Zen:
-    // 1)  Naples, Whitehaven, Summit ridge, and Snowy Owl
-    // 17) Raven ridge
-    // Model numbers for Zen+:
-    // 8)  Pinnacle Ridge
-    // 24) Picasso
-    return (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Amd && cpuInfo.family() == 23
-            && (cpuInfo.model() == 1 || cpuInfo.model() == 17 || cpuInfo.model() == 8
-                || cpuInfo.model() == 24));
-}
-
-} // namespace
-
-
 SimdType simdSuggested(const CpuInfo& c)
 {
     SimdType suggested = SimdType::None;

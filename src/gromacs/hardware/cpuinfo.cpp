@@ -1168,9 +1168,26 @@ const std::string& CpuInfo::featureString(Feature f)
 
 bool cpuIsX86Nehalem(const CpuInfo& cpuInfo)
 {
-    return (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Intel && cpuInfo.family() == 6
+    return (cpuInfo.vendor() == CpuInfo::Vendor::Intel && cpuInfo.family() == 6
             && (cpuInfo.model() == 0x2E || cpuInfo.model() == 0x1A || cpuInfo.model() == 0x1E
                 || cpuInfo.model() == 0x2F || cpuInfo.model() == 0x2C || cpuInfo.model() == 0x25));
+}
+
+bool cpuIsAmdZen1(const CpuInfo& cpuInfo)
+{
+    /* Both Zen/Zen+/Zen2 have family==23
+     * Model numbers for Zen:
+     * 1)  Naples, Whitehaven, Summit Ridge, and Snowy Owl;
+     * 17) Raven Ridge.
+     * Model numbers for Zen+:
+     * 8)  Pinnacle Ridge;
+     * 24) Picasso.
+     * Hygon got license for Zen1, but not Zen2 (https://www.tomshardware.com/news/amd-zen-china-x86-ip-license,39573.html)
+     */
+    return (cpuInfo.vendor() == CpuInfo::Vendor::Amd && cpuInfo.family() == 23
+            && (cpuInfo.model() == 1 || cpuInfo.model() == 17 || cpuInfo.model() == 8
+                || cpuInfo.model() == 24))
+           || (cpuInfo.vendor() == CpuInfo::Vendor::Hygon);
 }
 
 } // namespace gmx

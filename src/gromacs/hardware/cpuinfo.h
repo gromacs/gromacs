@@ -273,6 +273,14 @@ private:
  */
 bool cpuIsX86Nehalem(const CpuInfo& cpuInfo);
 
+/*! \brief Return true if the CPU is a first generation AMD Zen (produced by AMD or Hygon)
+ *
+ * \param cpuInfo  Object with cpu information
+ *
+ * \returns  True if running on a first generation AMD Zen
+ */
+bool cpuIsAmdZen1(const CpuInfo& cpuInfo);
+
 } // namespace gmx
 
 #endif // GMX_HARDWARE_CPUINFO_H
