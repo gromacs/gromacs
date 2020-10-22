@@ -37,6 +37,8 @@
 
 #include "seed.h"
 
+#include <time.h>
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -49,14 +51,14 @@ namespace gmx
  * Due to a bug in AMD Ryzen microcode, RDRAND may always return -1 (0xFFFFFFFF).
  * To avoid that, fall back to using PRNG instead of RDRAND if this happens.
  *
- * \param[in] rd Random device to check.
- *
  * \returns The result of the checks.
  */
-static bool checkIfRandomDeviceIsFunctional(std::random_device* rd)
+static bool checkIfRandomDeviceIsFunctional()
 {
-    uint64_t randomNumber1 = static_cast<uint64_t>((*rd)());
-    uint64_t randomNumber2 = static_cast<uint64_t>((*rd)());
+    std::random_device rd;
+
+    uint64_t randomNumber1 = static_cast<uint64_t>(rd());
+    uint64_t randomNumber2 = static_cast<uint64_t>(rd());
 
     // Due to a bug in AMD Ryzen microcode, RDRAND may always return -1 (0xFFFFFFFF).
     // To avoid that, fall back to using PRNG instead of RDRAND if this happens.
@@ -75,40 +77,44 @@ static bool checkIfRandomDeviceIsFunctional(std::random_device* rd)
 
 /*! \brief Get the next pure or pseudo-random number
  *
- * Returns the next random number taken from the hardware generator or from standard PRNG.
+ * Returns the next random number taken from the hardware generator or from PRNG.
  *
- * \param[in] useRdrand  Whether the hardware source of random numbers should be used.
- * \param[in] rd         Pointer to the random device to use.
+ * \param[in] gen  Pseudo-random/random numbers generator/device to use.
  *
  * \return Random or pseudo-random number.
  */
-static inline uint64_t getNextRandomNumber(bool useRdrand, std::random_device* rd)
+template<typename GeneratorType>
+static uint64_t makeRandomSeedInternal(GeneratorType& gen)
 {
-    if (debug && !useRdrand)
+    constexpr std::size_t resultBits = std::numeric_limits<uint64_t>::digits;
+    constexpr std::size_t numBitsInRandomNumber =
+            std::numeric_limits<typename GeneratorType::result_type>::digits;
+
+    uint64_t result = static_cast<uint64_t>(gen());
+    // This is needed so that compiler understands that what follows is a dead branch
+    // and not complains about shift count larger than number of bits in the result.
+    constexpr std::size_t shiftCount = (resultBits < numBitsInRandomNumber) ? numBitsInRandomNumber : 0;
+    for (std::size_t bits = numBitsInRandomNumber; bits < resultBits; bits += numBitsInRandomNumber)
     {
-        fprintf(debug,
-                "Will use pseudo-random number generator (PRNG) rather than hardware device.");
+        result = (result << shiftCount) | static_cast<uint64_t>(gen());
     }
-    return useRdrand ? static_cast<uint64_t>((*rd)()) : static_cast<uint64_t>(rand());
+    return result;
 }
 
 uint64_t makeRandomSeed()
 {
-    std::random_device rd;
-
-    bool useRdrand = checkIfRandomDeviceIsFunctional(&rd);
-
-    const std::size_t resultBits = std::numeric_limits<uint64_t>::digits;
-    const std::size_t numBitsInRandomNumber =
-            useRdrand ? std::numeric_limits<std::random_device::result_type>::digits
-                      : std::numeric_limits<int>::digits;
-
-    uint64_t result = getNextRandomNumber(useRdrand, &rd);
-    for (std::size_t bits = numBitsInRandomNumber; bits < resultBits; bits += numBitsInRandomNumber)
+    bool useRdrand = checkIfRandomDeviceIsFunctional();
+    if (useRdrand)
     {
-        result = (result << numBitsInRandomNumber) | getNextRandomNumber(useRdrand, &rd);
+        std::random_device rd;
+        return makeRandomSeedInternal(rd);
     }
-    return result;
+    else
+    {
+        std::mt19937_64 prng(time(nullptr));
+        return makeRandomSeedInternal(prng);
+    }
 }
+
 
 } // namespace gmx

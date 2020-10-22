@@ -43,6 +43,8 @@
 
 #include "config.h"
 
+#include <time.h>
+
 #include <random>
 #include <string>
 
@@ -74,9 +76,9 @@ bool beCool()
 
 //! Return a valid random index into \c arrayRef
 template<typename T>
-const T& getRandomElement(gmx::ArrayRef<const T> arrayRef)
+const T& getPseudoRandomElement(gmx::ArrayRef<const T> arrayRef)
 {
-    std::random_device                    generator;
+    std::mt19937_64                       generator(time(nullptr));
     std::uniform_int_distribution<size_t> distribution(0, arrayRef.size() - 1);
     return arrayRef[distribution(generator)];
 }
@@ -116,7 +118,7 @@ std::string bromacs()
 
     if (beCool())
     {
-        return getRandomElement<const char*>(bromacsArray);
+        return getPseudoRandomElement<const char*>(bromacsArray);
     }
     else
     {
@@ -1514,7 +1516,7 @@ std::string getCoolQuote()
 
     if (beCool())
     {
-        auto quote = getRandomElement<Quote>(quoteArray);
+        auto quote = getPseudoRandomElement<Quote>(quoteArray);
         return formatString("GROMACS reminds you: \"%s\" (%s)", quote.text, quote.author);
     }
     else
