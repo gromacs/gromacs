@@ -83,7 +83,8 @@ struct FileTypeMapping
 const FileTypeMapping c_fileTypeMapping[] = { { eftTopology, efTPS },   { eftRunInput, efTPR },
                                               { eftTrajectory, efTRX }, { eftEnergy, efEDR },
                                               { eftPDB, efPDB },        { eftIndex, efNDX },
-                                              { eftPlot, efXVG },       { eftGenericData, efDAT } };
+                                              { eftPlot, efXVG },       { eftGenericData, efDAT },
+                                              { eftCsv, efCSV } };
 
 /********************************************************************
  * FileTypeHandler

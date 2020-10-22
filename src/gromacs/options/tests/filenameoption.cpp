@@ -207,4 +207,38 @@ TEST(FileNameOptionTest, GivesErrorOnInvalidFileSuffix)
     EXPECT_TRUE(value.empty());
 }
 
+TEST(FileNameOptionTest, HandlesRequiredCsvValueWithoutExtension)
+{
+    gmx::Options options;
+    std::string  value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+            FileNameOption("f").store(&value).required().filetype(gmx::eftCsv).outputFile().defaultBasename("testfile")));
+    EXPECT_EQ("testfile.csv", value);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ("testfile.csv", value);
+}
+
+TEST(FileNameOptionTest, HandlesRequiredCsvOptionWithoutValue)
+{
+    gmx::Options options;
+    std::string  value;
+    ASSERT_NO_THROW_GMX(options.addOption(
+            FileNameOption("f").store(&value).required().filetype(gmx::eftCsv).outputFile().defaultBasename("testfile")));
+    EXPECT_EQ("testfile.csv", value);
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("f"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
+
+    EXPECT_EQ("testfile.csv", value);
+}
+
 } // namespace
