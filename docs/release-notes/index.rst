@@ -8,22 +8,42 @@ releases of |Gromacs|. Major releases contain changes to the
 functionality supported, whereas patch releases contain only fixes for
 issues identified in the corresponding major releases.
 
-Two versions of |Gromacs| are under active maintenance, the 2021
-series and the 2020 series. In the latter, only highly conservative
+Two versions of |Gromacs| are under active maintenance, the 2022
+series and the 2021 series. In the latter, only highly conservative
 fixes will be made, and only to address issues that affect scientific
 correctness. Naturally, some of those releases will be made after the
-year 2020 ends, but we keep 2019 in the name so users understand how
+year 2021 ends, but we keep 2021 in the name so users understand how
 up to date their version is. Such fixes will also be incorporated into
-the 2021 release series, as appropriate. Around the time the 2022
-release is made, the 2020 series will no longer be maintained.
+the 2022 release series, as appropriate. Around the time the 2023
+release is made, the 2021 series will no longer be maintained.
 
 Where issue numbers are reported in these release notes, more details
 can be found at https://gitlab.com/gromacs/gromacs/-/issues at that issue number.
 
-|Gromacs| 2021 series
+|Gromacs| 2022 series
 ---------------------
 
 .. todolist::
+
+Major release
+^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2022/major/highlights
+   2022/major/features
+   2022/major/performance
+   2022/major/tools
+   2022/major/bugs-fixed
+   2022/major/deprecated-functionality
+   2022/major/removed-functionality
+   2022/major/portability
+   2022/major/miscellaneous
+
+
+|Gromacs| 2021 series
+---------------------
 
 Major release
 ^^^^^^^^^^^^^
@@ -41,6 +61,8 @@ Major release
    2021/major/portability
    2021/major/miscellaneous
 
+Older (unmaintained) |Gromacs| series
+-------------------------------------------------------
 
 |Gromacs| 2020 series
 ---------------------
@@ -105,9 +127,6 @@ Major release
    2019/major/removed-functionality
    2019/major/portability
    2019/major/miscellaneous
-
-Older (unmaintained) |Gromacs| series
--------------------------------------------------------
 
 |Gromacs| 2018 series
 ---------------------
