@@ -73,8 +73,9 @@ public:
      *
      * \param [in] deviceStream  Stream to use for reduction
      * \param [in] deviceContext GPU device context
+     * \param [in] wcycle        The wallclock counter
      */
-    Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStream);
+    Impl(const DeviceContext& deviceContext, const DeviceStream& deviceStreami, gmx_wallcycle* wcycle);
     ~Impl();
 
     /*! \brief Register a nbnxm-format force to be reduced
@@ -137,6 +138,8 @@ private:
     DeviceBuffer<RVec> rvecForceToAdd_ = nullptr;
     //! event to be marked when redcution launch has been completed
     GpuEventSynchronizer* completionMarker_ = nullptr;
+    //! The wallclock counter
+    gmx_wallcycle* wcycle_ = nullptr;
 };
 
 } // namespace gmx

@@ -155,6 +155,7 @@ static const char* wcsn[ewcsNR] = {
     "DD make top.",
     "DD make constr.",
     "DD top. other",
+    "DD GPU ops.",
     "NS grid local",
     "NS grid non-loc.",
     "NS search local",

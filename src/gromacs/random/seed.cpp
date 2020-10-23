@@ -91,14 +91,12 @@ static uint64_t makeRandomSeedInternal(GeneratorType& gen)
             std::numeric_limits<typename GeneratorType::result_type>::digits;
 
     uint64_t result = static_cast<uint64_t>(gen());
-    // This conditional is needed so that compiler understands that what follows is a dead branch
-    // and not complains about shift larger than number of bits in the result.
-    if (resultBits < numBitsInRandomNumber)
+    // This is needed so that compiler understands that what follows is a dead branch
+    // and not complains about shift count larger than number of bits in the result.
+    constexpr std::size_t shiftCount = (resultBits < numBitsInRandomNumber) ? numBitsInRandomNumber : 0;
+    for (std::size_t bits = numBitsInRandomNumber; bits < resultBits; bits += numBitsInRandomNumber)
     {
-        for (std::size_t bits = numBitsInRandomNumber; bits < resultBits; bits += numBitsInRandomNumber)
-        {
-            result = (result << numBitsInRandomNumber) | static_cast<uint64_t>(gen());
-        }
+        result = (result << shiftCount) | static_cast<uint64_t>(gen());
     }
     return result;
 }

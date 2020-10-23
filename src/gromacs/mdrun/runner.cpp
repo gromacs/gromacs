@@ -1693,10 +1693,10 @@ int Mdrunner::mdrunner()
         {
             fr->gpuForceReduction[gmx::AtomLocality::Local] = std::make_unique<gmx::GpuForceReduction>(
                     deviceStreamManager->context(),
-                    deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedLocal));
+                    deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedLocal), wcycle);
             fr->gpuForceReduction[gmx::AtomLocality::NonLocal] = std::make_unique<gmx::GpuForceReduction>(
                     deviceStreamManager->context(),
-                    deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedNonLocal));
+                    deviceStreamManager->stream(gmx::DeviceStreamType::NonBondedNonLocal), wcycle);
         }
 
         std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;

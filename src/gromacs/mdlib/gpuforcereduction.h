@@ -45,6 +45,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/fixedcapacityvector.h"
@@ -73,8 +74,11 @@ public:
      *
      * \param [in] deviceContext GPU device context
      * \param [in] deviceStream  Stream to use for reduction
+     * \param [in] wcycle        Wall-clock cycle counter
      */
-    GpuForceReduction(const DeviceContext& deviceContext, const DeviceStream& deviceStream);
+    GpuForceReduction(const DeviceContext& deviceContext,
+                      const DeviceStream&  deviceStream,
+                      gmx_wallcycle*       wcycle);
     ~GpuForceReduction();
 
     /*! \brief Register a nbnxm-format force to be reduced

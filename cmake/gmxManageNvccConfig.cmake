@@ -149,6 +149,19 @@ if (GMX_CUDA_TARGET_COMPUTE)
     set_property(CACHE GMX_CUDA_TARGET_COMPUTE PROPERTY TYPE STRING)
 endif()
 
+# FindCUDA.cmake is unaware of the mechanism used by cmake to embed
+# the compiler flag for the required C++ standard in the generated
+# build files, so we have to pass it ourselves
+if (CUDA_VERSION VERSION_LESS 10.2)
+    # CUDA doesn't formally support C++17 until version 10.2, so for
+    # now host-side code that compiles with CUDA is restricted to
+    # C++14. This needs to be expressed formally for older CUDA
+    # version.
+    list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
+else()
+    list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
+endif()
+
 # assemble the CUDA flags
 list(APPEND GMX_CUDA_NVCC_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 list(APPEND GMX_CUDA_NVCC_FLAGS "-use_fast_math")
@@ -161,13 +174,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     # where nullptr would be preferable. GROMACS can't fix these, so
     # must suppress them.
     GMX_TEST_CXXFLAG(CXXFLAGS_NO_ZERO_AS_NULL_POINTER_CONSTANT "-Wno-zero-as-null-pointer-constant" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
-    if (CUDA_VERSION VERSION_LESS 11.0)
-        # CUDA header crt/math_functions.h before CUDA 11.0 used
-        # throw() specifications that are deprecated in more recent
-        # C++ versions. GROMACS can't fix these, so must suppress
-        # them.
-        GMX_TEST_CXXFLAG(CXXFLAGS_NO_DEPRECATED_DYNAMIC_EXCEPTION_SPEC "-Wno-deprecated-dynamic-exception-spec" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
-    endif()
+
+    # CUDA header crt/math_functions.h in at least CUDA 10.x and 11.1
+    # used throw() specifications that are deprecated in more recent
+    # C++ versions. GROMACS can't fix these, so must suppress them.
+    GMX_TEST_CXXFLAG(CXXFLAGS_NO_DEPRECATED_DYNAMIC_EXCEPTION_SPEC "-Wno-deprecated-dynamic-exception-spec" NVCC_CLANG_SUPPRESSIONS_CXXFLAGS)
+
     # Add these flags to those used for the host compiler. The
     # "-Xcompiler" prefix directs nvcc to only use them for host
     # compilation, which is all that is needed in this case.

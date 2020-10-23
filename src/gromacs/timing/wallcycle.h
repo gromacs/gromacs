@@ -107,6 +107,7 @@ enum
     ewcsDD_MAKETOP,
     ewcsDD_MAKECONSTR,
     ewcsDD_TOPOTHER,
+    ewcsDD_GPU,
     ewcsNBS_GRID_LOCAL,
     ewcsNBS_GRID_NONLOCAL,
     ewcsNBS_SEARCH_LOCAL,

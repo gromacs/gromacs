@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2018,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -59,10 +59,6 @@ if (GMX_PREFER_STATIC_LIBS)
     endif()
     set(SHARED_LIBS_DEFAULT OFF)
 endif()
-set(GMX_PREFER_STATIC_LIBS_DEFAULT OFF)
-if (WIN32 AND NOT BUILD_SHARED_LIBS)
-    set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
-endif()
 if (NOT GMX_BUILD_SHARED_EXE)
     set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
     set(SHARED_LIBS_DEFAULT OFF)
@@ -70,6 +66,12 @@ endif()
 
 # Declare the user-visible options
 option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
+
+set(GMX_PREFER_STATIC_LIBS_DEFAULT OFF)
+if (WIN32 OR NOT BUILD_SHARED_LIBS)
+    set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
+endif()
+
 if(BUILD_SHARED_LIBS AND GMX_BUILD_MDRUN_ONLY)
     message(WARNING "Both BUILD_SHARED_LIBS and GMX_BUILD_MDRUN_ONLY are set. Generally, an mdrun-only build should prefer to use static libraries, which is the default if you make a fresh build tree. You may be re-using an old build tree, and so may wish to set BUILD_SHARED_LIBS=off yourself.")
 endif()
@@ -112,7 +114,8 @@ function(gmx_manage_prefer_static_libs_flags build_type)
     # Change the real CMake variables for the given build type in each
     # language, in the parent scope.
     foreach(language C CXX)
-        string(REPLACE /MD /MT CMAKE_${language}_FLAGS${punctuation}${build_type} ${CMAKE_${language}_FLAGS${punctuation}${build_type}} PARENT_SCOPE)
+        string(REPLACE /MD /MT CMAKE_${language}_FLAGS${punctuation}${build_type} ${CMAKE_${language}_FLAGS${punctuation}${build_type}})
+	set(CMAKE_${language}_FLAGS${punctuation}${build_type} ${CMAKE_${language}_FLAGS${punctuation}${build_type}} PARENT_SCOPE)
     endforeach()
 endfunction()
 
@@ -144,6 +147,7 @@ IF( WIN32)
   IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
     if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work
         STRING(REPLACE "/INCREMENTAL:YES" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
+        set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} PARENT_SCOPE)
     endif()
   ENDIF()
 ENDIF()

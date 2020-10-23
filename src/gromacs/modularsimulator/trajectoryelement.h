@@ -148,7 +148,7 @@ private:
     //! The next state writing step
     Step writeStateStep_;
     //! The next communicated log writing step
-    Step logWritingStep_;
+    Step writeLogStep_;
 
     //! The output object
     gmx_mdoutf* outf_;

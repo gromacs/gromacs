@@ -65,6 +65,7 @@ TrajectoryElement::TrajectoryElement(std::vector<ITrajectoryWriterClient*> write
                                      const bool                            simulationsShareState) :
     writeEnergyStep_(-1),
     writeStateStep_(-1),
+    writeLogStep_(-1),
     outf_(init_mdoutf(fplog,
                       nfile,
                       fnm,
@@ -122,7 +123,7 @@ void TrajectoryElement::scheduleTask(Step step, Time time, const RegisterRunFunc
 {
     const bool writeEnergyThisStep = writeEnergyStep_ == step;
     const bool writeStateThisStep  = writeStateStep_ == step;
-    const bool writeLogThisStep    = logWritingStep_ == step;
+    const bool writeLogThisStep    = writeLogStep_ == step;
     if (writeEnergyThisStep || writeStateThisStep || writeLogThisStep)
     {
         registerRunFunction([this, step, time, writeStateThisStep, writeEnergyThisStep, writeLogThisStep]() {
@@ -161,7 +162,7 @@ void TrajectoryElement::write(Step step, Time time, bool writeState, bool writeE
 
 std::optional<SignallerCallback> TrajectoryElement::registerLoggingCallback()
 {
-    return [this](Step step, Time /*unused*/) { logWritingStep_ = step; };
+    return [this](Step step, Time /*unused*/) { writeLogStep_ = step; };
 }
 
 std::optional<SignallerCallback> TrajectoryElement::registerTrajectorySignallerCallback(TrajectoryEvent event)
