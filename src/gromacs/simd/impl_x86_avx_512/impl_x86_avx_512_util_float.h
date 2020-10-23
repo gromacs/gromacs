@@ -60,7 +60,7 @@ namespace
 // shifting. Currently up to 8 is accelerated. Could be accelerated for any
 // number with a constexpr log2 function.
 template<int n>
-SimdFInt32 fastMultiply(SimdFInt32 x)
+static inline SimdFInt32 fastMultiply(SimdFInt32 x)
 {
     if (n == 2)
     {
