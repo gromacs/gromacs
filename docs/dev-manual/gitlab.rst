@@ -1,5 +1,5 @@
-GitLab
-======
+GitLab CI Pipeline Execution
+============================
 
 The repository contains DockerFiles and GitLab Runner configuration
 files to support automated testing and documentation builds.
@@ -18,12 +18,11 @@ This documentation is incomplete, pending resolution of :issue:`3275`.
 
 ..  todo:: Expand this documentation to resolve :issue:`3275`
 
-Pipeline execution
-------------------
-
 .. todo:: Discuss the distinct characteristics of |Gromacs| CI pipelines to relevant to job configuration.
+          (:issue:`3472` and :issue:`3617`)
 
-.. todo:: Comment on the number of pipelines that can be or which are likely to be running at the same time.
+.. todo:: (:issue:`3472` and :issue:`3617`) Comment on the number of pipelines that can be or which are likely to be running at the same time.
+          (:issue:`3472` and :issue:`3617`)
 
 .. note::
 
@@ -35,7 +34,7 @@ Pipeline execution
     sufficient testing before acceptance.
 
 Configuration files
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 At the root of the repository, :file:`.gitlab-ci.yml` defines the stages and
 some default parameters, then includes files from :file:`admin/gitlab-ci/` to
@@ -47,7 +46,7 @@ Such jobs are not directly eligible to run, but may be used as templates
 via the `*extends* job property <https://docs.gitlab.com/ee/ci/yaml/#extends>`_.
 
 Job parameters
-~~~~~~~~~~~~~~
+--------------
 
 Refer to https://docs.gitlab.com/ee/ci/yaml for complete documentation on
 GitLab CI job parameters, but note the following GROMACS-specific conventions.
@@ -69,9 +68,9 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         to `cache:key <https://docs.gitlab.com/ee/ci/yaml/#cachekey>`__
 
     image
-        Part of the tool chain configuration. Instead of setting *image*
-        directly, *extend* a *.use_<toolchain>* template from
-        :file:`admin/gitlab-ci/global.gitlab-ci.yml`
+        See :doc:`/dev-manual/containers` for more about the Docker images used for the
+        CI pipelines. If a job depends on artifacts from previous jobs, be sure
+        to use the same (or a compatible) image as the dependency!
 
     rules
     only
@@ -110,7 +109,7 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         for details of the merging behavior. Refer to :ref:`variables` for local usage.
 
 Schedules and triggers
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 Pipeline `schedules <https://gitlab.com/help/ci/pipelines/schedules>`__ are
 configured through the GitLab web interface.
@@ -131,7 +130,7 @@ or one of the *release* branches. Those jobs can be triggered manually using the
 through the Gitlab web interface.
 
 Global templates
-~~~~~~~~~~~~~~~~
+----------------
 
 In addition to the templates in the main job definition files,
 common "mix-in" functionality and behavioral templates are defined in
@@ -149,7 +148,7 @@ by a meaningful descriptor and documented within
 :file:`admin/gitlab-ci/global.gitlab-ci.yml`
 
 Job names
-~~~~~~~~~
+---------
 
 Job names should
 
@@ -170,7 +169,7 @@ basic job name from qualifiers or details. Also consider
 .. _variables:
 
 Updating regression tests
-~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------
 
 Changes in |Gromacs| that require changes in regression-tests are notoriously hard,
 because a merge request that tests against the non-updated version of the
@@ -181,11 +180,11 @@ merge request pipelines to fail.
 The solution is a new regression-test branch or commit, uploaded to gitlab.
 Then set that regression test branch with REGRESSIONTESTBRANCH or
 the specific commit with REGRESSIONTESTCOMMIT when
-running the specific pipeline that requires the regressiontest-update. 
+running the specific pipeline that requires the regressiontest-update.
 See below on how to set variables for specific pipelines.
 
 Variables
-~~~~~~~~~
+---------
 
 The GitLab CI framework, GitLab Runner, plugins, and our own scripts set and
 use several `variables <https://docs.gitlab.com/ee/ci/variables/README.html>`__.
@@ -238,12 +237,12 @@ Other important variable keys are as follows.
         pipeline execution time.
 
     REGRESSIONTESTBRANCH
-        Use this branch of the regressiontests rather than master to allow for 
+        Use this branch of the regressiontests rather than master to allow for
         merge requests that require updated regression tests with valid CI tests.
 
     REGRESSIONTESTCOMMIT
-        Use this commit to the regressiontests rather than the head on master to 
-        allow for merge requests that require updated regression tests with 
+        Use this commit to the regressiontests rather than the head on master to
+        allow for merge requests that require updated regression tests with
         valid CI tests.
 
     POST_MERGE_ACCEPTANCE
@@ -257,7 +256,7 @@ Other important variable keys are as follows.
     ``BUILD_DIR``, ``INSTALL_DIR``, ``CACHE_FALLBACK_KEY``, ...
 
 Setting variables
-~~~~~~~~~~~~~~~~~
+-----------------
 
 Variables for individual piplelines are set in the gitlab interface under 
 ``CI/CD``; ``Pipelines``. Then chose in the top right corner ``Run Piplelines``.

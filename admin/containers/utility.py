@@ -32,9 +32,37 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""A `utility` module helps manage the matrix of configurations for CI testing and build containers.
+"""A utility module to help manage the matrix of configurations for CI testing and build containers.
 
-Provides importable argument parser.
+When called as a stand alone script, prints a Docker image name based on the
+command line arguments. The Docker image name is of the form used in the GROMACS
+CI pipeline jobs.
+
+Example::
+
+    $ python3 -m utility --llvm --doxygen
+    gromacs/ci-ubuntu-18.04-llvm-7-docs
+
+See Also:
+    :file:`buildall.sh`
+
+As a module, provides importable argument parser and docker image name generator.
+
+Note that the parser is created with ``add_help=False`` to make it friendly as a
+parent parser, but this means that you must derive a new parser from it if you
+want to see the full generated command line help.
+
+Example::
+
+    import utility.parser
+    # utility.parser does not support `-h` or `--help`
+    parser = argparse.ArgumentParser(
+        description='GROMACS CI image creation script',
+        parents=[utility.parser])
+    # ArgumentParser(add_help=True) is default, so parser supports `-h` and `--help`
+
+See Also:
+    :file:`scripted_gmx_docker_builds.py`
 
 Authors:
     * Paul Bauer <paul.bauer.q@gmail.com>
@@ -58,8 +86,9 @@ parsers for tools.
     Instead, inherit from it with the *parents* argument to :py:class:`argparse.ArgumentParser`
 """
 
-parser.add_argument('--cmake', type=str, default='3.13.0',
+parser.add_argument('--cmake', nargs='*', type=str, default=['3.13.0', '3.15.7', '3.17.2'],
                     help='Selection of CMake version to provide to base image')
+
 compiler_group = parser.add_mutually_exclusive_group()
 compiler_group.add_argument('--gcc', type=int, nargs='?', const=7, default=7,
                             help='Select GNU compiler tool chain. (Default) '
@@ -94,11 +123,63 @@ parser.add_argument('--mpi', type=str, nargs='?', const='openmpi', default=None,
 parser.add_argument('--tsan', type=str, nargs='?', const='llvm', default=None,
                     help='Build special compiler versions with TSAN OpenMP support')
 
-parser.add_argument('--opencl', type=str, nargs='?', const='nvidia', default=None,
-                    help='Provide environment for OpenCL builds')
-
 parser.add_argument('--clfft', type=str, nargs='?', const='master', default=None,
                     help='Add external clFFT libraries to the build image')
 
 parser.add_argument('--doxygen', type=str, nargs='?', const='1.8.5', default=None,
                     help='Add doxygen environment for documentation builds. Also adds other requirements needed for final docs images.')
+
+# Supported Python versions for maintained branches.
+_python_versions = ['3.6.10', '3.7.7', '3.8.2']
+parser.add_argument('--venvs', nargs='*', type=str, default=_python_versions,
+                    help='List of Python versions ("major.minor.patch") for which to install venvs. '
+                         'Default: {}'.format(' '.join(_python_versions)))
+
+
+def image_name(configuration: argparse.Namespace) -> str:
+    """Generate docker image name.
+
+    The configuration slug has the form::
+
+        <distro>-<version>-<compiler>-<major version>[-<gpusdk>-<version>][-<use case>]
+
+    Image name is prefixed by ``gromacs/ci-``
+
+    Arguments:
+        configuration: Docker image configuration as described by the parsed arguments.
+
+    """
+    elements = []
+    for distro in ('centos', 'ubuntu'):
+        version = getattr(configuration, distro, None)
+        if version is not None:
+            elements.append(distro + '-' + version)
+            break
+    for compiler in ('icc', 'llvm', 'gcc'):
+        version = getattr(configuration, compiler, None)
+        if version is not None:
+            elements.append(compiler + '-' + str(version).split('.')[0])
+            break
+    for gpusdk in ('cuda',):
+        version = getattr(configuration, gpusdk, None)
+        if version is not None:
+            elements.append(gpusdk + '-' + version)
+    if configuration.oneapi is not None:
+        elements.append('oneapi-' + configuration.oneapi)
+
+    # Check for special cases
+    # The following attribute keys indicate the image is built for the named
+    # special use case.
+    cases = {'doxygen': 'docs',
+             'tsan': 'tsan'}
+    for attr in cases:
+        value = getattr(configuration, attr, None)
+        if value is not None:
+            elements.append(cases[attr])
+    slug = '-'.join(elements)
+    return 'gromacs/ci-' + slug
+
+
+if __name__ == "__main__":
+    args = argparse.ArgumentParser(parents=[parser]).parse_args()
+    print(image_name(args))
