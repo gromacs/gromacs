@@ -237,7 +237,7 @@ library. LAM-MPI_ might work, but since it has
 been deprecated for years, it is not supported.
 
 For example, depending on your actual MPI library, use ``cmake
--DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DGMX_MPI=on``.
+-DMPI_C_COMPILER=mpicc -DGMX_MPI=on``.
 
 
 CMake
