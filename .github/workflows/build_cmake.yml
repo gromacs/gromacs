@@ -112,6 +112,10 @@ jobs:
           set(path_separator ";")
         endif()
         set(ENV{PATH} "$ENV{GITHUB_WORKSPACE}${path_separator}$ENV{PATH}")
+        set(openmp_use "ON")
+        if ("${{ runner.os }}" STREQUAL "Windows")
+          set(openmp_use "OFF")
+        endif()
 
         execute_process(
           COMMAND cmake
@@ -127,6 +131,7 @@ jobs:
             -D GMX_GPU=OFF
             -D GMX_SIMD=None
             -D GMX_FFT_LIBRARY=FFTPACK
+            -D GMX_OPENMP=${openmp_use}
           RESULT_VARIABLE result
         )
         if (NOT result EQUAL 0)
