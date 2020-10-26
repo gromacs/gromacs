@@ -67,9 +67,9 @@ if (GMX_LIB_MPI)
     # Clarification should be possible with resolution of #3672.
     set(_gmx_mpi_type "library")
     # Ref https://cmake.org/cmake/help/v3.13/module/FindMPI.html#variables-for-using-mpi
-    find_package(MPI COMPONENTS CXX)
-    if (MPI_CXX_FOUND)
-        target_link_libraries(gmxapi PUBLIC MPI::MPI_CXX)
+    find_package(MPI COMPONENTS C)
+    if (MPI_C_FOUND)
+        target_link_libraries(gmxapi PUBLIC MPI::MPI_C)
     else()
         message(FATAL_ERROR "Building gmxapi for MPI-enabled GROMACS, but no MPI toolchain found.")
     endif ()
