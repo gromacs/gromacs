@@ -214,6 +214,16 @@ Other important variable keys are as follows.
         Integer version number provided by toolchain mix-in for convenience and
         internal use.
 
+    CMAKE
+        ``gromacs/ci-...`` Docker images built after October 2020 have several
+        versions of CMake installed. The most recent version of CMake in the
+        container will be appear first in ``PATH``. To allow individual jobs to
+        use specific versions of CMake, please write the job *script* sections
+        using ``$CMAKE`` instead of ``cmake`` and begin the *script* section with
+        a line such as ``- CMAKE=${CMAKE:-$(which cmake)}``. Specify a CMake
+        version by setting the *CMAKE* variable to the full executable path for
+        the CMake version you would like to use. See also :doc:`containers`.
+
     CMAKE_COMPILER_SCRIPT
         CMake command line options for a tool chain. A definition is provided by
         the mix-in toolchain definitions (e.g. ``.use-gcc8``) to be appended to

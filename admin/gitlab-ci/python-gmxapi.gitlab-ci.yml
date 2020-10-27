@@ -78,7 +78,7 @@ gmxapi-0.1:clang-8:py-3.8.2:
   extends:
     - .variables:default
     - .use-clang:base
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2
