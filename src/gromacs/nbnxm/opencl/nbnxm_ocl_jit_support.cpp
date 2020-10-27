@@ -187,10 +187,13 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
         /* Here we pass macros and static const/constexpr int variables defined
          * in include files outside the opencl as macros, to avoid
          * including those files in the plain-C JIT compilation that happens
-         * at runtime. */
+         * at runtime.
+         * Note that we need to re-add the the suffix to the floating point literals
+         * passed the to the kernel to avoid type ambiguity.
+         */
         extraDefines += gmx::formatString(
                 " -Dc_nbnxnGpuClusterSize=%d"
-                " -Dc_nbnxnMinDistanceSquared=%g"
+                " -DNBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT=%g"
                 " -Dc_nbnxnGpuNumClusterPerSupercluster=%d"
                 " -Dc_nbnxnGpuJgroupSize=%d"
                 "%s",

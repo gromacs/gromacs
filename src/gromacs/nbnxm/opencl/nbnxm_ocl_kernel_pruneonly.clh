@@ -166,7 +166,7 @@ nbnxn_kernel_prune_rolling_opencl
     /* loop over the j clusters = seen by any of the atoms in the current super-cluster */
     for (int j4 = cij4_start + tidxz; j4 < cij4_end; j4 += NTHREAD_Z)
     {
-        unsigned int imaskFull, imaskCheck, imaskNew;
+        unsigned int imaskFull = 0, imaskCheck = 0, imaskNew = 0;
 
         if (haveFreshList)
         {
