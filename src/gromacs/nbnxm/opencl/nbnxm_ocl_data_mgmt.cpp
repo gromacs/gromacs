@@ -622,15 +622,19 @@ void gpu_free(NbnxmGpu* nb)
     }
 
     /* Free kernels */
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     int kernel_count = sizeof(nb->kernel_ener_noprune_ptr) / sizeof(nb->kernel_ener_noprune_ptr[0][0]);
     free_kernels(nb->kernel_ener_noprune_ptr[0], kernel_count);
 
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     kernel_count = sizeof(nb->kernel_ener_prune_ptr) / sizeof(nb->kernel_ener_prune_ptr[0][0]);
     free_kernels(nb->kernel_ener_prune_ptr[0], kernel_count);
 
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     kernel_count = sizeof(nb->kernel_noener_noprune_ptr) / sizeof(nb->kernel_noener_noprune_ptr[0][0]);
     free_kernels(nb->kernel_noener_noprune_ptr[0], kernel_count);
 
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     kernel_count = sizeof(nb->kernel_noener_prune_ptr) / sizeof(nb->kernel_noener_prune_ptr[0][0]);
     free_kernels(nb->kernel_noener_prune_ptr[0], kernel_count);
 
