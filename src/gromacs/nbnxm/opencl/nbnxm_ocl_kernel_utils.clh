@@ -122,6 +122,9 @@
 #        define gmx_unused
 #    endif
 
+/*! \brief Single precision floating point short vector type (as rvec in the CPU codebase).
+ *   Currently only used to avoid float3 register arrays.
+ */
 typedef float fvec[3];
 
 // Data structures shared between OpenCL device code and OpenCL host code
