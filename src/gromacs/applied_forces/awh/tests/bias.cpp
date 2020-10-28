@@ -94,8 +94,9 @@ static AwhTestParameters getAwhTestParameters(int eawhgrowth, int eawhpotential)
 
     AwhDimParams& awhDimParams = params.awhDimParams;
 
-    awhDimParams.period         = 0;
-    awhDimParams.diffusion      = 0.1;
+    awhDimParams.period = 0;
+    // Correction for removal of GaussianGeometryFactor/2 in histogram size
+    awhDimParams.diffusion      = 0.1 / (0.144129616073222 * 2);
     awhDimParams.origin         = 0.5;
     awhDimParams.end            = 1.5;
     awhDimParams.coordValueInit = awhDimParams.origin;

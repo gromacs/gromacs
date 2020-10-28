@@ -602,10 +602,16 @@ free energy scales as :math:`\varepsilon^2 \sim 1/(ND)`
 estimate used by AWH to initialize :math:`N` in terms of more meaningful
 quantities
 
-.. math:: \frac{1}{N_0} = \frac{1}{N_0(\varepsilon_0, D)} \sim D\varepsilon_0^2.
+.. math:: \frac{1}{N_0} = \frac{1}{N_0(\varepsilon_0, D)} = \frac{1}{\Delta
+	  t_\mathrm{sample}} \max_d \frac{L_d^2}{2D_d} \varepsilon_0^2
           :label: eqawhn0
 
-Essentially, this tells us that a slower system (small :math:`D`)
+where :math:`L_d` is the length of the interval and :math:`D_d` is
+the diffusion constant along dimension :math:`d` of the AWH bias.
+For one dimension, :math:`L^2/2D` is the average time to diffuse
+over a distance of :math:`L`. We then takes the maximum crossing
+time over all dimensions involved in the bias.
+Essentially, this formula tells us that a slower system (small :math:`D`)
 requires more samples (larger :math:`N^0`) to attain the same level of
 accuracy (:math:`\varepsilon_0`) at a given sampling rate. Conversely,
 for a system of given diffusion, how to choose the initial biasing rate
@@ -621,9 +627,10 @@ run a short trial simulation and after the first covering check the
 maximum free energy difference of the PMF estimate. If this is much
 larger than the expected magnitude of the free energy barriers that
 should be crossed, then the system is probably being pulled too hard and
-:math:`D` should be decreased. :math:`\varepsilon_0` on the other hand,
-would only be tweaked when starting an AWH simulation using a fairly
-accurate guess of the PMF as input.
+:math:`D` should be decreased. An accurate estimate of the diffusion
+can be obtaining from an AWH simulation with the :ref:`gmx awh` tool.
+:math:`\varepsilon_0` on the other hand, should be a rough estimate
+of the initial error.
 
 Tips for efficient sampling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
