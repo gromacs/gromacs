@@ -89,10 +89,10 @@ template<class Function, class Enum, class... Enums>
 auto dispatchTemplatedFunction(Function&& f, Enum e, Enums... es)
 {
     return dispatchTemplatedFunction(
-            [&](auto... es) {
-                return compat::mp_with_index<size_t(Enum::Count)>(size_t(e), [&](auto e) {
+            [&](auto... es_) {
+                return compat::mp_with_index<size_t(Enum::Count)>(size_t(e), [&](auto e_) {
                     return std::forward<Function>(f)(
-                            std::integral_constant<Enum, static_cast<Enum>(size_t(e))>(), es...);
+                            std::integral_constant<Enum, static_cast<Enum>(size_t(e_))>(), es_...);
                 });
             },
             es...);
