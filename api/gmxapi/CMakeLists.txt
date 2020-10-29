@@ -70,6 +70,8 @@ if (GMX_LIB_MPI)
     find_package(MPI COMPONENTS C)
     if (MPI_C_FOUND)
         target_link_libraries(gmxapi PRIVATE MPI::MPI_C)
+        # If clients also need to link this target, we need to provide help in gmxapi-config.cmake
+        set(_gmxapi_find_dependencies "find_dependency(MPI COMPONENTS C)")
     else()
         message(FATAL_ERROR "Building gmxapi for MPI-enabled GROMACS, but no MPI toolchain found.")
     endif ()
