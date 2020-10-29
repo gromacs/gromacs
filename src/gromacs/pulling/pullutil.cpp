@@ -519,8 +519,9 @@ static void sum_com_part_cosweight(const pull_group_work_t* pgrp,
 
 /* calculates center of mass of selection index from all coordinates x */
 // Compiler segfault with 2019_update_5 and 2020_initial
-#if defined(__INTEL_COMPILER) \
-        && ((__INTEL_COMPILER == 1900 && __INTEL_COMPILER_UPDATE >= 5) || __INTEL_COMPILER >= 1910)
+#if defined(__INTEL_COMPILER)                                          \
+        && ((__INTEL_COMPILER == 1900 && __INTEL_COMPILER_UPDATE >= 5) \
+            || (__INTEL_COMPILER >= 1910 && __INTEL_COMPILER < 2021))
 #    pragma intel optimization_level 2
 #endif
 void pull_calc_coms(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc* pbc, double t, const rvec x[], rvec* xp)

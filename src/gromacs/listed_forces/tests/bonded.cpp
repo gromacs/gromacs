@@ -770,8 +770,8 @@ std::vector<PaddedVector<RVec>> c_coordinatesForTestsZeroAngle = {
 //! PBC values for testing
 std::vector<PbcType> c_pbcForTests = { PbcType::No, PbcType::XY, PbcType::Xyz };
 
-// Those tests give errors with the intel compiler and nothing else, so we disable them only there.
-#ifndef __INTEL_COMPILER
+// Those tests give errors with the Intel compiler (as of October 2019) and nothing else, so we disable them only there.
+#if !defined(__INTEL_COMPILER) || (__INTEL_COMPILER >= 2021)
 INSTANTIATE_TEST_CASE_P(Bond,
                         ListedForcesTest,
                         ::testing::Combine(::testing::ValuesIn(c_InputBonds),
