@@ -464,7 +464,6 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
                             int                  pulse,
                             gmx_wallcycle*       wcycle) :
     dd_(dd),
-    dimIndex_(dimIndex),
     sendRankX_(dd->neighbor[dimIndex][1]),
     recvRankX_(dd->neighbor[dimIndex][0]),
     sendRankF_(dd->neighbor[dimIndex][0]),
@@ -475,6 +474,7 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
     deviceContext_(deviceContext),
     localStream_(localStream),
     nonLocalStream_(nonLocalStream),
+    dimIndex_(dimIndex),
     pulse_(pulse),
     wcycle_(wcycle)
 {
