@@ -88,7 +88,19 @@ add_custom_target(check-nblib
         COMMENT "Running nblib tests"
         USES_TERMINAL VERBATIM)
 
-add_library(nblib SHARED "")
+set(NBLIB_MAJOR 0)
+set(NBLIB_MINOR 1)
+set(NBLIB_RELEASE ${NBLIB_MAJOR}.${NBLIB_MINOR}.0)
+
+add_library(nblib)
+set_target_properties(nblib PROPERTIES
+        VERSION_MAJOR ${NBLIB_MAJOR}
+        VERSION_MINOR ${NBLIB_MINOR}
+        SOVERSION ${NBLIB_MAJOR}
+        RELEASE ${NBLIB_RELEASE}
+        VERSION ${NBLIB_RELEASE}
+        LINKER_LANGUAGE CXX
+        OUTPUT_NAME "nblib")
 
 target_sources(nblib
         PRIVATE
@@ -106,12 +118,6 @@ target_sources(nblib
         )
 
 gmx_target_compile_options(nblib)
-
-set_target_properties(nblib
-        PROPERTIES
-        LINKER_LANGUAGE CXX
-        OUTPUT_NAME "nblib"
-        )
 
 target_link_libraries(nblib PRIVATE libgromacs)
 target_include_directories(nblib PRIVATE ${PROJECT_SOURCE_DIR}/api)
