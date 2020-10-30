@@ -233,6 +233,20 @@ gromacs:gcc-7:configure:
     CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
     COMPILER_MAJOR_VERSION: 7
 
+gromacs:clang-8-cuda-10.0:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .use-cuda
+    - .rules:merge-and-post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_USE_SIMD_KERNELS=off"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_CUDA=ON"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    COMPILER_MAJOR_VERSION: 8
+
 gromacs:gcc-8-cuda-11.0:configure:
   extends:
     - .gromacs:base:configure
@@ -476,7 +490,19 @@ gromacs:gcc-7:build:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
     - job: gromacs:gcc-7:configure
-      artifacts: true
+
+gromacs:clang-8-cuda-10.0:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-and-post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+  needs:
+    - job: gromacs:clang-8-cuda-10.0:configure
 
 gromacs:gcc-8-cuda-11.0:build:
   extends:
@@ -783,6 +809,20 @@ gromacs:gcc-7:test:
   needs:
     - job: gromacs:gcc-7:build
 
+gromacs:clang-8-cuda-10.0:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-8-cuda-10.0:build
+
 gromacs:gcc-8-cuda-11.0:test:
   extends:
     - .gromacs:base:test
@@ -911,6 +951,25 @@ gromacs:gcc-7:regressiontest:
   needs:
     - job: gromacs:gcc-7:build
     - job: regressiontests:prepare
+
+gromacs:clang-8-cuda-10.0:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-8-cuda-10.0:build
+    - job: regressiontests:prepare
+
 
 gromacs:gcc-8-cuda-11.0:regressiontest:
   extends:
