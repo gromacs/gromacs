@@ -40,6 +40,7 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "nblib/exception.h"
 #include "nblib/forcecalculator.h"
 #include "nblib/gmxcalculator.h"
 #include "nblib/gmxsetup.h"
@@ -56,7 +57,12 @@ ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOp
 
 void ForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates, gmx::ArrayRef<Vec3> forces)
 {
-    return gmxForceCalculator_->compute(coordinates, forces);
+    if (coordinates.size() != forces.size())
+    {
+        throw InputException("Coordinates array and force buffer size mismatch");
+    }
+
+    gmxForceCalculator_->compute(coordinates, forces);
 }
 
 void ForceCalculator::updatePairList(gmx::ArrayRef<const int> particleInfoAllVdW,

@@ -71,6 +71,18 @@ class NbvSetupUtil;
 class SimulationState;
 struct NBKernelOptions;
 
+/*! \brief GROMACS non-bonded force calculation backend
+ *
+ * This class encapsulates the various GROMACS data structures and their interplay
+ * from the NBLIB user. The class is a private member of the ForceCalculator and
+ * is not intended for the public interface.
+ *
+ * Handles the task of storing the simulation problem description using the internal
+ * representation used within GROMACS. It currently supports short range non-bonded
+ * interactions (PP) on a single node CPU.
+ *
+ */
+
 class GmxForceCalculator final
 {
 public:
@@ -87,6 +99,7 @@ public:
                             const Box&                     box);
 
 private:
+    //! Friend to allow setting up private members in this class
     friend class NbvSetupUtil;
 
     //! Non-Bonded Verlet object for force calculation

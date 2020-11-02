@@ -196,7 +196,8 @@ void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKer
 
     // Put everything together
     auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
-                                                    std::move(atomData), kernelSetup, nullptr, nullptr);
+                                                    std::move(atomData), kernelSetup, nullptr,
+                                                    nullWallcycle);
 
     // Needs to be called with the number of unique ParticleTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,

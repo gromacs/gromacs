@@ -57,6 +57,8 @@
 
 namespace nblib
 {
+class TopologyBuilder;
+
 //! Named type for unique identifier for a particle in a molecule
 using ParticleName = StrongType<std::string, struct ParticleNameParameter>;
 
@@ -103,11 +105,11 @@ public:
     void addExclusion(int particleIndex, int particleIndexToExclude);
 
     //! Specify an exclusion with particle and residue names that have been added to molecule
-    void addExclusion(std::tuple<std::string, std::string> particle,
-                      std::tuple<std::string, std::string> particleToExclude);
+    void addExclusion(std::tuple<ParticleName, ResidueName> particle,
+                      std::tuple<ParticleName, ResidueName> particleToExclude);
 
     //! Specify an exclusion with particle names that have been added to molecule
-    void addExclusion(const std::string& particleName, const std::string& particleNameToExclude);
+    void addExclusion(const ParticleName& particleName, const ParticleName& particleNameToExclude);
 
     //! The number of molecules
     int numParticlesInMolecule() const;

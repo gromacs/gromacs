@@ -64,9 +64,12 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
         return std::get<0>(tup1) < std::get<0>(tup2);
     };
 
+    // Note this is a programming error as all particles should exclude at least themselves and empty topologies are not allowed.
+    // Note also that this is also checked in the parent function with a more informative error message.
+    assert((!tupleList.empty() && "No exclusions found.\n"));
+
     // initialize pair of iterators delimiting the range of exclusions for
     // the first particle in the list
-    assert((!tupleList.empty() && "tupleList must not be empty\n"));
     auto range = std::equal_range(std::begin(tupleList), std::end(tupleList), tupleList[0], firstLowerThan);
     auto it1 = range.first;
     auto it2 = range.second;

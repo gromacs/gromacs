@@ -133,9 +133,9 @@ Molecule WaterMoleculeBuilder::waterMoleculeWithoutExclusions()
 
 void WaterMoleculeBuilder::addExclusionsFromNames()
 {
-    water_.addExclusion("H1", "Oxygen");
-    water_.addExclusion("H2", "Oxygen");
-    water_.addExclusion("H1", "H2");
+    water_.addExclusion(ParticleName("H1"), ParticleName("Oxygen"));
+    water_.addExclusion(ParticleName("H2"), ParticleName("Oxygen"));
+    water_.addExclusion(ParticleName("H1"), ParticleName("H2"));
 }
 
 MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_(MoleculeName("MeOH"))
@@ -148,9 +148,9 @@ MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_(MoleculeName("MeO
     methanol_.addParticle(ParticleName("H3"), Charges.at("HMet"), library.type("H"));
 
     // Add the exclusions
-    methanol_.addExclusion("Me1", "O2");
-    methanol_.addExclusion("Me1", "H3");
-    methanol_.addExclusion("H3", "O2");
+    methanol_.addExclusion(ParticleName("Me1"), ParticleName("O2"));
+    methanol_.addExclusion(ParticleName("Me1"), ParticleName("H3"));
+    methanol_.addExclusion(ParticleName("H3"), ParticleName("O2"));
 }
 
 Molecule MethanolMoleculeBuilder::methanolMolecule()
