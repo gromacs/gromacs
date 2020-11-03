@@ -247,9 +247,8 @@ PmeRunMode determinePmeRunMode(bool useGpuForPme, const TaskTarget& pmeFftTarget
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
  * \param[in]  useGpuForPme              Whether GPUs will be used for PME interactions.
  * \param[in]  bondedTarget              The user's choice for mdrun -bonded for where to assign tasks.
- * \param[in]  canUseGpuForBonded        Whether the bonded interactions can run on a GPU
- * \param[in]  usingLJPme                Whether Vdw interactions use LJ-PME.
- * \param[in]  usingElecPmeOrEwald       Whether a PME or Ewald type method is used for electrostatics.
+ * \param[in]  inputrec                  The user input.
+ * \param[in]  mtop                      The global topology.
  * \param[in]  numPmeRanksPerSimulation  The number of PME ranks in each simulation, can be -1 for auto.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
  *
@@ -257,14 +256,13 @@ PmeRunMode determinePmeRunMode(bool useGpuForPme, const TaskTarget& pmeFftTarget
  *
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
-bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
-                                     bool       useGpuForPme,
-                                     TaskTarget bondedTarget,
-                                     bool       canUseGpuForBonded,
-                                     bool       usingLJPme,
-                                     bool       usingElecPmeOrEwald,
-                                     int        numPmeRanksPerSimulation,
-                                     bool       gpusWereDetected);
+bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
+                                     bool              useGpuForPme,
+                                     TaskTarget        bondedTarget,
+                                     const t_inputrec& inputrec,
+                                     const gmx_mtop_t& mtop,
+                                     int               numPmeRanksPerSimulation,
+                                     bool              gpusWereDetected);
 
 /*! \brief Decide whether to use GPU for update.
  *

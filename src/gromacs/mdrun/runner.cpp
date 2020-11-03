@@ -897,12 +897,9 @@ int Mdrunner::mdrunner()
         useGpuForPme = decideWhetherToUseGpusForPme(
                 useGpuForNonbonded, pmeTarget, userGpuTaskAssignment, *hwinfo, *inputrec,
                 cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks, gpusWereDetected);
-        auto canUseGpuForBonded = buildSupportsGpuBondeds(nullptr)
-                                  && inputSupportsGpuBondeds(*inputrec, mtop, nullptr);
-        useGpuForBonded = decideWhetherToUseGpusForBonded(
-                useGpuForNonbonded, useGpuForPme, bondedTarget, canUseGpuForBonded,
-                EVDW_PME(inputrec->vdwtype), EEL_PME_EWALD(inputrec->coulombtype),
-                domdecOptions.numPmeRanks, gpusWereDetected);
+        useGpuForBonded = decideWhetherToUseGpusForBonded(useGpuForNonbonded, useGpuForPme,
+                                                          bondedTarget, *inputrec, mtop,
+                                                          domdecOptions.numPmeRanks, gpusWereDetected);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 

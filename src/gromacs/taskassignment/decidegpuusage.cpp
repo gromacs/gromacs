@@ -57,6 +57,7 @@
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -458,27 +459,36 @@ PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFft
     }
 }
 
-bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
-                                     const bool       useGpuForPme,
-                                     const TaskTarget bondedTarget,
-                                     const bool       canUseGpuForBonded,
-                                     const bool       usingLJPme,
-                                     const bool       usingElecPmeOrEwald,
-                                     const int        numPmeRanksPerSimulation,
-                                     const bool       gpusWereDetected)
+bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
+                                     bool              useGpuForPme,
+                                     TaskTarget        bondedTarget,
+                                     const t_inputrec& inputrec,
+                                     const gmx_mtop_t& mtop,
+                                     int               numPmeRanksPerSimulation,
+                                     bool              gpusWereDetected)
 {
     if (bondedTarget == TaskTarget::Cpu)
     {
         return false;
     }
 
-    if (!canUseGpuForBonded)
+    std::string errorMessage;
+
+    if (!buildSupportsGpuBondeds(&errorMessage))
     {
         if (bondedTarget == TaskTarget::Gpu)
         {
-            GMX_THROW(InconsistentInputError(
-                    "Bonded interactions on the GPU were required, but not supported for these "
-                    "simulation settings. Change your settings, or do not require using GPUs."));
+            GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+        }
+
+        return false;
+    }
+
+    if (!inputSupportsGpuBondeds(inputrec, mtop, &errorMessage))
+    {
+        if (bondedTarget == TaskTarget::Gpu)
+        {
+            GMX_THROW(InconsistentInputError(errorMessage.c_str()));
         }
 
         return false;
@@ -514,7 +524,8 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     // Note that here we assume that the auto setting of PME ranks will not
     // choose seperate PME ranks when nonBonded are assigned to the GPU.
     bool usingOurCpuForPmeOrEwald =
-            (usingLJPme || (usingElecPmeOrEwald && !useGpuForPme && numPmeRanksPerSimulation <= 0));
+            (EVDW_PME(inputrec.vdwtype)
+             || (EEL_PME_EWALD(inputrec.coulombtype) && !useGpuForPme && numPmeRanksPerSimulation <= 0));
 
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
