@@ -415,7 +415,7 @@ void gmx::LegacySimulator::do_md()
         integrator = std::make_unique<UpdateConstrainGpu>(
                 *ir, *top_global, fr->deviceStreamManager->context(),
                 fr->deviceStreamManager->stream(gmx::DeviceStreamType::UpdateAndConstraints),
-                stateGpu->xUpdatedOnDevice());
+                stateGpu->xUpdatedOnDevice(), wcycle);
 
         integrator->setPbc(PbcType::Xyz, state->box);
     }
@@ -1255,6 +1255,8 @@ void gmx::LegacySimulator::do_md()
 
         if (useGpuForUpdate)
         {
+            wallcycle_stop(wcycle, ewcUPDATE);
+
             if (bNS && (bFirstStep || DOMAINDECOMP(cr)))
             {
                 integrator->set(stateGpu->getCoordinates(), stateGpu->getVelocities(),

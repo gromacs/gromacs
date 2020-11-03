@@ -66,10 +66,10 @@ public:
     /*! \brief Create Update-Constrain object.
      *
      * The constructor is given a non-nullptr \p deviceStream, in which all the update and constrain
-     * routines are executed. \p xUpdatedOnDevice should mark the completion of all kernels that modify
-     * coordinates. The event is maintained outside this class and also passed to all (if any) consumers
-     * of the updated coordinates. The \p xUpdatedOnDevice also can not be a nullptr because the
-     * markEvent(...) method is called unconditionally.
+     * routines are executed. \p xUpdatedOnDevice should mark the completion of all kernels that
+     * modify coordinates. The event is maintained outside this class and also passed to all (if
+     * any) consumers of the updated coordinates. The \p xUpdatedOnDevice also can not be a nullptr
+     * because the markEvent(...) method is called unconditionally.
      *
      * \param[in] ir                Input record data: LINCS takes number of iterations and order of
      *                              projection from it.
@@ -77,13 +77,16 @@ public:
      *                              and target O-H and H-H distances from this object.
      * \param[in] deviceContext     GPU device context.
      * \param[in] deviceStream      GPU stream to use.
-     * \param[in] xUpdatedOnDevice  The event synchronizer to use to mark that update is done on the GPU.
+     * \param[in] xUpdatedOnDevice  The event synchronizer to use to mark that
+     *                              update is done on the GPU.
+     * \param[in] wcycle            The wallclock counter
      */
     Impl(const t_inputrec&     ir,
          const gmx_mtop_t&     mtop,
          const DeviceContext&  deviceContext,
          const DeviceStream&   deviceStream,
-         GpuEventSynchronizer* xUpdatedOnDevice);
+         GpuEventSynchronizer* xUpdatedOnDevice,
+         gmx_wallcycle*        wcycle);
 
     ~Impl();
 
@@ -220,6 +223,8 @@ private:
 
     //! An pointer to the event to indicate when the update of coordinates is complete
     GpuEventSynchronizer* coordinatesReady_;
+    //! The wallclock counter
+    gmx_wallcycle* wcycle_ = nullptr;
 };
 
 } // namespace gmx

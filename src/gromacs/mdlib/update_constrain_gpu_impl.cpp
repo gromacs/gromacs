@@ -60,7 +60,8 @@ UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec& /* ir   */,
                                        const gmx_mtop_t& /* mtop */,
                                        const DeviceContext& /* deviceContext */,
                                        const DeviceStream& /* deviceStream */,
-                                       GpuEventSynchronizer* /* xUpdatedOnDevice */) :
+                                       GpuEventSynchronizer* /* xUpdatedOnDevice */,
+                                       gmx_wallcycle* /*wcycle*/) :
     impl_(nullptr)
 {
     GMX_ASSERT(!impl_,
