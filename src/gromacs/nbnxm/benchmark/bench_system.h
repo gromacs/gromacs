@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #ifndef GMX_NBNXN_BENCH_SYSTEM_H
 #define GMX_NBNXN_BENCH_SYSTEM_H
 
+#include <string>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -64,8 +65,9 @@ struct BenchmarkSystem
      * with 3000 atoms total.
      *
      * \param[in] multiplicationFactor  Should be a power of 2, is checked
+     * \param[in] outputFile            The name of the csv file to write benchmark results
      */
-    BenchmarkSystem(int multiplicationFactor);
+    BenchmarkSystem(int multiplicationFactor, const std::string& outputFile);
 
     //! Number of different atom types in test system.
     int numAtomTypes;
@@ -87,6 +89,8 @@ struct BenchmarkSystem
     matrix box;
     //! Forcerec with only the entries used in the benchmark set
     t_forcerec forceRec;
+    //! csv output file
+    FILE* csv;
 };
 
 } // namespace gmx
