@@ -456,6 +456,7 @@ void process_pull_groups(gmx::ArrayRef<t_pull_group>      pullGroups,
                       gmx::ssize(pullGroup.ind));
         }
 
+        pullGroup.pbcatom_input = pullGroup.pbcatom;
         if (pullGroup.ind.size() == 1)
         {
             /* No pbc is required for this group */
