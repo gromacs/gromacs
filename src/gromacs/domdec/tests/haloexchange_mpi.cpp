@@ -36,14 +36,13 @@
  * \brief Tests for the halo exchange
  *
  *  The test sets up a 2D rank topology and performs a coordinate halo
- *  exchange (using the pre-existing CPU codepath), with 2 pulses in
+ *  exchange (for both CPU and GPU codepaths), with 2 pulses in
  *  the first dimension and 1 pulse in the second. Each pulse involves
  *  a few non-contiguous indices. The sending rank, atom number and
  *  spatial 3D index are encoded in the x values, to allow correctness
  *  checking following the halo exchange.
  *
  * \todo Add more test variations
- * \todo Port to GPU codepath
  *
  * \author Alan Gray <alang@nvidia.com>
  * \ingroup module_domdec
@@ -58,11 +57,20 @@
 #include "gromacs/domdec/atomdistribution.h"
 #include "gromacs/domdec/domdec_internal.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
+#if GMX_GPU_CUDA
+#    include "gromacs/gpu_utils/device_stream.h"
+#    include "gromacs/gpu_utils/devicebuffer.h"
+#    include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#endif
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/inputrec.h"
 
 #include "testutils/mpitest.h"
+#include "testutils/test_hardware_environment.h"
 
 namespace gmx
+{
+namespace test
 {
 namespace
 {
@@ -99,6 +107,59 @@ void initHaloData(RVec* x, const int numHomeAtoms, const int numAtomsTotal)
         }
     }
 }
+
+#if (GMX_GPU_CUDA && GMX_THREAD_MPI)
+/*! \brief Perform GPU halo exchange, including required setup and data transfers
+ *
+ * \param [in] dd             Domain decomposition object
+ * \param [in] box            Box matrix
+ * \param [in] h_x            Atom coordinate data array on host
+ * \param [in] numAtomsTotal  Total number of atoms, including halo
+ */
+void gpuHalo(gmx_domdec_t* dd, matrix box, RVec* h_x, int numAtomsTotal)
+{
+    // Set up GPU hardware environment and assign this MPI rank to a device
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int         numDevices = getTestHardwareEnvironment()->getTestDeviceList().size();
+    const auto& testDevice = getTestHardwareEnvironment()->getTestDeviceList()[rank % numDevices];
+    const auto& deviceContext = testDevice->deviceContext();
+    setActiveDevice(testDevice->deviceInfo());
+    DeviceStream deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
+
+    // Set up GPU buffer and copy input data from host
+    DeviceBuffer<RVec> d_x;
+    int                d_x_size       = -1;
+    int                d_x_size_alloc = -1;
+    reallocateDeviceBuffer(&d_x, numAtomsTotal, &d_x_size, &d_x_size_alloc, deviceContext);
+
+    copyToDeviceBuffer(&d_x, h_x, 0, numAtomsTotal, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+
+    GpuEventSynchronizer coordinatesReadyOnDeviceEvent;
+    coordinatesReadyOnDeviceEvent.markEvent(deviceStream);
+
+    // Perform GPU halo exchange
+    for (int d = 0; d < dd->ndim; d++)
+    {
+        for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
+        {
+            GpuHaloExchange gpuHaloExchange(dd, d, MPI_COMM_WORLD, deviceContext, deviceStream,
+                                            deviceStream, pulse, nullptr);
+            gpuHaloExchange.reinitHalo(d_x, nullptr);
+            gpuHaloExchange.communicateHaloCoordinates(box, &coordinatesReadyOnDeviceEvent);
+        }
+    }
+
+    GpuEventSynchronizer haloCompletedEvent;
+    haloCompletedEvent.markEvent(deviceStream);
+    haloCompletedEvent.waitForEvent();
+
+    // Copy results back to host
+    copyFromDeviceBuffer(h_x, &d_x, 0, numAtomsTotal, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+
+    freeDeviceBuffer(d_x);
+}
+#endif
 
 /*! \brief Define 2D rank topology with 4 MPI tasks
  *
@@ -202,6 +263,7 @@ void define2dHaloWith2PulsesInDim1(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_
     }
 }
 
+
 /*! \brief Check results for above-defined 2D halo with 2 pulses in the first dimension
  *
  * \param [in] x             Atom coordinate data array
@@ -226,17 +288,19 @@ void checkResults2dHaloWith2PulsesInDim1(const RVec* x, const gmx_domdec_t* dd, 
     }
 }
 
-
 TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
 {
     GMX_MPI_TEST(4);
 
     // Set up atom data
-    const int numHomeAtoms  = 10;
-    const int numHaloAtoms  = 7;
-    const int numAtomsTotal = numHomeAtoms + numHaloAtoms;
-    RVec      x[numAtomsTotal];
-    initHaloData(x, numHomeAtoms, numAtomsTotal);
+    const int        numHomeAtoms  = 10;
+    const int        numHaloAtoms  = 7;
+    const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
+    HostVector<RVec> h_x;
+    changePinningPolicy(&h_x, PinningPolicy::PinnedIfSupported);
+    h_x.resize(numAtomsTotal);
+
+    initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
     // Set up dd
     t_inputrec   ir;
@@ -257,11 +321,23 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
 
     // Perform halo exchange
     matrix box = { { 0., 0., 0. } };
-    dd_move_x(&dd, box, static_cast<ArrayRef<RVec>>(x), nullptr);
+    dd_move_x(&dd, box, static_cast<ArrayRef<RVec>>(h_x), nullptr);
 
     // Check results
-    checkResults2dHaloWith2PulsesInDim1(x, &dd, numHomeAtoms);
+    checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
+
+#if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
+    // Re-initialize input
+    initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
+
+    // Perform GPU halo exchange
+    gpuHalo(&dd, box, h_x.data(), numAtomsTotal);
+
+    // Check results
+    checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
+#endif
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx
