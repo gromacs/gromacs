@@ -225,7 +225,7 @@ gromacs:gcc-7:configure:
   image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
   variables:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON -DGMX_INSTALL_LEGACY_API=ON"
     COMPILER_MAJOR_VERSION: 7
 
 gromacs:gcc-8-cuda-11.0:configure:

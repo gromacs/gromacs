@@ -142,10 +142,8 @@ if (WIN32)
 endif()
 list(APPEND libgromacs_object_library_dependencies thread_mpi)
 
-configure_file(version.h.cmakein version.h)
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
-          ${CMAKE_CURRENT_BINARY_DIR}/version.h
 	  analysisdata.h
 	  options.h
 	  selection.h
@@ -321,6 +319,8 @@ target_link_libraries(libgromacs
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
                       )
+target_link_libraries(libgromacs PUBLIC legacy_api)
+
 if (GMX_OPENMP)
     target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
 endif()
@@ -380,6 +380,7 @@ endif()
 
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary
+# TODO: Stop installing libgromacs. Possibly allow installation during deprecation period with GMX_INSTALL_LEGACY_API.
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
     install(TARGETS libgromacs
             EXPORT libgromacs
@@ -398,8 +399,8 @@ if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
     if(GMX_INSTALL_LEGACY_API)
         target_compile_features(libgromacs INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
     endif()
-    add_library(Gromacs::libgromacs ALIAS libgromacs)
 endif()
+add_library(Gromacs::libgromacs ALIAS libgromacs)
 
 if (NOT GMX_BUILD_MDRUN_ONLY)
     include(InstallLibInfo.cmake)

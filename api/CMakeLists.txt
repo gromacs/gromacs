@@ -32,6 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# The legacy public API headers may still be installed,
+# but may be removed or changed without warning.
+add_subdirectory(legacy)
 
 # Activate targets for new C++ API components and docs.
 if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY)

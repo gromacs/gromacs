@@ -47,6 +47,10 @@ set(LINEARALGEBRA_SOURCES
     ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
 
 add_library(linearalgebra OBJECT ${LINEARALGEBRA_SOURCES})
+target_include_directories(linearalgebra PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# TODO: Only expose the module's public headers.
+target_include_directories(linearalgebra INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
 gmx_target_compile_options(linearalgebra)
 target_compile_definitions(linearalgebra PRIVATE HAVE_CONFIG_H)
 # The linearalgebra code is all considered external, and we will
@@ -62,5 +66,6 @@ else()
     # not expect null termination of C strings.
     gmx_target_warning_suppression(linearalgebra -Wno-stringop-truncation HAS_NO_STRINGOP_TRUNCATION)
 endif()
+target_link_libraries(linearalgebra PRIVATE legacy_api)
 list(APPEND libgromacs_object_library_dependencies linearalgebra)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)

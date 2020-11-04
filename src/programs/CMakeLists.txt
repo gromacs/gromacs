@@ -41,13 +41,14 @@ target_compile_definitions(mdrun_objlib PRIVATE HAVE_CONFIG_H)
 target_include_directories(mdrun_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 # Should be possible to remove this when resolving #3290
 target_include_directories(mdrun_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+target_link_libraries(mdrun_objlib PRIVATE legacy_api)
 
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
     # may break some generators, according to CMake documentation. If
     # so, we can consider adding some dummy file to make it work.
     add_library(fahcore $<TARGET_OBJECTS:mdrun_objlib>)
-    target_link_libraries(fahcore PRIVATE ${GMX_COMMON_LIBRARIES})
+    target_link_libraries(fahcore PRIVATE ${GMX_COMMON_LIBRARIES} legacy_api)
 elseif(GMX_BUILD_MDRUN_ONLY)
     add_executable(mdrun $<TARGET_OBJECTS:mdrun_objlib> mdrun_main.cpp)
     gmx_target_compile_options(mdrun)
@@ -74,7 +75,9 @@ else()
     gmx_target_compile_options(view_objlib)
     target_compile_definitions(view_objlib PRIVATE HAVE_CONFIG_H)
     target_include_directories(view_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+    target_link_libraries(view_objlib PRIVATE legacy_api)
     add_library(gmx_objlib OBJECT ${GMX_MAIN_SOURCES})
+    target_link_libraries(gmx_objlib PRIVATE legacy_api)
     target_include_directories(gmx_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
     add_executable(gmx
         $<TARGET_OBJECTS:gmx_objlib>
@@ -83,9 +86,10 @@ else()
     add_executable(Gromacs::gmx ALIAS gmx)
     gmx_target_compile_options(gmx)
     target_compile_definitions(gmx PRIVATE HAVE_CONFIG_H)
-    target_link_libraries(gmx libgromacs
-        ${GMX_COMMON_LIBRARIES}
-        ${GMX_EXE_LINKER_FLAGS})
+    target_link_libraries(gmx PRIVATE
+                          libgromacs
+                          ${GMX_COMMON_LIBRARIES}
+                          ${GMX_EXE_LINKER_FLAGS})
     if(GMX_X11)
         target_link_libraries(gmx ${X11_LIBRARIES})
     endif()

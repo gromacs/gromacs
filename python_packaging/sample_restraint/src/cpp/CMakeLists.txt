@@ -20,4 +20,4 @@ set_target_properties(gmxapi_extension_ensemblepotential PROPERTIES SKIP_BUILD_R
 # If building with setuptools, CMake will not be performing the install
 set_target_properties(gmxapi_extension_ensemblepotential PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
-target_link_libraries(gmxapi_extension_ensemblepotential PRIVATE Gromacs::gmxapi)
+target_link_libraries(gmxapi_extension_ensemblepotential PUBLIC Gromacs::libgromacs Gromacs::gmxapi)

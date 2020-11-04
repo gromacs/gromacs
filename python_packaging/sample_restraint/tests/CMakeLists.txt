@@ -97,7 +97,7 @@ configure_file(testingconfiguration.in.h testingconfiguration.h)
 add_executable(gmxapi_extension_library-test test_binding.cpp)
 add_dependencies(gmxapi_extension_library-test gmxapi_extension_spc2_water_box)
 target_include_directories(gmxapi_extension_library-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(gmxapi_extension_library-test Gromacs::gmxapi GTest::Main)
+target_link_libraries(gmxapi_extension_library-test Gromacs::libgromacs Gromacs::gmxapi GTest::Main)
 gtest_add_tests(TARGET gmxapi_extension_library-test
                 TEST_LIST BasicPlugin)
 

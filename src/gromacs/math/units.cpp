@@ -35,7 +35,7 @@
  */
 #include "gmxpre.h"
 
-#include "units.h"
+#include "gromacs/math/units.h"
 
 #include <cstdio>
 

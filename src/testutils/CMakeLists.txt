@@ -81,6 +81,8 @@ if (GMX_GPU_CUDA)
 else()
     add_library(testutils STATIC ${UNITTEST_TARGET_OPTIONS} ${TESTUTILS_SOURCES})
 endif()
+# TODO: Use a non-degenerate interface include directory.
+target_include_directories(testutils PUBLIC ${CMAKE_SOURCE_DIR}/src)
 
 if (GMX_GPU_SYCL)
     set_source_files_properties(test_device.cpp

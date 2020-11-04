@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "filetypes.h"
+#include "gromacs/fileio/filetypes.h"
 
 #include <cstring>
 

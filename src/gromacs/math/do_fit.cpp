@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "do_fit.h"
+#include "gromacs/math/do_fit.h"
 
 #include <cmath>
 #include <cstdio>

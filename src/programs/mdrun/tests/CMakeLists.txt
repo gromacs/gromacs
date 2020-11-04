@@ -47,6 +47,7 @@ gmx_add_unit_test_library(mdrun_test_infrastructure
     $<TARGET_OBJECTS:mdrun_objlib>
     )
 target_include_directories(mdrun_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+target_link_libraries(mdrun_test_infrastructure PUBLIC legacy_api)
 
 # To avoid running into test timeouts, some end-to-end tests of mdrun
 # functionality are split off. This can be rearranged in future as we

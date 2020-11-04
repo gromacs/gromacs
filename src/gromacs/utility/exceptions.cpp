@@ -42,7 +42,7 @@
  */
 #include "gmxpre.h"
 
-#include "exceptions.h"
+#include "gromacs/utility/exceptions.h"
 
 #include <cstring>
 

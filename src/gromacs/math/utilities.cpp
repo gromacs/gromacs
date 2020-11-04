@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "utilities.h"
+#include "gromacs/math/utilities.h"
 
 #include "config.h"
 

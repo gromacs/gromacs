@@ -39,7 +39,7 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 
 #include <cstdio>
 #include <cstdlib>

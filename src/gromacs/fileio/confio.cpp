@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 
 #include <cstdio>
 #include <cstring>

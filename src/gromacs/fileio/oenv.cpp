@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "oenv.h"
+#include "gromacs/fileio/oenv.h"
 
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"

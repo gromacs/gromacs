@@ -39,22 +39,11 @@ if (GMX_GPU_CUDA)
 endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
-# TODO: (https://gitlab.com/gromacs/gromacs/-/issues/988) Find a new convention for defining public API.
-install(FILES
-        basedefinitions.h
-        current_function.h
-        gmxassert.h
-        real.h
-        DESTINATION include/gromacs/utility)
-
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
-          arrayref.h
           baseversion.h
           classhelpers.h
           enumerationhelpers.h
-          exceptions.h
-          listoflists.h
 	  fileptr.h
 	  futil.h
 	  flags.h

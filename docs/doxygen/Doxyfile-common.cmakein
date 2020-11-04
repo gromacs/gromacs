@@ -3,6 +3,7 @@ PROJECT_NAME           = @CMAKE_PROJECT_NAME@
 LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/DoxygenLayout.xml
 INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@ \
                          @CMAKE_SOURCE_DIR@/src \
+                         @CMAKE_SOURCE_DIR@/api/legacy/include \
                          @CMAKE_SOURCE_DIR@/share/template
 FILE_PATTERNS          = *.c *.cpp *.h *.md
 # CUDA files could be included like this, but currently produce a lot of
@@ -29,7 +30,10 @@ EXCLUDE_SYMBOLS       += TEST TEST_F TEST_P TYPED_TEST_CASE TYPED_TEST INSTANTIA
 EXCLUDE_SYMBOLS       += MOCK_METHOD* MOCK_CONST_METHOD*
 FULL_PATH_NAMES        = YES
 STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@
-STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src
+STRIP_FROM_INC_PATH    = @CMAKE_SOURCE_DIR@/src \
+                         @CMAKE_SOURCE_DIR@/src/include \
+                         @CMAKE_SOURCE_DIR@/src/gromacs/*/include \
+                         @CMAKE_SOURCE_DIR@/api/legacy/include
 INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@

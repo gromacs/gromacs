@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016,2017,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,23 +32,34 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test_library(mdrunutility-test-shared
-                          threadaffinitytest.cpp)
-target_link_libraries(mdrunutility-test-shared PUBLIC legacy_api)
+# The legacy installed API consists of headers that are not considered
+# to be maintainable in terms of a stable API specification. These headers
+# will no longer be available to install in a future release.
 
-gmx_add_unit_test(MdrunUtilityUnitTests mdrunutility-test
-    CPP_SOURCE_FILES
-        threadaffinity.cpp
-        )
-target_link_libraries(mdrunutility-test PRIVATE mdrunutility-test-shared)
+# Note: Any usage requirements that should be transitive should be added to
+# this INTERFACE target. Compiler and linker options (that do not need to
+# be propagated when linking to the `common` target) can be added directly
+# to the `common` target.
+add_library(legacy_api INTERFACE)
+target_include_directories(legacy_api INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+                           $<INSTALL_INTERFACE:include>)
 
-gmx_add_mpi_unit_test(MdrunUtilityMpiUnitTests mdrunutility-mpi-test 4
-    CPP_SOURCE_FILES
-        threadaffinity_mpi.cpp
-        )
-# TODO This target does not exist in a non-MPI build. It would be preferable
-# to change functions like gmx_add_mpi_unit_test to add link-time dependencies
-# as well as source files.
-if (GMX_MPI OR (GMX_THREAD_MPI AND GTEST_IS_THREADSAFE))
-    target_link_libraries(mdrunutility-mpi-test PRIVATE mdrunutility-test-shared)
+configure_file(version.h.cmakein include/gromacs/version.h)
+
+# Allow an export target for legacy_api since it is a dependency of the
+# installable libgromacs target.
+install(TARGETS legacy_api
+        EXPORT libgromacs
+        INCLUDES DESTINATION include)
+
+if(GMX_INSTALL_LEGACY_API)
+    # Install public header directories.
+    install(DIRECTORY include/gromacs
+            DESTINATION include)
+
+    # Install "configured" files from the build tree.
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gromacs/version.h
+            DESTINATION include/gromacs)
 endif()

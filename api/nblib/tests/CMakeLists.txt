@@ -46,6 +46,7 @@ gmx_add_unit_test_library(nblib_test_infrastructure
     )
 target_include_directories(nblib_test_infrastructure PRIVATE ${PROJECT_SOURCE_DIR}/api)
 target_include_directories(nblib_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+target_link_libraries(nblib_test_infrastructure PRIVATE legacy_api)
 
 set(testname "NbLibSetupTests")
 set(exename "nblib-setup-test")

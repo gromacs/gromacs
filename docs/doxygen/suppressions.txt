@@ -1,63 +1,71 @@
-# The script is currently a bit too eager
-share/template/template.cpp: error: source file documentation appears outside full documentation
-# The parser in the script is not clever enough
-src/gromacs/version.h: warning: includes local file as <gromacs/version.h>
-
-# These are OK
-src/gromacs/linearalgebra/eigensolver.cpp: warning: should include "config.h"
-src/gromacs/linearalgebra/gmx_arpack.cpp: warning: should include "config.h"
-src/gromacs/linearalgebra/gmx_blas/*: warning: does not include "gmxpre.h" first
-src/gromacs/linearalgebra/gmx_blas/*: warning: should include "config.h"
-src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" first
-src/gromacs/linearalgebra/gmx_lapack/*: warning: should include "config.h"
-src/gromacs/utility/baseversion-gen.cpp: warning: does not include "gmxpre.h" first
-
-# Exclude header files that are used for inlining code; the responsibility for
-# making the right #includes should be on the source file that uses these.
-# TODO: # Stop using the preprocessor for meta-programming!
-src/gromacs/ewald/pme_simd4.h: warning: should include "pme_simd.h"
-src/gromacs/ewald/pme_spline_work.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/ewald/pme_spline_work.h: warning: includes "simd.h" unnecessarily
-src/gromacs/ewald/pme_spread.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/nbnxm/boundingboxes.h: warning: includes "simd.h" unnecessarily
-src/gromacs/nbnxm/kernels_simd_2xmm/kernel_inner.h: warning: should include "simd.h"
-src/gromacs/nbnxm/kernels_simd_2xmm/kernel_outer.h: warning: should include "simd.h"
-src/gromacs/nbnxm/kernels_simd_4xm/kernel_inner.h: warning: should include "simd.h"
-src/gromacs/nbnxm/kernels_simd_4xm/kernel_outer.h: warning: should include "simd.h"
-src/gromacs/nbnxm/pairlist_simd_2xmm.h: warning: should include "simd.h"
-src/gromacs/nbnxm/pairlist_simd_4xm.h: warning: should include "simd.h"
-
-# This module name doesn't really fall into any currently used pattern; needs some thought
-: error: no matching directory for module: module_mdrun_integration_tests
-
-# These would be nice to fix, but can wait for later / deletion / rewrites
-src/gromacs/nbnxm/kernels_simd_2xmm/kernel_common.h: warning: should include "nbnxm_simd.h"
-src/gromacs/nbnxm/kernels_simd_4xm/kernel_common.h: warning: should include "nbnxm_simd.h"
-
 # This seems to be a false positive
 src/gromacs/nbnxm/cuda/nbnxm_cuda_types.h: error: NbnxmGpu: is in internal file(s), but appears in public documentation
 
-# False positive caused by forward-declaration of BasicVector in src/testutils/refdata.h
-src/gromacs/math/vectypes.h: error: gmx::BasicVector: is in library file(s), but appears in public documentation
-
-# Temporary while we change the SIMD implementation
-src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"
-
-src/gromacs/simd/tests/scalar.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/simd/tests/scalar_math.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/simd/tests/scalar_util.cpp: warning: includes "simd.h" unnecessarily
-src/gromacs/tables/cubicsplinetable.h: warning: includes "simd.h" unnecessarily
-src/gromacs/tables/quadraticsplinetable.h: warning: includes "simd.h" unnecessarily
-
-# These are specific to Folding@Home, and easiest to suppress here
-src/gmxpre.h: warning: includes non-local file as "swindirect.h"
-
-# New external API (see https://gitlab.com/gromacs/gromacs/-/issues/2586) has some unresolved
-# conflicts with previous definitions of public API, installed API, and other things
-# described or implemented in check-source.py, gmxtree.py, gmxtree.rst, and others
-# TODO: resolve definitions, update testing heuristics, and activate policy checks
-# for src/api/cpp files.
-src/api/cpp/*: *
-
 # doxygen has problems with the template construct in this file
 src/gromacs/modularsimulator/signallers.h: error: build: is documented, but does not have brief description
+
+# False positive caused by forward-declaration of BasicVector in src/testutils/refdata.h
+src/testutils/refdata.h: error: gmx::BasicVector: is in library file(s), but appears in public documentation
+
+#
+# All following suppressions are disabled while the include checker
+# is temporarily disabled pending resolution of
+# https://gitlab.com/gromacs/gromacs/-/issues/3288 and
+# https://gitlab.com/gromacs/gromacs/-/issues/3659
+#
+
+# # The script is currently a bit too eager
+# share/template/template.cpp: error: source file documentation appears outside full documentation
+# # The parser in the script is not clever enough
+# src/gromacs/version.h: warning: includes local file as <gromacs/version.h>
+
+# # These are OK
+# src/gromacs/linearalgebra/eigensolver.cpp: warning: should include "config.h"
+# src/gromacs/linearalgebra/gmx_arpack.cpp: warning: should include "config.h"
+# src/gromacs/linearalgebra/gmx_blas/*: warning: does not include "gmxpre.h" first
+# src/gromacs/linearalgebra/gmx_blas/*: warning: should include "config.h"
+# src/gromacs/linearalgebra/gmx_lapack/*: warning: does not include "gmxpre.h" first
+# src/gromacs/linearalgebra/gmx_lapack/*: warning: should include "config.h"
+# src/gromacs/utility/baseversion-gen.cpp: warning: does not include "gmxpre.h" first
+
+# # Exclude header files that are used for inlining code; the responsibility for
+# # making the right #includes should be on the source file that uses these.
+# # TODO: # Stop using the preprocessor for meta-programming!
+# src/gromacs/ewald/pme_simd4.h: warning: should include "pme_simd.h"
+# src/gromacs/ewald/pme_spline_work.cpp: warning: includes "simd.h" unnecessarily
+# src/gromacs/ewald/pme_spline_work.h: warning: includes "simd.h" unnecessarily
+# src/gromacs/ewald/pme_spread.cpp: warning: includes "simd.h" unnecessarily
+# src/gromacs/nbnxm/boundingboxes.h: warning: includes "simd.h" unnecessarily
+# src/gromacs/nbnxm/kernels_simd_2xmm/kernel_inner.h: warning: should include "simd.h"
+# src/gromacs/nbnxm/kernels_simd_2xmm/kernel_outer.h: warning: should include "simd.h"
+# src/gromacs/nbnxm/kernels_simd_4xm/kernel_inner.h: warning: should include "simd.h"
+# src/gromacs/nbnxm/kernels_simd_4xm/kernel_outer.h: warning: should include "simd.h"
+# src/gromacs/nbnxm/pairlist_simd_2xmm.h: warning: should include "simd.h"
+# src/gromacs/nbnxm/pairlist_simd_4xm.h: warning: should include "simd.h"
+
+# # This module name doesn't really fall into any currently used pattern; needs some thought
+# : error: no matching directory for module: module_mdrun_integration_tests
+
+# # These would be nice to fix, but can wait for later / deletion / rewrites
+# src/gromacs/nbnxm/kernels_simd_2xmm/kernel_common.h: warning: should include "nbnxm_simd.h"
+# src/gromacs/nbnxm/kernels_simd_4xm/kernel_common.h: warning: should include "nbnxm_simd.h"
+
+
+# # Temporary while we change the SIMD implementation
+# src/gromacs/simd/impl_sparc64_hpc_ace/impl_sparc64_hpc_ace_common.h: warning: should include "simd.h"
+
+# src/gromacs/simd/tests/scalar.cpp: warning: includes "simd.h" unnecessarily
+# src/gromacs/simd/tests/scalar_math.cpp: warning: includes "simd.h" unnecessarily
+# src/gromacs/simd/tests/scalar_util.cpp: warning: includes "simd.h" unnecessarily
+# src/gromacs/tables/cubicsplinetable.h: warning: includes "simd.h" unnecessarily
+# src/gromacs/tables/quadraticsplinetable.h: warning: includes "simd.h" unnecessarily
+
+# # These are specific to Folding@Home, and easiest to suppress here
+# src/gmxpre.h: warning: includes non-local file as "swindirect.h"
+
+# # New external API (see https://gitlab.com/gromacs/gromacs/-/issues/2586) has some unresolved
+# # conflicts with previous definitions of public API, installed API, and other things
+# # described or implemented in check-source.py, gmxtree.py, gmxtree.rst, and others
+# # TODO: resolve definitions, update testing heuristics, and activate policy checks
+# # for src/api/cpp files.
+# src/api/cpp/*: *
