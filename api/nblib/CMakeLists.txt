@@ -143,12 +143,14 @@ if(GMX_INSTALL_NBLIB_API)
             kerneloptions.h
             nblib.h
             particletype.h
+            ppmap.h
             simulationstate.h
             topology.h
             topologyhelpers.h
             DESTINATION include/nblib)
 endif()
 
+add_subdirectory(listed_forces)
 add_subdirectory(samples)
 add_subdirectory(util)
 

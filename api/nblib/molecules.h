@@ -53,6 +53,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "nblib/listed_forces/definitions.h"
 #include "nblib/particletype.h"
 
 namespace nblib
@@ -81,6 +82,59 @@ struct ParticleData
 
 class Molecule final
 {
+    //! \brief string based listed interaction data type used during construction
+    template<class TwoCenterType>
+    struct TwoCenterData
+    {
+        using type = TwoCenterType;
+
+        std::vector<TwoCenterType> interactionTypes_;
+        std::vector<std::tuple<ParticleName, ResidueName, ParticleName, ResidueName>> interactions_;
+    };
+
+    template<class ThreeCenterType>
+    struct ThreeCenterData
+    {
+        using type = ThreeCenterType;
+
+        std::vector<ThreeCenterType> interactionTypes_;
+        std::vector<std::tuple<ParticleName, ResidueName, ParticleName, ResidueName, ParticleName, ResidueName>> interactions_;
+    };
+
+    template<class FourCenter>
+    struct FourCenterDataHolder
+    {
+        using type = FourCenter;
+
+        std::vector<FourCenter> interactionTypes_;
+        std::vector<std::tuple<ParticleName, ResidueName, ParticleName, ResidueName, ParticleName, ResidueName, ParticleName, ResidueName>> interactions_;
+    };
+
+    template<class FiveCenter>
+    struct FiveCenterDataHolder
+    {
+        using type = FiveCenter;
+
+        std::vector<FiveCenter> interactionTypes_;
+        std::vector<std::tuple<ParticleName, ResidueName, ParticleName, ResidueName, ParticleName, ResidueName, ParticleName, ResidueName, ParticleName, ResidueName>>
+                interactions_;
+    };
+
+    // BondContainerTypes is TypeList<TwoCenterData<HarmonicBondType>, ...>
+    using TwoCenterContainerTypes = Map<TwoCenterData, SupportedTwoCenterTypes>;
+
+    using ThreeCenterContainerTypes = Map<ThreeCenterData, SupportedThreeCenterTypes>;
+
+    using FourCenterContainerTypes = Map<FourCenterDataHolder, SupportedFourCenterTypes>;
+
+    using FiveCenterContainerTypes = Map<FiveCenterDataHolder, SupportedFiveCenterTypes>;
+
+    // InteractionTuple is std::tuple<TwoCenterData<HarmonicBondType>, ...>
+    using InteractionTuple = decltype(std::tuple_cat(Reduce<std::tuple, TwoCenterContainerTypes>{},
+                                                     Reduce<std::tuple, ThreeCenterContainerTypes>{},
+                                                     Reduce<std::tuple, FourCenterContainerTypes>{},
+                                                     Reduce<std::tuple, FiveCenterContainerTypes>{}));
+
 public:
     explicit Molecule(MoleculeName moleculeName);
 
@@ -111,6 +165,40 @@ public:
     //! Specify an exclusion with particle names that have been added to molecule
     void addExclusion(const ParticleName& particleName, const ParticleName& particleNameToExclude);
 
+    // Add various types of interactions to the molecule
+    // Note: adding an interaction type not listed in SUPPORTED_TWO_CENTER_TYPES results in a compilation error
+
+    //! For 2-particle interactions such as harmonic bonds
+    template<class Interaction>
+    void addInteraction(const ParticleName& particleNameI,
+                        const ResidueName&  residueNameI,
+                        const ParticleName& particleNameJ,
+                        const ResidueName&  residueNameJ,
+                        const Interaction&  interaction);
+
+    //! Add 2-particle interactions with the default residue name
+    template<class Interaction>
+    void addInteraction(const ParticleName& particleNameI,
+                        const ParticleName& particleNameJ,
+                        const Interaction&  interaction);
+
+    //! For 3-particle interactions such as angles
+    template<class Interaction>
+    void addInteraction(const ParticleName& particleNameI,
+                        const ResidueName&  residueNameI,
+                        const ParticleName& particleNameJ,
+                        const ResidueName&  residueNameJ,
+                        const ParticleName& particleNameK,
+                        const ResidueName&  residueNameK,
+                        const Interaction&  interaction);
+
+    //! Add 3-particle interactions with the default residue name
+    template<class Interaction>
+    void addInteraction(const ParticleName& particleNameI,
+                        const ParticleName& particleNameJ,
+                        const ParticleName& particleNameK,
+                        const Interaction&  interaction);
+
     //! The number of molecules
     int numParticlesInMolecule() const;
 
@@ -120,6 +208,9 @@ public:
     //! Convert exclusions given by name to indices and unify with exclusions given by indices
     //! returns a sorted vector containing no duplicates of particles to exclude by indices
     std::vector<std::tuple<int, int>> getExclusions() const;
+
+    //! Return all interactions stored in Molecule
+    const InteractionTuple& interactionData() const;
 
     //! Return name of ith particle
     ParticleName particleName(int i) const;
@@ -152,7 +243,40 @@ private:
     //! we cannot efficiently compute indices during the build-phase
     //! so we delay the conversion until TopologyBuilder requests it
     std::vector<std::tuple<std::string, std::string, std::string, std::string>> exclusionsByName_;
+
+    //! collection of data for all types of interactions
+    InteractionTuple interactionData_;
 };
+
+//! \cond DO_NOT_DOCUMENT
+#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                      \
+    extern template void Molecule::addInteraction(                              \
+            const ParticleName& particleNameI, const ResidueName& residueNameI, \
+            const ParticleName& particleNameJ, const ResidueName& residueNameJ, const x& interaction);
+MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
+#undef ADD_INTERACTION_EXTERN_TEMPLATE
+
+#define ADD_INTERACTION_EXTERN_TEMPLATE(x)         \
+    extern template void Molecule::addInteraction( \
+            const ParticleName& particleNameI, const ParticleName& particleNameJ, const x& interaction);
+MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
+#undef ADD_INTERACTION_EXTERN_TEMPLATE
+
+#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                      \
+    extern template void Molecule::addInteraction(                              \
+            const ParticleName& particleNameI, const ResidueName& residueNameI, \
+            const ParticleName& particleNameJ, const ResidueName& residueNameJ, \
+            const ParticleName& particleNameK, const ResidueName& residueNameK, const x& interaction);
+MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_THREE_CENTER_TYPES)
+#undef ADD_INTERACTION_EXTERN_TEMPLATE
+
+#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                        \
+    extern template void Molecule::addInteraction(                                \
+            const ParticleName& particleNameI, const ParticleName& particleNameJ, \
+            const ParticleName& particleNameK, const x& interaction);
+MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_THREE_CENTER_TYPES)
+#undef ADD_INTERACTION_EXTERN_TEMPLATE
+//! \endcond
 
 } // namespace nblib
 #endif // NBLIB_MOLECULES_H
