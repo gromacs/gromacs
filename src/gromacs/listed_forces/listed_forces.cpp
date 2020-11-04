@@ -158,6 +158,17 @@ void ListedForces::setup(const InteractionDefinitions& domainIdef, const int num
         selectInteractions(&idefSelection_, domainIdef, interactionSelection_);
 
         idefSelection_.ilsort = domainIdef.ilsort;
+
+        if (interactionSelection_.test(static_cast<int>(ListedForces::InteractionGroup::Rest)))
+        {
+            idefSelection_.iparams_posres   = domainIdef.iparams_posres;
+            idefSelection_.iparams_fbposres = domainIdef.iparams_fbposres;
+        }
+        else
+        {
+            idefSelection_.iparams_posres.clear();
+            idefSelection_.iparams_fbposres.clear();
+        }
     }
 
     setup_bonded_threading(threading_.get(), numAtomsForce, useGpu, *idef_);
