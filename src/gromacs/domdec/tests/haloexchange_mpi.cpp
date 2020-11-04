@@ -50,6 +50,8 @@
 
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <array>
 
 #include <gtest/gtest.h>
