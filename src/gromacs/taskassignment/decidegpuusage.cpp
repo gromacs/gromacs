@@ -561,26 +561,19 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
 
     if (isDomainDecomposition)
     {
-        if (!devFlags.enableGpuHaloExchange)
+        if (hasAnyConstraints && !useUpdateGroups)
         {
-            errorMessage += "Domain decomposition without GPU halo exchange is not supported.\n ";
+            errorMessage +=
+                    "Domain decomposition is only supported with constraints when update "
+                    "groups "
+                    "are used. This means constraining all bonds is not supported, except for "
+                    "small molecules, and box sizes close to half the pair-list cutoff are not "
+                    "supported.\n ";
         }
-        else
-        {
-            if (hasAnyConstraints && !useUpdateGroups)
-            {
-                errorMessage +=
-                        "Domain decomposition is only supported with constraints when update "
-                        "groups "
-                        "are used. This means constraining all bonds is not supported, except for "
-                        "small molecules, and box sizes close to half the pair-list cutoff are not "
-                        "supported.\n ";
-            }
 
-            if (pmeUsesCpu)
-            {
-                errorMessage += "With domain decomposition, PME must run fully on the GPU.\n";
-            }
+        if (pmeUsesCpu)
+        {
+            errorMessage += "With domain decomposition, PME must run fully on the GPU.\n";
         }
     }
 
@@ -589,11 +582,6 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         if (pmeUsesCpu)
         {
             errorMessage += "With separate PME rank(s), PME must run fully on the GPU.\n";
-        }
-
-        if (!devFlags.enableGpuPmePPComm)
-        {
-            errorMessage += "With separate PME rank(s), PME must use direct communication.\n";
         }
     }
 

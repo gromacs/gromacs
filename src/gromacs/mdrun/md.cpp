@@ -1267,9 +1267,16 @@ void gmx::LegacySimulator::do_md()
                 stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
             }
 
-            // If the buffer ops were not offloaded this step, the forces are on the host and have to be copied
-            if (!runScheduleWork->stepWork.useGpuFBufferOps)
+            if (simulationWork.useGpuPme && !runScheduleWork->simulationWork.useGpuPmePpCommunication
+                && !thisRankHasDuty(cr, DUTY_PME))
             {
+                // The PME forces were recieved to the host, so have to be copied
+                stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::All);
+            }
+            else if (!runScheduleWork->stepWork.useGpuFBufferOps)
+            {
+                // The buffer ops were not offloaded this step, so the forces are on the
+                // host and have to be copied
                 stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
             }
 

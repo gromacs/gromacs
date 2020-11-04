@@ -1213,6 +1213,30 @@ void do_force(FILE*                               fplog,
                                                        AtomLocality::Local, simulationWork, stepWork)
                                              : nullptr;
 
+    // Copy coordinate from the GPU if update is on the GPU and there
+    // are forces to be computed on the CPU, or for the computation of
+    // virial, or if host-side data will be transferred from this task
+    // to a remote task for halo exchange or PME-PP communication. At
+    // search steps the current coordinates are already on the host,
+    // hence copy is not needed.
+    const bool haveHostPmePpComms =
+            !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication;
+
+    GMX_ASSERT(simulationWork.useGpuHaloExchange
+                       == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
+               "The GPU halo exchange is active, but it has not been constructed.");
+    const bool haveHostHaloExchangeComms =
+            havePPDomainDecomposition(cr) && !simulationWork.useGpuHaloExchange;
+
+    bool gmx_used_in_debug haveCopiedXFromGpu = false;
+    if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
+        && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
+            || haveHostPmePpComms || haveHostHaloExchangeComms))
+    {
+        stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
+        haveCopiedXFromGpu = true;
+    }
+
     // If coordinates are to be sent to PME task from CPU memory, perform that send here.
     // Otherwise the send will occur after H2D coordinate transfer.
     if (GMX_MPI && !thisRankHasDuty(cr, DUTY_PME) && !pmeSendCoordinatesFromGpu && stepWork.computeSlowForces)
@@ -1220,11 +1244,7 @@ void do_force(FILE*                               fplog,
         /* Send particle coordinates to the pme nodes */
         if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
         {
-            GMX_RELEASE_ASSERT(false,
-                               "GPU update and separate PME ranks are only supported with GPU "
-                               "direct communication!");
-            // TODO: when this code-path becomes supported add:
-            // stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
 
         gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()), lambda[efptCOUL],
@@ -1258,31 +1278,6 @@ void do_force(FILE*                               fplog,
             GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
             stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         }
-    }
-
-    // Copy coordinate from the GPU if update is on the GPU and there
-    // are forces to be computed on the CPU, or for the computation of
-    // virial, or if host-side data will be transferred from this task
-    // to a remote task for halo exchange or PME-PP communication. At
-    // search steps the current coordinates are already on the host,
-    // hence copy is not needed.
-    const bool haveHostPmePpComms =
-            !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication;
-
-    GMX_ASSERT(simulationWork.useGpuHaloExchange
-                       == ((cr->dd != nullptr) && (!cr->dd->gpuHaloExchange[0].empty())),
-               "The GPU halo exchange is active, but it has not been constructed.");
-    const bool haveHostHaloExchangeComms =
-            havePPDomainDecomposition(cr) && !simulationWork.useGpuHaloExchange;
-
-    bool gmx_used_in_debug haveCopiedXFromGpu = false;
-    if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
-        && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
-            || haveHostPmePpComms || haveHostHaloExchangeComms))
-    {
-        GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
-        stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
-        haveCopiedXFromGpu = true;
     }
 
     // If coordinates are to be sent to PME task from GPU memory, perform that send here.
@@ -1495,10 +1490,12 @@ void do_force(FILE*                               fplog,
             }
             else
             {
-                // Note: GPU update + DD without direct communication is not supported,
-                // a waitCoordinatesReadyOnHost() should be issued if it will be.
-                GMX_ASSERT(!simulationWork.useGpuUpdate,
-                           "GPU update is not supported with CPU halo exchange");
+                if (simulationWork.useGpuUpdate)
+                {
+                    GMX_ASSERT(haveCopiedXFromGpu,
+                               "a wait should only be triggered if copy has been scheduled");
+                    stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+                }
                 dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
             }
 
@@ -1978,10 +1975,10 @@ void do_force(FILE*                               fplog,
         wallcycle_stop(wcycle, ewcFORCE);
     }
 
-    // If on GPU PME-PP comms or GPU update path, receive forces from PME before GPU buffer ops
+    // If on GPU PME-PP comms path, receive forces from PME before GPU buffer ops
     // TODO refactor this and unify with below default-path call to the same function
     if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && stepWork.computeSlowForces
-        && (simulationWork.useGpuPmePpCommunication || simulationWork.useGpuUpdate))
+        && simulationWork.useGpuPmePpCommunication)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
@@ -2039,7 +2036,8 @@ void do_force(FILE*                               fplog,
             //       copy call done in sim_utils(...) for the output.
             // NOTE: If there are virtual sites, the forces are modified on host after this D2H copy. Hence,
             //       they should not be copied in do_md(...) for the output.
-            if (!simulationWork.useGpuUpdate || vsite)
+            if (!simulationWork.useGpuUpdate
+                || (simulationWork.useGpuUpdate && DOMAINDECOMP(cr) && haveHostPmePpComms) || vsite)
             {
                 stateGpu->copyForcesFromGpu(forceWithShift, AtomLocality::Local);
                 stateGpu->waitForcesReadyOnHost(AtomLocality::Local);
@@ -2076,7 +2074,7 @@ void do_force(FILE*                               fplog,
 
     // TODO refactor this and unify with above GPU PME-PP / GPU update path call to the same function
     if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication
-        && !simulationWork.useGpuUpdate && stepWork.computeSlowForces)
+        && stepWork.computeSlowForces)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.

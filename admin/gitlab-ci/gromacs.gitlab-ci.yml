@@ -1015,6 +1015,29 @@ gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-tMPI:
     when: always
     expire_in: 1 week
 
+gromacs:gcc-8-cuda-11.0:regressiontest-upd-tMPI:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-8-cuda-11.0:build
+    - job: regressiontests:prepare
+  artifacts:
+    paths:
+      - regressiontests
+    when: always
+    expire_in: 1 week
+
 gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
   extends:
     - .gromacs:base:regressiontest
