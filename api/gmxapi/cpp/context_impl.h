@@ -51,6 +51,8 @@
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"
 
+struct gmx_hw_info_t;
+
 namespace gmxapi
 {
 
@@ -276,6 +278,12 @@ public:
      * be initialized at construction.
      */
     const MpiContextManager mpi_;
+
+    /*! \brief Owning handle to the results of the hardware detection.
+     *
+     * The hardware is detected across the whole environment described
+     * by \c mpi_ */
+    std::unique_ptr<gmx_hw_info_t> hardwareInformation_;
 
 private:
     /*!

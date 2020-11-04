@@ -76,6 +76,7 @@ else()
     target_include_directories(view_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
     add_library(gmx_objlib OBJECT ${GMX_MAIN_SOURCES})
     target_include_directories(gmx_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+    target_include_directories(gmx_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
     add_executable(gmx
         $<TARGET_OBJECTS:gmx_objlib>
         $<TARGET_OBJECTS:mdrun_objlib>

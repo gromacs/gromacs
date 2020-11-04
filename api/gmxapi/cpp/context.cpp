@@ -55,6 +55,8 @@
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/stophandler.h"
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdrunutility/multisim.h"
@@ -65,7 +67,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/init.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "gmxapi/mpi/resourceassignment.h"
 #include "gmxapi/exceptions.h"
@@ -229,7 +231,9 @@ Context createContext()
 }
 
 ContextImpl::ContextImpl(MpiContextManager&& mpi) noexcept(std::is_nothrow_constructible_v<gmx::LegacyMdrunOptions>) :
-    mpi_(std::move(mpi))
+    mpi_(std::move(mpi)),
+    hardwareInformation_(gmx_detect_hardware(
+            gmx::PhysicalNodeCommunicator(mpi_.communicator(), gmx_physicalnode_id_hash())))
 {
     // Confirm our understanding of the MpiContextManager invariant.
     GMX_ASSERT(mpi_.communicator() == MPI_COMM_NULL ? !GMX_LIB_MPI : GMX_LIB_MPI,
@@ -333,6 +337,9 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         // lifetime. The gmx wrapper binary uses the same infrastructure,
         // but the lifetime is now trivially that of the invocation of the
         // wrapper binary.
+        //
+        // For now, this should match the communicator used for hardware
+        // detection. There's no way to assert this is true.
         auto communicator = mpi_.communicator();
         // Confirm the precondition for simulationContext().
         GMX_ASSERT(communicator == MPI_COMM_NULL ? !GMX_LIB_MPI : GMX_LIB_MPI,
@@ -350,6 +357,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
 
         auto builder = MdrunnerBuilder(std::move(mdModules),
                                        compat::not_null<SimulationContext*>(&simulationContext));
+        builder.addHardwareDetectionResult(hardwareInformation_.get());
         builder.addSimulationMethod(options.mdrunOptions, options.pforce, startingBehavior);
         builder.addDomainDecomposition(options.domdecOptions);
         // \todo pass by value

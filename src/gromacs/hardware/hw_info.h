@@ -92,6 +92,9 @@ struct gmx_hw_info_t
 
     gmx_bool bIdenticalGPUs; /* TRUE if all ranks have the same type(s) and order of GPUs */
     bool     haveAmdZen1Cpu; /* TRUE when at least one CPU in any of the nodes is AMD Zen of the first generation */
+
+    //! Container of warning strings to log later when that is possible.
+    std::vector<std::string> hardwareDetectionWarnings_;
 };
 
 
