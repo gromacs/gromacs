@@ -41,13 +41,10 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <memory>
 #include <string>
-#include <thread>
 #include <vector>
 
-#include "gromacs/compat/pointers.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -62,11 +59,11 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "architecture.h"
 #include "device_information.h"
+#include "prepare_detection.h"
 
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h> // sysconf()
@@ -140,7 +137,7 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
     // Read-only access is enforced with providing those ranks with a
     // handle to a const object, so usage is also free of races.
     GMX_UNUSED_VALUE(physicalNodeComm);
-    isMasterRankOfPhysicalNode = true;
+    isMasterRankOfPhysicalNode        = true;
 #endif
 
     /* The SYCL and OpenCL support requires us to run detection on all
@@ -203,9 +200,9 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
 }
 
 //! Reduce the locally collected \p hardwareInfo over MPI ranks
-static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
-                                     const PhysicalNodeCommunicator&  physicalNodeComm,
-                                     compat::not_null<gmx_hw_info_t*> hardwareInfo)
+static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
+                                     const PhysicalNodeCommunicator& physicalNodeComm,
+                                     gmx_hw_info_t*                  hardwareInfo)
 {
     const int ncore = hardwareInfo->hardwareTopology->numberOfCores();
     /* Zen1 is assumed for:
@@ -296,7 +293,6 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
     hardwareInfo->bIdenticalGPUs      = (maxMinReduced[4] == -maxMinReduced[9]);
     hardwareInfo->haveAmdZen1Cpu      = (maxMinReduced[10] > 0);
 #else
-    /* All ranks use the same pointer, protected by a mutex in the caller */
     hardwareInfo->nphysicalnode       = 1;
     hardwareInfo->ncore_tot           = ncore;
     hardwareInfo->ncore_min           = ncore;
@@ -312,90 +308,6 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
     hardwareInfo->bIdenticalGPUs      = TRUE;
     hardwareInfo->haveAmdZen1Cpu      = cpuIsAmdZen1;
     GMX_UNUSED_VALUE(physicalNodeComm);
-#endif
-}
-
-/*! \brief Utility that does dummy computing for max 2 seconds to spin up cores
- *
- *  This routine will check the number of cores configured and online
- *  (using sysconf), and the spins doing dummy compute operations for up to
- *  2 seconds, or until all cores have come online. This can be used prior to
- *  hardware detection for platforms that take unused processors offline.
- *
- *  This routine will not throw exceptions. In principle it should be
- *  declared noexcept, but at least icc 19.1 and 21-beta08 with the
- *  libstdc++-7.5 has difficulty implementing a std::vector of
- *  std::thread started with this function when declared noexcept. It
- *  is not clear whether the problem is the compiler or the standard
- *  library. Fortunately, this function is not performance sensitive,
- *  and only runs on platforms other than x86 and POWER (ie ARM),
- *  so the possible overhead introduced by omitting noexcept is not
- *  important.
- */
-static void spinUpCore()
-{
-#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROCESSORS_ONLN)
-    float dummy           = 0.1;
-    int   countConfigured = sysconf(_SC_NPROCESSORS_CONF);    // noexcept
-    auto  start           = std::chrono::steady_clock::now(); // noexcept
-
-    while (sysconf(_SC_NPROCESSORS_ONLN) < countConfigured
-           && std::chrono::steady_clock::now() - start < std::chrono::seconds(2))
-    {
-        for (int i = 1; i < 10000; i++)
-        {
-            dummy /= i;
-        }
-    }
-
-    if (dummy < 0)
-    {
-        printf("This cannot happen, but prevents loop from being optimized away.");
-    }
-#endif
-}
-
-/*! \brief Prepare the system before hardware topology detection
- *
- * This routine should perform any actions we want to put the system in a state
- * where we want it to be before detecting the hardware topology. For most
- * processors there is nothing to do, but some architectures (in particular ARM)
- * have support for taking configured cores offline, which will make them disappear
- * from the online processor count.
- *
- * This routine checks if there is a mismatch between the number of cores
- * configured and online, and in that case we issue a small workload that
- * attempts to wake sleeping cores before doing the actual detection.
- *
- * This type of mismatch can also occur for x86 or PowerPC on Linux, if SMT has only
- * been disabled in the kernel (rather than bios). Since those cores will never
- * come online automatically, we currently skip this test for x86 & PowerPC to
- * avoid wasting 2 seconds. We also skip the test if there is no thread support.
- *
- * \note Cores will sleep relatively quickly again, so it's important to issue
- *       the real detection code directly after this routine.
- */
-static void hardwareTopologyPrepareDetection()
-{
-#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) \
-        && (defined(THREAD_PTHREADS) || defined(THREAD_WINDOWS))
-
-    // Modify this conditional when/if x86 or PowerPC starts to sleep some cores
-    if (c_architecture != Architecture::X86 && c_architecture != Architecture::PowerPC)
-    {
-        int                      countConfigured = sysconf(_SC_NPROCESSORS_CONF);
-        std::vector<std::thread> workThreads(countConfigured);
-
-        for (auto& t : workThreads)
-        {
-            t = std::thread(spinUpCore);
-        }
-
-        for (auto& t : workThreads)
-        {
-            t.join();
-        }
-    }
 #endif
 }
 
@@ -448,7 +360,7 @@ void hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused& mdlog,
 
 std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicator& physicalNodeComm)
 {
-    // Make the new hardwareInfo in a temporary.
+    // Ensure all cores have spun up, where applicable.
     hardwareTopologyPrepareDetection();
 
     // TODO: We should also do CPU hardware detection only once on each
@@ -469,7 +381,7 @@ std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicato
         std::swap(hardwareInfo->hardwareDetectionWarnings_, deviceDetectionResult.deviceDetectionWarnings_);
     }
 
-    gmx_collect_hardware_mpi(*hardwareInfo->cpuInfo, physicalNodeComm, compat::make_not_null(hardwareInfo));
+    gmx_collect_hardware_mpi(*hardwareInfo->cpuInfo, physicalNodeComm, hardwareInfo.get());
 
     return hardwareInfo;
 }

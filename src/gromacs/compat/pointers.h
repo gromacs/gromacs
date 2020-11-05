@@ -89,24 +89,24 @@ template<class T>
 class not_null
 {
 public:
-    static_assert(std::is_assignable_v<T&, std::nullptr_t>, "T cannot be assigned nullptr.");
+    static_assert(std::is_assignable<T&, std::nullptr_t>::value, "T cannot be assigned nullptr.");
 
     //! Move constructor. Asserts in debug mode if \c is nullptr.
-    template<typename U, typename = std::enable_if_t<std::is_convertible_v<U, T>>>
+    template<typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr explicit not_null(U&& u) : ptr_(std::forward<U>(u))
     {
         Expects(ptr_ != nullptr);
     }
 
     //! Simple constructor. Asserts in debug mode if \c u is nullptr.
-    template<typename = std::enable_if_t<!std::is_same_v<std::nullptr_t, T>>>
+    template<typename = std::enable_if_t<!std::is_same<std::nullptr_t, T>::value>>
     constexpr explicit not_null(T u) : ptr_(u)
     {
         Expects(ptr_ != nullptr);
     }
 
     //! Copy constructor.
-    template<typename U, typename = std::enable_if_t<std::is_convertible_v<U, T>>>
+    template<typename U, typename = std::enable_if_t<std::is_convertible<U, T>::value>>
     constexpr not_null(const not_null<U>& other) : not_null(other.get())
     {
     }

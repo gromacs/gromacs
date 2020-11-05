@@ -159,7 +159,15 @@ if (CUDA_VERSION VERSION_LESS 11.0)
     # version.
     list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
 else()
-    list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
+    # gcc-7 pre-dated C++17, so uses the -std=c++1z compiler flag for it,
+    # which modern nvcc does not recognize. So we work around that by
+    # compiling in C++14 mode. Clang doesn't have this problem because nvcc
+    # only supports version of clang that already understood -std=c++17
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
+        list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
+    else()
+        list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
+    endif()
 endif()
 
 # assemble the CUDA flags
