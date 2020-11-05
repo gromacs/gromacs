@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,6 +231,17 @@ INSTANTIATE_TEST_CASE_P(ChainChanges,
                                            ::testing::Values("no"),
                                            ::testing::Values("two-fragments.pdb"),
                                            ::testing::Values(efPDB)));
+
+INSTANTIATE_TEST_CASE_P(ForCharmm27CyclicSystem,
+                        Pdb2gmxTest,
+                        ::testing::Combine(::testing::Values("charmm27"),
+                                           ::testing::Values("tip3p"),
+                                           ::testing::Values("none"),
+                                           ::testing::Values("id_or_ter"),
+                                           ::testing::Values("no", "all"),
+                                           ::testing::Values("cyclic-rna.pdb",
+                                                             "cyclic-protein-small.pdb"),
+                                           ::testing::Values(efGRO)));
 #endif
 
 } // namespace

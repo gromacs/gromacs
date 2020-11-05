@@ -47,6 +47,12 @@ simulation using the Accelerated Weight Histogram method. This can be used
 as one of multiple AWH dimensions, where the other(s) are coupled to pull
 coordinates.
 
+Support for cyclic molecules in pdb2gmx
+"""""""""""""""""""""""""""""""""""""""
+
+It is now possible to process cyclic molecules in pdb2gmx and generate |Gromacs|
+topology files for them.
+
 Stochastic cell rescaling barostat
 """"""""""""""""""""""""""""""""""
 

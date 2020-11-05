@@ -534,7 +534,7 @@ int gmx_x2top(int argc, char* argv[])
     GMX_LOG(logger.info)
             .asParagraph()
             .appendTextFormatted("Generating angles and dihedrals from bonds...");
-    gen_pad(atoms, gmx::arrayRefFromArray(&rtp_header_settings, 1), plist, excls, {}, TRUE);
+    gen_pad(atoms, gmx::arrayRefFromArray(&rtp_header_settings, 1), plist, excls, {}, TRUE, {});
 
     if (!bPairs)
     {

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,19 +38,38 @@
 #ifndef GMX_GMXPREPROCESS_PGUTIL_H
 #define GMX_GMXPREPROCESS_PGUTIL_H
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
 struct t_atom;
 struct t_atoms;
 
-/* Search an atom in array of pointers to strings, starting from start
- * if type starts with '-' then searches backwards from start.
- * bondtype is only used for printing the error/warning string,
- * when bondtype="check" no error/warning is issued.
- * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
+/*! \brief
+ * Search an atom in array of pointers to strings
+ *
+ * If \p type starts with '-', start from \p start.
+ * Will search backwards from that.
+ *
+ * \p bondtype is only used for printing the error/warning string,
+ * when \p bondtype ="check" no error/warning is issued.
+ * When \p bAllowMissing = FALSE an fatal error is issued, otherwise a warning.
+ *
+ * \param[in] type             Atom type string to parse
+ * \param[in] start            Possible position to begin search from.
+ * \param[in] atoms            Global topology atoms information.
+ * \param[in] bondtype         Information what kind of bond, used for error messages.
+ * \param[in] bAllowMissing    If true, missing bond types are allowed.
+ *                             AKA allow cartoon physics.
+ * \param[in] cyclicBondsIndex Information about bonds creating cyclic molecules,
+ *                             empty if no such bonds exist.
  */
-int search_atom(const char* type, int start, const t_atoms* atoms, const char* bondtype, bool bAllowMissing);
+int search_atom(const char*              type,
+                int                      start,
+                const t_atoms*           atoms,
+                const char*              bondtype,
+                bool                     bAllowMissing,
+                gmx::ArrayRef<const int> cyclicBondsIndex);
 
 /* Similar to search_atom, but this routine searches for the specified
  * atom in residue resind.

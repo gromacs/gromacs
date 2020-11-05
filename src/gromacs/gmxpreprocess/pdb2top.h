@@ -168,6 +168,7 @@ void pdb2top(FILE*                                  top_file,
              bool                                   bCmap,
              bool                                   bRenumRes,
              bool                                   bRTPresname,
+             gmx::ArrayRef<const int>               cyclicBondsIndex,
              const gmx::MDLogger&                   logger);
 /* Create a topology ! */
 
