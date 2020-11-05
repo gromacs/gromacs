@@ -249,11 +249,14 @@ static void setupMtsLevels(gmx::ArrayRef<gmx::MtsLevel> mtsLevels,
                            const t_gromppopts&          opts,
                            warninp_t                    wi)
 {
-    if (!(ir.eI == eiMD || ir.eI == eiSD1))
+    /* MD-VV has no MTS support yet.
+     * SD1 needs different scaling coefficients for the different MTS forces
+     * and the different forces are currently not available in ForceBuffers.
+     */
+    if (ir.eI != eiMD)
     {
         auto message = gmx::formatString(
-                "Multiple time stepping is only supported with integrators %s and %s",
-                ei_names[eiMD], ei_names[eiSD1]);
+                "Multiple time stepping is only supported with integrator %s", ei_names[eiMD]);
         warning_error(wi, message.c_str());
     }
     if (opts.numMtsLevels != 2)
