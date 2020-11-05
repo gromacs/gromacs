@@ -344,7 +344,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t*     GPU_FUNC_ARGU
 GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t*            GPU_FUNC_ARGUMENT(pme),
                                               GpuEventSynchronizer* GPU_FUNC_ARGUMENT(xReadyOnDevice),
                                               gmx_wallcycle*        GPU_FUNC_ARGUMENT(wcycle),
-                                              const real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
+                                              real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
 
 /*! \brief
  * Launches middle stages of PME (FFT R2C, solving, FFT C2R) either on GPU or on CPU, depending on the run mode.
@@ -367,7 +367,7 @@ pme_gpu_launch_complex_transforms(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme
  */
 GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
                                               gmx_wallcycle*   GPU_FUNC_ARGUMENT(wcycle),
-                                              const real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
+                                              real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
 
 /*! \brief
  * Attempts to complete PME GPU tasks.
@@ -394,7 +394,7 @@ GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(gmx_pme_t*               GPU_FUN
                                                 gmx_wallcycle*           GPU_FUNC_ARGUMENT(wcycle),
                                                 gmx::ForceWithVirial* GPU_FUNC_ARGUMENT(forceWithVirial),
                                                 gmx_enerdata_t*       GPU_FUNC_ARGUMENT(enerd),
-                                                const real            GPU_FUNC_ARGUMENT(lambdaQ),
+                                                real                  GPU_FUNC_ARGUMENT(lambdaQ),
                                                 GpuTaskCompletion GPU_FUNC_ARGUMENT(completionKind))
         GPU_FUNC_TERM_WITH_RETURN(false);
 
@@ -414,7 +414,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t*               GPU_FUN
                                                 gmx_wallcycle*           GPU_FUNC_ARGUMENT(wcycle),
                                                 gmx::ForceWithVirial* GPU_FUNC_ARGUMENT(forceWithVirial),
                                                 gmx_enerdata_t*       GPU_FUNC_ARGUMENT(enerd),
-                                                const real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
+                                                real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
 
 /*! \brief
  * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.

@@ -56,13 +56,13 @@ namespace test
 namespace
 {
 
-TEST(NBlibTest, checkNumericValues)
+TEST(NBlibTest, isRealValued)
 {
     std::vector<Vec3> vec;
     vec.emplace_back(1., 1., 1.);
     vec.emplace_back(2., 2., 2.);
 
-    bool ret = checkNumericValues(vec);
+    bool ret = isRealValued(vec);
     EXPECT_EQ(ret, true);
 }
 
@@ -74,7 +74,7 @@ TEST(NBlibTest, checkNumericValuesHasNan)
 
     vec.emplace_back(NAN, NAN, NAN);
 
-    bool ret = checkNumericValues(vec);
+    bool ret = isRealValued(vec);
     EXPECT_EQ(ret, false);
 }
 
@@ -86,7 +86,7 @@ TEST(NBlibTest, checkNumericValuesHasInf)
 
     vec.emplace_back(INFINITY, INFINITY, INFINITY);
 
-    bool ret = checkNumericValues(vec);
+    bool ret = isRealValued(vec);
     EXPECT_EQ(ret, false);
 }
 
@@ -114,7 +114,7 @@ TEST(NBlibTest, generateVelocityCheckNumbers)
     constexpr int     N = 10;
     std::vector<real> masses(N, 1.0);
     auto              out = generateVelocity(300.0, 1, masses);
-    bool              ret = checkNumericValues(out);
+    bool              ret = isRealValued(out);
     EXPECT_EQ(ret, true);
 }
 

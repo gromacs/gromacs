@@ -415,7 +415,7 @@ void gmx::LegacySimulator::do_md()
         integrator = std::make_unique<UpdateConstrainGpu>(
                 *ir, *top_global, fr->deviceStreamManager->context(),
                 fr->deviceStreamManager->stream(gmx::DeviceStreamType::UpdateAndConstraints),
-                stateGpu->xUpdatedOnDevice());
+                stateGpu->xUpdatedOnDevice(), wcycle);
 
         integrator->setPbc(PbcType::Xyz, state->box);
     }
@@ -1255,6 +1255,8 @@ void gmx::LegacySimulator::do_md()
 
         if (useGpuForUpdate)
         {
+            wallcycle_stop(wcycle, ewcUPDATE);
+
             if (bNS && (bFirstStep || DOMAINDECOMP(cr)))
             {
                 integrator->set(stateGpu->getCoordinates(), stateGpu->getVelocities(),
@@ -1265,9 +1267,16 @@ void gmx::LegacySimulator::do_md()
                 stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
             }
 
-            // If the buffer ops were not offloaded this step, the forces are on the host and have to be copied
-            if (!runScheduleWork->stepWork.useGpuFBufferOps)
+            if (simulationWork.useGpuPme && !runScheduleWork->simulationWork.useGpuPmePpCommunication
+                && !thisRankHasDuty(cr, DUTY_PME))
             {
+                // The PME forces were recieved to the host, so have to be copied
+                stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::All);
+            }
+            else if (!runScheduleWork->stepWork.useGpuFBufferOps)
+            {
+                // The buffer ops were not offloaded this step, so the forces are on the
+                // host and have to be copied
                 stateGpu->copyForcesToGpu(f.view().force(), AtomLocality::Local);
             }
 

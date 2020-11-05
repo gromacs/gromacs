@@ -51,9 +51,12 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
+
+struct gmx_hw_info_t;
 
 namespace gmx
 {
@@ -79,9 +82,9 @@ enum class SimulationRunnerMdpSource
  * \brief Helper object for running grompp and mdrun in
  * integration tests of mdrun functionality
  *
- * Objects of this class are intended to be owned by
- * IntegrationTestFixture objects, and an IntegrationTestFixture
- * object might own more than one SimulationRunner.
+ * Objects of this class must be owned by objects descended from
+ * MdrunTestFixtureBase, which sets up necessary infrastructure for
+ * it. Such an object may own more than one SimulationRunner.
  *
  * The setup phase creates various temporary files for input and
  * output that are common for mdrun tests, using the file manager
@@ -174,6 +177,7 @@ public:
     std::string mdpInputContents_;
 
 private:
+    //! The file manager used to manage I/O
     TestFileManager& fileManager_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(SimulationRunner);
@@ -183,31 +187,31 @@ private:
  * \brief Declares test fixture base class for
  * integration tests of mdrun functionality
  *
- * Derived fixture classes (or individual test cases) that might have
- * specific requirements should assert that behaviour, rather than
- * hard-code the requirements. A test that (for example) can't run
- * with more than one thread should report that as a diagnostic, so the
- * person running the test (or designing the test harness) can get
- * feedback on what tests need what conditions without having to read
- * the code of lots of tests.
- *
- * Specifying the execution context (such as numbers of threads and
- * processors) is normally sensible to specify from the test harness
- * (i.e. when CMake/CTest/the user runs a test executable), because
- * only there is information about the hardware available. The default
- * values for such context provided in test fixtures for mdrun should
- * mirror the defaults for mdrun, but currently mdrun.c hard-codes
- * those in a gmx_hw_opt_t.
- *
- * Any method in this class may throw std::bad_alloc if out of memory.
+ * Heavyweight resources are set up here and shared
+ * across all tests in the test case fixture, e.g.
+ * the MPI communicator for the tests and the hardware
+ * detected that is available to it.
  *
  * \ingroup module_mdrun_integration_tests
  */
 class MdrunTestFixtureBase : public ::testing::Test
 {
 public:
+    //! Per-test-case setup for lengthy processes that need run only once.
+    static void SetUpTestCase();
+    //! Per-test-case tear down
+    static void TearDownTestCase();
+
     MdrunTestFixtureBase();
     ~MdrunTestFixtureBase() override;
+
+    //! Communicator over which the test fixture works
+    static MPI_Comm communicator_;
+    /*! \brief Hardware information object
+     *
+     * Detected within \c communicator_ and available to re-use
+     * over all tests in the test case of this text fixture. */
+    static std::unique_ptr<gmx_hw_info_t> hwinfo_;
 };
 
 /*! \internal
@@ -218,7 +222,7 @@ public:
  *
  * \ingroup module_mdrun_integration_tests
  */
-class MdrunTestFixture : public ::testing::Test
+class MdrunTestFixture : public MdrunTestFixtureBase
 {
 public:
     MdrunTestFixture();

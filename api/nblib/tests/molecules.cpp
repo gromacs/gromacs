@@ -142,8 +142,8 @@ TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
     Molecule             water = waterMolecule.waterMoleculeWithoutExclusions();
 
     //! Add the exclusions
-    water.addExclusion("H1", "Oxygen");
-    water.addExclusion("H2", "Oxygen");
+    water.addExclusion(ParticleName("H1"), ParticleName("Oxygen"));
+    water.addExclusion(ParticleName("H2"), ParticleName("Oxygen"));
     water.addExclusion(1, 2);
 
     std::vector<std::tuple<int, int>> exclusions = water.getExclusions();

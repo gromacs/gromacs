@@ -156,8 +156,12 @@ TEST(NBlibTest, UpdateChangesForces)
     gmx::ArrayRef<Vec3> forces(simState.forces());
     forceCalculator.compute(simState.coordinates(), simState.forces());
 
+    // copy computed forces to another array
     std::vector<Vec3> forces_1(forces.size());
     std::copy(forces.begin(), forces.end(), begin(forces_1));
+
+    // zero original force buffer
+    zeroCartesianArray(forces);
 
     // check if forces change without update step
     forceCalculator.compute(simState.coordinates(), forces);
@@ -174,8 +178,11 @@ TEST(NBlibTest, UpdateChangesForces)
     // update
     integrator.integrate(1.0, simState.coordinates(), simState.velocities(), simState.forces());
 
+    // zero original force buffer
+    zeroCartesianArray(forces);
+
     // step 2
-    forceCalculator.compute(simState.coordinates(), simState.forces());
+    forceCalculator.compute(simState.coordinates(), forces);
     std::vector<Vec3> forces_2(forces.size());
     std::copy(forces.begin(), forces.end(), begin(forces_2));
 

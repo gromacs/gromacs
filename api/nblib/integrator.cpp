@@ -49,7 +49,7 @@
 
 namespace nblib
 {
-// NOLINTNEXTLINE(performance-unnecessary-value-param)
+
 LeapFrog::LeapFrog(const Topology& topology, const Box& box) : box_(box)
 {
     inverseMasses_.resize(topology.numParticles());

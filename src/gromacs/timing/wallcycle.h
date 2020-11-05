@@ -132,6 +132,7 @@ enum
     ewcsLAUNCH_GPU_NB_F_BUF_OPS,
     ewcsLAUNCH_GPU_MOVEX,
     ewcsLAUNCH_GPU_MOVEF,
+    ewcsLAUNCH_GPU_UPDATE_CONSTRAIN,
     ewcsTEST,
     ewcsNR
 };

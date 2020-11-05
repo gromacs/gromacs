@@ -48,6 +48,7 @@
 #include <vector>
 
 #include "nblib/interactions.h"
+#include "nblib/listed_forces/definitions.h"
 #include "nblib/molecules.h"
 #include "nblib/topologyhelpers.h"
 
@@ -94,6 +95,9 @@ public:
     //! Returns a map of non-bonded force parameters indexed by ParticleType names
     NonBondedInteractionMap getNonBondedInteractionMap() const;
 
+    //! Returns the interaction data
+    ListedInteractionData getInteractionData() const;
+
     //! Returns the combination rule used to generate the NonBondedInteractionMap
     CombinationRule getCombinationRule() const;
 
@@ -116,6 +120,8 @@ private:
     detail::ParticleSequencer particleSequencer_;
     //! Map that should hold all nonbonded interactions for all particle types
     NonBondedInteractionMap nonBondedInteractionMap_;
+    //! data about bonds for all supported types
+    ListedInteractionData interactionData_;
     //! Combination Rule used to generate the nonbonded interactions
     CombinationRule combinationRule_;
 };
@@ -163,6 +169,9 @@ private:
 
     //! Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
     gmx::ListOfLists<int> createExclusionsListOfLists() const;
+
+    //! Gather interaction data from molecules
+    ListedInteractionData createInteractionData(const detail::ParticleSequencer&);
 
     //! Helper function to extract quantities like mass, charge, etc from the system
     template<typename T, class Extractor>

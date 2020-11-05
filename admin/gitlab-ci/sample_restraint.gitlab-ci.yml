@@ -3,7 +3,7 @@
   extends:
     - .variables:default
     - .use-clang:base
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2
@@ -15,7 +15,7 @@
     EXTRA_INSTALLS: "curl libbz2-dev libffi-dev liblzma-dev libncurses5-dev libncursesw5-dev libreadline-dev libsqlite3-dev libssl-dev llvm python-openssl tk-dev zlib1g-dev"
   script:
     - source $INSTALL_DIR/bin/GMXRC
-    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint-2020.sh
+    - source $VENVPATH/bin/activate && INSTALL_DIR=$PWD/$INSTALL_DIR OMP_NUM_THREADS=1 bash admin/ci-scripts/build-and-test-sample_restraint-2021.sh
   artifacts:
     reports:
       junit:

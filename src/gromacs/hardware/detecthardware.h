@@ -36,30 +36,45 @@
 #ifndef GMX_HARDWARE_DETECTHARDWARE_H
 #define GMX_HARDWARE_DETECTHARDWARE_H
 
+#include <memory>
+
 struct gmx_hw_info_t;
 
 namespace gmx
 {
+class HardwareTopology;
 class MDLogger;
 class PhysicalNodeCommunicator;
 
-/*! \brief Run detection, consistency checks, and make consistent
+/*! \brief Run detection and make correct and consistent
  * hardware information available on all ranks.
- *
- * This routine constructs the global hwinfo structure and returns a pointer to
- * it. It will run a preamble before executing cpu and hardware checks, and
- * then run consistency checks afterwards. The results will also be made
- * available on all nodes.
  *
  * May do communication on MPI_COMM_WORLD when compiled with real MPI.
  *
- * All processes in a physical node need to coordinate calling this
- * routine. With thread-MPI only the first call leads to detection
- * work, and any subsequent call receives the same handle. With real
- * MPI, communication is needed to coordinate the results. In all
- * cases, any thread within a process may use the returned handle. */
-gmx_hw_info_t* gmx_detect_hardware(const gmx::MDLogger&            mdlog,
-                                   const PhysicalNodeCommunicator& physicalNodeComm);
+ * This routine is designed to be called once on each process.  In a
+ * thread-MPI configuration, it may only be called before the threads
+ * are spawned. With real MPI, communication is needed to coordinate
+ * the results. In all cases, any thread within a process may use the
+ * returned handle.
+ *
+ * \todo Replace the use of MPI_COMM_WORLD e.g. by using a libraryCommWorld
+ * argument. See https://gitlab.com/gromacs/gromacs/-/issues/3650
+ */
+std::unique_ptr<gmx_hw_info_t> gmx_detect_hardware(const PhysicalNodeCommunicator& physicalNodeComm);
+
+/*! \brief Sanity check hardware topology and print some notes to log
+ *
+ *  \param mdlog            Logger.
+ *  \param hardwareTopology Reference to hardwareTopology object.
+ */
+void hardwareTopologyDoubleCheckDetection(const gmx::MDLogger&         mdlog,
+                                          const gmx::HardwareTopology& hardwareTopology);
+
+/*! \brief Issue warnings to mdlog that were decided during detection
+ *
+ * \param[in] mdlog                Logger
+ * \param[in] hardwareInformation  The hardwareInformation */
+void logHardwareDetectionWarnings(const gmx::MDLogger& mdlog, const gmx_hw_info_t& hardwareInformation);
 
 } // namespace gmx
 

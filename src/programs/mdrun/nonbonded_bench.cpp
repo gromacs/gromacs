@@ -208,6 +208,14 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
     options->addOption(BooleanOption("cycles")
                                .store(&benchmarkOptions_.cyclesPerPair)
                                .description("Report cycles/pair instead of pairs/cycle"));
+    options->addOption(
+            BooleanOption("time").store(&benchmarkOptions_.reportTime).description("Report micro-seconds instead of cycles"));
+    options->addOption(FileNameOption("o")
+                               .filetype(eftCsv)
+                               .outputFile()
+                               .store(&benchmarkOptions_.outputFile)
+                               .defaultBasename("nonbonded-benchmark")
+                               .description("Also output results in csv format"));
 }
 
 void NonbondedBenchmark::optionsFinished()

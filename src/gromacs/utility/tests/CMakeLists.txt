@@ -54,6 +54,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         range.cpp
         strconvert.cpp
         stringutil.cpp
+        template_mp.cpp
         textreader.cpp
         textwriter.cpp
         typetraits.cpp

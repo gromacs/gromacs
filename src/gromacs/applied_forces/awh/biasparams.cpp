@@ -166,122 +166,33 @@ int64_t calcCheckCoveringInterval(const AwhParams&              awhParams,
 }
 
 /*! \brief
- * Returns an approximation of the geometry factor used for initializing the AWH update size.
- *
- * The geometry factor is defined as the following sum of Gaussians:
- * sum_{k!=0} exp(-0.5*(k*pi*x)^2)/(pi*k)^2,
- * where k is a xArray.size()-dimensional integer vector with k_i in {0,1,..}.
- *
- * \param[in] xArray  Array to evaluate.
- * \returns the geometry factor.
- */
-double gaussianGeometryFactor(gmx::ArrayRef<const double> xArray)
-{
-    /* For convenience we give the geometry factor function a name: zeta(x) */
-    constexpr size_t                    tableSize  = 5;
-    std::array<const double, tableSize> xTabulated = { { 1e-5, 1e-4, 1e-3, 1e-2, 1e-1 } };
-    std::array<const double, tableSize> zetaTable1d = { { 0.166536811948, 0.16653116886, 0.166250075882,
-                                                          0.162701098306, 0.129272430287 } };
-    std::array<const double, tableSize> zetaTable2d = { { 2.31985974274, 1.86307292523, 1.38159772648,
-                                                          0.897554759158, 0.405578211115 } };
-
-    gmx::ArrayRef<const double> zetaTable;
-
-    if (xArray.size() == 1)
-    {
-        zetaTable = zetaTable1d;
-    }
-    else if (xArray.size() == 2)
-    { // NOLINT bugprone-branch-clone
-        zetaTable = zetaTable2d;
-    }
-    else
-    {
-        /* TODO... but this is anyway a rough estimate and > 2 dimensions is not so popular.
-         * Remove the above NOLINT when addressing this */
-        zetaTable = zetaTable2d;
-    }
-
-    /* TODO. Really zeta is a function of an ndim-dimensional vector x and we shoudl have a ndim-dimensional lookup-table.
-       Here we take the geometric average of the components of x which is ok if the x-components are not very different. */
-    double xScalar = 1;
-    for (const double& x : xArray)
-    {
-        xScalar *= x;
-    }
-
-    GMX_ASSERT(!xArray.empty(), "We should have a non-empty input array");
-    xScalar = std::pow(xScalar, 1.0 / xArray.size());
-
-    /* Look up zeta(x) */
-    size_t xIndex = 0;
-    while ((xIndex < xTabulated.size()) && (xScalar > xTabulated[xIndex]))
-    {
-        xIndex++;
-    }
-
-    double zEstimate;
-    if (xIndex == xTabulated.size())
-    {
-        /* Take last value */
-        zEstimate = zetaTable[xTabulated.size() - 1];
-    }
-    else if (xIndex == 0)
-    {
-        zEstimate = zetaTable[xIndex];
-    }
-    else
-    {
-        /* Interpolate */
-        double x0 = xTabulated[xIndex - 1];
-        double x1 = xTabulated[xIndex];
-        double w  = (xScalar - x0) / (x1 - x0);
-        zEstimate = w * zetaTable[xIndex - 1] + (1 - w) * zetaTable[xIndex];
-    }
-
-    return zEstimate;
-}
-
-/*! \brief
  * Estimate a reasonable initial reference weight histogram size.
  *
- * \param[in] dimParams         Parameters for the dimensions of the coordinate.
  * \param[in] awhBiasParams     Bias parameters.
  * \param[in] gridAxis          The BiasGrid axes.
  * \param[in] beta              1/(k_B T).
  * \param[in] samplingTimestep  Sampling frequency of probability weights.
  * \returns estimate of initial histogram size.
  */
-double getInitialHistogramSizeEstimate(const std::vector<DimParams>& dimParams,
-                                       const AwhBiasParams&          awhBiasParams,
-                                       const std::vector<GridAxis>&  gridAxis,
-                                       double                        beta,
-                                       double                        samplingTimestep)
+double getInitialHistogramSizeEstimate(const AwhBiasParams&         awhBiasParams,
+                                       const std::vector<GridAxis>& gridAxis,
+                                       double                       beta,
+                                       double                       samplingTimestep)
 {
     /* Get diffusion factor */
-    double              crossingTime = 0.;
+    double              maxCrossingTime = 0.;
     std::vector<double> x;
     for (size_t d = 0; d < gridAxis.size(); d++)
     {
-        double axisLength = gridAxis[d].isFepLambdaAxis() ? 1.0 : gridAxis[d].length();
-        if (axisLength > 0)
-        {
-            crossingTime += awhBiasParams.dimParams[d].diffusion / (axisLength * axisLength);
-            /* The sigma of the Gaussian distribution in the umbrella */
-            double sigma = 1.;
-            if (dimParams[d].isPullDimension())
-            {
-                GMX_RELEASE_ASSERT(dimParams[d].pullDimParams().betak != 0,
-                                   "beta*k cannot be zero");
-                sigma /= std::sqrt(dimParams[d].pullDimParams().betak);
-            }
-            x.push_back(sigma / axisLength);
-        }
+        GMX_RELEASE_ASSERT(awhBiasParams.dimParams[d].diffusion > 0, "We need positive diffusion");
+        // With diffusion it takes on average T = L^2/2D time to cross length L
+        double axisLength   = gridAxis[d].isFepLambdaAxis() ? 1.0 : gridAxis[d].length();
+        double crossingTime = (axisLength * axisLength) / (2 * awhBiasParams.dimParams[d].diffusion);
+        maxCrossingTime     = std::max(maxCrossingTime, crossingTime);
     }
-    GMX_RELEASE_ASSERT(crossingTime > 0, "We need at least one dimension with non-zero length");
+    GMX_RELEASE_ASSERT(maxCrossingTime > 0, "We need at least one dimension with non-zero length");
     double errorInitialInKT = beta * awhBiasParams.errorInitial;
-    double histogramSize    = gaussianGeometryFactor(x)
-                           / (crossingTime * gmx::square(errorInitialInKT) * samplingTimestep);
+    double histogramSize    = maxCrossingTime / (gmx::square(errorInitialInKT) * samplingTimestep);
 
     return histogramSize;
 }
@@ -332,11 +243,8 @@ BiasParams::BiasParams(const AwhParams&              awhParams,
     updateWeight(numSamplesUpdateFreeEnergy_ * numSharedUpdate),
     localWeightScaling(eTarget == eawhtargetLOCALBOLTZMANN ? temperatureScaleFactor : 1),
     initialErrorInKT(beta * awhBiasParams.errorInitial),
-    initialHistogramSize(getInitialHistogramSizeEstimate(dimParams,
-                                                         awhBiasParams,
-                                                         gridAxis,
-                                                         beta,
-                                                         numStepsSampleCoord_ * mdTimeStep)),
+    initialHistogramSize(
+            getInitialHistogramSizeEstimate(awhBiasParams, gridAxis, beta, numStepsSampleCoord_ * mdTimeStep)),
     convolveForce(awhParams.ePotential == eawhpotentialCONVOLVED),
     biasIndex(biasIndex),
     disableUpdateSkips_(disableUpdateSkips == DisableUpdateSkips::yes)

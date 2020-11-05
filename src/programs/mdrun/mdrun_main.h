@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,13 +32,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief This file declares C-style entrypoints for mdrun
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ *
+ * \ingroup module_mdrun
+ */
 #ifndef GMX_PROGRAMS_MDRUN_MDRUN_H
 #define GMX_PROGRAMS_MDRUN_MDRUN_H
+
+#include "gromacs/utility/gmxmpi.h"
+
+struct gmx_hw_info_t;
 
 namespace gmx
 {
 
+/*! \brief Implements C-style main function for mdrun
+ *
+ * This implementation detects hardware itself, as suits
+ * the gmx wrapper binary.
+ *
+ * \param[in]  argc          Number of C-style command-line arguments
+ * \param[in]  argv          C-style command-line argument strings
+ */
 int gmx_mdrun(int argc, char* argv[]);
+
+/*! \brief Implements C-style main function for mdrun
+ *
+ * This implementation facilitates reuse of infrastructure. This
+ * includes the information about the hardware detected across the
+ * given \c communicator. That suits e.g. efficient implementation of
+ * test fixtures.
+ *
+ * \param[in]  communicator  The communicator to use for the simulation
+ * \param[in]  hwinfo        Describes the hardware detected on the physical nodes of the communicator
+ * \param[in]  argc          Number of C-style command-line arguments
+ * \param[in]  argv          C-style command-line argument strings
+ *
+ * \todo Progress on https://gitlab.com/gromacs/gromacs/-/issues/3774
+ * will remove the need of test binaries to call gmx_mdrun in a way
+ * that is different from the command-line and gmxapi.
+ */
+int gmx_mdrun(MPI_Comm communicator, const gmx_hw_info_t& hwinfo, int argc, char* argv[]);
 
 } // namespace gmx
 

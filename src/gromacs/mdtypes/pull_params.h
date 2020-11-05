@@ -74,39 +74,73 @@ static const int c_pullCoordNgroupMax = 6;
 /*! \brief Struct that defines a pull coordinate */
 struct t_pull_coord
 {
-    int                                   eType; /**< The pull type: umbrella, constraint, ... */
-    std::string                           externalPotentialProvider; /**< Name of the module providing the external potential, only used with eType==epullEXTERNAL */
-    int                                   eGeom;  /**< The pull geometry */
-    int                                   ngroup; /**< The number of groups, depends on eGeom */
-    std::array<int, c_pullCoordNgroupMax> group; /**< The pull groups: indices into the group arrays in pull_t and pull_params_t, ngroup indices are used */
-    gmx::IVec                             dim;   /**< Used to select components for constraint */
-    gmx::RVec                             origin; /**< The origin for the absolute reference */
-    gmx::RVec                             vec;    /**< The pull vector, direction or position */
-    bool                                  bStart; /**< Set init based on the initial structure */
-    real                                  init; /**< Initial reference displacement (nm) or (deg) */
-    real                                  rate; /**< Rate of motion (nm/ps) or (deg/ps) */
-    real                                  k; /**< Force constant (kJ/(mol nm^2) or kJ/(mol rad^2) for umbrella pull type, or kJ/(mol nm) or kJ/(mol rad) for constant force pull type */
-    real                                  kB; /**< Force constant for state B */
+    //! The pull type: umbrella, constraint, ...
+    int eType = 0;
+    //! Name of the module providing   the external potential, only used with eType==epullEXTERNAL
+    std::string externalPotentialProvider;
+    //! The pull geometry
+    int eGeom = 0;
+    //! The number of groups, depends on eGeom
+    int ngroup = 0;
+    /*! \brief The pull groups:
+     *
+     *  indices into the group arrays in pull_t and pull_params_t,
+     *   ngroup indices are used
+     */
+    std::array<int, c_pullCoordNgroupMax> group;
+    //! Used to select components for constraint
+    gmx::IVec dim = { 0, 0, 0 };
+    //! The origin for the absolute reference
+    gmx::RVec origin = { 0, 0, 0 };
+    //! The pull vector, direction or position
+    gmx::RVec vec = { 0, 0, 0 };
+    //! Set init based on the initial structure
+    bool bStart = false;
+    //! Initial reference displacement (nm) or (deg)
+    real init = 0.0;
+    //! Rate of motion (nm/ps) or (deg/ps)
+    real rate = 0.0;
+    /*! \brief Force constant
+     *
+     * For umbrella pull type this is (kJ/(mol nm^2) or kJ/(mol rad^2).
+     * For constant force pull type it is kJ/(mol nm) or kJ/(mol rad).
+     */
+    real k = 0.0;
+    //! Force constant for state B
+    real kB = 0.0;
 };
 
 /*! \brief Struct containing all pull parameters */
 struct pull_params_t
 {
-    int  ngroup;         /**< Number of pull groups */
-    int  ncoord;         /**< Number of pull coordinates */
-    real cylinder_r;     /**< Radius of cylinder for dynamic COM (nm) */
-    real constr_tol;     /**< Absolute tolerance for constraints in (nm) */
-    bool bPrintCOM;      /**< Print coordinates of COM for each coord */
-    bool bPrintRefValue; /**< Print the reference value for each coord */
-    bool bPrintComp;     /**< Print cartesian components for each coord with geometry=distance */
-    bool bSetPbcRefToPrevStepCOM; /**< Use the COM of each group from the previous step as reference */
-    int  nstxout;                 /**< Output interval for pull x */
-    int  nstfout;                 /**< Output interval for pull f */
-    bool bXOutAverage;            /**< Write the average coordinate during the output interval */
-    bool bFOutAverage;            /**< Write the average force during the output interval */
-
-    std::vector<t_pull_group> group; /**< groups to pull/restrain/etc/ */
-    std::vector<t_pull_coord> coord; /**< the pull coordinates */
+    //! Number of pull groups
+    int ngroup = 0;
+    //! Number of pull coordinates
+    int ncoord = 0;
+    //! Radius of cylinder for dynamic COM (nm)
+    real cylinder_r = 0.0;
+    //! Absolute tolerance for constraints in (nm)
+    real constr_tol = 0.0;
+    //! Print coordinates of COM for each coord
+    bool bPrintCOM = false;
+    //! Print the reference value for each coord
+    bool bPrintRefValue = false;
+    //! Print cartesian components for each coord with geometry=distance
+    bool bPrintComp = false;
+    //! Use the COM of each group from the previous step as reference
+    bool bSetPbcRefToPrevStepCOM = false;
+    //! Output interval for pull x
+    int nstxout = 0;
+    //! Output interval for pull f
+    int nstfout = 0;
+    //! Write the average coordinate during the output interval
+    bool bXOutAverage = false;
+    //! Write the average force during the output interval
+    bool bFOutAverage = false;
+    //! groups to pull/restrain/etc/
+    std::vector<t_pull_group> group;
+    //! the pull coordinates
+    std::vector<t_pull_coord> coord;
 };
 
 /*! \endcond */

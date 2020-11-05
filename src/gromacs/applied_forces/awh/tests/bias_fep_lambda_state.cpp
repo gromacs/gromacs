@@ -96,8 +96,9 @@ static AwhFepLambdaStateTestParameters getAwhFepLambdaTestParameters(int eawhgro
 
     AwhDimParams& awhDimParams = params.awhDimParams;
 
-    awhDimParams.period         = 0;
-    awhDimParams.diffusion      = 1e-4;
+    awhDimParams.period = 0;
+    // Correction for removal of GaussianGeometryFactor/2 in histogram size
+    awhDimParams.diffusion      = 1e-4 / (0.12927243028700 * 2);
     awhDimParams.origin         = 0;
     awhDimParams.end            = numLambdaStates - 1;
     awhDimParams.coordValueInit = awhDimParams.origin;

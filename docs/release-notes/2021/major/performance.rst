@@ -32,3 +32,10 @@ CPU SIMD accelerated implementation of harmonic bonds
 SIMD acceleration for bonds slightly improves performance for systems
 with H-bonds only constrained or no constraints. This gives a significant
 improvement with multiple time stepping.
+
+Allow offloading GPU update and constraints without direct GPU communication
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Allow domain-decomposition and separate PME rank parallel runs to offload update and
+constraints to a GPU with CUDA without requiring the (experimental) direct GPU
+communication features to be also enabled.

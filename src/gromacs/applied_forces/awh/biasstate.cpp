@@ -1003,13 +1003,16 @@ bool BiasState::isSamplingRegionCovered(const BiasParams&             params,
     {
         if (grid.axis(d).isFepLambdaAxis())
         {
-            /* TODO: Verify that a threshold of 1.0 is OK. With a very high sample weight 1.0 can be
-             * reached quickly even in regions with low probability. Should the sample weight be
-             * taken into account here? */
+            /* Do not modify the weight threshold based on a FEP lambda axis. The spread
+             * of the sampling weights is not depending on a Gaussian distribution (like
+             * below). */
             weightThreshold *= 1.0;
         }
         else
         {
+            /* The spacing is proportional to 1/sqrt(betak). The weight threshold will be
+             * approximately (given that the spacing can be modified if the dimension is periodic)
+             * proportional to sqrt(1/(2*pi)). */
             weightThreshold *= grid.axis(d).spacing()
                                * std::sqrt(dimParams[d].pullDimParams().betak * 0.5 * M_1_PI);
         }

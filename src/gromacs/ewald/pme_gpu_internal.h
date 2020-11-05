@@ -354,7 +354,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_spread(const PmeGpu*         GPU_FUNC_ARGUMENT(p
                                        float**               GPU_FUNC_ARGUMENT(h_grids),
                                        bool                  GPU_FUNC_ARGUMENT(computeSplines),
                                        bool                  GPU_FUNC_ARGUMENT(spreadCharges),
-                                       const real GPU_FUNC_ARGUMENT(lambda)) GPU_FUNC_TERM;
+                                       real GPU_FUNC_ARGUMENT(lambda)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * 3D FFT R2C/C2R routine.

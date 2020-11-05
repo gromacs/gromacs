@@ -48,15 +48,19 @@
 
 #include <cstdio>
 
+#include <utility>
+
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/hardware/detecthardware.h"
+#include "gromacs/hardware/hw_info.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/textwriter.h"
 #include "programs/mdrun/mdrun_main.h"
 
@@ -108,6 +112,14 @@ SimulationRunner::SimulationRunner(TestFileManager* fileManager) :
 {
 #if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "MPI system not initialized for mdrun tests");
+
+    // It would be better to also detect this in a thread-MPI build,
+    // but there is no way to do that currently, and it is also not a
+    // problem for such a build. Any code based on such an invalid
+    // test fixture will be found in CI testing, however.
+    GMX_RELEASE_ASSERT(MdrunTestFixtureBase::communicator_ != MPI_COMM_NULL,
+                       "SimulationRunner may only be used from a test fixture that inherits from "
+                       "MdrunTestFixtureBase");
 #endif
 }
 
@@ -223,7 +235,7 @@ int SimulationRunner::callGrompp(const CommandLine& callerRef)
     // Make sure rank zero has written the .tpr file before other
     // ranks try to read it. Thread-MPI and serial do this just fine
     // on their own.
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MdrunTestFixtureBase::communicator_);
 #endif
     return returnValue;
 }
@@ -304,7 +316,8 @@ int SimulationRunner::callMdrun(const CommandLine& callerRef)
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
-    return gmx_mdrun(caller.argc(), caller.argv());
+    return gmx_mdrun(MdrunTestFixtureBase::communicator_, *MdrunTestFixtureBase::hwinfo_,
+                     caller.argc(), caller.argv());
 }
 
 int SimulationRunner::callMdrun()
@@ -313,6 +326,26 @@ int SimulationRunner::callMdrun()
 }
 
 // ====
+
+// static
+MPI_Comm MdrunTestFixtureBase::communicator_ = MPI_COMM_NULL;
+// static
+std::unique_ptr<gmx_hw_info_t> MdrunTestFixtureBase::hwinfo_;
+
+// static
+void MdrunTestFixtureBase::SetUpTestCase()
+{
+    communicator_ = MPI_COMM_WORLD;
+    auto newHwinfo =
+            gmx_detect_hardware(PhysicalNodeCommunicator{ communicator_, gmx_physicalnode_id_hash() });
+    std::swap(hwinfo_, newHwinfo);
+}
+
+// static
+void MdrunTestFixtureBase::TearDownTestCase()
+{
+    hwinfo_.reset(nullptr);
+}
 
 MdrunTestFixtureBase::MdrunTestFixtureBase()
 {
@@ -331,7 +364,7 @@ MdrunTestFixture::~MdrunTestFixture()
 {
 #if GMX_LIB_MPI
     // fileManager_ should only clean up after all the ranks are done.
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MdrunTestFixtureBase::communicator_);
 #endif
 }
 

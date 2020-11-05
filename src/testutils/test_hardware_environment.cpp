@@ -54,7 +54,6 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 
 namespace gmx
@@ -89,17 +88,14 @@ void callAddGlobalTestEnvironment()
     getTestHardwareEnvironment();
 }
 
-//! Simple hardware initialization
-static gmx_hw_info_t* hardwareInit()
+TestHardwareEnvironment::TestHardwareEnvironment() :
+    hardwareInfo_(gmx_detect_hardware(PhysicalNodeCommunicator{ MPI_COMM_WORLD, gmx_physicalnode_id_hash() }))
 {
-    PhysicalNodeCommunicator physicalNodeComm(MPI_COMM_WORLD, gmx_physicalnode_id_hash());
-    return gmx_detect_hardware(MDLogger{}, physicalNodeComm);
 }
 
 void TestHardwareEnvironment::SetUp()
 {
     testDeviceList_.clear();
-    hardwareInfo_ = hardwareInit();
     // Constructing contexts for all compatible GPUs - will be empty on non-GPU builds
     for (const DeviceInformation& compatibleDeviceInfo : getCompatibleDevices(hardwareInfo_->deviceInfoList))
     {
@@ -111,6 +107,11 @@ void TestHardwareEnvironment::SetUp()
 void TestHardwareEnvironment::TearDown()
 {
     testDeviceList_.clear();
+    /* In OneAPI 2021.1-beta9 and beta10, there is a bug that cause a
+     * segfault when a sycl::device is destructed too late. So, we
+     * explicitly destroy device handles here by resetting
+     * hardwareInfo_, which does no harm to anything else. */
+    hardwareInfo_.reset(nullptr);
 }
 
 } // namespace test

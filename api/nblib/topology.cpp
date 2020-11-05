@@ -71,9 +71,10 @@ gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
         size_t          numMols    = std::get<1>(molNumberTuple);
         const auto&     exclusions = molecule.getExclusions();
 
-        assert((!exclusions.empty()
-                && std::string("No exclusions found in the " + molecule.name().value() + " molecule.")
-                           .c_str()));
+        // Note this is a programming error as all particles should exclude at least themselves and empty topologies are not allowed.
+        const std::string message =
+                "No exclusions found in the " + molecule.name().value() + " molecule.";
+        assert((!exclusions.empty() && message.c_str()));
 
         std::vector<gmx::ExclusionBlock> exclusionBlockPerMolecule =
                 detail::toGmxExclusionBlock(exclusions);
@@ -129,6 +130,11 @@ std::vector<T> TopologyBuilder::extractParticleTypeQuantity(Extractor&& extracto
 
 Topology TopologyBuilder::buildTopology()
 {
+    assert((!(numParticles_ < 0) && "It should not be possible to have negative particles"));
+    if (numParticles_ == 0)
+    {
+        throw InputException("You cannot build a topology with no particles");
+    }
     topology_.numParticles_ = numParticles_;
 
     topology_.exclusions_ = createExclusionsListOfLists();

@@ -79,7 +79,7 @@ foreach(ELEC_DEF IN LISTS ELEC_DEFS)
                 -Xclang -finclude-default-header  -D_${VENDOR}_SOURCE_
                 -DGMX_OCL_FASTGEN ${ELEC_DEF} ${VDW_DEF}
                 -Dc_nbnxnGpuClusterSize=${CLUSTER_SIZE}
-                -Dc_nbnxnMinDistanceSquared=3.82e-07F
+                -DNBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT=3.82e-07
                 -Dc_nbnxnGpuNumClusterPerSupercluster=8
                 -Dc_nbnxnGpuJgroupSize=4
                 -DIATYPE_SHMEM

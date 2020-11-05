@@ -65,7 +65,52 @@
  */
 double gmx_cycles_calibrate(double sampletime)
 {
-#ifdef _MSC_VER
+    /* On ARM and recent-generation x86-64, we can use the more accurate cycle counters
+     * that allow better timing for things that depend on it (e.g. load balancing, profiling).
+     */
+#if ((defined __aarch64__) \
+     && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
+    /* 64-bit ARM cycle counters with GCC inline assembly */
+    unsigned long cycles;
+    __asm__ __volatile__("mrs %0, cntfrq_el0" : "=r"(cycles));
+    /* Only first 32 bits are significant */
+    cycles &= 0xFFFFFFFF;
+    return 1. / cycles;
+    GMX_UNUSED_VALUE(sampletime);
+#else
+#    if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) \
+         && defined(__x86_64__) && !defined(_CRAYC))
+    long gmx_unused tmp;
+    int             cpuid1;
+    int gmx_unused cpuid2;
+    const int      l0  = 0x0;
+    const int      l16 = 0x16;
+    gmx_cycles_t   cycles;
+
+    /* cpuid clobbers ebx but it must be restored for -fPIC so save
+     * then restore ebx */
+    __asm__ volatile(
+            "xchg %%rbx, %2\n"
+            "cpuid\n"
+            "xchg %%rbx, %2\n"
+            : "=a"(cpuid1), "=d"(cpuid2), "=r"(tmp)
+            : "a"(l0)
+            : "ecx", "ebx");
+    if (cpuid1 >= 0x16)
+    {
+        /* This CPU is recent enough so the timer frequency can be directly queried */
+        __asm__ volatile(
+                "xchg %%rbx, %2\n"
+                "cpuid\n"
+                "xchg %%rbx, %2\n"
+                : "=a"(cpuid1), "=d"(cpuid2), "=r"(tmp)
+                : "a"(l16)
+                : "ecx", "ebx");
+        cycles = static_cast<gmx_cycles_t>(cpuid1) * static_cast<gmx_cycles_t>(1000000);
+        return 1. / cycles;
+    }
+#    endif
+#    ifdef _MSC_VER
 
     /* Windows does not have gettimeofday, but it provides a special
      * routine that returns the cycle counter frequency.
@@ -77,7 +122,7 @@ double gmx_cycles_calibrate(double sampletime)
     return 1.0 / static_cast<double>(i.QuadPart);
     /* end of MS Windows implementation */
 
-#elif HAVE_GETTIMEOFDAY
+#    elif HAVE_GETTIMEOFDAY
 
     /*  generic implementation with gettimeofday() */
     struct timeval t1, t2;
@@ -90,7 +135,7 @@ double gmx_cycles_calibrate(double sampletime)
         return -1;
     }
 
-#    if (defined(__alpha__) || defined(__alpha))
+#        if (defined(__alpha__) || defined(__alpha))
     /* Alpha cannot count to more than 4e9, but I don't expect
      * that the architecture will go over 2GHz before it dies, so
      * up to 2.0 seconds of sampling should be safe.
@@ -99,7 +144,7 @@ double gmx_cycles_calibrate(double sampletime)
     {
         sampletime = 2.0;
     }
-#    endif
+#        endif
 
     /* Start a timing loop. We want this to be largely independent
      * of machine speed, so we need to start with a very small number
@@ -138,9 +183,10 @@ double gmx_cycles_calibrate(double sampletime)
     /* Return seconds per cycle */
     return timediff / cyclediff;
 
-#else
+#    else
     /* No timing function available */
     return -1;
     GMX_UNUSED_VALUE(sampletime);
+#    endif
 #endif
 }

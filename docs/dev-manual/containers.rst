@@ -11,18 +11,19 @@ under :file:`admin/containers/`
 Images are (re)built manually by |Gromacs| project staff and pushed to
 repositories at https://hub.docker.com/u/gromacs
 
+Refer to :file:`buildall.sh` in the ``master`` branch for the set of images
+currently being built.
+
 Utilities
 =========
+
+:file:`utility.py`
+------------------
 
 .. automodule:: utility
     :members:
 
-HPC container maker
--------------------
+:file:`scripted_gmx_docker_builds.py`
+-------------------------------------
 
-We use the `NVidia HPC Container Maker <https://github.com/NVIDIA/hpc-container-maker>`__
-package for scripted Dockerfile generation.
-See :file:`admin/containers/scripted_gmx_docker_builds.py`.
-
-.. todo:: :issue:`3272` Insert tool documentation.
-    E.g. ``.. automodule:: scripted_gmx_docker_builds``
+.. automodule:: scripted_gmx_docker_builds

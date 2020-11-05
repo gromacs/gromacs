@@ -61,7 +61,7 @@ if [ -x `which mpiexec` ]; then
 fi
 
 # Run Python acceptance tests.
-python -m pytest python_packaging/test --junitxml=$PY_ACCEPTANCE_TEST_XML
+python -m pytest python_packaging/test --junitxml=$PY_ACCEPTANCE_TEST_XML --threads=2
 
 # Note: Multiple pytest processes getting --junitxml output file argument
 # may cause problems, so we set the option on only one of the launched processes.

@@ -73,9 +73,6 @@ void GmxForceCalculator::compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
     // update the coordinates in the backend
     nbv_->convertCoordinates(gmx::AtomLocality::Local, false, coordinateInput);
 
-    // set forces to zero
-    std::fill(forceOutput.begin(), forceOutput.end(), gmx::RVec{ 0, 0, 0 });
-
     nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local, *interactionConst_, *stepWork_,
                                   enbvClearFYes, *forcerec_, enerd_.get(), nrnb_.get());
 

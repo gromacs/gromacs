@@ -306,6 +306,9 @@ private:
     //! The modules that comprise mdrun.
     std::unique_ptr<MDModules> mdModules_;
 
+    //! Non-owning handle to the results of the hardware detection.
+    const gmx_hw_info_t* hwinfo_ = nullptr;
+
     /*!
      * \brief Holds simulation input specification provided by client, if any.
      *
@@ -401,6 +404,17 @@ public:
      * \throws APIError if a required component has not been added before calling build().
      */
     Mdrunner build();
+
+    /*!
+     * \brief Supply the result of hardware detection to the gmx::Mdrunner
+     *
+     * \param hwinfo  Non-owning not-null handle to result of hardware detection.
+     *
+     * \todo It would be better to express this as either a not-null const pointer or
+     * a const reference, but neither of those is consistent with incremental
+     * building of an object. This motivates future work to be able to make a deep copy
+     * of the detection result. See https://gitlab.com/gromacs/gromacs/-/issues/3650 */
+    MdrunnerBuilder& addHardwareDetectionResult(const gmx_hw_info_t* hwinfo);
 
     /*!
      * \brief Set up non-bonded short-range force calculations.

@@ -67,6 +67,7 @@
 #include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/timing/wallcycle.h"
 
 namespace gmx
 {
@@ -116,6 +117,9 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
                                          const float                       dtPressureCouple,
                                          const matrix                      prVelocityScalingMatrix)
 {
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+
     // Clearing virial matrix
     // TODO There is no point in having separate virial matrix for constraints
     clear_mat(virial);
@@ -145,11 +149,17 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
 
     coordinatesReady_->markEvent(deviceStream_);
 
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
+
     return;
 }
 
 void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
 {
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+
     ScalingMatrix mu;
     mu.xx = scalingMatrix[XX][XX];
     mu.yy = scalingMatrix[YY][YY];
@@ -165,10 +175,16 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
     //       can affect the performance if nstpcouple is small.
     deviceStream_.synchronize();
+
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
 {
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+
     ScalingMatrix mu;
     mu.xx = scalingMatrix[XX][XX];
     mu.yy = scalingMatrix[YY][YY];
@@ -184,16 +200,21 @@ void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
     //       can affect the performance if nstpcouple is small.
     deviceStream_.synchronize();
+
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
                                const gmx_mtop_t&     mtop,
                                const DeviceContext&  deviceContext,
                                const DeviceStream&   deviceStream,
-                               GpuEventSynchronizer* xUpdatedOnDevice) :
+                               GpuEventSynchronizer* xUpdatedOnDevice,
+                               gmx_wallcycle*        wcycle) :
     deviceContext_(deviceContext),
     deviceStream_(deviceStream),
-    coordinatesReady_(xUpdatedOnDevice)
+    coordinatesReady_(xUpdatedOnDevice),
+    wcycle_(wcycle)
 {
     GMX_ASSERT(xUpdatedOnDevice != nullptr, "The event synchronizer can not be nullptr.");
 
@@ -217,6 +238,10 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
                                    const t_mdatoms&              md,
                                    const int                     numTempScaleValues)
 {
+    // TODO wallcycle
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+
     GMX_ASSERT(d_x != nullptr, "Coordinates device buffer should not be null.");
     GMX_ASSERT(d_v != nullptr, "Velocities device buffer should not be null.");
     GMX_ASSERT(d_f != nullptr, "Forces device buffer should not be null.");
@@ -239,10 +264,14 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
 
     coordinateScalingKernelLaunchConfig_.gridSize[0] =
             (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
+
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_UPDATE_CONSTRAIN);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 void UpdateConstrainGpu::Impl::setPbc(const PbcType pbcType, const matrix box)
 {
+    // TODO wallcycle
     setPbcAiuc(numPbcDimensions(pbcType), box, &pbcAiuc_);
 }
 
@@ -255,8 +284,9 @@ UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec&     ir,
                                        const gmx_mtop_t&     mtop,
                                        const DeviceContext&  deviceContext,
                                        const DeviceStream&   deviceStream,
-                                       GpuEventSynchronizer* xUpdatedOnDevice) :
-    impl_(new Impl(ir, mtop, deviceContext, deviceStream, xUpdatedOnDevice))
+                                       GpuEventSynchronizer* xUpdatedOnDevice,
+                                       gmx_wallcycle*        wcycle) :
+    impl_(new Impl(ir, mtop, deviceContext, deviceStream, xUpdatedOnDevice, wcycle))
 {
 }
 

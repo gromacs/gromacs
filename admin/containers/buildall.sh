@@ -9,46 +9,29 @@ SCRIPT=$PWD/scripted_gmx_docker_builds.py
 # images needed, because the same one can test library,
 # thread and no MPI configurations.
 
-tag="gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.15.7 --gcc 8 --cuda 11.0 --opencl --clfft --mpi openmpi \
-| docker build -t $tag -
+args[${#args[@]}]="--gcc 8 --cuda 11.0 --clfft --mpi openmpi"
+args[${#args[@]}]="--gcc 7 --clfft --mpi openmpi --ubuntu 18.04"
+args[${#args[@]}]="--llvm 8 --tsan"
+args[${#args[@]}]="--llvm 8 --cuda 10.0 --clfft --mpi openmpi"
+args[${#args[@]}]="--llvm 8 --cuda 11.0 --clfft --mpi openmpi"
+args[${#args[@]}]="--llvm 9 --clfft --mpi openmpi --ubuntu 18.04"
+args[${#args[@]}]="--oneapi 2021.1-beta09"
+args[${#args[@]}]="--llvm --doxygen"
 
-tag="gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.13.0 --gcc 7 --opencl amd --clfft --mpi openmpi --ubuntu 18.04 | docker build -t $tag -
+echo "Building the following images."
+for arg_string in "${args[@]}"; do
+  # shellcheck disable=SC2086
+  python3 -m utility $arg_string
+done
+echo
 
-tag="gromacs/cmake-3.13.0-llvm-8-tsan-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.13.0 --llvm 8 --tsan | docker build -t $tag -
-
-tag="gromacs/cmake-3.15.7-llvm-8-cuda-10.0-openmpi-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.15.7 --llvm 8 --cuda 10.0 --mpi openmpi | docker build -t $tag -
-
-tag="gromacs/cmake-3.15.7-llvm-8-cuda-11.0-openmpi-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.15.7 --llvm 8 --cuda 11.0 --mpi openmpi | docker build -t $tag -
-
-tag="gromacs/cmake-3.15.7-llvm-9-openmpi-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.15.7 --llvm 9 --mpi openmpi | docker build -t $tag -
-
-tag="gromacs/cmake-3.13.0-llvm-9-intelopencl-openmpi-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl intel --mpi openmpi | docker build -t $tag -
-
-tag="gromacs/cmake-3.13.0-llvm-9-amdopencl-openmpi-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.13.0 --llvm 9 --opencl amd --mpi openmpi --ubuntu 18.04 | docker build -t $tag -
-
-tag="gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.17.2 --oneapi 2021.1-beta09 | docker build -t $tag -
-
-tag="gromacs/ci-docs-llvm-master"
-tags[${#tags[@]}]=$tag
-python3 $SCRIPT --cmake 3.17.2 --llvm --doxygen | docker build -t $tag -
+for arg_string in "${args[@]}"; do
+  # shellcheck disable=SC2086
+  tag=$(python3 -m utility $arg_string)
+  tags[${#tags[@]}]=$tag
+  # shellcheck disable=SC2086
+  python3 $SCRIPT $arg_string | docker build -t $tag -
+done
 
 echo "Run the following to upload the updated images."
 echo "docker login"

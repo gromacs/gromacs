@@ -204,8 +204,6 @@ private:
     int dimIndex_ = 0;
     //! The pulse corresponding to this halo exchange instance
     int pulse_ = 0;
-    //! Number of zones. Always 1 for 1-D case.
-    const int nzone_ = 1;
     //! The wallclock counter
     gmx_wallcycle* wcycle_ = nullptr;
     //! The atom offset for receive (x) or send (f) for dimension index and pulse corresponding to this halo exchange instance

@@ -59,6 +59,17 @@ struct KernelSetup;
 namespace nblib
 {
 
+/*! \brief Sets up the GROMACS data structures for the non-bonded force calculator
+ *
+ * This data structure initializes the GmxForceCalculator object which internally
+ * contains various objects needed to perform non-bonded force calculations using
+ * the internal representation for the problem as required for GROMACS.
+ *
+ * The public functions of this class basically translate the problem description
+ * specified by the user in NBLIB. This ultimately returns the GmxForceCalculator
+ * object which is used by the ForceCalculator object in the user-facing library.
+ *
+ */
 class NbvSetupUtil final
 {
 public:
@@ -99,6 +110,7 @@ public:
     //! Sets up t_forcerec object on the GmxForceCalculator
     void setupForceRec(const matrix& box);
 
+    //! Returns a unique pointer a GmxForceCalculator object
     std::unique_ptr<GmxForceCalculator> getGmxForceCalculator()
     {
         return std::move(gmxForceCalculator_);
@@ -115,6 +127,16 @@ private:
     std::unique_ptr<GmxForceCalculator> gmxForceCalculator_;
 };
 
+/*! \brief Calls the setup utilities needed to initialize a GmxForceCalculator object
+ *
+ * The GmxSetupDirector encapsulates the multi-stage setup of the GmxForceCalculator which
+ * is done using the public functions of the NbvSetupUtil. This separation ensures that the
+ * NbvSetupUtil object is temporary in scope. The function definition makes it easy for the
+ * developers to follow the sequence of calls and the dataflow involved in setting up
+ * the non-bonded force calculation backend. This is the only function needed to be called
+ * from the ForceCalculator during construction.
+ *
+ */
 class GmxSetupDirector
 {
 public:

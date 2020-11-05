@@ -33,7 +33,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-"""
+"""Building block based Dockerfile generation for CI testing images.
+
 Generates a set of docker images used for running GROMACS CI on Gitlab.
 The images are prepared according to a selection of build configuration targets
 that hope to cover a broad enough scope of different possible systems,
@@ -43,6 +44,9 @@ described as an entry in the build_configs dictionary, with the script
 analysing the logic and adding build stages as needed.
 
 Based on the example script provided by the NVidia HPCCM repository.
+
+Reference:
+    `NVidia HPC Container Maker <https://github.com/NVIDIA/hpc-container-maker>`__
 
 Authors:
     * Paul Bauer <paul.bauer.q@gmail.com>
@@ -55,6 +59,9 @@ Usage::
     $ python3 scripted_gmx_docker_builds.py --help
     $ python3 scripted_gmx_docker_builds.py --format docker > Dockerfile && docker build .
     $ python3 scripted_gmx_docker_builds.py | docker build -
+
+See Also:
+    :file:`buildall.sh`
 
 """
 
@@ -80,6 +87,7 @@ _common_packages = ['build-essential',
                     'ccache',
                     'git',
                     'gnupg',
+                    'gpg-agent',
                     'libfftw3-dev',
                     'libhwloc-dev',
                     'liblapack-dev',
@@ -91,6 +99,22 @@ _common_packages = ['build-essential',
                     'vim',
                     'wget',
                     'xsltproc']
+
+_opencl_extra_packages = [
+    'nvidia-opencl-dev',
+    # The following require apt_ppas=['ppa:intel-opencl/intel-opencl']
+    'intel-opencl-icd',
+    'ocl-icd-libopencl1',
+    'ocl-icd-opencl-dev',
+    'opencl-headers',
+    # The following require
+    #             apt_keys=['http://repo.radeon.com/rocm/apt/debian/rocm.gpg.key'],
+    #             apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main']
+    'libelf1',
+    'rocm-opencl',
+    'rocm-dev',
+    'clinfo'
+]
 
 # Extra packages needed to build Python installations from source.
 _python_extra_packages = ['build-essential',
@@ -134,18 +158,13 @@ _docs_extra_packages = ['autoconf',
                         'texlive-fonts-recommended',
                         'texlive-fonts-extra']
 
-# Supported Python versions for maintained branches.
-_python_versions = ['3.6.10', '3.7.7', '3.8.2']
-
 # Parse command line arguments
-parser = argparse.ArgumentParser(description='GROMACS CI image creation script', parents=[utility.parser])
+parser = argparse.ArgumentParser(description='GROMACS CI image creation script',
+                                 parents=[utility.parser])
 
 parser.add_argument('--format', type=str, default='docker',
                     choices=['docker', 'singularity'],
                     help='Container specification format (default: docker)')
-parser.add_argument('--venvs', nargs='*', type=str, default=_python_versions,
-                    help='List of Python versions ("major.minor.patch") for which to install venvs. '
-                         'Default: {}'.format(' '.join(_python_versions)))
 
 
 def base_image_tag(args) -> str:
@@ -177,6 +196,13 @@ def get_llvm_packages(args) -> typing.Iterable[str]:
                 'libomp5',
                 'clang-format-' + str(args.llvm),
                 'clang-tidy-' + str(args.llvm)]
+    else:
+        return []
+
+
+def get_opencl_packages(args) -> typing.Iterable[str]:
+    if (args.doxygen is None) and (args.oneapi is None):
+        return _opencl_extra_packages
     else:
         return []
 
@@ -243,34 +269,6 @@ def get_mpi(args, compiler):
             raise RuntimeError('Intel MPI recipe not implemented yet.')
         else:
             raise RuntimeError('Requested unknown MPI implementation.')
-    else:
-        return None
-
-
-def get_opencl(args):
-    # Add OpenCL environment if needed
-    if (args.opencl is not None):
-        if args.opencl == 'nvidia':
-            if (args.cuda is None):
-                raise RuntimeError('Need Nvidia environment for Nvidia OpenCL image')
-
-            return hpccm.building_blocks.packages(ospackages=['nvidia-opencl-dev'])
-
-        elif args.opencl == 'intel':
-            # Note, when using oneapi, there is bundled OpenCL support, so this
-            # installation is not needed.
-            return hpccm.building_blocks.packages(
-                    apt_ppas=['ppa:intel-opencl/intel-opencl'],
-                    ospackages=['opencl-headers', 'ocl-icd-libopencl1',
-                                'ocl-icd-opencl-dev', 'intel-opencl-icd'])
-
-        elif args.opencl == 'amd':
-            # libelf1 is a necessary dependency for something in the ROCm stack,
-            # which they should set up, but seem to have omitted.
-            return hpccm.building_blocks.packages(
-                    apt_keys=['http://repo.radeon.com/rocm/apt/debian/rocm.gpg.key'],
-                    apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main'],
-                    ospackages=['ocl-icd-libopencl1', 'ocl-icd-opencl-dev', 'opencl-headers', 'libelf1', 'rocm-opencl', 'rocm-dev', 'clinfo'])
     else:
         return None
 
@@ -538,21 +536,31 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     # Building blocks are chunks of container-builder instructions that can be
     # copied to any build stage with the addition operator.
     building_blocks = collections.OrderedDict()
+    building_blocks['base_packages'] = hpccm.building_blocks.packages(
+        ospackages=_common_packages)
 
     # These are the most expensive and most reusable layers, so we put them first.
     building_blocks['compiler'] = get_compiler(args, compiler_build_stage=stages.get('compiler_build'))
     building_blocks['mpi'] = get_mpi(args, building_blocks['compiler'])
+    for i, cmake in enumerate(args.cmake):
+        building_blocks['cmake' + str(i)] = hpccm.building_blocks.cmake(
+            eula=True,
+            prefix='/usr/local/cmake-{}'.format(cmake),
+            version=cmake)
 
     # Install additional packages early in the build to optimize Docker build layer cache.
-    os_packages = _common_packages + get_llvm_packages(args)
+    os_packages = list(get_llvm_packages(args)) + get_opencl_packages(args)
     if args.doxygen is not None:
         os_packages += _docs_extra_packages
     if args.oneapi is not None:
         os_packages += ['lsb-release']
-    building_blocks['ospackages'] = hpccm.building_blocks.packages(ospackages=os_packages)
+    building_blocks['extra_packages'] = hpccm.building_blocks.packages(
+        ospackages=os_packages,
+        apt_ppas=['ppa:intel-opencl/intel-opencl'],
+        apt_keys=['http://repo.radeon.com/rocm/apt/debian/rocm.gpg.key'],
+        apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main']
+    )
 
-    building_blocks['cmake'] = hpccm.building_blocks.cmake(eula=True, version=args.cmake)
-    building_blocks['opencl'] = get_opencl(args)
     building_blocks['clfft'] = get_clfft(args)
 
     # Add Python environments to MPI images, only, so we don't have to worry

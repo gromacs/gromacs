@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,13 +68,19 @@ namespace gmx
  * support for the CLI and API without duplicating code. It should be
  * eliminated following the TODOs below.
  *
+ * \warning Instances provide lifetime scope for members that do not have
+ *  effective lifetime management or which are frequently accessed unsafely.
+ *  The caller is responsible for keeping a LegacyMdrunOptions object alive
+ *  for as long as any consumers, direct or transitive.
+ *
  * \todo Modules in mdrun should acquire proper option handling so
- * that all of these declarations and defaults are local to the
- * modules.
+ *       that all of these declarations and defaults are local to the
+ *       modules.
  *
  * \todo Contextual aspects, such as working directory
- * and environment variable handling are more properly
- * the role of SimulationContext, and should be moved there */
+ *       and environment variable handling are more properly
+ *       the role of SimulationContext, and should be moved there.
+ */
 class LegacyMdrunOptions
 {
 public:

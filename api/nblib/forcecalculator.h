@@ -66,7 +66,7 @@ class GmxForceCalculator;
  * costly to create this object since much of the SimulationState and NBKernelOptions has to be
  * passed to the gromacs backend. However, once constructed, compute can be called repeatedly only
  * paying the cost of the actual nonbonded force calculation. Repeated calls to compute on the same
- * coordinated will always return the same forces (within precision), so the user must update the
+ * coordinates will always return the same forces (within precision), so the user must update the
  * positions using the forces generated here to advance a simulation. If the coordinates move
  * sufficiently far from their positions at construction time, the efficiency of the calculation
  * will suffer. To alleviate this, the user can call updatePairList.

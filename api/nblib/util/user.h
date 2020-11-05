@@ -57,6 +57,12 @@
 #include "nblib/basicdefinitions.h"
 #include "nblib/vector.h"
 
+namespace gmx
+{
+template<typename T>
+class ArrayRef;
+} // namespace gmx
+
 namespace nblib
 {
 
@@ -65,7 +71,10 @@ namespace nblib
 std::vector<Vec3> generateVelocity(real Temperature, unsigned int seed, std::vector<real> const& masses);
 
 //! Check within the container of gmx::RVecs for a NaN or inf
-bool checkNumericValues(const std::vector<Vec3>& values);
+bool isRealValued(gmx::ArrayRef<const Vec3> values);
+
+//! Zero a cartesian buffer
+void zeroCartesianArray(gmx::ArrayRef<Vec3> cartesianArray);
 
 //! Used to ignore unused arguments of a lambda functions
 inline void ignore_unused() {}

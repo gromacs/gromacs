@@ -2873,7 +2873,7 @@ static float boundingbox_only_distance2(const Grid::Dimensions& iGridDims,
 #if !GMX_DOUBLE
     return rbb2;
 #else
-    return (float)((1 + GMX_FLOAT_EPS) * rbb2);
+    return static_cast<float>((1 + GMX_FLOAT_EPS) * rbb2);
 #endif
 }
 

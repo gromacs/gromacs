@@ -254,10 +254,12 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    float3 fci_buf[c_nbnxnGpuNumClusterPerSupercluster]; /* i force buffer */
+    fvec fci_buf[c_nbnxnGpuNumClusterPerSupercluster]; /* i force buffer */
     for (int ci_offset = 0; ci_offset < c_nbnxnGpuNumClusterPerSupercluster; ci_offset++)
     {
-        fci_buf[ci_offset] = (float3)(0.0F);
+        fci_buf[ci_offset][0] = 0.0F;
+        fci_buf[ci_offset][1] = 0.0F;
+        fci_buf[ci_offset][2] = 0.0F;
     }
 
 #ifdef LJ_EWALD
@@ -415,19 +417,18 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 const float c12    = ljcp_i.y * ljcp_j.y;
 #    else
                                 /* LJ 2^(1/6)*sigma and 12*epsilon */
-                                const float sigma   = ljcp_i.x + ljcp_j.x;
-                                const float epsilon = ljcp_i.y * ljcp_j.y;
+                                const float  sigma   = ljcp_i.x + ljcp_j.x;
+                                const float  epsilon = ljcp_i.y * ljcp_j.y;
 #        if defined CALC_ENERGIES || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
-                                float       c6, c12;
-                                convert_sigma_epsilon_to_c6_c12(sigma, epsilon, &c6, &c12);
+                                const float2 c6c12 = convert_sigma_epsilon_to_c6_c12(sigma, epsilon);
+                                const float  c6    = c6c12.x;
+                                const float  c12   = c6c12.y;
 #        endif
 #    endif /* LJ_COMB_GEOM */
 #endif     /* LJ_COMB */
 
                                 // Ensure distance do not become so small that r^-12 overflows.
-                                // Cast to float to ensure the correct built-in max() function
-                                // is called.
-                                r2 = max(r2, (float)c_nbnxnMinDistanceSquared);
+                                r2 = max(r2, c_nbnxnMinDistanceSquared);
 
                                 const float inv_r  = rsqrt(r2);
                                 const float inv_r2 = inv_r * inv_r;
@@ -555,7 +556,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 fcj_buf -= f_ij;
 
                                 /* accumulate i forces in registers */
-                                fci_buf[i] += f_ij;
+                                fci_buf[i][0] += f_ij.x;
+                                fci_buf[i][1] += f_ij.y;
+                                fci_buf[i][2] += f_ij.z;
                             }
                         }
 

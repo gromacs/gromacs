@@ -8,8 +8,9 @@ simple-build:
     - .use-clang:base
     - .rules:basic-push
   stage: pre-build
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_CPU_LIMIT: 8
     KUBERNETES_CPU_REQUEST: 4
     KUBERNETES_MEMORY_REQUEST: 8Gi
@@ -22,6 +23,7 @@ simple-build:
     COMPILER_MAJOR_VERSION: 9
     BUILD_DIR: simple-build
   script:
+    - CMAKE=${CMAKE:-$(which cmake)}
     - echo $CMAKE_COMPILER_SCRIPT
     - echo $CMAKE_EXTRA_OPTIONS
     - echo $CMAKE_SIMD_OPTIONS
@@ -38,7 +40,7 @@ simple-build:
       mkdir $BUILD_DIR ;
       fi
     - cd $BUILD_DIR
-    - cmake ..
+    - $CMAKE ..
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
       $CMAKE_EXTRA_OPTIONS
@@ -52,12 +54,12 @@ simple-build:
       2>&1 | tee cmakeLog.log
     - awk '/CMake Warning/,/^--|^$/' cmakeLog.log | tee cmakeErrors.log
     - if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; cat cmakeErrors.log ; exit 1; fi
-    - cmake --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
-    - cmake --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
+    - $CMAKE --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
+    - $CMAKE --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
       | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
-    - cmake --build . --target install 2>&1 | tee installBuildLogFile.log
+    - $CMAKE --build . --target install 2>&1 | tee installBuildLogFile.log
     - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
     - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
     - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
@@ -95,6 +97,7 @@ simple-build:
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
   script:
+    - CMAKE=${CMAKE:-$(which cmake)}
     - echo $CMAKE_COMPILER_SCRIPT
     - echo $CMAKE_EXTRA_OPTIONS
     - echo $CMAKE_SIMD_OPTIONS
@@ -110,7 +113,7 @@ simple-build:
       mkdir $BUILD_DIR ;
       fi
     - cd $BUILD_DIR
-    - cmake ..
+    - $CMAKE ..
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
       $CMAKE_EXTRA_OPTIONS
@@ -151,6 +154,7 @@ simple-build:
     RELEASE_SOURCE: release-source-from-tarball
     RELEASE_REGRESSIONTESTS: release-regressiontests-from-tarball
   script:
+    - CMAKE=${CMAKE:-$(which cmake)}
     - VERSION=`cat version.json |
       python3 -c "import json,sys; print(json.load(sys.stdin)['version'])"`
     - if [[ $GROMACS_RELEASE != "true" ]] ; then
@@ -222,11 +226,26 @@ gromacs:gcc-7:configure:
     - .use-gcc:base
     - .use-opencl
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON -DGMX_INSTALL_LEGACY_API=ON"
     COMPILER_MAJOR_VERSION: 7
+
+gromacs:clang-8-cuda-10.0:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .use-cuda
+    - .rules:merge-and-post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_USE_SIMD_KERNELS=off"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_CUDA=ON"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+    COMPILER_MAJOR_VERSION: 8
 
 gromacs:gcc-8-cuda-11.0:configure:
   extends:
@@ -234,8 +253,9 @@ gromacs:gcc-8-cuda-11.0:configure:
     - .use-gcc:base
     - .use-cuda
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     COMPILER_MAJOR_VERSION: 8
 
@@ -246,8 +266,9 @@ gromacs:gcc-8-cuda-11.0:configureMPI:
     - .use-cuda
     - .use-mpi
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     COMPILER_MAJOR_VERSION: 8
 
@@ -256,8 +277,9 @@ gromacs:clang-TSAN:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 8
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=TSAN"
 
@@ -276,8 +298,9 @@ gromacs:clang-9-mpi:configure:
    - .use-clang:base
    - .use-mpi
    - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 9
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
 
@@ -286,19 +309,21 @@ gromacs:clang-static-analyzer:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
-     CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
-     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_ANALYZER=ON -DGMX_OPENMP=OFF -DGMX_USE_RDTSCP=OFF -DGMX_FFT_LIBRARY=fftpack -DGMX_DEVELOPER_BUILD=ON"
-     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_ANALYZER=ON -DGMX_OPENMP=OFF -DGMX_USE_RDTSCP=OFF -DGMX_FFT_LIBRARY=fftpack -DGMX_DEVELOPER_BUILD=ON"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
 
 gromacs:clang-ASAN:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 8
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
 
@@ -308,8 +333,9 @@ gromacs:oneapi-2021.1-beta09-opencl:configure:
    - .use-oneapi:base
    - .use-opencl
    - .rules:merge-requests
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
 
 gromacs:oneapi-2021.1-beta09-sycl:configure:
@@ -318,8 +344,9 @@ gromacs:oneapi-2021.1-beta09-sycl:configure:
    - .use-oneapi:base
    - .use-sycl
    - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
 
 gromacs:clang-UBSAN:configure:
@@ -327,8 +354,9 @@ gromacs:clang-UBSAN:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 8
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=UBSAN"
 
@@ -339,8 +367,9 @@ gromacs:gcc-8-cuda-11.0:release:configure:
     - .use-mpi
     - .use-cuda
     - .rules:nightly-only-for-release
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-gcc
     CMAKE_EXTRA_OPTIONS: "-DGMX_BUILD_MDRUN_ONLY=ON"
@@ -357,8 +386,9 @@ gromacs:gcc-7:release:configure:
     - .use-gcc:base
     - .use-opencl
     - .rules:nightly-only-for-release
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 7
     CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
     RELEASE_BUILD_DIR: release-builds-gcc
@@ -374,8 +404,9 @@ gromacs:clang-9:release:configure:
     - .use-clang:base
     - .use-mpi
     - .rules:nightly-only-for-release
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 9
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
@@ -403,8 +434,9 @@ gromacs:oneapi-2021.1-beta09-opencl:release:configure:
    - .use-oneapi:base
    - .use-opencl
    - .rules:nightly-only-for-release
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
     RELEASE_BUILD_DIR: release-builds-oneapi
 
@@ -413,13 +445,14 @@ gromacs:oneapi-2021.1-beta09-opencl:release:configure:
 .gromacs:base:build:
   stage: build
   script:
+    - CMAKE=${CMAKE:-$(which cmake)}
     - cd $BUILD_DIR
-    - cmake --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
-    - cmake --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
+    - $CMAKE --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
+    - $CMAKE --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log
       | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
-    - cmake --build . --target install 2>&1 | tee installBuildLogFile.log
+    - $CMAKE --build . --target install 2>&1 | tee installBuildLogFile.log
     - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
     - for file in `find . -mindepth 1 -name "*.o" ! -type l` ; do echo $file ; rm $file ; done 2>&1 > remove-build-objects.log
     - cd ..
@@ -432,8 +465,9 @@ gromacs:oneapi-2021.1-beta09-opencl:release:configure:
 .gromacs:static-analyzer-build:
   stage: build
   script:
+    - CMAKE=${CMAKE:-$(which cmake)}
     - cd $BUILD_DIR
-    - scan-build -o scan_html cmake --build . -- -j8 2>&1 | tee buildLogFile.log
+    - scan-build -o scan_html $CMAKE --build . -- -j8 2>&1 | tee buildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log
       | grep -v "CMake" | tee buildErrors.log || true
     - grep "cannot be built" buildLogFile.log | tee -a buildErrors.log || true
@@ -451,10 +485,24 @@ gromacs:gcc-7:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
     - job: gromacs:gcc-7:configure
-      artifacts: true
+
+gromacs:clang-8-cuda-10.0:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-and-post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+  needs:
+    - job: gromacs:clang-8-cuda-10.0:configure
 
 gromacs:gcc-8-cuda-11.0:build:
   extends:
@@ -463,7 +511,9 @@ gromacs:gcc-8-cuda-11.0:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   needs:
     - job: gromacs:gcc-8-cuda-11.0:configure
 
@@ -474,7 +524,9 @@ gromacs:gcc-8-cuda-11.0:buildMPI:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   needs:
     - job: gromacs:gcc-8-cuda-11.0:configureMPI
 
@@ -485,7 +537,9 @@ gromacs:clang-TSAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
     - job: gromacs:clang-TSAN:configure
 
@@ -496,7 +550,9 @@ gromacs:clang-ASAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-requests
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -509,7 +565,9 @@ gromacs:clang-UBSAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -522,7 +580,9 @@ gromacs:clang-static-analyzer:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-requests
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -546,7 +606,9 @@ gromacs:oneapi-2021.1-beta09-opencl:build:
     - .use-ccache
     - .use-oneapi:base
     - .rules:merge-requests
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:configure
 
@@ -557,7 +619,9 @@ gromacs:oneapi-2021.1-beta09-sycl:build:
     - .use-ccache
     - .use-oneapi:base
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
     - job: gromacs:oneapi-2021.1-beta09-sycl:configure
 
@@ -568,7 +632,9 @@ gromacs:clang-9-mpi:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   needs:
     - job: gromacs:clang-9-mpi:configure
 
@@ -581,8 +647,9 @@ gromacs:gcc-8-cuda-11.0:release:build:
     - .rules:nightly-only-for-release
   stage: release-build
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-gcc
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   needs:
     - job: gromacs:gcc-8-cuda-11.0:release:configure
 
@@ -595,8 +662,9 @@ gromacs:gcc-7:release:build:
     - .rules:nightly-only-for-release
   stage: release-build
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   needs:
     - job: gromacs:gcc-7:release:configure
 
@@ -609,8 +677,9 @@ gromacs:clang-9:release:build:
     - .rules:nightly-only-for-release
   stage: release-build
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
   needs:
     - job: gromacs:clang-9:release:configure
 
@@ -638,9 +707,10 @@ gromacs:oneapi-2021.1-beta09-opencl:release:build:
     - .rules:nightly-only-for-release
   stage: release-build
   variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     BUILD_DIR: release-builds-oneapi
     COMPILER_MAJOR_VERSION: 2021
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:release:configure
 
@@ -656,6 +726,7 @@ gromacs:oneapi-2021.1-beta09-opencl:release:build:
   variables:
     CTEST_RUN_MODE: "ExperimentalTest"
   script:
+    - CMAKE=${CMAKE:-$(which cmake)}
     - cd $BUILD_DIR
     - export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1:suppressions=$CI_PROJECT_DIR/admin/ubsan-suppressions.txt
     # Needed to run MPI enabled code in the docker images, until we set up different users
@@ -727,8 +798,9 @@ gromacs:gcc-7:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
@@ -737,12 +809,27 @@ gromacs:gcc-7:test:
   needs:
     - job: gromacs:gcc-7:build
 
+gromacs:clang-8-cuda-10.0:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-8-cuda-10.0:build
+
 gromacs:gcc-8-cuda-11.0:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   tags:
@@ -754,8 +841,9 @@ gromacs:gcc-8-cuda-11.0:test-gpucommupd:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_GPU_DD_COMMS: 1
@@ -778,7 +866,9 @@ gromacs:clang-TSAN:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
     - job: gromacs:clang-TSAN:build
 
@@ -787,8 +877,9 @@ gromacs:clang-ASAN:test:
     - .gromacs:base:test
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
   tags:
     - k8s-scilifelab
@@ -800,7 +891,9 @@ gromacs:clang-UBSAN:test:
     - .gromacs:base:test
     - .use-clang:base
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -811,7 +904,9 @@ gromacs:oneapi-2021.1-beta09-opencl:test:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:merge-requests
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:build
 
@@ -820,7 +915,9 @@ gromacs:oneapi-2021.1-beta09-sycl:test:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
     - job: gromacs:oneapi-2021.1-beta09-sycl:build
 
@@ -828,7 +925,9 @@ gromacs:clang-9-mpi:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -838,8 +937,9 @@ gromacs:gcc-7:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -852,12 +952,32 @@ gromacs:gcc-7:regressiontest:
     - job: gromacs:gcc-7:build
     - job: regressiontests:prepare
 
+gromacs:clang-8-cuda-10.0:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-8-cuda-10.0:build
+    - job: regressiontests:prepare
+
+
 gromacs:gcc-8-cuda-11.0:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -873,8 +993,9 @@ gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-tMPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -894,12 +1015,36 @@ gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-tMPI:
     when: always
     expire_in: 1 week
 
-gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
+gromacs:gcc-8-cuda-11.0:regressiontest-upd-tMPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
   image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
   variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-8-cuda-11.0:build
+    - job: regressiontests:prepare
+  artifacts:
+    paths:
+      - regressiontests
+    when: always
+    expire_in: 1 week
+
+gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -935,7 +1080,9 @@ gromacs:clang-TSAN:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -947,7 +1094,9 @@ gromacs:clang-ASAN:regressiontest:
     - .gromacs:base:regressiontest
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/cmake-3.13.0-llvm-8-tsan-master
+  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -958,8 +1107,9 @@ gromacs:clang-9:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
   tags:
@@ -973,7 +1123,9 @@ gromacs:oneapi-2021.1-beta09-opencl:regressiontest:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:merge-requests
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:build
     - job: regressiontests:prepare
@@ -983,7 +1135,9 @@ gromacs:oneapi-2021.1-beta09-sycl:regressiontest:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
     - job: gromacs:oneapi-2021.1-beta09-sycl:build
     - job: regressiontests:prepare
@@ -993,8 +1147,9 @@ gromacs:gcc-8-cuda-11.0:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     BUILD_DIR: release-builds-gcc
@@ -1009,8 +1164,9 @@ gromacs:gcc-7:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
@@ -1026,8 +1182,9 @@ gromacs:clang-9:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang
   needs:
     - job: gromacs:clang-9:release:configure
@@ -1055,8 +1212,9 @@ gromacs:oneapi-2021.1-beta09-opencl:release:test:
     - .use-oneapi:base
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     BUILD_DIR: release-builds-oneapi
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:release:configure
@@ -1067,8 +1225,9 @@ gromacs:gcc-7:release:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.13.0-gcc-7-amdopencl-clfft-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7
   variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
@@ -1084,8 +1243,9 @@ gromacs:clang-9:release:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.15.7-llvm-9-openmpi-master
+  image: gromacs/ci-ubuntu-18.04-llvm-9
   variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
@@ -1120,8 +1280,9 @@ gromacs:oneapi-2021.1-beta09-opencl:release:regressiontest:
     - .use-oneapi:base
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.17.2-oneapi-2021.1-beta09-master
+  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     BUILD_DIR: release-builds-oneapi
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2

@@ -152,14 +152,22 @@ endif()
 # FindCUDA.cmake is unaware of the mechanism used by cmake to embed
 # the compiler flag for the required C++ standard in the generated
 # build files, so we have to pass it ourselves
-if (CUDA_VERSION VERSION_LESS 10.2)
-    # CUDA doesn't formally support C++17 until version 10.2, so for
+if (CUDA_VERSION VERSION_LESS 11.0)
+    # CUDA doesn't formally support C++17 until version 11.0, so for
     # now host-side code that compiles with CUDA is restricted to
     # C++14. This needs to be expressed formally for older CUDA
     # version.
     list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
 else()
-    list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
+    # gcc-7 pre-dated C++17, so uses the -std=c++1z compiler flag for it,
+    # which modern nvcc does not recognize. So we work around that by
+    # compiling in C++14 mode. Clang doesn't have this problem because nvcc
+    # only supports version of clang that already understood -std=c++17
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8)
+        list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX14_STANDARD_COMPILE_OPTION}")
+    else()
+        list(APPEND GMX_CUDA_NVCC_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
+    endif()
 endif()
 
 # assemble the CUDA flags

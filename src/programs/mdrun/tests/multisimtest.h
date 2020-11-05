@@ -69,7 +69,7 @@ typedef std::unique_ptr<CommandLine> CommandLinePointer;
  *
  * \ingroup module_mdrun_integration_tests
  */
-class MultiSimTest : public ::testing::Test, public ::testing::WithParamInterface<const char*>
+class MultiSimTest : public MdrunTestFixtureBase, public ::testing::WithParamInterface<const char*>
 {
 public:
     MultiSimTest();

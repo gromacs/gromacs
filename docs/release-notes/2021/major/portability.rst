@@ -43,6 +43,9 @@ Windows
 |Gromacs| now builds correctly on Windows with MSVC even when the path
 to the source or build directory has a space in it.
 
+Builds with MSVC 2019 correctly detect the proper static linking setup
+during CMake configuration.
+
 RDTSCP usage and reporting
 """"""""""""""""""""""""""
 

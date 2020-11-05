@@ -54,8 +54,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "nblib/basicdefinitions.h"
-#include "nblib/vector.h"
 
 namespace nblib
 {
@@ -68,6 +66,9 @@ std::string next_token(std::string& s, const std::string& delimiter);
 // Like std::void_t but for values
 template<auto...>
 using void_value_t = void;
+
+template<class... Tuples>
+using tuple_cat_t = decltype(std::tuple_cat(Tuples{}...));
 
 template<class T, class = void>
 struct HasValueMember : std::false_type
@@ -94,8 +95,11 @@ struct AccessTypeMemberIfPresent<T, typename std::void_t<typename T::type>>
 template<class T>
 using AccessTypeMemberIfPresent_t = typename AccessTypeMemberIfPresent<T>::type;
 
-//! this trait evaluates to std::true_type if T is the same as Tuple[N]
-//! OR if T is the same as the type member of Tuple[N]
+/*! \brief Comparison meta function that compares T to Tuple[N]
+ *
+ * This trait evaluates to std::true_type if T is the same as Tuple[N]
+ * OR if T is the same as the type member of Tuple[N]
+ */
 template<int N, typename T, typename Tuple>
 struct MatchTypeOrTypeMember :
     std::disjunction<std::is_same<T, std::tuple_element_t<N, Tuple>>,
@@ -103,47 +107,73 @@ struct MatchTypeOrTypeMember :
 {
 };
 
-//! recursion to check the next field N+1
-template<int N, class T, class Tuple, template<int, class, class> class Comparison, bool Match = false>
-struct MatchField_ :
-    std::integral_constant<size_t, MatchField_<N + 1, T, Tuple, Comparison, Comparison<N + 1, T, Tuple>{}>{}>
+//! \brief Recursion to check the next field N+1
+template<int N, class T, class Tuple, template<int, class, class> class Comparison, class Match = void>
+struct MatchField_ : std::integral_constant<size_t, MatchField_<N + 1, T, Tuple, Comparison>{}>
 {
 };
 
-//! recursion stop when Comparison<N, T, Tuple>::value is true
+//! \brief recursion stop when Comparison<N, T, Tuple>::value is true
 template<int N, class T, class Tuple, template<int, class, class> class Comparison>
-struct MatchField_<N, T, Tuple, Comparison, true> : std::integral_constant<size_t, N>
+struct MatchField_<N, T, Tuple, Comparison, std::enable_if_t<Comparison<N, T, Tuple>{}>> :
+    std::integral_constant<size_t, N>
 {
 };
 
 } // namespace detail
 
-/*! \brief The value member of this struct evaluates to the integral constant N for which
- *  the value member of Comparison<N, T, Tuple> is true
- *  and generates a compiler error if there is no such N
+
+/*! \brief Meta function to return the first index in Tuple whose type matches T
+ *
+ *  If there are more than one, the first occurrence will be returned.
+ *  If there is no such type, the size of Tuple will be returned.
+ *  Note that the default comparison operation supplied here also matches if the type member Tuple[N]::type matches T
  */
-template<class T, class Tuple, template<int, class, class> class Comparison>
-struct MatchField : detail::MatchField_<0, T, Tuple, Comparison, Comparison<0, T, Tuple>{}>
+template<typename T, class TL, template<int, class, class> class Comparison = detail::MatchTypeOrTypeMember>
+struct FindIndex
 {
 };
 
-/*! \brief Function to return the index in Tuple whose type matches T
- *  - If there are more than one, the first occurrence will be returned
- *  - If there is no such type, a compiler error from accessing a tuple out of range is generated
- *  Note that the default comparison operation supplied here also matches if the type member of Tuple[N] matches T
+/*! \brief Specialization to only enable this trait if TL has template parameters
+ *
+ * \tparam T          a type to look for in the template parameters of TL
+ * \tparam TL         a template template parameter, e.g. std::tuple or nblib::TypeList
+ * \tparam Ts         template parameters of TL
+ * \tparam Comparison comparison operation
+ *
+ *  Note that \a T is added to \a TL as a sentinel to terminate the recursion
+ *  and prevent an out of bounds tuple access compiler error.
  */
-template<typename T, typename Tuple, template<int, class, class> class Comparison = detail::MatchTypeOrTypeMember>
-struct FindIndex : std::integral_constant<size_t, MatchField<T, Tuple, Comparison>{}>
+template<typename T, template<class...> class TL, class... Ts, template<int, class, class> class Comparison>
+struct FindIndex<T, TL<Ts...>, Comparison> : detail::MatchField_<0, T, std::tuple<Ts..., T>, Comparison>
 {
 };
 
-//! Function to return the element in Tuple whose type matches T
-//! Note: if there are more than one, the first occurrence will be returned
+/*! \brief Meta function to return the element in Tuple whose type matches T
+ *
+ * If there are more than one, the first occurrence will be returned
+ * If there is no such that, a compiler error is generated due to accessing
+ * the tuple out of bounds
+ */
 template<typename T, typename Tuple>
 decltype(auto) pickType(Tuple& tup)
 {
-    return std::get<FindIndex<T, Tuple>{}>(tup);
+    return std::get<FindIndex<T, std::decay_t<Tuple>>{}>(tup);
 }
+
+//! \brief template meta function to determine whether T is contained in TL
+template<class T, class TL>
+struct Contains
+{
+};
+
+//! this formatting must be a bug in clang-format... should be:
+// struct Contains<T, TL<Ts...>> : std::bool_constant<FindIndex<T, TL<Ts...>>{} < sizeof...(Ts)>
+template<class T, template<class...> class TL, class... Ts>
+        struct Contains<T, TL<Ts...>> : std::bool_constant < FindIndex<T, TL<Ts...>>{}<sizeof...(Ts)>
+{
+};
+
 
 //! Utility to call function with each element in tuple_
 template<class F, class... Ts>

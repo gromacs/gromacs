@@ -344,7 +344,7 @@ bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
     // time needed for that checking, but do not yet record that the
     // gather has occured.
     bool           needToSynchronize      = true;
-    constexpr bool c_streamQuerySupported = bool(GMX_GPU_CUDA);
+    constexpr bool c_streamQuerySupported = GMX_GPU_CUDA;
 
     // TODO: implement c_streamQuerySupported with an additional GpuEventSynchronizer per stream (#2521)
     if ((completionKind == GpuTaskCompletion::Check) && c_streamQuerySupported)

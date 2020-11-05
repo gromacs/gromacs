@@ -61,7 +61,6 @@
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -110,8 +109,8 @@ void PmeTest::runTest(const RunModesList& runModes)
         EXPECT_NONFATAL_FAILURE(rootChecker.checkUnusedEntries(), ""); // skip checks on other ranks
     }
 
-    auto hardwareInfo_ = gmx_detect_hardware(
-            MDLogger{}, PhysicalNodeCommunicator(MPI_COMM_WORLD, gmx_physicalnode_id_hash()));
+    auto hardwareInfo_ =
+            gmx_detect_hardware(PhysicalNodeCommunicator(MPI_COMM_WORLD, gmx_physicalnode_id_hash()));
 
     for (const auto& mode : runModes)
     {

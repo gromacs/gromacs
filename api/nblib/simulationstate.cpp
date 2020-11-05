@@ -70,12 +70,29 @@ SimulationState::Impl::Impl(const std::vector<Vec3>& coordinates,
     box_(box),
     topology_(std::move(topology))
 {
-    if (!checkNumericValues(coordinates))
+    auto numParticles = topology_.numParticles();
+
+    if (int(coordinates.size()) != numParticles)
+    {
+        throw InputException("Coordinates array size mismatch");
+    }
+
+    if (int(velocities.size()) != numParticles)
+    {
+        throw InputException("Velocities array size mismatch");
+    }
+
+    if (int(forces.size()) != numParticles)
+    {
+        throw InputException("Force buffer array size mismatch");
+    }
+
+    if (!isRealValued(coordinates))
     {
         throw InputException("Input coordinates has at least one NaN");
     }
     coordinates_ = coordinates;
-    if (!checkNumericValues(velocities))
+    if (!isRealValued(velocities))
     {
         throw InputException("Input velocities has at least one NaN");
     }

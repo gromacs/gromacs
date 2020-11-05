@@ -150,7 +150,7 @@ static void generateCoordinates(int multiplicationFactor, std::vector<gmx::RVec>
     }
 }
 
-BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
+BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor, const std::string& outputFile)
 {
     numAtomTypes = 2;
     nonbondedParameters.resize(numAtomTypes * numAtomTypes * 2, 0);
@@ -199,6 +199,10 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
     forceRec.nbfp  = nonbondedParameters;
     snew(forceRec.shift_vec, SHIFTS);
     calc_shifts(box, forceRec.shift_vec);
+    if (!outputFile.empty())
+    {
+        csv = fopen(outputFile.c_str(), "w+");
+    }
 }
 
 } // namespace gmx

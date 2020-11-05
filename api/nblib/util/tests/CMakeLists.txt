@@ -44,6 +44,7 @@ set(exename "nblib-util-test")
 gmx_add_gtest_executable(
         ${exename}
         CPP_SOURCE_FILES
+        internal.cpp
         user.cpp
 )
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)

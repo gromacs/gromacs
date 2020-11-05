@@ -131,8 +131,8 @@ void Molecule::addExclusion(const int particleIndex, const int particleIndexToEx
     }
 }
 
-void Molecule::addExclusion(std::tuple<std::string, std::string> particle,
-                            std::tuple<std::string, std::string> particleToExclude)
+void Molecule::addExclusion(std::tuple<ParticleName, ResidueName> particle,
+                            std::tuple<ParticleName, ResidueName> particleToExclude)
 {
     // duplication for the swapped pair happens in getExclusions()
     exclusionsByName_.emplace_back(std::make_tuple(std::get<0>(particle), std::get<1>(particle),
@@ -140,9 +140,10 @@ void Molecule::addExclusion(std::tuple<std::string, std::string> particle,
                                                    std::get<1>(particleToExclude)));
 }
 
-void Molecule::addExclusion(const std::string& particleName, const std::string& particleNameToExclude)
+void Molecule::addExclusion(const ParticleName& particleName, const ParticleName& particleNameToExclude)
 {
-    addExclusion(std::make_tuple(particleName, name_), std::make_tuple(particleNameToExclude, name_));
+    addExclusion(std::make_tuple(particleName, ResidueName(name_)),
+                 std::make_tuple(particleNameToExclude, ResidueName(name_)));
 }
 
 const ParticleType& Molecule::at(const std::string& particleTypeName) const
