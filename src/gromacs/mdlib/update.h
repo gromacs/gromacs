@@ -148,12 +148,17 @@ public:
      *
      * \param[in]  inputRecord  Input record.
      * \param[in]  step         Current timestep.
-     * \param[in]  dvdlambda    Free energy derivative. Contribution to be added to the bonded
-     * interactions. \param[in]  md           MD atoms data. \param[in]  state        System state
-     * object. \param[in]  cr           Comunication record. \param[in]  nrnb         Cycle
-     * counters. \param[in]  wcycle       Wall-clock cycle counter. \param[in]  constr Constraints
-     * object. The constraints are applied on coordinates after update. \param[in]  do_log       If
-     * this is logging step. \param[in]  do_ene       If this is an energy evaluation step.
+     * \param[in]  dvdlambda    Free energy derivative. Contribution to be added to
+     *                          the bonded interactions.
+     * \param[in]  md           MD atoms data.
+     * \param[in]  state        System state object.
+     * \param[in]  cr           Comunication record.
+     * \param[in]  nrnb         Cycle counters.
+     * \param[in]  wcycle       Wall-clock cycle counter.
+     * \param[in]  constr       Constraints object. The constraints are applied
+     *                          on coordinates after update.
+     * \param[in]  do_log       If this is logging step.
+     * \param[in]  do_ene       If this is an energy evaluation step.
      */
     void update_sd_second_half(const t_inputrec& inputRecord,
                                int64_t           step,
