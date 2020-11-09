@@ -39,6 +39,12 @@ simulations of systems with SETTLE up to 1000 nm in size (but note that
 constraining with LINCS and SHAKE still introduces significant drift,
 which limits the system size to 100 to 200 nm).
 
+mdrun now reports energy drift
+""""""""""""""""""""""""""""""
+
+With conservative integrators, mdrun now reports the drift of the conserved
+energy quantity in the log file.
+
 FEP using AWH
 """""""""""""
 

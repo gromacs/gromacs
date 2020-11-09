@@ -47,6 +47,8 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/mdtypes/enerdata.h"
 
 class energyhistory_t;
@@ -97,6 +99,7 @@ enum
 
 namespace gmx
 {
+class EnergyDriftTracker;
 
 /*! \internal
  * \brief Arrays connected to Pressure and Temperature coupling
@@ -136,6 +139,7 @@ public:
      * \param[in] fp_dhdl    FEP file.
      * \param[in] isRerun    Is this is a rerun instead of the simulations.
      * \param[in] startingBehavior  Run starting behavior.
+     * \param[in] simulationsShareState  Tells whether the physical state is shared over simulations
      * \param[in] mdModulesNotifier Notifications to MD modules.
      */
     EnergyOutput(ener_file*               fp_ene,
@@ -145,6 +149,7 @@ public:
                  FILE*                    fp_dhdl,
                  bool                     isRerun,
                  StartingBehavior         startingBehavior,
+                 bool                     simulationsShareState,
                  const MdModulesNotifier& mdModulesNotifier);
 
     ~EnergyOutput();
@@ -276,6 +281,15 @@ public:
 
     //! Print an output header to the log file.
     static void printHeader(FILE* log, int64_t steps, double time);
+
+    /*! \brief Print conserved energy drift message to \p fplog
+     *
+     * Note that this is only over the current run (times are printed),
+     * this is not from the original start time for runs with continuation.
+     * This has the advantage that one can find if conservation issues are
+     * from the current run with the current settings on the current hardware.
+     */
+    void printEnergyConservation(FILE* fplog, int simulationPart, bool usingMdIntegrator) const;
 
 private:
     //! Timestep
@@ -411,6 +425,9 @@ private:
     real* temperatures_ = nullptr;
     //! Number of temperatures actually saved
     int numTemperatures_ = 0;
+
+    //! For tracking the conserved or total energy
+    std::unique_ptr<EnergyDriftTracker> conservedEnergyTracker_;
 };
 
 } // namespace gmx

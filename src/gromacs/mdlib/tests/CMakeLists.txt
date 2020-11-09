@@ -39,6 +39,7 @@ gmx_add_unit_test(MdlibUnitTest mdlib-test HARDWARE_DETECTION
         constrtestdata.cpp
         constrtestrunners.cpp
         ebin.cpp
+	energydrifttracker.cpp
         energyoutput.cpp
         freeenergyparameters.cpp
         leapfrog.cpp
