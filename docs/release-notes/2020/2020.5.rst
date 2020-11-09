@@ -16,6 +16,17 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix mdrun writing zero dH/dlambda and foreign lambda energies before checkpointing
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ 
+With free-energy runs with separate-dhdl-file=no and nstdhdl not a multiple of
+nstenergy, mdrun would write zeros for dH/dlambda and foreign energies to
+the energy file for steps between the last energy frame and the checkpoint.
+This would lead to errors in free-energy estimates which could go unnoticed
+as values only deviate for a few steps.
+
+:issue:`3763`
+
 Fixed bugs with COM pulling and domain decompostion with weight or >32 ranks
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
