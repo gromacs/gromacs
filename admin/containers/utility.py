@@ -139,11 +139,11 @@ parser.add_argument('--venvs', nargs='*', type=str, default=_python_versions,
 def image_name(configuration: argparse.Namespace) -> str:
     """Generate docker image name.
 
-    The configuration slug has the form::
+    Image names have the form ``ci-<slug>``, where the configuration slug has the form::
 
         <distro>-<version>-<compiler>-<major version>[-<gpusdk>-<version>][-<use case>]
 
-    Image name is prefixed by ``gromacs/ci-``
+    This function also applies an appropriate Docker image repository prefix.
 
     Arguments:
         configuration: Docker image configuration as described by the parsed arguments.
@@ -177,7 +177,10 @@ def image_name(configuration: argparse.Namespace) -> str:
         if value is not None:
             elements.append(cases[attr])
     slug = '-'.join(elements)
-    return 'gromacs/ci-' + slug
+    # we are using the GitLab container registry to store the images
+    # to get around issues with pulling them repeatedly from DockerHub
+    # and running into the image pull limitation there.
+    return 'registry.gitlab.com/gromacs/gromacs/ci-' + slug
 
 
 if __name__ == "__main__":
