@@ -697,6 +697,19 @@ bool ModularSimulatorAlgorithmBuilderHelper::elementIsStored(const ISimulatorEle
     return builder_->elementExists(element);
 }
 
+std::optional<std::any> ModularSimulatorAlgorithmBuilderHelper::getStoredValue(const std::string& key) const
+{
+    const auto iter = values_.find(key);
+    if (iter == values_.end())
+    {
+        return std::nullopt;
+    }
+    else
+    {
+        return iter->second;
+    }
+}
+
 void ModularSimulatorAlgorithmBuilderHelper::registerThermostat(
         std::function<void(const PropagatorThermostatConnection&)> registrationFunction)
 {
