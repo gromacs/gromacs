@@ -99,6 +99,8 @@ public:
                     int                  pulse,
                     gmx_wallcycle*       wcycle);
     ~GpuHaloExchange();
+    GpuHaloExchange(GpuHaloExchange&& source) noexcept;
+    GpuHaloExchange& operator=(GpuHaloExchange&& source) noexcept;
 
     /*! \brief
      *

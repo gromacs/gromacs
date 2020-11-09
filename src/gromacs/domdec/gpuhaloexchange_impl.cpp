@@ -47,6 +47,8 @@
 
 #include "config.h"
 
+#include <utility>
+
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -76,6 +78,14 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
 }
 
 GpuHaloExchange::~GpuHaloExchange() = default;
+
+GpuHaloExchange::GpuHaloExchange(GpuHaloExchange&&) noexcept = default;
+
+GpuHaloExchange& GpuHaloExchange::operator=(GpuHaloExchange&& other) noexcept
+{
+    std::swap(impl_, other.impl_);
+    return *this;
+}
 
 /*!\brief init halo exhange stub. */
 void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> /* d_coordinatesBuffer */,
