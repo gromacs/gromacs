@@ -206,6 +206,34 @@ TEST(NBlibTest, MoleculeNoThrowsSameParticleTypeName)
     EXPECT_NO_THROW(molecule.addParticle(ParticleName("U2"), atom2));
 }
 
+TEST(NBlibTest, CanAddInteractions)
+{
+    Molecule     molecule(MoleculeName("BondTest"));
+    ParticleType O(ParticleTypeName("Ow"), Mass(1));
+    ParticleType H(ParticleTypeName("Hw"), Mass(1));
+    molecule.addParticle(ParticleName("O"), O);
+    molecule.addParticle(ParticleName("H1"), H);
+    molecule.addParticle(ParticleName("H2"), H);
+
+    HarmonicBondType hb(1, 2);
+    CubicBondType    cub(1, 2, 3);
+    DefaultAngle     ang(Degrees(1), 1);
+
+    molecule.addInteraction(ParticleName("O"), ParticleName("H1"), hb);
+    molecule.addInteraction(ParticleName("O"), ParticleName("H2"), hb);
+    molecule.addInteraction(ParticleName("H1"), ParticleName("H2"), cub);
+    molecule.addInteraction(ParticleName("H1"), ParticleName("O"), ParticleName("H2"), ang);
+
+    const auto& interactionData = molecule.interactionData();
+
+    //! harmonic bonds
+    EXPECT_EQ(pickType<HarmonicBondType>(interactionData).interactions_.size(), 2);
+    //! cubic bonds
+    EXPECT_EQ(pickType<CubicBondType>(interactionData).interactions_.size(), 1);
+    //! angular interactions
+    EXPECT_EQ(pickType<DefaultAngle>(interactionData).interactions_.size(), 1);
+}
+
 } // namespace
 } // namespace test
 } // namespace nblib

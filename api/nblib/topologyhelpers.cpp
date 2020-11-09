@@ -47,6 +47,7 @@
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/utility/smalloc.h"
 #include "nblib/exception.h"
+#include "nblib/listed_forces/transformations.h"
 #include "nblib/topologyhelpers.h"
 #include "nblib/util/internal.h"
 
@@ -156,6 +157,148 @@ void ParticleSequencer::build(const std::vector<std::tuple<Molecule, int>>& mole
     }
 }
 
+template<class I>
+std::tuple<std::vector<size_t>, std::vector<I>>
+collectInteractions(const std::vector<std::tuple<Molecule, int>>& molecules)
+{
+    std::vector<I>      collectedBonds;
+    std::vector<size_t> expansionArray;
+    for (auto& molNumberTuple : molecules)
+    {
+        const Molecule& molecule = std::get<0>(molNumberTuple);
+        size_t          numMols  = std::get<1>(molNumberTuple);
+
+        auto& interactions = pickType<I>(molecule.interactionData()).interactionTypes_;
+
+        std::vector<size_t> moleculeExpansion(interactions.size());
+        // assign indices to the bonds in the current molecule, continue counting from
+        // the number of bonds seen so far (=collectedBonds.size())
+        std::iota(begin(moleculeExpansion), end(moleculeExpansion), collectedBonds.size());
+
+        std::copy(begin(interactions), end(interactions), std::back_inserter(collectedBonds));
+
+        for (size_t i = 0; i < numMols; ++i)
+        {
+            std::copy(begin(moleculeExpansion), end(moleculeExpansion), std::back_inserter(expansionArray));
+        }
+    }
+    return std::make_tuple(expansionArray, collectedBonds);
+}
+
+/// \cond DO_NOT_DOCUMENT
+#define COLLECT_BONDS_INSTANTIATE_TEMPLATE(x)                                     \
+    template std::tuple<std::vector<size_t>, std::vector<x>> collectInteractions( \
+            const std::vector<std::tuple<Molecule, int>>&);
+MAP(COLLECT_BONDS_INSTANTIATE_TEMPLATE, SUPPORTED_LISTED_TYPES)
+/// \endcond
+
+namespace sequence_detail
+{
+
+//! Helper function to convert a tuple of strings into a particle index sequence
+template<class Tuple, class F, class... Args, size_t... Is>
+auto stringsToIndices_impl(const Tuple& tuple, std::index_sequence<Is...> is, F&& f, Args... args)
+{
+    // return std::make_tuple(f(args..., std::get<2 * Is + 1>(tuple), std::get<2 * Is>(tuple))...);
+    ignore_unused(is);
+    return std::array<int, sizeof...(Is)>{ f(args..., std::get<2 * Is + 1>(tuple),
+                                             std::get<2 * Is>(tuple))... };
+}
+
+/*! \brief
+ *  This takes a tuple<(string, string) * nCenter> from molecule
+ *  where nCenter = 2 for bonds, 3 for angles and 4 for dihedrals
+ *  each (ResidueName, ParticleName)-pair is converted to a particle sequence index
+ *  by calling the supplied function object f, containing the particleSequencer at the call site
+ *  Therefore, the return type is tuple<int * nCenter>
+ *
+ */
+template<class Tuple, class F, class... Args>
+auto stringsToIndices(const Tuple& tuple, F&& f, Args... args)
+{
+    auto is = std::make_index_sequence<std::tuple_size<Tuple>::value / 2>{};
+    return stringsToIndices_impl(tuple, is, std::forward<F>(f), args...);
+}
+
+//! Tuple ordering for two center interactions
+[[maybe_unused]] static std::array<int, 2> nblibOrdering(const std::array<int, 2>& t)
+{
+    // for bonds (two coordinate indices),
+    // we choose to store the lower sequence ID first. this allows for better unit tests
+    // that are agnostic to how the input was set up
+    int id1 = std::min(std::get<0>(t), std::get<1>(t));
+    int id2 = std::max(std::get<0>(t), std::get<1>(t));
+
+    return std::array<int, 2>{ id1, id2 };
+}
+
+//! Tuple ordering for three center interactions
+[[maybe_unused]] static std::array<int, 3> nblibOrdering(const std::array<int, 3>& t)
+{
+    // for angles (three coordinate indices),
+    // we choose to store the two non-center coordinate indices sorted.
+    // such that ret[0] < ret[2] always (ret = returned tuple)
+    int id1 = std::min(std::get<0>(t), std::get<2>(t));
+    int id3 = std::max(std::get<0>(t), std::get<2>(t));
+
+    return std::array<int, 3>{ id1, std::get<1>(t), id3 };
+}
+
+//! Tuple ordering for four center interactions
+[[maybe_unused]] static std::array<int, 4> nblibOrdering(const std::array<int, 4>& t)
+{
+    return t;
+}
+
+//! Tuple ordering for five center interactions
+[[maybe_unused]] static std::array<int, 5> nblibOrdering(const std::array<int, 5>& t)
+{
+    return t;
+}
+
+} // namespace sequence_detail
+
+//! For each interaction, translate particle identifiers (moleculeName, nr, residueName,
+//! particleName) to particle coordinate indices
+template<class B>
+std::vector<CoordinateIndex<B>> sequenceIDs(const std::vector<std::tuple<Molecule, int>>& molecules,
+                                            const detail::ParticleSequencer& particleSequencer)
+{
+    std::vector<CoordinateIndex<B>> coordinateIndices;
+
+    auto callSequencer = [&particleSequencer](const MoleculeName& moleculeName, int i,
+                                              const ResidueName&  residueName,
+                                              const ParticleName& particleName) {
+        return particleSequencer(moleculeName, i, residueName, particleName);
+    };
+
+    // loop over all molecules
+    for (const auto& molNumberTuple : molecules)
+    {
+        const Molecule& molecule = std::get<0>(molNumberTuple);
+        size_t          numMols  = std::get<1>(molNumberTuple);
+
+        for (size_t i = 0; i < numMols; ++i)
+        {
+            auto& interactions = pickType<B>(molecule.interactionData()).interactions_;
+            for (const auto& interactionString : interactions)
+            {
+                CoordinateIndex<B> index = sequence_detail::stringsToIndices(
+                        interactionString, callSequencer, molecule.name(), i);
+                coordinateIndices.push_back(nblibOrdering(index));
+            }
+        }
+    }
+    return coordinateIndices;
+}
+
+/// \cond DO_NOT_DOCUMENT
+#define SEQUENCE_PAIR_ID_INSTANTIATE_TEMPLATE(x)             \
+    template std::vector<CoordinateIndex<x>> sequenceIDs<x>( \
+            const std::vector<std::tuple<Molecule, int>>&, const detail::ParticleSequencer&);
+MAP(SEQUENCE_PAIR_ID_INSTANTIATE_TEMPLATE, SUPPORTED_LISTED_TYPES)
+#undef SEQUENCE_PAIR_ID_INSTANTIATE_TEMPLATE
+/// \endcond
 
 template<class I>
 std::tuple<std::vector<size_t>, std::vector<I>> eliminateDuplicateInteractions(const std::vector<I>& aggregatedInteractions)
@@ -210,6 +353,14 @@ std::tuple<std::vector<size_t>, std::vector<I>> eliminateDuplicateInteractions(c
 
     return make_tuple(uniqueIndices, uniquInteractionsInstances);
 }
+
+/// \cond DO_NOT_DOCUMENT
+#define ELIMINATE_DUPLICATE_BONDS_INSTANTIATE_TEMPLATE(x)                                    \
+    template std::tuple<std::vector<size_t>, std::vector<x>> eliminateDuplicateInteractions( \
+            const std::vector<x>& aggregatedBonds);
+MAP(ELIMINATE_DUPLICATE_BONDS_INSTANTIATE_TEMPLATE, SUPPORTED_LISTED_TYPES)
+#undef ELIMINATE_DUPLICATE_BONDS_INSTANTIATE_TEMPLATE
+/// \endcond
 
 } // namespace detail
 

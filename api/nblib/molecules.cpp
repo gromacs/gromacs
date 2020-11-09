@@ -115,6 +115,98 @@ Molecule& Molecule::addParticle(const ParticleName& particleName, const Particle
     return *this;
 }
 
+//! Two-particle interactions such as bonds and LJ1-4
+template<class Interaction>
+void Molecule::addInteraction(const ParticleName& particleNameI,
+                              const ResidueName&  residueNameI,
+                              const ParticleName& particleNameJ,
+                              const ResidueName&  residueNameJ,
+                              const Interaction&  interaction)
+{
+    if (particleNameI == particleNameJ and residueNameI == residueNameJ)
+    {
+        throw InputException(std::string("Cannot add interaction of particle ")
+                             + particleNameI.value() + " with itself in molecule " + name_.value());
+    }
+
+    auto& interactionContainer = pickType<Interaction>(interactionData_);
+    interactionContainer.interactions_.emplace_back(particleNameI, residueNameI, particleNameJ, residueNameJ);
+    interactionContainer.interactionTypes_.push_back(interaction);
+}
+
+//! \cond DO_NOT_DOCUMENT
+#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                                 \
+    template void Molecule::addInteraction(                                     \
+            const ParticleName& particleNameI, const ResidueName& residueNameI, \
+            const ParticleName& particleNameJ, const ResidueName& residueNameJ, const x& interaction);
+MAP(ADD_INTERACTION_INSTANTIATE_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
+#undef ADD_INTERACTION_INSTANTIATE_TEMPLATE
+//! \endcond
+
+// add interactions with default residue name
+template<class Interaction>
+void Molecule::addInteraction(const ParticleName& particleNameI,
+                              const ParticleName& particleNameJ,
+                              const Interaction&  interaction)
+{
+    addInteraction(particleNameI, ResidueName(name_), particleNameJ, ResidueName(name_), interaction);
+}
+
+//! \cond DO_NOT_DOCUMENT
+#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                               \
+    template void Molecule::addInteraction(const ParticleName& particleNameI, \
+                                           const ParticleName& particleNameJ, const x& interaction);
+MAP(ADD_INTERACTION_INSTANTIATE_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
+#undef ADD_INTERACTION_INSTANTIATE_TEMPLATE
+
+//! 3-particle interactions such as angles
+template<class Interaction>
+void Molecule::addInteraction(const ParticleName& particleNameI,
+                              const ResidueName&  residueNameI,
+                              const ParticleName& particleNameJ,
+                              const ResidueName&  residueNameJ,
+                              const ParticleName& particleNameK,
+                              const ResidueName&  residueNameK,
+                              const Interaction&  interaction)
+{
+    if (particleNameI == particleNameJ and particleNameJ == particleNameK)
+    {
+        throw InputException(std::string("Cannot add interaction of particle ")
+                             + particleNameI.value() + " with itself in molecule " + name_.value());
+    }
+
+    auto& interactionContainer = pickType<Interaction>(interactionData_);
+    interactionContainer.interactions_.emplace_back(particleNameI, residueNameI, particleNameJ,
+                                                    residueNameJ, particleNameK, residueNameK);
+    interactionContainer.interactionTypes_.push_back(interaction);
+}
+
+#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                                 \
+    template void Molecule::addInteraction(                                     \
+            const ParticleName& particleNameI, const ResidueName& residueNameI, \
+            const ParticleName& particleNameJ, const ResidueName& residueNameJ, \
+            const ParticleName& particleNameK, const ResidueName& residueNameK, const x& interaction);
+MAP(ADD_INTERACTION_INSTANTIATE_TEMPLATE, SUPPORTED_THREE_CENTER_TYPES)
+#undef ADD_INTERACTION_INSTANTIATE_TEMPLATE
+
+template<class Interaction>
+void Molecule::addInteraction(const ParticleName& particleNameI,
+                              const ParticleName& particleNameJ,
+                              const ParticleName& particleNameK,
+                              const Interaction&  interaction)
+{
+    addInteraction(particleNameI, ResidueName(name_), particleNameJ, ResidueName(name_),
+                   particleNameK, ResidueName(name_), interaction);
+}
+
+#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                               \
+    template void Molecule::addInteraction(const ParticleName& particleNameI, \
+                                           const ParticleName& particleNameJ, \
+                                           const ParticleName& particleNameK, const x& interaction);
+MAP(ADD_INTERACTION_INSTANTIATE_TEMPLATE, SUPPORTED_THREE_CENTER_TYPES)
+#undef ADD_INTERACTION_INSTANTIATE_TEMPLATE
+//! \endcond
+
 int Molecule::numParticlesInMolecule() const
 {
     return particles_.size();
@@ -144,6 +236,11 @@ void Molecule::addExclusion(const ParticleName& particleName, const ParticleName
 {
     addExclusion(std::make_tuple(particleName, ResidueName(name_)),
                  std::make_tuple(particleNameToExclude, ResidueName(name_)));
+}
+
+const Molecule::InteractionTuple& Molecule::interactionData() const
+{
+    return interactionData_;
 }
 
 const ParticleType& Molecule::at(const std::string& particleTypeName) const

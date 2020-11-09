@@ -2,7 +2,7 @@ Adding New Listed-Interaction Types in NB-LIB
 =============================================
 
 NB-LIB currently has code paths for listed interactions that occur between two, three, four and five different particles.
-To extend NB-LIB to support more types of particle interactions, modify the following three files.
+It is easy to extend NB-LIB to support novel formulations of particle interactions by modifying the following three files.
 
 Two center interactions must use the distance between the centers as an input to the force kernel.
 Three center interactions take the form ``(particleI, particleJ, ParticleK)``.
@@ -20,11 +20,40 @@ Accepting these constraints, it is possible to add a new kernel by modifying the
 1) bondtypes.h
 ---------------
 
-This file contains one C++ type to store the parameters for each interaction type.
-New interaction types are added here as separate C++ types.
-The interface of these types is completely unrestricted.
-The only requirements are equality and less than comparison, and that the interface be
-compatible with the corresponding (user-added) kernel.
+This file contains one ``struct`` for each interaction type parameter set.
+New interaction types are added here as separate structs. There
+are no content requirements, but for convenience, the existing ``NAMED_MEBERS``
+macro in combination with inheriting from a ``std::tuple`` or ``std::array``
+may be used. The macro can be used to define the
+parameter names for the corresponding setters and getters.
+For example, ``NAMED_MEMBERS(forceConstant, equilDistance)`` will expand to
+
+.. code:: cpp
+
+   inline auto& forceConstant() { return std::get<0>(*this); }
+   inline auto& equilDistance() { return std::get<1>(*this); }
+   inline const auto& forceConstant() const { return std::get<0>(*this); }
+   inline const auto& equilDistance() const { return std::get<1>(*this); }
+
+Putting everything together, one could define the complete parameter set for a new interaction type as follows.
+
+.. code:: cpp
+
+   /*! \brief new bond type
+    *
+    * V(r; forceConstant, equilDistance, scaleFactor)
+    *      = forceConstant * exp( (r - equilDistance) / scaleFactor)
+    */
+   struct NewBondType : public std::tuple<real, real, int>
+   {
+       NewBondType() = default;
+       NewBondType(ForceConstant f, EquilDistance d, ScaleFactor s) :
+           std::tuple<real, real, int>{ f, d, s }
+       {
+       }
+
+       NAMED_MEMBERS(forceConstant, equilDistance, scaleFactor)
+   };
 
 .. _definitions.h:
 
@@ -46,16 +75,10 @@ Assuming that the only other two center interaction is called ``DefaultBond``, t
 Adding ``NewBondType`` to this macro ensures that the NBLIB ``molecule``
 class ``addInteraction`` function supports adding the new bond type
 and includes it in the listed interaction data that the ``topology`` class
-provides. The ``SUPPORTED_TWO_CENTER_TYPES`` macro is immediately converted into a
-C++ type list that is implemented as a variadic template. The type list
-is then used to define all the dependent data structures. Apart from creating
-the type list, the only place where the macro is needed is explicit template instantiation.
+provides.
 
 Note that, as of C++17, there's no alternative to preprocessor macros for adding
 the required template instantiations controlled through the macros described here.
-(Other than manually adding the template instantiations, which would require the instantiation list
-of several templates to be updated each time a new interaction type is added. Compared to the preprocessor
-based solution where just a single macro has to be extended, this would clearly be an inferior solution.)
 In NBLIB, the design decision we took, was that we did not want to expose a templated
 interface in a user header and it is for this reason that we explicitly need
 to instantiate the interface with all the supported listed interaction types defined
@@ -91,7 +114,7 @@ The kernel return type is always an ``std::tuple`` of the force and the potentia
    }
 
   template <class T>
-  inline std::tuple<T, T> bondKernel(T dr, const NewBondType& bond)
+  inline auto bondKernel(T dr, const NewBondType& bond)
   {
       return newBondForce(bond.forceConstant(), bond.equilDistance(), bond.scaleFactor(), dr);
   }

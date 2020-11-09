@@ -49,6 +49,12 @@ gmx_add_gtest_executable(
         CPP_SOURCE_FILES
         # files with code for tests
         bondtypes.cpp
+        helpers.cpp
+        kernels.cpp
+        typetests.cpp
+        calculator.cpp
+        conversions.cpp
+        transformations.cpp
 )
 target_link_libraries(${exename} PRIVATE nblib_test_infrastructure nblib)
 gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST)

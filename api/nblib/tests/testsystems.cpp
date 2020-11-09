@@ -118,6 +118,10 @@ WaterMoleculeBuilder::WaterMoleculeBuilder() : water_(MoleculeName("SOL"))
     water_.addParticle(ParticleName("Oxygen"), Charges.at("Ow"), plib.type("Ow"));
     water_.addParticle(ParticleName("H1"), Charges.at("Hw"), plib.type("H"));
     water_.addParticle(ParticleName("H2"), Charges.at("Hw"), plib.type("H"));
+
+    HarmonicBondType ohBond(1., 1.);
+    water_.addInteraction(ParticleName("Oxygen"), ParticleName("H1"), ohBond);
+    water_.addInteraction(ParticleName("Oxygen"), ParticleName("H2"), ohBond);
 }
 
 Molecule WaterMoleculeBuilder::waterMolecule()
@@ -151,6 +155,15 @@ MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_(MoleculeName("MeO
     methanol_.addExclusion(ParticleName("Me1"), ParticleName("O2"));
     methanol_.addExclusion(ParticleName("Me1"), ParticleName("H3"));
     methanol_.addExclusion(ParticleName("H3"), ParticleName("O2"));
+
+    HarmonicBondType ohBond(1.01, 1.02);
+    methanol_.addInteraction(ParticleName("O2"), ParticleName("H3"), ohBond);
+
+    HarmonicBondType ometBond(1.1, 1.2);
+    methanol_.addInteraction(ParticleName("O2"), ParticleName("Me1"), ometBond);
+
+    DefaultAngle ochAngle(Degrees(108.52), 397.5);
+    methanol_.addInteraction(ParticleName("O2"), ParticleName("Me1"), ParticleName("H3"), ochAngle);
 }
 
 Molecule MethanolMoleculeBuilder::methanolMolecule()

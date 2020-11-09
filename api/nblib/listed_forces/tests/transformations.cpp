@@ -1,0 +1,94 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2020, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * This implements basic nblib utility tests
+ *
+ * \author Victor Holanda <victor.holanda@cscs.ch>
+ * \author Joe Jordan <ejjordan@kth.se>
+ * \author Prashanth Kanduri <kanduri@cscs.ch>
+ * \author Sebastian Keller <keller@cscs.ch>
+ */
+#include <numeric>
+
+#include <gtest/gtest.h>
+
+#include "nblib/listed_forces/traits.h"
+#include "nblib/listed_forces/transformations.h"
+
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+
+namespace nblib
+{
+namespace test
+{
+namespace
+{
+
+ListedInteractionData unsortedInteractions()
+{
+    ListedInteractionData interactions;
+
+    std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 2, 0 }, { 0, 1, 0 } };
+    pickType<HarmonicBondType>(interactions).indices = std::move(bondIndices);
+
+    std::vector<InteractionIndex<DefaultAngle>> angleIndices{ { 0, 1, 2, 0 }, { 1, 0, 2, 0 } };
+    pickType<DefaultAngle>(interactions).indices = std::move(angleIndices);
+
+    std::vector<InteractionIndex<ProperDihedral>> dihedralIndices{ { 0, 2, 1, 3, 0 }, { 0, 1, 2, 3, 0 } };
+    pickType<ProperDihedral>(interactions).indices = std::move(dihedralIndices);
+
+    return interactions;
+}
+
+TEST(ListedTransformations, SortInteractionIndices)
+{
+    ListedInteractionData interactions = unsortedInteractions();
+    sortInteractions(interactions);
+
+    std::vector<InteractionIndex<HarmonicBondType>> refBondIndices{ { 0, 1, 0 }, { 0, 2, 0 } };
+    std::vector<InteractionIndex<DefaultAngle>>   refAngleIndices{ { 1, 0, 2, 0 }, { 0, 1, 2, 0 } };
+    std::vector<InteractionIndex<ProperDihedral>> refDihedralIndices{ { 0, 1, 2, 3, 0 },
+                                                                      { 0, 2, 1, 3, 0 } };
+
+    EXPECT_EQ(pickType<HarmonicBondType>(interactions).indices, refBondIndices);
+    EXPECT_EQ(pickType<DefaultAngle>(interactions).indices, refAngleIndices);
+    EXPECT_EQ(pickType<ProperDihedral>(interactions).indices, refDihedralIndices);
+}
+
+} // namespace
+} // namespace test
+} // namespace nblib
