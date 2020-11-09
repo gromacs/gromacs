@@ -142,15 +142,25 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
     GpuEventSynchronizer coordinatesReadyOnDeviceEvent;
     coordinatesReadyOnDeviceEvent.markEvent(deviceStream);
 
+    std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];
+
+    // Create halo exchange objects
+    for (int d = 0; d < dd->ndim; d++)
+    {
+        for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
+        {
+            gpuHaloExchange[d].push_back(std::make_unique<GpuHaloExchange>(
+                    dd, d, MPI_COMM_WORLD, deviceContext, deviceStream, deviceStream, pulse, nullptr));
+        }
+    }
+
     // Perform GPU halo exchange
     for (int d = 0; d < dd->ndim; d++)
     {
         for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
         {
-            GpuHaloExchange gpuHaloExchange(dd, d, MPI_COMM_WORLD, deviceContext, deviceStream,
-                                            deviceStream, pulse, nullptr);
-            gpuHaloExchange.reinitHalo(d_x, nullptr);
-            gpuHaloExchange.communicateHaloCoordinates(box, &coordinatesReadyOnDeviceEvent);
+            gpuHaloExchange[d][pulse]->reinitHalo(d_x, nullptr);
+            gpuHaloExchange[d][pulse]->communicateHaloCoordinates(box, &coordinatesReadyOnDeviceEvent);
         }
     }
 
