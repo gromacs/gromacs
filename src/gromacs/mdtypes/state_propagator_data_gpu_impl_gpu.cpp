@@ -223,8 +223,6 @@ void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<RVec>              
     GMX_ASSERT(dataSize >= 0, "Trying to copy to device buffer before it was allocated.");
 
     GMX_ASSERT(deviceStream.isValid(), "No stream is valid for copying with given atom locality.");
-    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle_, ewcsLAUNCH_STATE_PROPAGATOR_DATA);
 
     int atomsStartAt, numAtomsToCopy;
     std::tie(atomsStartAt, numAtomsToCopy) = getAtomRangesFromAtomLocality(atomLocality);
@@ -239,9 +237,6 @@ void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<RVec>              
         copyToDeviceBuffer(&d_data, reinterpret_cast<const RVec*>(&h_data.data()[atomsStartAt]),
                            atomsStartAt, numAtomsToCopy, deviceStream, transferKind_, nullptr);
     }
-
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_STATE_PROPAGATOR_DATA);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_data,
@@ -257,8 +252,6 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_dat
     GMX_ASSERT(dataSize >= 0, "Trying to copy from device buffer before it was allocated.");
 
     GMX_ASSERT(deviceStream.isValid(), "No stream is valid for copying with given atom locality.");
-    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    wallcycle_sub_start(wcycle_, ewcsLAUNCH_STATE_PROPAGATOR_DATA);
 
     int atomsStartAt, numAtomsToCopy;
     std::tie(atomsStartAt, numAtomsToCopy) = getAtomRangesFromAtomLocality(atomLocality);
@@ -273,9 +266,6 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_dat
         copyFromDeviceBuffer(reinterpret_cast<RVec*>(&h_data.data()[atomsStartAt]), &d_data,
                              atomsStartAt, numAtomsToCopy, deviceStream, transferKind_, nullptr);
     }
-
-    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_STATE_PROPAGATOR_DATA);
-    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 DeviceBuffer<RVec> StatePropagatorDataGpu::Impl::getCoordinates()
