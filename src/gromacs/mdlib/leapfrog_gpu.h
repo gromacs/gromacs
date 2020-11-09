@@ -50,6 +50,10 @@
 #    include "gromacs/gpu_utils/devicebuffer.cuh"
 #    include "gromacs/gpu_utils/gputraits.cuh"
 #endif
+#if GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/devicebuffer_sycl.h"
+#    include "gromacs/gpu_utils/gputraits_sycl.h"
+#endif
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -72,9 +76,10 @@ namespace gmx
  */
 enum class NumTempScaleValues
 {
-    None,    //!< No temperature coupling
-    Single,  //!< Single T-scaling value (one group)
-    Multiple //!< Multiple T-scaling values, need to use T-group indices
+    None     = 0, //!< No temperature coupling
+    Single   = 1, //!< Single T-scaling value (one group)
+    Multiple = 2, //!< Multiple T-scaling values, need to use T-group indices
+    Count    = 3  //!< Number of valid values
 };
 
 /*! \brief Different variants of the Parrinello-Rahman velocity scaling
@@ -84,8 +89,9 @@ enum class NumTempScaleValues
  */
 enum class VelocityScalingType
 {
-    None,     //!< Do not apply velocity scaling (not a PR-coupling run or step)
-    Diagonal, //!< Apply velocity scaling using a diagonal matrix
+    None     = 0, //!< Do not apply velocity scaling (not a PR-coupling run or step)
+    Diagonal = 1, //!< Apply velocity scaling using a diagonal matrix
+    Count    = 2  //!< Number of valid values
 };
 
 class LeapFrogGpu
@@ -166,7 +172,8 @@ private:
     //! Number of temperature coupling groups (zero = no coupling)
     int numTempScaleValues_ = 0;
     /*! \brief Array with temperature scaling factors.
-     * This is temporary solution to remap data from t_grp_tcstat into plain array
+     * This is temporary solution to remap data from t_grp_tcstat into plain array.
+     * Not used in SYCL.
      * \todo Replace with better solution.
      */
     gmx::HostVector<float> h_lambdas_;
