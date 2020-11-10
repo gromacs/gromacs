@@ -138,14 +138,13 @@ ListedInteractionData TopologyBuilder::createInteractionData(const detail::Parti
         std::transform(begin(coordinateIndices), end(coordinateIndices), begin(expansionArray),
                        begin(interactionDataElement.indices),
                        [](auto coordinateIndex, auto interactionIndex) {
-                           std::array<int, coordinateIndex.size() + 1> ret;
+                           std::array<int, coordinateIndex.size() + 1> ret{ 0 };
                            for (int i = 0; i < int(coordinateIndex.size()); ++i)
                            {
                                ret[i] = coordinateIndex[i];
                            }
                            ret[coordinateIndex.size()] = interactionIndex;
                            return ret;
-                           // return std::tuple_cat(coordinateIndex, std::make_tuple(interactionIndex));
                        });
     };
 
