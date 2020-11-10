@@ -162,7 +162,7 @@ protected:
     double refBondEnergyDouble, refAngleEnergyDouble;
 };
 
-TEST_F(ListedExampleData, ComputeHarmonicBondForces)
+TEST_F(ListedExampleData, DISABLED_ComputeHarmonicBondForces)
 {
     auto indices = pickType<HarmonicBondType>(interactions).indices;
     auto bonds   = pickType<HarmonicBondType>(interactions).parameters;
@@ -186,7 +186,7 @@ TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
     compareVectors(forces, refAngleForcesFloat, refAngleForcesDouble);
 }
 
-TEST_F(ListedExampleData, CanReduceForces)
+TEST_F(ListedExampleData, DISABLED_CanReduceForces)
 {
     auto energies    = reduceListedForces(interactions, x, &forces, *pbc);
     real totalEnergy = std::accumulate(begin(energies), end(energies), 0.0);
