@@ -26,6 +26,21 @@ results.
 
 :issue:`3750`
 
+Fixed conserved energy for MTTK
+"""""""""""""""""""""""""""""""
+
+When using `pcoupl=MTTK` and `tcoupl=nose-hoover`, the calculated conserved
+energy was incorrect due to two errors dating back to GROMACS 4.6 and 2018,
+respectively. As a result, all reported conserved energies using this
+combination of temperature and pressure coupling algorithms in any GROMACS
+version since GROMACS 4.6 are likely to be wrong. Note that these errors did
+not impact the dynamics, as the conserved energy is only reported, but never
+used in calculations. Also note that this bug only affects this exact
+combination of temperature / pressure coupling algorithms.
+
+:issue:`3796`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

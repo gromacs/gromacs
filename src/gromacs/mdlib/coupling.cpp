@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1312,7 +1312,7 @@ static real energyNoseHoover(const t_inputrec* ir, const t_state* state, const t
 
         if (nd > 0.0)
         {
-            if (inputrecNvtTrotter(ir))
+            if (inputrecNvtTrotter(ir) || inputrecNptTrotter(ir))
             {
                 /* contribution from the thermal momenta of the NH chain */
                 for (int j = 0; j < nh; j++)
@@ -1363,7 +1363,7 @@ static real energyPressureMTTK(const t_inputrec* ir, const t_state* state, const
             double iQinv = MassQ->QPinv[i * nh + j];
             if (iQinv > 0)
             {
-                energy += 0.5 * gmx::square(state->nhpres_vxi[i * nh + j] / iQinv);
+                energy += 0.5 * gmx::square(state->nhpres_vxi[i * nh + j]) / iQinv;
                 /* contribution from the thermal variable of the NH chain */
                 energy += state->nhpres_xi[i * nh + j] * kT;
             }

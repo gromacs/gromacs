@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -222,8 +222,8 @@ public:
     // All things public
     int natoms; //!< Number of atoms, local + non-local; this is the size of \p x, \p v and \p cg_p, when used
     int ngtc;          //!< The number of temperature coupling groups
-    int nnhpres;       //!< The NH-chain length for the MTTK barostat
-    int nhchainlength; //!< The NH-chain length for temperature coupling
+    int nnhpres;       //!< The number of NH-chains for the MTTK barostat (always 1 or 0)
+    int nhchainlength; //!< The NH-chain length for temperature coupling and MTTK barostat
     int flags; //!< Set of bit-flags telling which entries are present, see enum at the top of the file
     int                      fep_state;      //!< indicates which of the alchemical states we are in
     std::array<real, efptNR> lambda;         //!< Free-energy lambda vector
