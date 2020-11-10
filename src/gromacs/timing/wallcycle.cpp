@@ -60,13 +60,22 @@
 
 static const bool useCycleSubcounters = GMX_CYCLE_SUBCOUNTERS;
 
-/* DEBUG_WCYCLE adds consistency checking for the counters.
- * It checks if you stop a counter different from the last
+#ifndef DEBUG_WCYCLE
+/*! \brief Enables consistency checking for the counters.
+ *
+ * If the macro is set to 1, code checks if you stop a counter different from the last
  * one that was opened and if you do nest too deep.
  */
-/* #define DEBUG_WCYCLE */
+#    define DEBUG_WCYCLE 0
+#endif
+//! Whether wallcycle debugging is enabled
+constexpr bool gmx_unused enableWallcycleDebug = (DEBUG_WCYCLE != 0);
+//! True if only the master rank should print debugging output
+constexpr bool gmx_unused onlyMasterDebugPrints = true;
+//! True if cycle counter nesting depth debuggin prints are enabled
+constexpr bool gmx_unused debugPrintDepth = false /* enableWallcycleDebug */;
 
-#ifdef DEBUG_WCYCLE
+#if DEBUG_WCYCLE
 #    include "gromacs/utility/fatalerror.h"
 #endif
 
@@ -86,10 +95,11 @@ struct gmx_wallcycle
     gmx_bool  wc_barrier;
     wallcc_t* wcc_all;
     int       wc_depth;
-#ifdef DEBUG_WCYCLE
+#if DEBUG_WCYCLE
 #    define DEPTH_MAX 6
-    int counterlist[DEPTH_MAX];
-    int count_depth;
+    int  counterlist[DEPTH_MAX];
+    int  count_depth;
+    bool isMasterRank;
 #endif
     int          ewc_prev;
     gmx_cycles_t cycle_prev;
@@ -214,6 +224,7 @@ gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, t_commrec gmx_unused*
     wc->ewc_prev         = -1;
     wc->reset_counters   = resetstep;
 
+
 #if GMX_MPI
     if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != nullptr)
     {
@@ -241,8 +252,9 @@ gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, t_commrec gmx_unused*
         snew(wc->wcsc, ewcsNR);
     }
 
-#ifdef DEBUG_WCYCLE
-    wc->count_depth = 0;
+#if DEBUG_WCYCLE
+    wc->count_depth  = 0;
+    wc->isMasterRank = MASTER(cr);
 #endif
 
     return wc;
@@ -283,24 +295,32 @@ static void wallcycle_all_stop(gmx_wallcycle_t wc, int ewc, gmx_cycles_t cycle)
 }
 
 
-#ifdef DEBUG_WCYCLE
+#if DEBUG_WCYCLE
 static void debug_start_check(gmx_wallcycle_t wc, int ewc)
 {
-    /* fprintf(stderr,"wcycle_start depth %d, %s\n",wc->count_depth,wcn[ewc]); */
-
     if (wc->count_depth < 0 || wc->count_depth >= DEPTH_MAX)
     {
-        gmx_fatal(FARGS, "wallcycle counter depth out of range: %d", wc->count_depth);
+        gmx_fatal(FARGS, "wallcycle counter depth out of range: %d", wc->count_depth + 1);
     }
     wc->counterlist[wc->count_depth] = ewc;
     wc->count_depth++;
+
+    if (debugPrintDepth && (!onlyMasterDebugPrints || wc->isMasterRank))
+    {
+        std::string indentStr(4 * wc->count_depth, ' ');
+        fprintf(stderr, "%swcycle_start depth %d, %s\n", indentStr.c_str(), wc->count_depth, wcn[ewc]);
+    }
 }
 
 static void debug_stop_check(gmx_wallcycle_t wc, int ewc)
 {
-    wc->count_depth--;
+    if (debugPrintDepth && (!onlyMasterDebugPrints || wc->isMasterRank))
+    {
+        std::string indentStr(4 * wc->count_depth, ' ');
+        fprintf(stderr, "%swcycle_stop  depth %d, %s\n", indentStr.c_str(), wc->count_depth, wcn[ewc]);
+    }
 
-    /* fprintf(stderr,"wcycle_stop depth %d, %s\n",wc->count_depth,wcn[ewc]); */
+    wc->count_depth--;
 
     if (wc->count_depth < 0)
     {
@@ -331,7 +351,7 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
     }
 #endif
 
-#ifdef DEBUG_WCYCLE
+#if DEBUG_WCYCLE
     debug_start_check(wc, ewc);
 #endif
 
@@ -387,7 +407,7 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
     }
 #endif
 
-#ifdef DEBUG_WCYCLE
+#if DEBUG_WCYCLE
     debug_stop_check(wc, ewc);
 #endif
 

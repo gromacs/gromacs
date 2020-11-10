@@ -1206,7 +1206,10 @@ void gmx::LegacySimulator::do_md()
 
         dvdl_constr = 0;
 
-        wallcycle_start(wcycle, ewcUPDATE);
+        if (!useGpuForUpdate)
+        {
+            wallcycle_start(wcycle, ewcUPDATE);
+        }
         /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
         if (bTrotter)
         {
@@ -1256,8 +1259,6 @@ void gmx::LegacySimulator::do_md()
 
         if (useGpuForUpdate)
         {
-            wallcycle_stop(wcycle, ewcUPDATE);
-
             if (bNS && (bFirstStep || DOMAINDECOMP(cr)))
             {
                 integrator->set(stateGpu->getCoordinates(), stateGpu->getVelocities(),

@@ -1341,11 +1341,12 @@ void do_force(FILE*                               fplog,
         /* initialize the GPU nbnxm atom data and bonded data structures */
         if (simulationWork.useGpuNonbonded)
         {
+            // Note: cycle counting only nononbondeds, gpuBonded counts internally
             wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
-
             wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             Nbnxm::gpu_init_atomdata(nbv->gpu_nbv, nbv->nbat.get());
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 
             if (fr->gpuBonded)
             {
@@ -1361,7 +1362,6 @@ void do_force(FILE*                               fplog,
                         nbv->getGridIndices(), top->idef, Nbnxm::gpu_get_xq(nbv->gpu_nbv),
                         Nbnxm::gpu_get_f(nbv->gpu_nbv), Nbnxm::gpu_get_fshift(nbv->gpu_nbv));
             }
-            wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
 
         // Need to run after the GPU-offload bonded interaction lists
@@ -1415,7 +1415,6 @@ void do_force(FILE*                               fplog,
         ddBalanceRegionHandler.openBeforeForceComputationGpu();
 
         wallcycle_start(wcycle, ewcLAUNCH_GPU);
-
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
         if (stepWork.doNeighborSearch || !stepWork.useGpuXBufferOps)
@@ -1423,18 +1422,18 @@ void do_force(FILE*                               fplog,
             Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(), AtomLocality::Local);
         }
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+        wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         // with X buffer ops offloaded to the GPU on all but the search steps
 
         // bonded work not split into separate local and non-local, so with DD
         // we can only launch the kernel after non-local coordinates have been received.
         if (domainWork.haveGpuBondedWork && !havePPDomainDecomposition(cr))
         {
-            wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_BONDED);
             fr->gpuBonded->setPbcAndlaunchKernel(fr->pbcType, box, fr->bMolPBC, stepWork);
-            wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
         }
 
         /* launch local nonbonded work on GPU */
+        wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         do_nb_verlet(fr, ic, enerd, stepWork, InteractionLocality::Local, enbvClearFNo, step, nrnb, wcycle);
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
@@ -1517,28 +1516,27 @@ void do_force(FILE*                               fplog,
 
         if (simulationWork.useGpuNonbonded)
         {
-            wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
             if (stepWork.doNeighborSearch || !stepWork.useGpuXBufferOps)
             {
+                wallcycle_start(wcycle, ewcLAUNCH_GPU);
                 wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
                 Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(), AtomLocality::NonLocal);
                 wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
+                wallcycle_stop(wcycle, ewcLAUNCH_GPU);
             }
 
             if (domainWork.haveGpuBondedWork)
             {
-                wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_BONDED);
                 fr->gpuBonded->setPbcAndlaunchKernel(fr->pbcType, box, fr->bMolPBC, stepWork);
-                wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_BONDED);
             }
 
             /* launch non-local nonbonded tasks on GPU */
+            wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
             wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
             do_nb_verlet(fr, ic, enerd, stepWork, InteractionLocality::NonLocal, enbvClearFNo, step,
                          nrnb, wcycle);
             wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_NONBONDED);
-
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
     }
@@ -1713,8 +1711,10 @@ void do_force(FILE*                               fplog,
     // TODO Force flags should include haveFreeEnergyWork for this domain
     if (stepWork.useGpuXHalo && (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork))
     {
+        wallcycle_stop(wcycle, ewcFORCE);
         /* Wait for non-local coordinate data to be copied from device */
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
+        wallcycle_start_nocount(wcycle, ewcFORCE);
     }
 
     // Compute wall interactions, when present.
