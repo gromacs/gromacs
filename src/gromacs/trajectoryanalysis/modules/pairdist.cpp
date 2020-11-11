@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -251,12 +251,17 @@ void PairDistance::initOptions(IOptionsContainer* options, TrajectoryAnalysisSet
 int initSelectionGroups(Selection* sel, const gmx_mtop_t* top, int type)
 {
     e_index_t indexType = INDEX_UNKNOWN;
-    switch (type)
+    // If the selection type is INDEX_UNKNOWN (e.g. a position not associated
+    // with a set of particles), don't overwrite the selection type.
+    if (sel->type() != INDEX_UNKNOWN)
     {
-        case eGroupType_All: indexType = INDEX_ALL; break;
-        case eGroupType_Residue: indexType = INDEX_RES; break;
-        case eGroupType_Molecule: indexType = INDEX_MOL; break;
-        case eGroupType_None: indexType = INDEX_ATOM; break;
+        switch (type)
+        {
+            case eGroupType_All: indexType = INDEX_ALL; break;
+            case eGroupType_Residue: indexType = INDEX_RES; break;
+            case eGroupType_Molecule: indexType = INDEX_MOL; break;
+            case eGroupType_None: indexType = INDEX_ATOM; break;
+        }
     }
     return sel->initOriginalIdsToGroup(top, indexType);
 }
