@@ -52,6 +52,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
@@ -70,6 +71,8 @@
 #include "pairlist.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
+
+const char* const c_ljcrNames[ljcrNR + 1] = { "none", "geometric", "Lorentz-Berthelot", nullptr };
 
 void nbnxn_atomdata_t::resizeCoordinateBuffer(int numAtoms)
 {
@@ -580,9 +583,8 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                 }
                 else
                 {
-                    mesg = gmx::formatString(
-                            "Using %s Lennard-Jones combination rule",
-                            params->comb_rule == ljcrGEOM ? "geometric" : "Lorentz-Berthelot");
+                    mesg = gmx::formatString("Using %s Lennard-Jones combination rule",
+                                             enum_name(params->comb_rule, ljcrNR, c_ljcrNames));
                 }
                 GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
             }

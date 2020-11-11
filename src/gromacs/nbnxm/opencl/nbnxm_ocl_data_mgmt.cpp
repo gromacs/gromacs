@@ -124,77 +124,6 @@ static void init_atomdata_first(cl_atomdata_t* ad, int ntypes, const DeviceConte
     ad->nalloc = -1;
 }
 
-/*! \brief Returns the kinds of electrostatics and Vdw OpenCL
- *  kernels that will be used.
- *
- * Respectively, these values are from enum eelOcl and enum
- * evdwOcl. */
-static void map_interaction_types_to_gpu_kernel_flavors(const interaction_const_t* ic,
-                                                        int                        combRule,
-                                                        int*                       gpu_eeltype,
-                                                        int*                       gpu_vdwtype)
-{
-    if (ic->vdwtype == evdwCUT)
-    {
-        switch (ic->vdw_modifier)
-        {
-            case eintmodNONE:
-            case eintmodPOTSHIFT:
-                switch (combRule)
-                {
-                    case ljcrNONE: *gpu_vdwtype = evdwTypeCUT; break;
-                    case ljcrGEOM: *gpu_vdwtype = evdwTypeCUTCOMBGEOM; break;
-                    case ljcrLB: *gpu_vdwtype = evdwTypeCUTCOMBLB; break;
-                    default:
-                        gmx_incons(
-                                "The requested LJ combination rule is not implemented in the "
-                                "OpenCL GPU accelerated kernels!");
-                }
-                break;
-            case eintmodFORCESWITCH: *gpu_vdwtype = evdwTypeFSWITCH; break;
-            case eintmodPOTSWITCH: *gpu_vdwtype = evdwTypePSWITCH; break;
-            default:
-                gmx_incons(
-                        "The requested VdW interaction modifier is not implemented in the GPU "
-                        "accelerated kernels!");
-        }
-    }
-    else if (ic->vdwtype == evdwPME)
-    {
-        if (ic->ljpme_comb_rule == ljcrGEOM)
-        {
-            *gpu_vdwtype = evdwTypeEWALDGEOM;
-        }
-        else
-        {
-            *gpu_vdwtype = evdwTypeEWALDLB;
-        }
-    }
-    else
-    {
-        gmx_incons("The requested VdW type is not implemented in the GPU accelerated kernels!");
-    }
-
-    if (ic->eeltype == eelCUT)
-    {
-        *gpu_eeltype = eelTypeCUT;
-    }
-    else if (EEL_RF(ic->eeltype))
-    {
-        *gpu_eeltype = eelTypeRF;
-    }
-    else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
-    {
-        *gpu_eeltype = nbnxn_gpu_pick_ewald_kernel_type(*ic);
-    }
-    else
-    {
-        /* Shouldn't happen, as this is checked when choosing Verlet-scheme */
-        gmx_incons(
-                "The requested electrostatics type is not implemented in the GPU accelerated "
-                "kernels!");
-    }
-}
 
 /*! \brief Initializes the nonbonded parameter data structure.
  */
@@ -206,7 +135,8 @@ static void init_nbparam(NBParamGpu*                     nbp,
 {
     set_cutoff_parameters(nbp, ic, listParams);
 
-    map_interaction_types_to_gpu_kernel_flavors(ic, nbatParams.comb_rule, &(nbp->eeltype), &(nbp->vdwtype));
+    nbp->vdwType  = nbnxmGpuPickVdwKernelType(ic, nbatParams.comb_rule);
+    nbp->elecType = nbnxmGpuPickElectrostaticsKernelType(ic);
 
     if (ic->vdwtype == evdwPME)
     {
@@ -221,7 +151,7 @@ static void init_nbparam(NBParamGpu*                     nbp,
     }
     /* generate table for PME */
     nbp->coulomb_tab = nullptr;
-    if (nbp->eeltype == eelTypeEWALD_TAB || nbp->eeltype == eelTypeEWALD_TAB_TWIN)
+    if (nbp->elecType == ElecType::EwaldTab || nbp->elecType == ElecType::EwaldTabTwin)
     {
         GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
         init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, deviceContext);
@@ -517,7 +447,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         allocateDeviceBuffer(&d_atdat->f, nalloc * DIM, deviceContext);
         allocateDeviceBuffer(&d_atdat->xq, nalloc * (DIM + 1), deviceContext);
 
-        if (useLjCombRule(nb->nbparam->vdwtype))
+        if (useLjCombRule(nb->nbparam->vdwType))
         {
             // Two Lennard-Jones parameters per atom
             allocateDeviceBuffer(&d_atdat->lj_comb, nalloc * 2, deviceContext);
@@ -540,7 +470,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         nbnxn_ocl_clear_f(nb, nalloc);
     }
 
-    if (useLjCombRule(nb->nbparam->vdwtype))
+    if (useLjCombRule(nb->nbparam->vdwType))
     {
         GMX_ASSERT(sizeof(float) == sizeof(*nbat->params().lj_comb.data()),
                    "Size of the LJ parameters element should be equal to the size of float2.");

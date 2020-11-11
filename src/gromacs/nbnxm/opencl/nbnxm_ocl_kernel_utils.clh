@@ -156,10 +156,10 @@ typedef struct
 typedef struct cl_nbparam_params
 {
 
-    //! type of electrostatics, takes values from #eelCu
-    int eeltype;
-    //! type of VdW impl., takes values from #evdwCu
-    int vdwtype;
+    //! type of electrostatics, takes values from #ElecType
+    int elecType;
+    //! type of VdW impl., takes values from #VdwType
+    int vdwType;
 
     //! charge multiplication factor
     float epsfac;

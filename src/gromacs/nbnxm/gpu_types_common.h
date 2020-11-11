@@ -47,6 +47,7 @@
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+#include "nbnxm.h"
 #include "pairlist.h"
 
 #if GMX_GPU_OPENCL
@@ -63,10 +64,10 @@
 struct NBParamGpu
 {
 
-    //! type of electrostatics, takes values from #eelType
-    int eeltype;
-    //! type of VdW impl., takes values from #evdwType
-    int vdwtype;
+    //! type of electrostatics
+    enum Nbnxm::ElecType elecType;
+    //! type of VdW impl.
+    enum Nbnxm::VdwType vdwType;
 
     //! charge multiplication factor
     float epsfac;

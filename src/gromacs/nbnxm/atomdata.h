@@ -164,6 +164,9 @@ enum
     ljcrNR
 };
 
+//! String corresponding to LJ combination rule
+extern const char* const c_ljcrNames[ljcrNR + 1];
+
 /*! \internal
  * \brief Struct that stores atom related data for the nbnxn module
  *

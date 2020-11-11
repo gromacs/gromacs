@@ -155,13 +155,62 @@ class StepWorkload;
 class UpdateGroupsCog;
 } // namespace gmx
 
+//! Namespace for non-bonded kernels
 namespace Nbnxm
 {
 enum class KernelType;
-}
 
-namespace Nbnxm
+/*! \brief Nbnxm electrostatic GPU kernel flavors.
+ *
+ *  Types of electrostatics implementations available in the GPU non-bonded
+ *  force kernels. These represent both the electrostatics types implemented
+ *  by the kernels (cut-off, RF, and Ewald - a subset of what's defined in
+ *  enums.h) as well as encode implementation details analytical/tabulated
+ *  and single or twin cut-off (for Ewald kernels).
+ *  Note that the cut-off and RF kernels have only analytical flavor and unlike
+ *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
+ *
+ *  The row-order of pointers to different electrostatic kernels defined in
+ *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
+ *  should match the order of enumerated types below.
+ */
+enum class ElecType : int
 {
+    Cut,          //!< Plain cut-off
+    RF,           //!< Reaction field
+    EwaldTab,     //!< Tabulated Ewald with single cut-off
+    EwaldTabTwin, //!< Tabulated Ewald with twin cut-off
+    EwaldAna,     //!< Analytical Ewald with single cut-off
+    EwaldAnaTwin, //!< Analytical Ewald with twin cut-off
+    Count         //!< Number of valid values
+};
+
+//! Number of possible \ref ElecType values.
+constexpr int c_numElecTypes = static_cast<int>(ElecType::Count);
+
+/*! \brief Nbnxm VdW GPU kernel flavors.
+ *
+ * The enumerates values correspond to the LJ implementations in the GPU non-bonded
+ * kernels.
+ *
+ * The column-order of pointers to different electrostatic kernels defined in
+ * nbnxn_cuda_ocl.cpp/.cu by the nb_*_kfunc_ptr function pointer table
+ * should match the order of enumerated types below.
+ */
+enum class VdwType : int
+{
+    Cut,         //!< Plain cut-off
+    CutCombGeom, //!< Cut-off with geometric combination rules
+    CutCombLB,   //!< Cut-off with Lorentz-Berthelot combination rules
+    FSwitch,     //!< Smooth force switch
+    PSwitch,     //!< Smooth potential switch
+    EwaldGeom,   //!< Ewald with geometric combination rules
+    EwaldLB,     //!< Ewald with Lorentz-Berthelot combination rules
+    Count        //!< Number of valid values
+};
+
+//! Number of possible \ref VdwType values.
+constexpr int c_numVdwTypes = static_cast<int>(VdwType::Count);
 
 /*! \brief Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
 enum class KernelType : int
@@ -236,8 +285,6 @@ public:
     //! Return whether the pairlist is of simple, CPU type
     bool pairlistIsSimple() const { return !useGpu() && !emulateGpu(); }
 
-    //! Initialize the pair list sets, TODO this should be private
-    void initPairlistSets(bool haveMultipleDomains);
 
     //! Returns the order of the local atoms on the grid
     gmx::ArrayRef<const int> getLocalAtomOrder() const;
@@ -341,22 +388,6 @@ public:
      * \param [inout] force         Force to be added to
      */
     void atomdata_add_nbat_f_to_f(gmx::AtomLocality locality, gmx::ArrayRef<gmx::RVec> force);
-
-    /*! \brief Add the forces stored in nbat to total force using GPU buffer opse
-     *
-     * \param [in]     locality             Local or non-local
-     * \param [in,out] totalForcesDevice    Force to be added to
-     * \param [in]     forcesPmeDevice      Device buffer with PME forces
-     * \param[in]      dependencyList       List of synchronizers that represent the dependencies the reduction task needs to sync on.
-     * \param [in]     useGpuFPmeReduction  Whether PME forces should be added
-     * \param [in]     accumulateForce      If the total force buffer already contains data
-     */
-    void atomdata_add_nbat_f_to_f_gpu(gmx::AtomLocality                          locality,
-                                      DeviceBuffer<gmx::RVec>                    totalForcesDevice,
-                                      void*                                      forcesPmeDevice,
-                                      gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
-                                      bool useGpuFPmeReduction,
-                                      bool accumulateForce);
 
     /*! \brief Get the number of atoms for a given locality
      *
