@@ -55,6 +55,11 @@ combination of temperature / pressure coupling algorithms.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Improve CHARMM support in gmx do_dssp
+"""""""""""""""""""""""""""""""""""""
+
+:issue:`3568`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
