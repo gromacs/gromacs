@@ -68,7 +68,7 @@ void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
                                     const DeviceContext&         deviceContext);
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused& ic);
+enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused& ic);
 
 /*! \brief Copies all parameters related to the cut-off from ic to nbp
  */

@@ -50,6 +50,8 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdtypes/locality.h"
 
+#include "nbnxm.h"
+
 struct NbnxmGpu;
 struct DeviceInformation;
 struct gmx_wallclock_gpu_nbnxn_t;
@@ -123,6 +125,16 @@ int gpu_min_ci_balanced(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(-1);
 /** Returns if analytical Ewald GPU kernels are used. */
 GPU_FUNC_QUALIFIER
 bool gpu_is_kernel_ewald_analytical(const NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(FALSE);
+
+/** Return the enum value of electrostatics kernel type for given interaction parameters \p ic. */
+GPU_FUNC_QUALIFIER
+enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t gmx_unused* ic)
+        GPU_FUNC_TERM_WITH_RETURN(ElecType::Count);
+
+/** Return the enum value of VdW kernel type for given \p ic and \p combRule. */
+GPU_FUNC_QUALIFIER
+enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t gmx_unused* ic, int gmx_unused combRule)
+        GPU_FUNC_TERM_WITH_RETURN(VdwType::Count);
 
 /** Returns an opaque pointer to the GPU command stream
  *  Note: CUDA only.

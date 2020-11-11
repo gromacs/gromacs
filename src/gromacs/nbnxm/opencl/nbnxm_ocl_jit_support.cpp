@@ -99,18 +99,18 @@ static const char* kernel_VdW_family_definitions[] = {
 
 /*! \brief Returns a string with the compiler defines required to avoid all flavour generation
  *
- * For example if flavour eelTypeRF with evdwTypeFSWITCH, the output will be such that the corresponding
+ * For example if flavour ElecType::RF with VdwType::FSwitch, the output will be such that the corresponding
  * kernel flavour is generated:
  * -DGMX_OCL_FASTGEN          (will replace flavour generator nbnxn_ocl_kernels.clh with nbnxn_ocl_kernels_fastgen.clh)
- * -DEL_RF                    (The eelTypeRF flavour)
+ * -DEL_RF                    (The ElecType::RF flavour)
  * -DEELNAME=_ElecRF          (The first part of the generated kernel name )
- * -DLJ_EWALD_COMB_GEOM       (The evdwTypeFSWITCH flavour)
+ * -DLJ_EWALD_COMB_GEOM       (The VdwType::FSwitch flavour)
  * -DVDWNAME=_VdwLJEwCombGeom (The second part of the generated kernel name )
  *
  * prune/energy are still generated as originally. It is only the flavour-level that has changed, so that
  * only the required flavour for the simulation is compiled.
  *
- * If eeltype is single-range Ewald, then we need to add the
+ * If elecType is single-range Ewald, then we need to add the
  * twin-cutoff flavour kernels to the JIT, because PME tuning might
  * need it. This path sets -DGMX_OCL_FASTGEN_ADD_TWINCUT, which
  * triggers the use of nbnxn_ocl_kernels_fastgen_add_twincut.clh. This
@@ -122,19 +122,22 @@ static const char* kernel_VdW_family_definitions[] = {
  * JIT defaults to compiling all kernel flavours.
  *
  * \param[in]  bFastGen    Whether FastGen should be used
- * \param[in]  eeltype     Electrostatics kernel flavour for FastGen
- * \param[in]  vdwtype     VDW kernel flavour for FastGen
+ * \param[in]  elecType    Electrostatics kernel flavour for FastGen
+ * \param[in]  vdwType     VDW kernel flavour for FastGen
  * \return                 String with the defines if FastGen is active
  *
  * \throws std::bad_alloc if out of memory
  */
-static std::string makeDefinesForKernelTypes(bool bFastGen, int eeltype, int vdwtype)
+static std::string makeDefinesForKernelTypes(bool                 bFastGen,
+                                             enum Nbnxm::ElecType elecType,
+                                             enum Nbnxm::VdwType  vdwType)
 {
+    using Nbnxm::ElecType;
     std::string defines_for_kernel_types;
 
     if (bFastGen)
     {
-        bool bIsEwaldSingleCutoff = (eeltype == eelTypeEWALD_TAB || eeltype == eelTypeEWALD_ANA);
+        bool bIsEwaldSingleCutoff = (elecType == ElecType::EwaldTab || elecType == ElecType::EwaldAna);
 
         if (bIsEwaldSingleCutoff)
         {
@@ -146,8 +149,8 @@ static std::string makeDefinesForKernelTypes(bool bFastGen, int eeltype, int vdw
                nbnxn_ocl_kernels_fastgen.clh. */
             defines_for_kernel_types += "-DGMX_OCL_FASTGEN";
         }
-        defines_for_kernel_types += kernel_electrostatic_family_definitions[eeltype];
-        defines_for_kernel_types += kernel_VdW_family_definitions[vdwtype];
+        defines_for_kernel_types += kernel_electrostatic_family_definitions[static_cast<int>(elecType)];
+        defines_for_kernel_types += kernel_VdW_family_definitions[static_cast<int>(vdwType)];
     }
 
     return defines_for_kernel_types;
@@ -182,7 +185,7 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
     try
     {
         std::string extraDefines =
-                makeDefinesForKernelTypes(bFastGen, nb->nbparam->eeltype, nb->nbparam->vdwtype);
+                makeDefinesForKernelTypes(bFastGen, nb->nbparam->elecType, nb->nbparam->vdwType);
 
         /* Here we pass macros and static const/constexpr int variables defined
          * in include files outside the opencl as macros, to avoid

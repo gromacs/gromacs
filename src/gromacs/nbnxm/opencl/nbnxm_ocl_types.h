@@ -153,10 +153,10 @@ typedef struct cl_atomdata
 typedef struct cl_nbparam_params
 {
 
-    //! type of electrostatics, takes values from #eelType
-    int eeltype;
-    //! type of VdW impl., takes values from #evdwType
-    int vdwtype;
+    //! type of electrostatics
+    enum Nbnxm::ElecType elecType;
+    //! type of VdW impl.
+    enum Nbnxm::VdwType vdwType;
 
     //! charge multiplication factor
     float epsfac;
@@ -166,7 +166,7 @@ typedef struct cl_nbparam_params
     float two_k_rf;
     //! Ewald/PME parameter
     float ewald_beta;
-    //! Ewald/PME correction term substracted from the direct-space potential
+    //! Ewald/PME correction term subtracted from the direct-space potential
     float sh_ewald;
     //! LJ-Ewald/PME correction term added to the correction potential
     float sh_lj_ewald;
@@ -219,10 +219,10 @@ struct NbnxmGpu
     /**< Pointers to non-bonded kernel functions
      * organized similar with nb_kfunc_xxx arrays in nbnxn_ocl.cpp */
     ///@{
-    cl_kernel kernel_noener_noprune_ptr[eelTypeNR][evdwTypeNR] = { { nullptr } };
-    cl_kernel kernel_ener_noprune_ptr[eelTypeNR][evdwTypeNR]   = { { nullptr } };
-    cl_kernel kernel_noener_prune_ptr[eelTypeNR][evdwTypeNR]   = { { nullptr } };
-    cl_kernel kernel_ener_prune_ptr[eelTypeNR][evdwTypeNR]     = { { nullptr } };
+    cl_kernel kernel_noener_noprune_ptr[Nbnxm::c_numElecTypes][Nbnxm::c_numVdwTypes] = { { nullptr } };
+    cl_kernel kernel_ener_noprune_ptr[Nbnxm::c_numElecTypes][Nbnxm::c_numVdwTypes] = { { nullptr } };
+    cl_kernel kernel_noener_prune_ptr[Nbnxm::c_numElecTypes][Nbnxm::c_numVdwTypes] = { { nullptr } };
+    cl_kernel kernel_ener_prune_ptr[Nbnxm::c_numElecTypes][Nbnxm::c_numVdwTypes] = { { nullptr } };
     ///@}
     //! prune kernels, ePruneKind defined the kernel kinds
     cl_kernel kernel_pruneonly[ePruneNR] = { nullptr };

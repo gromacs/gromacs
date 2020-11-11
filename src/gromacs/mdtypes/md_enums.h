@@ -58,7 +58,7 @@
  * \param[in] names     The array
  * \return the correct string or "no name defined"
  */
-const char* enum_name(int index, int max_index, const char* names[]);
+const char* enum_name(int index, int max_index, const char* const names[]);
 
 //! Boolean strings no or yes
 extern const char* yesno_names[BOOL_NR + 1];

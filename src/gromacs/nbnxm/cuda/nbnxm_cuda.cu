@@ -164,7 +164,7 @@ static inline int calc_nb_kernel_nblock(int nwork_units, const DeviceInformation
  */
 
 /*! Force-only kernel function pointers. */
-static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[eelTypeNR][evdwTypeNR] = {
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[c_numElecTypes][c_numVdwTypes] = {
     { nbnxn_kernel_ElecCut_VdwLJ_F_cuda, nbnxn_kernel_ElecCut_VdwLJCombGeom_F_cuda,
       nbnxn_kernel_ElecCut_VdwLJCombLB_F_cuda, nbnxn_kernel_ElecCut_VdwLJFsw_F_cuda,
       nbnxn_kernel_ElecCut_VdwLJPsw_F_cuda, nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_cuda,
@@ -192,7 +192,7 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_noprune_ptr[eelTypeNR][evdwTyp
 };
 
 /*! Force + energy kernel function pointers. */
-static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[eelTypeNR][evdwTypeNR] = {
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[c_numElecTypes][c_numVdwTypes] = {
     { nbnxn_kernel_ElecCut_VdwLJ_VF_cuda, nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_cuda,
       nbnxn_kernel_ElecCut_VdwLJCombLB_VF_cuda, nbnxn_kernel_ElecCut_VdwLJFsw_VF_cuda,
       nbnxn_kernel_ElecCut_VdwLJPsw_VF_cuda, nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_cuda,
@@ -220,7 +220,7 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_noprune_ptr[eelTypeNR][evdwTypeN
 };
 
 /*! Force + pruning kernel function pointers. */
-static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[eelTypeNR][evdwTypeNR] = {
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[c_numElecTypes][c_numVdwTypes] = {
     { nbnxn_kernel_ElecCut_VdwLJ_F_prune_cuda, nbnxn_kernel_ElecCut_VdwLJCombGeom_F_prune_cuda,
       nbnxn_kernel_ElecCut_VdwLJCombLB_F_prune_cuda, nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_cuda,
       nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_cuda, nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_cuda,
@@ -250,7 +250,7 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_noener_prune_ptr[eelTypeNR][evdwTypeN
 };
 
 /*! Force + energy + pruning kernel function pointers. */
-static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelTypeNR][evdwTypeNR] = {
+static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[c_numElecTypes][c_numVdwTypes] = {
     { nbnxn_kernel_ElecCut_VdwLJ_VF_prune_cuda, nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_prune_cuda,
       nbnxn_kernel_ElecCut_VdwLJCombLB_VF_prune_cuda, nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_cuda,
       nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_cuda, nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_cuda,
@@ -282,17 +282,18 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[eelTypeNR][evdwTypeNR]
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
-static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     eeltype,
-                                                       int                     evdwtype,
+static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType           elecType,
+                                                       enum VdwType            vdwType,
                                                        bool                    bDoEne,
                                                        bool                    bDoPrune,
                                                        const DeviceInformation gmx_unused* deviceInfo)
 {
-    nbnxn_cu_kfunc_ptr_t res;
+    const int elecTypeIdx = static_cast<int>(elecType);
+    const int vdwTypeIdx  = static_cast<int>(vdwType);
 
-    GMX_ASSERT(eeltype < eelTypeNR,
+    GMX_ASSERT(elecTypeIdx < c_numElecTypes,
                "The electrostatics type requested is not implemented in the CUDA kernels.");
-    GMX_ASSERT(evdwtype < evdwTypeNR,
+    GMX_ASSERT(vdwTypeIdx < c_numVdwTypes,
                "The VdW type requested is not implemented in the CUDA kernels.");
 
     /* assert assumptions made by the kernels */
@@ -306,26 +307,24 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     e
     {
         if (bDoPrune)
         {
-            res = nb_kfunc_ener_prune_ptr[eeltype][evdwtype];
+            return nb_kfunc_ener_prune_ptr[elecTypeIdx][vdwTypeIdx];
         }
         else
         {
-            res = nb_kfunc_ener_noprune_ptr[eeltype][evdwtype];
+            return nb_kfunc_ener_noprune_ptr[elecTypeIdx][vdwTypeIdx];
         }
     }
     else
     {
         if (bDoPrune)
         {
-            res = nb_kfunc_noener_prune_ptr[eeltype][evdwtype];
+            return nb_kfunc_noener_prune_ptr[elecTypeIdx][vdwTypeIdx];
         }
         else
         {
-            res = nb_kfunc_noener_noprune_ptr[eeltype][evdwtype];
+            return nb_kfunc_noener_noprune_ptr[elecTypeIdx][vdwTypeIdx];
         }
     }
-
-    return res;
 }
 
 /*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use. */
@@ -344,7 +343,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
 
-    if (nbp->vdwtype == evdwTypeCUTCOMBGEOM || nbp->vdwtype == evdwTypeCUTCOMBLB)
+    if (nbp->vdwType == VdwType::CutCombGeom || nbp->vdwType == VdwType::CutCombLB)
     {
         /* i-atom LJ combination parameters in shared memory */
         shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float2);
@@ -562,7 +561,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 
     auto*      timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     const auto kernel =
-            select_nbnxn_kernel(nbp->eeltype, nbp->vdwtype, stepWork.computeEnergy,
+            select_nbnxn_kernel(nbp->elecType, nbp->vdwType, stepWork.computeEnergy,
                                 (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune),
                                 &nb->deviceContext_->deviceInfo());
     const auto kernelArgs =
@@ -817,9 +816,9 @@ void cuda_set_cacheconfig()
 {
     cudaError_t stat;
 
-    for (int i = 0; i < eelTypeNR; i++)
+    for (int i = 0; i < c_numElecTypes; i++)
     {
-        for (int j = 0; j < evdwTypeNR; j++)
+        for (int j = 0; j < c_numVdwTypes; j++)
         {
             /* Default kernel 32/32 kB Shared/L1 */
             cudaFuncSetCacheConfig(nb_kfunc_ener_prune_ptr[i][j], cudaFuncCachePreferEqual);
