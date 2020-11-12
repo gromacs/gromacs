@@ -51,6 +51,7 @@ if(GMX_FAHCORE)
 elseif(GMX_BUILD_MDRUN_ONLY)
     add_executable(mdrun $<TARGET_OBJECTS:mdrun_objlib> mdrun_main.cpp)
     gmx_target_compile_options(mdrun)
+    target_include_directories(mdrun SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
     target_compile_definitions(mdrun PRIVATE HAVE_CONFIG_H)
     target_link_libraries(mdrun libgromacs
         ${GMX_COMMON_LIBRARIES}
