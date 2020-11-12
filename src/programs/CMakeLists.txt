@@ -41,6 +41,7 @@ target_compile_definitions(mdrun_objlib PRIVATE HAVE_CONFIG_H)
 target_include_directories(mdrun_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 # Should be possible to remove this when resolving #3290
 target_include_directories(mdrun_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+target_link_libraries(mdrun_objlib PRIVATE common)
 target_link_libraries(mdrun_objlib PRIVATE legacy_api)
 
 if(GMX_FAHCORE)
@@ -75,8 +76,10 @@ else()
     gmx_target_compile_options(view_objlib)
     target_compile_definitions(view_objlib PRIVATE HAVE_CONFIG_H)
     target_include_directories(view_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+    target_link_libraries(view_objlib PRIVATE common)
     target_link_libraries(view_objlib PRIVATE legacy_api)
     add_library(gmx_objlib OBJECT ${GMX_MAIN_SOURCES})
+    target_link_libraries(gmx_objlib PRIVATE common)
     target_link_libraries(gmx_objlib PRIVATE legacy_api)
     target_include_directories(gmx_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
     target_include_directories(gmx_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
@@ -89,6 +92,7 @@ else()
     target_compile_definitions(gmx PRIVATE HAVE_CONFIG_H)
     target_link_libraries(gmx PRIVATE
                           libgromacs
+                          common
                           ${GMX_COMMON_LIBRARIES}
                           ${GMX_EXE_LINKER_FLAGS})
     if(GMX_X11)

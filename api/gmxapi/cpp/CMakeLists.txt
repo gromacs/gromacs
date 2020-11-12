@@ -84,6 +84,7 @@ set_target_properties(gmxapi PROPERTIES
                       )
 
 target_link_libraries(gmxapi PRIVATE libgromacs)
+target_link_libraries(gmxapi PRIVATE common)
 
 
 ################################################

@@ -186,6 +186,7 @@ if (GMX_GPU_CUDA)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
+target_link_libraries(libgromacs PRIVATE common)
 
 # Add these contents first because linking their tests can take a lot
 # of time, so we want lots of parallel work still available after
@@ -204,6 +205,7 @@ foreach(object_library ${libgromacs_object_library_dependencies})
         set_target_properties(${object_library} PROPERTIES POSITION_INDEPENDENT_CODE true)
     endif()
     target_include_directories(${object_library} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+    target_link_libraries(${object_library} PRIVATE common)
 
     # Add the sources from the object libraries to the main library.
     target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:${object_library}>)

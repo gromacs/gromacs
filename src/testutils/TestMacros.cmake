@@ -169,7 +169,7 @@ function (gmx_add_gtest_executable EXENAME)
         endif()
 
         target_link_libraries(${EXENAME} PRIVATE
-            testutils libgromacs gmock
+            testutils common libgromacs gmock
             ${GMX_COMMON_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
 
         if(GMX_CLANG_TIDY)
