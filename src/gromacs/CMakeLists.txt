@@ -187,6 +187,12 @@ else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
 target_link_libraries(libgromacs PRIVATE common)
+# As long as the libgromacs target has source files that reference headers from
+# modules that don't provide CMake targets, libgromacs needs to use `src/`
+# amongst its include directories (to support `#include "gromacs/module/header.h"`).
+add_library(legacy_modules INTERFACE)
+target_include_directories(legacy_modules INTERFACE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(libgromacs PRIVATE legacy_modules)
 
 # Add these contents first because linking their tests can take a lot
 # of time, so we want lots of parallel work still available after

@@ -43,6 +43,8 @@ target_include_directories(mdrun_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_D
 target_include_directories(mdrun_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 target_link_libraries(mdrun_objlib PRIVATE common)
 target_link_libraries(mdrun_objlib PRIVATE legacy_api)
+# TODO: Explicitly link specific modules.
+target_link_libraries(mdrun_objlib PRIVATE common legacy_modules)
 
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
@@ -76,11 +78,13 @@ else()
     gmx_target_compile_options(view_objlib)
     target_compile_definitions(view_objlib PRIVATE HAVE_CONFIG_H)
     target_include_directories(view_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
-    target_link_libraries(view_objlib PRIVATE common)
-    target_link_libraries(view_objlib PRIVATE legacy_api)
+    target_link_libraries(view_objlib PRIVATE common legacy_api)
+    # TODO: Explicitly link specific modules.
+    target_link_libraries(view_objlib PRIVATE legacy_modules)
     add_library(gmx_objlib OBJECT ${GMX_MAIN_SOURCES})
-    target_link_libraries(gmx_objlib PRIVATE common)
-    target_link_libraries(gmx_objlib PRIVATE legacy_api)
+    target_link_libraries(gmx_objlib PRIVATE common legacy_api)
+    # TODO: Explicitly link specific modules.
+    target_link_libraries(gmx_objlib PRIVATE legacy_modules)
     target_include_directories(gmx_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
     target_include_directories(gmx_objlib SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
     add_executable(gmx

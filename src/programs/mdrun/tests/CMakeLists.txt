@@ -231,4 +231,6 @@ gmx_add_gtest_executable(${exename}
         $<TARGET_OBJECTS:mdrun_objlib>
 )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
+# TODO: Link specific modules: topology
+target_link_libraries(${exename} PRIVATE legacy_modules)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS)

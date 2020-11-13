@@ -67,5 +67,8 @@ else()
     gmx_target_warning_suppression(linearalgebra -Wno-stringop-truncation HAS_NO_STRINGOP_TRUNCATION)
 endif()
 target_link_libraries(linearalgebra PRIVATE legacy_api)
+target_link_libraries(linearalgebra PRIVATE common)
+# TODO: Link specific modules.
+target_link_libraries(linearalgebra PRIVATE legacy_modules)
 list(APPEND libgromacs_object_library_dependencies linearalgebra)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)

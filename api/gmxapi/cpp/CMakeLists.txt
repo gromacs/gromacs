@@ -85,6 +85,8 @@ set_target_properties(gmxapi PROPERTIES
 
 target_link_libraries(gmxapi PRIVATE libgromacs)
 target_link_libraries(gmxapi PRIVATE common)
+# TODO: Explicitly link specific modules: mdlib, mdtypes, utility, commandline
+target_link_libraries(gmxapi PRIVATE legacy_modules)
 
 
 ################################################

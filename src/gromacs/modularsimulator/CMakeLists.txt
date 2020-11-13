@@ -41,6 +41,8 @@ target_compile_definitions(modularsimulator PRIVATE HAVE_CONFIG_H)
 # Should be possible to remove this when resolving #3290
 target_include_directories(modularsimulator SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 target_link_libraries(modularsimulator PRIVATE legacy_api)
+# TODO: Use explicit module dependencies.
+target_link_libraries(modularsimulator PRIVATE legacy_modules)
 
 if(GMX_OPENMP)
     # Explicitly set properties for modular simulator module to compile with openmp

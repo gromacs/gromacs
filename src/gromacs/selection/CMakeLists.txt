@@ -57,6 +57,8 @@ else()
     gmx_target_warning_suppression(scanner -Wno-null-conversion HAS_NO_NULL_CONVERSIONS)
 endif()
 target_link_libraries(scanner PRIVATE legacy_api)
+# TODO: Use explicit module dependencies.
+target_link_libraries(scanner PRIVATE legacy_modules)
 
 list(APPEND libgromacs_object_library_dependencies scanner)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
