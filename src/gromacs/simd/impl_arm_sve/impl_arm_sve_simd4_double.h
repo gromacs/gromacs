@@ -57,7 +57,7 @@ namespace gmx
 
 typedef struct Simd4Double
 {
-    float64_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH / 8)));
+    float64_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8)));
 
     Simd4Double(const double d) { this->simdInternal_ = svdup_f64(d); }
 
@@ -68,7 +68,7 @@ typedef struct Simd4Double
 
 typedef struct Simd4DBool
 {
-    uint64_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH / 8)));
+    uint64_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8)));
 
     Simd4DBool(const bool b) { this->simdInternal_ = svdup_n_u64_z(svptrue_b64(), b ? 1 : 0); }
 

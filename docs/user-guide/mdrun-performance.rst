@@ -217,7 +217,9 @@ Some of the latest ARM based CPU, such as the Fujitsu A64fx, support the Scalabl
 Though SVE can be used to generate fairly efficient Vector Length Agnostic (VLA) code,
 this is not a good fit for |Gromacs| (as the SIMD vector length assumed to be known at
 CMake time). Consequently, the SVE vector length must be fixed at CMake time. The default
-value is 512 bits, and this can be changed with ``GMX_SIMD_ARM_SVE_LENGTH=<len>``.
+is to automatically detect the default vector length at CMake time
+(via the ``/proc/sys/abi/sve_default_vector_length`` pseudo-file, and this can be changed by
+configuring with ``GMX_SIMD_ARM_SVE_LENGTH=<len>``.
 The supported vector lengths are 128, 256, 512 and 1024. Since the SIMD short-range non-bonded kernels
 only support up to 16 floating point numbers per SIMD vector, 1024 bits vector length is only
 valid in double precision (e.g. ``-DGMX_DOUBLE=on``).

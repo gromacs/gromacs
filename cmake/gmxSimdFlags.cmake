@@ -346,12 +346,12 @@ function(gmx_find_simd_arm_sve_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
 
     gmx_find_flags(SIMD_ARM_SVE_C_FLAGS_RESULT SIMD_ARM_SVE_CXX_FLAGS_RESULT
         "#include<arm_sve.h>
-         int main(){float32_t x __attribute((vector_size(${GMX_SIMD_ARM_SVE_LENGTH}/8))) = svdup_f32(0.5f); return 0;}"
+         int main(){float32_t x __attribute((vector_size(${GMX_SIMD_ARM_SVE_LENGTH_VALUE}/8))) = svdup_f32(0.5f); return 0;}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
         SIMD_ARM_SVE_C_FLAGS SIMD_ARM_SVE_CXX_FLAGS
-        "-msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH}"
-        "-march=armv8.2-a+sve -msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH}"
-        "-march=armv8.2a+sve -msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH}")
+        "-msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH_VALUE}"
+        "-march=armv8.2-a+sve -msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH_VALUE}"
+        "-march=armv8.2a+sve -msve-vector-bits=${GMX_SIMD_ARM_SVE_LENGTH_VALUE}")
 
     if(${SIMD_ARM_SVE_C_FLAGS_RESULT})
         set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_ARM_SVE_C_FLAGS}" CACHE INTERNAL "C flags required for Arm SVE instructions")
