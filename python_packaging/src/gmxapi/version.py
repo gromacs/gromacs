@@ -70,7 +70,7 @@ from .exceptions import FeatureNotAvailableError
 
 # TODO: Version management policy and procedures.
 _major = 0
-_minor = 2
+_minor = 3
 _micro = 0
 _suffix = 'b1'
 

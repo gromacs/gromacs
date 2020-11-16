@@ -134,7 +134,7 @@ class CommandLineOperationSimpleTestCase(unittest.TestCase):
         assert operation.output.returncode.result() == 1
 
     def test_echo(self):
-        # TODO: (FR5+) do we want to pipeline or checkpoint stdout somehow?
+        # TODO: (#3549) Check stdout, stderr.
         operation = commandline.commandline_operation(executable='echo',
                                                       arguments=['hi there'])
         assert operation.output.returncode.result() == 0

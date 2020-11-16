@@ -130,6 +130,7 @@ def spc_water_box(gmxcli, remove_tempdir):
                                            output_files={'-o': tprfile})
         tprfilename = grompp.output.file['-o'].result()
         if grompp.output.returncode.result() != 0:
+            # TODO: update for #3549
             logging.debug(grompp.output.erroroutput.result())
             raise RuntimeError('grompp failed in spc_water_box testing fixture.')
 
