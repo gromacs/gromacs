@@ -2665,4 +2665,17 @@ structures into cryoelectron microscopy maps using biased molecular dynamics sim
 
 .. raw:: html
 
+   <div id="ref-Gapsys2012">
+
+.. _refGapsys2012:
+
+:sup:`185` V. Gapsys, D. Seeliger, and B.L. de Groot, 
+"New Soft-Core Potential Function for Molecular Dynamics Based Alchemical Free Energy Calculations", *J. Chem. Theor. Comput.*, **8** 2373-2382 (2012).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
    </div>

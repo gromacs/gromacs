@@ -63,6 +63,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/arrayref.h"
 
+#include "nb_softcore.h"
 
 //! Scalar (non-SIMD) data types.
 struct ScalarDataTypes
@@ -257,7 +258,7 @@ static inline RealType potSwitchPotentialMod(const RealType potentialInp, const 
 
 
 //! Templated free-energy non-bonded kernel
-template<typename DataTypes, bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
+template<typename DataTypes, SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForce>
 static void nb_free_energy_kernel(const t_nblist&                                  nlist,
                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                   const int                                        ntype,
@@ -364,8 +365,9 @@ static void nb_free_energy_kernel(const t_nblist&                               
         icoul = NbkernelElecType::None;
     }
 
-    real rcutoff_max2 = std::max(ic.rcoulomb, ic.rvdw);
-    rcutoff_max2      = rcutoff_max2 * rcutoff_max2;
+    real rcutoff_max2                 = std::max(ic.rcoulomb, ic.rvdw);
+    rcutoff_max2                      = rcutoff_max2 * rcutoff_max2;
+    const real gmx_unused rCutoffCoul = ic.rcoulomb;
 
     real gmx_unused sh_ewald = 0;
     if constexpr (elecInteractionTypeIsEwald || vdwInteractionTypeIsEwald)
@@ -526,7 +528,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         {
                             preloadLjPmeC6Grid[i][s] = 0;
                         }
-                        if constexpr (useSoftCore)
+                        if constexpr (softcoreType == SoftcoreType::Beutler
+                                      || softcoreType == SoftcoreType::Gapsys)
                         {
                             const real c6  = nbfp[2 * typeIndices[i][s]];
                             const real c12 = nbfp[2 * typeIndices[i][s] + 1];
@@ -546,7 +549,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             }
                         }
                     }
-                    if constexpr (useSoftCore)
+                    if constexpr (softcoreType == SoftcoreType::Beutler
+                                  || softcoreType == SoftcoreType::Gapsys)
                     {
                         /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
                         const real c12A = nbfp[2 * typeIndices[STATE_A][s] + 1];
@@ -558,8 +562,16 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         }
                         else
                         {
-                            preloadAlphaVdwEff[s]  = alpha_vdw;
-                            preloadAlphaCoulEff[s] = alpha_coul;
+                            if constexpr (softcoreType == SoftcoreType::Beutler)
+                            {
+                                preloadAlphaVdwEff[s]  = alpha_vdw;
+                                preloadAlphaCoulEff[s] = alpha_coul;
+                            }
+                            else if constexpr (softcoreType == SoftcoreType::Gapsys)
+                            {
+                                preloadAlphaVdwEff[s]  = alpha_vdw;
+                                preloadAlphaCoulEff[s] = gmx::sixthroot(sigma6_def);
+                            }
                         }
                     }
                 }
@@ -634,12 +646,12 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 gmx::gatherLoadTranspose<2>(nbfp.data(), typeIndices[i], &c6[i], &c12[i]);
                 qq[i]          = gmx::load<RealType>(preloadQq[i]);
                 ljPmeC6Grid[i] = gmx::load<RealType>(preloadLjPmeC6Grid[i]);
-                if constexpr (useSoftCore)
+                if constexpr (softcoreType == SoftcoreType::Beutler || softcoreType == SoftcoreType::Gapsys)
                 {
                     sigma6[i] = gmx::load<RealType>(preloadSigma6[i]);
                 }
             }
-            if constexpr (useSoftCore)
+            if constexpr (softcoreType == SoftcoreType::Beutler || softcoreType == SoftcoreType::Gapsys)
             {
                 alphaVdwEff  = gmx::load<RealType>(preloadAlphaVdwEff);
                 alphaCoulEff = gmx::load<RealType>(preloadAlphaCoulEff);
@@ -651,7 +663,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
             r    = rSq * rInv;
 
             RealType gmx_unused rp, rpm2;
-            if constexpr (useSoftCore)
+            if constexpr (softcoreType == SoftcoreType::Beutler)
             {
                 rpm2 = rSq * rSq;  /* r4 */
                 rp   = rpm2 * rSq; /* r6 */
@@ -689,7 +701,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                              && bPairIncluded && withinCutoffMask);
                     if (gmx::anyTrue(nonZeroState))
                     {
-                        if constexpr (useSoftCore)
+                        if constexpr (softcoreType == SoftcoreType::Beutler)
                         {
                             RealType divisor = (alphaCoulEff * lFacCoul[i] * sigma6[i] + rp);
                             rPInvC           = gmx::inv(divisor);
@@ -742,6 +754,22 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                 {
                                     fScalC[i] = ewaldScalarForce(qq[i], rInvC);
                                 }
+
+                                if constexpr (softcoreType == SoftcoreType::Gapsys)
+                                {
+                                    ewaldQuadraticPotential(qq[i],
+                                                            facel,
+                                                            rC,
+                                                            rCutoffCoul,
+                                                            LFC[i],
+                                                            DLF[i],
+                                                            alphaCoulEff,
+                                                            sh_ewald,
+                                                            &fScalC[i],
+                                                            &vCoul[i],
+                                                            &dvdlCoul,
+                                                            computeElecInteraction);
+                                }
                             }
                             else
                             {
@@ -749,6 +777,23 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                 if constexpr (computeForces)
                                 {
                                     fScalC[i] = reactionFieldScalarForce(qq[i], rInvC, rC, krf, two);
+                                }
+
+                                if constexpr (softcoreType == SoftcoreType::Gapsys)
+                                {
+                                    reactionFieldQuadraticPotential(qq[i],
+                                                                    facel,
+                                                                    rC,
+                                                                    rCutoffCoul,
+                                                                    LFC[i],
+                                                                    DLF[i],
+                                                                    alphaCoulEff,
+                                                                    krf,
+                                                                    crf,
+                                                                    &fScalC[i],
+                                                                    &vCoul[i],
+                                                                    &dvdlCoul,
+                                                                    computeElecInteraction);
                                 }
                             }
 
@@ -777,7 +822,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                         if (gmx::anyTrue(computeVdwInteraction))
                         {
                             RealType rInv6;
-                            if constexpr (useSoftCore)
+                            if constexpr (softcoreType == SoftcoreType::Beutler)
                             {
                                 rInv6 = rPInvV;
                             }
@@ -799,6 +844,24 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             if constexpr (computeForces)
                             {
                                 fScalV[i] = lennardJonesScalarForce(vVdw6, vVdw12);
+                            }
+
+                            if constexpr (softcoreType == SoftcoreType::Gapsys)
+                            {
+                                lennardJonesQuadraticPotential(c6[i],
+                                                               c12[i],
+                                                               r,
+                                                               rSq,
+                                                               LFV[i],
+                                                               DLF[i],
+                                                               sigma6[i],
+                                                               alphaVdwEff,
+                                                               repulsionShift,
+                                                               dispersionShift,
+                                                               &fScalV[i],
+                                                               &vVdw[i],
+                                                               &dvdlVdw,
+                                                               computeVdwInteraction);
                             }
 
                             if constexpr (vdwInteractionTypeIsEwald)
@@ -864,7 +927,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             fScal = fScal + LFV[i] * fScalV[i] * rpm2;
                         }
 
-                        if constexpr (useSoftCore)
+                        if constexpr (softcoreType == SoftcoreType::Beutler)
                         {
                             dvdlCoul = dvdlCoul + vCoul[i] * DLF[i]
                                        + LFC[i] * alphaCoulEff * dlFacCoul[i] * fScalC[i] * sigma6[i];
@@ -1063,56 +1126,56 @@ typedef void (*KernelFunction)(const t_nblist&                                  
                                gmx::ArrayRef<real> threadVv,
                                gmx::ArrayRef<real> threadDvdl);
 
-template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
+template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
 static KernelFunction dispatchKernelOnUseSimd(const bool useSimd)
 {
     if (useSimd)
     {
 #if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS && GMX_USE_SIMD_KERNELS
-        return (nb_free_energy_kernel<SimdDataTypes, useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces>);
+        return (nb_free_energy_kernel<SimdDataTypes, softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces>);
 #else
-        return (nb_free_energy_kernel<ScalarDataTypes, useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces>);
+        return (nb_free_energy_kernel<ScalarDataTypes, softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch computeForces>);
 #endif
     }
     else
     {
-        return (nb_free_energy_kernel<ScalarDataTypes, useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces>);
+        return (nb_free_energy_kernel<ScalarDataTypes, softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces>);
     }
 }
 
-template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
+template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
 static KernelFunction dispatchKernelOnComputeForces(const bool computeForces, const bool useSimd)
 {
     if (computeForces)
     {
-        return (dispatchKernelOnUseSimd<useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, true>(
+        return (dispatchKernelOnUseSimd<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, true>(
                 useSimd));
     }
     else
     {
-        return (dispatchKernelOnUseSimd<useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, false>(
+        return (dispatchKernelOnUseSimd<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, false>(
                 useSimd));
     }
 }
 
-template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald>
+template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald>
 static KernelFunction dispatchKernelOnVdwModifier(const bool vdwModifierIsPotSwitch,
                                                   const bool computeForces,
                                                   const bool useSimd)
 {
     if (vdwModifierIsPotSwitch)
     {
-        return (dispatchKernelOnComputeForces<useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, true>(
+        return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, true>(
                 computeForces, useSimd));
     }
     else
     {
-        return (dispatchKernelOnComputeForces<useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, false>(
+        return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, false>(
                 computeForces, useSimd));
     }
 }
 
-template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald>
+template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald>
 static KernelFunction dispatchKernelOnElecInteractionType(const bool elecInteractionTypeIsEwald,
                                                           const bool vdwModifierIsPotSwitch,
                                                           const bool computeForces,
@@ -1120,17 +1183,17 @@ static KernelFunction dispatchKernelOnElecInteractionType(const bool elecInterac
 {
     if (elecInteractionTypeIsEwald)
     {
-        return (dispatchKernelOnVdwModifier<useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, true>(
+        return (dispatchKernelOnVdwModifier<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, true>(
                 vdwModifierIsPotSwitch, computeForces, useSimd));
     }
     else
     {
-        return (dispatchKernelOnVdwModifier<useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, false>(
+        return (dispatchKernelOnVdwModifier<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, false>(
                 vdwModifierIsPotSwitch, computeForces, useSimd));
     }
 }
 
-template<bool useSoftCore, bool scLambdasOrAlphasDiffer>
+template<SoftcoreType softcoreType, bool scLambdasOrAlphasDiffer>
 static KernelFunction dispatchKernelOnVdwInteractionType(const bool vdwInteractionTypeIsEwald,
                                                          const bool elecInteractionTypeIsEwald,
                                                          const bool vdwModifierIsPotSwitch,
@@ -1139,17 +1202,17 @@ static KernelFunction dispatchKernelOnVdwInteractionType(const bool vdwInteracti
 {
     if (vdwInteractionTypeIsEwald)
     {
-        return (dispatchKernelOnElecInteractionType<useSoftCore, scLambdasOrAlphasDiffer, true>(
+        return (dispatchKernelOnElecInteractionType<softcoreType, scLambdasOrAlphasDiffer, true>(
                 elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces, useSimd));
     }
     else
     {
-        return (dispatchKernelOnElecInteractionType<useSoftCore, scLambdasOrAlphasDiffer, false>(
+        return (dispatchKernelOnElecInteractionType<softcoreType, scLambdasOrAlphasDiffer, false>(
                 elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces, useSimd));
     }
 }
 
-template<bool useSoftCore>
+template<SoftcoreType softcoreType>
 static KernelFunction dispatchKernelOnScLambdasOrAlphasDifference(const bool scLambdasOrAlphasDiffer,
                                                                   const bool vdwInteractionTypeIsEwald,
                                                                   const bool elecInteractionTypeIsEwald,
@@ -1159,12 +1222,12 @@ static KernelFunction dispatchKernelOnScLambdasOrAlphasDifference(const bool scL
 {
     if (scLambdasOrAlphasDiffer)
     {
-        return (dispatchKernelOnVdwInteractionType<useSoftCore, true>(
+        return (dispatchKernelOnVdwInteractionType<softcoreType, true>(
                 vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces, useSimd));
     }
     else
     {
-        return (dispatchKernelOnVdwInteractionType<useSoftCore, false>(
+        return (dispatchKernelOnVdwInteractionType<softcoreType, false>(
                 vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces, useSimd));
     }
 }
@@ -1177,23 +1240,38 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
                                      const bool                 useSimd,
                                      const interaction_const_t& ic)
 {
-    if (ic.softCoreParameters->alphaCoulomb == 0 && ic.softCoreParameters->alphaVdw == 0)
+    if ((ic.softCoreParameters->alphaCoulomb == 0 && ic.softCoreParameters->alphaVdw == 0)
+        || ic.softCoreParameters->softcoreType == SoftcoreType::None)
     {
-        return (dispatchKernelOnScLambdasOrAlphasDifference<false>(scLambdasOrAlphasDiffer,
-                                                                   vdwInteractionTypeIsEwald,
-                                                                   elecInteractionTypeIsEwald,
-                                                                   vdwModifierIsPotSwitch,
-                                                                   computeForces,
-                                                                   useSimd));
+        return (dispatchKernelOnScLambdasOrAlphasDifference<SoftcoreType::None>(scLambdasOrAlphasDiffer,
+                                                                                vdwInteractionTypeIsEwald,
+                                                                                elecInteractionTypeIsEwald,
+                                                                                vdwModifierIsPotSwitch,
+                                                                                computeForces,
+                                                                                useSimd));
     }
     else
     {
-        return (dispatchKernelOnScLambdasOrAlphasDifference<true>(scLambdasOrAlphasDiffer,
-                                                                  vdwInteractionTypeIsEwald,
-                                                                  elecInteractionTypeIsEwald,
-                                                                  vdwModifierIsPotSwitch,
-                                                                  computeForces,
-                                                                  useSimd));
+        if (ic.softCoreParameters->softcoreType == SoftcoreType::Beutler)
+        {
+            return (dispatchKernelOnScLambdasOrAlphasDifference<SoftcoreType::Beutler>(
+                    scLambdasOrAlphasDiffer,
+                    vdwInteractionTypeIsEwald,
+                    elecInteractionTypeIsEwald,
+                    vdwModifierIsPotSwitch,
+                    computeForces,
+                    useSimd));
+        }
+        else
+        {
+            return (dispatchKernelOnScLambdasOrAlphasDifference<SoftcoreType::Gapsys>(
+                    scLambdasOrAlphasDiffer,
+                    vdwInteractionTypeIsEwald,
+                    elecInteractionTypeIsEwald,
+                    vdwModifierIsPotSwitch,
+                    computeForces,
+                    useSimd));
+        }
     }
 }
 

@@ -229,12 +229,13 @@ class ForcerecHelper
 public:
     ForcerecHelper()
     {
-        fepVals_.sc_alpha     = 0.3;
-        fepVals_.sc_power     = 1;
-        fepVals_.sc_r_power   = 6.0;
-        fepVals_.sc_sigma     = 0.3;
-        fepVals_.sc_sigma_min = 0.3;
-        fepVals_.bScCoul      = true;
+        fepVals_.sc_alpha         = 0.3;
+        fepVals_.sc_power         = 1;
+        fepVals_.sc_r_power       = 6.0;
+        fepVals_.sc_sigma         = 0.3;
+        fepVals_.sc_sigma_min     = 0.3;
+        fepVals_.bScCoul          = true;
+        fepVals_.softcoreFunction = SoftcoreType::Beutler;
     }
 
     //! initialize data structure to construct forcerec
@@ -250,6 +251,11 @@ public:
 
     void setSoftcoreAlpha(const real scAlpha) { fepVals_.sc_alpha = scAlpha; }
     void setSoftcoreCoulomb(const bool scCoulomb) { fepVals_.bScCoul = scCoulomb; }
+    void setSoftcoreType(const SoftcoreType softcoreType)
+    {
+        fepVals_.softcoreFunction = softcoreType;
+    }
+
 
     //! get forcerec data as wanted by the nonbonded kernel
     void getForcerec(t_forcerec* fr)
@@ -392,7 +398,7 @@ public:
 };
 
 class NonbondedFepTest :
-    public ::testing::TestWithParam<std::tuple<ListInput, PaddedVector<RVec>, real, real, bool>>
+    public ::testing::TestWithParam<std::tuple<SoftcoreType, ListInput, PaddedVector<RVec>, real, real, bool>>
 {
 protected:
     PaddedVector<RVec>   x_;
@@ -400,16 +406,18 @@ protected:
     real                 lambda_;
     real                 softcoreAlpha_;
     bool                 softcoreCoulomb_;
+    SoftcoreType         softcoreType_;
     TestReferenceData    refData_;
     TestReferenceChecker checker_;
 
     NonbondedFepTest() : checker_(refData_.rootChecker())
     {
-        input_           = std::get<0>(GetParam());
-        x_               = std::get<1>(GetParam());
-        lambda_          = std::get<2>(GetParam());
-        softcoreAlpha_   = std::get<3>(GetParam());
-        softcoreCoulomb_ = std::get<4>(GetParam());
+        softcoreType_    = std::get<0>(GetParam());
+        input_           = std::get<1>(GetParam());
+        x_               = std::get<2>(GetParam());
+        lambda_          = std::get<3>(GetParam());
+        softcoreAlpha_   = std::get<4>(GetParam());
+        softcoreCoulomb_ = std::get<5>(GetParam());
 
         // Note that the reference data for Ewald type interactions has been generated
         // with accurate analytical approximations for the long-range corrections.
@@ -424,6 +432,7 @@ protected:
     {
         input_.frHelper.setSoftcoreAlpha(softcoreAlpha_);
         input_.frHelper.setSoftcoreCoulomb(softcoreCoulomb_);
+        input_.frHelper.setSoftcoreType(softcoreType_);
 
         // get forcerec and interaction_const
         t_forcerec fr;
@@ -495,6 +504,7 @@ std::vector<ListInput> c_interaction = {
 std::vector<real> c_fepLambdas      = { 0.0, 0.5, 1.0 };
 std::vector<real> c_softcoreAlphas  = { 0.0, 0.3 };
 std::vector<bool> c_softcoreCoulomb = { true, false };
+std::vector<SoftcoreType> c_softcoreType = { SoftcoreType::Beutler, SoftcoreType::Gapsys, SoftcoreType::None };
 
 //! Coordinates for testing
 std::vector<PaddedVector<RVec>> c_coordinates = {
@@ -503,7 +513,8 @@ std::vector<PaddedVector<RVec>> c_coordinates = {
 
 INSTANTIATE_TEST_SUITE_P(NBInteraction,
                          NonbondedFepTest,
-                         ::testing::Combine(::testing::ValuesIn(c_interaction),
+                         ::testing::Combine(::testing::ValuesIn(c_softcoreType),
+                                            ::testing::ValuesIn(c_interaction),
                                             ::testing::ValuesIn(c_coordinates),
                                             ::testing::ValuesIn(c_fepLambdas),
                                             ::testing::ValuesIn(c_softcoreAlphas),

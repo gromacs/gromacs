@@ -605,6 +605,21 @@ enum class DhDlDerivativeCalculation : int
 //! String for DHDL derivatives
 const char* enumValueToString(DhDlDerivativeCalculation enumValue);
 
+/*! \brief soft-core function \
+ *
+ * Distinguishes between soft-core functions.
+ */
+enum class SoftcoreType : int
+{
+    Beutler,
+    Gapsys,
+    None,
+    Count,
+    Default = Beutler
+};
+//! Strings for softcore function names
+const char* enumValueToString(SoftcoreType enumValue);
+
 /*! \brief Solvent model
  *
  * Distinguishes classical water types with 3 or 4 particles

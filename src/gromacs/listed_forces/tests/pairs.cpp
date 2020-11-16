@@ -163,12 +163,13 @@ class ForcerecHelper
 public:
     ForcerecHelper()
     {
-        fepVals_.sc_alpha     = 0.3;
-        fepVals_.sc_power     = 1;
-        fepVals_.sc_r_power   = 6.0;
-        fepVals_.sc_sigma     = 0.3;
-        fepVals_.sc_sigma_min = 0.3;
-        fepVals_.bScCoul      = true;
+        fepVals_.sc_alpha         = 0.3;
+        fepVals_.sc_power         = 1;
+        fepVals_.sc_r_power       = 6.0;
+        fepVals_.sc_sigma         = 0.85;
+        fepVals_.sc_sigma_min     = 0.3;
+        fepVals_.bScCoul          = true;
+        fepVals_.softcoreFunction = SoftcoreType::Beutler;
 
         fr_.ic = std::make_unique<interaction_const_t>();
         // set data in ic
@@ -314,7 +315,7 @@ protected:
         checker_.setDefaultTolerance(tolerance);
     }
 
-    void testOneIfunc(TestReferenceChecker* checker, const real lambda)
+    void testOneIfunc(TestReferenceChecker* checker, const real lambda, const SoftcoreType softcoreType)
     {
         SCOPED_TRACE(std::string("Testing PBC type: ") + c_pbcTypeNames[pbcType_]);
 
@@ -338,6 +339,7 @@ protected:
 
         t_forcerec* fr = frHelper.get();
         fr->efep = input_.fep ? FreeEnergyPerturbationType::Yes : FreeEnergyPerturbationType::No;
+        fr->ic->softCoreParameters->softcoreType = softcoreType;
         if (pbcType_ != PbcType::No)
         {
             fr->bMolPBC = true;
@@ -418,14 +420,18 @@ protected:
             const int numLambdas = 3;
             for (int i = 0; i < numLambdas; ++i)
             {
-                const real lambda        = i / (numLambdas - 1.0);
-                auto       lambdaChecker = thisChecker.checkCompound("Lambda", toString(lambda));
-                testOneIfunc(&lambdaChecker, lambda);
+                const real lambda = i / (numLambdas - 1.0);
+                for (SoftcoreType c : EnumerationWrapper<SoftcoreType>{})
+                {
+                    auto lambdaChecker = thisChecker.checkCompound("Lambda", toString(lambda));
+                    auto softcoreChecker = lambdaChecker.checkCompound("Sofcore", enumValueToString(c));
+                    testOneIfunc(&softcoreChecker, lambda, c);
+                }
             }
         }
         else
         {
-            testOneIfunc(&thisChecker, 0.0);
+            testOneIfunc(&thisChecker, 0.0, SoftcoreType::None);
         }
     }
 };

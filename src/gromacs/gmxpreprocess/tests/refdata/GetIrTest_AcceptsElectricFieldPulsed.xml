@@ -254,6 +254,7 @@ sc-power                 = 1
 sc-r-power               = 6
 sc-sigma                 = 0.3
 sc-coul                  = no
+sc-function              = beutler
 separate-dhdl-file       = yes
 dhdl-derivatives         = yes
 dh_hist_size             = 0

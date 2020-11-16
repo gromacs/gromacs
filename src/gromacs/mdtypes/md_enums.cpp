@@ -288,6 +288,14 @@ const char* enumValueToString(SeparateDhdlFile enumValue)
     return separateDhdlFileNames[enumValue];
 }
 
+const char* enumValueToString(SoftcoreType enumValue)
+{
+    static constexpr gmx::EnumerationArray<SoftcoreType, const char*> softcoreTypeNames = {
+        "beutler", "gapsys", "none"
+    };
+    return softcoreTypeNames[enumValue];
+}
+
 const char* enumValueToString(DhDlDerivativeCalculation enumValue)
 {
     static constexpr gmx::EnumerationArray<DhDlDerivativeCalculation, const char*> dhdlDerivativeCalculationNames = {

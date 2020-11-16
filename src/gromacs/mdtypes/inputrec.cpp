@@ -600,6 +600,7 @@ static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPf
     PD("dh-hist-spacing", fep->dh_hist_spacing);
     PS("separate-dhdl-file", enumValueToString(fep->separate_dhdl_file));
     PS("dhdl-derivatives", enumValueToString(fep->dhdl_derivatives));
+    PS("sc-function", enumValueToString(fep->softcoreFunction));
 };
 
 static void pr_pull(FILE* fp, int indent, const pull_params_t& pull)
@@ -1346,6 +1347,7 @@ static void cmp_fepvals(FILE* fp, const t_lambda* fep1, const t_lambda* fep2, re
     cmp_bool(fp, "inputrec->fepvals->bScCoul", -1, fep1->bScCoul, fep1->bScCoul);
     cmpEnum(fp, "inputrec->separate_dhdl_file", fep1->separate_dhdl_file, fep2->separate_dhdl_file);
     cmpEnum(fp, "inputrec->dhdl_derivatives", fep1->dhdl_derivatives, fep2->dhdl_derivatives);
+    cmpEnum(fp, "inputrec->softcoreFunction", fep1->softcoreFunction, fep2->softcoreFunction);
     cmp_int(fp, "inputrec->dh_hist_size", -1, fep1->dh_hist_size, fep2->dh_hist_size);
     cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing, ftol, abstol);
 }

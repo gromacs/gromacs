@@ -850,6 +850,26 @@ void check_ir(const char*                    mdparin,
                 CHECK((fep->all_lambda[i][j] < 0) || (fep->all_lambda[i][j] > 1));
             }
         }
+
+        if (fep->softcoreFunction == SoftcoreType::Gapsys)
+        {
+            if (fep->sc_alpha < 0.0)
+            {
+                sprintf(warn_buf,
+                        "sc_alpha is equal %g but must be >= 0 when used with sc_function=gapsys.",
+                        fep->sc_alpha);
+                warning_note(wi, warn_buf);
+            }
+
+            if ((fep->sc_sigma < 0.0) || (fep->sc_sigma >= 1.0))
+            {
+                sprintf(warn_buf,
+                        "sc_sigma is equal %g but must be in [0,1) when used with "
+                        "sc_function=gapsys.",
+                        fep->sc_sigma);
+                warning_note(wi, warn_buf);
+            }
+        }
     }
 
     if ((ir->bSimTemp) || (ir->efep == FreeEnergyPerturbationType::Expanded))
@@ -2308,6 +2328,7 @@ void get_ir(const char*     mdparin,
     fep->sc_r_power         = get_ereal(&inp, "sc-r-power", 6.0, wi);
     fep->sc_sigma           = get_ereal(&inp, "sc-sigma", 0.3, wi);
     fep->bScCoul            = (getEnum<Boolean>(&inp, "sc-coul", wi) != Boolean::No);
+    fep->softcoreFunction   = getEnum<SoftcoreType>(&inp, "sc-function", wi);
     fep->dh_hist_size       = get_eint(&inp, "dh_hist_size", 0, wi);
     fep->dh_hist_spacing    = get_ereal(&inp, "dh_hist_spacing", 0.1, wi);
     fep->separate_dhdl_file = getEnum<SeparateDhdlFile>(&inp, "separate-dhdl-file", wi);

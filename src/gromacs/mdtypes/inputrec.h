@@ -143,6 +143,8 @@ struct t_lambda
     real sc_sigma_min = 0;
     //! Use softcore for the coulomb portion as well (default FALSE)
     bool bScCoul = false;
+    //! The specific soft-core function to use
+    SoftcoreType softcoreFunction = SoftcoreType::Beutler;
     //! Whether to print the dvdl term associated with this term; if it is not specified as separate, it is lumped with the FEP term
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, bool> separate_dvdl;
     //! Whether to write a separate dhdl.xvg file note: NOT a gmx_bool, but an enum

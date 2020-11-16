@@ -290,6 +290,7 @@ if (SPHINX_FOUND)
         reference-manual/functions/plots/f-rbs.pdf
         reference-manual/functions/plots/ring-imp.pdf
         reference-manual/functions/plots/softcore.pdf
+        reference-manual/functions/plots/gapsys-sc.pdf
         reference-manual/functions/plots/subst-im.pdf
         reference-manual/functions/plots/tetra-im.pdf
         reference-manual/functions/plots/vcrf.pdf

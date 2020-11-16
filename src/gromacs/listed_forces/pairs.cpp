@@ -169,7 +169,9 @@ static inline real sixthRoot(const real r)
 }
 
 /*! \brief Compute the energy and force for a single pair interaction under FEP */
+template<SoftcoreType softcoreType>
 static real free_energy_evaluate_single(real                                           r2,
+                                        real                                           rCoulCutoff,
                                         const interaction_const_t::SoftCoreParameters& scParams,
                                         real                                           tabscale,
                                         const real*                                    vftab,
@@ -180,6 +182,7 @@ static real free_energy_evaluate_single(real                                    
                                         real                                           qqB,
                                         real                                           c6B,
                                         real                                           c12B,
+                                        real                                           facel,
                                         const real                                     LFC[2],
                                         const real                                     LFV[2],
                                         const real                                     DLF[2],
@@ -193,10 +196,13 @@ static real free_energy_evaluate_single(real                                    
 {
     real       rtab, eps, eps2, Y, F, Geps, Heps2, Fp, VV, FF, fscal;
     real       qq[2], c6[2], c12[2], sigma6[2], sigma_pow[2];
-    real       alpha_coul_eff, alpha_vdw_eff, dvdl_coul, dvdl_vdw;
+    real       alpha_coul_eff, alpha_vdw_eff, dvdl_coul_sum, dvdl_vdw_sum;
     real       rpinv, r_coul, r_vdw, velecsum, vvdwsum;
     real       fscal_vdw[2], fscal_elec[2];
     real       velec[2], vvdw[2];
+    real       dvdl_elec[2], dvdl_vdw[2];
+    real       rQ, rLJ;
+    real       scaleDvdlRCoul;
     int        i, ntab;
     const real half = 0.5_real;
     const real one  = 1.0_real;
@@ -211,38 +217,53 @@ static real free_energy_evaluate_single(real                                    
 
     const real rpm2 = r2 * r2;   /* r4 */
     const real rp   = rpm2 * r2; /* r6 */
+    const real r    = sqrt(r2);  /* r1 */
 
     /* Loop over state A(0) and B(1) */
     for (i = 0; i < 2; i++)
     {
-        if ((c6[i] > 0) && (c12[i] > 0))
+        if (softcoreType == SoftcoreType::Beutler || softcoreType == SoftcoreType::Gapsys)
         {
-            /* The c6 & c12 coefficients now contain the constants 6.0 and 12.0, respectively.
-             * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
-             */
-            sigma6[i] = half * c12[i] / c6[i];
-            if (sigma6[i] < scParams.sigma6Minimum) /* for disappearing coul and vdw with soft core at the same time */
+            if ((c6[i] > 0) && (c12[i] > 0))
             {
-                sigma6[i] = scParams.sigma6Minimum;
+                /* The c6 & c12 coefficients now contain the constants 6.0 and 12.0, respectively.
+                 * Correct for this by multiplying with (1/12.0)/(1/6.0)=6.0/12.0=0.5.
+                 */
+                sigma6[i] = half * c12[i] / c6[i];
+                if ((sigma6[i] < scParams.sigma6Minimum) && softcoreType == SoftcoreType::Beutler) /* for disappearing coul and vdw with soft core at the same time */
+                {
+                    sigma6[i] = scParams.sigma6Minimum;
+                }
             }
+            else
+            {
+                sigma6[i] = scParams.sigma6WithInvalidSigma;
+            }
+            sigma_pow[i] = sigma6[i];
+        }
+    }
+
+    if (softcoreType == SoftcoreType::Beutler || softcoreType == SoftcoreType::Gapsys)
+    {
+        /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
+        if ((c12[0] > 0) && (c12[1] > 0))
+        {
+            alpha_vdw_eff  = 0;
+            alpha_coul_eff = 0;
         }
         else
         {
-            sigma6[i] = scParams.sigma6WithInvalidSigma;
+            if (softcoreType == SoftcoreType::Beutler)
+            {
+                alpha_vdw_eff  = scParams.alphaVdw;
+                alpha_coul_eff = scParams.alphaCoulomb;
+            }
+            else if (softcoreType == SoftcoreType::Gapsys)
+            {
+                alpha_vdw_eff  = scParams.alphaVdw;
+                alpha_coul_eff = gmx::sixthroot(scParams.sigma6WithInvalidSigma);
+            }
         }
-        sigma_pow[i] = sigma6[i];
-    }
-
-    /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
-    if ((c12[0] > 0) && (c12[1] > 0))
-    {
-        alpha_vdw_eff  = 0;
-        alpha_coul_eff = 0;
-    }
-    else
-    {
-        alpha_vdw_eff  = scParams.alphaVdw;
-        alpha_coul_eff = scParams.alphaCoulomb;
     }
 
     /* Loop over A and B states again */
@@ -252,71 +273,172 @@ static real free_energy_evaluate_single(real                                    
         fscal_vdw[i]  = 0;
         velec[i]      = 0;
         vvdw[i]       = 0;
+        dvdl_elec[i]  = 0;
+        dvdl_vdw[i]   = 0;
+        rQ            = 0;
+        rLJ           = 0;
 
         /* Only spend time on A or B state if it is non-zero */
         if ((qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0))
         {
             /* Coulomb */
-            rpinv  = one / (alpha_coul_eff * lfac_coul[i] * sigma_pow[i] + rp);
-            r_coul = sixthRoot(rpinv);
+            if (softcoreType == SoftcoreType::Beutler)
+            {
+                rpinv  = one / (alpha_coul_eff * lfac_coul[i] * sigma_pow[i] + rp);
+                r_coul = sixthRoot(rpinv);
+            }
+            else
+            {
+                rpinv  = one / rp;
+                r_coul = r;
+            }
 
-            /* Electrostatics table lookup data */
-            rtab = r_coul * tabscale;
-            ntab = static_cast<int>(rtab);
-            eps  = rtab - ntab;
-            eps2 = eps * eps;
-            ntab = static_cast<int>(tableStride * ntab);
-            /* Electrostatics */
-            Y             = vftab[ntab];
-            F             = vftab[ntab + 1];
-            Geps          = eps * vftab[ntab + 2];
-            Heps2         = eps2 * vftab[ntab + 3];
-            Fp            = F + Geps + Heps2;
-            VV            = Y + eps * Fp;
-            FF            = Fp + Geps + two * Heps2;
-            velec[i]      = qq[i] * VV;
-            fscal_elec[i] = -qq[i] * FF * r_coul * rpinv * tabscale;
+            if (softcoreType == SoftcoreType::Gapsys)
+            {
+                rQ = gmx::sixthroot(1. - LFC[i]) * (1. + std::fabs(qq[i] / facel));
+                rQ *= alpha_coul_eff;
+                scaleDvdlRCoul = 1.0;
+                if (rQ > rCoulCutoff)
+                {
+                    rQ             = rCoulCutoff;
+                    scaleDvdlRCoul = 0.0;
+                }
+            }
+
+            if ((softcoreType == SoftcoreType::Gapsys) && (r < rQ))
+            {
+                real rInvQ    = 1.0 / rQ;
+                real constFac = qq[i] * rInvQ;
+                real linFac   = constFac * r * rInvQ;
+                real quadrFac = linFac * r * rInvQ;
+
+                /* Computing Coulomb force and potential energy */
+                fscal_elec[i] = 2. * quadrFac - 3. * linFac;
+                fscal_elec[i] *= rpinv;
+
+                velec[i] = quadrFac - 3. * (linFac - constFac);
+
+                dvdl_elec[i] += scaleDvdlRCoul * DLF[i] * 0.5 * (LFC[i] / (1. - LFC[i]))
+                                * (quadrFac - 2. * linFac + constFac);
+            }
+            else // Beutler, resp. hardcore
+            {
+                /* Electrostatics table lookup data */
+                rtab = r_coul * tabscale;
+                ntab = static_cast<int>(rtab);
+                eps  = rtab - ntab;
+                eps2 = eps * eps;
+                ntab = static_cast<int>(tableStride * ntab);
+                /* Electrostatics */
+                Y             = vftab[ntab];
+                F             = vftab[ntab + 1];
+                Geps          = eps * vftab[ntab + 2];
+                Heps2         = eps2 * vftab[ntab + 3];
+                Fp            = F + Geps + Heps2;
+                VV            = Y + eps * Fp;
+                FF            = Fp + Geps + two * Heps2;
+                velec[i]      = qq[i] * VV;
+                fscal_elec[i] = -qq[i] * FF * r_coul * rpinv * tabscale;
+            }
 
             /* Vdw */
-            rpinv = one / (alpha_vdw_eff * lfac_vdw[i] * sigma_pow[i] + rp);
-            r_vdw = sixthRoot(rpinv);
-            /* Vdw table lookup data */
-            rtab = r_vdw * tabscale;
-            ntab = static_cast<int>(rtab);
-            eps  = rtab - ntab;
-            eps2 = eps * eps;
-            ntab = 12 * ntab;
-            /* Dispersion */
-            Y            = vftab[ntab + 4];
-            F            = vftab[ntab + 5];
-            Geps         = eps * vftab[ntab + 6];
-            Heps2        = eps2 * vftab[ntab + 7];
-            Fp           = F + Geps + Heps2;
-            VV           = Y + eps * Fp;
-            FF           = Fp + Geps + two * Heps2;
-            vvdw[i]      = c6[i] * VV;
-            fscal_vdw[i] = -c6[i] * FF;
+            if (softcoreType == SoftcoreType::Beutler)
+            {
+                rpinv = one / (alpha_vdw_eff * lfac_vdw[i] * sigma_pow[i] + rp);
+                r_vdw = sixthRoot(rpinv);
+            }
+            else
+            {
+                rpinv = one / rp;
+                r_vdw = r;
+            }
 
-            /* Repulsion */
-            Y     = vftab[ntab + 8];
-            F     = vftab[ntab + 9];
-            Geps  = eps * vftab[ntab + 10];
-            Heps2 = eps2 * vftab[ntab + 11];
-            Fp    = F + Geps + Heps2;
-            VV    = Y + eps * Fp;
-            FF    = Fp + Geps + two * Heps2;
-            vvdw[i] += c12[i] * VV;
-            fscal_vdw[i] -= c12[i] * FF;
-            fscal_vdw[i] *= r_vdw * rpinv * tabscale;
+            if (softcoreType == SoftcoreType::Gapsys)
+            {
+                constexpr real c_twentySixSeventh = 26.0 / 7.0;
+
+                rLJ = gmx::sixthroot(c_twentySixSeventh * sigma6[i] * (1. - LFV[i]));
+                rLJ *= alpha_vdw_eff;
+            }
+
+            if ((softcoreType == SoftcoreType::Gapsys) && (r < rLJ))
+            {
+                // scaled values for c6 and c12
+                real c6s, c12s;
+                c6s  = c6[i] / 6.0;
+                c12s = c12[i] / 12.0;
+
+                /* Temporary variables for inverted values */
+                real rInvLJ = 1.0 / rLJ;
+                real rInv14, rInv13, rInv12;
+                real rInv8, rInv7, rInv6;
+                rInv6 = rInvLJ * rInvLJ * rInvLJ;
+                rInv6 *= rInv6;
+                rInv7  = rInv6 * rInvLJ;
+                rInv8  = rInv7 * rInvLJ;
+                rInv14 = c12s * rInv7 * rInv7 * r2;
+                rInv13 = c12s * rInv7 * rInv6 * r;
+                rInv12 = c12s * rInv6 * rInv6;
+                rInv8 *= c6s * r2;
+                rInv7 *= c6s * r;
+                rInv6 *= c6s;
+
+                /* Temporary variables for A and B */
+                real quadrFac, linearFac, constFac;
+                quadrFac  = 156. * rInv14 - 42. * rInv8;
+                linearFac = 168. * rInv13 - 48. * rInv7;
+                constFac  = 91. * rInv12 - 28. * rInv6;
+
+                /* Computing LJ force and potential energy*/
+                fscal_vdw[i] = quadrFac - linearFac;
+                fscal_vdw[i] *= rpinv;
+
+                vvdw[i] = 0.5 * quadrFac - linearFac + constFac;
+
+                dvdl_vdw[i] += DLF[i] * 28. * (LFV[i] / (1. - LFV[i]))
+                               * ((6.5 * rInv14 - rInv8) - (13. * rInv13 - 2. * rInv7)
+                                  + (6.5 * rInv12 - rInv6));
+            }
+            else // Beutler, resp. hardcore
+            {
+                /* Vdw table lookup data */
+                rtab = r_vdw * tabscale;
+                ntab = static_cast<int>(rtab);
+                eps  = rtab - ntab;
+                eps2 = eps * eps;
+                ntab = 12 * ntab;
+                /* Dispersion */
+                Y            = vftab[ntab + 4];
+                F            = vftab[ntab + 5];
+                Geps         = eps * vftab[ntab + 6];
+                Heps2        = eps2 * vftab[ntab + 7];
+                Fp           = F + Geps + Heps2;
+                VV           = Y + eps * Fp;
+                FF           = Fp + Geps + two * Heps2;
+                vvdw[i]      = c6[i] * VV;
+                fscal_vdw[i] = -c6[i] * FF;
+
+                /* Repulsion */
+                Y     = vftab[ntab + 8];
+                F     = vftab[ntab + 9];
+                Geps  = eps * vftab[ntab + 10];
+                Heps2 = eps2 * vftab[ntab + 11];
+                Fp    = F + Geps + Heps2;
+                VV    = Y + eps * Fp;
+                FF    = Fp + Geps + two * Heps2;
+                vvdw[i] += c12[i] * VV;
+                fscal_vdw[i] -= c12[i] * FF;
+                fscal_vdw[i] *= r_vdw * rpinv * tabscale;
+            }
         }
     }
     /* Now we have velec[i], vvdw[i], and fscal[i] for both states */
     /* Assemble A and B states */
-    velecsum  = 0;
-    vvdwsum   = 0;
-    dvdl_coul = 0;
-    dvdl_vdw  = 0;
-    fscal     = 0;
+    velecsum      = 0;
+    vvdwsum       = 0;
+    dvdl_coul_sum = 0;
+    dvdl_vdw_sum  = 0;
+    fscal         = 0;
     for (i = 0; i < 2; i++)
     {
         velecsum += LFC[i] * velec[i];
@@ -324,14 +446,22 @@ static real free_energy_evaluate_single(real                                    
 
         fscal += (LFC[i] * fscal_elec[i] + LFV[i] * fscal_vdw[i]) * rpm2;
 
-        dvdl_coul += velec[i] * DLF[i]
-                     + LFC[i] * alpha_coul_eff * dlfac_coul[i] * fscal_elec[i] * sigma_pow[i];
-        dvdl_vdw += vvdw[i] * DLF[i]
-                    + LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * fscal_vdw[i] * sigma_pow[i];
+        if (softcoreType == SoftcoreType::Gapsys)
+        {
+            dvdl_coul_sum += dvdl_elec[i];
+            dvdl_vdw_sum += dvdl_vdw[i];
+        }
+        dvdl_coul_sum += velec[i] * DLF[i];
+        dvdl_vdw_sum += vvdw[i] * DLF[i];
+        if (softcoreType == SoftcoreType::Beutler)
+        {
+            dvdl_coul_sum += LFC[i] * alpha_coul_eff * dlfac_coul[i] * fscal_elec[i] * sigma_pow[i];
+            dvdl_vdw_sum += LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * fscal_vdw[i] * sigma_pow[i];
+        }
     }
 
-    dvdl[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)] += dvdl_coul;
-    dvdl[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)] += dvdl_vdw;
+    dvdl[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)] += dvdl_coul_sum;
+    dvdl[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)] += dvdl_vdw_sum;
 
     *velectot = velecsum;
     *vvdwtot  = vvdwsum;
@@ -507,27 +637,84 @@ static real do_pairs_general(int                           ftype,
             c6B  = iparams[itype].lj14.c6B * 6.0;
             c12B = iparams[itype].lj14.c12B * 12.0;
 
-            fscal = free_energy_evaluate_single(r2,
-                                                *fr->ic->softCoreParameters,
-                                                fr->pairsTable->scale,
-                                                fr->pairsTable->data.data(),
-                                                fr->pairsTable->stride,
-                                                qq,
-                                                c6,
-                                                c12,
-                                                qqB,
-                                                c6B,
-                                                c12B,
-                                                LFC,
-                                                LFV,
-                                                DLF,
-                                                lfac_coul,
-                                                lfac_vdw,
-                                                dlfac_coul,
-                                                dlfac_vdw,
-                                                &velec,
-                                                &vvdw,
-                                                dvdl);
+            if (fr->ic->softCoreParameters->softcoreType == SoftcoreType::Gapsys)
+            {
+                fscal = free_energy_evaluate_single<SoftcoreType::Gapsys>(r2,
+                                                                          fr->ic->rcoulomb,
+                                                                          *fr->ic->softCoreParameters,
+                                                                          fr->pairsTable->scale,
+                                                                          fr->pairsTable->data.data(),
+                                                                          fr->pairsTable->stride,
+                                                                          qq,
+                                                                          c6,
+                                                                          c12,
+                                                                          qqB,
+                                                                          c6B,
+                                                                          c12B,
+                                                                          epsfac,
+                                                                          LFC,
+                                                                          LFV,
+                                                                          DLF,
+                                                                          lfac_coul,
+                                                                          lfac_vdw,
+                                                                          dlfac_coul,
+                                                                          dlfac_vdw,
+                                                                          &velec,
+                                                                          &vvdw,
+                                                                          dvdl);
+            }
+            else if (fr->ic->softCoreParameters->softcoreType == SoftcoreType::Beutler)
+            {
+                fscal = free_energy_evaluate_single<SoftcoreType::Beutler>(r2,
+                                                                           fr->ic->rcoulomb,
+                                                                           *fr->ic->softCoreParameters,
+                                                                           fr->pairsTable->scale,
+                                                                           fr->pairsTable->data.data(),
+                                                                           fr->pairsTable->stride,
+                                                                           qq,
+                                                                           c6,
+                                                                           c12,
+                                                                           qqB,
+                                                                           c6B,
+                                                                           c12B,
+                                                                           epsfac,
+                                                                           LFC,
+                                                                           LFV,
+                                                                           DLF,
+                                                                           lfac_coul,
+                                                                           lfac_vdw,
+                                                                           dlfac_coul,
+                                                                           dlfac_vdw,
+                                                                           &velec,
+                                                                           &vvdw,
+                                                                           dvdl);
+            }
+            else
+            {
+                fscal = free_energy_evaluate_single<SoftcoreType::None>(r2,
+                                                                        fr->ic->rcoulomb,
+                                                                        *fr->ic->softCoreParameters,
+                                                                        fr->pairsTable->scale,
+                                                                        fr->pairsTable->data.data(),
+                                                                        fr->pairsTable->stride,
+                                                                        qq,
+                                                                        c6,
+                                                                        c12,
+                                                                        qqB,
+                                                                        c6B,
+                                                                        c12B,
+                                                                        epsfac,
+                                                                        LFC,
+                                                                        LFV,
+                                                                        DLF,
+                                                                        lfac_coul,
+                                                                        lfac_vdw,
+                                                                        dlfac_coul,
+                                                                        dlfac_vdw,
+                                                                        &velec,
+                                                                        &vvdw,
+                                                                        dvdl);
+            }
         }
         else
         {
