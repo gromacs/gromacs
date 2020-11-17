@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
+struct df_history_t;
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
@@ -62,5 +63,14 @@ void distributeState(const gmx::MDLogger& mdlog,
                      t_state*             state_global,
                      const gmx_ddbox_t&   ddbox,
                      t_state*             state_local);
+
+/*! \brief Distribute the dfhist struct from the master rank to all DD ranks
+ *
+ * Used by the modular simulator checkpointing
+ *
+ * \param dd  Domain decomposition information
+ * \param dfhist  Free energy history struct
+ */
+void dd_distribute_dfhist(gmx_domdec_t* dd, df_history_t* dfhist);
 
 #endif

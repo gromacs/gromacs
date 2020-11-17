@@ -163,7 +163,7 @@ static void distributeVec(gmx_domdec_t*                  dd,
     }
 }
 
-static void dd_distribute_dfhist(gmx_domdec_t* dd, df_history_t* dfhist)
+void dd_distribute_dfhist(gmx_domdec_t* dd, df_history_t* dfhist)
 {
     if (dfhist == nullptr)
     {
