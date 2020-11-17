@@ -368,6 +368,11 @@ gmx_enerdata_t* EnergyData::enerdata()
     return enerd_;
 }
 
+const gmx_enerdata_t* EnergyData::enerdata() const
+{
+    return enerd_;
+}
+
 gmx_ekindata_t* EnergyData::ekindata()
 {
     return ekind_;

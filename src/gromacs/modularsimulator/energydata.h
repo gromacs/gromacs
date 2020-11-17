@@ -173,6 +173,11 @@ public:
      */
     gmx_enerdata_t* enerdata();
 
+    /*! \brief Get const pointer to energy structure
+     *
+     */
+    const gmx_enerdata_t* enerdata() const;
+
     /*! \brief Get pointer to kinetic energy structure
      *
      */
