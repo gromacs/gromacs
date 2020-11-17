@@ -120,7 +120,7 @@ public:
      * \param[in] refFilename   File with the expected contents.
      * \param[in] testFilename  File with the contents to be tested.
      */
-    void testFilesEqual(const std::string& refFilename, const std::string& testFilename);
+    static void testFilesEqual(const std::string& refFilename, const std::string& testFilename);
 
 private:
     class Impl;

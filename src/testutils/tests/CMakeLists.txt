@@ -39,8 +39,10 @@ gmx_add_unit_test(TestUtilsUnitTests testutils-test
         testasserts_tests.cpp
         xvgtest_tests.cpp
         )
+target_link_libraries(testutils-test PRIVATE testutils)
 
 gmx_add_mpi_unit_test(TestUtilsMpiUnitTests testutils-mpi-test 2
     CPP_SOURCE_FILES
         mpitest.cpp
         )
+target_link_libraries(testutils-test PRIVATE testutils)

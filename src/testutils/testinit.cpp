@@ -42,7 +42,7 @@
  */
 #include "gmxpre.h"
 
-#include "testinit.h"
+#include "testutils/testinit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -68,11 +68,12 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/textwriter.h"
 
-#include "testutils/mpi_printer.h"
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
+
+#include "mpi_printer.h"
 
 namespace gmx
 {

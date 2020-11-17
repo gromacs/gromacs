@@ -602,10 +602,7 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 # Our own GROMACS tests
 ########################################################################
 
-include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
 include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/src/external)
-# Required for config.h, maybe should only be set in src/CMakeLists.txt
-include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)

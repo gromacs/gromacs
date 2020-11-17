@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,56 +34,80 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::test::LoggerTestHelper.
+ * Exception classes for errors in tests.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_testutils
  */
-#ifndef GMX_TESTUTILS_LOGGERTEST_H
-#define GMX_TESTUTILS_LOGGERTEST_H
+#ifndef GMX_TESTUTILS_TESTEXCEPTIONS_H
+#define GMX_TESTUTILS_TESTEXCEPTIONS_H
 
-#include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/logger.h"
+#include <string>
+
+#include "gromacs/utility/exceptions.h"
 
 namespace gmx
 {
-
 namespace test
 {
 
 /*! \libinternal \brief
- * Helper class for tests to check output written to a logger.
+ * Exception class for reporting errors in tests.
  *
- * \inlibraryapi
+ * This exception should be used for error conditions that are internal to the
+ * test, i.e., do not indicate errors in the tested code.
+ *
  * \ingroup module_testutils
  */
-class LoggerTestHelper
+class TestException : public GromacsException
 {
 public:
-    LoggerTestHelper();
-    ~LoggerTestHelper();
-
-    //! Returns the logger to pass to code under test.
-    const MDLogger& logger();
-
     /*! \brief
-     * Expects a log entry at a given level matching a given regex.
+     * Creates a test exception object with the provided detailed reason.
      *
-     * Currently, the order of the entries is not checked, and if this
-     * method is called once for a log level, then it needs to be called
-     * for all entries produced by the test.
-     *
-     * If not called for a log level, all entries for that level are
-     * accepted.
+     * \param[in] reason Detailed reason for the exception.
      */
-    void expectEntryMatchingRegex(gmx::MDLogger::LogLevel level, const char* re);
+    explicit TestException(const std::string& reason) : GromacsException(reason) {}
+    /*! \brief
+     * Creates a test exception based on another GromacsException object.
+     *
+     * \param[in] base  Exception to wrap.
+     *
+     * \see GMX_THROW_WRAPPER_TESTEXCEPTION
+     */
+    explicit TestException(const GromacsException& base) : GromacsException(base) {}
 
-private:
-    class Impl;
-
-    PrivateImplPointer<Impl> impl_;
+    int errorCode() const override { return -1; }
 };
+
+/*! \brief
+ * Macro for throwing a TestException that wraps another exception.
+ *
+ * \param[in] e    Exception object to wrap.
+ *
+ * This macro is intended for wrapping exceptions thrown by Gromacs methods
+ * that are called from a test for the test's internal purposes.  It wraps the
+ * exception in a TestException to make it possible to tell from the type of
+ * the exception whether the exception was thrown by the code under test, or by
+ * the test code itself.
+ *
+ * \p e should evaluate to an instance of an object derived from
+ * GromacsException.
+ *
+ * Typical usage in test code:
+ * \code
+   try
+   {
+       // some code that may throw a GromacsException
+   }
+   catch (const GromacsException &ex)
+   {
+       GMX_THROW_WRAPPER_TESTEXCEPTION(ex);
+   }
+ * \endcode
+ */
+#define GMX_THROW_WRAPPER_TESTEXCEPTION(e) throw ::gmx::test::TestException(e)
 
 } // namespace test
 } // namespace gmx

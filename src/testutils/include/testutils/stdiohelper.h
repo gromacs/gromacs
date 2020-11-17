@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,54 +34,53 @@
  */
 /*! \libinternal \file
  * \brief
- * Helper functions to have identical behavior of setenv and unsetenv
- * on Unix and Windows systems.
+ * Declares gmx::test::StdioTestHelper.
  *
- * \author Pascal Merz <pascal.merz@me.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \inlibraryapi
  * \ingroup module_testutils
  */
+#ifndef GMX_TESTUTILS_STDIOHELPER_H
+#define GMX_TESTUTILS_STDIOHELPER_H
 
-#include "config.h"
-
-#include <cstdlib>
-
-#ifndef GMX_TESTUTILS_SETENV_H
-#    define GMX_TESTUTILS_SETENV_H
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
 namespace test
 {
-//! Workaround to make setenv work on Windows
-inline int gmxSetenv(const char* name, const char* value, int overwrite)
-{
-#    if GMX_NATIVE_WINDOWS
-    if (!overwrite)
-    {
-        size_t size  = 0;
-        int    error = getenv_s(&size, nullptr, 0, name);
-        if (error != 0 || size != 0)
-        {
-            return error;
-        }
-    }
-    return _putenv_s(name, value);
-#    else
-    return setenv(name, value, overwrite);
-#    endif
-}
 
-//! Workaround to make unsetenv work on Windows
-inline int gmxUnsetenv(const char* name)
+class TestFileManager;
+
+/*! \libinternal \brief
+ * Helper class for tests where code reads directly from `stdin`.
+ *
+ * Any method in this class may throw std::bad_alloc if out of memory.
+ *
+ * \inlibraryapi
+ * \ingroup module_testutils
+ */
+class StdioTestHelper
 {
-#    if GMX_NATIVE_WINDOWS
-    return _putenv_s(name, "");
-#    else
-    return unsetenv(name);
-#    endif
-}
+public:
+    //! Creates a helper using the given file manager.
+    explicit StdioTestHelper(TestFileManager* fileManager) : fileManager_(*fileManager) {}
+
+    /*! \brief Accepts a string as input, writes it to a temporary
+     * file and then reopens stdin to read the contents of that
+     * string.
+     *
+     * \throws FileIOError  when the freopen() fails
+     */
+    void redirectStringToStdin(const char* theString);
+
+private:
+    TestFileManager& fileManager_;
+
+    GMX_DISALLOW_COPY_AND_ASSIGN(StdioTestHelper);
+};
+
 } // namespace test
 } // namespace gmx
 
-#endif // GMX_TESTUTILS_SETENV_H
+#endif

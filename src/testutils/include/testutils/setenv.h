@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,71 +32,56 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \libinternal \file
  * \brief
- * Implements routine to check the content of conf files.
+ * Helper functions to have identical behavior of setenv and unsetenv
+ * on Unix and Windows systems.
  *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ * \author Pascal Merz <pascal.merz@me.com>
+ * \inlibraryapi
  * \ingroup module_testutils
  */
-#include "gmxpre.h"
 
-#include "testutils/conftest.h"
+#include "config.h"
 
-#include <cstdio>
 #include <cstdlib>
 
-#include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/textstream.h"
-
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-#include "testutils/textblockmatchers.h"
+#ifndef GMX_TESTUTILS_SETENV_H
+#    define GMX_TESTUTILS_SETENV_H
 
 namespace gmx
 {
-
 namespace test
 {
-
-namespace
+//! Workaround to make setenv work on Windows
+inline int gmxSetenv(const char* name, const char* value, int overwrite)
 {
-
-class ConfMatcher : public ITextBlockMatcher
-{
-public:
-    explicit ConfMatcher(const ConfMatchSettings& settings) : settings_(settings) {}
-
-    void checkStream(TextInputStream* stream, TestReferenceChecker* checker) override
+#    if GMX_NATIVE_WINDOWS
+    if (!overwrite)
     {
-        checkConfFile(stream, checker, settings_);
+        size_t size  = 0;
+        int    error = getenv_s(&size, nullptr, 0, name);
+        if (error != 0 || size != 0)
+        {
+            return error;
+        }
     }
-
-private:
-    ConfMatchSettings settings_;
-};
-
-} // namespace
-
-void checkConfFile(TextInputStream* input, TestReferenceChecker* checker, const ConfMatchSettings& /*unused*/)
-{
-
-    TestReferenceChecker groChecker(checker->checkCompound("GroFile", "Header"));
-    // Just check the first two lines of the output file
-    std::string line;
-    EXPECT_TRUE(input->readLine(&line));
-    line = stripSuffixIfPresent(line, "\n");
-    groChecker.checkString(line, "Title");
-    EXPECT_TRUE(input->readLine(&line));
-    line = stripSuffixIfPresent(line, "\n");
-    groChecker.checkInteger(std::atoi(line.c_str()), "Number of atoms");
+    return _putenv_s(name, value);
+#    else
+    return setenv(name, value, overwrite);
+#    endif
 }
 
-TextBlockMatcherPointer ConfMatch::createMatcher() const
+//! Workaround to make unsetenv work on Windows
+inline int gmxUnsetenv(const char* name)
 {
-    return TextBlockMatcherPointer(new ConfMatcher(settings_));
+#    if GMX_NATIVE_WINDOWS
+    return _putenv_s(name, "");
+#    else
+    return unsetenv(name);
+#    endif
 }
-
 } // namespace test
 } // namespace gmx
+
+#endif // GMX_TESTUTILS_SETENV_H

@@ -42,7 +42,7 @@
  */
 #include "gmxpre.h"
 
-#include "testmatchers.h"
+#include "testutils/testmatchers.h"
 
 #include <memory>
 

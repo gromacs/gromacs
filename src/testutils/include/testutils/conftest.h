@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,53 +34,77 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares gmx::test::StdioTestHelper.
+ * Declares function to add the content of a conf file to a checker.
  *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \inlibraryapi
  * \ingroup module_testutils
  */
-#ifndef GMX_TESTUTILS_STDIOHELPER_H
-#define GMX_TESTUTILS_STDIOHELPER_H
+#ifndef GMX_TESTUTILS_CONFTEST_H
+#define GMX_TESTUTILS_CONFTEST_H
 
-#include "gromacs/utility/classhelpers.h"
+#include <string>
+
+#include "testutils/testasserts.h"
+#include "testutils/textblockmatchers.h"
 
 namespace gmx
 {
+
+class TextInputStream;
+
 namespace test
 {
 
-class TestFileManager;
+class TestReferenceChecker;
+
+struct ConfMatchSettings
+{
+    ConfMatchSettings() : tolerance(defaultRealTolerance()) {}
+
+    FloatingPointTolerance tolerance;
+};
+
+/*! \brief
+ * Adds content of a gro file to TestReferenceChecker object.
+ *
+ * \param[in] input       Stream that provides the gro content.
+ * \param[in,out] checker Checker to use.
+ * \param[in] settings    Settings to use for matching.
+ *
+ * Parses a gro file from the input stream, and checks the contents against
+ * reference data (only first two lines for now).
+ *
+ * \see ConfMatch
+ */
+void checkConfFile(TextInputStream* input, TestReferenceChecker* checker, const ConfMatchSettings& settings);
 
 /*! \libinternal \brief
- * Helper class for tests where code reads directly from `stdin`.
+ * Match the contents as an gro file.
  *
- * Any method in this class may throw std::bad_alloc if out of memory.
+ * \see checkGroFile()
  *
  * \inlibraryapi
  * \ingroup module_testutils
  */
-class StdioTestHelper
+class ConfMatch : public ITextBlockMatcherSettings
 {
 public:
-    //! Creates a helper using the given file manager.
-    explicit StdioTestHelper(TestFileManager* fileManager) : fileManager_(*fileManager) {}
+    //! Sets the tolerance for matching floating point values.
+    ConfMatch& tolerance(const FloatingPointTolerance& tolerance)
+    {
+        settings_.tolerance = tolerance;
+        return *this;
+    }
 
-    /*! \brief Accepts a string as input, writes it to a temporary
-     * file and then reopens stdin to read the contents of that
-     * string.
-     *
-     * \throws FileIOError  when the freopen() fails
-     */
-    void redirectStringToStdin(const char* theString);
+    TextBlockMatcherPointer createMatcher() const override;
 
 private:
-    TestFileManager& fileManager_;
-
-    GMX_DISALLOW_COPY_AND_ASSIGN(StdioTestHelper);
+    ConfMatchSettings settings_;
 };
 
 } // namespace test
+
 } // namespace gmx
 
 #endif

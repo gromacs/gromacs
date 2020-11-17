@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,77 +34,49 @@
  */
 /*! \libinternal \file
  * \brief
- * Declares function to add the content of a conf file to a checker.
+ * Helper for generating reusuable TPR files for tests within the same test binary.
  *
- * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \inlibraryapi
  * \ingroup module_testutils
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
  */
-#ifndef GMX_TESTUTILS_CONFTEST_H
-#define GMX_TESTUTILS_CONFTEST_H
+#ifndef GMX_TESTUTILS_TPRFILEGENERATOR_H
+#define GMX_TESTUTILS_TPRFILEGENERATOR_H
 
+#include <memory>
 #include <string>
 
-#include "testutils/testasserts.h"
-#include "testutils/textblockmatchers.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
-
-class TextInputStream;
-
 namespace test
 {
 
-class TestReferenceChecker;
-
-struct ConfMatchSettings
-{
-    ConfMatchSettings() : tolerance(defaultRealTolerance()) {}
-
-    FloatingPointTolerance tolerance;
-};
-
-/*! \brief
- * Adds content of a gro file to TestReferenceChecker object.
- *
- * \param[in] input       Stream that provides the gro content.
- * \param[in,out] checker Checker to use.
- * \param[in] settings    Settings to use for matching.
- *
- * Parses a gro file from the input stream, and checks the contents against
- * reference data (only first two lines for now).
- *
- * \see ConfMatch
- */
-void checkConfFile(TextInputStream* input, TestReferenceChecker* checker, const ConfMatchSettings& settings);
+class TestFileManager;
 
 /*! \libinternal \brief
- * Match the contents as an gro file.
- *
- * \see checkGroFile()
- *
- * \inlibraryapi
- * \ingroup module_testutils
+ * Helper to bundle generated TPR and the file manager to clean it up.
  */
-class ConfMatch : public ITextBlockMatcherSettings
+class TprAndFileManager
 {
 public:
-    //! Sets the tolerance for matching floating point values.
-    ConfMatch& tolerance(const FloatingPointTolerance& tolerance)
-    {
-        settings_.tolerance = tolerance;
-        return *this;
-    }
-
-    TextBlockMatcherPointer createMatcher() const override;
+    /*! \brief
+     * Generates the file when needed.
+     *
+     * \param[in] name The basename of the input files and the generated TPR.
+     */
+    TprAndFileManager(const std::string& name);
+    //! Access to the string.
+    const std::string& tprName() const { return tprFileName_; }
 
 private:
-    ConfMatchSettings settings_;
+    //! Tpr file name.
+    std::string tprFileName_;
+    //! Filemanager, needed to clean up the file later.
+    TestFileManager fileManager_;
 };
 
 } // namespace test
-
 } // namespace gmx
 
 #endif

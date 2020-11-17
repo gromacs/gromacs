@@ -44,7 +44,7 @@
 
 #include "gmxpre.h"
 
-#include "test_hardware_environment.h"
+#include "testutils/test_hardware_environment.h"
 
 #include <memory>
 

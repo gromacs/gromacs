@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,46 +34,55 @@
  */
 /*! \libinternal \file
  * \brief
- * Helper for generating reusuable TPR files for tests within the same test binary.
+ * Declares gmx::test::LoggerTestHelper.
  *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inlibraryapi
  * \ingroup module_testutils
- * \author Paul Bauer <paul.bauer.q@gmail.com>
  */
-#ifndef GMX_TESTUTILS_TPRFILEGENERATOR_H
-#define GMX_TESTUTILS_TPRFILEGENERATOR_H
+#ifndef GMX_TESTUTILS_LOGGERTEST_H
+#define GMX_TESTUTILS_LOGGERTEST_H
 
-#include <memory>
-#include <string>
-
-#include "testutils/testfilemanager.h"
+#include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/logger.h"
 
 namespace gmx
 {
+
 namespace test
 {
 
-class TestFileManager;
-
 /*! \libinternal \brief
- * Helper to bundle generated TPR and the file manager to clean it up.
+ * Helper class for tests to check output written to a logger.
+ *
+ * \inlibraryapi
+ * \ingroup module_testutils
  */
-class TprAndFileManager
+class LoggerTestHelper
 {
 public:
+    LoggerTestHelper();
+    ~LoggerTestHelper();
+
+    //! Returns the logger to pass to code under test.
+    const MDLogger& logger();
+
     /*! \brief
-     * Generates the file when needed.
+     * Expects a log entry at a given level matching a given regex.
      *
-     * \param[in] name The basename of the input files and the generated TPR.
+     * Currently, the order of the entries is not checked, and if this
+     * method is called once for a log level, then it needs to be called
+     * for all entries produced by the test.
+     *
+     * If not called for a log level, all entries for that level are
+     * accepted.
      */
-    TprAndFileManager(const std::string& name);
-    //! Access to the string.
-    const std::string& tprName() const { return tprFileName_; }
+    void expectEntryMatchingRegex(gmx::MDLogger::LogLevel level, const char* re);
 
 private:
-    //! Tpr file name.
-    std::string tprFileName_;
-    //! Filemanager, needed to clean up the file later.
-    TestFileManager fileManager_;
+    class Impl;
+
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

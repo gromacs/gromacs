@@ -44,7 +44,7 @@ target_include_directories(mdrun_objlib SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src
 target_link_libraries(mdrun_objlib PRIVATE common)
 target_link_libraries(mdrun_objlib PRIVATE legacy_api)
 # TODO: Explicitly link specific modules.
-target_link_libraries(mdrun_objlib PRIVATE common legacy_modules)
+target_link_libraries(mdrun_objlib PRIVATE legacy_modules)
 
 if(GMX_FAHCORE)
     # The lack of a real source file here alongside the object library
@@ -95,8 +95,8 @@ else()
     gmx_target_compile_options(gmx)
     target_compile_definitions(gmx PRIVATE HAVE_CONFIG_H)
     target_link_libraries(gmx PRIVATE
-                          libgromacs
                           common
+                          libgromacs
                           ${GMX_COMMON_LIBRARIES}
                           ${GMX_EXE_LINKER_FLAGS})
     if(GMX_X11)
