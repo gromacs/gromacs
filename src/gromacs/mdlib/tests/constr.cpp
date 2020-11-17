@@ -73,6 +73,24 @@ namespace test
 namespace
 {
 
+// Define the set of PBCs to run the test for
+const std::vector<t_pbc> c_pbcs = [] {
+    std::vector<t_pbc> pbcs;
+    t_pbc              pbc;
+
+    // Infinitely small box
+    matrix boxNone = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+    set_pbc(&pbc, PbcType::No, boxNone);
+    pbcs.emplace_back(pbc);
+
+    // Rectangular box
+    matrix boxXyz = { { 10.0, 0.0, 0.0 }, { 0.0, 20.0, 0.0 }, { 0.0, 0.0, 15.0 } };
+    set_pbc(&pbc, PbcType::Xyz, boxXyz);
+    pbcs.emplace_back(pbc);
+
+    return pbcs;
+}();
+
 /*! \brief Test fixture for constraints.
  *
  * The fixture uses following test systems:
@@ -91,37 +109,9 @@ namespace
  * For some systems, the value for scaled virial tensor is checked against
  * pre-computed data.
  */
-class ConstraintsTest : public ::testing::TestWithParam<std::string>
+class ConstraintsTest : public ::testing::TestWithParam<t_pbc>
 {
 public:
-    //! PBC setups
-    std::unordered_map<std::string, t_pbc> pbcs_;
-
-    /*! \brief Test setup function.
-     *
-     * Setting up the pbcs and algorithms. Note, that corresponding string keywords
-     * have to be explicitly added at the end of this file when the tests are called.
-     *
-     */
-    void SetUp() override
-    {
-
-        //
-        // PBC initialization
-        //
-        t_pbc pbc;
-
-        // Infinitely small box
-        matrix boxNone = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-        set_pbc(&pbc, PbcType::No, boxNone);
-        pbcs_["PBCNone"] = pbc;
-
-        // Rectangular box
-        matrix boxXyz = { { 10.0, 0.0, 0.0 }, { 0.0, 20.0, 0.0 }, { 0.0, 0.0, 15.0 } };
-        set_pbc(&pbc, PbcType::Xyz, boxXyz);
-        pbcs_["PBCXYZ"] = pbc;
-    }
-
     /*! \brief
      * The test on the final length of constrained bonds.
      *
@@ -338,14 +328,13 @@ TEST_P(ConstraintsTest, SingleConstraint)
             real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
             lincslincsExpansionOrder, lincsWarnAngle);
 
-    std::string pbcName = GetParam();
-    t_pbc       pbc     = pbcs_.at(pbcName);
+    t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s using %s.", testData->title_.c_str(),
-                                  pbcName.c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
 
         testData->reset();
 
@@ -397,14 +386,13 @@ TEST_P(ConstraintsTest, TwoDisjointConstraints)
             real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
             lincslincsExpansionOrder, lincsWarnAngle);
 
-    std::string pbcName = GetParam();
-    t_pbc       pbc     = pbcs_.at(pbcName);
+    t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s using %s.", testData->title_.c_str(),
-                                  pbcName.c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
 
         testData->reset();
 
@@ -456,14 +444,13 @@ TEST_P(ConstraintsTest, ThreeSequentialConstraints)
             real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
             lincslincsExpansionOrder, lincsWarnAngle);
 
-    std::string pbcName = GetParam();
-    t_pbc       pbc     = pbcs_.at(pbcName);
+    t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s using %s.", testData->title_.c_str(),
-                                  pbcName.c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
 
         testData->reset();
 
@@ -516,14 +503,13 @@ TEST_P(ConstraintsTest, ThreeConstraintsWithCentralAtom)
             real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
             lincslincsExpansionOrder, lincsWarnAngle);
 
-    std::string pbcName = GetParam();
-    t_pbc       pbc     = pbcs_.at(pbcName);
+    t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s using %s.", testData->title_.c_str(),
-                                  pbcName.c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
 
         testData->reset();
 
@@ -575,14 +561,13 @@ TEST_P(ConstraintsTest, FourSequentialConstraints)
             real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
             lincslincsExpansionOrder, lincsWarnAngle);
 
-    std::string pbcName = GetParam();
-    t_pbc       pbc     = pbcs_.at(pbcName);
+    t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s using %s.", testData->title_.c_str(),
-                                  pbcName.c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
 
         testData->reset();
 
@@ -633,14 +618,13 @@ TEST_P(ConstraintsTest, TriangleOfConstraints)
             real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
             lincslincsExpansionOrder, lincsWarnAngle);
 
-    std::string pbcName = GetParam();
-    t_pbc       pbc     = pbcs_.at(pbcName);
+    t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s using %s.", testData->title_.c_str(),
-                                  pbcName.c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
 
         testData->reset();
 
@@ -656,8 +640,7 @@ TEST_P(ConstraintsTest, TriangleOfConstraints)
     }
 }
 
-
-INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest, ::testing::Values("PBCNone", "PBCXYZ"));
+INSTANTIATE_TEST_CASE_P(WithParameters, ConstraintsTest, ::testing::ValuesIn(c_pbcs));
 
 } // namespace
 } // namespace test
