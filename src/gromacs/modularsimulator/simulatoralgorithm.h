@@ -108,7 +108,7 @@ private:
                               t_commrec*               cr,
                               const MDLogger&          mdlog,
                               const MdrunOptions&      mdrunOptions,
-                              t_inputrec*              inputrec,
+                              const t_inputrec*        inputrec,
                               t_nrnb*                  nrnb,
                               gmx_wallcycle*           wcycle,
                               t_forcerec*              fr,
@@ -263,7 +263,7 @@ private:
     //! Contains command-line options to mdrun.
     const MdrunOptions& mdrunOptions;
     //! Contains user input mdp options.
-    t_inputrec* inputrec;
+    const t_inputrec* inputrec;
     //! Manages flop accounting.
     t_nrnb* nrnb;
     //! Manages wall cycle accounting.

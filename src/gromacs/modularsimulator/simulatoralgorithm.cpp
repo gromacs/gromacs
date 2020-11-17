@@ -92,7 +92,7 @@ ModularSimulatorAlgorithm::ModularSimulatorAlgorithm(std::string              to
                                                      t_commrec*               cr,
                                                      const MDLogger&          mdlog,
                                                      const MdrunOptions&      mdrunOptions,
-                                                     t_inputrec*              inputrec,
+                                                     const t_inputrec*        inputrec,
                                                      t_nrnb*                  nrnb,
                                                      gmx_wallcycle*           wcycle,
                                                      t_forcerec*              fr,

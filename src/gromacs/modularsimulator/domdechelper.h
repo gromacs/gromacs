@@ -99,7 +99,7 @@ public:
                  t_commrec*                      cr,
                  const MDLogger&                 mdlog,
                  Constraints*                    constr,
-                 t_inputrec*                     inputrec,
+                 const t_inputrec*               inputrec,
                  MDAtoms*                        mdAtoms,
                  t_nrnb*                         nrnb,
                  gmx_wallcycle*                  wcycle,
@@ -163,7 +163,7 @@ private:
     //! Handles constraints.
     Constraints* constr_;
     //! Contains user input mdp options.
-    t_inputrec* inputrec_;
+    const t_inputrec* inputrec_;
     //! Atom parameters for this domain.
     MDAtoms* mdAtoms_;
     //! Manages flop accounting.
