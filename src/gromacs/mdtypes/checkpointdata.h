@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,6 +89,26 @@ ArrayRef<std::conditional_t<operation == CheckpointDataOperation::Write || std::
 makeCheckpointArrayRef(T& container)
 {
     return container;
+}
+
+/*! \internal
+ * \brief Get an ArrayRef to a C array whose const-ness is defined by the checkpointing operation
+ *
+ * \tparam operation  Whether we are reading or writing
+ * \tparam T          The type of values stored in the ArrayRef
+ * \param begin       Pointer to the beginning of array.
+ * \param size        Number of elements in array.
+ * \return            The ArrayRef
+ *
+ * \see ArrayRef
+ *
+ * \ingroup module_modularsimulator
+ */
+template<CheckpointDataOperation operation, typename T>
+ArrayRef<std::conditional_t<operation == CheckpointDataOperation::Write || std::is_const<T>::value, const T, T>>
+makeCheckpointArrayRefFromArray(T* begin, size_t size)
+{
+    return ArrayRef<T>(begin, begin + size);
 }
 
 /*! \internal
