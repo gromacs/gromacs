@@ -96,7 +96,7 @@ def spc_water_box(gmxcli, remove_tempdir):
         assert os.path.exists(topfile)
 
         if solvate.output.returncode.result() != 0:
-            logging.debug(solvate.output.erroroutput.result())
+            logging.debug(solvate.output.stderr.result())
             raise RuntimeError('solvate failed in spc_water_box testing fixture.')
 
         # Choose an exactly representable dt of 2^-9 ps (approximately 0.002)
@@ -132,7 +132,7 @@ def spc_water_box(gmxcli, remove_tempdir):
                                            output_files={'-o': tprfile})
         tprfilename = grompp.output.file['-o'].result()
         if grompp.output.returncode.result() != 0:
-            logging.debug(grompp.output.erroroutput.result())
+            logging.debug(grompp.output.stderr.result())
             raise RuntimeError('grompp failed in spc_water_box testing fixture.')
 
         # TODO: more inspection of grompp errors...

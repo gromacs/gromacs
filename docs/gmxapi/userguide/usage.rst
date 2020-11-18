@@ -145,7 +145,7 @@ For example, you might create a :command:`gmx solvate` operation as::
                                                       }
 
 To check the status or error output of a command line operation, refer to the
-``returncode`` and ``erroroutput`` outputs.
+``returncode`` and ``stderr`` outputs.
 To access the results from the output file arguments, use the command line flags
 as keys in the ``file`` dictionary output.
 
