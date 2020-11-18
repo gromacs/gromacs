@@ -48,10 +48,9 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/nbnxm/atomdata.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-#include "nbnxm.h"
 
 struct interaction_const_t;
 struct nbnxn_atomdata_t;

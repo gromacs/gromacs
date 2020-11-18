@@ -45,9 +45,9 @@
 #include "config.h"
 
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
-#include "nbnxm.h"
 #include "pairlist.h"
 
 #if GMX_GPU_OPENCL
