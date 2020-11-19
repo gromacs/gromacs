@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -167,6 +167,21 @@ template<MathOptimization opt = MathOptimization::Safe>
 static inline float sqrt(float x)
 {
     return std::sqrt(x);
+}
+
+/*! \brief Float cbrt(x). This is the cubic root.
+ *
+ * \param x Argument, should be >= 0.
+ * \result The cubic root of x. Undefined if argument is invalid.
+ *
+ * \note This function might be superficially meaningless, but it helps us to
+ *       write templated SIMD/non-SIMD code. For clarity it should not be used
+ *       outside such code.
+ */
+template<MathOptimization opt = MathOptimization::Safe>
+static inline float cbrt(float x)
+{
+    return std::cbrt(x);
 }
 
 /*! \brief Float log(x). This is the natural logarithm.
@@ -555,6 +570,21 @@ template<MathOptimization opt = MathOptimization::Safe>
 static inline double sqrt(double x)
 {
     return std::sqrt(x);
+}
+
+/*! \brief Double cbrt(x). This is the cubic root.
+ *
+ * \param x Argument, should be >= 0.
+ * \result The cubic root of x. Undefined if argument is invalid.
+ *
+ * \note This function might be superficially meaningless, but it helps us to
+ *       write templated SIMD/non-SIMD code. For clarity it should not be used
+ *       outside such code.
+ */
+template<MathOptimization opt = MathOptimization::Safe>
+static inline double cbrt(double x)
+{
+    return std::cbrt(x);
 }
 
 /*! \brief Double log(x). This is the natural logarithm.
