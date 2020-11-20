@@ -32,6 +32,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Set up the module library
+add_library(mdtypes INTERFACE)
+
 file(GLOB MDTYPES_SOURCES
     checkpointdata.cpp
     df_history.cpp
@@ -65,6 +68,38 @@ else()
       state_propagator_data_gpu_impl.cpp
       )
 endif()
+
+# Source files have the following private module dependencies.
+target_link_libraries(mdtypes PRIVATE
+                      #                      gmxlib
+                      #                      math
+                      #                      mdtypes
+                      #                      tng_io
+                      )
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(mdtypes PUBLIC
+target_include_directories(mdtypes INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(mdtypes PUBLIC
+target_link_libraries(mdtypes INTERFACE
+                      legacy_api
+                      )
+
+# TODO: when fileio is an OBJECT target
+#target_link_libraries(mdtypes PUBLIC legacy_api)
+#target_link_libraries(mdtypes PRIVATE common)
+
+# Module dependencies
+# fileio interfaces convey transitive dependence on these modules.
+#target_link_libraries(mdtypes PUBLIC
+target_link_libraries(mdtypes INTERFACE
+                      utility
+                      )
+# Source files have the following private module dependencies.
+#target_link_libraries(mdtypes PRIVATE tng_io)
+# TODO: Explicitly link specific modules.
+#target_link_libraries(mdtypes PRIVATE legacy_modules)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -40,3 +40,4 @@ gmx_add_unit_test(MDSpanTests mdspan-test
         layouts.cpp
         mdspan.cpp
         )
+target_link_libraries(mdspan-test PRIVATE mdspan)

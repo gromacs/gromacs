@@ -32,19 +32,45 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Set up the module library
+add_library(taskassignment INTERFACE)
+file(GLOB TASKASSIGNMENT_SOURCES *.cpp)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TASKASSIGNMENT_SOURCES} PARENT_SCOPE)
+
 # Note that this is a higher-level module that should not need
 # special compilation to suit e.g. GPU or MPI dependencies.
 # If you find you want to do that, consider a preliminary
 # refactoring.
-gmx_add_libgromacs_sources(
-    decidegpuusage.cpp
-    decidesimulationworkload.cpp
-    findallgputasks.cpp
-    reportgpuusage.cpp
-    resourcedivision.cpp
-    taskassignment.cpp
-    usergpuids.cpp
-    )
+
+# Source files have the following dependencies on library infrastructure.
+#target_link_libraries(taskassignment PRIVATE
+#                      common
+#                      legacy_modules
+#)
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(taskassignment PUBLIC
+target_include_directories(taskassignment INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(taskassignment PUBLIC
+target_link_libraries(taskassignment INTERFACE
+                      legacy_api
+                      )
+
+# TODO: when taskassignment is an OBJECT target
+#target_link_libraries(taskassignment PUBLIC legacy_api)
+#target_link_libraries(taskassignment PRIVATE common)
+
+# Module dependencies
+# taskassignment interfaces convey transitive dependence on these modules.
+#target_link_libraries(taskassignment PUBLIC
+target_link_libraries(taskassignment INTERFACE
+                      utility
+                      )
+# Source files have the following private module dependencies.
+#target_link_libraries(taskassignment PRIVATE NOTHING)
+# TODO: Explicitly link specific modules.
+#target_link_libraries(taskassignment PRIVATE legacy_modules)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

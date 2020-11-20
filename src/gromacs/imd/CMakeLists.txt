@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -32,5 +32,37 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+add_library(imd INTERFACE)
 file(GLOB IMD_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${IMD_SOURCES} PARENT_SCOPE)
+
+# Source files have the following private module dependencies.
+target_link_libraries(imd PRIVATE
+#                      gmxlib
+#                      math
+#                      mdtypes
+                      )
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(imd PUBLIC
+target_include_directories(imd INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(imd PUBLIC
+target_link_libraries(imd INTERFACE
+                      legacy_api
+                      )
+
+# TODO: when imd is an OBJECT target
+#target_link_libraries(imd PUBLIC legacy_api)
+#target_link_libraries(imd PRIVATE common)
+
+# Module dependencies
+# imd interfaces convey transitive dependence on these modules.
+#target_link_libraries(imd PUBLIC
+target_link_libraries(imd INTERFACE
+                      utility
+                      )
+# Source files have the following private module dependencies.
+#target_link_libraries(imd PRIVATE tng_io)
+# TODO: Explicitly link specific modules.
+#target_link_libraries(imd PRIVATE legacy_modules)

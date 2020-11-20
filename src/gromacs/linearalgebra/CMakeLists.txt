@@ -47,9 +47,10 @@ set(LINEARALGEBRA_SOURCES
     ${LINEARALGEBRA_SOURCES} ${BLAS_SOURCES} ${LAPACK_SOURCES})
 
 add_library(linearalgebra OBJECT ${LINEARALGEBRA_SOURCES})
-target_include_directories(linearalgebra PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 # TODO: Only expose the module's public headers.
-target_include_directories(linearalgebra INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(linearalgebra INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(linearalgebra PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 gmx_target_compile_options(linearalgebra)
 target_compile_definitions(linearalgebra PRIVATE HAVE_CONFIG_H)

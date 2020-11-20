@@ -33,6 +33,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+add_library(gmxlib INTERFACE)
+
 add_subdirectory(nonbonded)
 
 # The nonbonded directory contains subdirectories that are only
@@ -40,6 +42,38 @@ add_subdirectory(nonbonded)
 file(GLOB GMXLIB_SOURCES *.cpp)
 
 set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${NONBONDED_SOURCES} PARENT_SCOPE)
+
+# Source files have the following private module dependencies.
+target_link_libraries(gmxlib PRIVATE
+                      #                      gmxlib
+                      #                      math
+                      #                      mdtypes
+                      #                      tng_io
+                      )
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(gmxlib PUBLIC
+target_include_directories(gmxlib INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(gmxlib PUBLIC
+target_link_libraries(gmxlib INTERFACE
+                      legacy_api
+                      )
+
+# TODO: when fileio is an OBJECT target
+#target_link_libraries(gmxlib PUBLIC legacy_api)
+#target_link_libraries(gmxlib PRIVATE common)
+
+# Module dependencies
+# fileio interfaces convey transitive dependence on these modules.
+#target_link_libraries(gmxlib PUBLIC
+target_link_libraries(gmxlib INTERFACE
+                      utility
+                      )
+# Source files have the following private module dependencies.
+#target_link_libraries(gmxlib PRIVATE tng_io)
+# TODO: Explicitly link specific modules.
+#target_link_libraries(gmxlib PRIVATE legacy_modules)
 
 # if(BUILD_TESTING)
 #     add_subdirectory(tests)

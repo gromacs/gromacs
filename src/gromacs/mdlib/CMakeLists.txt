@@ -33,12 +33,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+add_library(mdlib INTERFACE)
+
 file(GLOB MDLIB_SOURCES *.cpp)
 
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
 if(GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
        leapfrog_gpu.cu
@@ -49,3 +48,38 @@ if(GMX_GPU_CUDA)
        )
 endif()
 
+# Source files have the following private module dependencies.
+target_link_libraries(mdlib PRIVATE
+#                      gmxlib
+#                      math
+#                      mdtypes
+#                      tng_io
+                      )
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(mdlib PUBLIC
+target_include_directories(mdlib INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(mdlib PUBLIC
+target_link_libraries(mdlib INTERFACE
+                      legacy_api
+                      )
+
+# TODO: when mdlib is an OBJECT target
+#target_link_libraries(mdlib PUBLIC legacy_api)
+#target_link_libraries(mdlib PRIVATE common)
+
+# Module dependencies
+# mdlib interfaces convey transitive dependence on these modules.
+#target_link_libraries(mdlib PUBLIC
+target_link_libraries(mdlib INTERFACE
+                      utility
+                      )
+# Source files have the following private module dependencies.
+#target_link_libraries(mdlib PRIVATE tng_io)
+# TODO: Explicitly link specific modules.
+#target_link_libraries(mdlib PRIVATE legacy_modules)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

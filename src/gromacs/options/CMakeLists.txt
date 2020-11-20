@@ -33,6 +33,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Set up the module library
+add_library(options INTERFACE)
+
 gmx_add_libgromacs_sources(
     abstractoption.cpp
     abstractsection.cpp
@@ -64,6 +67,30 @@ if(GMX_INSTALL_LEGACY_API)
 	    timeunitmanager.h
             DESTINATION include/gromacs/options)
 endif()
+
+# Source files have the following private module dependencies.
+target_link_libraries(options PRIVATE
+		)
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(options PUBLIC
+target_include_directories(options INTERFACE
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(options PUBLIC
+target_link_libraries(options INTERFACE
+		legacy_api
+		)
+
+# TODO: when options is an OBJECT target
+#target_link_libraries(options PUBLIC legacy_api)
+#target_link_libraries(options PRIVATE common)
+
+# Module dependencies
+# options interfaces convey transitive dependence on these modules.
+#target_link_libraries(options PUBLIC
+target_link_libraries(options INTERFACE
+                      utility
+		)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

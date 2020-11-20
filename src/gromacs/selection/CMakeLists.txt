@@ -33,6 +33,9 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+# Set up the module library
+add_library(selection INTERFACE)
+
 file(GLOB SELECTION_SOURCES *.cpp)
 file(GLOB SCANNER_SOURCES scanner.cpp parser.cpp)
 list(REMOVE_ITEM SELECTION_SOURCES ${SCANNER_SOURCES})
@@ -62,6 +65,36 @@ target_link_libraries(scanner PRIVATE legacy_modules)
 
 list(APPEND libgromacs_object_library_dependencies scanner)
 set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
+
+# Source files have the following dependencies on library infrastructure.
+#target_link_libraries(selection PRIVATE
+#                      common
+#                      legacy_modules
+#)
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(selection PUBLIC
+target_include_directories(selection INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(selection PUBLIC
+target_link_libraries(selection INTERFACE
+                      legacy_api
+                      )
+
+# TODO: when selection is an OBJECT target
+#target_link_libraries(selection PUBLIC legacy_api)
+#target_link_libraries(selection PRIVATE common)
+
+# Module dependencies
+# selection interfaces convey transitive dependence on these modules.
+#target_link_libraries(selection PUBLIC
+target_link_libraries(selection INTERFACE
+                      utility
+                      )
+# Source files have the following private module dependencies.
+#target_link_libraries(selection PRIVATE NOTHING)
+# TODO: Explicitly link specific modules.
+#target_link_libraries(selection PRIVATE legacy_modules)
 
 if(GMX_INSTALL_LEGACY_API)
     install(FILES

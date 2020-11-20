@@ -33,6 +33,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+add_library(utility INTERFACE)
+
 file(GLOB UTILITY_SOURCES *.cpp)
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(cuda_version_information.cu)
@@ -55,6 +57,23 @@ if(GMX_INSTALL_LEGACY_API)
           unique_cptr.h
           DESTINATION include/gromacs/utility)
 endif()
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(utility PUBLIC
+target_include_directories(utility INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(utility PUBLIC
+target_link_libraries(utility INTERFACE
+                      legacy_api
+                      )
+
+# TODO: when utility is an OBJECT target
+#target_link_libraries(utility PUBLIC legacy_api)
+#target_link_libraries(utility PRIVATE common)
+
+# Source files have the following private module dependencies.
+# TODO: Explicitly link specific modules.
+#target_link_libraries(utility PRIVATE legacy_modules)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

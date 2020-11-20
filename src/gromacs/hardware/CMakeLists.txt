@@ -32,6 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+add_library(hardware INTERFACE)
 gmx_add_libgromacs_sources(
     cpuinfo.cpp
     detecthardware.cpp
@@ -71,6 +72,34 @@ else()
         device_management.cpp
     )
 endif()
+
+# Source files have the following private module dependencies.
+target_link_libraries(hardware PRIVATE
+                      )
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(hardware PUBLIC
+target_include_directories(hardware INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(hardware PUBLIC
+target_link_libraries(hardware INTERFACE
+                      legacy_api
+                      )
+
+# TODO: when hardware is an OBJECT target
+#target_link_libraries(hardware PUBLIC legacy_api)
+#target_link_libraries(hardware PRIVATE common)
+
+# Module dependencies
+# hardware interfaces convey transitive dependence on these modules.
+#target_link_libraries(hardware PUBLIC
+target_link_libraries(hardware INTERFACE
+                      utility
+                      )
+# Source files have the following private module dependencies.
+#target_link_libraries(hardware PRIVATE tng_io)
+# TODO: Explicitly link specific modules.
+#target_link_libraries(hardware PRIVATE legacy_modules)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

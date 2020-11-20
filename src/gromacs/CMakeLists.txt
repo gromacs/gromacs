@@ -328,7 +328,59 @@ target_link_libraries(libgromacs
                       ${GMX_PUBLIC_LIBRARIES}
                       )
 target_link_libraries(libgromacs PUBLIC legacy_api)
-
+# Dependencies from libgromacs to the modules are set up here, but
+# once the add_subdirectory() commands are re-ordered then
+# responsibility for setting this up will move to the respective
+# modules.
+target_link_libraries(libgromacs PRIVATE
+                      $<BUILD_INTERFACE:analysisdata>
+                      $<BUILD_INTERFACE:applied_forces>
+                      $<BUILD_INTERFACE:commandline>
+                      $<BUILD_INTERFACE:compat>
+                      $<BUILD_INTERFACE:coordinateio>
+                      $<BUILD_INTERFACE:correlationfunctions>
+                      $<BUILD_INTERFACE:domdec>
+#                      $<BUILD_INTERFACE:energyanalysis>
+                      $<BUILD_INTERFACE:essentialdynamics>
+                      $<BUILD_INTERFACE:ewald>
+                      $<BUILD_INTERFACE:fft>
+                      $<BUILD_INTERFACE:fileio>
+                      $<BUILD_INTERFACE:gmxana>
+                      $<BUILD_INTERFACE:gmxlib>
+                      $<BUILD_INTERFACE:gmxpreprocess>
+                      $<BUILD_INTERFACE:gpu_utils>
+                      $<BUILD_INTERFACE:hardware>
+                      $<BUILD_INTERFACE:imd>
+                      $<BUILD_INTERFACE:linearalgebra>
+                      $<BUILD_INTERFACE:listed_forces>
+                      $<BUILD_INTERFACE:math>
+                      $<BUILD_INTERFACE:mdlib>
+                      $<BUILD_INTERFACE:mdrun>
+                      $<BUILD_INTERFACE:mdrunutility>
+                      $<BUILD_INTERFACE:mdspan>
+                      $<BUILD_INTERFACE:mdtypes>
+                      $<BUILD_INTERFACE:mimic>
+                      $<BUILD_INTERFACE:modularsimulator>
+                      $<BUILD_INTERFACE:nbnxm>
+                      $<BUILD_INTERFACE:onlinehelp>
+                      $<BUILD_INTERFACE:options>
+                      $<BUILD_INTERFACE:pbcutil>
+                      $<BUILD_INTERFACE:pulling>
+                      $<BUILD_INTERFACE:random>
+                      $<BUILD_INTERFACE:restraint>
+                      $<BUILD_INTERFACE:selection>
+                      $<BUILD_INTERFACE:simd>
+                      $<BUILD_INTERFACE:statistics>
+                      $<BUILD_INTERFACE:swap>
+                      $<BUILD_INTERFACE:tables>
+                      $<BUILD_INTERFACE:taskassignment>
+                      $<BUILD_INTERFACE:timing>
+                      $<BUILD_INTERFACE:tools>
+                      $<BUILD_INTERFACE:topology>
+                      $<BUILD_INTERFACE:trajectory>
+                      $<BUILD_INTERFACE:trajectoryanalysis>
+                      $<BUILD_INTERFACE:utility>
+                      )
 if (GMX_OPENMP)
     target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
 endif()
