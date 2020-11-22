@@ -37,7 +37,7 @@
  */
 #include "gmxpre.h"
 
-#include "trxio.h"
+#include "gromacs/fileio/trxio.h"
 
 #include "config.h"
 
