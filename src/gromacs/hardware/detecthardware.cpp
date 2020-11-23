@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, The GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -300,9 +301,17 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&              cpuInfo,
  *  2 seconds, or until all cores have come online. This can be used prior to
  *  hardware detection for platforms that take unused processors offline.
  *
- *  This routine will not throw exceptions.
+ *  This routine will not throw exceptions. In principle it should be
+ *  declared noexcept, but at least icc 19.1 and 21-beta08 with the
+ *  libstdc++-7.5 has difficulty implementing a std::vector of
+ *  std::thread started with this function when declared noexcept. It
+ *  is a known compiler bug that should be fixed after 19.1.
+ *  Fortunately, this function is not performance sensitive,
+ *  and only runs on platforms other than x86 and POWER (ie ARM),
+ *  so the possible overhead introduced by omitting noexcept is not
+ *  important.
  */
-static void spinUpCore() noexcept
+static void spinUpCore()
 {
 #if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_CONF) && defined(_SC_NPROCESSORS_ONLN)
     float dummy           = 0.1;

@@ -40,6 +40,7 @@ Authors:
     * Paul Bauer <paul.bauer.q@gmail.com>
     * Eric Irrgang <ericirrgang@gmail.com>
     * Joe Jordan <e.jjordan12@gmail.com>
+    * Mark Abraham <mark.j.abraham@gmail.com>
 
 """
 

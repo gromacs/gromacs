@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016, The GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +46,7 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -208,7 +210,7 @@ gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans
     int                       nthreads;
     gmx::DefaultRandomEngine* trng = nullptr;
 #endif
-    int64_t                  mc = 0, mc_max;
+    int64_t                  mc_max;
     gmx::DefaultRandomEngine rng(seed);
 
     /* allocate memory for pr */
@@ -249,13 +251,14 @@ gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans
             snew(tgr[i], pr->grn);
             trng[i].seed(rng());
         }
-#    pragma omp parallel shared(tgr, trng, mc) private(tid, i, j)
+#    pragma omp parallel shared(tgr, trng) private(tid, i, j)
         {
             gmx::UniformIntDistribution<int> tdist(0, isize - 1);
             tid = gmx_omp_get_thread_num();
-/* now starting parallel threads */
+            /* now starting parallel threads */
+            INTEL_DIAGNOSTIC_IGNORE(593)
 #    pragma omp for
-            for (mc = 0; mc < mc_max; mc++)
+            for (int64_t mc = 0; mc < mc_max; mc++)
             {
                 try
                 {
@@ -270,6 +273,7 @@ gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }
         }
+        INTEL_DIAGNOSTIC_RESET
         /* collecting data from threads */
         for (i = 0; i < pr->grn; i++)
         {
@@ -287,7 +291,7 @@ gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans
         delete[] trng;
 #else
         gmx::UniformIntDistribution<int> dist(0, isize - 1);
-        for (mc = 0; mc < mc_max; mc++)
+        for (int64_t mc = 0; mc < mc_max; mc++)
         {
             i = dist(rng); // [0,isize-1]
             j = dist(rng); // [0,isize-1]
