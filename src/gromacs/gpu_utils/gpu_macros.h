@@ -73,11 +73,15 @@
 #    define OPENCL_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
 #    define OPENCL_FUNC_TERM REAL_FUNC_TERM
 #    define OPENCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+#    define SYCL_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#    define SYCL_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
+#    define SYCL_FUNC_TERM REAL_FUNC_TERM
+#    define SYCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
 
 #else // Not DOXYGEN
 
 /* GPU support is enabled, so these functions will have real code defined somewhere */
-#    if GMX_GPU && !GMX_GPU_SYCL
+#    if GMX_GPU
 #        define GPU_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
 #        define GPU_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
 #        define GPU_FUNC_TERM REAL_FUNC_TERM
@@ -87,7 +91,6 @@
 #        define GPU_FUNC_ARGUMENT NULL_FUNC_ARGUMENT
 #        define GPU_FUNC_TERM NULL_FUNC_TERM
 #        define GPU_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
-#
 #    endif
 
 /* Enable and disable platform-specific function implementations */
@@ -113,6 +116,18 @@
 #        define CUDA_FUNC_ARGUMENT NULL_FUNC_ARGUMENT
 #        define CUDA_FUNC_TERM NULL_FUNC_TERM
 #        define CUDA_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
+#    endif
+
+#    if GMX_GPU_SYCL
+#        define SYCL_FUNC_QUALIFIER REAL_FUNC_QUALIFIER
+#        define SYCL_FUNC_ARGUMENT REAL_FUNC_ARGUMENT
+#        define SYCL_FUNC_TERM REAL_FUNC_TERM
+#        define SYCL_FUNC_TERM_WITH_RETURN(arg) REAL_FUNC_TERM_WITH_RETURN(arg)
+#    else
+#        define SYCL_FUNC_QUALIFIER NULL_FUNC_QUALIFIER
+#        define SYCL_FUNC_ARGUMENT NULL_FUNC_ARGUMENT
+#        define SYCL_FUNC_TERM NULL_FUNC_TERM
+#        define SYCL_FUNC_TERM_WITH_RETURN(arg) NULL_FUNC_TERM_WITH_RETURN(arg)
 #    endif
 
 #endif // ifdef DOXYGEN

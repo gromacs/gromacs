@@ -47,6 +47,7 @@
 #include <cstddef>
 
 #include "gromacs/gpu_utils/gmxsycl.h"
+#include "gromacs/math/vectypes.h"
 
 using DeviceTexture = void*;
 

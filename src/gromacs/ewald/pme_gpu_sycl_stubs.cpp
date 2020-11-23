@@ -1,8 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,55 +32,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *  \brief Declare common functions for NBNXM GPU data management.
+
+/*! \internal \file
+ * \brief Implements stubs of high-level PME GPU functions for SYCL.
  *
- *  \author Artem Zhmurov <zhmurov@gmail.com>
+ * \author Andrey Alekseenko <al42and@gmail.com>
  *
- *  \ingroup module_nbnxm
+ * \ingroup module_ewald
  */
+#include "gmxpre.h"
 
-#ifndef GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
-#define GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
+#include "gromacs/ewald/ewald_utils.h"
 
-struct interaction_const_t;
+#include "pme_gpu_3dfft.h"
+#include "pme_gpu_internal.h"
+#include "pme_gpu_program_impl.h"
 
-struct NBParamGpu;
-struct PairlistParams;
-
-namespace gmx
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
+    deviceContext_(deviceContext),
+    warpSize_(0),
+    spreadWorkGroupSize(0),
+    gatherWorkGroupSize(0),
+    solveMaxWorkGroupSize(0)
 {
-enum class InteractionLocality;
+    // SYCL-TODO
 }
 
-namespace Nbnxm
+PmeGpuProgramImpl::~PmeGpuProgramImpl() = default;
+
+// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
+
+GpuParallel3dFft::GpuParallel3dFft(PmeGpu const* /*pmeGpu*/, int /*gridIndex*/)
 {
+    GMX_THROW(gmx::NotImplementedError("PME is not implemented in SYCL"));
+}
 
-struct gpu_plist;
+GpuParallel3dFft::~GpuParallel3dFft() = default;
 
-/*! \brief Tabulates the Ewald Coulomb force and initializes the size/scale and the table GPU array.
- *
- * If called with an already allocated table, it just re-uploads the
- * table.
- */
-void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
-                                    NBParamGpu*                  nbp,
-                                    const DeviceContext&         deviceContext);
+void GpuParallel3dFft::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEvent*/)
+{
+    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+}
 
-/*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused& ic);
-
-/*! \brief Copies all parameters related to the cut-off from ic to nbp
- */
-void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t* ic, const PairlistParams& listParams);
-
-/*! \brief Initializes the pair list data structure.
- */
-void init_plist(gpu_plist* pl);
-
-/*! \brief Initializes the timings data structure. */
-void init_timings(gmx_wallclock_gpu_nbnxn_t* t);
-
-} // namespace Nbnxm
-
-#endif // GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
+#pragma clang diagnostic pop

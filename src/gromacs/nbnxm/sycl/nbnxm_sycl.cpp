@@ -1,8 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,55 +32,57 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *  \brief Declare common functions for NBNXM GPU data management.
- *
- *  \author Artem Zhmurov <zhmurov@gmail.com>
+
+/*! \internal \file
+ *  \brief
+ *  Stubs of functions that must be defined by nbnxm sycl implementation.
  *
  *  \ingroup module_nbnxm
  */
+#include "gmxpre.h"
 
-#ifndef GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
-#define GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
+#include "gromacs/nbnxm/gpu_common.h"
+#include "gromacs/utility/exceptions.h"
 
-struct interaction_const_t;
-
-struct NBParamGpu;
-struct PairlistParams;
-
-namespace gmx
-{
-enum class InteractionLocality;
-}
+#include "nbnxm_sycl_types.h"
 
 namespace Nbnxm
 {
 
-struct gpu_plist;
+// SYCL-TODO: remove when functions are properly implemented
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 
-/*! \brief Tabulates the Ewald Coulomb force and initializes the size/scale and the table GPU array.
- *
- * If called with an already allocated table, it just re-uploads the
- * table.
+/*! \brief
+ * Launch asynchronously the download of nonbonded forces from the GPU
+ * (and energies/shift forces if required).
  */
-void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
-                                    NBParamGpu*                  nbp,
-                                    const DeviceContext&         deviceContext);
+void gpu_launch_cpyback(NbnxmGpu* /*nb*/,
+                        struct nbnxn_atomdata_t* /*nbatom*/,
+                        const gmx::StepWorkload& /*stepWork*/,
+                        const AtomLocality /*atomLocality*/)
+{
+    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+}
 
-/*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused& ic);
+/*! \brief Launch asynchronously the xq buffer host to device copy. */
+void gpu_copy_xq_to_gpu(NbnxmGpu* /*nb*/, const nbnxn_atomdata_t* /*nbatom*/, const AtomLocality /*atomLocality*/)
+{
+    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+}
 
-/*! \brief Copies all parameters related to the cut-off from ic to nbp
- */
-void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t* ic, const PairlistParams& listParams);
+void gpu_launch_kernel_pruneonly(NbnxmGpu* /*nb*/, const InteractionLocality /*iloc*/, const int /*numParts*/)
+{
+    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+}
 
-/*! \brief Initializes the pair list data structure.
- */
-void init_plist(gpu_plist* pl);
+void gpu_launch_kernel(NbnxmGpu* /*nb*/,
+                       const gmx::StepWorkload& /*stepWork*/,
+                       const Nbnxm::InteractionLocality /*iloc*/)
+{
+    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+}
 
-/*! \brief Initializes the timings data structure. */
-void init_timings(gmx_wallclock_gpu_nbnxn_t* t);
+#pragma clang diagnostic pop // SYCL-TODO: remove when functions above are properly implemented
 
 } // namespace Nbnxm
-
-#endif // GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H

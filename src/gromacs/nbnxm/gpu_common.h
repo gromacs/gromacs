@@ -55,6 +55,10 @@
 #    include "opencl/nbnxm_ocl_types.h"
 #endif
 
+#if GMX_GPU_SYCL
+#    include "sycl/nbnxm_sycl_types.h"
+#endif
+
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/listed_forces/gpubonded.h"
 #include "gromacs/math/vec.h"
@@ -272,6 +276,38 @@ static inline void gpu_reduce_staged_outputs(const StagingData&        nbst,
         }
     }
 }
+
+#if GMX_GPU_SYCL
+template<>
+inline void gpu_reduce_staged_outputs(const nb_staging_sycl_t&  nbst,
+                                      const InteractionLocality iLocality,
+                                      const bool                reduceEnergies,
+                                      const bool                reduceFshift,
+                                      real*                     e_lj,
+                                      real*                     e_el,
+                                      rvec*                     fshift)
+{
+    if (iLocality == InteractionLocality::Local)
+    {
+        if (reduceEnergies)
+        {
+            auto a_lj = nbst.e_lj->buffer_->get_access<cl::sycl::access::mode::read>();
+            auto a_el = nbst.e_el->buffer_->get_access<cl::sycl::access::mode::read>();
+            *e_lj += a_lj[0];
+            *e_el += a_el[0];
+        }
+
+        if (reduceFshift)
+        {
+            auto a_fshift = nbst.fshift->buffer_->get_access<cl::sycl::access::mode::read>();
+            for (int i = 0; i < SHIFTS; i++)
+            {
+                rvec_inc(fshift[i], a_fshift[i]);
+            }
+        }
+    }
+}
+#endif
 
 /*! \brief Do the per-step timing accounting of the nonbonded tasks.
  *

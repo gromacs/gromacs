@@ -43,10 +43,7 @@
 
 #include "config.h"
 
-#include <cassert>
-
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 #ifdef _MSC_VER

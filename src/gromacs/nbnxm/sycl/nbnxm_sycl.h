@@ -1,8 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,55 +32,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- *  \brief Declare common functions for NBNXM GPU data management.
+/*! \internal \file
+ * \brief
+ * Declares nbnxn sycl helper functions
  *
- *  \author Artem Zhmurov <zhmurov@gmail.com>
- *
- *  \ingroup module_nbnxm
+ * \ingroup module_nbnxm
  */
-
-#ifndef GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
-#define GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
-
-struct interaction_const_t;
-
-struct NBParamGpu;
-struct PairlistParams;
-
-namespace gmx
-{
-enum class InteractionLocality;
-}
+#ifndef GMX_NBNXM_SYCL_NBNXN_SYCL_H
+#define GMX_NBNXM_SYCL_NBNXN_SYCL_H
 
 namespace Nbnxm
 {
 
-struct gpu_plist;
-
-/*! \brief Tabulates the Ewald Coulomb force and initializes the size/scale and the table GPU array.
- *
- * If called with an already allocated table, it just re-uploads the
- * table.
- */
-void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
-                                    NBParamGpu*                  nbp,
-                                    const DeviceContext&         deviceContext);
-
-/*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused& ic);
-
-/*! \brief Copies all parameters related to the cut-off from ic to nbp
- */
-void set_cutoff_parameters(NBParamGpu* nbp, const interaction_const_t* ic, const PairlistParams& listParams);
-
-/*! \brief Initializes the pair list data structure.
- */
-void init_plist(gpu_plist* pl);
-
-/*! \brief Initializes the timings data structure. */
-void init_timings(gmx_wallclock_gpu_nbnxn_t* t);
-
 } // namespace Nbnxm
 
-#endif // GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H
+#endif

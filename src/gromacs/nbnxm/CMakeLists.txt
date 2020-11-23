@@ -66,13 +66,19 @@ if(GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
     _gmx_add_files_to_property(CUDA_SOURCES
         nbnxm_gpu_data_mgmt.cpp
-	)
+        )
 endif()
 
 if(GMX_GPU_OPENCL)
     add_subdirectory(opencl)
     set(NBNXM_OPENCL_KERNELS ${NBNXM_OPENCL_KERNELS} PARENT_SCOPE)
     gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
+endif()
+
+if(GMX_GPU_SYCL)
+    add_subdirectory(sycl)
+    gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
+    _gmx_add_files_to_property(SYCL_SOURCES nbnxm_gpu_data_mgmt.cpp nbnxm.cpp)
 endif()
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${NBNXM_SOURCES} PARENT_SCOPE)

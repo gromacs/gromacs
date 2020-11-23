@@ -56,6 +56,9 @@
 #elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
 #    include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
+#elif GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gpueventsynchronizer_sycl.h"
+#    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
 #include "gromacs/timing/gpu_timing.h" // for gtPME_EVENT_COUNT

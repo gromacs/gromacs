@@ -56,6 +56,8 @@
 
 #    include "gromacs/gpu_utils/gmxopencl.h"
 #    include "gromacs/gpu_utils/gputraits_ocl.h"
+#elif GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/gputraits_sycl.h"
 #endif
 
 #include "gromacs/fft/fft.h" // for the enum gmx_fft_direction

@@ -78,7 +78,7 @@ typedef int PmeGpuSpecific;
 struct PmeGpuCudaKernelParams;
 /*! \brief A typedef for including the GPU kernel arguments data by pointer */
 typedef PmeGpuCudaKernelParams PmeGpuKernelParams;
-#elif GMX_GPU_OPENCL
+#elif GMX_GPU_OPENCL || GMX_GPU_SYCL
 struct PmeGpuKernelParamsBase;
 /*! \brief A typedef for including the GPU kernel arguments data by pointer */
 typedef PmeGpuKernelParamsBase PmeGpuKernelParams;

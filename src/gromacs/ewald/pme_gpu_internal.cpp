@@ -75,6 +75,8 @@
 #    include "pme.cuh"
 #elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
+#elif GMX_GPU_SYCL
+#    include "gromacs/gpu_utils/syclutils.h"
 #endif
 
 #include "gromacs/ewald/pme.h"
@@ -427,7 +429,7 @@ void pme_gpu_free_fract_shifts(const PmeGpu* pmeGpu)
                             kernelParamsPtr->fractShiftsTableTexture);
     destroyParamLookupTable(&kernelParamsPtr->grid.d_gridlineIndicesTable,
                             kernelParamsPtr->gridlineIndicesTableTexture);
-#elif GMX_GPU_OPENCL
+#elif GMX_GPU_OPENCL || GMX_GPU_SYCL
     freeDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable);
     freeDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable);
 #endif
