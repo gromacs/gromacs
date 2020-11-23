@@ -175,6 +175,16 @@ void rescale_velocities(const gmx_ekindata_t*               ekind,
                         gmx::ArrayRef<gmx::RVec>            v);
 /* Rescale the velocities with the scaling factor in ekind */
 
+/*!
+ * \brief Compute the new annealing temperature for a temperature group
+ *
+ * \param inputrec          The input record
+ * \param temperatureGroup  The temperature group
+ * \param time              The current time
+ * \return  The new reference temperature for the group
+ */
+real computeAnnealingTargetTemperature(const t_inputrec& inputrec, int temperatureGroup, real time);
+
 //! Check whether we do simulated annealing.
 bool doSimulatedAnnealing(const t_inputrec* ir);
 
