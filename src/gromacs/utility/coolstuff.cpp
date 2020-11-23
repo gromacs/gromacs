@@ -243,7 +243,6 @@ std::string getCoolQuote()
         { "You Own the Sun", "Throwing Muses" },
         { "I Need a Little Poison", "Throwing Muses" },
         { "Ease Myself Into the Body Bag", "P.J. Harvey" },
-        { "Motherhood Means Mental Freeze", "The Breeders" },
         { "Correctomundo", "Pulp Fiction" },
         { "I Don't Like Dirt", "The Breeders" },
         { "Bring Out the Gimp", "Pulp Fiction" },
