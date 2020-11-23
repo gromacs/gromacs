@@ -392,7 +392,7 @@ void gmx::LegacySimulator::do_md()
                            "Orientation restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
                 ir->efep == efepNO
-                        || (!haveFreeEnergyType(*ir, efptBONDED) && !haveFreeEnergyType(*ir, efptMASS)),
+                        || (!haveFepPerturbedMasses(*top_global) && !havePerturbedConstraints(*top_global)),
                 "Free energy perturbation of masses and constraints are not supported with the GPU "
                 "update.");
 
