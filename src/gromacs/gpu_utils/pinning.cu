@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,33 +67,29 @@ gmx_unused static inline bool isAligned(const void* ptr, size_t bytes)
 
 void pinBuffer(void* pointer, std::size_t numBytes) noexcept
 {
-    const char* errorMessage =
-            "Could not register the host memory for page locking for GPU transfers.";
+    const std::string errorMessage =
+            "Could not register the host memory for page locking for GPU transfers. ";
 
     GMX_ASSERT(isAligned(pointer, PageAlignedAllocationPolicy::alignment()),
-               formatString("%s Host memory needs to be page aligned.", errorMessage).c_str());
+               (errorMessage + "Host memory needs to be page aligned.").c_str());
 
     numBytes = std::max<size_t>(
             1, numBytes); // C++11 3.7.4.1 gurantees that every pointer is different thus at least 1 byte
 
-    ensureNoPendingCudaError(errorMessage);
+    ensureNoPendingDeviceError(errorMessage);
     cudaError_t stat = cudaHostRegister(pointer, numBytes, cudaHostRegisterDefault);
 
     // These errors can only arise from a coding error somewhere.
-    GMX_RELEASE_ASSERT(
-            stat != cudaErrorInvalidValue && stat != cudaErrorNotSupported
-                    && stat != cudaErrorHostMemoryAlreadyRegistered,
-            formatString("%s %s: %s", errorMessage, cudaGetErrorName(stat), cudaGetErrorString(stat))
-                    .c_str());
+    GMX_RELEASE_ASSERT(stat != cudaErrorInvalidValue && stat != cudaErrorNotSupported
+                               && stat != cudaErrorHostMemoryAlreadyRegistered,
+                       (errorMessage + getDeviceErrorString(stat)).c_str());
 
     // We always handle the error, but if it's a type we didn't expect
     // (e.g. because CUDA changes the set of errors it returns) then
     // we should get a descriptive assertion in Debug mode so we know
     // to fix our expectations.
     GMX_ASSERT(stat != cudaErrorMemoryAllocation,
-               formatString("%s %s: %s which was an unexpected error", errorMessage,
-                            cudaGetErrorName(stat), cudaGetErrorString(stat))
-                       .c_str());
+               (errorMessage + getDeviceErrorString(stat) + " which was an unexpected error").c_str());
 
     // It might be preferable to throw InternalError here, because the
     // failing condition can only happen when GROMACS is used with a
@@ -101,25 +97,21 @@ void pinBuffer(void* pointer, std::size_t numBytes) noexcept
     // engineer GROMACS to be forward-compatible with future CUDA
     // versions, so if this proves to be a problem in practice, then
     // GROMACS must be patched, or a supported CUDA version used.
-    GMX_RELEASE_ASSERT(stat == cudaSuccess, formatString("%s %s: %s", errorMessage,
-                                                         cudaGetErrorName(stat), cudaGetErrorString(stat))
-                                                    .c_str());
+    GMX_RELEASE_ASSERT(stat == cudaSuccess, (errorMessage + getDeviceErrorString(stat)).c_str());
 }
 
 void unpinBuffer(void* pointer) noexcept
 {
-    const char* errorMessage = "Could not unregister pinned host memory used for GPU transfers.";
+    const std::string errorMessage =
+            "Could not unregister pinned host memory used for GPU transfers. ";
 
-    GMX_ASSERT(pointer != nullptr,
-               formatString("%s pointer should not be nullptr when pinned.", errorMessage).c_str());
+    GMX_ASSERT(pointer != nullptr, (errorMessage + "Pointer should not be nullptr when pinned.").c_str());
 
-    ensureNoPendingCudaError(errorMessage);
+    ensureNoPendingDeviceError(errorMessage);
     cudaError_t stat = cudaHostUnregister(pointer);
     // These errors can only arise from a coding error somewhere.
-    GMX_RELEASE_ASSERT(
-            stat != cudaErrorInvalidValue && stat != cudaErrorHostMemoryNotRegistered,
-            formatString("%s %s: %s", errorMessage, cudaGetErrorName(stat), cudaGetErrorString(stat))
-                    .c_str());
+    GMX_RELEASE_ASSERT(stat != cudaErrorInvalidValue && stat != cudaErrorHostMemoryNotRegistered,
+                       (errorMessage + getDeviceErrorString(stat)).c_str());
     // If there's an error whose type we didn't expect (e.g. because a
     // future CUDA changes the set of errors it returns) then we
     // should assert, because our code is wrong.
@@ -128,10 +120,7 @@ void unpinBuffer(void* pointer) noexcept
     // unpin() from a destructor, in which case any attempt to throw
     // an uncaught exception would anyway terminate the program. A
     // release assertion is a better behaviour than that.
-    GMX_RELEASE_ASSERT(stat == cudaSuccess,
-                       formatString("%s %s: %s which was an unexpected error", errorMessage,
-                                    cudaGetErrorName(stat), cudaGetErrorString(stat))
-                               .c_str());
+    GMX_RELEASE_ASSERT(stat == cudaSuccess, (errorMessage + getDeviceErrorString(stat)).c_str());
 }
 
 } // namespace gmx

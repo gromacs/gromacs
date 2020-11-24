@@ -57,23 +57,6 @@
 
 namespace gmx
 {
-namespace
-{
-
-/*! \brief Help give useful diagnostics about error \c status while doing \c message.
- *
- * \throws InternalError  If status indicates failure, supplying
- *                        descriptive text from \c message. */
-static void throwUponFailure(cudaError_t status, const char* message)
-{
-    if (status != cudaSuccess)
-    {
-        GMX_THROW(InternalError(formatString("Failure while %s", message)));
-        ;
-    }
-}
-
-} // namespace
 
 void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char> input, ArrayRef<char> output)
 {
@@ -83,24 +66,24 @@ void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char>
     int oldDeviceId;
 
     status = cudaGetDevice(&oldDeviceId);
-    throwUponFailure(status, "getting old device id");
+    checkDeviceError(status, "Error while getting old device id.");
     status = cudaSetDevice(deviceInfo.id);
-    throwUponFailure(status, "setting device id to the first compatible GPU");
+    checkDeviceError(status, "Error while setting device id to the first compatible GPU.");
 
     void* devicePointer;
     status = cudaMalloc(&devicePointer, input.size());
-    throwUponFailure(status, "creating buffer");
+    checkDeviceError(status, "Error while creating buffer.");
 
     status = cudaMemcpy(devicePointer, input.data(), input.size(), cudaMemcpyHostToDevice);
-    throwUponFailure(status, "transferring host to device");
+    checkDeviceError(status, "Error while transferring host to device.");
     status = cudaMemcpy(output.data(), devicePointer, output.size(), cudaMemcpyDeviceToHost);
-    throwUponFailure(status, "transferring device to host");
+    checkDeviceError(status, "Error while transferring device to host.");
 
     status = cudaFree(devicePointer);
-    throwUponFailure(status, "releasing buffer");
+    checkDeviceError(status, "Error while releasing buffer.");
 
     status = cudaSetDevice(oldDeviceId);
-    throwUponFailure(status, "setting old device id");
+    checkDeviceError(status, "Error while setting old device id.");
 }
 
 } // namespace gmx

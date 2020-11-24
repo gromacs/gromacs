@@ -55,21 +55,47 @@ namespace gmx
 namespace
 {
 
+/*! \brief Add the API information on the specific error to the error message.
+ *
+ * \param[in]  deviceError  The error to assert cudaSuccess on.
+ *
+ * \returns A description of the API error. Returns '(CUDA error #0 (cudaSuccess): no error)' in case deviceError is cudaSuccess.
+ */
+static inline std::string getDeviceErrorString(const cudaError_t deviceError)
+{
+    return formatString("CUDA error #%d (%s): %s.", deviceError, cudaGetErrorName(deviceError),
+                        cudaGetErrorString(deviceError));
+}
+
+/*! \brief Check if API returned an error and throw an exception with information on it.
+ *
+ * \param[in]  deviceError  The error to assert cudaSuccess on.
+ * \param[in]  errorMessage  Undecorated error message.
+ *
+ *  \throws InternalError if deviceError is not a success.
+ */
+static inline void checkDeviceError(const cudaError_t deviceError, const std::string& errorMessage)
+{
+    if (deviceError != cudaSuccess)
+    {
+        GMX_THROW(gmx::InternalError(errorMessage + " " + getDeviceErrorString(deviceError)));
+    }
+}
+
 /*! \brief Helper function to ensure no pending error silently
  * disrupts error handling.
  *
  * Asserts in a debug build if an unhandled error is present. Issues a
  * warning at run time otherwise.
  *
- * \todo This is similar to CU_CHECK_PREV_ERR, which should be
- * consolidated.
+ * \param[in]  errorMessage  Undecorated error message.
  */
-static inline void ensureNoPendingCudaError(const char* errorMessage)
+static inline void ensureNoPendingDeviceError(const std::string& errorMessage)
 {
     // Ensure there is no pending error that would otherwise affect
     // the behaviour of future error handling.
-    cudaError_t stat = cudaGetLastError();
-    if (stat == cudaSuccess)
+    cudaError_t deviceError = cudaGetLastError();
+    if (deviceError == cudaSuccess)
     {
         return;
     }
@@ -77,13 +103,13 @@ static inline void ensureNoPendingCudaError(const char* errorMessage)
     // If we would find an error in a release build, we do not know
     // what is appropriate to do about it, so assert only for debug
     // builds.
-    auto fullMessage = formatString(
-            "%s An unhandled error from a previous CUDA operation was detected. %s: %s",
-            errorMessage, cudaGetErrorName(stat), cudaGetErrorString(stat));
-    GMX_ASSERT(stat == cudaSuccess, fullMessage.c_str());
+    const std::string fullErrorMessage =
+            errorMessage + " An unhandled error from a previous CUDA operation was detected. "
+            + gmx::getDeviceErrorString(deviceError);
+    GMX_ASSERT(deviceError == cudaSuccess, fullErrorMessage.c_str());
     // TODO When we evolve a better logging framework, use that
     // for release-build error reporting.
-    gmx_warning("%s", fullMessage.c_str());
+    gmx_warning("%s", fullErrorMessage.c_str());
 }
 
 } // namespace
@@ -107,27 +133,13 @@ enum class GpuApiCallBehavior;
 #ifdef CHECK_CUDA_ERRORS
 
 /*! Check for CUDA error on the return status of a CUDA RT API call. */
-#    define CU_RET_ERR(status, msg)                                            \
-        do                                                                     \
-        {                                                                      \
-            if (status != cudaSuccess)                                         \
-            {                                                                  \
-                gmx_fatal(FARGS, "%s: %s\n", msg, cudaGetErrorString(status)); \
-            }                                                                  \
-        } while (0)
-
-/*! Check for any previously occurred uncaught CUDA error. */
-#    define CU_CHECK_PREV_ERR()                                                           \
-        do                                                                                \
-        {                                                                                 \
-            cudaError_t _CU_CHECK_PREV_ERR_status = cudaGetLastError();                   \
-            if (_CU_CHECK_PREV_ERR_status != cudaSuccess)                                 \
-            {                                                                             \
-                gmx_warning(                                                              \
-                        "Just caught a previously occurred CUDA error (%s), will try to " \
-                        "continue.",                                                      \
-                        cudaGetErrorString(_CU_CHECK_PREV_ERR_status));                   \
-            }                                                                             \
+#    define CU_RET_ERR(deviceError, msg)                                                          \
+        do                                                                                        \
+        {                                                                                         \
+            if (deviceError != cudaSuccess)                                                       \
+            {                                                                                     \
+                gmx_fatal(FARGS, "%s\n", (msg + gmx::getDeviceErrorString(deviceError)).c_str()); \
+            }                                                                                     \
         } while (0)
 
 #else /* CHECK_CUDA_ERRORS */
@@ -135,10 +147,6 @@ enum class GpuApiCallBehavior;
 #    define CU_RET_ERR(status, msg) \
         do                          \
         {                           \
-        } while (0)
-#    define CU_CHECK_PREV_ERR() \
-        do                      \
-        {                       \
         } while (0)
 
 #endif /* CHECK_CUDA_ERRORS */
@@ -174,13 +182,16 @@ static inline bool haveStreamTasksCompleted(const DeviceStream& deviceStream)
         return false;
     }
 
-    GMX_ASSERT(stat != cudaErrorInvalidResourceHandle, "Stream identifier not valid");
+    GMX_ASSERT(stat != cudaErrorInvalidResourceHandle,
+               ("Stream identifier not valid. " + gmx::getDeviceErrorString(stat)).c_str());
 
     // cudaSuccess and cudaErrorNotReady are the expected return values
-    CU_RET_ERR(stat, "Unexpected cudaStreamQuery failure");
+    CU_RET_ERR(stat, "Unexpected cudaStreamQuery failure. ");
 
     GMX_ASSERT(stat == cudaSuccess,
-               "Values other than cudaSuccess should have been explicitly handled");
+               ("Values other than cudaSuccess should have been explicitly handled. "
+                + gmx::getDeviceErrorString(stat))
+                       .c_str());
 
     return true;
 }
@@ -273,14 +284,8 @@ void launchGpuKernel(void (*kernel)(Args...),
     cudaLaunchKernel((void*)kernel, gridSize, blockSize, const_cast<void**>(kernelArgs.data()),
                      config.sharedMemorySize, deviceStream.stream());
 
-    cudaError_t status = cudaGetLastError();
-    if (cudaSuccess != status)
-    {
-        const std::string errorMessage =
-                "GPU kernel (" + std::string(kernelName)
-                + ") failed to launch: " + std::string(cudaGetErrorString(status));
-        GMX_THROW(gmx::InternalError(errorMessage));
-    }
+    gmx::ensureNoPendingDeviceError("GPU kernel (" + std::string(kernelName)
+                                    + ") failed to launch.");
 }
 
 #endif
