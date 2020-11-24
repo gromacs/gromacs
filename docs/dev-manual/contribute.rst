@@ -40,7 +40,8 @@ please make sure that you have checked all the points on this list:
   widespread adoption of the method.
 
 * *Advance discussion*: Please communicate with the other developers,
-  e.g.  on the `developer mailing list`_ mailing list, or `issue tracker`_ to let them know of the general
+  e.g.  on the `developer mailing list`_ mailing list, or
+  `issue tracker`_ to let them know of the general
   nature of your plans. This will prevent duplicate or wasted
   effort. It is also a good idea to search those resources as well as
   the literature and WWW for other projects that may be relevant.

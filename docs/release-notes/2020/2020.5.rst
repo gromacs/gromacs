@@ -16,8 +16,56 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix mdrun writing zero dH/dlambda and foreign lambda energies before checkpointing
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ 
+With free-energy runs with separate-dhdl-file=no and nstdhdl not a multiple of
+nstenergy, mdrun would write zeros for dH/dlambda and foreign energies to
+the energy file for steps between the last energy frame and the checkpoint.
+This would lead to errors in free-energy estimates which could go unnoticed
+as values only deviate for a few steps.
+
+:issue:`3763`
+
+Fixed bugs with COM pulling and domain decompostion with weight or >32 ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using COM pulling and domain decomposition, the results would be
+incorrect when using relative weights per atom or when using more than
+32 DD MPI ranks. This would usually lead to crashes or obviously wrong
+results.
+
+:issue:`3750`
+
+Fixed conserved energy for MTTK
+"""""""""""""""""""""""""""""""
+
+When using `pcoupl=MTTK` and `tcoupl=nose-hoover`, the calculated conserved
+energy was incorrect due to two errors dating back to GROMACS 4.6 and 2018,
+respectively. As a result, all reported conserved energies using this
+combination of temperature and pressure coupling algorithms in any GROMACS
+version since GROMACS 4.6 are likely to be wrong. Note that these errors did
+not impact the dynamics, as the conserved energy is only reported, but never
+used in calculations. Also note that this bug only affects this exact
+combination of temperature / pressure coupling algorithms.
+
+:issue:`3796`
+
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+Improve CHARMM support in gmx do_dssp
+"""""""""""""""""""""""""""""""""""""
+
+:issue:`3568`
+
+Fix non-funtioning gmx h2order -d option
+""""""""""""""""""""""""""""""""""""""""
+
+The gmx h2order tool would always take the normal along the z-axis.
+
+:issue:`3820`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -199,13 +199,11 @@ def get_llvm_packages(args) -> typing.Iterable[str]:
     else:
         return []
 
-
 def get_opencl_packages(args) -> typing.Iterable[str]:
     if (args.doxygen is None) and (args.oneapi is None):
         return _opencl_extra_packages
     else:
         return []
-
 
 def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
     # Compiler

@@ -730,7 +730,7 @@ void mde_delta_h_coll_update_energyhistory(const t_mde_delta_h_coll* dhc, energy
     {
         std::vector<real>& dh = deltaH->dh[i];
         dh.resize(dhc->dh[i].ndh);
-        std::copy(dh.begin(), dh.end(), dhc->dh[i].dh);
+        std::copy(dhc->dh[i].dh, dhc->dh[i].dh + dhc->dh[i].ndh, dh.begin());
     }
     deltaH->start_time   = dhc->start_time;
     deltaH->start_lambda = dhc->start_lambda;

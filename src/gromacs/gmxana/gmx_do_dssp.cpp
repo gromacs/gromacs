@@ -259,17 +259,14 @@ static gmx_bool* bPhobics(t_atoms* atoms)
 
 static void check_oo(t_atoms* atoms)
 {
-    char* OOO;
+    char* OOO = gmx_strdup("O");
 
-    int i;
-
-    OOO = gmx_strdup("O");
-
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         if ((std::strcmp(*(atoms->atomname[i]), "OXT") == 0)
             || (std::strcmp(*(atoms->atomname[i]), "O1") == 0)
-            || (std::strcmp(*(atoms->atomname[i]), "OC1") == 0))
+            || (std::strcmp(*(atoms->atomname[i]), "OC1") == 0)
+            || (std::strcmp(*(atoms->atomname[i]), "OT1") == 0))
         {
             *atoms->atomname[i] = OOO;
         }

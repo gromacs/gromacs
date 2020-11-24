@@ -3152,16 +3152,17 @@ void dd_partition_system(FILE*                     fplog,
                                 mdatoms->sigmaB, dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
     }
 
-    if (ir->bPull)
-    {
-        /* Update the local pull groups */
-        dd_make_local_pull_groups(cr, pull_work);
-    }
-
     if (dd->atomSets != nullptr)
     {
         /* Update the local atom sets */
         dd->atomSets->setIndicesInDomainDecomposition(*(dd->ga2la));
+    }
+
+    // The pull group construction can need the atom sets updated above
+    if (ir->bPull)
+    {
+        /* Update the local pull groups */
+        dd_make_local_pull_groups(cr, pull_work);
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is TRUE. */
