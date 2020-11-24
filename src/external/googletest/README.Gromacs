@@ -59,3 +59,10 @@ such as for the clang static analyzer, and some lines are removed
 from consideration by wrapping with `#ifndef __clang_analyzer__`
 or marking them with `/*NOLINT*/` comment.
 ... `#endif`.
+
+GoogleTest declares quite old minimum CMake versions, which newer
+CMake versions warn about. In practice, the CMake version requirement
+for GROMACS is greater than these minimums, and that version will be
+used for GoogleTest also. The warnings aren't useful for GROMACS
+developers, so those declarations by GoogleTest have been commented
+out.
