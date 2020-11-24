@@ -60,6 +60,13 @@ Improve CHARMM support in gmx do_dssp
 
 :issue:`3568`
 
+Fix non-funtioning gmx h2order -d option
+""""""""""""""""""""""""""""""""""""""""
+
+The gmx h2order tool would always take the normal along the z-axis.
+
+:issue:`3820`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

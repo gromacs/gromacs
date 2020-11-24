@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -258,6 +258,15 @@ static void h2order_plot(rvec dipole[], real order[], const char* afile, int nsl
     xvgrclose(ord);
 }
 
+enum
+{
+    axisSEL,
+    axisZ,
+    axisY,
+    axisX,
+    axisNR
+};
+
 int gmx_h2order(int argc, char* argv[])
 {
     const char* desc[] = {
@@ -270,13 +279,13 @@ int gmx_h2order(int argc, char* argv[])
         "dipole and the axis from the center of mass to the oxygen is calculated",
         "instead of the angle between the dipole and a box axis."
     };
-    static int         axis    = 2; /* normal to memb. default z  */
-    static const char* axtitle = "Z";
-    static int         nslices = 0; /* nr of slices defined       */
-    t_pargs            pa[]    = { { "-d",
+    static const char* axisOption[axisNR + 1] = { nullptr, "Z", "Y", "X", nullptr };
+    static int         nslices                = 0; /* nr of slices defined       */
+    // The struct that will hold the parsed user input
+    t_pargs     pa[]   = { { "-d",
                        FALSE,
-                       etSTR,
-                       { &axtitle },
+                       etENUM,
+                       { axisOption },
                        "Take the normal on the membrane in direction X, Y or Z." },
                      { "-sl",
                        FALSE,
@@ -284,7 +293,7 @@ int gmx_h2order(int argc, char* argv[])
                        { &nslices },
                        "Calculate order parameter as function of boxlength, dividing the box"
                        " in this number of slices." } };
-    const char*        bugs[]  = {
+    const char* bugs[] = {
         "The program assigns whole water molecules to a slice, based on the first "
         "atom of three in the index file group. It assumes an order O,H,H. "
         "Name is not important, but the order is. If this demand is not met, "
@@ -315,11 +324,25 @@ int gmx_h2order(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
+    // Parse the user input in argv into pa
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
                            asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
+
+    // Process the axis option chosen by the user to set the
+    // axis used for the computation. The useful choice is an
+    // axis normal to the membrane. Default is z-axis.
+    int axis = ZZ;
+    switch (nenum(axisOption))
+    {
+        case axisX: axis = XX; break;
+        case axisY: axis = YY; break;
+        case axisZ: axis = ZZ; break;
+        default: axis = ZZ;
+    }
+
     bMicel = opt2bSet("-nm", NFILE, fnm);
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
