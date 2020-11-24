@@ -78,8 +78,8 @@ namespace gmx
  *  declared noexcept, but at least icc 19.1 and 21-beta08 with the
  *  libstdc++-7.5 has difficulty implementing a std::vector of
  *  std::thread started with this function when declared noexcept. It
- *  is not clear whether the problem is the compiler or the standard
- *  library. Fortunately, this function is not performance sensitive,
+ *  is a known compiler bug that should be fixed after 19.1.
+ *  Fortunately, this function is not performance sensitive,
  *  and only runs on platforms other than x86 and POWER (ie ARM),
  *  so the possible overhead introduced by omitting noexcept is not
  *  important.

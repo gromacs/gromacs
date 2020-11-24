@@ -116,7 +116,107 @@ DeviceBuffer<T>& DeviceBuffer<T>::operator=(std::nullptr_t nullPtr)
     return *this;
 }
 
+
+namespace gmx::internal
+{
+//! Shorthand alias to create a placeholder SYCL accessor with chosen data type and access mode.
+template<class T, enum cl::sycl::access::mode mode>
+using PlaceholderAccessor =
+        cl::sycl::accessor<T, 1, mode, cl::sycl::access::target::global_buffer, cl::sycl::access::placeholder::true_t>;
+} // namespace gmx::internal
+
+/** \brief
+ * Thin wrapper around placeholder accessor that allows implicit construction from \c DeviceBuffer.
+ *
+ * "Placeholder accessor" is an indicator of the intent to create an accessor for certain buffer
+ * of a certain type, that is not yet bound to a specific command group handler (device). Such
+ * accessors can be created outside SYCL kernels, which is helpful if we want to pass them as
+ * function arguments.
+ *
+ * \tparam T Type of buffer content.
+ * \tparam mode Access mode.
+ */
+template<class T, enum cl::sycl::access::mode mode>
+class DeviceAccessor : public gmx::internal::PlaceholderAccessor<T, mode>
+{
+public:
+    // Inherit all the constructors
+    using gmx::internal::PlaceholderAccessor<T, mode>::PlaceholderAccessor;
+    //! Construct Accessor from DeviceBuffer (must be initialized)
+    DeviceAccessor(DeviceBuffer<T>& buffer) :
+        gmx::internal::PlaceholderAccessor<T, mode>(getSyclBuffer(buffer))
+    {
+    }
+
+private:
+    //! Helper function to get sycl:buffer object from DeviceBuffer wrapper, with a sanity check.
+    static inline cl::sycl::buffer<T, 1>& getSyclBuffer(DeviceBuffer<T>& buffer)
+    {
+        GMX_ASSERT(bool(buffer), "Trying to construct accessor from an uninitialized buffer");
+        return *buffer.buffer_;
+    }
+};
+
+namespace gmx::internal
+{
+//! A "blackhole" class to be used when we want to ignore an argument to a function.
+struct EmptyClassThatIgnoresConstructorArguments
+{
+    template<class... Args>
+    [[maybe_unused]] EmptyClassThatIgnoresConstructorArguments(Args&&... /*args*/)
+    {
+    }
+};
+} // namespace gmx::internal
+
+/** \brief
+ * Helper class to be used as function argument. Will either correspond to a device accessor, or an empty class.
+ *
+ * Example usage:
+ * \code
+    template <bool doFoo>
+    void getBarKernel(handler& cgh, OptionalAccessor<float, mode::read, doFoo> a_fooPrms)
+    {
+        if constexpr (doFoo)
+            cgh.require(a_fooPrms);
+        // Can only use a_fooPrms if doFoo == true
+    }
+
+    template <bool doFoo>
+    void callBar(DeviceBuffer<float> b_fooPrms)
+    {
+        // If doFoo is false, b_fooPrms will be ignored (can be not initialized).
+        // Otherwise, an accessor will be built (b_fooPrms must be a valid buffer).
+        auto kernel = getBarKernel<doFoo>(b_fooPrms);
+        // If the accessor in not enabled, anything can be passed as its ctor argument.
+        auto kernel2 = getBarKernel<false>(nullptr_t);
+    }
+ * \endcode
+ *
+ * \tparam T Data type of the underlying buffer
+ * \tparam mode Access mode of the accessor
+ * \tparam enabled Compile-time flag indicating whether we want to actually create an accessor.
+ */
+template<class T, enum cl::sycl::access::mode mode, bool enabled>
+using OptionalAccessor =
+        std::conditional_t<enabled, DeviceAccessor<T, mode>, gmx::internal::EmptyClassThatIgnoresConstructorArguments>;
+
 #endif // #ifndef DOXYGEN
+
+/*! \brief Check the validity of the device buffer.
+ *
+ * Checks if the buffer is valid and if its allocation is big enough.
+ *
+ * \param[in] buffer        Device buffer to be checked.
+ * \param[in] requiredSize  Number of elements that the buffer will have to accommodate.
+ *
+ * \returns Whether the device buffer exists and has enough capacity.
+ */
+template<typename T>
+static gmx_unused bool checkDeviceBuffer(const DeviceBuffer<T>& buffer, int requiredSize)
+{
+    return buffer.buffer_ && (static_cast<int>(buffer.buffer_->get_count()) >= requiredSize);
+}
 
 /*! \libinternal \brief
  * Allocates a device-side buffer.
@@ -182,8 +282,10 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
         return; // such calls are actually made with empty domains
     }
     GMX_ASSERT(buffer, "needs a buffer pointer");
-    GMX_ASSERT(buffer->buffer_, "needs an initialized buffer pointer");
     GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
+
+    GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
+               "buffer too small or not initialized");
 
     cl::sycl::buffer<ValueType>& syclBuffer = *buffer->buffer_;
 
@@ -234,6 +336,9 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
     GMX_ASSERT(buffer, "needs a buffer pointer");
     GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
 
+    GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
+               "buffer too small or not initialized");
+
     cl::sycl::buffer<ValueType>& syclBuffer = *buffer->buffer_;
 
     cl::sycl::event ev = deviceStream.stream().submit([&](cl::sycl::handler& cgh) {
@@ -269,6 +374,9 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     }
     GMX_ASSERT(buffer, "needs a buffer pointer");
 
+    GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
+               "buffer too small or not initialized");
+
     const ValueType              pattern{};
     cl::sycl::buffer<ValueType>& syclBuffer = *(buffer->buffer_);
 
@@ -278,21 +386,6 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
         };
         cgh.fill(d_bufferAccessor, pattern);
     });
-}
-
-/*! \brief Check the validity of the device buffer.
- *
- * Checks if the buffer is valid and if its allocation is big enough.
- *
- * \param[in] buffer        Device buffer to be checked.
- * \param[in] requiredSize  Number of elements that the buffer will have to accommodate.
- *
- * \returns Whether the device buffer exists and has enough capacity.
- */
-template<typename T>
-static gmx_unused bool checkDeviceBuffer(DeviceBuffer<T> buffer, int requiredSize)
-{
-    return buffer.buffer_ && (static_cast<int>(buffer.buffer_->get_count()) >= requiredSize);
 }
 
 /*! \brief Create a texture object for an array of type ValueType.

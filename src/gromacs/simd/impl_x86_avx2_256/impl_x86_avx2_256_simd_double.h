@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,6 +75,7 @@ static inline SimdDBool gmx_simdcall testBits(SimdDouble a)
     return { _mm256_castsi256_pd(res) };
 }
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
 {
     const __m256d exponentMask = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FF0000000000000LL));
@@ -82,17 +83,27 @@ static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
     const __m256i exponentBias =
             _mm256_set1_epi64x(1022LL); // add 1 to make our definition identical to frexp()
     const __m256d half = _mm256_set1_pd(0.5);
-    __m256i       iExponent;
-    __m128i       iExponent128;
 
-    iExponent = _mm256_castpd_si256(_mm256_and_pd(value.simdInternal_, exponentMask));
-    iExponent = _mm256_sub_epi64(_mm256_srli_epi64(iExponent, 52), exponentBias);
-    iExponent = _mm256_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0));
+    __m256i iExponent = _mm256_castpd_si256(_mm256_and_pd(value.simdInternal_, exponentMask));
+    iExponent         = _mm256_sub_epi64(_mm256_srli_epi64(iExponent, 52), exponentBias);
 
-    iExponent128            = _mm256_extractf128_si256(iExponent, 1);
+    __m256d result = _mm256_or_pd(_mm256_and_pd(value.simdInternal_, mantissaMask), half);
+
+    if (opt == MathOptimization::Safe)
+    {
+        __m256d valueIsZero = _mm256_cmp_pd(_mm256_setzero_pd(), value.simdInternal_, _CMP_EQ_OQ);
+        // Set the 64-bit-fields of "iExponent" to 0-bits if the corresponding input value was +-0.0
+        iExponent = _mm256_andnot_si256(_mm256_castpd_si256(valueIsZero), iExponent);
+        // Set result to +-0 if the corresponding input value was +-0
+        result = _mm256_blendv_pd(result, value.simdInternal_, valueIsZero);
+    }
+
+    // Shuffle exponent so that 32-bit-fields 0 & 1 contain the relevant exponent values to return
+    iExponent               = _mm256_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0));
+    __m128i iExponent128    = _mm256_extractf128_si256(iExponent, 1);
     exponent->simdInternal_ = _mm_unpacklo_epi64(_mm256_castsi256_si128(iExponent), iExponent128);
 
-    return { _mm256_or_pd(_mm256_and_pd(value.simdInternal_, mantissaMask), half) };
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

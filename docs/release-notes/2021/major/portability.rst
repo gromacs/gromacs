@@ -62,8 +62,8 @@ Support for ARM Scalable Vector Extensions (SVE) has been added.
 (typically via the -msve-vector-bits=<len> compiler option),
 which is at the time of the release supported in GNU GCC 10 and later,
 and will supported soon by LLVM 12 and compilers based on this.
-The default vector length is 512 bits, and that can be changed at
-CMake configure time with ``GMX_SIMD_ARM_SVE_LENGTH=<bits>`` option.
+The default is to detect the default vector length at CMake configure time,
+and that can be changed with the ``GMX_SIMD_ARM_SVE_LENGTH=<bits>`` option.
 Supported values are 128, 256, 512 and 1024. Note that the nonbonded
 kernels have not been optimized for ARM_SVE as of yet.
 ARM_SVE support is contributed by the Research Organization for Science Information and Technology (RIST)

@@ -555,7 +555,8 @@ static inline SimdFloat gmx_simdcall log2(SimdFloat x)
     SimdFBool       m;
     SimdFInt32      iExp;
 
-    x    = frexp(x, &iExp);
+    // For the log2() function, the argument can never be 0, so use the faster version of frexp()
+    x    = frexp<MathOptimization::Unsafe>(x, &iExp);
     fExp = cvtI2R(iExp);
 
     m = x < invsqrt2;
@@ -597,7 +598,8 @@ static inline SimdFloat gmx_simdcall log(SimdFloat x)
     SimdFBool       m;
     SimdFInt32      iExp;
 
-    x    = frexp(x, &iExp);
+    // For log(), the argument cannot be 0, so use the faster version of frexp()
+    x    = frexp<MathOptimization::Unsafe>(x, &iExp);
     fExp = cvtI2R(iExp);
 
     m = x < invsqrt2;
@@ -2142,7 +2144,8 @@ static inline SimdDouble gmx_simdcall log2(SimdDouble x)
     SimdDBool        m;
     SimdDInt32       iExp;
 
-    x    = frexp(x, &iExp);
+    // For log2(), the argument cannot be 0, so use the faster version of frexp()
+    x    = frexp<MathOptimization::Unsafe>(x, &iExp);
     fExp = cvtI2R(iExp);
 
     m = x < invsqrt2;
@@ -2190,7 +2193,8 @@ static inline SimdDouble gmx_simdcall log(SimdDouble x)
     SimdDBool        m;
     SimdDInt32       iExp;
 
-    x    = frexp(x, &iExp);
+    // For log(), the argument cannot be 0, so use the faster version of frexp()
+    x    = frexp<MathOptimization::Unsafe>(x, &iExp);
     fExp = cvtI2R(iExp);
 
     m = x < invsqrt2;
@@ -3690,7 +3694,8 @@ static inline SimdDouble gmx_simdcall log2SingleAccuracy(SimdDouble x)
     SimdDInt32       iexp;
     SimdDBool        mask;
 
-    x    = frexp(x, &iexp);
+    // For log2(), the argument cannot be 0, so use the faster version of frexp
+    x    = frexp<MathOptimization::Unsafe>(x, &iexp);
     fexp = cvtI2R(iexp);
 
     mask = (x < sqrt2);
@@ -3734,7 +3739,8 @@ static inline SimdDouble gmx_simdcall logSingleAccuracy(SimdDouble x)
     SimdDInt32       iexp;
     SimdDBool        mask;
 
-    x    = frexp(x, &iexp);
+    // For log(), the argument cannot be 0, so use the faster version of frexp
+    x    = frexp<MathOptimization::Unsafe>(x, &iexp);
     fexp = cvtI2R(iexp);
 
     mask = x < invsqrt2;

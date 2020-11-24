@@ -8,7 +8,7 @@ simple-build:
     - .use-clang:base
     - .rules:basic-push
   stage: pre-build
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_CPU_LIMIT: 8
@@ -226,7 +226,7 @@ gromacs:gcc-7:configure:
     - .use-gcc:base
     - .use-opencl
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -239,7 +239,7 @@ gromacs:clang-8-cuda-10.0:configure:
     - .use-clang:base
     - .use-cuda
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_USE_SIMD_KERNELS=off"
@@ -253,7 +253,7 @@ gromacs:gcc-8-cuda-11.0:configure:
     - .use-gcc:base
     - .use-cuda
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
@@ -266,7 +266,7 @@ gromacs:gcc-8-cuda-11.0:configureMPI:
     - .use-cuda
     - .use-mpi
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
@@ -277,7 +277,7 @@ gromacs:clang-TSAN:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 8
@@ -288,7 +288,7 @@ gromacs:clang-8:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
   variables:
     COMPILER_MAJOR_VERSION: 8
 
@@ -298,7 +298,7 @@ gromacs:clang-9-mpi:configure:
    - .use-clang:base
    - .use-mpi
    - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 9
@@ -309,7 +309,7 @@ gromacs:clang-static-analyzer:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
@@ -321,7 +321,7 @@ gromacs:clang-ASAN:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 8
@@ -333,7 +333,7 @@ gromacs:oneapi-2021.1-beta09-opencl:configure:
    - .use-oneapi:base
    - .use-opencl
    - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
@@ -344,7 +344,7 @@ gromacs:oneapi-2021.1-beta09-sycl:configure:
    - .use-oneapi:base
    - .use-sycl
    - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
@@ -354,7 +354,7 @@ gromacs:clang-UBSAN:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 8
@@ -367,7 +367,7 @@ gromacs:gcc-8-cuda-11.0:release:configure:
     - .use-mpi
     - .use-cuda
     - .rules:nightly-only-for-release
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 8
@@ -386,7 +386,7 @@ gromacs:gcc-7:release:configure:
     - .use-gcc:base
     - .use-opencl
     - .rules:nightly-only-for-release
-  image: gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 7
@@ -404,7 +404,7 @@ gromacs:clang-9:release:configure:
     - .use-clang:base
     - .use-mpi
     - .rules:nightly-only-for-release
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 9
@@ -422,7 +422,7 @@ gromacs:clang-8-cuda-10.1:release:configure:
     - .use-clang:base
     - .use-cuda
     - .rules:nightly-only-for-release
-  image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi-master
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.1
   variables:
     COMPILER_MAJOR_VERSION: 8
     RELEASE_BUILD_DIR: release-builds-clang
@@ -434,7 +434,7 @@ gromacs:oneapi-2021.1-beta09-opencl:release:configure:
    - .use-oneapi:base
    - .use-opencl
    - .rules:nightly-only-for-release
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 2021
@@ -485,7 +485,7 @@ gromacs:gcc-7:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
@@ -498,7 +498,7 @@ gromacs:clang-8-cuda-10.0:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
@@ -511,7 +511,7 @@ gromacs:gcc-8-cuda-11.0:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   needs:
@@ -524,7 +524,7 @@ gromacs:gcc-8-cuda-11.0:buildMPI:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   needs:
@@ -537,7 +537,7 @@ gromacs:clang-TSAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
@@ -550,7 +550,7 @@ gromacs:clang-ASAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
@@ -565,7 +565,7 @@ gromacs:clang-UBSAN:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
@@ -580,7 +580,7 @@ gromacs:clang-static-analyzer:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
@@ -595,7 +595,7 @@ gromacs:clang-8:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
   needs:
     - job: gromacs:clang-8:configure
 
@@ -606,7 +606,7 @@ gromacs:oneapi-2021.1-beta09-opencl:build:
     - .use-ccache
     - .use-oneapi:base
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -619,7 +619,7 @@ gromacs:oneapi-2021.1-beta09-sycl:build:
     - .use-ccache
     - .use-oneapi:base
     - .rules:merge-and-post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -632,7 +632,7 @@ gromacs:clang-9-mpi:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   needs:
@@ -649,7 +649,7 @@ gromacs:gcc-8-cuda-11.0:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-gcc
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   needs:
     - job: gromacs:gcc-8-cuda-11.0:release:configure
 
@@ -664,7 +664,7 @@ gromacs:gcc-7:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc
-  image: gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
   needs:
     - job: gromacs:gcc-7:release:configure
 
@@ -679,7 +679,7 @@ gromacs:clang-9:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   needs:
     - job: gromacs:clang-9:release:configure
 
@@ -693,7 +693,7 @@ gromacs:clang-8-cuda-10.1:release:build:
   stage: release-build
   variables:
     BUILD_DIR: release-builds-clang
-  image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi-master
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.1
   needs:
     - job: gromacs:clang-8-cuda-10.1:release:configure
 
@@ -710,7 +710,7 @@ gromacs:oneapi-2021.1-beta09-opencl:release:build:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     BUILD_DIR: release-builds-oneapi
     COMPILER_MAJOR_VERSION: 2021
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   needs:
     - job: gromacs:oneapi-2021.1-beta09-opencl:release:configure
 
@@ -798,7 +798,7 @@ gromacs:gcc-7:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
@@ -813,7 +813,7 @@ gromacs:clang-8-cuda-10.0:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -827,7 +827,7 @@ gromacs:gcc-8-cuda-11.0:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -841,7 +841,7 @@ gromacs:gcc-8-cuda-11.0:test-gpucommupd:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -858,7 +858,7 @@ gromacs:clang-8:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
   needs:
     - job: gromacs:clang-8:build
 
@@ -866,7 +866,7 @@ gromacs:clang-TSAN:test:
   extends:
     - .gromacs:base:test
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
@@ -877,7 +877,7 @@ gromacs:clang-ASAN:test:
     - .gromacs:base:test
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
@@ -891,7 +891,7 @@ gromacs:clang-UBSAN:test:
     - .gromacs:base:test
     - .use-clang:base
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
@@ -904,7 +904,7 @@ gromacs:oneapi-2021.1-beta09-opencl:test:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -915,7 +915,7 @@ gromacs:oneapi-2021.1-beta09-sycl:test:
     - .gromacs:base:test
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -925,7 +925,7 @@ gromacs:clang-9-mpi:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   tags:
@@ -937,7 +937,7 @@ gromacs:gcc-7:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
@@ -956,7 +956,7 @@ gromacs:clang-8-cuda-10.0:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -975,7 +975,7 @@ gromacs:gcc-8-cuda-11.0:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -993,7 +993,7 @@ gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-tMPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -1019,7 +1019,7 @@ gromacs:gcc-8-cuda-11.0:regressiontest-upd-tMPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/cmake-3.15.7-gcc-8-cuda-11.0-nvidiaopencl-clfft-openmpi-master
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
@@ -1042,7 +1042,7 @@ gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -1069,7 +1069,7 @@ gromacs:clang-8:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
   tags:
     - k8s-scilifelab
   needs:
@@ -1080,7 +1080,7 @@ gromacs:clang-TSAN:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
@@ -1094,7 +1094,7 @@ gromacs:clang-ASAN:regressiontest:
     - .gromacs:base:regressiontest
     - .use-clang:base
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:
@@ -1107,7 +1107,7 @@ gromacs:clang-9:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"
@@ -1123,7 +1123,7 @@ gromacs:oneapi-2021.1-beta09-opencl:regressiontest:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:merge-requests
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -1135,7 +1135,7 @@ gromacs:oneapi-2021.1-beta09-sycl:regressiontest:
     - .gromacs:base:regressiontest
     - .use-oneapi:base
     - .rules:post-merge-acceptance
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
@@ -1147,7 +1147,7 @@ gromacs:gcc-8-cuda-11.0:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -1164,7 +1164,7 @@ gromacs:gcc-7:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc
@@ -1182,7 +1182,7 @@ gromacs:clang-9:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang
@@ -1195,7 +1195,7 @@ gromacs:clang-8-cuda-10.1:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi-master
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.1
   variables:
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
@@ -1212,7 +1212,7 @@ gromacs:oneapi-2021.1-beta09-opencl:release:test:
     - .use-oneapi:base
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     BUILD_DIR: release-builds-oneapi
@@ -1225,7 +1225,7 @@ gromacs:gcc-7:release:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc
@@ -1243,7 +1243,7 @@ gromacs:clang-9:release:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang
@@ -1260,7 +1260,7 @@ gromacs:clang-8-cuda-10.1:release:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/cmake-3.15.7-llvm-8-cuda-10.1-openmpi-master
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.1
   variables:
     BUILD_DIR: release-builds-clang
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
@@ -1280,7 +1280,7 @@ gromacs:oneapi-2021.1-beta09-opencl:release:regressiontest:
     - .use-oneapi:base
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1-beta09
   variables:
     CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     BUILD_DIR: release-builds-oneapi

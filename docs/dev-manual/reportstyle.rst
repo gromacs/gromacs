@@ -34,8 +34,8 @@ does not result in any warnings or errors in itself. If your example generates e
 not be considered as *real*, or at the minimum it will be much harder to analyse to find the actual issue.
 
 
-If your inputs are sensitive, then it is possible to create private `issues`_ so that the
-developer team can have access to solve the problem, while preventing widespread
+If your inputs are sensitive, then it is possible to create private `issues <issue tracker>`_
+so that the developer team can have access to solve the problem, while preventing widespread
 visibility on the internet.
 
 

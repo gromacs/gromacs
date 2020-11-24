@@ -101,6 +101,58 @@ gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
     return exclusionsListOfListsGlobal;
 }
 
+ListedInteractionData TopologyBuilder::createInteractionData(const detail::ParticleSequencer& particleSequencer)
+{
+    ListedInteractionData interactionData;
+
+    // this code is doing the compile time equivalent of
+    // for (int i = 0; i < interactionData.size(); ++i)
+    //     create(get<i>(interactionData));
+
+    auto create = [this, &particleSequencer](auto& interactionDataElement) {
+        using InteractionType = typename std::decay_t<decltype(interactionDataElement)>::type;
+
+        // first compression stage: each bond per molecule listed once,
+        // eliminates duplicates from multiple identical molecules
+        auto  compressedDataStage1 = detail::collectInteractions<InteractionType>(this->molecules_);
+        auto& expansionArrayStage1 = std::get<0>(compressedDataStage1);
+        auto& moleculeInteractions = std::get<1>(compressedDataStage1);
+
+        // second compression stage: recognize bond duplicates among bonds from all molecules put together
+        auto  compressedDataStage2 = detail::eliminateDuplicateInteractions(moleculeInteractions);
+        auto& expansionArrayStage2 = std::get<0>(compressedDataStage2);
+        auto& uniqueInteractionInstances = std::get<1>(compressedDataStage2);
+
+        // combine stage 1 + 2 expansion arrays
+        std::vector<size_t> expansionArray(expansionArrayStage1.size());
+        std::transform(begin(expansionArrayStage1), end(expansionArrayStage1), begin(expansionArray),
+                       [& S2 = expansionArrayStage2](size_t S1Element) { return S2[S1Element]; });
+
+        // add data about InteractionType instances
+        interactionDataElement.parameters = std::move(uniqueInteractionInstances);
+
+        interactionDataElement.indices.resize(expansionArray.size());
+        // coordinateIndices contains the particle sequence IDs of all interaction coordinates of type <BondType>
+        auto coordinateIndices = detail::sequenceIDs<InteractionType>(this->molecules_, particleSequencer);
+        // zip coordinateIndices(i,j,...) + expansionArray(k) -> interactionDataElement.indices(i,j,...,k)
+        std::transform(begin(coordinateIndices), end(coordinateIndices), begin(expansionArray),
+                       begin(interactionDataElement.indices),
+                       [](auto coordinateIndex, auto interactionIndex) {
+                           std::array<int, coordinateIndex.size() + 1> ret{ 0 };
+                           for (int i = 0; i < int(coordinateIndex.size()); ++i)
+                           {
+                               ret[i] = coordinateIndex[i];
+                           }
+                           ret[coordinateIndex.size()] = interactionIndex;
+                           return ret;
+                       });
+    };
+
+    for_each_tuple(create, interactionData);
+
+    return interactionData;
+}
+
 template<typename T, class Extractor>
 std::vector<T> TopologyBuilder::extractParticleTypeQuantity(Extractor&& extractor)
 {
@@ -163,6 +215,8 @@ Topology TopologyBuilder::buildTopology()
 
     topology_.combinationRule_         = particleTypesInteractions_.getCombinationRule();
     topology_.nonBondedInteractionMap_ = particleTypesInteractions_.generateTable();
+
+    topology_.interactionData_ = createInteractionData(topology_.particleSequencer_);
 
     // Check whether there is any missing term in the particleTypesInteractions compared to the
     // list of particletypes
@@ -250,6 +304,11 @@ int Topology::sequenceID(MoleculeName moleculeName, int moleculeNr, ResidueName 
 NonBondedInteractionMap Topology::getNonBondedInteractionMap() const
 {
     return nonBondedInteractionMap_;
+}
+
+ListedInteractionData Topology::getInteractionData() const
+{
+    return interactionData_;
 }
 
 CombinationRule Topology::getCombinationRule() const

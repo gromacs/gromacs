@@ -577,8 +577,8 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
 14. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
 15. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
     The SVE vector length is fixed at CMake configure time. The default vector
-    length is 512 bits, and this can be changed via the ``GMX_SIMD_ARM_SVE_LENGTH``
-    CMake variable.
+    length is automatically detected, and this can be changed via the
+    ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.
 
 The CMake configure system will check that the compiler you have
 chosen can target the architecture you have chosen. mdrun will check
@@ -1317,8 +1317,8 @@ and
 a beta version of oneAPI containing Intel's compiler.
 For this testing, we use Ubuntu 18.04 or 20.04 operating system.
 Other compiler, library, and OS versions are tested less frequently.
-For details, you can
-have a look at the `continuous integration server used by GROMACS`_,
+For details, you can have a look at the
+`continuous integration server used by GROMACS <gitlab>`_,
 which uses GitLab runner on a local k8s x86 cluster with NVIDIA and
 AMD GPU support.
 

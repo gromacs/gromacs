@@ -297,7 +297,8 @@ void gmx::LegacySimulator::do_md()
             init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier, ir,
                         top_global, oenv, wcycle, startingBehavior, simulationsShareState, ms);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, ir, pull_work,
-                                   mdoutf_get_fp_dhdl(outf), false, startingBehavior, mdModulesNotifier);
+                                   mdoutf_get_fp_dhdl(outf), false, startingBehavior,
+                                   simulationsShareState, mdModulesNotifier);
 
     gstat = global_stat_init(ir);
 
@@ -392,7 +393,7 @@ void gmx::LegacySimulator::do_md()
                            "Orientation restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
                 ir->efep == efepNO
-                        || (!haveFreeEnergyType(*ir, efptBONDED) && !haveFreeEnergyType(*ir, efptMASS)),
+                        || (!haveFepPerturbedMasses(*top_global) && !havePerturbedConstraints(*top_global)),
                 "Free energy perturbation of masses and constraints are not supported with the GPU "
                 "update.");
 
@@ -1069,7 +1070,10 @@ void gmx::LegacySimulator::do_md()
 
         dvdl_constr = 0;
 
-        wallcycle_start(wcycle, ewcUPDATE);
+        if (!useGpuForUpdate)
+        {
+            wallcycle_start(wcycle, ewcUPDATE);
+        }
         /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
         if (bTrotter)
         {
@@ -1518,6 +1522,8 @@ void gmx::LegacySimulator::do_md()
     {
         if (ir->nstcalcenergy > 0)
         {
+            energyOutput.printEnergyConservation(fplog, ir->simulation_part, EI_MD(ir->eI));
+
             gmx::EnergyOutput::printAnnealingTemperatures(fplog, groups, &(ir->opts));
             energyOutput.printAverages(fplog, groups);
         }

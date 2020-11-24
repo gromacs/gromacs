@@ -41,6 +41,7 @@
 #ifndef GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_CUH
 #define GMX_GPU_UTILS_GPUEVENTSYNCHRONIZER_CUH
 
+#include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/utility/gmxassert.h"
@@ -66,12 +67,14 @@ public:
     GpuEventSynchronizer()
     {
         cudaError_t gmx_used_in_debug stat = cudaEventCreateWithFlags(&event_, cudaEventDisableTiming);
-        GMX_RELEASE_ASSERT(stat == cudaSuccess, "cudaEventCreate failed");
+        GMX_RELEASE_ASSERT(stat == cudaSuccess,
+                           ("cudaEventCreate failed. " + gmx::getDeviceErrorString(stat)).c_str());
     }
     ~GpuEventSynchronizer()
     {
         cudaError_t gmx_used_in_debug stat = cudaEventDestroy(event_);
-        GMX_ASSERT(stat == cudaSuccess, "cudaEventDestroy failed");
+        GMX_RELEASE_ASSERT(stat == cudaSuccess,
+                           ("cudaEventDestroy failed. " + gmx::getDeviceErrorString(stat)).c_str());
     }
     //! No copying
     GpuEventSynchronizer(const GpuEventSynchronizer&) = delete;
@@ -86,19 +89,22 @@ public:
     inline void markEvent(const DeviceStream& deviceStream)
     {
         cudaError_t gmx_used_in_debug stat = cudaEventRecord(event_, deviceStream.stream());
-        GMX_ASSERT(stat == cudaSuccess, "cudaEventRecord failed");
+        GMX_ASSERT(stat == cudaSuccess,
+                   ("cudaEventRecord failed. " + gmx::getDeviceErrorString(stat)).c_str());
     }
     /*! \brief Synchronizes the host thread on the marked event. */
     inline void waitForEvent()
     {
         cudaError_t gmx_used_in_debug stat = cudaEventSynchronize(event_);
-        GMX_ASSERT(stat == cudaSuccess, "cudaEventSynchronize failed");
+        GMX_ASSERT(stat == cudaSuccess,
+                   ("cudaEventSynchronize failed. " + gmx::getDeviceErrorString(stat)).c_str());
     }
     /*! \brief Enqueues a wait for the recorded event in stream \p stream */
     inline void enqueueWaitEvent(const DeviceStream& deviceStream)
     {
         cudaError_t gmx_used_in_debug stat = cudaStreamWaitEvent(deviceStream.stream(), event_, 0);
-        GMX_ASSERT(stat == cudaSuccess, "cudaStreamWaitEvent failed");
+        GMX_ASSERT(stat == cudaSuccess,
+                   ("cudaStreamWaitEvent failed. " + gmx::getDeviceErrorString(stat)).c_str());
     }
 
 private:

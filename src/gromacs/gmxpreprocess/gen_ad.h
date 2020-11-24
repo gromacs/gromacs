@@ -55,6 +55,7 @@ void gen_pad(t_atoms*                               atoms,
              gmx::ArrayRef<InteractionsOfType>      plist,
              t_excls                                excls[],
              gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
-             bool                                   bAllowMissing);
+             bool                                   bAllowMissing,
+             gmx::ArrayRef<const int>               circ_bonds);
 
 #endif

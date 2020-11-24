@@ -38,6 +38,12 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
+target_sources(nblib
+        PRIVATE
+        calculator.cpp
+        transformations.cpp
+        )
+
 if(GMX_INSTALL_NBLIB_API)
     install(FILES
             bondtypes.h

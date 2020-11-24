@@ -291,14 +291,41 @@ static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
 #endif
 }
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
-    __m512  rExponent = _mm512_getexp_ps(value.simdInternal_);
-    __m512i iExponent = _mm512_cvtps_epi32(rExponent);
+    __m512  rExponent;
+    __m512i iExponent;
+    __m512  result;
 
-    exponent->simdInternal_ = _mm512_add_epi32(iExponent, _mm512_set1_epi32(1));
+    if (opt == MathOptimization::Safe)
+    {
+        // For the safe branch, we use the masked operations to only assign results if the
+        // input value was nonzero, and otherwise set exponent to 0, and the fraction to the input (+-0).
+        __mmask16 valueIsNonZero =
+                _mm512_cmp_ps_mask(_mm512_setzero_ps(), value.simdInternal_, _CMP_NEQ_OQ);
+        rExponent = _mm512_mask_getexp_ps(_mm512_setzero_ps(), valueIsNonZero, value.simdInternal_);
+        iExponent = _mm512_cvtps_epi32(rExponent);
+        iExponent = _mm512_mask_add_epi32(iExponent, valueIsNonZero, iExponent, _mm512_set1_epi32(1));
 
-    return { _mm512_getmant_ps(value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src) };
+        // Set result to input value when the latter is +-0
+        result = _mm512_mask_getmant_ps(value.simdInternal_, valueIsNonZero, value.simdInternal_,
+                                        _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+    }
+    else
+    {
+        // For the fast branch, it's the user's responsibility to make sure never to call the
+        // function with input values of +-0.0
+        rExponent = _mm512_getexp_ps(value.simdInternal_);
+        iExponent = _mm512_cvtps_epi32(rExponent);
+        iExponent = _mm512_add_epi32(iExponent, _mm512_set1_epi32(1));
+
+        result = _mm512_getmant_ps(value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+    }
+
+    exponent->simdInternal_ = iExponent;
+
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

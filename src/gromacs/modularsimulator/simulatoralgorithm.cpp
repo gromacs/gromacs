@@ -408,13 +408,16 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
             opt2fn("-c", legacySimulatorData->nfile, legacySimulatorData->fnm), legacySimulatorData->inputrec,
             legacySimulatorData->mdAtoms->mdatoms(), legacySimulatorData->top_global);
 
+    // Multi sim is turned off
+    const bool simulationsShareState = false;
+
     energyData_ = std::make_unique<EnergyData>(
-            statePropagatorData_.get(), freeEnergyPerturbationData_.get(),
-            legacySimulatorData->top_global, legacySimulatorData->inputrec, legacySimulatorData->mdAtoms,
-            legacySimulatorData->enerd, legacySimulatorData->ekind, legacySimulatorData->constr,
-            legacySimulatorData->fplog, legacySimulatorData->fr->fcdata.get(),
-            legacySimulatorData->mdModulesNotifier, MASTER(legacySimulatorData->cr),
-            legacySimulatorData->observablesHistory, legacySimulatorData->startingBehavior);
+            statePropagatorData_.get(), freeEnergyPerturbationData_.get(), legacySimulatorData->top_global,
+            legacySimulatorData->inputrec, legacySimulatorData->mdAtoms, legacySimulatorData->enerd,
+            legacySimulatorData->ekind, legacySimulatorData->constr, legacySimulatorData->fplog,
+            legacySimulatorData->fr->fcdata.get(), legacySimulatorData->mdModulesNotifier,
+            MASTER(legacySimulatorData->cr), legacySimulatorData->observablesHistory,
+            legacySimulatorData->startingBehavior, simulationsShareState);
 }
 
 ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
@@ -692,6 +695,19 @@ ISimulatorElement* ModularSimulatorAlgorithmBuilderHelper::storeElement(std::uni
 bool ModularSimulatorAlgorithmBuilderHelper::elementIsStored(const ISimulatorElement* element) const
 {
     return builder_->elementExists(element);
+}
+
+std::optional<std::any> ModularSimulatorAlgorithmBuilderHelper::getStoredValue(const std::string& key) const
+{
+    const auto iter = values_.find(key);
+    if (iter == values_.end())
+    {
+        return std::nullopt;
+    }
+    else
+    {
+        return iter->second;
+    }
 }
 
 void ModularSimulatorAlgorithmBuilderHelper::registerThermostat(

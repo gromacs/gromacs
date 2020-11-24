@@ -107,7 +107,8 @@ public:
                const MdModulesNotifier&    mdModulesNotifier,
                bool                        isMasterRank,
                ObservablesHistory*         observablesHistory,
-               StartingBehavior            startingBehavior);
+               StartingBehavior            startingBehavior,
+               bool                        simulationsShareState);
 
     /*! \brief Final output
      *
@@ -315,6 +316,8 @@ private:
     const SimulationGroups* groups_;
     //! History of simulation observables.
     ObservablesHistory* observablesHistory_;
+    //! Whether simulations share the state
+    bool simulationsShareState_;
 };
 
 /*! \internal

@@ -47,31 +47,20 @@ set(IGNORED_CLANG_ALL_WARNINGS
         "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
         "-Wno-switch-enum" # default statement for enum is OK
 
-        # We need to use macros like
-        # GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR. Those will look strange
-        # if they don't have a semicolon after them, and might confuse
-        # tools like IDEs also.
-        "-Wno-extra-semi-stmt"
-
-        #Following ones are undecided/TODO
-        "-Wno-disabled-macro-expansion"
-        "-Wno-cast-align"
-        "-Wno-reserved-id-macro"
-        "-Wno-global-constructors"
+        # These are all needed, mostly for testing code
+        "-Wno-conversion"
+        "-Wno-documentation"
+        "-Wno-double-promotion"
         "-Wno-exit-time-destructors"
+        "-Wno-float-equal"
+        "-Wno-global-constructors"
+        "-Wno-padded"
+        "-Wno-reserved-id-macro"
+        "-Wno-shadow"
         "-Wno-unused-macros"
         "-Wno-weak-vtables"
-        "-Wno-conditional-uninitialized"
-        "-Wno-format-nonliteral"
-        "-Wno-shadow"
-        "-Wno-cast-qual"
-        "-Wno-documentation"
-        "-Wno-used-but-marked-unused"
-        "-Wno-padded"
-        "-Wno-float-equal"
-        "-Wno-old-style-cast"
-        "-Wno-conversion"
-        "-Wno-double-promotion")
+        )
+
 string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
 
 set(TESTUTILS_DIR ${PROJECT_SOURCE_DIR}/src/testutils)

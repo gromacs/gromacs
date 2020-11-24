@@ -66,6 +66,7 @@ class ArrayRef;
  * \param[in] rN Residue number of the N-terminus of each chain.
  * \param[in] rC Residue number of the C-terminus of each chain.
  * \param[in] bMissing If routine should continue if atoms are not found.
+ * \param[in] cyclicBondsIndex Index of cyclic bonds or empty.
  * \returns New total number of atoms.
  */
 int add_h(t_atoms**                                   initialAtoms,
@@ -78,5 +79,6 @@ int add_h(t_atoms**                                   initialAtoms,
           gmx::ArrayRef<MoleculePatchDatabase* const> ctdb,
           gmx::ArrayRef<const int>                    rN,
           gmx::ArrayRef<const int>                    rC,
-          bool                                        bMissing);
+          bool                                        bMissing,
+          gmx::ArrayRef<const int>                    cyclicBondsIndex);
 #endif

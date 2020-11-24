@@ -250,12 +250,28 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
 elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
 
     # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
-
     gmx_option_multichoice(
         GMX_SIMD_ARM_SVE_LENGTH
-        "SVE vector length"
-        "512"
-        128 256 512 1024 2048)
+	"SVE vector length in bits"
+	"auto"
+	auto 128 256 512 1024 2048)
+
+    if (GMX_SIMD_ARM_SVE_LENGTH STREQUAL "AUTO")
+        if (NOT GMX_SIMD_ARM_SVE_DETECTED_LENGTH)
+            # Read the vector length and cache it
+            if(NOT EXISTS "/proc/sys/abi/sve_default_vector_length")
+                message(FATAL_ERROR "cannot automatically determine the SVE vector length, please explicitly set it via -DGMX_SIMD_ARM_SVE_LENGTH=<bits>")
+            endif()
+            file(READ "/proc/sys/abi/sve_default_vector_length" GMX_SIMD_ARM_SVE_DETECTED_LENGTH_IN_BYTES)
+	    message(STATUS "Detected SVE vector length in bytes : ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH_IN_BYTES}")
+	    math(EXPR GMX_SIMD_ARM_SVE_DETECTED_LENGTH "${GMX_SIMD_ARM_SVE_DETECTED_LENGTH_IN_BYTES} * 8")
+            set(GMX_SIMD_ARM_SVE_DETECTED_LENGTH ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH} CACHE STRING "Detected length in bits for SVE vectors")
+            message(STATUS "Detected SVE vector length of ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH} bits")
+        endif()
+	set(GMX_SIMD_ARM_SVE_LENGTH_VALUE ${GMX_SIMD_ARM_SVE_DETECTED_LENGTH})
+    else()
+        set(GMX_SIMD_ARM_SVE_LENGTH_VALUE ${GMX_SIMD_ARM_SVE_LENGTH})
+    endif()
 
     gmx_find_simd_arm_sve_flags(SIMD_ARM_SVE_C_SUPPORTED SIMD_ARM_SVE_CXX_SUPPORTED
                                 SIMD_ARM_SVE_C_FLAGS SIMD_ARM_SVE_CXX_FLAGS)

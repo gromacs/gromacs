@@ -97,7 +97,6 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \param[in]     dt                               Timestep.
  * \param[in]     gm_lambdas                       Temperature scaling factors (one per group)
  * \param[in]     gm_tempScaleGroups               Mapping of atoms into groups.
- * \param[in]     dtPressureCouple                 Time step for pressure coupling
  * \param[in]     prVelocityScalingMatrixDiagonal  Diagonal elements of Parrinello-Rahman velocity scaling matrix
  */
 template<NumTempScaleValues numTempScaleValues, VelocityScalingType velocityScaling>
@@ -138,6 +137,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         // Swapping places for xp and x so that the x will contain the updated coordinates and xp - the
         // coordinates before update. This should be taken into account when (if) constraints are applied
         // after the update: x and xp have to be passed to constraints in the 'wrong' order.
+        // TODO: Issue #3727
         gm_xp[threadIndex] = x;
 
         if (numTempScaleValues != NumTempScaleValues::None || velocityScaling != VelocityScalingType::None)
@@ -249,7 +249,7 @@ void LeapFrogGpu::integrate(const DeviceBuffer<float3>        d_x,
                             const matrix                      prVelocityScalingMatrix)
 {
 
-    ensureNoPendingCudaError("In CUDA version of Leap-Frog integrator");
+    ensureNoPendingDeviceError("In CUDA version of Leap-Frog integrator");
 
     auto kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::None>;
     if (doTemperatureScaling || doParrinelloRahman)

@@ -43,6 +43,8 @@
 
 #include <cstring>
 
+#include <algorithm>
+
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
@@ -91,13 +93,19 @@ static void atom_not_found(int         fatal_errno,
     }
 }
 
-int search_atom(const char* type, int start, const t_atoms* atoms, const char* bondtype, bool bAllowMissing)
+int search_atom(const char*              type,
+                int                      start,
+                const t_atoms*           atoms,
+                const char*              bondtype,
+                bool                     bAllowMissing,
+                gmx::ArrayRef<const int> cyclicBondsIndex)
 {
-    int           i, resind = -1;
-    bool          bPrevious, bNext;
-    int           natoms = atoms->nr;
-    t_atom*       at     = atoms->atom;
-    char** const* anm    = atoms->atomname;
+    int                                i, resind = -1;
+    bool                               bPrevious, bNext, bOverring;
+    int                                natoms = atoms->nr;
+    t_atom*                            at     = atoms->atom;
+    char** const*                      anm    = atoms->atomname;
+    gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
 
     bPrevious = (strchr(type, '-') != nullptr);
     bNext     = (strchr(type, '+') != nullptr);
@@ -109,13 +117,25 @@ int search_atom(const char* type, int start, const t_atoms* atoms, const char* b
         {
             /* The next residue */
             type++;
-            while ((start < natoms) && (at[start].resind == resind))
+            bOverring = !cyclicBondsIndex.empty()
+                        && (cyclicBondsIterator =
+                                    std::find(cyclicBondsIndex.begin(), cyclicBondsIndex.end(), resind))
+                                   != cyclicBondsIndex.end();
+            if (bOverring && ((cyclicBondsIterator - cyclicBondsIndex.begin()) & 1))
             {
-                start++;
+                resind = *(--cyclicBondsIterator);
+                return search_res_atom(type, resind, atoms, bondtype, false);
             }
-            if (start < natoms)
+            else
             {
-                resind = at[start].resind;
+                while ((start < natoms) && (at[start].resind == resind))
+                {
+                    start++;
+                }
+                if (start < natoms)
+                {
+                    resind = at[start].resind;
+                }
             }
         }
 
@@ -136,11 +156,30 @@ int search_atom(const char* type, int start, const t_atoms* atoms, const char* b
     {
         /* The previous residue */
         type++;
-        if (start > 0)
+        resind    = at[start].resind;
+        bOverring = !cyclicBondsIndex.empty()
+                    && (cyclicBondsIterator =
+                                std::find(cyclicBondsIndex.begin(), cyclicBondsIndex.end(), resind))
+                               != cyclicBondsIndex.end();
+
+        if (bOverring && !((cyclicBondsIterator - cyclicBondsIndex.begin()) & 1))
         {
-            resind = at[start - 1].resind;
+            resind = *(++cyclicBondsIterator);
+            return search_res_atom(type, resind, atoms, bondtype, false);
         }
-        for (i = start - 1; (i >= 0) /*&& (at[i].resind == resind)*/; i--)
+        else
+        {
+            while ((start >= 0) && (at[start].resind == resind))
+            {
+                start--;
+            }
+            if (start >= 0)
+            {
+                resind = at[start].resind;
+                start++;
+            }
+        }
+        for (i = start - 1; (i >= 0) && (at[i].resind == resind); i--)
         {
             if (gmx_strcasecmp(type, *(anm[i])) == 0)
             {
@@ -164,7 +203,7 @@ int search_res_atom(const char* type, int resind, const t_atoms* atoms, const ch
     {
         if (atoms->atom[i].resind == resind)
         {
-            return search_atom(type, i, atoms, bondtype, bAllowMissing);
+            return search_atom(type, i, atoms, bondtype, bAllowMissing, gmx::ArrayRef<const int>());
         }
     }
 

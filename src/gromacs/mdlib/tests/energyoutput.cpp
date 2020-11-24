@@ -627,7 +627,7 @@ TEST_P(EnergyOutputTest, CheckOutput)
     MdModulesNotifier             mdModulesNotifier;
     std::unique_ptr<EnergyOutput> energyOutput = std::make_unique<EnergyOutput>(
             energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun,
-            StartingBehavior::NewSimulation, mdModulesNotifier);
+            StartingBehavior::NewSimulation, false, mdModulesNotifier);
 
     // Add synthetic data for a single step
     double testValue = 10.0;

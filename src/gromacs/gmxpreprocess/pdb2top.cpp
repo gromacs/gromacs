@@ -756,6 +756,7 @@ static void at2bonds(InteractionsOfType*                  psb,
                      gmx::ArrayRef<const gmx::RVec>       x,
                      real                                 long_bond_dist,
                      real                                 short_bond_dist,
+                     gmx::ArrayRef<const int>             cyclicBondsIndex,
                      const gmx::MDLogger&                 logger)
 {
     real        long_bond_dist2, short_bond_dist2;
@@ -784,8 +785,8 @@ static void at2bonds(InteractionsOfType*                  psb,
              * for missing atoms in bonds, as the hydrogens and terminal atoms
              * have not been added yet.
              */
-            int ai = search_atom(patch.ai().c_str(), i, atoms, ptr, TRUE);
-            int aj = search_atom(patch.aj().c_str(), i, atoms, ptr, TRUE);
+            int ai = search_atom(patch.ai().c_str(), i, atoms, ptr, TRUE, cyclicBondsIndex);
+            int aj = search_atom(patch.aj().c_str(), i, atoms, ptr, TRUE, cyclicBondsIndex);
             if (ai != -1 && aj != -1)
             {
                 real dist2 = distance2(x[ai], x[aj]);
@@ -1363,6 +1364,7 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
 static void gen_cmap(InteractionsOfType*                    psb,
                      gmx::ArrayRef<const PreprocessResidue> usedPpResidues,
                      t_atoms*                               atoms,
+                     gmx::ArrayRef<const int>               cyclicBondsIndex,
                      const gmx::MDLogger&                   logger)
 {
     int         residx;
@@ -1406,14 +1408,14 @@ static void gen_cmap(InteractionsOfType*                    psb,
                 /* Skip this CMAP entry if it refers to residues before the
                  * first or after the last residue.
                  */
-                if (((strchr(pname, '-') != nullptr) && (residx == 0))
+                if ((cyclicBondsIndex.empty() && ((strchr(pname, '-') != nullptr) && (residx == 0)))
                     || ((strchr(pname, '+') != nullptr) && (residx == nres - 1)))
                 {
                     bAddCMAP = false;
                     break;
                 }
 
-                cmap_atomid[k] = search_atom(pname, i, atoms, ptr, TRUE);
+                cmap_atomid[k] = search_atom(pname, i, atoms, ptr, TRUE, cyclicBondsIndex);
                 bAddCMAP       = bAddCMAP && (cmap_atomid[k] != -1);
                 if (!bAddCMAP)
                 {
@@ -1499,6 +1501,7 @@ void pdb2top(FILE*                                  top_file,
              bool                                   bCmap,
              bool                                   bRenumRes,
              bool                                   bRTPresname,
+             gmx::ArrayRef<const int>               cyclicBondsIndex,
              const gmx::MDLogger&                   logger)
 {
     std::array<InteractionsOfType, F_NRE> plist;
@@ -1511,7 +1514,8 @@ void pdb2top(FILE*                                  top_file,
     ResidueType rt;
 
     /* Make bonds */
-    at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist, logger);
+    at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist,
+             cyclicBondsIndex, logger);
 
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]), atoms, ssbonds, bAllowMissing);
@@ -1562,12 +1566,12 @@ void pdb2top(FILE*                                  top_file,
             .asParagraph()
             .appendTextFormatted("Generating angles, dihedrals and pairs...");
     snew(excls, atoms->nr);
-    gen_pad(atoms, usedPpResidues, plist, excls, globalPatches, bAllowMissing);
+    gen_pad(atoms, usedPpResidues, plist, excls, globalPatches, bAllowMissing, cyclicBondsIndex);
 
     /* Make CMAP */
     if (bCmap)
     {
-        gen_cmap(&(plist[F_CMAP]), usedPpResidues, atoms, logger);
+        gen_cmap(&(plist[F_CMAP]), usedPpResidues, atoms, cyclicBondsIndex, logger);
         if (plist[F_CMAP].size() > 0)
         {
             GMX_LOG(logger.info)

@@ -5,7 +5,7 @@
   extends:
     - .variables:default
     - .use-clang:base
-  image: gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
+  image: ${CI_REGISTRY}/gromacs/gromacs/cmake-3.15.7-llvm-8-intelopencl-openmpi:2020
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2

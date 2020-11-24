@@ -153,6 +153,7 @@ set_target_properties(_gmxapi PROPERTIES
 if(GMXAPI_MASTER_PROJECT)
     # TODO: This requirement is probably overly restrictive.
     find_package(GROMACS 2021 REQUIRED
+                 NAMES gromacs gromacs_mpi
                  HINTS "$ENV{GROMACS_DIR}"
                  )
 endif()

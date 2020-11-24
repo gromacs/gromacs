@@ -36,6 +36,8 @@
 add_library(mdlib INTERFACE)
 
 file(GLOB MDLIB_SOURCES *.cpp)
+# To avoid listing all the necessary files manually, we will remove SYCL-specfific one here:
+list(REMOVE_ITEM MDLIB_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/leapfrog_gpu_sycl.cpp)
 
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
 if(GMX_GPU_CUDA)
@@ -46,6 +48,15 @@ if(GMX_GPU_CUDA)
        update_constrain_gpu_impl.cu
        gpuforcereduction_impl.cu
        )
+endif()
+
+if(GMX_GPU_SYCL)
+    gmx_add_libgromacs_sources(
+        leapfrog_gpu_sycl.cpp
+    )
+    _gmx_add_files_to_property(SYCL_SOURCES
+        leapfrog_gpu_sycl.cpp
+    )
 endif()
 
 # Source files have the following private module dependencies.

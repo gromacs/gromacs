@@ -405,7 +405,7 @@ void SettleGpu::apply(const float3* d_x,
                       const PbcAiuc pbcAiuc)
 {
 
-    ensureNoPendingCudaError("In CUDA version SETTLE");
+    ensureNoPendingDeviceError("In CUDA version SETTLE");
 
     // Early exit if no settles
     if (numSettles_ == 0)

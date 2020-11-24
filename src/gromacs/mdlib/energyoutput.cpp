@@ -85,6 +85,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "energydrifttracker.h"
+
 //! Labels for energy file quantities
 //! \{
 static const char* conrmsd_nm[] = { "Constr. rmsd", "Constr.2 rmsd" };
@@ -127,6 +129,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
                            FILE*                    fp_dhdl,
                            bool                     isRerun,
                            const StartingBehavior   startingBehavior,
+                           const bool               simulationsShareState,
                            const MdModulesNotifier& mdModulesNotifier)
 {
     const char*        ener_nm[F_NRE];
@@ -571,6 +574,11 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     else
     {
         numTemperatures_ = 0;
+    }
+
+    if (EI_MD(ir->eI) && !simulationsShareState)
+    {
+        conservedEnergyTracker_ = std::make_unique<EnergyDriftTracker>(mtop->natoms);
     }
 }
 
@@ -1142,6 +1150,12 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                                     store_dhdl, dE_ + fep->lambda_start_n, time);
         }
     }
+
+    if (conservedEnergyTracker_)
+    {
+        conservedEnergyTracker_->addPoint(
+                time, bEner_[F_ECONSERVED] ? enerd->term[F_ECONSERVED] : enerd->term[F_ETOT]);
+    }
 }
 
 void EnergyOutput::recordNonEnergyStep()
@@ -1495,6 +1509,26 @@ void EnergyOutput::restoreFromEnergyHistory(const energyhistory_t& enerhist)
 int EnergyOutput::numEnergyTerms() const
 {
     return ebin_->nener;
+}
+
+void EnergyOutput::printEnergyConservation(FILE* fplog, int simulationPart, bool usingMdIntegrator) const
+{
+    if (fplog == nullptr)
+    {
+        return;
+    }
+
+    if (conservedEnergyTracker_)
+    {
+        std::string partName = formatString("simulation part #%d", simulationPart);
+        fprintf(fplog, "\n%s\n", conservedEnergyTracker_->energyDriftString(partName).c_str());
+    }
+    else if (usingMdIntegrator)
+    {
+        fprintf(fplog,
+                "\nCannot report drift of the conserved energy quantity because simulations share "
+                "state\n\n");
+    }
 }
 
 } // namespace gmx

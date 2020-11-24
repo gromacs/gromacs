@@ -93,6 +93,7 @@ jobs:
       run: |
         set(ENV{CC} ${{ matrix.config.cc }})
         set(ENV{CXX} ${{ matrix.config.cxx }})
+        set(ENV{CI_JOB_ID} ${{ github.sha }} ) # Tell CMake it's running in CI
 
         if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
           execute_process(
@@ -132,6 +133,7 @@ jobs:
             -D GMX_SIMD=None
             -D GMX_FFT_LIBRARY=FFTPACK
             -D GMX_OPENMP=${openmp_use}
+            -D REGRESSIONTEST_DOWNLOAD=ON
           RESULT_VARIABLE result
         )
         if (NOT result EQUAL 0)
@@ -143,6 +145,7 @@ jobs:
       shell: cmake -P {0}
       run: |
         set(ENV{NINJA_STATUS} "[%f/%t %o/sec] ")
+        set(ENV{CI_JOB_ID} ${{ github.sha }} )
 
         if ("${{ runner.os }}" STREQUAL "Windows" AND NOT "x${{ matrix.config.environment_script }}" STREQUAL "x")
           file(STRINGS environment_script_output.txt output_lines)
@@ -192,11 +195,8 @@ jobs:
     - name: Run tests
       shell: cmake -P {0}
       run: |
-        include(ProcessorCount)
-        ProcessorCount(N)
-
         execute_process(
-          COMMAND ctest -j ${N} --output-on-failure
+          COMMAND ctest --output-on-failure
           WORKING_DIRECTORY build
           RESULT_VARIABLE result
           OUTPUT_VARIABLE output

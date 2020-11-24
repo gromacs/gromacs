@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -309,6 +309,7 @@ static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
 
 #endif
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
 {
     // Don't use _mm_set1_epi64x() - on MSVC it is only supported for 64-bit builds
@@ -318,14 +319,26 @@ static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
             _mm_castsi128_pd(_mm_set_epi32(0x800FFFFF, 0xFFFFFFFF, 0x800FFFFF, 0xFFFFFFFF));
     const __m128i exponentBias = _mm_set1_epi32(1022); // add 1 to make our definition identical to frexp()
     const __m128d half = _mm_set1_pd(0.5);
-    __m128i       iExponent;
 
-    iExponent               = _mm_castpd_si128(_mm_and_pd(value.simdInternal_, exponentMask));
-    iExponent               = _mm_sub_epi32(_mm_srli_epi64(iExponent, 52), exponentBias);
-    iExponent               = _mm_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0));
-    exponent->simdInternal_ = iExponent;
+    __m128i iExponent = _mm_castpd_si128(_mm_and_pd(value.simdInternal_, exponentMask));
+    iExponent         = _mm_sub_epi32(_mm_srli_epi64(iExponent, 52), exponentBias);
 
-    return { _mm_or_pd(_mm_and_pd(value.simdInternal_, mantissaMask), half) };
+    __m128d result = _mm_or_pd(_mm_and_pd(value.simdInternal_, mantissaMask), half);
+
+    if (opt == MathOptimization::Safe)
+    {
+        __m128d valueIsZero = _mm_cmpeq_pd(_mm_setzero_pd(), value.simdInternal_);
+        // Set the upper/lower 64-bit-fields of "iExponent" to 0-bits if the corresponding input value was +-0.0
+        iExponent = _mm_andnot_si128(_mm_castpd_si128(valueIsZero), iExponent);
+        // Set result to +-0 if the corresponding input value was +-0
+        result = _mm_or_pd(_mm_andnot_pd(valueIsZero, result),
+                           _mm_and_pd(valueIsZero, value.simdInternal_));
+    }
+
+    // Shuffle exponent so that 32-bit-fields 0 & 1 contain the relevant exponent values to return
+    exponent->simdInternal_ = _mm_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0));
+
+    return { result };
 }
 
 // Override for SSE4.1

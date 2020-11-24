@@ -303,26 +303,47 @@ static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
 
 // Override for AVX2 and higher
 #if GMX_SIMD_X86_AVX_256
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
 {
     const __m256d exponentMask = _mm256_castsi256_pd(_mm256_set1_epi64x(0x7FF0000000000000LL));
     const __m256d mantissaMask = _mm256_castsi256_pd(_mm256_set1_epi64x(0x800FFFFFFFFFFFFFLL));
     const __m256d half         = _mm256_set1_pd(0.5);
     const __m128i exponentBias = _mm_set1_epi32(1022); // add 1 to make our definition identical to frexp()
-    __m256i iExponent;
-    __m128i iExponentLow, iExponentHigh;
 
-    iExponent               = _mm256_castpd_si256(_mm256_and_pd(value.simdInternal_, exponentMask));
-    iExponentHigh           = _mm256_extractf128_si256(iExponent, 0x1);
-    iExponentLow            = _mm256_castsi256_si128(iExponent);
-    iExponentLow            = _mm_srli_epi64(iExponentLow, 52);
-    iExponentHigh           = _mm_srli_epi64(iExponentHigh, 52);
-    iExponentLow            = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(1, 1, 2, 0));
-    iExponentHigh           = _mm_shuffle_epi32(iExponentHigh, _MM_SHUFFLE(2, 0, 1, 1));
-    iExponentLow            = _mm_or_si128(iExponentLow, iExponentHigh);
-    exponent->simdInternal_ = _mm_sub_epi32(iExponentLow, exponentBias);
+    __m256i iExponent     = _mm256_castpd_si256(_mm256_and_pd(value.simdInternal_, exponentMask));
+    __m128i iExponentHigh = _mm256_extractf128_si256(iExponent, 0x1);
+    __m128i iExponentLow  = _mm256_castsi256_si128(iExponent);
+    iExponentLow          = _mm_srli_epi64(iExponentLow, 52);
+    iExponentHigh         = _mm_srli_epi64(iExponentHigh, 52);
+    iExponentLow          = _mm_shuffle_epi32(iExponentLow, _MM_SHUFFLE(1, 1, 2, 0));
+    iExponentHigh         = _mm_shuffle_epi32(iExponentHigh, _MM_SHUFFLE(2, 0, 1, 1));
+    // We need to store the return in a 128-bit integer variable, so reuse iExponentLow for both
+    iExponentLow = _mm_or_si128(iExponentLow, iExponentHigh);
+    iExponentLow = _mm_sub_epi32(iExponentLow, exponentBias);
 
-    return { _mm256_or_pd(_mm256_and_pd(value.simdInternal_, mantissaMask), half) };
+    __m256d result = _mm256_or_pd(_mm256_and_pd(value.simdInternal_, mantissaMask), half);
+
+    if (opt == MathOptimization::Safe)
+    {
+        __m256d valueIsZero = _mm256_cmp_pd(_mm256_setzero_pd(), value.simdInternal_, _CMP_EQ_OQ);
+        // This looks more complex than it is: the valueIsZero variable contains 4x 64-bit double
+        // precision fields, but a bit below we'll need a corresponding integer variable with 4x
+        // 32-bit fields. Since AVX1 does not support shuffling across the upper/lower 128-bit
+        // lanes, we need to extract those first, and then shuffle between two 128-bit variables.
+        __m128i iValueIsZero = _mm_castps_si128(_mm_shuffle_ps(
+                _mm256_extractf128_ps(_mm256_castpd_ps(valueIsZero), 0x0),
+                _mm256_extractf128_ps(_mm256_castpd_ps(valueIsZero), 0x1), _MM_SHUFFLE(2, 0, 2, 0)));
+
+        // Set exponent to 0 when input value was zero
+        iExponentLow = _mm_andnot_si128(iValueIsZero, iExponentLow);
+
+        // Set result to +-0 if the corresponding input value was +-0
+        result = _mm256_blendv_pd(result, value.simdInternal_, valueIsZero);
+    }
+    exponent->simdInternal_ = iExponentLow;
+
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

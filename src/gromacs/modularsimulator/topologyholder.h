@@ -93,7 +93,7 @@ public:
     class Builder;
 
 private:
-    //! Constant reference to the global topolgy
+    //! Constant reference to the global topology
     const gmx_mtop_t& globalTopology_;
     //! Pointer to the currently valid local topology
     std::unique_ptr<gmx_localtop_t> localTopology_;

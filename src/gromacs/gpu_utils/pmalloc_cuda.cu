@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ void pmalloc(void** h_ptr, size_t nbytes)
         return;
     }
 
-    CU_CHECK_PREV_ERR();
+    gmx::ensureNoPendingDeviceError("Could not allocate page-locked memory.");
 
     stat = cudaMallocHost(h_ptr, nbytes, flag);
     sprintf(strbuf, "cudaMallocHost of size %d bytes failed", (int)nbytes);
@@ -86,7 +86,7 @@ void pmalloc_wc(void** h_ptr, size_t nbytes)
         return;
     }
 
-    CU_CHECK_PREV_ERR();
+    gmx::ensureNoPendingDeviceError("Could not allocate page-locked memory with write-combining.");
 
     stat = cudaMallocHost(h_ptr, nbytes, flag);
     sprintf(strbuf, "cudaMallocHost of size %d bytes failed", (int)nbytes);
@@ -106,7 +106,7 @@ void pfree(void* h_ptr)
         return;
     }
 
-    CU_CHECK_PREV_ERR();
+    gmx::ensureNoPendingDeviceError("Could not free page-locked memory.");
 
     stat = cudaFreeHost(h_ptr);
     CU_RET_ERR(stat, "cudaFreeHost failed");

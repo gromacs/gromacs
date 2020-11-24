@@ -5,7 +5,7 @@ clang-tidy:configure-push:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:basic-push
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 9
@@ -17,7 +17,7 @@ clang-tidy:configure-schedule:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:nightly-not-for-release
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 9
@@ -31,7 +31,7 @@ clang-tidy:build:
     - .variables:default
     - .rules:nightly-not-for-release
   stage: source-check
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   needs:
     - job: clang-tidy:configure-schedule
   variables:
@@ -44,7 +44,7 @@ clang-tidy:test:
     - .variables:default
     - .rules:basic-push
   stage: source-check
-  image: gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   needs:
     - job: clang-tidy:configure-push
   variables:
@@ -81,7 +81,7 @@ clang-format:
     - .rules:basic-push
   cache: {}
   stage: pre-build
-  image: gromacs/ci-ubuntu-18.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs
   variables:
     COMPILER_MAJOR_VERSION: 7
     KUBERNETES_CPU_LIMIT: 1
@@ -112,7 +112,7 @@ copyright-check:
     - .rules:basic-push
   cache: {}
   stage: pre-build
-  image: gromacs/ci-ubuntu-18.04-llvm-7-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-7-docs
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1

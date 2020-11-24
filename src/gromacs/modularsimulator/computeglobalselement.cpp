@@ -384,10 +384,17 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
 {
     // We allow this element to be added multiple times to the call list, but we only want one
     // actual element built
-    static thread_local ISimulatorElement* vvComputeGlobalsElement = nullptr;
-    if (!builderHelper->elementIsStored(vvComputeGlobalsElement))
+    static const std::string key("vvComputeGlobalsElement");
+
+    const std::optional<std::any> cachedValue = builderHelper->getStoredValue(key);
+
+    if (cachedValue)
     {
-        vvComputeGlobalsElement = builderHelper->storeElement(
+        return std::any_cast<ISimulatorElement*>(cachedValue.value());
+    }
+    else
+    {
+        ISimulatorElement* vvComputeGlobalsElement = builderHelper->storeElement(
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>(
                         statePropagatorData, energyData, freeEnergyPerturbationData,
                         globalCommunicationHelper->simulationSignals(),
@@ -401,7 +408,8 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
                         vvComputeGlobalsElement);
         globalCommunicationHelper->setCheckBondedInteractionsCallback(
                 castedElement->getCheckNumberOfBondedInteractionsCallback());
+        builderHelper->storeValue(key, vvComputeGlobalsElement);
+        return vvComputeGlobalsElement;
     }
-    return vvComputeGlobalsElement;
 }
 } // namespace gmx

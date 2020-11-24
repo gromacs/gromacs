@@ -254,13 +254,18 @@ void PairDistance::initOptions(IOptionsContainer* options, TrajectoryAnalysisSet
 int initSelectionGroups(Selection* sel, const gmx_mtop_t* top, GroupType type)
 {
     e_index_t indexType = INDEX_UNKNOWN;
-    switch (type)
+    // If the selection type is INDEX_UNKNOWN (e.g. a position not associated
+    // with a set of particles), don't overwrite the selection type.
+    if (sel->type() != INDEX_UNKNOWN)
     {
-        case GroupType::All: indexType = INDEX_ALL; break;
-        case GroupType::Residue: indexType = INDEX_RES; break;
-        case GroupType::Molecule: indexType = INDEX_MOL; break;
-        case GroupType::None: indexType = INDEX_ATOM; break;
-        case GroupType::Count: GMX_THROW(InternalError("Invalid GroupType"));
+        switch (type)
+        {
+            case GroupType::All: indexType = INDEX_ALL; break;
+            case GroupType::Residue: indexType = INDEX_RES; break;
+            case GroupType::Molecule: indexType = INDEX_MOL; break;
+            case GroupType::None: indexType = INDEX_ATOM; break;
+            case GroupType::Count: GMX_THROW(InternalError("Invalid GroupType"));
+        }
     }
     return sel->initOriginalIdsToGroup(top, indexType);
 }

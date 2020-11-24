@@ -13,6 +13,7 @@ args[${#args[@]}]="--gcc 8 --cuda 11.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--gcc 7 --clfft --mpi openmpi --ubuntu 18.04"
 args[${#args[@]}]="--llvm 8 --tsan"
 args[${#args[@]}]="--llvm 8 --cuda 10.0 --clfft --mpi openmpi"
+args[${#args[@]}]="--llvm 8 --cuda 10.1 --clfft --mpi openmpi"
 args[${#args[@]}]="--llvm 8 --cuda 11.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--llvm 9 --clfft --mpi openmpi --ubuntu 18.04"
 args[${#args[@]}]="--oneapi 2021.1-beta09"
@@ -34,7 +35,7 @@ for arg_string in "${args[@]}"; do
 done
 
 echo "Run the following to upload the updated images."
-echo "docker login"
+echo "docker login registry.gitlab.com -u <token name> -p <hash>"
 for tag in "${tags[@]}"; do
   echo "docker push $tag"
 done

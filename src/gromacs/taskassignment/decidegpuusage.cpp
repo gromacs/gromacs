@@ -97,8 +97,10 @@ const char* g_specifyEverythingFormatString =
         // is AMD OpenCL, which offers this variable.
         "GPU_DEVICE_ORDINAL"
 #    elif GMX_GPU_SYCL
-        // SYCL-TODO:
-        "How to restrict visible devices in SYCL?"
+        // As with OpenCL, there are no portable way to do it.
+        // Intel reference: https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md
+        // While SYCL_DEVICE_FILTER is a better option, as of 2021.1-beta10 it is not yet supported.
+        "SYCL_DEVICE_ALLOWLIST"
 #    else
 #        error "Unreachable branch"
 #    endif
@@ -648,8 +650,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         // The graph is needed, but not supported
         errorMessage += "Orientation restraints are not supported.\n";
     }
-    if (inputrec.efep != efepNO
-        && (haveFreeEnergyType(inputrec, efptBONDED) || haveFreeEnergyType(inputrec, efptMASS)))
+    if (inputrec.efep != efepNO && (haveFepPerturbedMasses(mtop) || havePerturbedConstraints(mtop)))
     {
         errorMessage += "Free energy perturbation for mass and constraints are not supported.\n";
     }

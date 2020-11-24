@@ -39,6 +39,12 @@ simulations of systems with SETTLE up to 1000 nm in size (but note that
 constraining with LINCS and SHAKE still introduces significant drift,
 which limits the system size to 100 to 200 nm).
 
+mdrun now reports energy drift
+""""""""""""""""""""""""""""""
+
+With conservative integrators, mdrun now reports the drift of the conserved
+energy quantity in the log file.
+
 FEP using AWH
 """""""""""""
 
@@ -46,6 +52,12 @@ It is now possible to control the lambda state of a free energy perturbation
 simulation using the Accelerated Weight Histogram method. This can be used
 as one of multiple AWH dimensions, where the other(s) are coupled to pull
 coordinates.
+
+Support for cyclic molecules in pdb2gmx
+"""""""""""""""""""""""""""""""""""""""
+
+It is now possible to process cyclic molecules in pdb2gmx and generate |Gromacs|
+topology files for them.
 
 Stochastic cell rescaling barostat
 """"""""""""""""""""""""""""""""""

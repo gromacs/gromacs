@@ -50,6 +50,8 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include <utility>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
@@ -511,6 +513,14 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t*        dd,
                                  gmx_wallcycle*       wcycle) :
     impl_(new Impl(dd, dimIndex, mpi_comm_mysim, deviceContext, localStream, nonLocalStream, pulse, wcycle))
 {
+}
+
+GpuHaloExchange::GpuHaloExchange(GpuHaloExchange&&) noexcept = default;
+
+GpuHaloExchange& GpuHaloExchange::operator=(GpuHaloExchange&& other) noexcept
+{
+    std::swap(impl_, other.impl_);
+    return *this;
 }
 
 GpuHaloExchange::~GpuHaloExchange() = default;

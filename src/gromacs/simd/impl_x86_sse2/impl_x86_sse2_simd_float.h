@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -304,19 +304,32 @@ static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
 
 #endif
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
     const __m128 exponentMask = _mm_castsi128_ps(_mm_set1_epi32(0x7F800000));
     const __m128 mantissaMask = _mm_castsi128_ps(_mm_set1_epi32(0x807FFFFF));
     const __m128i exponentBias = _mm_set1_epi32(126); // add 1 to make our definition identical to frexp()
     const __m128 half = _mm_set1_ps(0.5F);
-    __m128i      iExponent;
 
-    iExponent               = _mm_castps_si128(_mm_and_ps(value.simdInternal_, exponentMask));
-    iExponent               = _mm_sub_epi32(_mm_srli_epi32(iExponent, 23), exponentBias);
+    __m128i iExponent = _mm_castps_si128(_mm_and_ps(value.simdInternal_, exponentMask));
+    iExponent         = _mm_sub_epi32(_mm_srli_epi32(iExponent, 23), exponentBias);
+
+    // Combine mantissa and exponent for result
+    __m128 result = _mm_or_ps(_mm_and_ps(value.simdInternal_, mantissaMask), half);
+
+    if (opt == MathOptimization::Safe)
+    {
+        __m128 valueIsZero = _mm_cmpeq_ps(_mm_setzero_ps(), value.simdInternal_);
+        // If value was non-zero, use the exponent we calculated, otherwise set return-value exponent to zero.
+        iExponent = _mm_andnot_si128(_mm_castps_si128(valueIsZero), iExponent);
+        // set the fraction result to zero for all elements where the input value was zero.
+        result = _mm_or_ps(_mm_andnot_ps(valueIsZero, result),
+                           _mm_and_ps(valueIsZero, value.simdInternal_));
+    }
+
     exponent->simdInternal_ = iExponent;
-
-    return { _mm_or_ps(_mm_and_ps(value.simdInternal_, mantissaMask), half) };
+    return { result };
 }
 
 // Override for SSE4.1

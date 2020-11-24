@@ -311,7 +311,7 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
                 simdString(compiled).c_str(), simdString(wanted).c_str()));
 #if GMX_SIMD_ARM_SVE
     }
-    else if ((compiled == SimdType::Arm_Sve) && (svcntb() != GMX_SIMD_ARM_SVE_LENGTH / 8))
+    else if ((compiled == SimdType::Arm_Sve) && (svcntb() != GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8))
     {
         logMsg  = wrapper.wrapToString(formatString(
                 "Longest SVE length requested by all nodes in run: %d\n"
@@ -319,10 +319,10 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
                 "This program was compiled for different hardware than you are running on, "
                 "which will lead to incorrect behavior.\n"
                 "Aborting",
-                GMX_SIMD_ARM_SVE_LENGTH, svcntb() * 8));
+                GMX_SIMD_ARM_SVE_LENGTH_VALUE, svcntb() * 8));
         warnMsg = wrapper.wrapToString(formatString(
                 "Compiled SVE Length: %d, but for this process requires %ld (see log).",
-                GMX_SIMD_ARM_SVE_LENGTH, svcntb() * 8));
+                GMX_SIMD_ARM_SVE_LENGTH_VALUE, svcntb() * 8));
 #endif
     }
 
@@ -335,7 +335,7 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
         fprintf(stderr, "%s\n", warnMsg.c_str());
     }
 #if GMX_SIMD_ARM_SVE
-    if ((compiled == SimdType::Arm_Sve) && (svcntb() != GMX_SIMD_ARM_SVE_LENGTH / 8))
+    if ((compiled == SimdType::Arm_Sve) && (svcntb() != GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8))
     {
         gmx_exit_on_fatal_error(ExitType_Abort, 1);
     }

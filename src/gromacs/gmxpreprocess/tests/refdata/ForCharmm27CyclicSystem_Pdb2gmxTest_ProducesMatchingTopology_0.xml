@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <GroFile Name="Header">
+        <String Name="Title">L1 RIBOZYME RNA LIGASE</String>
+        <Int Name="Number of atoms">4679</Int>
+      </GroFile>
+    </File>
+    <File Name="-p">
+      <String Name="Contents"><![CDATA[
+;
+;
+;	This is a standalone topology file
+;
+;	Created by:
+;	
+;	Command line:
+;	Force field was read from the standard GROMACS share directory.
+;
+
+; Include forcefield parameters
+#include "charmm27.ff/forcefield.itp"
+
+; Include chain topologies
+#include "ForCharmm27CyclicSystem_Pdb2gmxTest_ProducesMatchingTopology_0_topol_RNA_chain_P.itp"
+#include "ForCharmm27CyclicSystem_Pdb2gmxTest_ProducesMatchingTopology_0_topol_RNA_chain_Q.itp"
+#include "ForCharmm27CyclicSystem_Pdb2gmxTest_ProducesMatchingTopology_0_topol_Ion_chain_Q2.itp"
+
+; Include water topology
+#include "charmm27.ff/tip3p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "charmm27.ff/ions.itp"
+
+[ system ]
+; Name
+L1 RIBOZYME RNA LIGASE
+
+[ molecules ]
+; Compound        #mols
+RNA_chain_P         1
+RNA_chain_Q         1
+Ion_chain_Q2        1
+SOL                10
+SOL                16
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

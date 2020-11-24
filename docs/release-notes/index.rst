@@ -18,7 +18,7 @@ the 2022 release series, as appropriate. Around the time the 2023
 release is made, the 2021 series will no longer be maintained.
 
 Where issue numbers are reported in these release notes, more details
-can be found at https://gitlab.com/gromacs/gromacs/-/issues at that issue number.
+can be found on the `issue tracker`_ at that issue number.
 
 |Gromacs| 2022 series
 ---------------------
@@ -60,6 +60,7 @@ Major release
    2021/major/removed-functionality
    2021/major/portability
    2021/major/miscellaneous
+
 
 Older (unmaintained) |Gromacs| series
 -------------------------------------------------------

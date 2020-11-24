@@ -61,6 +61,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "gpubonded_impl.h"
@@ -826,6 +827,9 @@ void GpuBonded::Impl::launchKernel()
     GMX_ASSERT(haveInteractions_,
                "Cannot launch bonded GPU kernels unless bonded GPU work was scheduled");
 
+    wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
+    wallcycle_sub_start(wcycle_, ewcsLAUNCH_GPU_BONDED);
+
     int fTypeRangeEnd = kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1];
 
     if (fTypeRangeEnd < 0)
@@ -839,6 +843,9 @@ void GpuBonded::Impl::launchKernel()
 
     launchGpuKernel(kernelPtr, kernelLaunchConfig_, deviceStream_, nullptr,
                     "exec_kernel_gpu<calcVir, calcEner>", kernelArgs);
+
+    wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_BONDED);
+    wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 }
 
 void GpuBonded::launchKernel(const gmx::StepWorkload& stepWork)

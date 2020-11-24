@@ -119,6 +119,8 @@ enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
             (getenv("GMX_GPU_NB_ANA_EWALD") != nullptr) || forceAnalyticalEwaldLegacy;
     const bool forceTabulatedEwald =
             (getenv("GMX_GPU_NB_TAB_EWALD") != nullptr) || forceTabulatedEwaldLegacy;
+    const bool forceTwinCutoffEwald =
+            (getenv("GMX_GPU_NB_EWALD_TWINCUT") != nullptr) || forceTwinCutoffEwaldLegacy;
 
     if (forceAnalyticalEwald && forceTabulatedEwald)
     {
@@ -151,7 +153,7 @@ enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
 
     /* Use twin cut-off kernels if requested by bTwinCut or the env. var.
        forces it (use it for debugging/benchmarking only). */
-    if (!bTwinCut && ((getenv("GMX_GPU_NB_EWALD_TWINCUT") == nullptr) || forceTwinCutoffEwaldLegacy))
+    if (!bTwinCut && !forceTwinCutoffEwald)
     {
         return bUseAnalyticalEwald ? ElecType::EwaldAna : ElecType::EwaldTab;
     }

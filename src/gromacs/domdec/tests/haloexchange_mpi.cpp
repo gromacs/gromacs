@@ -53,6 +53,7 @@
 #include "config.h"
 
 #include <array>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -117,9 +118,11 @@ void initHaloData(RVec* x, const int numHomeAtoms, const int numAtomsTotal)
  * \param [in] h_x            Atom coordinate data array on host
  * \param [in] numAtomsTotal  Total number of atoms, including halo
  */
-void gpuHalo(gmx_domdec_t* dd, matrix box, RVec* h_x, int numAtomsTotal)
+void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTotal)
 {
 #if (GMX_GPU_CUDA && GMX_THREAD_MPI)
+    // pin memory if possible
+    changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
     // Set up GPU hardware environment and assign this MPI rank to a device
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -135,20 +138,30 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, RVec* h_x, int numAtomsTotal)
     int                d_x_size_alloc = -1;
     reallocateDeviceBuffer(&d_x, numAtomsTotal, &d_x_size, &d_x_size_alloc, deviceContext);
 
-    copyToDeviceBuffer(&d_x, h_x, 0, numAtomsTotal, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_x, h_x->data(), 0, numAtomsTotal, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
     GpuEventSynchronizer coordinatesReadyOnDeviceEvent;
     coordinatesReadyOnDeviceEvent.markEvent(deviceStream);
+
+    std::array<std::vector<GpuHaloExchange>, DIM> gpuHaloExchange;
+
+    // Create halo exchange objects
+    for (int d = 0; d < dd->ndim; d++)
+    {
+        for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
+        {
+            gpuHaloExchange[d].push_back(GpuHaloExchange(dd, d, MPI_COMM_WORLD, deviceContext,
+                                                         deviceStream, deviceStream, pulse, nullptr));
+        }
+    }
 
     // Perform GPU halo exchange
     for (int d = 0; d < dd->ndim; d++)
     {
         for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
         {
-            GpuHaloExchange gpuHaloExchange(dd, d, MPI_COMM_WORLD, deviceContext, deviceStream,
-                                            deviceStream, pulse, nullptr);
-            gpuHaloExchange.reinitHalo(d_x, nullptr);
-            gpuHaloExchange.communicateHaloCoordinates(box, &coordinatesReadyOnDeviceEvent);
+            gpuHaloExchange[d][pulse].reinitHalo(d_x, nullptr);
+            gpuHaloExchange[d][pulse].communicateHaloCoordinates(box, &coordinatesReadyOnDeviceEvent);
         }
     }
 
@@ -157,7 +170,8 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, RVec* h_x, int numAtomsTotal)
     haloCompletedEvent.waitForEvent();
 
     // Copy results back to host
-    copyFromDeviceBuffer(h_x, &d_x, 0, numAtomsTotal, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_x->data(), &d_x, 0, numAtomsTotal, deviceStream,
+                         GpuApiCallBehavior::Sync, nullptr);
 
     freeDeviceBuffer(d_x);
 #else
@@ -502,7 +516,6 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith1Pulse)
     const int        numHaloAtoms  = 2;
     const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
     HostVector<RVec> h_x;
-    changePinningPolicy(&h_x, PinningPolicy::PinnedIfSupported);
     h_x.resize(numAtomsTotal);
 
     initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
@@ -533,11 +546,17 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith1Pulse)
 
     if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
     {
+        // early return if no devices are available.
+        if (getTestHardwareEnvironment()->getTestDeviceList().empty())
+        {
+            return;
+        }
+
         // Re-initialize input
         initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
         // Perform GPU halo exchange
-        gpuHalo(&dd, box, h_x.data(), numAtomsTotal);
+        gpuHalo(&dd, box, &h_x, numAtomsTotal);
 
         // Check results
         checkResults1dHaloWith1Pulse(h_x.data(), &dd, numHomeAtoms);
@@ -553,7 +572,6 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith2Pulses)
     const int        numHaloAtoms  = 5;
     const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
     HostVector<RVec> h_x;
-    changePinningPolicy(&h_x, PinningPolicy::PinnedIfSupported);
     h_x.resize(numAtomsTotal);
 
     initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
@@ -584,11 +602,17 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith2Pulses)
 
     if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
     {
+        // early return if no devices are available.
+        if (getTestHardwareEnvironment()->getTestDeviceList().empty())
+        {
+            return;
+        }
+
         // Re-initialize input
         initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
         // Perform GPU halo exchange
-        gpuHalo(&dd, box, h_x.data(), numAtomsTotal);
+        gpuHalo(&dd, box, &h_x, numAtomsTotal);
 
         // Check results
         checkResults1dHaloWith2Pulses(h_x.data(), &dd, numHomeAtoms);
@@ -605,7 +629,6 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith1PulseInEachDim)
     const int        numHaloAtoms  = 4;
     const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
     HostVector<RVec> h_x;
-    changePinningPolicy(&h_x, PinningPolicy::PinnedIfSupported);
     h_x.resize(numAtomsTotal);
 
     initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
@@ -636,11 +659,17 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith1PulseInEachDim)
 
     if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
     {
+        // early return if no devices are available.
+        if (getTestHardwareEnvironment()->getTestDeviceList().empty())
+        {
+            return;
+        }
+
         // Re-initialize input
         initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
         // Perform GPU halo exchange
-        gpuHalo(&dd, box, h_x.data(), numAtomsTotal);
+        gpuHalo(&dd, box, &h_x, numAtomsTotal);
 
         // Check results
         checkResults2dHaloWith1PulseInEachDim(h_x.data(), &dd, numHomeAtoms);
@@ -656,7 +685,6 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
     const int        numHaloAtoms  = 7;
     const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
     HostVector<RVec> h_x;
-    changePinningPolicy(&h_x, PinningPolicy::PinnedIfSupported);
     h_x.resize(numAtomsTotal);
 
     initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
@@ -685,16 +713,23 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
     // Check results
     checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
 
-#if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
-    // Re-initialize input
-    initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
+    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
+    {
+        // early return if no devices are available.
+        if (getTestHardwareEnvironment()->getTestDeviceList().empty())
+        {
+            return;
+        }
 
-    // Perform GPU halo exchange
-    gpuHalo(&dd, box, h_x.data(), numAtomsTotal);
+        // Re-initialize input
+        initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
 
-    // Check results
-    checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
-#endif
+        // Perform GPU halo exchange
+        gpuHalo(&dd, box, &h_x, numAtomsTotal);
+
+        // Check results
+        checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
+    }
 }
 
 } // namespace

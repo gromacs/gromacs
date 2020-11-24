@@ -89,18 +89,32 @@ static inline SimdFBool gmx_simdcall testBits(SimdFloat a)
     return { _mm256_castsi256_ps(res) };
 }
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
     const __m256  exponentMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
     const __m256  mantissaMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x807FFFFF));
     const __m256i exponentBias = _mm256_set1_epi32(126); // add 1 to make our definition identical to frexp()
     const __m256  half = _mm256_set1_ps(0.5);
-    __m256i       iExponent;
 
-    iExponent               = _mm256_castps_si256(_mm256_and_ps(value.simdInternal_, exponentMask));
-    exponent->simdInternal_ = _mm256_sub_epi32(_mm256_srli_epi32(iExponent, 23), exponentBias);
+    __m256i iExponent = _mm256_castps_si256(_mm256_and_ps(value.simdInternal_, exponentMask));
+    iExponent         = _mm256_sub_epi32(_mm256_srli_epi32(iExponent, 23), exponentBias);
 
-    return { _mm256_or_ps(_mm256_and_ps(value.simdInternal_, mantissaMask), half) };
+    // Combine mantissa and exponent for result
+    __m256 result = _mm256_or_ps(_mm256_and_ps(value.simdInternal_, mantissaMask), half);
+
+    if (opt == MathOptimization::Safe)
+    {
+        __m256 valueIsZero = _mm256_cmp_ps(_mm256_setzero_ps(), value.simdInternal_, _CMP_EQ_OQ);
+        // If value was non-zero, use the exponent we calculated, otherwise set return-value exponent to zero.
+        iExponent = _mm256_andnot_si256(_mm256_castps_si256(valueIsZero), iExponent);
+        // set the result to zero for all elements where the input value was zero.
+        result = _mm256_blendv_ps(result, value.simdInternal_, valueIsZero);
+    }
+
+    exponent->simdInternal_ = iExponent;
+
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

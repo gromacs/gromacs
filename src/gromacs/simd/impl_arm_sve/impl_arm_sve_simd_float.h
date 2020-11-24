@@ -64,7 +64,7 @@ public:
 
     SimdFloat(svfloat32_t simd) : simdInternal_(simd) {}
 
-    float32_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH / 8)));
+    float32_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8)));
 };
 
 class SimdFInt32
@@ -76,7 +76,7 @@ public:
 
     SimdFInt32(svint32_t simd) : simdInternal_(simd) {}
 
-    int32_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH / 8)));
+    int32_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8)));
 };
 
 class SimdFBool
@@ -93,7 +93,7 @@ public:
 
     SimdFBool(svuint32_t simd) : simdInternal_(simd) {}
 
-    uint32_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH / 8)));
+    uint32_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8)));
 };
 
 class SimdFIBool
@@ -110,7 +110,7 @@ public:
 
     SimdFIBool(svuint32_t simd) : simdInternal_(simd) {}
 
-    uint32_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH / 8)));
+    uint32_t simdInternal_ __attribute__((vector_size(GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8)));
 };
 
 static inline SimdFloat gmx_simdcall simdLoad(const float* m, SimdFloatTag = {})
@@ -379,6 +379,7 @@ static inline SimdFloat gmx_simdcall min(SimdFloat a, SimdFloat b)
 // Round and trunc operations are defined at the end of this file, since they
 // need to use float-to-integer and integer-to-float conversions.
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
     svbool_t        pg           = svptrue_b32();

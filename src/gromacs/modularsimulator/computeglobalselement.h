@@ -154,6 +154,9 @@ public:
      * \param freeEnergyPerturbationData  Pointer to the \c FreeEnergyPerturbationData object
      * \param globalCommunicationHelper  Pointer to the \c GlobalCommunicationHelper object
      *
+     * \throws std::bad_any_cast  on internal error in VelocityVerlet algorithm builder.
+     * \throws std::bad_alloc  when out of memory.
+     *
      * \return  Pointer to the element to be added. Element needs to have been stored using \c storeElement
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,

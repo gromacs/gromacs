@@ -48,10 +48,15 @@
 #ifndef GROMACS_MODULARSIMULATOR_SIMULATORALGORITHM_H
 #define GROMACS_MODULARSIMULATOR_SIMULATORALGORITHM_H
 
+#include <any>
+#include <map>
+#include <optional>
 #include <string>
+#include <typeinfo>
 
 #include "gromacs/mdrun/isimulator.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "checkpointhelper.h"
 #include "domdechelper.h"
@@ -321,6 +326,11 @@ public:
     ISimulatorElement* storeElement(std::unique_ptr<ISimulatorElement> element);
     //! Check if an element is stored in the ModularSimulatorAlgorithmBuilder
     bool elementIsStored(const ISimulatorElement* element) const;
+    //! Set arbitrary data in the ModularSimulatorAlgorithmBuilder. Helpful for stateful elements.
+    template<typename ValueType>
+    void storeValue(const std::string& key, const ValueType& value);
+    //! Get previously stored data. Returns std::nullopt if key is not found.
+    std::optional<std::any> getStoredValue(const std::string& key) const;
     //! Register a thermostat that accepts propagator registrations
     void registerThermostat(std::function<void(const PropagatorThermostatConnection&)> registrationFunction);
     //! Register a barostat that accepts propagator registrations
@@ -333,6 +343,7 @@ public:
 private:
     //! Pointer to the associated ModularSimulatorAlgorithmBuilder
     ModularSimulatorAlgorithmBuilder* builder_;
+    std::map<std::string, std::any>   values_;
 };
 
 /*!\internal
@@ -604,6 +615,14 @@ void ModularSimulatorAlgorithmBuilder::registerWithInfrastructureAndSignallers(E
     // Register element to checkpoint client (if applicable)
     checkpointHelperBuilder_.registerClient(castOrNull<ICheckpointHelperClient, Element>(element));
 }
+
+
+template<typename ValueType>
+void ModularSimulatorAlgorithmBuilderHelper::storeValue(const std::string& key, const ValueType& value)
+{
+    values_[key] = std::any(value);
+}
+
 
 } // namespace gmx
 
