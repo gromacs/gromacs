@@ -376,6 +376,7 @@ static inline SimdDouble gmx_simdcall min(SimdDouble a, SimdDouble b)
 // Round and trunc operations are defined at the end of this file, since they
 // need to use double-to-integer and integer-to-double conversions.
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall frexp(SimdDouble value, SimdDInt32* exponent)
 {
     svbool_t        pg           = svptrue_b64();

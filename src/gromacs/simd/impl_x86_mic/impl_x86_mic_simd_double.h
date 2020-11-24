@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -293,14 +293,43 @@ static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
     return { _mm512_roundfxpnt_adjust_pd(x.simdInternal_, _MM_FROUND_TO_ZERO, _MM_EXPADJ_NONE) };
 }
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
 {
-    __m512d rExponent = _mm512_getexp_pd(value.simdInternal_);
-    __m512i iExponent = _mm512_cvtfxpnt_roundpd_epi32lo(rExponent, _MM_FROUND_TO_NEAREST_INT);
+    __m512d rExponent;
+    __m512i iExponent;
+    __m512d result;
 
-    exponent->simdInternal_ = _mm512_add_epi32(iExponent, _mm512_set1_epi32(1));
+    if (opt == MathOptimization::Safe)
+    {
+        // For the safe branch, we use the masked operations to only assign results if the
+        // input value was nonzero, and otherwise set exponent to 0, and the fraction to the input (+-0).
+        __mmask8 valueIsNonZero =
+                _mm512_cmp_pd_mask(_mm512_setzero_pd(), value.simdInternal_, _CMP_NEQ_OQ);
+        rExponent = _mm512_mask_getexp_pd(_mm512_setzero_pd(), valueIsNonZero, value.simdInternal_);
 
-    return { _mm512_getmant_pd(value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src) };
+        // Create an integer -1 value, and use masking in the conversion as the result for
+        // zero-value input. When we later add 1 to all fields, the fields that were formerly -1
+        // (corresponding to zero exponent) will be assigned -1 + 1 = 0.
+        iExponent = _mm512_mask_cvtfxpnt_roundpd_epi32lo(_mm512_set_epi32(-1), valueIsNonZero,
+                                                         rExponent, _MM_FROUND_TO_NEAREST_INT);
+        iExponent = _mm512__add_epi32(iExponent, _mm512_set1_epi32(1));
+
+        // Set result to value (+-0) when it is zero.
+        result = _mm512_mask_getmant_pd(value.simdInternal_, valueIsNonZero, value.simdInternal_,
+                                        _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+    }
+    else
+    {
+        rExponent = _mm512_getexp_pd(value.simdInternal_);
+        iExponent = _mm512_cvtfxpnt_roundpd_epi32lo(rExponent, _MM_FROUND_TO_NEAREST_INT);
+        iExponent = _mm512_add_epi32(iExponent, _mm512_set1_epi32(1));
+        result    = _mm512_getmant_pd(value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+    }
+
+    exponent->simdInternal_ = iExponent;
+
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

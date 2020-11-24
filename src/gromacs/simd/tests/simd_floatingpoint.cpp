@@ -241,21 +241,46 @@ TEST_F(SimdFloatingpointTest, frexp)
     SimdReal  fraction;
     SimdInt32 exponent;
 
-    fraction = frexp(rSimd_Exp, &exponent);
 
+    fraction = frexp(rSimd_Exp, &exponent);
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.609548660288905419513128, 0.5833690139241746175358116,
                                               -0.584452007502232362412542),
                             fraction);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(61, -40, 55), exponent);
 
+    // Test the unsafe flavor too, in case they use different branches
+    fraction = frexp<MathOptimization::Unsafe>(rSimd_Exp, &exponent);
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.609548660288905419513128, 0.5833690139241746175358116,
+                                              -0.584452007502232362412542),
+                            fraction);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(61, -40, 55), exponent);
+
+    // Use ulp testing with 0 bit ulp tolerance for testing to separate 0.0 and -0.0
+    setUlpTol(0);
+    fraction = frexp(setSimdRealFrom1R(0.0), &exponent);
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(0.0), fraction);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0), exponent);
+
+    // Second -0.0.
+    fraction = frexp(setSimdRealFrom1R(-0.0), &exponent);
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom1R(-0.0), fraction);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom1I(0), exponent);
+
+    // Reset to default ulp tolerance
+    setUlpTol(defaultRealUlpTol());
 
 #        if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
-    fraction = frexp(rSimd_ExpDouble, &exponent);
+    // Test exponents larger than what fit in single precision, as well as mixtures of 0 and non-zero values, to
+    // make sure the shuffling operations in the double-precision implementations don't do anything bad.
+    fraction = frexp(rSimd_ExpDouble1, &exponent);
+    GMX_EXPECT_SIMD_REAL_EQ(
+            setSimdRealFrom3R(0.0, 0.5236473618795619566768096, -0.9280331023751380303821179), fraction);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(0, -461, 673), exponent);
 
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.6206306194761728178832527, 0.5236473618795619566768096,
-                                              -0.9280331023751380303821179),
-                            fraction);
-    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(588, -461, 673), exponent);
+    fraction = frexp(rSimd_ExpDouble2, &exponent);
+    GMX_EXPECT_SIMD_REAL_EQ(
+            setSimdRealFrom3R(0.6206306194761728178832527, 0.0, -0.9280331023751380303821179), fraction);
+    GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(588, 0, 673), exponent);
 #        endif
 }
 

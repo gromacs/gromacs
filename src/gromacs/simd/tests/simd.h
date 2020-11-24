@@ -137,7 +137,8 @@ extern const SimdReal rSimd_logicalResultAnd; //!< Result or bitwise 'and' of A 
 
 #        if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
 // Make sure we also test exponents outside single precision when we use double
-extern const SimdReal rSimd_ExpDouble;
+extern const SimdReal rSimd_ExpDouble1;
+extern const SimdReal rSimd_ExpDouble2;
 #        endif
 // Magic FP numbers corresponding to specific bit patterns
 extern const SimdReal rSimd_Bits1; //!< Pattern F0 repeated to fill single/double.

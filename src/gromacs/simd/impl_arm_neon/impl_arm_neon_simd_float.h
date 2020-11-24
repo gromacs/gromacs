@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -343,6 +343,7 @@ static inline SimdFloat gmx_simdcall min(SimdFloat a, SimdFloat b)
 // Round and trunc operations are defined at the end of this file, since they
 // need to use float-to-integer and integer-to-float conversions.
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
     const int32x4_t exponentMask = vdupq_n_s32(0x7F800000);
