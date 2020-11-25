@@ -392,11 +392,21 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
     iExponent = svand_s32_x(pg, svreinterpret_s32_f32(value.simdInternal_), exponentMask);
     iExponent = svsub_s32_x(
             pg, svreinterpret_s32_u32(svlsr_n_u32_x(pg, svreinterpret_u32_s32(iExponent), 23)), exponentBias);
-    exponent->simdInternal_ = iExponent;
 
-    return { svreinterpret_f32_s32(svorr_s32_x(
+
+    svfloat32_t result = svreinterpret_f32_s32(svorr_s32_x(
             pg, svand_s32_x(pg, svreinterpret_s32_f32(value.simdInternal_), mantissaMask),
-            svreinterpret_s32_f32(half))) };
+            svreinterpret_s32_f32(half)));
+
+    if (opt == MathOptimization::Safe)
+    {
+        svbool_t valueIsZero = svcmpeq_n_f32(pg, value.simdInternal_, 0.0F);
+        iExponent            = svsel_s32(valueIsZero, svdup_s32(0), iExponent);
+        result               = svsel_f32(valueIsZero, value.simdInternal_, result);
+    }
+
+    exponent->simdInternal_ = iExponent;
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>
