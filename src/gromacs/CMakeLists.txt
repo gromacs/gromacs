@@ -108,6 +108,8 @@ add_subdirectory(imd)
 add_subdirectory(compat)
 add_subdirectory(mimic)
 add_subdirectory(modularsimulator)
+# Note that this subset should match the subset of module
+# BUILD_INTERFACEs added to libgromacs below.
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
@@ -333,21 +335,16 @@ target_link_libraries(libgromacs PUBLIC legacy_api)
 # responsibility for setting this up will move to the respective
 # modules.
 target_link_libraries(libgromacs PRIVATE
-                      $<BUILD_INTERFACE:analysisdata>
                       $<BUILD_INTERFACE:applied_forces>
                       $<BUILD_INTERFACE:commandline>
                       $<BUILD_INTERFACE:compat>
-                      $<BUILD_INTERFACE:coordinateio>
-                      $<BUILD_INTERFACE:correlationfunctions>
                       $<BUILD_INTERFACE:domdec>
 #                      $<BUILD_INTERFACE:energyanalysis>
                       $<BUILD_INTERFACE:essentialdynamics>
                       $<BUILD_INTERFACE:ewald>
                       $<BUILD_INTERFACE:fft>
                       $<BUILD_INTERFACE:fileio>
-                      $<BUILD_INTERFACE:gmxana>
                       $<BUILD_INTERFACE:gmxlib>
-                      $<BUILD_INTERFACE:gmxpreprocess>
                       $<BUILD_INTERFACE:gpu_utils>
                       $<BUILD_INTERFACE:hardware>
                       $<BUILD_INTERFACE:imd>
@@ -370,17 +367,28 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:restraint>
                       $<BUILD_INTERFACE:selection>
                       $<BUILD_INTERFACE:simd>
-                      $<BUILD_INTERFACE:statistics>
                       $<BUILD_INTERFACE:swap>
                       $<BUILD_INTERFACE:tables>
                       $<BUILD_INTERFACE:taskassignment>
                       $<BUILD_INTERFACE:timing>
-                      $<BUILD_INTERFACE:tools>
                       $<BUILD_INTERFACE:topology>
                       $<BUILD_INTERFACE:trajectory>
-                      $<BUILD_INTERFACE:trajectoryanalysis>
                       $<BUILD_INTERFACE:utility>
                       )
+# Note that this subset should match the subset of module
+# subdirectories added above.
+if (NOT GMX_BUILD_MDRUN_ONLY)
+    target_link_libraries(libgromacs PRIVATE
+                          $<BUILD_INTERFACE:analysisdata>
+                          $<BUILD_INTERFACE:coordinateio>
+                          $<BUILD_INTERFACE:correlationfunctions>
+                          $<BUILD_INTERFACE:gmxana>
+                          $<BUILD_INTERFACE:gmxpreprocess>
+                          $<BUILD_INTERFACE:statistics>
+                          $<BUILD_INTERFACE:tools>
+                          $<BUILD_INTERFACE:trajectoryanalysis>
+                          )
+endif()
 if (GMX_OPENMP)
     target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
 endif()
