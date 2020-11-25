@@ -100,7 +100,7 @@ gmx_find_flag_for_source(SYCL_CXX_FLAGS_RESULT
          q.parallel_for<class whatever>(sycl::range<1>{length}, [=, ptr = v.data()] (sycl::id<1> i){ ptr[i] *= 2; }).wait();
          return 0;
      }
-     " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-fsycl")
+     " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-fsycl -fsycl-device-code-split=per_kernel")
 
 if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
     if(SYCL_CXX_FLAGS_RESULT)
