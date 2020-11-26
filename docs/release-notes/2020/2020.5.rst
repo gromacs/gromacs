@@ -51,6 +51,13 @@ combination of temperature / pressure coupling algorithms.
 
 :issue:`3796`
 
+Fix pull error message with angles and dihedrals
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+The COM pull code could print incorrect pull group indices when mdrun exited
+with an error about a too long pull distance in angle and dihedral geometries.
+
+:issue:`3613`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
