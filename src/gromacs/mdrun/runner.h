@@ -78,6 +78,9 @@ class RestraintManager;
 class SimulationContext;
 class StopHandlerBuilder;
 
+//! Work-around for GCC bug 58265 still present in CentOS 7 devtoolset-7
+constexpr bool BUGFREE_NOEXCEPT_STRING = std::is_nothrow_move_assignable<std::string>::value;
+
 /*! \libinternal \brief Runner object for supporting setup and execution of mdrun.
  *
  * This class has responsibility for the lifetime of data structures
@@ -143,7 +146,8 @@ public:
      * \{
      */
     Mdrunner(Mdrunner&& handle) noexcept;
-    Mdrunner& operator=(Mdrunner&& handle) noexcept;
+    //NOLINTNEXTLINE(performance-noexcept-move-constructor) working around GCC bug 58265 in CentOS 7
+    Mdrunner& operator=(Mdrunner&& handle) noexcept(BUGFREE_NOEXCEPT_STRING);
     /* \} */
 
     /*! \brief Driver routine, that calls the different simulation methods. */

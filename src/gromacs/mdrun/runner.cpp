@@ -1882,7 +1882,8 @@ Mdrunner::Mdrunner(std::unique_ptr<MDModules> mdModules) : mdModules_(std::move(
 
 Mdrunner::Mdrunner(Mdrunner&&) noexcept = default;
 
-Mdrunner& Mdrunner::operator=(Mdrunner&& /*handle*/) noexcept = default;
+//NOLINTNEXTLINE(performance-noexcept-move-constructor) working around GCC bug 58265 in CentOS 7
+Mdrunner& Mdrunner::operator=(Mdrunner&& /*handle*/) noexcept(BUGFREE_NOEXCEPT_STRING) = default;
 
 class Mdrunner::BuilderImplementation
 {
