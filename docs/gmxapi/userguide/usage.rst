@@ -30,20 +30,6 @@ If you would like to access multiple GROMACS installations
 from Python, build and install *gmxapi* in separate
 :ref:`virtual environments <gmxapi venv>`.
 
-In some cases *gmxapi* still needs help finding infrastructure from the
-GROMACS installation.
-For instance, :py:func:`gmxapi.commandline_operation` is not a pure API utility,
-but a wrapper for command line tools.
-Make sure that the command line tools you intend to use are discoverable in
-your :envvar:`PATH`, such as by "source"ing your :file:`GMXRC` before launching
-a *gmxapi* script.
-
-.. todo:: Get relevant GROMACS paths in Python environment.
-
-    :py:class:`gmxapi.commandline_operation` relies on the environment :envvar:`PATH`
-    to locate executables, including the :command:`gmx` wrapper binary.
-    Relates to `#2961 <https://gitlab.com/gromacs/gromacs/-/issues/2961>`__.
-
 .. _parallelism:
 
 Notes on parallelism and MPI

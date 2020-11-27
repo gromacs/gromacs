@@ -187,6 +187,8 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription, stdi
 
     executable = shutil.which(command[0])
     if executable is None:
+        executable = shutil.which(command[0], path=str(cli_bindir()))
+    if executable is None:
         raise exceptions.ValueError('"{}" is not found or not executable.'.format(command[0]))
     command[0] = executable
 

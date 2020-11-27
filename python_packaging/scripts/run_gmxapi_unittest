@@ -3,7 +3,4 @@
 # Additional arguments are passed along to pytest.
 # See README.md and the gmxapi/ci-<option> Docker images.
 
-# TODO: GMXRC should not be necessary with either Py 3.7+ or importlib_resources package.
-source /usr/local/gromacs/bin/GMXRC
-
 pytest $HOME/gmxapi/test $@
