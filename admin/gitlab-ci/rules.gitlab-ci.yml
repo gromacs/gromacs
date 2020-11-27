@@ -155,6 +155,28 @@
     - *if-schedule-then-always
     - *if-mr-then-always
 
+# Jobs that run for merge requests and schedules for branch `release-2021`,
+# but not when GROMACS_RELEASE is set.
+# Excludes non-gromacs projects.
+.rules:merge-requests:release-2021:
+  rules:
+    - *if-not-gromacs-then-never
+    - *if-release-then-never
+    - *if-post-merge-acceptance-then-never
+    # This next rule catches "push" and other events in branches other than `release-2021`
+    # but allows merge_request_events for merge requests targeting `release-2021`.
+    # This rule is before "web" so the web interface won't include jobs that can't succeed
+    # (and would not ordinarily be run). Such jobs are hard to identify in a way that is
+    # sufficiently general for a global rules definition.
+    # If extra coverage is needed through a web-triggered job in merge request branches,
+    # we could provide an additional short-circuiting rule based on an environment variable
+    # to be provided through the web interface.
+    - if: '$CI_MERGE_REQUEST_TARGET_BRANCH_NAME != "release-2021" && $CI_COMMIT_REF_NAME != "release-2021"'
+      when: never
+    - *if-web-then-always
+    - *if-schedule-then-always
+    - *if-mr-then-always
+
 # Jobs that run for merge requests and schedules for branch `release-2020`,
 # but not when GROMACS_RELEASE is set.
 # Excludes non-gromacs projects.
