@@ -213,6 +213,10 @@ public:
                                         ObservablesHistory* observablesHistory,
                                         EnergyOutput*       energyOutput);
 
+    /*! \brief Request (local) kinetic energy update
+     */
+    void updateKineticEnergy();
+
     //! The element taking part in the simulator loop
     class Element;
     //! Get pointer to element (whose lifetime is managed by this)
