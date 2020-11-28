@@ -475,6 +475,36 @@ private:
 };
 
 /*! \internal
+ * \brief Strong type used to denote propagation time steps
+ */
+struct TimeStep
+{
+    //! Explicit constructor
+    explicit TimeStep(real timeStep) : timeStep_(timeStep) {}
+    //! Can be used as underlying type
+    operator const real&() const { return timeStep_; }
+
+private:
+    //! The time step
+    real timeStep_;
+};
+
+/*! \internal
+ * \brief Strong type used to denote scheduling offsets
+ */
+struct Offset
+{
+    //! Explicit constructor
+    explicit Offset(int offset) : offset_(offset) {}
+    //! Can be used as underlying type
+    operator const int&() const { return offset_; }
+
+private:
+    //! The offset
+    int offset_;
+};
+
+/*! \internal
  * \brief Information needed to connect a propagator to a thermostat
  */
 struct PropagatorThermostatConnection

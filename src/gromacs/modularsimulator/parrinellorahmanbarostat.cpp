@@ -329,7 +329,7 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         EnergyData*                             energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        int                                   offset,
+        Offset                                offset,
         const PropagatorTag&                  propagatorTag)
 {
     auto* element  = builderHelper->storeElement(std::make_unique<ParrinelloRahmanBarostat>(

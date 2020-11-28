@@ -658,7 +658,7 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
         EnergyData*                     energyData,
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        int                                   offset,
+        Offset                                offset,
         UseFullStepKE                         useFullStepKE,
         ReportPreviousStepConservedEnergy     reportPreviousStepConservedEnergy,
         const PropagatorTag&                  propagatorTag)

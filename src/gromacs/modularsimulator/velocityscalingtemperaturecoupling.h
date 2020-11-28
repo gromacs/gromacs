@@ -152,7 +152,7 @@ public:
                           EnergyData*                             energyData,
                           FreeEnergyPerturbationData*             freeEnergyPerturbationData,
                           GlobalCommunicationHelper*              globalCommunicationHelper,
-                          int                                     offset,
+                          Offset                                  offset,
                           UseFullStepKE                           useFullStepKE,
                           ReportPreviousStepConservedEnergy       reportPreviousStepConservedEnergy,
                           const PropagatorTag&                    propagatorTag);

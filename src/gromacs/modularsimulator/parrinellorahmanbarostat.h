@@ -131,7 +131,7 @@ public:
                           EnergyData*                             energyData,
                           FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
                           GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-                          int                                   offset,
+                          Offset                                offset,
                           const PropagatorTag&                  propagatorTag);
 
 private:

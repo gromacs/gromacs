@@ -907,7 +907,7 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
         FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
         const PropagatorTag&                  propagatorTag,
-        double                                timestep)
+        TimeStep                              timestep)
 {
     GMX_RELEASE_ASSERT(!(integrationStage == IntegrationStage::ScaleVelocities
                          || integrationStage == IntegrationStage::ScalePositions)
@@ -952,7 +952,7 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
                                  freeEnergyPerturbationData,
                                  globalCommunicationHelper,
                                  propagatorTag,
-                                 0.0);
+                                 TimeStep(0.0));
 }
 //! \endcond
 
