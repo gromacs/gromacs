@@ -196,16 +196,21 @@ Documentation build requirements
 
 See :ref:`gmxapi_package_documentation`
 
-.. _testing_requirements:
+.. _testing requirements:
 
 Testing requirements
 --------------------
 
-Testing is performed with `pytest <https://docs.pytest.org/en/latest/>`_.
-Tests also require numpy_.
-You can probably install both with pip_::
+Note that the test suite is only available in the GROMACS source tree.
+(It is not part of the installed package.)
+Acquire the GROMACS sources with :command:`git` or by downloading an archive, as documented elsewhere.
 
-    pip install pytest numpy
+Testing is performed with `pytest <https://docs.pytest.org/en/latest/>`_.
+
+:file:`python_packaging/requirements-test.txt` lists additional requirements for testing.
+With pip_::
+
+    pip install -r python_packaging/requirements-test.txt
 
 To test the full functionality also requires an MPI parallel environment.
 You will need the mpi4py_ Python package and an MPI launcher
@@ -513,6 +518,20 @@ https://hub.docker.com/r/gmxapi/docs for more information.
 
     Document sample_restraint package. Reference issue
     `3027 <https://gitlab.com/gromacs/gromacs/-/issues/3027>`_
+
+Testing
+=======
+
+Note `testing requirements`_ above.
+
+After installing the :py:mod:`gmxapi` Python package,
+you can run the Python test suite from the GROMACS source tree.
+Example::
+
+    # Assuming you are in the root directory of the repository:
+    pytest python_packaging/src/test/
+
+Refer to :file:`python_packaging/README.md` for more detailed information.
 
 .. _gmxapi install troubleshooting:
 
