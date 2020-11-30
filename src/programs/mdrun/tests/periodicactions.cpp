@@ -125,12 +125,23 @@ void PeriodicActionsTest::doMdrun(const PeriodicOutputParameters& output)
                                                 propagation["integrator"],
                                                 propagation["tcoupl"],
                                                 propagation["pcoupl"]);
-    mdpFieldValues.insert(propagation.begin(), propagation.end());
-    mdpFieldValues.insert(output.begin(), output.end());
-    // Remove non-mdp entries stored in propagation and output
-    mdpFieldValues.erase("simulationName");
-    mdpFieldValues.erase("maxGromppWarningsTolerated");
-    mdpFieldValues.erase("description");
+
+    // This lambda writes all mdp options in `source` into `target`, overwriting options already
+    // present in `target`. It also filters out non-mdp option entries in the source maps
+    auto overWriteMdpMapValues = [](const MdpFieldValues& source, MdpFieldValues& target) {
+        for (auto const& [key, value] : source)
+        {
+            if (key == "simulationName" || key == "maxGromppWarningsTolerated" || key == "description")
+            {
+                // Remove non-mdp entries used in propagation and output
+                continue;
+            }
+            target[key] = value;
+        }
+    };
+    // Add options in propagation and output to the mdp options
+    overWriteMdpMapValues(propagation, mdpFieldValues);
+    overWriteMdpMapValues(output, mdpFieldValues);
 
     // prepare the tpr file
     {
