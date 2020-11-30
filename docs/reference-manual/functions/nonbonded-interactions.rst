@@ -47,7 +47,7 @@ cut-off distance.
 
 The force derived from this potential is:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = \left( 12~\frac{C_{ij}^{(12)}}{{r_{ij}}^{13}} -
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = -\left( 12~\frac{C_{ij}^{(12)}}{{r_{ij}}^{13}} -
                                     6~\frac{C_{ij}^{(6)}}{{r_{ij}}^7} \right) {\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
           :label: eqnljforce
 
@@ -138,7 +138,7 @@ See also :numref:`Fig. %s <fig-coul>`, where
 
 The force derived from this potential is:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = f \frac{q_i q_j}{{\varepsilon_r}{r_{ij}}^2}{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = -f \frac{q_i q_j}{{\varepsilon_r}{r_{ij}}^2}{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
           :label: eqnfcoul
 
 A plain Coulomb interaction should only be used without cut-off or when
@@ -197,7 +197,7 @@ modified interaction is plotted, and it is clear that the derivative
 with respect to :math:`{r_{ij}}` (= -force) goes to zero at the cut-off
 distance. The force derived from this potential reads:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = f \frac{q_i q_j}{{\varepsilon_r}}\left[\frac{1}{{r_{ij}}^2} - 2 k_{rf}{r_{ij}}\right]{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = -f \frac{q_i q_j}{{\varepsilon_r}}\left[\frac{1}{{r_{ij}}^2} - 2 k_{rf}{r_{ij}}\right]{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
           :label: eqnfcrf
 
 The reaction-field correction should also be applied to all excluded
