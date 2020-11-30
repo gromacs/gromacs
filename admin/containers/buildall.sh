@@ -9,8 +9,10 @@ SCRIPT=$PWD/scripted_gmx_docker_builds.py
 # images needed, because the same one can test library,
 # thread and no MPI configurations.
 
+args[${#args[@]}]="--gcc 10 --clfft --mpi openmpi --ubuntu 20.04"
+args[${#args[@]}]="--gcc 9 --clfft --mpi openmpi"
 args[${#args[@]}]="--gcc 8 --cuda 11.0 --clfft --mpi openmpi"
-args[${#args[@]}]="--gcc 7 --clfft --mpi openmpi --ubuntu 18.04"
+args[${#args[@]}]="--gcc 7 --cuda 10.2 --clfft --mpi openmpi --ubuntu 18.04"
 args[${#args[@]}]="--llvm 8 --tsan"
 args[${#args[@]}]="--llvm 8 --cuda 10.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--llvm 8 --cuda 10.1 --clfft --mpi openmpi"
