@@ -233,7 +233,7 @@ void integrateVVFirstStep(int64_t                   step,
                     copy_mat(shake_vir, state->svir_prev);
                     copy_mat(force_vir, state->fvir_prev);
                 }
-                if (inputrecNvtTrotter(ir) && ir->eI == eiVV)
+                if ((inputrecNptTrotter(ir) || inputrecNvtTrotter(ir)) && ir->eI == eiVV)
                 {
                     /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
                     enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, nullptr, (ir->eI == eiVV), FALSE);
