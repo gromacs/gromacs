@@ -51,6 +51,21 @@ combination of temperature / pressure coupling algorithms.
 
 :issue:`3796`
 
+Fixed kinetic energy and temperature reporting for MTTK
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using `pcoupl=MTTK` and `tcoupl=nose-hoover`, the reported kinetic
+energy and temperature were very slightly off. The integration of the
+temperature coupling trailed the reporting by half a time step. Note that
+these errors did not impact the dynamics, as the quantities were correctly
+integrated and only wrongly reported. Also note that the difference is so
+small that it is unlikely to have been significant for any application
+except for rigorous algorithm validation. Finally, note that this bug
+only affects this exact combination of temperature / pressure coupling
+algorithms.
+
+:issue:`3832`
+
 Fix pull error message with angles and dihedrals
 """"""""""""""""""""""""""""""""""""""""""""""""
 
