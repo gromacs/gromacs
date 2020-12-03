@@ -97,6 +97,8 @@ typedef std::function<void()> SimulatorRunFunction;
 
 //! The function type that allows to register run functions
 typedef std::function<void(SimulatorRunFunction)> RegisterRunFunction;
+//! The function type scheduling run functions for a step / time using a RegisterRunFunction reference
+typedef std::function<void(Step, Time, const RegisterRunFunction&)> SchedulingFunction;
 
 /*! \internal
  * \brief The general interface for elements of the modular simulator
