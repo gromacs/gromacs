@@ -130,8 +130,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
                                                       tcoupling.c_str(), pcoupling.c_str());
 
     EnergyTermsToCompare energyTermsToCompare{ {
-            { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 100, 80) },
-            { interaction_function[F_EKIN].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 100, 80) },
+            { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
+            { interaction_function[F_EKIN].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
             { interaction_function[F_PRES].longname,
               relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.01, 0.001) },
     } };
