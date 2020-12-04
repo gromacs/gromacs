@@ -347,7 +347,7 @@ def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[st
         apt_keys=['https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB'],
         apt_repositories=['deb https://apt.repos.intel.com/oneapi all main'],
         # Add minimal packages (not the whole HPC toolkit!)
-        ospackages=['intel-oneapi-dpcpp-cpp-compiler-pro-{}'.format(version),
+        ospackages=['intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic-{}'.format(version),
             'intel-oneapi-openmp-{}'.format(version),
             'intel-oneapi-mkl-{}'.format(version),
             'intel-oneapi-mkl-devel-{}'.format(version)]
