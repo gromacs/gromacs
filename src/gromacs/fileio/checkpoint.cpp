@@ -2591,12 +2591,24 @@ static void read_checkpoint(const char*                    fn,
                   fn);
     }
 
-    GMX_ASSERT(!(headerContents->isModularSimulatorCheckpoint && !useModularSimulator),
-               "Checkpoint file was written by modular simulator, but the current simulation uses "
-               "the legacy simulator.");
-    GMX_ASSERT(!(!headerContents->isModularSimulatorCheckpoint && useModularSimulator),
-               "Checkpoint file was written by legacy simulator, but the current simulation uses "
-               "the modular simulator.");
+    GMX_RELEASE_ASSERT(!(headerContents->isModularSimulatorCheckpoint && !useModularSimulator),
+                       "Checkpoint file was written by modular simulator, but the current "
+                       "simulation uses the legacy simulator.\n\n"
+                       "Try the following steps:\n"
+                       "1. Make sure the GMX_DISABLE_MODULAR_SIMULATOR environment variable is not "
+                       "set to return to the default behavior. Retry running the simulation.\n"
+                       "2. If the problem persists, set the environment variable "
+                       "GMX_USE_MODULAR_SIMULATOR=ON to overwrite the default behavior and use "
+                       "modular simulator for all implemented use cases.");
+    GMX_RELEASE_ASSERT(!(!headerContents->isModularSimulatorCheckpoint && useModularSimulator),
+                       "Checkpoint file was written by legacy simulator, but the current "
+                       "simulation uses the modular simulator.\n\n"
+                       "Try the following steps:\n"
+                       "1. Make sure the GMX_USE_MODULAR_SIMULATOR environment variable is not set "
+                       "to return to the default behavior. Retry running the simulation.\n"
+                       "2. If the problem persists, set the environment variable "
+                       "GMX_DISABLE_MODULAR_SIMULATOR=ON to overwrite the default behavior and use "
+                       "legacy simulator for all implemented use cases.");
 
     if (MASTER(cr))
     {
