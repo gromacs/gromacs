@@ -337,7 +337,7 @@ void preserve_box_shape(const t_inputrec* ir, matrix box_rel, matrix box)
     }
 }
 
-void printLambdaStateToLog(FILE* fplog, const gmx::ArrayRef<real> lambda, const bool isInitialOutput)
+void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<const real> lambda, const bool isInitialOutput)
 {
     if (fplog != nullptr)
     {

@@ -358,7 +358,7 @@ static inline gmx::ArrayRef<const gmx::RVec> positionsFromStatePointer(const t_s
  * \param[in] lambda The array of lambda values.
  * \param[in] isInitialOutput Whether this output is the initial lambda state or not.
  */
-void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<real> lambda, bool isInitialOutput);
+void printLambdaStateToLog(FILE* fplog, gmx::ArrayRef<const real> lambda, bool isInitialOutput);
 
 
 /*! \brief Fills fep_state and lambda if needed
