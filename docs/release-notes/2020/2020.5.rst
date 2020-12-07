@@ -51,6 +51,21 @@ combination of temperature / pressure coupling algorithms.
 
 :issue:`3796`
 
+Fixed conserved energy for Nose-Hoover
+""""""""""""""""""""""""""""""""""""""
+
+When using `tcoupl=nose-hoover` and one or more temperature groups with
+non-integer number of degrees of freedom, the calculated conserved
+energy was incorrect due to an error dating back to GROMACS 2018.
+Reported conserved energies using Nose-Hoover temperature coupling and
+non-integer number of degrees of freedom since GROMACS 2018 are likely to
+be slightly off. Note that this error does not impact the dynamics, as the
+conserved energy is only reported, but never used in calculations. Also note
+that this will only be noticeable when using small temperature groups or
+small systems.
+
+:issue:`3831`
+
 Fixed kinetic energy and temperature reporting for MTTK
 """""""""""""""""""""""""""""""""""""""""""""""""""""""
 
