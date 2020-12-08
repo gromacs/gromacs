@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
  *
  *  \inlibraryapi
  */
+
+#include <utility>
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
@@ -353,6 +355,45 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
     }
 }
 
+
+namespace gmx::internal
+{
+/*! \brief Helper function to clear device buffer.
+ *
+ * Not applicable to GROMACS's float3 (a.k.a. gmx::RVec). From SYCL specs: "T must be a scalar
+ * value or a SYCL vector type."
+ */
+template<typename ValueType>
+cl::sycl::event fillSyclBufferWithNull(cl::sycl::buffer<ValueType, 1>& buffer,
+                                       size_t                          startingOffset,
+                                       size_t                          numValues,
+                                       cl::sycl::queue                 queue)
+{
+    using cl::sycl::access::mode;
+    const cl::sycl::range<1> range(numValues);
+    const cl::sycl::id<1>    offset(startingOffset);
+    const ValueType pattern = ValueType(0); // Initialization by scalar supported by SYCL vectors.
+
+    return queue.submit([&](cl::sycl::handler& cgh) {
+        auto d_bufferAccessor =
+                cl::sycl::accessor<ValueType, 1, mode::discard_write>{ buffer, cgh, range, offset };
+        cgh.fill(d_bufferAccessor, pattern);
+    });
+}
+
+//! \brief Helper function to clear device buffer of type float3.
+template<>
+inline cl::sycl::event fillSyclBufferWithNull(cl::sycl::buffer<float3, 1>& buffer,
+                                              size_t                       startingOffset,
+                                              size_t                       numValues,
+                                              cl::sycl::queue              queue)
+{
+    cl::sycl::buffer<float, 1> bufferAsFloat = buffer.reinterpret<float, 1>(buffer.get_count() * DIM);
+    return fillSyclBufferWithNull<float>(bufferAsFloat, startingOffset * DIM, numValues * DIM,
+                                         std::move(queue));
+}
+} // namespace gmx::internal
+
 /*! \brief
  * Clears the device buffer asynchronously.
  *
@@ -377,15 +418,10 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
-    const ValueType              pattern{};
     cl::sycl::buffer<ValueType>& syclBuffer = *(buffer->buffer_);
 
-    cl::sycl::event ev = deviceStream.stream().submit([&](cl::sycl::handler& cgh) {
-        auto d_bufferAccessor = cl::sycl::accessor<ValueType, 1, cl::sycl::access::mode::discard_write>{
-            syclBuffer, cgh, cl::sycl::range(numValues), cl::sycl::id(startingOffset)
-        };
-        cgh.fill(d_bufferAccessor, pattern);
-    });
+    gmx::internal::fillSyclBufferWithNull<ValueType>(syclBuffer, startingOffset, numValues,
+                                                     deviceStream.stream());
 }
 
 /*! \brief Create a texture object for an array of type ValueType.
