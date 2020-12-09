@@ -37,3 +37,11 @@ dimensions. The, now simplified, formula for the initial histogram size is
 given in the reference manual.
 
 :issue:`3751`
+
+Fixed LJ Ewald exclusions when used with cut-off electrostatics
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The exclusion forces in CUDA and OpenCL kernels were computed incorrectly
+if LJ Ewald was used together with cut-off electrostatics.
+
+:issue:`3840`

@@ -60,6 +60,11 @@
 #    define EL_EWALD_ANY
 #endif
 
+#if defined LJ_EWALD_COMB_GEOM || defined LJ_EWALD_COMB_LB
+/* Note: convenience macro, needs to be undef-ed at the end of the file. */
+#    define LJ_EWALD
+#endif
+
 #if defined EL_EWALD_ANY || defined EL_RF || defined LJ_EWALD \
         || (defined EL_CUTOFF && defined CALC_ENERGIES)
 /* Macro to control the calculation of exclusion forces in the kernel
@@ -69,11 +74,6 @@
  * Note: convenience macro, needs to be undef-ed at the end of the file.
  */
 #    define EXCLUSION_FORCES
-#endif
-
-#if defined LJ_EWALD_COMB_GEOM || defined LJ_EWALD_COMB_LB
-/* Note: convenience macro, needs to be undef-ed at the end of the file. */
-#    define LJ_EWALD
 #endif
 
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB
