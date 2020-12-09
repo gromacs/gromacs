@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">pairdist -ref '[0.0, 1.5, 2.9]' -sel 'resindex 3' -type max</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="dist">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">4.3197222132910351</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+  <OutputFiles Name="Files">
+    <File Name="-o"></File>
+  </OutputFiles>
+</ReferenceData>

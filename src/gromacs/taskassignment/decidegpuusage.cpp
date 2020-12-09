@@ -650,8 +650,7 @@ bool decideWhetherToUseGpuForUpdate(const bool                     isDomainDecom
         // The graph is needed, but not supported
         errorMessage += "Orientation restraints are not supported.\n";
     }
-    if (inputrec.efep != efepNO
-        && (haveFreeEnergyType(inputrec, efptBONDED) || haveFreeEnergyType(inputrec, efptMASS)))
+    if (inputrec.efep != efepNO && (haveFepPerturbedMasses(mtop) || havePerturbedConstraints(mtop)))
     {
         errorMessage += "Free energy perturbation for mass and constraints are not supported.\n";
     }

@@ -1317,8 +1317,8 @@ and
 a beta version of oneAPI containing Intel's compiler.
 For this testing, we use Ubuntu 18.04 or 20.04 operating system.
 Other compiler, library, and OS versions are tested less frequently.
-For details, you can
-have a look at the `continuous integration server used by GROMACS`_,
+For details, you can have a look at the
+`continuous integration server used by GROMACS <https://gitlab.com/gromacs/gromacs/>`_,
 which uses GitLab runner on a local k8s x86 cluster with NVIDIA and
 AMD GPU support.
 

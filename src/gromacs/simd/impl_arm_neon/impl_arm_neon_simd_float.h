@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -343,6 +343,7 @@ static inline SimdFloat gmx_simdcall min(SimdFloat a, SimdFloat b)
 // Round and trunc operations are defined at the end of this file, since they
 // need to use float-to-integer and integer-to-float conversions.
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
     const int32x4_t exponentMask = vdupq_n_s32(0x7F800000);
@@ -351,12 +352,22 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
     const float32x4_t half = vdupq_n_f32(0.5F);
     int32x4_t         iExponent;
 
-    iExponent               = vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), exponentMask);
-    iExponent               = vsubq_s32(vshrq_n_s32(iExponent, 23), exponentBias);
-    exponent->simdInternal_ = iExponent;
+    iExponent = vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), exponentMask);
+    iExponent = vsubq_s32(vshrq_n_s32(iExponent, 23), exponentBias);
 
-    return { vreinterpretq_f32_s32(vorrq_s32(vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), mantissaMask),
-                                             vreinterpretq_s32_f32(half))) };
+    float32x4_t result = vreinterpretq_f32_s32(
+            vorrq_s32(vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), mantissaMask),
+                      vreinterpretq_s32_f32(half)));
+
+    if (opt == MathOptimization::Safe)
+    {
+        uint32x4_t valueIsZero = vceqq_f32(value.simdInternal_, vdupq_n_f32(0.0F));
+        iExponent              = vbicq_s32(iExponent, vreinterpretq_s32_u32(valueIsZero));
+        result                 = vbslq_f32(valueIsZero, value.simdInternal_, result);
+    }
+
+    exponent->simdInternal_ = iExponent;
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

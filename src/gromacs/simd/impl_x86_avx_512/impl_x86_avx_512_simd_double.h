@@ -291,14 +291,46 @@ static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
 #endif
 }
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
 {
-    __m512d rExponent = _mm512_getexp_pd(value.simdInternal_);
-    __m256i iExponent = _mm512_cvtpd_epi32(rExponent);
+    __m512d rExponent;
+    __m256i iExponent;
+    __m512d result;
 
-    exponent->simdInternal_ = _mm256_add_epi32(iExponent, _mm256_set1_epi32(1));
+    if (opt == MathOptimization::Safe)
+    {
+        // For the safe branch, we use the masked operations to only assign results if the
+        // input value was nonzero, and otherwise set exponent to 0, and the fraction to the input (+-0).
+        __mmask8 valueIsNonZero =
+                _mm512_cmp_pd_mask(_mm512_setzero_pd(), value.simdInternal_, _CMP_NEQ_OQ);
+        rExponent = _mm512_maskz_getexp_pd(valueIsNonZero, value.simdInternal_);
 
-    return { _mm512_getmant_pd(value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src) };
+        // AVX512F does not contain any function to use masking when adding 1 to a 256-bit register
+        // (that comes with AVX512VL), so to work around this we create an integer -1 value, and
+        // use masking in the _conversion_ instruction where it is supported. When we later add
+        // 1 to all fields, the files that were formerly -1 (corresponding to zero exponent)
+        // will be assigned -1 + 1 = 0.
+        iExponent = _mm512_mask_cvtpd_epi32(_mm256_set1_epi32(-1), valueIsNonZero, rExponent);
+        iExponent = _mm256_add_epi32(iExponent, _mm256_set1_epi32(1));
+
+        // Set result to value (+-0) when it is zero.
+        result = _mm512_mask_getmant_pd(value.simdInternal_, valueIsNonZero, value.simdInternal_,
+                                        _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+    }
+    else
+    {
+        // For the fast branch, it's the user's responsibility to make sure never to call the
+        // function with input values of +-0.0
+        rExponent = _mm512_getexp_pd(value.simdInternal_);
+        iExponent = _mm512_cvtpd_epi32(rExponent);
+        iExponent = _mm256_add_epi32(iExponent, _mm256_set1_epi32(1));
+
+        result = _mm512_getmant_pd(value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+    }
+
+    exponent->simdInternal_ = iExponent;
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

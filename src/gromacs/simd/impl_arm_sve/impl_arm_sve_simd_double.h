@@ -376,6 +376,7 @@ static inline SimdDouble gmx_simdcall min(SimdDouble a, SimdDouble b)
 // Round and trunc operations are defined at the end of this file, since they
 // need to use double-to-integer and integer-to-double conversions.
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdDouble gmx_simdcall frexp(SimdDouble value, SimdDInt32* exponent)
 {
     svbool_t        pg           = svptrue_b64();
@@ -386,15 +387,23 @@ static inline SimdDouble gmx_simdcall frexp(SimdDouble value, SimdDInt32* expone
     svint64_t         iExponent;
 
     iExponent = svand_s64_x(pg, svreinterpret_s64_f64(value.simdInternal_), exponentMask);
-    // iExponent               = svsub_s64_x(pg, svlsr_n_s64_x(pg, iExponent, 52), exponentBias);
     iExponent = svsub_s64_x(
             pg, svreinterpret_s64_u64(svlsr_n_u64_x(pg, svreinterpret_u64_s64(iExponent), 52)), exponentBias);
 
-    exponent->simdInternal_ = iExponent;
 
-    return { svreinterpret_f64_s64(svorr_s64_x(
+    svfloat64_t result = svreinterpret_f64_s64(svorr_s64_x(
             pg, svand_s64_x(pg, svreinterpret_s64_f64(value.simdInternal_), mantissaMask),
-            svreinterpret_s64_f64(half))) };
+            svreinterpret_s64_f64(half)));
+
+    if (opt == MathOptimization::Safe)
+    {
+        svbool_t valueIsZero = svcmpeq_n_f64(pg, value.simdInternal_, 0.0);
+        iExponent            = svsel_s64(valueIsZero, svdup_s64(0), iExponent);
+        result               = svsel_f64(valueIsZero, value.simdInternal_, result);
+    }
+
+    exponent->simdInternal_ = iExponent;
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

@@ -160,7 +160,8 @@ These document fixes for issues that were identified as having been
 introduced into the release-2016 branch since it diverged from
 release-5-1. These will not appear in the final release notes, because
 no formal release is thought to have had the problem. Of course, the
-tracked `issues`_ remain available should further discussion arise.
+tracked `issues <https://gitlab.com/gromacs/gromacs/-/issues/>`_
+remain available should further discussion arise.
 
 Fixed bug in v-rescale thermostat & replica exchange
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

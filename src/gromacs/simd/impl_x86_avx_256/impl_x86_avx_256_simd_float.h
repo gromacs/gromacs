@@ -285,26 +285,40 @@ static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
 
 // Override for AVX2 and higher
 #if GMX_SIMD_X86_AVX_256
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
     const __m256 exponentMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x7F800000));
     const __m256 mantissaMask = _mm256_castsi256_ps(_mm256_set1_epi32(0x807FFFFF));
     const __m256 half         = _mm256_set1_ps(0.5);
     const __m128i exponentBias = _mm_set1_epi32(126); // add 1 to make our definition identical to frexp()
-    __m256i iExponent;
-    __m128i iExponentLow, iExponentHigh;
 
-    iExponent               = _mm256_castps_si256(_mm256_and_ps(value.simdInternal_, exponentMask));
-    iExponentHigh           = _mm256_extractf128_si256(iExponent, 0x1);
-    iExponentLow            = _mm256_castsi256_si128(iExponent);
-    iExponentLow            = _mm_srli_epi32(iExponentLow, 23);
-    iExponentHigh           = _mm_srli_epi32(iExponentHigh, 23);
-    iExponentLow            = _mm_sub_epi32(iExponentLow, exponentBias);
-    iExponentHigh           = _mm_sub_epi32(iExponentHigh, exponentBias);
-    iExponent               = _mm256_castsi128_si256(iExponentLow);
-    exponent->simdInternal_ = _mm256_insertf128_si256(iExponent, iExponentHigh, 0x1);
+    __m256i iExponent     = _mm256_castps_si256(_mm256_and_ps(value.simdInternal_, exponentMask));
+    __m128i iExponentHigh = _mm256_extractf128_si256(iExponent, 0x1);
+    __m128i iExponentLow  = _mm256_castsi256_si128(iExponent);
+    iExponentLow          = _mm_srli_epi32(iExponentLow, 23);
+    iExponentHigh         = _mm_srli_epi32(iExponentHigh, 23);
+    iExponentLow          = _mm_sub_epi32(iExponentLow, exponentBias);
+    iExponentHigh         = _mm_sub_epi32(iExponentHigh, exponentBias);
+    iExponent             = _mm256_castsi128_si256(iExponentLow);
+    iExponent             = _mm256_insertf128_si256(iExponent, iExponentHigh, 0x1);
 
-    return { _mm256_or_ps(_mm256_and_ps(value.simdInternal_, mantissaMask), half) };
+    __m256 result = _mm256_or_ps(_mm256_and_ps(value.simdInternal_, mantissaMask), half);
+
+    if (opt == MathOptimization::Safe)
+    {
+        __m256 valueIsZero = _mm256_cmp_ps(_mm256_setzero_ps(), value.simdInternal_, _CMP_EQ_OQ);
+        // Set the upper/lower 64-bit-fields of "iExponent" to 0-bits if the corresponding input value was +-0.0
+        // ... but we need to do the actual andnot operation as float, since AVX1 does not support integer ops.
+        iExponent = _mm256_castps_si256(_mm256_andnot_ps(valueIsZero, _mm256_castsi256_ps(iExponent)));
+
+        // Set result to +-0 if the corresponding input value was +-0
+        result = _mm256_blendv_ps(result, value.simdInternal_, valueIsZero);
+    }
+
+    exponent->simdInternal_ = iExponent;
+
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

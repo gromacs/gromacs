@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,7 +97,7 @@ public:
     SimdFBool() {}
 
     SimdFBool(bool b) :
-        simdInternal_(reinterpret_cast<__vector vmxBool int>(vec_splat_u32(b ? 0xFFFFFFFF : 0)))
+        simdInternal_(reinterpret_cast<__vector vmxBool int>(vec_splats(b ? 0xFFFFFFFF : 0)))
     {
     }
 
@@ -288,6 +288,7 @@ static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
     return { vec_trunc(x.simdInternal_) };
 }
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
     // Generate constants without memory operations
@@ -299,13 +300,22 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
     const SimdFloat     half(0.5F);
     __vector signed int iExponent;
 
+    __vector vmxBool int valueIsZero =
+            vec_cmpeq(value.simdInternal_, reinterpret_cast<__vector float>(vec_splat_u32(0)));
+
     iExponent = vec_and(reinterpret_cast<__vector signed int>(value.simdInternal_), exponentMask);
     iExponent = vec_sr(iExponent, vec_add(vec_splat_u32(15), vec_splat_u32(8)));
     iExponent = vec_sub(iExponent, exponentBias);
+    iExponent = vec_andc(iExponent, reinterpret_cast<__vector int>(valueIsZero));
+
+    __vector float result =
+            vec_or(vec_andc(value.simdInternal_, reinterpret_cast<__vector float>(exponentMask)),
+                   half.simdInternal_);
+    result = vec_sel(result, value.simdInternal_, valueIsZero);
+
     exponent->simdInternal_ = iExponent;
 
-    return { vec_or(vec_andc(value.simdInternal_, reinterpret_cast<__vector float>(exponentMask)),
-                    half.simdInternal_) };
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

@@ -109,6 +109,14 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         return;
     }
 
+    const std::string envVariableModSimOn  = "GMX_USE_MODULAR_SIMULATOR";
+    const std::string envVariableModSimOff = "GMX_DISABLE_MODULAR_SIMULATOR";
+
+    GMX_RELEASE_ASSERT(
+            environmentVariable == envVariableModSimOn || environmentVariable == envVariableModSimOff,
+            ("Expected tested environment variable to be " + envVariableModSimOn + " or " + envVariableModSimOff)
+                    .c_str());
+
     const auto hasConservedField = !(tcoupling == "no" && pcoupling == "no");
 
     SCOPED_TRACE(formatString(
@@ -122,8 +130,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
                                                       tcoupling.c_str(), pcoupling.c_str());
 
     EnergyTermsToCompare energyTermsToCompare{ {
-            { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 100, 80) },
-            { interaction_function[F_EKIN].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 100, 80) },
+            { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
+            { interaction_function[F_EKIN].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 200, 160) },
             { interaction_function[F_PRES].longname,
               relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.01, 0.001) },
     } };
@@ -181,16 +189,18 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
     runGrompp(&runner_);
 
-    // Backup current state of environment variable and unset it
-    const char* environmentVariableBackup = getenv(environmentVariable.c_str());
-    gmxUnsetenv(environmentVariable.c_str());
+    // Backup current state of both environment variables and unset them
+    const char* environmentVariableBackupOn  = getenv(envVariableModSimOn.c_str());
+    const char* environmentVariableBackupOff = getenv(envVariableModSimOff.c_str());
+    gmxUnsetenv(envVariableModSimOn.c_str());
+    gmxUnsetenv(envVariableModSimOff.c_str());
 
     // Do first mdrun
     runner_.fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName;
     runner_.edrFileName_                     = simulator1EdrFileName;
     runMdrun(&runner_);
 
-    // Set environment variable
+    // Set tested environment variable
     const int overWriteEnvironmentVariable = 1;
     gmxSetenv(environmentVariable.c_str(), "ON", overWriteEnvironmentVariable);
 
@@ -199,16 +209,16 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     runner_.edrFileName_                     = simulator2EdrFileName;
     runMdrun(&runner_);
 
-    // Reset or unset environment variable to leave further tests undisturbed
-    if (environmentVariableBackup != nullptr)
+    // Unset tested environment variable
+    gmxUnsetenv(environmentVariable.c_str());
+    // Reset both environment variables to leave further tests undisturbed
+    if (environmentVariableBackupOn != nullptr)
     {
-        // set environment variable
-        gmxSetenv(environmentVariable.c_str(), environmentVariableBackup, overWriteEnvironmentVariable);
+        gmxSetenv(environmentVariable.c_str(), environmentVariableBackupOn, overWriteEnvironmentVariable);
     }
-    else
+    if (environmentVariableBackupOff != nullptr)
     {
-        // unset environment variable
-        gmxUnsetenv(environmentVariable.c_str());
+        gmxSetenv(environmentVariable.c_str(), environmentVariableBackupOff, overWriteEnvironmentVariable);
     }
 
     // Compare simulation results

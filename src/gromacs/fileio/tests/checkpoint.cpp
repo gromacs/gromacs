@@ -47,6 +47,8 @@
 
 #include "gromacs/utility/exceptions.h"
 
+#include "testutils/testasserts.h"
+
 namespace gmx
 {
 namespace test
@@ -57,27 +59,27 @@ namespace
 TEST(Checkpoint, ReadingThrowsWhenValueNotPresent)
 {
     KeyValueTreeObject kvtObject;
-    std::int64_t       readValue;
+    std::int64_t       readValue = 0;
     EXPECT_THROW_GMX(readKvtCheckpointValue(compat::make_not_null(&readValue), "non", "sense", kvtObject),
-                     InternalError);
+                     gmx::InternalError);
 }
 
 TEST(Checkpoint, ReadingDoesNotThrowWhenValuePresent)
 {
-    int64_t             value;
+    int64_t             value      = 37;
     std::string         name       = "checkpointedInteger";
     std::string         identifier = "testingmodule";
     KeyValueTreeBuilder kvtBuilder;
     writeKvtCheckpointValue(value, name, identifier, kvtBuilder.rootObject());
     const auto kvtObject = kvtBuilder.build();
     int64_t    readValue = 0;
-    EXPECT_NO_THROW_GMX(readKvtCheckpointValue(compat::make_not_null(&readValue), "non", "sense", kvtObject),
-                        InternalError);
+    EXPECT_NO_THROW_GMX(
+            readKvtCheckpointValue(compat::make_not_null(&readValue), name, identifier, kvtObject));
 }
 
 TEST(Checkpoint, KvtRoundTripInt64)
 {
-    int64_t             value;
+    int64_t             value      = INT64_MAX;
     std::string         name       = "checkpointedInteger";
     std::string         identifier = "testingmodule";
     KeyValueTreeBuilder kvtBuilder;
@@ -90,8 +92,8 @@ TEST(Checkpoint, KvtRoundTripInt64)
 
 TEST(Checkpoint, KvtRoundTripReal)
 {
-    real                value;
-    std::string         name       = "checkpointedInteger";
+    real                value      = 926.7;
+    std::string         name       = "checkpointedReal";
     std::string         identifier = "testingmodule";
     KeyValueTreeBuilder kvtBuilder;
     writeKvtCheckpointValue(value, name, identifier, kvtBuilder.rootObject());

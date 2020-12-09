@@ -87,6 +87,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
 
 #define CPT_MAGIC1 171817
@@ -2128,13 +2129,19 @@ static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhH
 
 static void do_cpt_mdmodules(int                           fileVersion,
                              t_fileio*                     checkpointFileHandle,
-                             const gmx::MdModulesNotifier& mdModulesNotifier)
+                             const gmx::MdModulesNotifier& mdModulesNotifier,
+                             FILE*                         outputFile)
 {
     if (fileVersion >= cptv_MdModules)
     {
         gmx::FileIOXdrSerializer serializer(checkpointFileHandle);
         gmx::KeyValueTreeObject  mdModuleCheckpointParameterTree =
                 gmx::deserializeKeyValueTree(&serializer);
+        if (outputFile)
+        {
+            gmx::TextWriter textWriter(outputFile);
+            gmx::dumpKeyValueTree(&textWriter, mdModuleCheckpointParameterTree);
+        }
         gmx::MdModulesCheckpointReadingDataOnMaster mdModuleCheckpointReadingDataOnMaster = {
             mdModuleCheckpointParameterTree, fileVersion
         };
@@ -2591,12 +2598,24 @@ static void read_checkpoint(const char*                    fn,
                   fn);
     }
 
-    GMX_ASSERT(!(headerContents->isModularSimulatorCheckpoint && !useModularSimulator),
-               "Checkpoint file was written by modular simulator, but the current simulation uses "
-               "the legacy simulator.");
-    GMX_ASSERT(!(!headerContents->isModularSimulatorCheckpoint && useModularSimulator),
-               "Checkpoint file was written by legacy simulator, but the current simulation uses "
-               "the modular simulator.");
+    GMX_RELEASE_ASSERT(!(headerContents->isModularSimulatorCheckpoint && !useModularSimulator),
+                       "Checkpoint file was written by modular simulator, but the current "
+                       "simulation uses the legacy simulator.\n\n"
+                       "Try the following steps:\n"
+                       "1. Make sure the GMX_DISABLE_MODULAR_SIMULATOR environment variable is not "
+                       "set to return to the default behavior. Retry running the simulation.\n"
+                       "2. If the problem persists, set the environment variable "
+                       "GMX_USE_MODULAR_SIMULATOR=ON to overwrite the default behavior and use "
+                       "modular simulator for all implemented use cases.");
+    GMX_RELEASE_ASSERT(!(!headerContents->isModularSimulatorCheckpoint && useModularSimulator),
+                       "Checkpoint file was written by legacy simulator, but the current "
+                       "simulation uses the modular simulator.\n\n"
+                       "Try the following steps:\n"
+                       "1. Make sure the GMX_USE_MODULAR_SIMULATOR environment variable is not set "
+                       "to return to the default behavior. Retry running the simulation.\n"
+                       "2. If the problem persists, set the environment variable "
+                       "GMX_DISABLE_MODULAR_SIMULATOR=ON to overwrite the default behavior and use "
+                       "legacy simulator for all implemented use cases.");
 
     if (MASTER(cr))
     {
@@ -2699,7 +2718,7 @@ static void read_checkpoint(const char*                    fn,
     {
         cp_error();
     }
-    do_cpt_mdmodules(headerContents->file_version, fp, mdModulesNotifier);
+    do_cpt_mdmodules(headerContents->file_version, fp, mdModulesNotifier, nullptr);
     if (headerContents->file_version >= cptv_ModularSimulator)
     {
         gmx::FileIOXdrSerializer serializer(fp);
@@ -2865,7 +2884,7 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
         cp_error();
     }
     gmx::MdModulesNotifier mdModuleNotifier;
-    do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifier);
+    do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifier, nullptr);
     if (headerContents.file_version >= cptv_ModularSimulator)
     {
         // In the scope of the current function, we can just throw away the content
@@ -2978,6 +2997,15 @@ void list_checkpoint(const char* fn, FILE* out)
     {
         std::vector<gmx_file_position_t> outputfiles;
         ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, out, headerContents.file_version);
+    }
+    gmx::MdModulesNotifier mdModuleNotifier;
+    do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifier, out);
+    if (headerContents.file_version >= cptv_ModularSimulator)
+    {
+        gmx::FileIOXdrSerializer      serializer(fp);
+        gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
+        modularSimulatorCheckpointData.deserialize(&serializer);
+        modularSimulatorCheckpointData.dump(out);
     }
 
     if (ret == 0)

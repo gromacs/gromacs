@@ -320,6 +320,7 @@ static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
     return { vec_trunc(x.simdInternal_) };
 }
 
+template<MathOptimization opt = MathOptimization::Safe>
 static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent)
 {
     const __vector float exponentMask = reinterpret_cast<__vector float>(vec_splats(0x7F800000U));
@@ -327,11 +328,19 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
     const __vector float      half         = vec_splats(0.5F);
     __vector signed int       iExponent;
 
+    __vector vsxBool int valueIsZero =
+            vec_cmpeq(value.simdInternal_, reinterpret_cast<__vector float>(vec_splats(0.0)));
+
     iExponent = reinterpret_cast<__vector signed int>(vec_and(value.simdInternal_, exponentMask));
     iExponent = vec_sub(vec_sr(iExponent, vec_splats(23U)), exponentBias);
+    iExponent = vec_andc(iExponent, reinterpret_cast<__vector int>(valueIsZero));
+
+    __vector float result = vec_or(vec_andc(value.simdInternal_, exponentMask), half);
+    result                = vec_sel(result, value.simdInternal_, valueIsZero);
+
     exponent->simdInternal_ = iExponent;
 
-    return { vec_or(vec_andc(value.simdInternal_, exponentMask), half) };
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

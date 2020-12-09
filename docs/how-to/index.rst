@@ -5,7 +5,7 @@ Short How-To guides
 .. highlight:: bash
 
 A number of short guides are presented here to help users getting started with simulations.
-More detailed tutorials are available for example at the http://www.mdtutorials.com/.
+Useful third-party tutorials provided by Justin Lemkul are found here http://www.mdtutorials.com/.
 
 .. toctree::
    :maxdepth: 2

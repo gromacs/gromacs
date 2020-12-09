@@ -29,7 +29,7 @@ Several tools have their own individual pages and are listed below.
 Change management
 -----------------
 
-|Gromacs| change management is supported by the following tools.
+|Gromacs| change management uses git and `GitLab`_ for code uploading and testing as well as issues tracking.
 (For change submission guidelines, refer to :doc:`contribute`.)
 
 git

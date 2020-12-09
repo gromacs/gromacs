@@ -72,7 +72,7 @@ struct RosenBrock3d
     }
 };
 
-TEST(NelderMeat, Optimizes2DFunctionCorrectly)
+TEST(NelderMead, Optimizes2DFunctionCorrectly)
 {
     std::vector<real> initalPoint = { 1, 1 };
     auto              result      = nelderMead(mcCormick, initalPoint);
@@ -83,13 +83,13 @@ TEST(NelderMeat, Optimizes2DFunctionCorrectly)
     EXPECT_REAL_EQ_TOL(result.functionValue_, -1.91329, relativeToleranceAsFloatingPoint(1, 5e-5));
 }
 
-TEST(NelderMeat, Optimizes3DFunctorCorrectly)
+TEST(NelderMead, Optimizes3DFunctorCorrectly)
 {
     std::vector<real> initalPoint = { 0, 0, 0 };
     auto              result      = nelderMead(RosenBrock3d(), initalPoint);
     EXPECT_REAL_EQ_TOL(result.coordinates_[0], 1.00, relativeToleranceAsFloatingPoint(1, 1e-6));
-    EXPECT_REAL_EQ_TOL(result.coordinates_[1], 1.00, relativeToleranceAsFloatingPoint(1, 1e-6));
-    EXPECT_REAL_EQ_TOL(result.coordinates_[2], 1.00, relativeToleranceAsFloatingPoint(1, 1e-6));
+    EXPECT_REAL_EQ_TOL(result.coordinates_[1], 1.00, relativeToleranceAsFloatingPoint(1, 2e-6));
+    EXPECT_REAL_EQ_TOL(result.coordinates_[2], 1.00, relativeToleranceAsFloatingPoint(1, 5e-6));
     EXPECT_REAL_EQ_TOL(result.functionValue_, 0, relativeToleranceAsFloatingPoint(1, 1e-7));
 }
 

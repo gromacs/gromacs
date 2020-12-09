@@ -171,8 +171,8 @@ static void peerAccessCheckStat(const cudaError_t    stat,
                 .asParagraph()
                 .appendTextFormatted(
                         "GPU peer access not enabled between GPUs %d and %d due to unexpected "
-                        "return value from %s: %s",
-                        gpuA, gpuB, cudaCallName, cudaGetErrorString(stat));
+                        "return value from %s. %s",
+                        gpuA, gpuB, cudaCallName, gmx::getDeviceErrorString(stat).c_str());
     }
 }
 
@@ -199,8 +199,8 @@ void setupGpuDevicePeerAccess(const std::vector<int>& gpuIdsToUse, const gmx::MD
                     .asParagraph()
                     .appendTextFormatted(
                             "GPU peer access not enabled due to unexpected return value from "
-                            "cudaSetDevice(%d): %s",
-                            gpuA, cudaGetErrorString(stat));
+                            "cudaSetDevice(%d). %s",
+                            gpuA, gmx::getDeviceErrorString(stat).c_str());
             return;
         }
         for (unsigned int j = 0; j < gpuIdsToUse.size(); j++)

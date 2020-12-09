@@ -45,6 +45,7 @@
 
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetreeserializer.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace gmx
 {
@@ -87,6 +88,15 @@ std::vector<std::string> ReadCheckpointDataHolder::keys() const
 ReadCheckpointData ReadCheckpointDataHolder::checkpointData(const std::string& key) const
 {
     return ReadCheckpointData(checkpointTree_[key].asObject());
+}
+
+void ReadCheckpointDataHolder::dump(FILE* out) const
+{
+    if (out != nullptr)
+    {
+        TextWriter textWriter(out);
+        dumpKeyValueTree(&textWriter, checkpointTree_);
+    }
 }
 
 WriteCheckpointData WriteCheckpointDataHolder::checkpointData(const std::string& key)

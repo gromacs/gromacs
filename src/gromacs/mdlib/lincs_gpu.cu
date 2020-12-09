@@ -435,7 +435,7 @@ void LincsGpu::apply(const float3* d_x,
                      tensor        virialScaled,
                      const PbcAiuc pbcAiuc)
 {
-    ensureNoPendingCudaError("In CUDA version of LINCS");
+    ensureNoPendingDeviceError("In CUDA version of LINCS");
 
     // Early exit if no constraints
     if (kernelParams_.numConstraintsThreads == 0)

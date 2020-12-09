@@ -249,7 +249,7 @@ void LeapFrogGpu::integrate(const DeviceBuffer<float3>        d_x,
                             const matrix                      prVelocityScalingMatrix)
 {
 
-    ensureNoPendingCudaError("In CUDA version of Leap-Frog integrator");
+    ensureNoPendingDeviceError("In CUDA version of Leap-Frog integrator");
 
     auto kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::None>;
     if (doTemperatureScaling || doParrinelloRahman)

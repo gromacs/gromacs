@@ -153,17 +153,17 @@ private:
     template<typename T>
     static std::enable_if_t<std::is_same<T, tensor>::value, void> increment(const T** ptr);
 
-    constexpr static bool   testTrue    = true;
-    constexpr static bool   testFalse   = false;
-    constexpr static tensor testTensor1 = { { 1.6234, 2.4632, 3.1112 },
+    static constexpr bool   testTrue    = true;
+    static constexpr bool   testFalse   = false;
+    static constexpr tensor testTensor1 = { { 1.6234, 2.4632, 3.1112 },
                                             { 4.66234, 5.9678, 6.088 },
                                             { 7.00001, 8.43535, 9.11233 } };
 #if GMX_DOUBLE
-    constexpr static tensor testTensor2 = { { 1, GMX_DOUBLE_EPS, 3 },
+    static constexpr tensor testTensor2 = { { 1, GMX_DOUBLE_EPS, 3 },
                                             { GMX_DOUBLE_MIN, 5, 6 },
                                             { 7, 8, GMX_DOUBLE_MAX } };
 #else
-    constexpr static tensor testTensor2 = { { 1, GMX_FLOAT_EPS, 3 },
+    static constexpr tensor testTensor2 = { { 1, GMX_FLOAT_EPS, 3 },
                                             { GMX_FLOAT_MIN, 5, 6 },
                                             { 7, 8, GMX_FLOAT_MAX } };
 #endif
