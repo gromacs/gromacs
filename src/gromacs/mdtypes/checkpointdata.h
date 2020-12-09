@@ -351,6 +351,9 @@ public:
      */
     [[nodiscard]] ReadCheckpointData checkpointData(const std::string& key) const;
 
+    //! Write the contents of the Checkpoint to file
+    void dump(FILE* out) const;
+
 private:
     //! KV-tree read from checkpoint
     KeyValueTreeObject checkpointTree_;

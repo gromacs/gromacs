@@ -87,6 +87,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
 
 #define CPT_MAGIC1 171817
@@ -2128,13 +2129,19 @@ static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhH
 
 static void do_cpt_mdmodules(int                           fileVersion,
                              t_fileio*                     checkpointFileHandle,
-                             const gmx::MdModulesNotifier& mdModulesNotifier)
+                             const gmx::MdModulesNotifier& mdModulesNotifier,
+                             FILE*                         outputFile)
 {
     if (fileVersion >= cptv_MdModules)
     {
         gmx::FileIOXdrSerializer serializer(checkpointFileHandle);
         gmx::KeyValueTreeObject  mdModuleCheckpointParameterTree =
                 gmx::deserializeKeyValueTree(&serializer);
+        if (outputFile)
+        {
+            gmx::TextWriter textWriter(outputFile);
+            gmx::dumpKeyValueTree(&textWriter, mdModuleCheckpointParameterTree);
+        }
         gmx::MdModulesCheckpointReadingDataOnMaster mdModuleCheckpointReadingDataOnMaster = {
             mdModuleCheckpointParameterTree, fileVersion
         };
@@ -2711,7 +2718,7 @@ static void read_checkpoint(const char*                    fn,
     {
         cp_error();
     }
-    do_cpt_mdmodules(headerContents->file_version, fp, mdModulesNotifier);
+    do_cpt_mdmodules(headerContents->file_version, fp, mdModulesNotifier, nullptr);
     if (headerContents->file_version >= cptv_ModularSimulator)
     {
         gmx::FileIOXdrSerializer serializer(fp);
@@ -2877,7 +2884,7 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
         cp_error();
     }
     gmx::MdModulesNotifier mdModuleNotifier;
-    do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifier);
+    do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifier, nullptr);
     if (headerContents.file_version >= cptv_ModularSimulator)
     {
         // In the scope of the current function, we can just throw away the content
@@ -2990,6 +2997,15 @@ void list_checkpoint(const char* fn, FILE* out)
     {
         std::vector<gmx_file_position_t> outputfiles;
         ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, out, headerContents.file_version);
+    }
+    gmx::MdModulesNotifier mdModuleNotifier;
+    do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifier, out);
+    if (headerContents.file_version >= cptv_ModularSimulator)
+    {
+        gmx::FileIOXdrSerializer      serializer(fp);
+        gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
+        modularSimulatorCheckpointData.deserialize(&serializer);
+        modularSimulatorCheckpointData.dump(out);
     }
 
     if (ret == 0)

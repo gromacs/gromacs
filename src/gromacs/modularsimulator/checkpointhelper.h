@@ -74,7 +74,7 @@ class TrajectoryElement;
  * every 15 minutes), and needs two NS steps to take effect - on the first
  * NS step, the checkpoint helper on master rank signals to all other ranks
  * that checkpointing is about to occur. At the next NS step, the checkpoint
- * is written. On the last step, checkpointing happens immediately after the
+ * is written. On the last step, checkpointing happens immediately before the
  * step (no signalling). To be able to react to last step being signalled,
  * the CheckpointHelper does also implement the `ISimulatorElement` interface,
  * but does only register a function if the last step has been called. It
