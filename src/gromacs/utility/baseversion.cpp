@@ -97,6 +97,7 @@ const char* getGpuImplementationString()
         else
         {
             GMX_RELEASE_ASSERT(false, "Unknown GPU configuration");
+            return "impossible";
         }
     }
     else

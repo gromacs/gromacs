@@ -323,7 +323,15 @@ VersionEnum checkpointVersion(WriteCheckpointData* checkpointData,
     return programVersion;
 }
 
+inline ReadCheckpointData::CheckpointData(const KeyValueTreeObject& inputTree) :
+    inputTree_(&inputTree)
+{
+}
 
+inline WriteCheckpointData::CheckpointData(KeyValueTreeObjectBuilder&& outputTreeBuilder) :
+    outputTreeBuilder_(outputTreeBuilder)
+{
+}
 /*! \libinternal
  * \brief Holder for read checkpoint data
  *
@@ -522,15 +530,6 @@ inline WriteCheckpointData WriteCheckpointData::subCheckpointData(const std::str
     return CheckpointData(outputTreeBuilder_->addObject(key));
 }
 
-inline ReadCheckpointData::CheckpointData(const KeyValueTreeObject& inputTree) :
-    inputTree_(&inputTree)
-{
-}
-
-inline WriteCheckpointData::CheckpointData(KeyValueTreeObjectBuilder&& outputTreeBuilder) :
-    outputTreeBuilder_(outputTreeBuilder)
-{
-}
 //! \endcond
 
 } // namespace gmx
