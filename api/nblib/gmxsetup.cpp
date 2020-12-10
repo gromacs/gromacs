@@ -280,7 +280,7 @@ void NbvSetupUtil::setupInteractionConst(const NBKernelOptions& options)
         }
         gmxForceCalculator_->interactionConst_->coulombEwaldTables =
                 std::make_unique<EwaldCorrectionTables>();
-        init_interaction_const_tables(nullptr, gmxForceCalculator_->interactionConst_.get(), 0);
+        init_interaction_const_tables(nullptr, gmxForceCalculator_->interactionConst_.get(), 0, 0);
     }
 }
 

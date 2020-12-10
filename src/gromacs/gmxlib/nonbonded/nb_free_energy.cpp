@@ -375,6 +375,10 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     real* gmx_restrict f      = &(forceWithShiftForces->force()[0][0]);
     real* gmx_restrict fshift = &(forceWithShiftForces->shiftForces()[0][0]);
 
+    const real rlistSquared = gmx::square(fr->rlist);
+
+    int numExcludedPairsBeyondRlist = 0;
+
     for (int n = 0; n < nri; n++)
     {
         int npair_within_cutoff = 0;
@@ -430,6 +434,11 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                 continue;
             }
             npair_within_cutoff++;
+
+            if (rsq > rlistSquared)
+            {
+                numExcludedPairsBeyondRlist++;
+            }
 
             if (rsq > 0)
             {
@@ -722,7 +731,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                 }
             }
 
-            if (vdwInteractionTypeIsEwald && r < rvdw)
+            if (vdwInteractionTypeIsEwald && (r < rvdw || !bPairIncluded))
             {
                 /* See comment in the preamble. When using LJ-Ewald interactions
                  * (unless we use a switch modifier) we subtract the reciprocal-space
@@ -839,6 +848,19 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
      */
 #pragma omp atomic
     inc_nrnb(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri * 12 + nlist->jindex[nri] * 150);
+
+    if (numExcludedPairsBeyondRlist > 0)
+    {
+        gmx_fatal(FARGS,
+                  "There are %d perturbed non-bonded pair interactions beyond the pair-list cutoff "
+                  "of %g nm, which is not supported. This can happen because the system is "
+                  "unstable or because intra-molecular interactions at long distances are "
+                  "excluded. If the "
+                  "latter is the case, you can try to increase nstlist or rlist to avoid this."
+                  "The error is likely triggered by the use of couple-intramol=no "
+                  "and the maximal distance in the decoupled molecule exceeding rlist.",
+                  numExcludedPairsBeyondRlist, fr->rlist);
+    }
 }
 
 typedef void (*KernelFunction)(const t_nblist* gmx_restrict nlist,
