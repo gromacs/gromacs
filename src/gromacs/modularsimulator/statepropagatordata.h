@@ -60,6 +60,7 @@ struct t_commrec;
 struct t_inputrec;
 class t_state;
 struct t_mdatoms;
+struct t_trxframe;
 
 namespace gmx
 {
@@ -148,6 +149,11 @@ public:
     //! Initial set up for the associated element
     void setup();
 
+    //! Read everything that can be stored in t_trxframe from a checkpoint file
+    static void readCheckpointToTrxFrame(t_trxframe* trxFrame, ReadCheckpointData readCheckpointData);
+    //! CheckpointHelper identifier
+    static const std::string& checkpointID();
+
     //! \cond
     // (doxygen doesn't like these)
     // Classes which need access to legacy state
@@ -155,6 +161,8 @@ public:
     //! \endcond
 
 private:
+    //! Default constructor - only used internally
+    StatePropagatorData() = default;
     //! The total number of atoms in the system
     int totalNumAtoms_;
     //! The local number of atoms
@@ -194,6 +202,10 @@ private:
     void copyPosition();
     //! OMP helper to move x_ to previousX_
     void copyPosition(int start, int end);
+
+    //! Helper function to read from / write to CheckpointData
+    template<CheckpointDataOperation operation>
+    void doCheckpointData(CheckpointData<operation>* checkpointData);
 
     // Access to legacy state
     //! Get a deep copy of the current state in legacy format
@@ -346,12 +358,6 @@ private:
 
     //! ITrajectoryWriterClient implementation
     std::optional<ITrajectoryWriterCallback> registerTrajectoryWriterCallback(TrajectoryEvent event) override;
-
-    //! CheckpointHelper identifier
-    const std::string identifier_ = "StatePropagatorData";
-    //! Helper function to read from / write to CheckpointData
-    template<CheckpointDataOperation operation>
-    void doCheckpointData(CheckpointData<operation>* checkpointData, const t_commrec* cr);
 
     //! ILastStepSignallerClient implementation (used for final output only)
     std::optional<SignallerCallback> registerLastStepCallback() override;
