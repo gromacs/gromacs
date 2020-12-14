@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -163,7 +163,7 @@ void sumPmf(gmx::ArrayRef<PointState> pointState,
     /* Need to temporarily exponentiate the log weights to sum over simulations */
     for (size_t i = 0; i < buffer.size(); i++)
     {
-        buffer[i] = pointState[i].inTargetRegion() ? std::exp(-pointState[i].logPmfSum()) : 0;
+        buffer[i] = pointState[i].inTargetRegion() ? std::exp(pointState[i].logPmfSum()) : 0;
     }
 
     sumOverSimulations(gmx::ArrayRef<double>(buffer), commRecord, multiSimComm);
@@ -174,7 +174,7 @@ void sumPmf(gmx::ArrayRef<PointState> pointState,
     {
         if (pointState[i].inTargetRegion())
         {
-            pointState[i].setLogPmfSum(-std::log(buffer[i] * normFac));
+            pointState[i].setLogPmfSum(std::log(buffer[i] * normFac));
         }
     }
 }

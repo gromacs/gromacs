@@ -37,6 +37,20 @@ results.
 
 :issue:`3750`
 
+Fix incorrect AWH free-energies when multiple walkers share a bias
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The AWH free-energy output was incorrect when multiple walkers shared
+an AWH bias. The error went up quadratically with the free-energy update
+interval, as well as with the number of walkers. The error decreases as
+update size decreases with time. This meant that with default AWH settings
+the error was negligible. With a free-energy update interval of 2 ps,
+we observed an error about equal to the statistical error with 32 walkers
+for a rather fast reaction coordinate. For slower coordinates the error
+will be smaller than the statistical error.
+
+:issue:`3828`
+
 Fixed conserved energy for MTTK
 """""""""""""""""""""""""""""""
 
