@@ -136,6 +136,14 @@ The gmx h2order tool would always take the normal along the z-axis.
 
 :issue:`3820`
 
+Fix pull group index handling
+"""""""""""""""""""""""""""""
+
+The pull code would not validate its index groups correctly, leading
+to infinite loops or assertions being triggered at grompp time.
+
+:issue:`3810`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

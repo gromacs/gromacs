@@ -69,6 +69,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -2706,6 +2707,21 @@ int search_string(const char* s, int ng, char* gn[])
               s);
 }
 
+static void atomGroupRangeValidation(int natoms, int groupIndex, const t_blocka& block)
+{
+    /* Now go over the atoms in the group */
+    for (int j = block.index[groupIndex]; (j < block.index[groupIndex + 1]); j++)
+    {
+        int aj = block.a[j];
+
+        /* Range checking */
+        if ((aj < 0) || (aj >= natoms))
+        {
+            gmx_fatal(FARGS, "Invalid atom number %d in indexfile", aj + 1);
+        }
+    }
+}
+
 static void do_numbering(int                        natoms,
                          SimulationGroups*          groups,
                          gmx::ArrayRef<std::string> groupsFromMdpFile,
@@ -2719,7 +2735,7 @@ static void do_numbering(int                        natoms,
 {
     unsigned short*   cbuf;
     AtomGroupIndices* grps = &(groups->groups[gtype]);
-    int               j, gid, aj, ognr, ntot = 0;
+    int               ntot = 0;
     const char*       title;
     char              warn_buf[STRLEN];
 
@@ -2735,25 +2751,19 @@ static void do_numbering(int                        natoms,
     for (int i = 0; i != groupsFromMdpFile.ssize(); ++i)
     {
         /* Lookup the group name in the block structure */
-        gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);
+        const int gid = search_string(groupsFromMdpFile[i].c_str(), block->nr, gnames);
         if ((grptp != egrptpONE) || (i == 0))
         {
             grps->emplace_back(gid);
         }
-
+        GMX_ASSERT(block, "Can't have a nullptr block");
+        atomGroupRangeValidation(natoms, gid, *block);
         /* Now go over the atoms in the group */
-        for (j = block->index[gid]; (j < block->index[gid + 1]); j++)
+        for (int j = block->index[gid]; (j < block->index[gid + 1]); j++)
         {
-
-            aj = block->a[j];
-
-            /* Range checking */
-            if ((aj < 0) || (aj >= natoms))
-            {
-                gmx_fatal(FARGS, "Invalid atom number %d in indexfile", aj + 1);
-            }
+            const int aj = block->a[j];
             /* Lookup up the old group number */
-            ognr = cbuf[aj];
+            const int ognr = cbuf[aj];
             if (ognr != NOGID)
             {
                 gmx_fatal(FARGS, "Atom %d in multiple %s groups (%d and %d)", aj + 1, title,
@@ -2788,7 +2798,7 @@ static void do_numbering(int                        natoms,
             warning_note(wi, warn_buf);
         }
         /* Assign all atoms currently unassigned to a rest group */
-        for (j = 0; (j < natoms); j++)
+        for (int j = 0; (j < natoms); j++)
         {
             if (cbuf[j] == NOGID)
             {
@@ -2806,7 +2816,7 @@ static void do_numbering(int                        natoms,
             grps->emplace_back(restnm);
 
             /* Assign the rest name to all atoms not currently assigned to a group */
-            for (j = 0; (j < natoms); j++)
+            for (int j = 0; (j < natoms); j++)
             {
                 if (cbuf[j] == NOGID)
                 {
@@ -3672,6 +3682,13 @@ void do_index(const char*                   mdparin,
 
     if (ir->bPull)
     {
+        for (int i = 1; i < ir->pull->ngroup; i++)
+        {
+            const int gid = search_string(is->pull_grp[i], defaultIndexGroups->nr, gnames);
+            GMX_ASSERT(defaultIndexGroups, "Must have initialized default index groups");
+            atomGroupRangeValidation(natoms, gid, *defaultIndexGroups);
+        }
+
         make_pull_groups(ir->pull, is->pull_grp, defaultIndexGroups, gnames);
 
         make_pull_coords(ir->pull);
