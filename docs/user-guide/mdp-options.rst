@@ -2958,7 +2958,7 @@ Non-equilibrium MD
 
    groups for constant acceleration (*e.g.* ``Protein Sol``) all atoms
    in groups Protein and Sol will experience constant acceleration as
-   specified in the :mdp:`accelerate` line
+   specified in the :mdp:`accelerate` line. (Deprecated)
 
 .. mdp:: accelerate
 
@@ -2966,7 +2966,7 @@ Non-equilibrium MD
    acceleration for :mdp:`acc-grps`; x, y and z for each group
    (*e.g.* ``0.1 0.0 0.0 -0.1 0.0 0.0`` means that first group has
    constant acceleration of 0.1 nm ps\ :sup:`-2` in X direction, second group
-   the opposite).
+   the opposite). (Deprecated)
 
 .. mdp:: freezegrps
 

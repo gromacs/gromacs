@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2016,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2016,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,14 @@ function(gmx_detect_target_architecture)
         try_compile(GMX_TARGET_MIC ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestMIC.cpp")
     endif()
+    if (GMX_TARGET_MIC)
+        message(STATUS "The Intel MIC KNC target is deprecated")
+    endif()
     if (NOT DEFINED GMX_TARGET_FUJITSU_SPARC64)
         try_compile(GMX_TARGET_FUJITSU_SPARC64 ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestFujitsuSparc64.cpp")
+    endif()
+    if (GMX_TARGET_FUJITSU_SPARC64)
+        message(STATUS "The Fujitsu Sparc64 target is deprecated")
     endif()
 endfunction()
