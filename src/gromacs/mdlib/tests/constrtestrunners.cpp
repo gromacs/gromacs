@@ -84,11 +84,24 @@ void ShakeConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
 {
     shakedata shaked;
     make_shake_sblock_serial(&shaked, testData->idef_.get(), testData->numAtoms_);
-    bool success = constrain_shake(
-            nullptr, &shaked, testData->invmass_.data(), *testData->idef_, testData->ir_, testData->x_,
-            testData->xPrime_, testData->xPrime2_, nullptr, &testData->nrnb_, testData->lambda_,
-            &testData->dHdLambda_, testData->invdt_, testData->v_, testData->computeVirial_,
-            testData->virialScaled_, false, gmx::ConstraintVariable::Positions);
+    bool success = constrain_shake(nullptr,
+                                   &shaked,
+                                   testData->invmass_.data(),
+                                   *testData->idef_,
+                                   testData->ir_,
+                                   testData->x_,
+                                   testData->xPrime_,
+                                   testData->xPrime2_,
+                                   nullptr,
+                                   &testData->nrnb_,
+                                   testData->lambda_,
+                                   &testData->dHdLambda_,
+                                   testData->invdt_,
+                                   testData->v_,
+                                   testData->computeVirial_,
+                                   testData->virialScaled_,
+                                   false,
+                                   gmx::ConstraintVariable::Positions);
     EXPECT_TRUE(success) << "Test failed with a false return value in SHAKE.";
 }
 
@@ -114,24 +127,50 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
     for (const gmx_moltype_t& moltype : testData->mtop_.moltype)
     {
         // This function is in constr.cpp
-        at2con_mt.push_back(make_at2con(moltype, testData->mtop_.ffparams.iparams,
+        at2con_mt.push_back(make_at2con(moltype,
+                                        testData->mtop_.ffparams.iparams,
                                         flexibleConstraintTreatment(EI_DYNAMICS(testData->ir_.eI))));
     }
     // Initialize LINCS
-    lincsd = init_lincs(nullptr, testData->mtop_, testData->nflexcon_, at2con_mt, false,
-                        testData->ir_.nLincsIter, testData->ir_.nProjOrder);
-    set_lincs(*testData->idef_, testData->numAtoms_, testData->invmass_.data(), testData->lambda_,
-              EI_DYNAMICS(testData->ir_.eI), &cr, lincsd);
+    lincsd = init_lincs(nullptr,
+                        testData->mtop_,
+                        testData->nflexcon_,
+                        at2con_mt,
+                        false,
+                        testData->ir_.nLincsIter,
+                        testData->ir_.nProjOrder);
+    set_lincs(*testData->idef_,
+              testData->numAtoms_,
+              testData->invmass_.data(),
+              testData->lambda_,
+              EI_DYNAMICS(testData->ir_.eI),
+              &cr,
+              lincsd);
 
     // Evaluate constraints
-    bool success = constrain_lincs(
-            false, testData->ir_, 0, lincsd, testData->invmass_.data(), &cr, &ms,
-            testData->x_.arrayRefWithPadding(), testData->xPrime_.arrayRefWithPadding(),
-            testData->xPrime2_.arrayRefWithPadding().unpaddedArrayRef(), pbc.box, &pbc,
-            testData->hasMassPerturbed_, testData->lambda_, &testData->dHdLambda_, testData->invdt_,
-            testData->v_.arrayRefWithPadding().unpaddedArrayRef(), testData->computeVirial_,
-            testData->virialScaled_, gmx::ConstraintVariable::Positions, &testData->nrnb_, maxwarn,
-            &warncount_lincs);
+    bool success = constrain_lincs(false,
+                                   testData->ir_,
+                                   0,
+                                   lincsd,
+                                   testData->invmass_.data(),
+                                   &cr,
+                                   &ms,
+                                   testData->x_.arrayRefWithPadding(),
+                                   testData->xPrime_.arrayRefWithPadding(),
+                                   testData->xPrime2_.arrayRefWithPadding().unpaddedArrayRef(),
+                                   pbc.box,
+                                   &pbc,
+                                   testData->hasMassPerturbed_,
+                                   testData->lambda_,
+                                   &testData->dHdLambda_,
+                                   testData->invdt_,
+                                   testData->v_.arrayRefWithPadding().unpaddedArrayRef(),
+                                   testData->computeVirial_,
+                                   testData->virialScaled_,
+                                   gmx::ConstraintVariable::Positions,
+                                   &testData->nrnb_,
+                                   maxwarn,
+                                   &warncount_lincs);
     EXPECT_TRUE(success) << "Test failed with a false return value in LINCS.";
     EXPECT_EQ(warncount_lincs, 0) << "There were warnings in LINCS.";
     done_lincs(lincsd);

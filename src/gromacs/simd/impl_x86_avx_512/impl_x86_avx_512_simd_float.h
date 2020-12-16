@@ -309,8 +309,8 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
         iExponent = _mm512_mask_add_epi32(iExponent, valueIsNonZero, iExponent, _mm512_set1_epi32(1));
 
         // Set result to input value when the latter is +-0
-        result = _mm512_mask_getmant_ps(value.simdInternal_, valueIsNonZero, value.simdInternal_,
-                                        _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        result = _mm512_mask_getmant_ps(
+                value.simdInternal_, valueIsNonZero, value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
     }
     else
     {
@@ -415,7 +415,8 @@ static inline SimdFloat gmx_simdcall copysign(SimdFloat a, SimdFloat b)
 {
     return { _mm512_castsi512_ps(_mm512_ternarylogic_epi32(_mm512_castps_si512(a.simdInternal_),
                                                            _mm512_castps_si512(b.simdInternal_),
-                                                           _mm512_set1_epi32(INT32_MIN), 0xD8)) };
+                                                           _mm512_set1_epi32(INT32_MIN),
+                                                           0xD8)) };
 }
 
 static inline SimdFInt32 gmx_simdcall operator&(SimdFInt32 a, SimdFInt32 b)

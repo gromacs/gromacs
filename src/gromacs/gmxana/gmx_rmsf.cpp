@@ -278,8 +278,8 @@ int gmx_rmsf(int argc, char* argv[])
                        { efXVG, "-oc", "correl", ffOPTWR },  { efLOG, "-dir", "rmsf", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pargs),
-                           pargs, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -492,12 +492,14 @@ int gmx_rmsf(int argc, char* argv[])
                 || top.atoms.atom[index[i]].resind != top.atoms.atom[index[i + 1]].resind)
             {
                 resind   = top.atoms.atom[index[i]].resind;
-                pdb_bfac = find_pdb_bfac(pdbatoms, &top.atoms.resinfo[resind],
-                                         *(top.atoms.atomname[index[i]]));
+                pdb_bfac = find_pdb_bfac(
+                        pdbatoms, &top.atoms.resinfo[resind], *(top.atoms.atomname[index[i]]));
 
-                fprintf(fp, "%5d  %10.5f  %10.5f\n",
+                fprintf(fp,
+                        "%5d  %10.5f  %10.5f\n",
                         bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i] + 1,
-                        rmsf[i] * bfac, pdb_bfac);
+                        rmsf[i] * bfac,
+                        pdb_bfac);
             }
         }
         xvgrclose(fp);
@@ -510,7 +512,8 @@ int gmx_rmsf(int argc, char* argv[])
             if (!bRes || i + 1 == isize
                 || top.atoms.atom[index[i]].resind != top.atoms.atom[index[i + 1]].resind)
             {
-                fprintf(fp, "%5d %8.4f\n",
+                fprintf(fp,
+                        "%5d %8.4f\n",
                         bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i] + 1,
                         std::sqrt(rmsf[i]));
             }
@@ -540,7 +543,8 @@ int gmx_rmsf(int argc, char* argv[])
             if (!bRes || i + 1 == isize
                 || top.atoms.atom[index[i]].resind != top.atoms.atom[index[i + 1]].resind)
             {
-                fprintf(fp, "%5d %8.4f\n",
+                fprintf(fp,
+                        "%5d %8.4f\n",
                         bRes ? top.atoms.resinfo[top.atoms.atom[index[i]].resind].nr : index[i] + 1,
                         std::sqrt(rmsf[i]));
             }
@@ -555,8 +559,8 @@ int gmx_rmsf(int argc, char* argv[])
         {
             rvec_inc(pdbx[index[i]], xcm);
         }
-        write_sto_conf_indexed(opt2fn("-oq", NFILE, fnm), title, pdbatoms, pdbx, nullptr, pbcType,
-                               pdbbox, isize, index);
+        write_sto_conf_indexed(
+                opt2fn("-oq", NFILE, fnm), title, pdbatoms, pdbx, nullptr, pbcType, pdbbox, isize, index);
     }
     if (opt2bSet("-ox", NFILE, fnm))
     {
@@ -570,8 +574,8 @@ int gmx_rmsf(int argc, char* argv[])
             }
         }
         /* Write a .pdb file with B-factors and optionally anisou records */
-        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm), title, pdbatoms, bFactorX, nullptr,
-                               pbcType, pdbbox, isize, index);
+        write_sto_conf_indexed(
+                opt2fn("-ox", NFILE, fnm), title, pdbatoms, bFactorX, nullptr, pbcType, pdbbox, isize, index);
         sfree(bFactorX);
     }
     if (bAniso)

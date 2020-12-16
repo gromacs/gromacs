@@ -80,20 +80,44 @@ const MdpFileValues mdpFileValueDatabase_g{
       { { { "ref-t", "80" } },
         { // TODO This test case is not currently used, so we
           // have not tested which rank counts work.
-          1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9 } } },
     // Simple system with 2 nearby water molecules
     { "spc2",
       { {},
         { // TODO This test case is not currently used, so we
           // have not tested which rank counts work.
-          1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9 } } },
     // Simple system with 216 water molecules, condensed phase
     { "spc216",
       { {},
         {
                 // TODO This test case is not currently used, so we
                 // have not tested which rank counts work.
-                1, 2, 3, 4, 5, 6, 7, 8, 9 // TODO tpi test
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9 // TODO tpi test
         } } },
     // Capped alanine peptide in vacuo with virtual sites
     { "alanine_vsite_vacuo",
@@ -104,7 +128,15 @@ const MdpFileValues mdpFileValueDatabase_g{
       { { { "constraints", "all-bonds" }, { "compressibility", "5e-10" }, { "tau-p", "1000" } },
         { // TODO This test case is not currently used, so we
           // have not tested which rank counts work.
-          1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9 } } },
     // Zwitterionic glycine in vacuo
     { "glycine_vacuo", { { { "constraints", "h-bonds" } }, { 1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
     // Zwitterionic glycine in vacuo, without constraints
@@ -203,8 +235,8 @@ bool isNumberOfPpRanksSupported(const std::string& simulationName, int possibleN
 std::string reportNumbersOfPpRanksSupported(const std::string& simulationName)
 {
     const auto& possibleNumbers = mdpFileValueDatabase_g.at(simulationName).validPpRankCounts;
-    return formatAndJoin(std::begin(possibleNumbers), std::end(possibleNumbers), ",",
-                         StringFormatter("%d"));
+    return formatAndJoin(
+            std::begin(possibleNumbers), std::end(possibleNumbers), ",", StringFormatter("%d"));
 }
 
 MdpFieldValues prepareMdpFieldValues(const std::string& simulationName,
@@ -288,18 +320,30 @@ std::string prepareMdpFileContents(const MdpFieldValues& mdpFieldValues)
                            comm-mode               = %s
                            nstcomm                 = %s
                            %s)",
-            mdpFieldValues.at("coulombtype").c_str(), mdpFieldValues.at("rcoulomb").c_str(),
-            mdpFieldValues.at("vdwtype").c_str(), mdpFieldValues.at("rvdw").c_str(),
-            mdpFieldValues.at("nsteps").c_str(), mdpFieldValues.at("nstenergy").c_str(),
-            mdpFieldValues.at("nstxout").c_str(), mdpFieldValues.at("nstvout").c_str(),
-            mdpFieldValues.at("nstfout").c_str(), mdpFieldValues.at("nstxout-compressed").c_str(),
-            mdpFieldValues.at("nstdhdl").c_str(), mdpFieldValues.at("integrator").c_str(),
-            mdpFieldValues.at("tcoupl").c_str(), mdpFieldValues.at("nsttcouple").c_str(),
-            mdpFieldValues.at("ref-t").c_str(), mdpFieldValues.at("pcoupl").c_str(),
-            mdpFieldValues.at("nstpcouple").c_str(), mdpFieldValues.at("tau-p").c_str(),
-            mdpFieldValues.at("compressibility").c_str(), mdpFieldValues.at("constraints").c_str(),
-            mdpFieldValues.at("nstcalcenergy").c_str(), mdpFieldValues.at("comm-mode").c_str(),
-            mdpFieldValues.at("nstcomm").c_str(), mdpFieldValues.at("other").c_str());
+            mdpFieldValues.at("coulombtype").c_str(),
+            mdpFieldValues.at("rcoulomb").c_str(),
+            mdpFieldValues.at("vdwtype").c_str(),
+            mdpFieldValues.at("rvdw").c_str(),
+            mdpFieldValues.at("nsteps").c_str(),
+            mdpFieldValues.at("nstenergy").c_str(),
+            mdpFieldValues.at("nstxout").c_str(),
+            mdpFieldValues.at("nstvout").c_str(),
+            mdpFieldValues.at("nstfout").c_str(),
+            mdpFieldValues.at("nstxout-compressed").c_str(),
+            mdpFieldValues.at("nstdhdl").c_str(),
+            mdpFieldValues.at("integrator").c_str(),
+            mdpFieldValues.at("tcoupl").c_str(),
+            mdpFieldValues.at("nsttcouple").c_str(),
+            mdpFieldValues.at("ref-t").c_str(),
+            mdpFieldValues.at("pcoupl").c_str(),
+            mdpFieldValues.at("nstpcouple").c_str(),
+            mdpFieldValues.at("tau-p").c_str(),
+            mdpFieldValues.at("compressibility").c_str(),
+            mdpFieldValues.at("constraints").c_str(),
+            mdpFieldValues.at("nstcalcenergy").c_str(),
+            mdpFieldValues.at("comm-mode").c_str(),
+            mdpFieldValues.at("nstcomm").c_str(),
+            mdpFieldValues.at("other").c_str());
 }
 
 } // namespace test

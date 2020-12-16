@@ -228,15 +228,28 @@ TEST_P(LeapFrogTest, SimpleIntegration)
                 "groups and "
                 "%s pressure coupling (dt = %f, v0=(%f, %f, %f), f0=(%f, %f, %f), nstpcouple = "
                 "%d)",
-                runner->hardwareDescription().c_str(), parameters.numAtoms, parameters.numSteps,
-                parameters.numTCoupleGroups, parameters.nstpcouple == 0 ? "without" : "with",
-                parameters.timestep, parameters.v[XX], parameters.v[YY], parameters.v[ZZ],
-                parameters.f[XX], parameters.f[YY], parameters.f[ZZ], parameters.nstpcouple);
+                runner->hardwareDescription().c_str(),
+                parameters.numAtoms,
+                parameters.numSteps,
+                parameters.numTCoupleGroups,
+                parameters.nstpcouple == 0 ? "without" : "with",
+                parameters.timestep,
+                parameters.v[XX],
+                parameters.v[YY],
+                parameters.v[ZZ],
+                parameters.f[XX],
+                parameters.f[YY],
+                parameters.f[ZZ],
+                parameters.nstpcouple);
         SCOPED_TRACE(testDescription);
 
-        std::unique_ptr<LeapFrogTestData> testData = std::make_unique<LeapFrogTestData>(
-                parameters.numAtoms, parameters.timestep, parameters.v, parameters.f,
-                parameters.numTCoupleGroups, parameters.nstpcouple);
+        std::unique_ptr<LeapFrogTestData> testData =
+                std::make_unique<LeapFrogTestData>(parameters.numAtoms,
+                                                   parameters.timestep,
+                                                   parameters.v,
+                                                   parameters.f,
+                                                   parameters.numTCoupleGroups,
+                                                   parameters.nstpcouple);
 
         runner->integrate(testData.get(), parameters.numSteps);
 

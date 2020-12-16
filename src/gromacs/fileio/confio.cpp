@@ -107,8 +107,8 @@ void write_sto_conf_indexed(const char*    outfile,
         case efENT:
         case efPQR:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile_indexed(out, title, atoms, x, pbcType, box, ' ', -1, nindex, index,
-                                  nullptr, ftp == efPQR);
+            write_pdbfile_indexed(
+                    out, title, atoms, x, pbcType, box, ' ', -1, nindex, index, nullptr, ftp == efPQR);
             gmx_fio_fclose(out);
             break;
         case efESP:
@@ -473,8 +473,8 @@ void readConfAndTopology(const char* infile,
             snew(*v, header.natoms);
         }
         int     natoms;
-        PbcType pbcType_tmp = read_tpx(infile, nullptr, box, &natoms, (x == nullptr) ? nullptr : *x,
-                                       (v == nullptr) ? nullptr : *v, mtop);
+        PbcType pbcType_tmp = read_tpx(
+                infile, nullptr, box, &natoms, (x == nullptr) ? nullptr : *x, (v == nullptr) ? nullptr : *v, mtop);
         if (pbcType != nullptr)
         {
             *pbcType = pbcType_tmp;

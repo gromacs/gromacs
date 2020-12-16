@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -108,7 +108,8 @@ TEST(HardwareTopologyTest, ProcessorSelfconsistency)
 
         auto logicalProcessors = hwTop.machine().logicalProcessors;
         for (auto logicalProcessorIt = logicalProcessors.begin();
-             logicalProcessorIt != logicalProcessors.end(); ++logicalProcessorIt)
+             logicalProcessorIt != logicalProcessors.end();
+             ++logicalProcessorIt)
         {
             // Check that logical processor information contains
             // reasonable values.
@@ -128,7 +129,8 @@ TEST(HardwareTopologyTest, ProcessorSelfconsistency)
             // for each logical processor.
 
             for (auto remainingLogicalProcessorIt = logicalProcessorIt + 1;
-                 remainingLogicalProcessorIt != logicalProcessors.end(); ++remainingLogicalProcessorIt)
+                 remainingLogicalProcessorIt != logicalProcessors.end();
+                 ++remainingLogicalProcessorIt)
             {
                 SCOPED_TRACE(gmx::formatString("Other socket rank in machine: %d",
                                                remainingLogicalProcessorIt->socketRankInMachine));

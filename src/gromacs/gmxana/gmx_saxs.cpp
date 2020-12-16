@@ -72,8 +72,8 @@ int gmx_saxs(int argc, char* argv[])
         { efXVG, "-sq", "sq", ffWRITE },
     };
 #define NFILE asize(fnm)
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm, NPA, pa, asize(desc), desc, 0,
-                           nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -83,8 +83,8 @@ int gmx_saxs(int argc, char* argv[])
     fnDAT = ftp2fn(efDAT, NFILE, fnm);
     fnNDX = ftp2fn_null(efNDX, NFILE, fnm);
 
-    do_scattering_intensity(fnTPS, fnNDX, opt2fn("-sq", NFILE, fnm), fnTRX, fnDAT, start_q, end_q,
-                            energy, ngroups, oenv);
+    do_scattering_intensity(
+            fnTPS, fnNDX, opt2fn("-sq", NFILE, fnm), fnTRX, fnDAT, start_q, end_q, energy, ngroups, oenv);
 
     please_cite(stdout, "Cromer1968a");
 

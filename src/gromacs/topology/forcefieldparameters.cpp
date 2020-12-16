@@ -98,7 +98,9 @@ void pr_ffparams(FILE* fp, int indent, const char* title, const gmx_ffparams_t* 
     for (i = 0; i < ffparams->numTypes(); i++)
     {
         pr_indent(fp, indent + INDENT);
-        fprintf(fp, "functype[%d]=%s, ", bShowNumbers ? i : -1,
+        fprintf(fp,
+                "functype[%d]=%s, ",
+                bShowNumbers ? i : -1,
                 interaction_function[ffparams->functype[i]].name);
         pr_iparams(fp, ffparams->functype[i], ffparams->iparams[i]);
     }

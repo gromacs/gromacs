@@ -150,8 +150,8 @@ int gmx_vanhove(int argc, char* argv[])
     FILE* fp;
     t_rgb rlo = { 1, 1, 1 }, rhi = { 0, 0, 0 };
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -430,9 +430,22 @@ int gmx_vanhove(int argc, char* argv[])
             ticky[i] = i * rbin;
         }
         fp = gmx_ffopen(matfile, "w");
-        write_xpm(fp, MAT_SPATIAL_Y, "Van Hove function", "G (1/nm)",
-                  sbin == 0 ? "time (ps)" : "sqrt(time) (ps^1/2)", "r (nm)", mat_nx, nbin, tickx,
-                  ticky, mat, 0, matmax, rlo, rhi, &nlev);
+        write_xpm(fp,
+                  MAT_SPATIAL_Y,
+                  "Van Hove function",
+                  "G (1/nm)",
+                  sbin == 0 ? "time (ps)" : "sqrt(time) (ps^1/2)",
+                  "r (nm)",
+                  mat_nx,
+                  nbin,
+                  tickx,
+                  ticky,
+                  mat,
+                  0,
+                  matmax,
+                  rlo,
+                  rhi,
+                  &nlev);
         gmx_ffclose(fp);
     }
 
@@ -455,7 +468,8 @@ int gmx_vanhove(int argc, char* argv[])
             fprintf(fp, "%g", i * rbin);
             for (fbin = 0; fbin < nr; fbin++)
             {
-                fprintf(fp, " %g",
+                fprintf(fp,
+                        " %g",
                         static_cast<real>(pr[fbin][i]
                                           / (rcount[fbin] * isize * rbin * (i == 0 ? 0.5 : 1.0))));
             }

@@ -87,15 +87,25 @@ static void warning_rlimit(const rvec* x, int ai, int aj, int* global_atom_index
             "IMPORTANT: This should not happen in a stable simulation, so there is\n"
             "probably something wrong with your system. Only change the table-extension\n"
             "distance in the mdp file if you are really sure that is the reason.\n",
-            glatnr(global_atom_index, ai), glatnr(global_atom_index, aj), r, rlimit);
+            glatnr(global_atom_index, ai),
+            glatnr(global_atom_index, aj),
+            r,
+            rlimit);
 
     if (debug)
     {
         fprintf(debug,
                 "%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. "
                 "Ignored\n",
-                x[ai][XX], x[ai][YY], x[ai][ZZ], x[aj][XX], x[aj][YY], x[aj][ZZ],
-                glatnr(global_atom_index, ai), glatnr(global_atom_index, aj), r);
+                x[ai][XX],
+                x[ai][YY],
+                x[ai][ZZ],
+                x[aj][XX],
+                x[aj][YY],
+                x[aj][ZZ],
+                glatnr(global_atom_index, ai),
+                glatnr(global_atom_index, aj),
+                r);
     }
 }
 
@@ -493,16 +503,40 @@ static real do_pairs_general(int                 ftype,
             c6B  = iparams[itype].lj14.c6B * 6.0;
             c12B = iparams[itype].lj14.c12B * 12.0;
 
-            fscal = free_energy_evaluate_single(
-                    r2, *fr->ic->softCoreParameters, fr->pairsTable->scale,
-                    fr->pairsTable->data.data(), fr->pairsTable->stride, qq, c6, c12, qqB, c6B, c12B,
-                    LFC, LFV, DLF, lfac_coul, lfac_vdw, dlfac_coul, dlfac_vdw, &velec, &vvdw, dvdl);
+            fscal = free_energy_evaluate_single(r2,
+                                                *fr->ic->softCoreParameters,
+                                                fr->pairsTable->scale,
+                                                fr->pairsTable->data.data(),
+                                                fr->pairsTable->stride,
+                                                qq,
+                                                c6,
+                                                c12,
+                                                qqB,
+                                                c6B,
+                                                c12B,
+                                                LFC,
+                                                LFV,
+                                                DLF,
+                                                lfac_coul,
+                                                lfac_vdw,
+                                                dlfac_coul,
+                                                dlfac_vdw,
+                                                &velec,
+                                                &vvdw,
+                                                dvdl);
         }
         else
         {
             /* Evaluate tabulated interaction without free energy */
-            fscal = evaluate_single(r2, fr->pairsTable->scale, fr->pairsTable->data.data(),
-                                    fr->pairsTable->stride, qq, c6, c12, &velec, &vvdw);
+            fscal = evaluate_single(r2,
+                                    fr->pairsTable->scale,
+                                    fr->pairsTable->data.data(),
+                                    fr->pairsTable->stride,
+                                    qq,
+                                    c6,
+                                    c12,
+                                    &velec,
+                                    &vvdw);
         }
 
         energygrp_elec[gid] += velec;
@@ -687,20 +721,18 @@ void do_pairs(int                      ftype,
                 pbc_nonnull = &pbc_no;
             }
 
-            do_pairs_simple<real, 1, const t_pbc*>(nbonds, iatoms, iparams, x, f, pbc_nonnull, md,
-                                                   fr->ic->epsfac * fr->fudgeQQ);
+            do_pairs_simple<real, 1, const t_pbc*>(
+                    nbonds, iatoms, iparams, x, f, pbc_nonnull, md, fr->ic->epsfac * fr->fudgeQQ);
         }
     }
     else if (stepWork.computeVirial)
     {
         do_pairs_general<BondedKernelFlavor::ForcesAndVirialAndEnergy>(
-                ftype, nbonds, iatoms, iparams, x, f, fshift, pbc, lambda, dvdl, md, fr, grppener,
-                global_atom_index);
+                ftype, nbonds, iatoms, iparams, x, f, fshift, pbc, lambda, dvdl, md, fr, grppener, global_atom_index);
     }
     else
     {
-        do_pairs_general<BondedKernelFlavor::ForcesAndEnergy>(ftype, nbonds, iatoms, iparams, x, f,
-                                                              fshift, pbc, lambda, dvdl, md, fr,
-                                                              grppener, global_atom_index);
+        do_pairs_general<BondedKernelFlavor::ForcesAndEnergy>(
+                ftype, nbonds, iatoms, iparams, x, f, fshift, pbc, lambda, dvdl, md, fr, grppener, global_atom_index);
     }
 }

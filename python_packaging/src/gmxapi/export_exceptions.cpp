@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,8 +87,8 @@ void export_exceptions(pybind11::module& m)
     struct UnknownExceptionPlaceHolder
     {
     };
-    static py::exception<UnknownExceptionPlaceHolder> unknownException(m, "UnknownException",
-                                                                       baseException.ptr());
+    static py::exception<UnknownExceptionPlaceHolder> unknownException(
+            m, "UnknownException", baseException.ptr());
     unknownException.doc() =
             "GROMACS library produced an exception that is "
             "not mapped in gmxapi or which should have been "

@@ -88,8 +88,10 @@ void make_wall_tables(FILE*                   fplog,
             if (!(fr->egp_flags[egp * ir->opts.ngener + negp_pp + w] & EGP_EXCL))
             {
                 sprintf(buf, "%s", tabfn);
-                sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "_%s_%s.%s",
-                        *groups->groupNames[nm_ind[egp]], *groups->groupNames[nm_ind[negp_pp + w]],
+                sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,
+                        "_%s_%s.%s",
+                        *groups->groupNames[nm_ind[egp]],
+                        *groups->groupNames[nm_ind[negp_pp + w]],
                         ftp2ext(efXVG));
                 fr->wall_tab[w][egp] = make_tables(fplog, fr->ic, buf, 0, GMX_MAKETABLES_FORCEUSER);
 
@@ -112,7 +114,10 @@ void make_wall_tables(FILE*                   fplog,
     gmx_fatal(FARGS,
               "An atom is beyond the wall: coordinates %f %f %f, distance %f\n"
               "You might want to use the mdp option wall_r_linpot",
-              x[a][XX], x[a][YY], x[a][ZZ], r);
+              x[a][XX],
+              x[a][YY],
+              x[a][ZZ],
+              r);
 }
 
 static void tableForce(real r, const t_forcetable& tab, real Cd, real Cr, real* V, real* F)

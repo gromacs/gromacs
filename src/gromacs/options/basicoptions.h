@@ -563,7 +563,9 @@ private:
     AbstractOptionStorage* createStorage(const OptionManagerContainer& /*managers*/) const override
     {
         // TODO: Implement storeCount() if necessary.
-        return internal::createEnumOptionStorage(*this, enumValues_, enumValuesCount_,
+        return internal::createEnumOptionStorage(*this,
+                                                 enumValues_,
+                                                 enumValuesCount_,
                                                  convertToInt(MyBase::defaultValue()),
                                                  convertToInt(MyBase::defaultValueIfSet()),
                                                  std::make_unique<internal::EnumIndexStore<EnumType>>(
@@ -675,7 +677,9 @@ private:
     AbstractOptionStorage* createStorage(const OptionManagerContainer& /*managers*/) const override
     {
         // TODO: Implement storeCount() if necessary.
-        return internal::createEnumOptionStorage(*this, enumValues_, enumValuesCount_,
+        return internal::createEnumOptionStorage(*this,
+                                                 enumValues_,
+                                                 enumValuesCount_,
                                                  convertToInt(MyBase::defaultValue()),
                                                  convertToInt(MyBase::defaultValueIfSet()),
                                                  std::make_unique<internal::EnumIndexStore<EnumType>>(

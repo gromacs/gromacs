@@ -141,8 +141,7 @@ static void do_ac_core(int nframes, int nout, real corr[], real c1[], int nresta
     }
     if (debug)
     {
-        fprintf(debug, "Starting do_ac_core: nframes=%d, nout=%d, nrestart=%d,mode=%lu\n", nframes,
-                nout, nrestart, mode);
+        fprintf(debug, "Starting do_ac_core: nframes=%d, nout=%d, nrestart=%d,mode=%lu\n", nframes, nout, nrestart, mode);
     }
 
     for (j = 0; (j < nout); j++)
@@ -191,8 +190,15 @@ static void do_ac_core(int nframes, int nout, real corr[], real c1[], int nresta
 
                 if (cth - 1.0 > 1.0e-15)
                 {
-                    printf("j: %d, k: %d, xj:(%g,%g,%g), xk:(%g,%g,%g)\n", j, k, xj[XX], xj[YY],
-                           xj[ZZ], xk[XX], xk[YY], xk[ZZ]);
+                    printf("j: %d, k: %d, xj:(%g,%g,%g), xk:(%g,%g,%g)\n",
+                           j,
+                           k,
+                           xj[XX],
+                           xj[YY],
+                           xj[ZZ],
+                           xk[XX],
+                           xk[YY],
+                           xk[ZZ]);
                 }
                 mmm = 1;
                 if (MODE(eacP2))
@@ -582,10 +588,11 @@ void low_do_autocorr(const char*             fn,
     /* Print flags and parameters */
     if (bVerbose)
     {
-        printf("Will calculate %s of %d thingies for %d frames\n",
-               title ? title : "autocorrelation", nitem, nframes);
-        printf("bAver = %s, bFour = %s bNormalize= %s\n", gmx::boolToString(bAver),
-               gmx::boolToString(bFour), gmx::boolToString(bNormalize));
+        printf("Will calculate %s of %d thingies for %d frames\n", title ? title : "autocorrelation", nitem, nframes);
+        printf("bAver = %s, bFour = %s bNormalize= %s\n",
+               gmx::boolToString(bAver),
+               gmx::boolToString(bFour),
+               gmx::boolToString(bNormalize));
         printf("mode = %lu, dt = %g, nrestart = %d\n", mode, dt, nrestart);
     }
     /* Allocate temp arrays */
@@ -698,7 +705,8 @@ void low_do_autocorr(const char*             fn,
         {
             Ctav /= nitem;
             Ct2av /= nitem;
-            printf("Average correlation time %.3f Std. Dev. %.3f Error %.3f (ps)\n", Ctav,
+            printf("Average correlation time %.3f Std. Dev. %.3f Error %.3f (ps)\n",
+                   Ctav,
                    std::sqrt((Ct2av - gmx::square(Ctav))),
                    std::sqrt((Ct2av - gmx::square(Ctav)) / (nitem - 1)));
         }
@@ -803,8 +811,22 @@ void do_autocorr(const char*             fn,
         default: break;
     }
 
-    low_do_autocorr(fn, oenv, title, nframes, nitem, acf.nout, c1, dt, mode, acf.nrestart, bAver,
-                    acf.bNormalize, bDebugMode(), acf.tbeginfit, acf.tendfit, acf.fitfn);
+    low_do_autocorr(fn,
+                    oenv,
+                    title,
+                    nframes,
+                    nitem,
+                    acf.nout,
+                    c1,
+                    dt,
+                    mode,
+                    acf.nrestart,
+                    bAver,
+                    acf.bNormalize,
+                    bDebugMode(),
+                    acf.tbeginfit,
+                    acf.tendfit,
+                    acf.fitfn);
 }
 
 int get_acfnout()

@@ -188,8 +188,8 @@ public:
     //! Appends a ListOfLists at the end and increments the appended elements by \p offset
     void appendListOfLists(const ListOfLists& listOfLists, const T offset = 0)
     {
-        listRanges_.insert(listRanges_.end(), listOfLists.listRanges_.begin() + 1,
-                           listOfLists.listRanges_.end());
+        listRanges_.insert(
+                listRanges_.end(), listOfLists.listRanges_.begin() + 1, listOfLists.listRanges_.end());
         const int oldNumElements = elements_.size();
         for (std::size_t i = listRanges_.size() - listOfLists.size(); i < listRanges_.size(); i++)
         {

@@ -105,8 +105,8 @@ public:
         fp_ = std::fopen(filename, mode);
         if (fp_ == nullptr)
         {
-            GMX_THROW_WITH_ERRNO(FileIOError(formatString("Could not open file '%s'", filename)),
-                                 "fopen", errno);
+            GMX_THROW_WITH_ERRNO(
+                    FileIOError(formatString("Could not open file '%s'", filename)), "fopen", errno);
         }
     }
     ~FileStreamImpl()
@@ -178,8 +178,8 @@ FilePtr TextInputFile::openRawHandle(const char* filename)
     FilePtr fp(fopen(filename, "r"));
     if (fp == nullptr)
     {
-        GMX_THROW_WITH_ERRNO(FileIOError(formatString("Could not open file '%s'", filename)),
-                             "fopen", errno);
+        GMX_THROW_WITH_ERRNO(
+                FileIOError(formatString("Could not open file '%s'", filename)), "fopen", errno);
     }
     return fp;
 }

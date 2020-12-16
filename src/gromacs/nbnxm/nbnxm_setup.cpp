@@ -323,14 +323,13 @@ static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
         minimumIlistCount = strtol(env, &end, 10);
         if (!end || (*end != 0) || minimumIlistCount < 0)
         {
-            gmx_fatal(FARGS,
-                      "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
+            gmx_fatal(
+                    FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
         }
 
         if (debug)
         {
-            fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n",
-                    minimumIlistCount);
+            fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n", minimumIlistCount);
         }
     }
     else
@@ -428,8 +427,13 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
          */
         mimimumNumEnergyGroupNonbonded = 1;
     }
-    nbnxn_atomdata_init(mdlog, nbat.get(), kernelSetup.kernelType, enbnxninitcombrule, fr->ntype,
-                        fr->nbfp, mimimumNumEnergyGroupNonbonded,
+    nbnxn_atomdata_init(mdlog,
+                        nbat.get(),
+                        kernelSetup.kernelType,
+                        enbnxninitcombrule,
+                        fr->ntype,
+                        fr->nbfp,
+                        mimimumNumEnergyGroupNonbonded,
                         (useGpuForNonbonded || emulateGpu) ? 1 : gmx_omp_nthreads_get(emntNonbonded));
 
     NbnxmGpu* gpu_nbv                          = nullptr;
@@ -446,16 +450,20 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }
 
-    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, haveMultipleDomains,
-                                                       minimumIlistCountForGpuBalancing);
+    auto pairlistSets = std::make_unique<PairlistSets>(
+            pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing);
 
-    auto pairSearch = std::make_unique<PairSearch>(
-            ir->pbcType, EI_TPI(ir->eI), DOMAINDECOMP(cr) ? &cr->dd->numCells : nullptr,
-            DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr, pairlistParams.pairlistType,
-            bFEP_NonBonded, gmx_omp_nthreads_get(emntPairsearch), pinPolicy);
+    auto pairSearch = std::make_unique<PairSearch>(ir->pbcType,
+                                                   EI_TPI(ir->eI),
+                                                   DOMAINDECOMP(cr) ? &cr->dd->numCells : nullptr,
+                                                   DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
+                                                   pairlistParams.pairlistType,
+                                                   bFEP_NonBonded,
+                                                   gmx_omp_nthreads_get(emntPairsearch),
+                                                   pinPolicy);
 
-    return std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
-                                                std::move(nbat), kernelSetup, gpu_nbv, wcycle);
+    return std::make_unique<nonbonded_verlet_t>(
+            std::move(pairlistSets), std::move(pairSearch), std::move(nbat), kernelSetup, gpu_nbv, wcycle);
 }
 
 } // namespace Nbnxm

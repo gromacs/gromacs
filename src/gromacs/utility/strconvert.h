@@ -268,7 +268,9 @@ parsedArrayFromInputString(const std::string& str)
 
     // will throw if any conversion from string to value fails
     std::array<ValueType, NumExpectedValues> valuesAsArray;
-    std::transform(std::begin(valuesAsStrings), std::end(valuesAsStrings), std::begin(valuesAsArray),
+    std::transform(std::begin(valuesAsStrings),
+                   std::end(valuesAsStrings),
+                   std::begin(valuesAsArray),
                    [](const std::string& split) { return fromString<ValueType>(split); });
 
     return { valuesAsArray };

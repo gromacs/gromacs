@@ -452,9 +452,18 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
         pme_gpu_stage_atom_data(sm_coordinates, gm_coordinates, DIM);
 
         barrier(CLK_LOCAL_MEM_FENCE);
-        calculate_splines(kernelParams, atomIndexOffset, sm_coordinates, sm_coefficients, sm_theta,
-                          sm_gridlineIndices, sm_fractCoords, gm_theta, gm_dtheta,
-                          gm_gridlineIndices, gm_fractShiftsTable, gm_gridlineIndicesTable);
+        calculate_splines(kernelParams,
+                          atomIndexOffset,
+                          sm_coordinates,
+                          sm_coefficients,
+                          sm_theta,
+                          sm_gridlineIndices,
+                          sm_fractCoords,
+                          gm_theta,
+                          gm_dtheta,
+                          gm_gridlineIndices,
+                          gm_fractShiftsTable,
+                          gm_gridlineIndicesTable);
 #if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_)
         /* This is only here for execution of e.g. 32-sized warps on 16-wide hardware; this was
          * __syncwarp() in CUDA. #2519
@@ -471,8 +480,8 @@ __attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
         /* Spline data - only thetas (dthetas will only be needed in gather) */
         pme_gpu_stage_atom_data(sm_theta, gm_theta, DIM * order);
         /* Gridline indices - they're actually int and not float, but C99 is angry about overloads */
-        pme_gpu_stage_atom_data((__local float*)sm_gridlineIndices,
-                                (__global const float*)gm_gridlineIndices, DIM);
+        pme_gpu_stage_atom_data(
+                (__local float*)sm_gridlineIndices, (__global const float*)gm_gridlineIndices, DIM);
 
         barrier(CLK_LOCAL_MEM_FENCE);
     }

@@ -138,13 +138,14 @@ static void MBCallback(t_x11* /*x11*/, int dlg_mess, int /*item_id*/, char* /*se
 
 static t_dlg* about_mb(t_x11* x11, t_gmx* gmx)
 {
-    const char* lines[] = { "         G R O M A C S", " Machine for Simulating Chemistry",
+    const char* lines[] = { "         G R O M A C S",
+                            " Machine for Simulating Chemistry",
                             "       Copyright (c) 1992-2013",
                             "  Berk Hess, David van der Spoel, Erik Lindahl",
                             "        and many collaborators!" };
 
-    return MessageBox(x11, gmx->wd->self, gmx->wd->text, asize(lines), lines,
-                      MB_OK | MB_ICONGMX | MBFLAGS, MBCallback, gmx);
+    return MessageBox(
+            x11, gmx->wd->self, gmx->wd->text, asize(lines), lines, MB_OK | MB_ICONGMX | MBFLAGS, MBCallback, gmx);
 }
 
 static void QuitCB(t_x11* x11, int dlg_mess, int /*item_id*/, char* set, void* data)
@@ -166,24 +167,24 @@ static t_dlg* quit_mb(t_x11* x11, t_gmx* gmx)
 {
     const char* lines[] = { " Do you really want to Quit ?" };
 
-    return MessageBox(x11, gmx->wd->self, gmx->wd->text, asize(lines), lines,
-                      MB_YESNO | MB_ICONSTOP | MBFLAGS, QuitCB, gmx);
+    return MessageBox(
+            x11, gmx->wd->self, gmx->wd->text, asize(lines), lines, MB_YESNO | MB_ICONSTOP | MBFLAGS, QuitCB, gmx);
 }
 
 static t_dlg* help_mb(t_x11* x11, t_gmx* gmx)
 {
     const char* lines[] = { " Help will soon be added" };
 
-    return MessageBox(x11, gmx->wd->self, gmx->wd->text, asize(lines), lines,
-                      MB_OK | MB_ICONINFORMATION | MBFLAGS, MBCallback, gmx);
+    return MessageBox(
+            x11, gmx->wd->self, gmx->wd->text, asize(lines), lines, MB_OK | MB_ICONINFORMATION | MBFLAGS, MBCallback, gmx);
 }
 
 static t_dlg* ni_mb(t_x11* x11, t_gmx* gmx)
 {
     const char* lines[] = { " This feature has not been", " implemented yet." };
 
-    return MessageBox(x11, gmx->wd->self, gmx->wd->text, asize(lines), lines,
-                      MB_OK | MB_ICONEXCLAMATION | MBFLAGS, MBCallback, gmx);
+    return MessageBox(
+            x11, gmx->wd->self, gmx->wd->text, asize(lines), lines, MB_OK | MB_ICONEXCLAMATION | MBFLAGS, MBCallback, gmx);
 }
 
 enum
@@ -392,8 +393,8 @@ void init_dlgs(t_x11* x11, t_gmx* gmx)
     snew(gmx->dlgs, edNR);
     for (int i = 0; (i < asize(di)); i++)
     {
-        gmx->dlgs[i] = ReadDlg(x11, gmx->wd->self, di[i].dlgfile, di[i].dlgfile, 0, 0, true, false,
-                               di[i].cb, gmx);
+        gmx->dlgs[i] = ReadDlg(
+                x11, gmx->wd->self, di[i].dlgfile, di[i].dlgfile, 0, 0, true, false, di[i].cb, gmx);
     }
 
     gmx->dlgs[edFilter] = select_filter(x11, gmx);

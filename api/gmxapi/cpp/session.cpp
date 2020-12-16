@@ -122,8 +122,10 @@ std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl> co
 {
     // We should be able to get a communicator (or subcommunicator) through the
     // Context.
-    return std::make_unique<SessionImpl>(std::move(context), std::move(runnerBuilder),
-                                         std::move(simulationContext), std::move(logFilehandle));
+    return std::make_unique<SessionImpl>(std::move(context),
+                                         std::move(runnerBuilder),
+                                         std::move(simulationContext),
+                                         std::move(logFilehandle));
 }
 
 SessionImpl::SessionImpl(std::shared_ptr<ContextImpl> context,
@@ -156,8 +158,10 @@ std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl> context,
                                        gmx::SimulationContext&&     simulationContext,
                                        gmx::LogFilePtr              logFilehandle)
 {
-    auto newSession      = SessionImpl::create(std::move(context), std::move(runnerBuilder),
-                                          std::move(simulationContext), std::move(logFilehandle));
+    auto newSession      = SessionImpl::create(std::move(context),
+                                          std::move(runnerBuilder),
+                                          std::move(simulationContext),
+                                          std::move(logFilehandle));
     auto launchedSession = std::make_shared<Session>(std::move(newSession));
     return launchedSession;
 }

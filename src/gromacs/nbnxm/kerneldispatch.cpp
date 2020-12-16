@@ -400,19 +400,22 @@ static void accountFlops(t_nrnb*                    nrnb,
     if (ic.vdw_modifier == eintmodFORCESWITCH)
     {
         /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_FSW + (stepWork.computeEnergy ? 1 : 0),
+        inc_nrnb(nrnb,
+                 eNR_NBNXN_ADD_LJ_FSW + (stepWork.computeEnergy ? 1 : 0),
                  pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_);
     }
     if (ic.vdw_modifier == eintmodPOTSWITCH)
     {
         /* We add up the switch cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_PSW + (stepWork.computeEnergy ? 1 : 0),
+        inc_nrnb(nrnb,
+                 eNR_NBNXN_ADD_LJ_PSW + (stepWork.computeEnergy ? 1 : 0),
                  pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_);
     }
     if (ic.vdwtype == evdwPME)
     {
         /* We add up the LJ Ewald cost separately */
-        inc_nrnb(nrnb, eNR_NBNXN_ADD_LJ_EWALD + (stepWork.computeEnergy ? 1 : 0),
+        inc_nrnb(nrnb,
+                 eNR_NBNXN_ADD_LJ_EWALD + (stepWork.computeEnergy ? 1 : 0),
                  pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_);
     }
 }
@@ -432,8 +435,14 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
         case Nbnxm::KernelType::Cpu4x4_PlainC:
         case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
         case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
-            nbnxn_kernel_cpu(pairlistSet, kernelSetup(), nbat.get(), ic, fr.shift_vec, stepWork,
-                             clearF, enerd->grpp.ener[egCOULSR].data(),
+            nbnxn_kernel_cpu(pairlistSet,
+                             kernelSetup(),
+                             nbat.get(),
+                             ic,
+                             fr.shift_vec,
+                             stepWork,
+                             clearF,
+                             enerd->grpp.ener[egCOULSR].data(),
                              fr.bBHAM ? enerd->grpp.ener[egBHAMSR].data() : enerd->grpp.ener[egLJSR].data(),
                              wcycle_);
             break;
@@ -444,8 +453,15 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality   iLoc
 
         case Nbnxm::KernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(
-                    pairlistSet.gpuList(), nbat.get(), &ic, fr.shift_vec, stepWork, clearF,
-                    nbat->out[0].f, nbat->out[0].fshift.data(), enerd->grpp.ener[egCOULSR].data(),
+                    pairlistSet.gpuList(),
+                    nbat.get(),
+                    &ic,
+                    fr.shift_vec,
+                    stepWork,
+                    clearF,
+                    nbat->out[0].f,
+                    nbat->out[0].fshift.data(),
+                    enerd->grpp.ener[egCOULSR].data(),
                     fr.bBHAM ? enerd->grpp.ener[egBHAMSR].data() : enerd->grpp.ener[egLJSR].data());
             break;
 
@@ -509,8 +525,8 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
     {
         try
         {
-            gmx_nb_free_energy_kernel(nbl_fep[th].get(), x, forceWithShiftForces, fr, &mdatoms,
-                                      &kernel_data, nrnb);
+            gmx_nb_free_energy_kernel(
+                    nbl_fep[th].get(), x, forceWithShiftForces, fr, &mdatoms, &kernel_data, nrnb);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
@@ -552,15 +568,15 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernel(gmx::InteractionLocality   iLo
             {
                 try
                 {
-                    gmx_nb_free_energy_kernel(nbl_fep[th].get(), x, forceWithShiftForces, fr,
-                                              &mdatoms, &kernel_data, nrnb);
+                    gmx_nb_free_energy_kernel(
+                            nbl_fep[th].get(), x, forceWithShiftForces, fr, &mdatoms, &kernel_data, nrnb);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }
 
             sum_epot(enerd->foreign_grpp, enerd->foreign_term);
-            enerd->foreignLambdaTerms.accumulate(i, enerd->foreign_term[F_EPOT],
-                                                 dvdl_nb[efptVDW] + dvdl_nb[efptCOUL]);
+            enerd->foreignLambdaTerms.accumulate(
+                    i, enerd->foreign_term[F_EPOT], dvdl_nb[efptVDW] + dvdl_nb[efptCOUL]);
         }
     }
     wallcycle_sub_stop(wcycle_, ewcsNONBONDED_FEP);

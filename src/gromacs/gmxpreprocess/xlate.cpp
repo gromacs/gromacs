@@ -91,8 +91,10 @@ static void get_xlatoms(const std::string& filename, FILE* fp, int* nptr, t_xlat
         }
         if (na != 3)
         {
-            gmx_fatal(FARGS, "Expected a residue name and two atom names in file '%s', not '%s'",
-                      filename.c_str(), line);
+            gmx_fatal(FARGS,
+                      "Expected a residue name and two atom names in file '%s', not '%s'",
+                      filename.c_str(),
+                      line);
         }
 
         srenew(xl, n + 1);
@@ -245,8 +247,11 @@ void rename_atoms(const char*                            xlfile,
                     const char* ptr0 = xlatom[i].replace;
                     if (bVerbose)
                     {
-                        printf("Renaming atom '%s' in residue %d %s to '%s'\n", *atoms->atomname[a],
-                               atoms->resinfo[resind].nr, *atoms->resinfo[resind].name, ptr0);
+                        printf("Renaming atom '%s' in residue %d %s to '%s'\n",
+                               *atoms->atomname[a],
+                               atoms->resinfo[resind].nr,
+                               *atoms->resinfo[resind].name,
+                               ptr0);
                     }
                     atoms->atomname[a] = put_symtab(symtab, ptr0);
                     bRenamed           = TRUE;

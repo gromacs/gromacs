@@ -176,8 +176,7 @@ TEST_F(ReportMethodsTest, ToolEndToEndTest)
 {
     const char* const command[] = { "report-methods", "-s", s_tprFileHandle->tprName().c_str() };
     CommandLine       cmdline(command);
-    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ReportMethodsInfo::create,
-                                                                    &cmdline));
+    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ReportMethodsInfo::create, &cmdline));
 }
 
 } // namespace test

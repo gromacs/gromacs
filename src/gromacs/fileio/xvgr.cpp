@@ -88,7 +88,8 @@ static char* xvgrstr(const std::string& gmx, const gmx_output_env_t* oenv, char*
             gmx_fatal(FARGS,
                       "Output buffer length in xvgstr (%d) too small to process xvg input string "
                       "'%s'",
-                      buflen, gmx.c_str());
+                      buflen,
+                      gmx.c_str());
         }
         if (gmx[g] == '\\')
         {
@@ -318,7 +319,10 @@ void xvgr_world(FILE* out, real xmin, real ymin, real xmax, real ymax, const gmx
                 "@ world ymin %g\n"
                 "@ world xmax %g\n"
                 "@ world ymax %g\n",
-                xmin, ymin, xmax, ymax);
+                xmin,
+                ymin,
+                xmax,
+                ymax);
     }
 }
 
@@ -386,13 +390,14 @@ void xvgr_new_dataset(FILE* out, int nr_first, int nsets, const char** setname, 
             {
                 if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgr)
                 {
-                    fprintf(out, "@ legend string %d \"%s\"\n", i + nr_first,
+                    fprintf(out,
+                            "@ legend string %d \"%s\"\n",
+                            i + nr_first,
                             xvgrstr(setname[i], oenv, buf, STRLEN));
                 }
                 else
                 {
-                    fprintf(out, "@ s%d legend \"%s\"\n", i + nr_first,
-                            xvgrstr(setname[i], oenv, buf, STRLEN));
+                    fprintf(out, "@ s%d legend \"%s\"\n", i + nr_first, xvgrstr(setname[i], oenv, buf, STRLEN));
                 }
             }
         }
@@ -1001,7 +1006,9 @@ real** read_xvg_time(const char* fn,
                             fprintf(stderr,
                                     "Invalid line in %s:\n%s"
                                     "Using zeros for the last %d sets\n",
-                                    fn, line0, narg - a);
+                                    fn,
+                                    line0,
+                                    narg - a);
                         }
                         n++;
                     }

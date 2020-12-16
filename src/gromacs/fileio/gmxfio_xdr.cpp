@@ -114,16 +114,27 @@ static void gmx_fio_check_nitem(int eio, std::size_t nitem, const char* file, in
         gmx_fatal(FARGS,
                   "nitem may differ from 1 only for %s, %s, %s or %s, not for %s"
                   "(%s, %d)",
-                  eioNames[eioNUCHAR], eioNames[eioNRVEC], eioNames[eioNCHAR], eioNames[eioOPAQUE],
-                  eioNames[eio], file, line);
+                  eioNames[eioNUCHAR],
+                  eioNames[eioNRVEC],
+                  eioNames[eioNCHAR],
+                  eioNames[eioOPAQUE],
+                  eioNames[eio],
+                  file,
+                  line);
     }
 }
 
 /* output a data type error. */
 [[noreturn]] static void gmx_fio_fe(t_fileio* fio, int eio, const char* desc, const char* srcfile, int line)
 {
-    gmx_fatal(FARGS, "Trying to %s %s type %d (%s), src %s, line %d", fio->bRead ? "read" : "write",
-              desc, eio, ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown", srcfile, line);
+    gmx_fatal(FARGS,
+              "Trying to %s %s type %d (%s), src %s, line %d",
+              fio->bRead ? "read" : "write",
+              desc,
+              eio,
+              ((eio >= 0) && (eio < eioNR)) ? eioNames[eio] : "unknown",
+              srcfile,
+              line);
 }
 
 /* This is the part that reads xdr files.  */
@@ -255,7 +266,9 @@ do_xdr(t_fileio* fio, void* item, std::size_t nitem, int eio, const char* desc, 
             cptr = static_cast<char*>(item);
             GMX_RELEASE_ASSERT(nitem < static_cast<std::size_t>(std::numeric_limits<int>::max()),
                                "The XDR interface cannot handle array lengths > 2^31");
-            res = xdr_vector(fio->xdr, cptr, static_cast<int>(nitem),
+            res = xdr_vector(fio->xdr,
+                             cptr,
+                             static_cast<int>(nitem),
                              static_cast<unsigned int>(sizeof(char)),
                              reinterpret_cast<xdrproc_t>(xdr_char));
             break;
@@ -263,7 +276,9 @@ do_xdr(t_fileio* fio, void* item, std::size_t nitem, int eio, const char* desc, 
             ucptr = static_cast<unsigned char*>(item);
             GMX_RELEASE_ASSERT(nitem < static_cast<std::size_t>(std::numeric_limits<int>::max()),
                                "The XDR interface cannot handle array lengths > 2^31");
-            res = xdr_vector(fio->xdr, reinterpret_cast<char*>(ucptr), static_cast<int>(nitem),
+            res = xdr_vector(fio->xdr,
+                             reinterpret_cast<char*>(ucptr),
+                             static_cast<int>(nitem),
                              static_cast<unsigned int>(sizeof(unsigned char)),
                              reinterpret_cast<xdrproc_t>(xdr_u_char));
             break;
@@ -288,7 +303,9 @@ do_xdr(t_fileio* fio, void* item, std::size_t nitem, int eio, const char* desc, 
                         dvec[m] = (static_cast<real*>(item))[m];
                     }
                 }
-                res = xdr_vector(fio->xdr, reinterpret_cast<char*>(dvec), DIM,
+                res = xdr_vector(fio->xdr,
+                                 reinterpret_cast<char*>(dvec),
+                                 DIM,
                                  static_cast<unsigned int>(sizeof(double)),
                                  reinterpret_cast<xdrproc_t>(xdr_double));
                 if (item)
@@ -308,7 +325,9 @@ do_xdr(t_fileio* fio, void* item, std::size_t nitem, int eio, const char* desc, 
                         fvec[m] = (static_cast<real*>(item))[m];
                     }
                 }
-                res = xdr_vector(fio->xdr, reinterpret_cast<char*>(fvec), DIM,
+                res = xdr_vector(fio->xdr,
+                                 reinterpret_cast<char*>(fvec),
+                                 DIM,
                                  static_cast<unsigned int>(sizeof(float)),
                                  reinterpret_cast<xdrproc_t>(xdr_float));
                 if (item)
@@ -374,7 +393,10 @@ do_xdr(t_fileio* fio, void* item, std::size_t nitem, int eio, const char* desc, 
                 gmx_fatal(FARGS,
                           "wrong string length %d for string %s"
                           " (source %s, line %d)",
-                          slen, desc, srcfile, line);
+                          slen,
+                          desc,
+                          srcfile,
+                          line);
             }
             if (!item && fio->bRead)
             {

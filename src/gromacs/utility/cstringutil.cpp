@@ -98,7 +98,9 @@ char* fgets2(char* line, int n, FILE* stream)
             gmx_fatal(FARGS,
                       "An input file contains a line longer than %d characters, while the buffer "
                       "passed to fgets2 has size %d. The line starts with: '%20.20s'",
-                      n, n, line);
+                      n,
+                      n,
+                      line);
         }
     }
     if ((c = strchr(line, '\r')) != nullptr)

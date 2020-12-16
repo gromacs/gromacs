@@ -200,22 +200,29 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
                 " -Dc_nbnxnGpuNumClusterPerSupercluster=%d"
                 " -Dc_nbnxnGpuJgroupSize=%d"
                 "%s",
-                c_nbnxnGpuClusterSize, c_nbnxnMinDistanceSquared, c_nbnxnGpuNumClusterPerSupercluster,
-                c_nbnxnGpuJgroupSize, (nb->bPrefetchLjParam) ? " -DIATYPE_SHMEM" : "");
+                c_nbnxnGpuClusterSize,
+                c_nbnxnMinDistanceSquared,
+                c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuJgroupSize,
+                (nb->bPrefetchLjParam) ? " -DIATYPE_SHMEM" : "");
         try
         {
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
-            program = gmx::ocl::compileProgram(
-                    stderr, "gromacs/nbnxm/opencl", "nbnxm_ocl_kernels.cl", extraDefines,
-                    nb->deviceContext_->context(), nb->deviceContext_->deviceInfo().oclDeviceId,
-                    nb->deviceContext_->deviceInfo().deviceVendor);
+            program = gmx::ocl::compileProgram(stderr,
+                                               "gromacs/nbnxm/opencl",
+                                               "nbnxm_ocl_kernels.cl",
+                                               extraDefines,
+                                               nb->deviceContext_->context(),
+                                               nb->deviceContext_->deviceInfo().oclDeviceId,
+                                               nb->deviceContext_->deviceInfo().deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {
-            e.prependContext(gmx::formatString(
-                    "Failed to compile/load nbnxm kernels for GPU #%d %s\n",
-                    nb->deviceContext_->deviceInfo().id, nb->deviceContext_->deviceInfo().device_name));
+            e.prependContext(
+                    gmx::formatString("Failed to compile/load nbnxm kernels for GPU #%d %s\n",
+                                      nb->deviceContext_->deviceInfo().id,
+                                      nb->deviceContext_->deviceInfo().device_name));
             throw;
         }
     }

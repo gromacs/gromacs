@@ -189,8 +189,9 @@ namespace
 {
 
 //! Names for XvgFormat
-const gmx::EnumerationArray<XvgFormat, const char*> c_xvgFormatNames = { { "xmgrace", "xmgr",
-                                                                           "none" } };
+const gmx::EnumerationArray<XvgFormat, const char*> c_xvgFormatNames = {
+    { "xmgrace", "xmgr", "none" }
+};
 
 /*! \brief Returns the default xvg format, as modified by GMX_VIEW_XVG
  * if that environment variable is set.

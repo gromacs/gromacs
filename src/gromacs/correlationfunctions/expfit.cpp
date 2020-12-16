@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -566,8 +566,12 @@ static void print_chi2_params(FILE*        fp,
         double yfit = lmcurves[eFitFn](x[i], fitparms);
         chi2 += gmx::square(y[i] - yfit);
     }
-    fprintf(fp, "There are %d data points, %d parameters, %s chi2 = %g\nparams:", nfitpnts,
-            effnNparams(eFitFn), label, chi2);
+    fprintf(fp,
+            "There are %d data points, %d parameters, %s chi2 = %g\nparams:",
+            nfitpnts,
+            effnNparams(eFitFn),
+            label,
+            chi2);
     for (i = 0; (i < effnNparams(eFitFn)); i++)
     {
         fprintf(fp, "  %10g", fitparms[i]);
@@ -601,8 +605,7 @@ real do_lmfit(int                     ndata,
     if (debug)
     {
         fprintf(debug, "There are %d points to fit %d vars!\n", ndata, effnNparams(eFitFn));
-        fprintf(debug, "Fit to function %d from %g through %g, dt=%g\n", eFitFn, begintimefit,
-                endtimefit, dt);
+        fprintf(debug, "Fit to function %d from %g through %g, dt=%g\n", eFitFn, begintimefit, endtimefit, dt);
     }
 
     snew(x, ndata);
@@ -761,19 +764,24 @@ real fit_acf(int                     ncorr,
 
     if (bPrint)
     {
-        printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 0.0,
-               dt * nf_int, sum);
+        printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 0.0, dt * nf_int, sum);
         printf("COR: Relaxation times are computed as fit to an exponential:\n");
         printf("COR:   %s\n", effnDescription(fitfn));
         printf("COR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n",
-               tbeginfit, std::min(ncorr * dt, tendfit));
+               tbeginfit,
+               std::min(ncorr * dt, tendfit));
     }
 
     tStart = 0;
     if (bPrint)
     {
-        printf("COR:%11s%11s%11s%11s%11s%11s%11s\n", "Fit from", "Integral", "Tail Value",
-               "Sum (ps)", " a1 (ps)", (effnNparams(fitfn) >= 2) ? " a2 ()" : "",
+        printf("COR:%11s%11s%11s%11s%11s%11s%11s\n",
+               "Fit from",
+               "Integral",
+               "Tail Value",
+               "Sum (ps)",
+               " a1 (ps)",
+               (effnNparams(fitfn) >= 2) ? " a2 ()" : "",
                (effnNparams(fitfn) >= 3) ? " a3 (ps)" : "");
     }
 
@@ -843,9 +851,9 @@ real fit_acf(int                     ncorr,
 
         nf_int    = std::min(ncorr, static_cast<int>((tStart + 1e-4) / dt));
         sum       = print_and_integrate(debug, nf_int, dt, c1, nullptr, 1);
-        tail_corr = do_lmfit(ncorr, c1, sig, dt, nullptr, tStart, tendfit, oenv, bDebugMode(),
-                             fitfn, fitparm, 0, nullptr);
-        sumtot    = sum + tail_corr;
+        tail_corr = do_lmfit(
+                ncorr, c1, sig, dt, nullptr, tStart, tendfit, oenv, bDebugMode(), fitfn, fitparm, 0, nullptr);
+        sumtot = sum + tail_corr;
         if (fit && ((jmax == 1) || (j == 1)))
         {
             double mfp[3];

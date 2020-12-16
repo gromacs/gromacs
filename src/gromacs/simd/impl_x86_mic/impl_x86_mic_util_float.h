@@ -61,8 +61,8 @@ inline void gmx_simdcall decrHsimd(float* m, SimdFloat a)
 
     assert(std::size_t(m) % 32 == 0);
 
-    t = _mm512_castpd_ps(_mm512_extload_pd(reinterpret_cast<const double*>(m), _MM_UPCONV_PD_NONE,
-                                           _MM_BROADCAST_4X8, _MM_HINT_NONE));
+    t = _mm512_castpd_ps(_mm512_extload_pd(
+            reinterpret_cast<const double*>(m), _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
     a = _mm512_add_ps(a.simdInternal_, _mm512_permute4f128_ps(a.simdInternal_, _MM_PERM_BADC));
     t = _mm512_sub_ps(t, a.simdInternal_);
     _mm512_mask_packstorelo_ps(m, _mm512_int2mask(0x00FF), t);
@@ -300,10 +300,14 @@ static inline float gmx_simdcall reduceIncr4ReturnSum(float* m, SimdFloat v0, Si
     assert(std::size_t(m) % 16 == 0);
 
     t0 = _mm512_add_ps(v0.simdInternal_, _mm512_swizzle_ps(v0.simdInternal_, _MM_SWIZ_REG_BADC));
-    t0 = _mm512_mask_add_ps(t0, _mm512_int2mask(0xCCCC), v2.simdInternal_,
+    t0 = _mm512_mask_add_ps(t0,
+                            _mm512_int2mask(0xCCCC),
+                            v2.simdInternal_,
                             _mm512_swizzle_ps(v2.simdInternal_, _MM_SWIZ_REG_BADC));
     t1 = _mm512_add_ps(v1.simdInternal_, _mm512_swizzle_ps(v1.simdInternal_, _MM_SWIZ_REG_BADC));
-    t1 = _mm512_mask_add_ps(t1, _mm512_int2mask(0xCCCC), v3.simdInternal_,
+    t1 = _mm512_mask_add_ps(t1,
+                            _mm512_int2mask(0xCCCC),
+                            v3.simdInternal_,
                             _mm512_swizzle_ps(v3.simdInternal_, _MM_SWIZ_REG_BADC));
     t2 = _mm512_add_ps(t0, _mm512_swizzle_ps(t0, _MM_SWIZ_REG_CDAB));
     t2 = _mm512_mask_add_ps(t2, _mm512_int2mask(0xAAAA), t1, _mm512_swizzle_ps(t1, _MM_SWIZ_REG_CDAB));
@@ -311,8 +315,8 @@ static inline float gmx_simdcall reduceIncr4ReturnSum(float* m, SimdFloat v0, Si
     t2 = _mm512_add_ps(t2, _mm512_permute4f128_ps(t2, _MM_PERM_BADC));
     t2 = _mm512_add_ps(t2, _mm512_permute4f128_ps(t2, _MM_PERM_CDAB));
 
-    t0 = _mm512_mask_extload_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), m, _MM_UPCONV_PS_NONE,
-                                _MM_BROADCAST_4X16, _MM_HINT_NONE);
+    t0 = _mm512_mask_extload_ps(
+            _mm512_undefined_ps(), _mm512_int2mask(0xF), m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE);
     t0 = _mm512_add_ps(t0, t2);
     _mm512_mask_packstorelo_ps(m, _mm512_int2mask(0xF), t0);
 
@@ -329,25 +333,30 @@ static inline SimdFloat gmx_simdcall loadDualHsimd(const float* m0, const float*
     assert(std::size_t(m1) % 32 == 0);
 
     return _mm512_castpd_ps(_mm512_mask_extload_pd(
-            _mm512_extload_pd(reinterpret_cast<const double*>(m0), _MM_UPCONV_PD_NONE,
-                              _MM_BROADCAST_4X8, _MM_HINT_NONE),
-            _mm512_int2mask(0xF0), reinterpret_cast<const double*>(m1), _MM_UPCONV_PD_NONE,
-            _MM_BROADCAST_4X8, _MM_HINT_NONE));
+            _mm512_extload_pd(reinterpret_cast<const double*>(m0), _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE),
+            _mm512_int2mask(0xF0),
+            reinterpret_cast<const double*>(m1),
+            _MM_UPCONV_PD_NONE,
+            _MM_BROADCAST_4X8,
+            _MM_HINT_NONE));
 }
 
 static inline SimdFloat gmx_simdcall loadDuplicateHsimd(const float* m)
 {
     assert(std::size_t(m) % 32 == 0);
 
-    return _mm512_castpd_ps(_mm512_extload_pd(reinterpret_cast<const double*>(m),
-                                              _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
+    return _mm512_castpd_ps(_mm512_extload_pd(
+            reinterpret_cast<const double*>(m), _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
 }
 
 static inline SimdFloat gmx_simdcall loadU1DualHsimd(const float* m)
 {
-    return _mm512_mask_extload_ps(
-            _mm512_extload_ps(m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE),
-            _mm512_int2mask(0xFF00), m + 1, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE);
+    return _mm512_mask_extload_ps(_mm512_extload_ps(m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_1X16, _MM_HINT_NONE),
+                                  _mm512_int2mask(0xFF00),
+                                  m + 1,
+                                  _MM_UPCONV_PS_NONE,
+                                  _MM_BROADCAST_1X16,
+                                  _MM_HINT_NONE);
 }
 
 
@@ -370,14 +379,14 @@ static inline void gmx_simdcall incrDualHsimd(float* m0, float* m1, SimdFloat a)
     __m512 x;
 
     // Update lower half
-    x = _mm512_castpd_ps(_mm512_extload_pd(reinterpret_cast<const double*>(m0), _MM_UPCONV_PD_NONE,
-                                           _MM_BROADCAST_4X8, _MM_HINT_NONE));
+    x = _mm512_castpd_ps(_mm512_extload_pd(
+            reinterpret_cast<const double*>(m0), _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
     x = _mm512_add_ps(x, a.simdInternal_);
     _mm512_mask_packstorelo_ps(m0, _mm512_int2mask(0x00FF), x);
 
     // Update upper half
-    x = _mm512_castpd_ps(_mm512_extload_pd(reinterpret_cast<const double*>(m1), _MM_UPCONV_PD_NONE,
-                                           _MM_BROADCAST_4X8, _MM_HINT_NONE));
+    x = _mm512_castpd_ps(_mm512_extload_pd(
+            reinterpret_cast<const double*>(m1), _MM_UPCONV_PD_NONE, _MM_BROADCAST_4X8, _MM_HINT_NONE));
     x = _mm512_add_ps(x, a.simdInternal_);
     _mm512_mask_packstorelo_ps(m1, _mm512_int2mask(0xFF00), x);
 }
@@ -428,13 +437,15 @@ static inline float gmx_simdcall reduceIncr4ReturnSumHsimd(float* m, SimdFloat v
     assert(std::size_t(m) % 32 == 0);
 
     t0 = _mm512_add_ps(v0.simdInternal_, _mm512_swizzle_ps(v0.simdInternal_, _MM_SWIZ_REG_BADC));
-    t0 = _mm512_mask_add_ps(t0, _mm512_int2mask(0xCCCC), v1.simdInternal_,
+    t0 = _mm512_mask_add_ps(t0,
+                            _mm512_int2mask(0xCCCC),
+                            v1.simdInternal_,
                             _mm512_swizzle_ps(v1.simdInternal_, _MM_SWIZ_REG_BADC));
     t0 = _mm512_add_ps(t0, _mm512_swizzle_ps(t0, _MM_SWIZ_REG_CDAB));
     t0 = _mm512_add_ps(t0, _mm512_castpd_ps(_mm512_swizzle_pd(_mm512_castps_pd(t0), _MM_SWIZ_REG_BADC)));
     t0 = _mm512_mask_permute4f128_ps(t0, _mm512_int2mask(0xAAAA), t0, _MM_PERM_BADC);
-    t1 = _mm512_mask_extload_ps(_mm512_undefined_ps(), _mm512_int2mask(0xF), m, _MM_UPCONV_PS_NONE,
-                                _MM_BROADCAST_4X16, _MM_HINT_NONE);
+    t1 = _mm512_mask_extload_ps(
+            _mm512_undefined_ps(), _mm512_int2mask(0xF), m, _MM_UPCONV_PS_NONE, _MM_BROADCAST_4X16, _MM_HINT_NONE);
     t1 = _mm512_add_ps(t1, t0);
     _mm512_mask_packstorelo_ps(m, _mm512_int2mask(0xF), t1);
 

@@ -120,17 +120,23 @@ int main()
     gmx::ArrayRef<nblib::Vec3> userForces(simState.forces());
     forceCalculator.compute(simState.coordinates(), userForces);
     // Print some diagnostic info
-    printf("  final forces on particle 0: x %4f y %4f z %4f\n", userForces[0][0], userForces[0][1],
+    printf("  final forces on particle 0: x %4f y %4f z %4f\n",
+           userForces[0][0],
+           userForces[0][1],
            userForces[0][2]);
     // User may modify forces stored in simState.forces() if needed
     // Print some diagnostic info
-    printf("initial position of particle 0: x %4f y %4f z %4f\n", simState.coordinates()[0][0],
-           simState.coordinates()[0][1], simState.coordinates()[0][2]);
+    printf("initial position of particle 0: x %4f y %4f z %4f\n",
+           simState.coordinates()[0][0],
+           simState.coordinates()[0][1],
+           simState.coordinates()[0][2]);
     // Integrate with a time step of 1 fs
     integrator.integrate(1.0, simState.coordinates(), simState.velocities(), simState.forces());
     // Print some diagnostic info
 
-    printf("  final position of particle 0: x %4f y %4f z %4f\n", simState.coordinates()[0][0],
-           simState.coordinates()[0][1], simState.coordinates()[0][2]);
+    printf("  final position of particle 0: x %4f y %4f z %4f\n",
+           simState.coordinates()[0][0],
+           simState.coordinates()[0][1],
+           simState.coordinates()[0][2]);
     return 0;
 }

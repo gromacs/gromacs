@@ -112,7 +112,8 @@ public:
                                   "tau-t = 1\n"
                                   "ref-t = 298\n"
                                   "compressed-x-grps = Sol\n",
-                                  steps, getTestStepSize()));
+                                  steps,
+                                  getTestStepSize()));
 
         EXPECT_EQ(0, runner_.callGromppOnThisRank());
     }

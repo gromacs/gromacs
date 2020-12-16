@@ -77,9 +77,9 @@ IndexGroupsAndNames::IndexGroupsAndNames(const t_blocka& indexGroup, ArrayRef<ch
 
 bool IndexGroupsAndNames::containsGroupName(const std::string& groupName) const
 {
-    return std::any_of(
-            std::begin(groupNames_), std::end(groupNames_),
-            [&groupName](const std::string& name) { return equalCaseInsensitive(groupName, name); });
+    return std::any_of(std::begin(groupNames_), std::end(groupNames_), [&groupName](const std::string& name) {
+        return equalCaseInsensitive(groupName, name);
+    });
 }
 
 std::vector<index> IndexGroupsAndNames::indices(const std::string& groupName) const
@@ -96,14 +96,17 @@ std::vector<index> IndexGroupsAndNames::indices(const std::string& groupName) co
                           "of grompp."));
     }
     const auto groupNamePosition = std::find_if(
-            std::begin(groupNames_), std::end(groupNames_),
-            [&groupName](const std::string& name) { return equalCaseInsensitive(groupName, name); });
+            std::begin(groupNames_), std::end(groupNames_), [&groupName](const std::string& name) {
+                return equalCaseInsensitive(groupName, name);
+            });
     const auto groupIndex = std::distance(std::begin(groupNames_), groupNamePosition);
     const auto groupSize  = indexGroup_.index[groupIndex + 1] - indexGroup_.index[groupIndex];
     std::vector<index> groupIndices(groupSize);
     const auto         startingIndex = indexGroup_.index[groupIndex];
     std::iota(std::begin(groupIndices), std::end(groupIndices), startingIndex);
-    std::transform(std::begin(groupIndices), std::end(groupIndices), std::begin(groupIndices),
+    std::transform(std::begin(groupIndices),
+                   std::end(groupIndices),
+                   std::begin(groupIndices),
                    [blockLookup = indexGroup_.a](auto i) { return blockLookup[i]; });
     return groupIndices;
 }

@@ -261,8 +261,11 @@ void ElectricField::initOutput(FILE* fplog, int nfile, const t_filenm fnm[], boo
             }
             else
             {
-                fpField_ = xvgropen(opt2fn("-field", nfile, fnm), "Applied electric field",
-                                    "Time (ps)", "E (V/nm)", oenv);
+                fpField_ = xvgropen(opt2fn("-field", nfile, fnm),
+                                    "Applied electric field",
+                                    "Time (ps)",
+                                    "E (V/nm)",
+                                    oenv);
             }
         }
     }

@@ -280,7 +280,12 @@ static int find_next_match_res(int*       rnr1,
     {
         if (debug)
         {
-            fprintf(debug, "%d.%d.%dX%sX%s", dx, rr1, rr2, *resinfo1[index1[rr1 + 1]].name,
+            fprintf(debug,
+                    "%d.%d.%dX%sX%s",
+                    dx,
+                    rr1,
+                    rr2,
+                    *resinfo1[index1[rr1 + 1]].name,
                     *resinfo2[index2[rr2 + 1]].name);
         }
         dx = 1;
@@ -417,8 +422,16 @@ static void find_matching_names(int*           isize1,
             }
             if (debug)
             {
-                fprintf(debug, " -> %s%d-%s%d %s%d-%s%d", *resinfo1[rnr1].name, rnr1, *atnms1[index1[i1]],
-                        index1[i1], *resinfo2[rnr2].name, rnr2, *atnms2[index2[i2]], index2[i2]);
+                fprintf(debug,
+                        " -> %s%d-%s%d %s%d-%s%d",
+                        *resinfo1[rnr1].name,
+                        rnr1,
+                        *atnms1[index1[i1]],
+                        index1[i1],
+                        *resinfo2[rnr2].name,
+                        rnr2,
+                        *atnms2[index2[i2]],
+                        index2[i2]);
             }
             m1 = find_res_end(i1, *isize1, index1, atoms1);
             m2 = find_res_end(i2, *isize2, index2, atoms2);
@@ -550,8 +563,8 @@ int gmx_confrms(int argc, char* argv[])
     real* msds;
 
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -601,8 +614,12 @@ int gmx_confrms(int argc, char* argv[])
         if (matchndxfile)
         {
             fp = gmx_ffopen(matchndxfile, "w");
-            fprintf(fp, "; Matching atoms between %s from %s and %s from %s\n", groupnames1,
-                    conf1file, groupnames2, conf2file);
+            fprintf(fp,
+                    "; Matching atoms between %s from %s and %s from %s\n",
+                    groupnames1,
+                    conf1file,
+                    groupnames2,
+                    conf2file);
             fprintf(fp, "[ Match_%s_%s ]\n", conf1file, groupnames1);
             for (i = 0; i < isize1; i++)
             {
@@ -630,8 +647,13 @@ int gmx_confrms(int argc, char* argv[])
         {
             if (warn < 20)
             {
-                fprintf(stderr, "Warning: atomnames at index %d don't match: %d %s, %d %s\n", i + 1,
-                        index1[i] + 1, name1, index2[i] + 1, name2);
+                fprintf(stderr,
+                        "Warning: atomnames at index %d don't match: %d %s, %d %s\n",
+                        i + 1,
+                        index1[i] + 1,
+                        name1,
+                        index2[i] + 1,
+                        name2);
             }
             warn++;
         }
@@ -814,12 +836,14 @@ int gmx_confrms(int argc, char* argv[])
         default:
             if (bBfac)
             {
-                fprintf(stderr, "WARNING: cannot write B-factor values to %s file\n",
+                fprintf(stderr,
+                        "WARNING: cannot write B-factor values to %s file\n",
                         ftp2ext(fn2ftp(outfile)));
             }
             if (!bOne)
             {
-                fprintf(stderr, "WARNING: cannot write the reference structure to %s file\n",
+                fprintf(stderr,
+                        "WARNING: cannot write the reference structure to %s file\n",
                         ftp2ext(fn2ftp(outfile)));
             }
             write_sto_conf(outfile, *top2->name, atoms2, x2, v2, pbcType2, box2);

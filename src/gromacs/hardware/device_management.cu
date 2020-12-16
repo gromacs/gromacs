@@ -86,7 +86,10 @@ static cudaError_t checkCompiledTargetCompatibility(int deviceId, const cudaDevi
                 "might be rare, or some architectures were disabled in the build. \n"
                 "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
                 "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture. \n",
-                gmx::getProgramContext().displayName(), deviceId, deviceProp.major, deviceProp.minor);
+                gmx::getProgramContext().displayName(),
+                deviceId,
+                deviceProp.major,
+                deviceProp.minor);
     }
 
     return stat;
@@ -127,7 +130,9 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
     cu_err = cudaSetDevice(deviceInfo.id);
     if (cu_err != cudaSuccess)
     {
-        fprintf(stderr, "Error while switching to device #%d. %s\n", deviceInfo.id,
+        fprintf(stderr,
+                "Error while switching to device #%d. %s\n",
+                deviceInfo.id,
                 gmx::getDeviceErrorString(cu_err).c_str());
         return DeviceStatus::NonFunctional;
     }
@@ -160,7 +165,8 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
         // launchGpuKernel error is not fatal and should continue with marking the device bad
         fprintf(stderr,
                 "Error occurred while running dummy kernel sanity check on device #%d:\n %s\n",
-                deviceInfo.id, formatExceptionMessageToString(ex).c_str());
+                deviceInfo.id,
+                formatExceptionMessageToString(ex).c_str());
         return DeviceStatus::NonFunctional;
     }
 
@@ -373,14 +379,17 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
 
     if (!gpuExists)
     {
-        return gmx::formatString("#%d: %s, stat: %s", deviceInfo.id, "N/A",
-                                 c_deviceStateString[deviceInfo.status]);
+        return gmx::formatString(
+                "#%d: %s, stat: %s", deviceInfo.id, "N/A", c_deviceStateString[deviceInfo.status]);
     }
     else
     {
         return gmx::formatString("#%d: NVIDIA %s, compute cap.: %d.%d, ECC: %3s, stat: %s",
-                                 deviceInfo.id, deviceInfo.prop.name, deviceInfo.prop.major,
-                                 deviceInfo.prop.minor, deviceInfo.prop.ECCEnabled ? "yes" : " no",
+                                 deviceInfo.id,
+                                 deviceInfo.prop.name,
+                                 deviceInfo.prop.major,
+                                 deviceInfo.prop.minor,
+                                 deviceInfo.prop.ECCEnabled ? "yes" : " no",
                                  c_deviceStateString[deviceInfo.status]);
     }
 }

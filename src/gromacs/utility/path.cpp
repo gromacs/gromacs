@@ -162,11 +162,21 @@ bool Path::isEquivalent(const std::string& path1, const std::string& path2)
 
     // p2 is done first, so any error reported is for p1
     // FixME: #1635
-    handle_wrapper h2(CreateFile(path2.c_str(), 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0));
+    handle_wrapper h2(CreateFile(path2.c_str(),
+                                 0,
+                                 FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                 0,
+                                 OPEN_EXISTING,
+                                 FILE_FLAG_BACKUP_SEMANTICS,
+                                 0));
 
-    handle_wrapper h1(CreateFile(path1.c_str(), 0, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                 0, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0));
+    handle_wrapper h1(CreateFile(path1.c_str(),
+                                 0,
+                                 FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                 0,
+                                 OPEN_EXISTING,
+                                 FILE_FLAG_BACKUP_SEMANTICS,
+                                 0));
 
     if (h1.handle == INVALID_HANDLE_VALUE || h2.handle == INVALID_HANDLE_VALUE)
     {
@@ -213,8 +223,8 @@ bool Path::isEquivalent(const std::string& path1, const std::string& path2)
         // but if both are invalid then it is an error.
         if (e1 != 0 && e2 != 0)
         {
-            GMX_THROW_WITH_ERRNO(FileIOError("Path::isEquivalent called with two invalid files"),
-                                 "stat", errno);
+            GMX_THROW_WITH_ERRNO(
+                    FileIOError("Path::isEquivalent called with two invalid files"), "stat", errno);
         }
         return false;
     }
@@ -488,8 +498,8 @@ void File::throwOnError(const NotFoundInfo& info)
 void File::throwOnNotFound(const NotFoundInfo& info)
 {
     throwOnError(info);
-    const std::string message = formatString("File '%s' does not exist or is not accessible.\n%s",
-                                             info.filename, info.message);
+    const std::string message = formatString(
+            "File '%s' does not exist or is not accessible.\n%s", info.filename, info.message);
     GMX_THROW_WITH_ERRNO(InvalidInputError(message), info.call, info.err);
 }
 

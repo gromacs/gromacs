@@ -102,12 +102,15 @@ enum class DeviceStatus : int
  * missing, so that is suppressed.
  */
 static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateString = {
-    "compatible", "nonexistent", "incompatible",
+    "compatible",
+    "nonexistent",
+    "incompatible",
     // clang-format off
     // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
     "incompatible (please recompile with correct GMX" "_OPENCL_NB_CLUSTER_SIZE of 4)",
     // clang-format on
-    "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)", "non-functional",
+    "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)",
+    "non-functional",
     "unavailable"
 };
 

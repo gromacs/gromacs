@@ -151,15 +151,15 @@ static void init_nbparam(NBParamGpu*                     nbp,
     /* set up LJ parameter lookup table */
     if (!useLjCombRule(nbp->vdwType))
     {
-        initParamLookupTable(&nbp->nbfp, &nbp->nbfp_texobj, nbatParams.nbfp.data(),
-                             2 * ntypes * ntypes, deviceContext);
+        initParamLookupTable(
+                &nbp->nbfp, &nbp->nbfp_texobj, nbatParams.nbfp.data(), 2 * ntypes * ntypes, deviceContext);
     }
 
     /* set up LJ-PME parameter lookup table */
     if (ic->vdwtype == evdwPME)
     {
-        initParamLookupTable(&nbp->nbfp_comb, &nbp->nbfp_comb_texobj, nbatParams.nbfp_comb.data(),
-                             2 * ntypes, deviceContext);
+        initParamLookupTable(
+                &nbp->nbfp_comb, &nbp->nbfp_comb_texobj, nbatParams.nbfp_comb.data(), 2 * ntypes, deviceContext);
     }
 }
 
@@ -277,8 +277,13 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
     {
         static_assert(sizeof(adat->shift_vec[0]) == sizeof(nbatom->shift_vec[0]),
                       "Sizes of host- and device-side shift vectors should be the same.");
-        copyToDeviceBuffer(&adat->shift_vec, reinterpret_cast<const float3*>(nbatom->shift_vec.data()),
-                           0, SHIFTS, localStream, GpuApiCallBehavior::Async, nullptr);
+        copyToDeviceBuffer(&adat->shift_vec,
+                           reinterpret_cast<const float3*>(nbatom->shift_vec.data()),
+                           0,
+                           SHIFTS,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
         adat->bShiftVecUploaded = true;
     }
 }
@@ -376,15 +381,24 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
         static_assert(sizeof(d_atdat->lj_comb[0]) == sizeof(float2),
                       "Size of the LJ parameters element should be equal to the size of float2.");
         copyToDeviceBuffer(&d_atdat->lj_comb,
-                           reinterpret_cast<const float2*>(nbat->params().lj_comb.data()), 0,
-                           natoms, localStream, GpuApiCallBehavior::Async, nullptr);
+                           reinterpret_cast<const float2*>(nbat->params().lj_comb.data()),
+                           0,
+                           natoms,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
     }
     else
     {
         static_assert(sizeof(d_atdat->atom_types[0]) == sizeof(nbat->params().type[0]),
                       "Sizes of host- and device-side atom types should be the same.");
-        copyToDeviceBuffer(&d_atdat->atom_types, nbat->params().type.data(), 0, natoms, localStream,
-                           GpuApiCallBehavior::Async, nullptr);
+        copyToDeviceBuffer(&d_atdat->atom_types,
+                           nbat->params().type.data(),
+                           0,
+                           natoms,
+                           localStream,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
     }
 
     if (bDoTime)
@@ -514,10 +528,16 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
     bool                bDoTime       = gpu_nbv->bDoTime;
     const int           maxNumColumns = gridSet.numColumnsMax();
 
-    reallocateDeviceBuffer(&gpu_nbv->cxy_na, maxNumColumns * gridSet.grids().size(),
-                           &gpu_nbv->ncxy_na, &gpu_nbv->ncxy_na_alloc, *gpu_nbv->deviceContext_);
-    reallocateDeviceBuffer(&gpu_nbv->cxy_ind, maxNumColumns * gridSet.grids().size(),
-                           &gpu_nbv->ncxy_ind, &gpu_nbv->ncxy_ind_alloc, *gpu_nbv->deviceContext_);
+    reallocateDeviceBuffer(&gpu_nbv->cxy_na,
+                           maxNumColumns * gridSet.grids().size(),
+                           &gpu_nbv->ncxy_na,
+                           &gpu_nbv->ncxy_na_alloc,
+                           *gpu_nbv->deviceContext_);
+    reallocateDeviceBuffer(&gpu_nbv->cxy_ind,
+                           maxNumColumns * gridSet.grids().size(),
+                           &gpu_nbv->ncxy_ind,
+                           &gpu_nbv->ncxy_ind_alloc,
+                           *gpu_nbv->deviceContext_);
 
     for (unsigned int g = 0; g < gridSet.grids().size(); g++)
     {
@@ -530,8 +550,11 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
         const int* cxy_na          = grid.cxy_na().data();
         const int* cxy_ind         = grid.cxy_ind().data();
 
-        reallocateDeviceBuffer(&gpu_nbv->atomIndices, atomIndicesSize, &gpu_nbv->atomIndicesSize,
-                               &gpu_nbv->atomIndicesSize_alloc, *gpu_nbv->deviceContext_);
+        reallocateDeviceBuffer(&gpu_nbv->atomIndices,
+                               atomIndicesSize,
+                               &gpu_nbv->atomIndicesSize,
+                               &gpu_nbv->atomIndicesSize_alloc,
+                               *gpu_nbv->deviceContext_);
 
         if (atomIndicesSize > 0)
         {
@@ -541,8 +564,13 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
                 gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(deviceStream);
             }
 
-            copyToDeviceBuffer(&gpu_nbv->atomIndices, atomIndices, 0, atomIndicesSize, deviceStream,
-                               GpuApiCallBehavior::Async, nullptr);
+            copyToDeviceBuffer(&gpu_nbv->atomIndices,
+                               atomIndices,
+                               0,
+                               atomIndicesSize,
+                               deviceStream,
+                               GpuApiCallBehavior::Async,
+                               nullptr);
 
             if (bDoTime)
             {
@@ -558,8 +586,8 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
             }
 
             int* destPtr = &gpu_nbv->cxy_na[maxNumColumns * g];
-            copyToDeviceBuffer(&destPtr, cxy_na, 0, numColumns, deviceStream,
-                               GpuApiCallBehavior::Async, nullptr);
+            copyToDeviceBuffer(
+                    &destPtr, cxy_na, 0, numColumns, deviceStream, GpuApiCallBehavior::Async, nullptr);
 
             if (bDoTime)
             {
@@ -572,8 +600,8 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
             }
 
             destPtr = &gpu_nbv->cxy_ind[maxNumColumns * g];
-            copyToDeviceBuffer(&destPtr, cxy_ind, 0, numColumns, deviceStream,
-                               GpuApiCallBehavior::Async, nullptr);
+            copyToDeviceBuffer(
+                    &destPtr, cxy_ind, 0, numColumns, deviceStream, GpuApiCallBehavior::Async, nullptr);
 
             if (bDoTime)
             {

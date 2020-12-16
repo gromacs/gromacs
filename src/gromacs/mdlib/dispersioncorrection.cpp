@@ -504,8 +504,7 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
     }
     else
     {
-        gmx_fatal(FARGS, "Dispersion correction is not implemented for vdw-type = %s",
-                  evdw_names[ic.vdwtype]);
+        gmx_fatal(FARGS, "Dispersion correction is not implemented for vdw-type = %s", evdw_names[ic.vdwtype]);
     }
 
     iParams->enerdiffsix_    = energy.dispersion;

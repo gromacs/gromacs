@@ -295,8 +295,7 @@ extern gmx_structurefactors_t* gmx_structurefactors_init(const char* datfn)
     while (get_a_line(fp.get(), line, STRLEN))
     {
         i = line_no;
-        if (sscanf(line, "%s %d %lf %lf %lf %lf %lf %lf %lf %lf %lf", atomn, &p, &a1, &a2, &a3, &a4,
-                   &b1, &b2, &b3, &b4, &c)
+        if (sscanf(line, "%s %d %lf %lf %lf %lf %lf %lf %lf %lf %lf", atomn, &p, &a1, &a2, &a3, &a4, &b1, &b2, &b3, &b4, &c)
             == 11)
         {
             gsf->atomnm[i] = gmx_strdup(atomn);
@@ -541,8 +540,8 @@ extern int do_scattering_intensity(const char*             fnTPS,
         {
             rearrange_atoms(red[i], &fr, index[i], isize[i], &top, FALSE, gmx_sf);
 
-            compute_structure_factor(static_cast<structure_factor_t*>(sf), box, red[i], isize[i],
-                                     start_q, end_q, i, sf_table);
+            compute_structure_factor(
+                    static_cast<structure_factor_t*>(sf), box, red[i], isize[i], start_q, end_q, i, sf_table);
         }
     }
 

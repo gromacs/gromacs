@@ -89,7 +89,10 @@ template<class BasicMdspan>
 constexpr BasicMdspan addElementwise(const BasicMdspan& span1, const BasicMdspan& span2)
 {
     BasicMdspan result(span1);
-    std::transform(begin(span1), end(span1), begin(span2), begin(result),
+    std::transform(begin(span1),
+                   end(span1),
+                   begin(span2),
+                   begin(result),
                    std::plus<typename BasicMdspan::element_type>());
     return result;
 }
@@ -99,7 +102,10 @@ template<class BasicMdspan>
 constexpr BasicMdspan subtractElementwise(const BasicMdspan& span1, const BasicMdspan& span2)
 {
     BasicMdspan result(span1);
-    std::transform(begin(span1), end(span1), begin(span2), begin(result),
+    std::transform(begin(span1),
+                   end(span1),
+                   begin(span2),
+                   begin(result),
                    std::minus<typename BasicMdspan::element_type>());
     return result;
 }
@@ -109,7 +115,10 @@ template<class BasicMdspan>
 constexpr BasicMdspan multiplyElementwise(const BasicMdspan& span1, const BasicMdspan& span2)
 {
     BasicMdspan result(span1);
-    std::transform(begin(span1), end(span1), begin(span2), begin(result),
+    std::transform(begin(span1),
+                   end(span1),
+                   begin(span2),
+                   begin(result),
                    std::multiplies<typename BasicMdspan::element_type>());
     return result;
 }
@@ -119,7 +128,10 @@ template<class BasicMdspan>
 constexpr BasicMdspan divideElementwise(const BasicMdspan& span1, const BasicMdspan& span2)
 {
     BasicMdspan result(span1);
-    std::transform(begin(span1), end(span1), begin(span2), begin(result),
+    std::transform(begin(span1),
+                   end(span1),
+                   begin(span2),
+                   begin(result),
                    std::divides<typename BasicMdspan::element_type>());
     return result;
 }

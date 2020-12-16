@@ -477,8 +477,8 @@ static int process_directive(gmx_cpp_t* handlep, const std::string& dname, const
         std::string inc_fn = dval.substr(i0, len);
 
         /* Open include file and store it as a child in the handle structure */
-        int status = cpp_open_file(inc_fn.c_str(), &(handle->child), nullptr, &handle->defines,
-                                   &handle->includes);
+        int status = cpp_open_file(
+                inc_fn.c_str(), &(handle->child), nullptr, &handle->defines, &handle->includes);
         if (status != eCPP_OK)
         {
             handle->child = nullptr;
@@ -751,9 +751,12 @@ char* cpp_error(gmx_cpp_t* handlep, int status)
         status = eCPP_NR;
     }
 
-    sprintf(buf, "%s - File %s, line %d\nLast line read:\n'%s'", ecpp[status],
+    sprintf(buf,
+            "%s - File %s, line %d\nLast line read:\n'%s'",
+            ecpp[status],
             (handle && !handle->fn.empty()) ? handle->fn.c_str() : "unknown",
-            (handle) ? handle->line_nr : -1, !handle->line.empty() ? handle->line.c_str() : "");
+            (handle) ? handle->line_nr : -1,
+            !handle->line.empty() ? handle->line.c_str() : "");
 
     return gmx_strdup(buf);
 }

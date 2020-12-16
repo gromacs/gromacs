@@ -174,8 +174,7 @@ static inline void gmx_simdcall store(std::int32_t* m, SimdDInt32 a)
 {
     assert(0 == (std::size_t(m) % GMX_SIMD_ALIGNMENT));
     svbool_t pg = svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH);
-    svst1_s32(pg, m,
-              svuzp1(svreinterpret_s32_s64(a.simdInternal_), svreinterpret_s32_s64(a.simdInternal_)));
+    svst1_s32(pg, m, svuzp1(svreinterpret_s32_s64(a.simdInternal_), svreinterpret_s32_s64(a.simdInternal_)));
 }
 
 static inline SimdDInt32 gmx_simdcall simdLoadU(const std::int32_t* m, SimdDInt32Tag)
@@ -187,8 +186,7 @@ static inline SimdDInt32 gmx_simdcall simdLoadU(const std::int32_t* m, SimdDInt3
 static inline void gmx_simdcall storeU(std::int32_t* m, SimdDInt32 a)
 {
     svbool_t pg = svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH);
-    svst1_s32(pg, m,
-              svuzp1(svreinterpret_s32_s64(a.simdInternal_), svreinterpret_s32_s64(a.simdInternal_)));
+    svst1_s32(pg, m, svuzp1(svreinterpret_s32_s64(a.simdInternal_), svreinterpret_s32_s64(a.simdInternal_)));
 }
 
 static inline SimdDInt32 gmx_simdcall setZeroDI()
@@ -213,29 +211,29 @@ gmx_simdcall static inline double extract(SimdDouble a)
 static inline SimdDouble gmx_simdcall operator&(SimdDouble a, SimdDouble b)
 {
     svbool_t pg = svptrue_b64();
-    return { svreinterpret_f64_s64(svand_s64_x(pg, svreinterpret_s64_f64(a.simdInternal_),
-                                               svreinterpret_s64_f64(b.simdInternal_))) };
+    return { svreinterpret_f64_s64(svand_s64_x(
+            pg, svreinterpret_s64_f64(a.simdInternal_), svreinterpret_s64_f64(b.simdInternal_))) };
 }
 
 static inline SimdDouble gmx_simdcall andNot(SimdDouble a, SimdDouble b)
 {
     svbool_t pg = svptrue_b64();
-    return { svreinterpret_f64_s64(svbic_s64_x(pg, svreinterpret_s64_f64(b.simdInternal_),
-                                               svreinterpret_s64_f64(a.simdInternal_))) };
+    return { svreinterpret_f64_s64(svbic_s64_x(
+            pg, svreinterpret_s64_f64(b.simdInternal_), svreinterpret_s64_f64(a.simdInternal_))) };
 }
 
 static inline SimdDouble gmx_simdcall operator|(SimdDouble a, SimdDouble b)
 {
     svbool_t pg = svptrue_b64();
-    return { svreinterpret_f64_s64(svorr_s64_x(pg, svreinterpret_s64_f64(a.simdInternal_),
-                                               svreinterpret_s64_f64(b.simdInternal_))) };
+    return { svreinterpret_f64_s64(svorr_s64_x(
+            pg, svreinterpret_s64_f64(a.simdInternal_), svreinterpret_s64_f64(b.simdInternal_))) };
 }
 
 static inline SimdDouble gmx_simdcall operator^(SimdDouble a, SimdDouble b)
 {
     svbool_t pg = svptrue_b64();
-    return { svreinterpret_f64_s64(sveor_s64_x(pg, svreinterpret_s64_f64(a.simdInternal_),
-                                               svreinterpret_s64_f64(b.simdInternal_))) };
+    return { svreinterpret_f64_s64(sveor_s64_x(
+            pg, svreinterpret_s64_f64(a.simdInternal_), svreinterpret_s64_f64(b.simdInternal_))) };
 }
 
 static inline SimdDouble gmx_simdcall operator+(SimdDouble a, SimdDouble b)
@@ -393,9 +391,10 @@ static inline SimdDouble gmx_simdcall frexp(SimdDouble value, SimdDInt32* expone
 
     exponent->simdInternal_ = iExponent;
 
-    return { svreinterpret_f64_s64(svorr_s64_x(
-            pg, svand_s64_x(pg, svreinterpret_s64_f64(value.simdInternal_), mantissaMask),
-            svreinterpret_s64_f64(half))) };
+    return { svreinterpret_f64_s64(
+            svorr_s64_x(pg,
+                        svand_s64_x(pg, svreinterpret_s64_f64(value.simdInternal_), mantissaMask),
+                        svreinterpret_s64_f64(half))) };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

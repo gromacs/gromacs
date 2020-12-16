@@ -94,8 +94,7 @@ public:
 
         TextWriter::writeFileFromString(inputMdpFilename, inputMdpFileContents);
 
-        get_ir(inputMdpFilename.c_str(), outputMdpFilename.c_str(), &mdModules_, &ir_, &opts_,
-               WriteMdpHeader::no, wi_);
+        get_ir(inputMdpFilename.c_str(), outputMdpFilename.c_str(), &mdModules_, &ir_, &opts_, WriteMdpHeader::no, wi_);
 
         check_ir(inputMdpFilename.c_str(), mdModules_.notifier(), &ir_, &opts_, wi_);
         // Now check

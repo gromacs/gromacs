@@ -1782,8 +1782,8 @@ static void init_method(const SelectionTreeElementPointer& sel, const gmx_mtop_t
     if (sel->u.expr.method->init && (bAtomVal || !(sel->flags & SEL_METHODINIT)))
     {
         sel->flags |= SEL_METHODINIT;
-        sel->u.expr.method->init(top, sel->u.expr.method->nparams, sel->u.expr.method->param,
-                                 sel->u.expr.mdata);
+        sel->u.expr.method->init(
+                top, sel->u.expr.method->nparams, sel->u.expr.method->param, sel->u.expr.mdata);
     }
     if (bAtomVal || !(sel->flags & SEL_OUTINIT))
     {
@@ -2614,8 +2614,8 @@ void compileSelection(SelectionCollection* coll)
     for (i = 0; i < sc->sel.size(); ++i)
     {
         gmx::internal::SelectionData& sel = *sc->sel[i];
-        init_pos_keyword_defaults(&sel.rootElement(), coll->impl_->spost_.c_str(),
-                                  coll->impl_->rpost_.c_str(), &sel);
+        init_pos_keyword_defaults(
+                &sel.rootElement(), coll->impl_->spost_.c_str(), coll->impl_->rpost_.c_str(), &sel);
     }
 
     /* Remove any unused variables. */

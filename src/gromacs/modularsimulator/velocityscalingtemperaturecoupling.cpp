@@ -142,11 +142,13 @@ public:
                 * temperatureCouplingData.numDegreesOfFreedom[temperatureGroup];
 
         const real newKineticEnergy =
-                vrescale_resamplekin(currentKineticEnergy, referenceKineticEnergy,
+                vrescale_resamplekin(currentKineticEnergy,
+                                     referenceKineticEnergy,
                                      temperatureCouplingData.numDegreesOfFreedom[temperatureGroup],
                                      temperatureCouplingData.couplingTime[temperatureGroup]
                                              / temperatureCouplingData.couplingTimeStep,
-                                     step, seed_);
+                                     step,
+                                     seed_);
 
         // Analytically newKineticEnergy >= 0, but we check for rounding errors
         if (newKineticEnergy <= 0)
@@ -160,8 +162,12 @@ public:
 
         if (debug)
         {
-            fprintf(debug, "TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n", temperatureGroup,
-                    referenceKineticEnergy, currentKineticEnergy, newKineticEnergy,
+            fprintf(debug,
+                    "TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
+                    temperatureGroup,
+                    referenceKineticEnergy,
+                    currentKineticEnergy,
+                    newKineticEnergy,
                     lambdaStartVelocities_[temperatureGroup]);
         }
 
@@ -230,8 +236,11 @@ public:
                 std::max<real>(std::min<real>(lambda, 1.25_real), 0.8_real);
         if (debug)
         {
-            fprintf(debug, "TC: group %d: T: %g, Lambda: %g\n", temperatureGroup,
-                    currentTemperature, lambdaStartVelocities_[temperatureGroup]);
+            fprintf(debug,
+                    "TC: group %d: T: %g, Lambda: %g\n",
+                    temperatureGroup,
+                    currentTemperature,
+                    lambdaStartVelocities_[temperatureGroup]);
         }
         return temperatureCouplingData.temperatureCouplingIntegral[temperatureGroup]
                - (lambdaStartVelocities_[temperatureGroup] * lambdaStartVelocities_[temperatureGroup]
@@ -356,8 +365,9 @@ void VelocityScalingTemperatureCoupling::setLambda(Step step)
     }
 
     const auto*             ekind          = energyData_->ekindata();
-    TemperatureCouplingData thermostatData = { couplingTimeStep_, referenceTemperature_, couplingTime_,
-                                               numDegreesOfFreedom_, temperatureCouplingIntegral_ };
+    TemperatureCouplingData thermostatData = {
+        couplingTimeStep_, referenceTemperature_, couplingTime_, numDegreesOfFreedom_, temperatureCouplingIntegral_
+    };
 
     for (int temperatureGroup = 0; (temperatureGroup < numTemperatureGroups_); temperatureGroup++)
     {
@@ -421,7 +431,8 @@ void VelocityScalingTemperatureCoupling::restoreCheckpointState(std::optional<Re
     }
     if (DOMAINDECOMP(cr))
     {
-        dd_bcast(cr->dd, ssize(temperatureCouplingIntegral_) * int(sizeof(double)),
+        dd_bcast(cr->dd,
+                 ssize(temperatureCouplingIntegral_) * int(sizeof(double)),
                  temperatureCouplingIntegral_.data());
     }
     temperatureCouplingImpl_->readCheckpoint(
@@ -441,12 +452,13 @@ real VelocityScalingTemperatureCoupling::conservedEnergyContribution() const
     if (reportPreviousConservedEnergy_ == ReportPreviousStepConservedEnergy::Yes)
     {
         return std::accumulate(temperatureCouplingIntegralPreviousStep_.begin(),
-                               temperatureCouplingIntegralPreviousStep_.end(), 0.0);
+                               temperatureCouplingIntegralPreviousStep_.end(),
+                               0.0);
     }
     else
     {
-        return std::accumulate(temperatureCouplingIntegral_.begin(),
-                               temperatureCouplingIntegral_.end(), 0.0);
+        return std::accumulate(
+                temperatureCouplingIntegral_.begin(), temperatureCouplingIntegral_.end(), 0.0);
     }
 }
 
@@ -463,11 +475,18 @@ ISimulatorElement* VelocityScalingTemperatureCoupling::getElementPointerImpl(
 {
     // Element is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     auto* element = builderHelper->storeElement(std::make_unique<VelocityScalingTemperatureCoupling>(
-            legacySimulatorData->inputrec->nsttcouple, offset, useFullStepKE, reportPreviousStepConservedEnergy,
-            legacySimulatorData->inputrec->ld_seed, legacySimulatorData->inputrec->opts.ngtc,
+            legacySimulatorData->inputrec->nsttcouple,
+            offset,
+            useFullStepKE,
+            reportPreviousStepConservedEnergy,
+            legacySimulatorData->inputrec->ld_seed,
+            legacySimulatorData->inputrec->opts.ngtc,
             legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nsttcouple,
-            legacySimulatorData->inputrec->opts.ref_t, legacySimulatorData->inputrec->opts.tau_t,
-            legacySimulatorData->inputrec->opts.nrdf, energyData, legacySimulatorData->inputrec->etc));
+            legacySimulatorData->inputrec->opts.ref_t,
+            legacySimulatorData->inputrec->opts.tau_t,
+            legacySimulatorData->inputrec->opts.nrdf,
+            energyData,
+            legacySimulatorData->inputrec->etc));
     auto* thermostat = static_cast<VelocityScalingTemperatureCoupling*>(element);
     // Capturing pointer is safe because lifetime is handled by caller
     builderHelper->registerThermostat([thermostat](const PropagatorThermostatConnection& connection) {

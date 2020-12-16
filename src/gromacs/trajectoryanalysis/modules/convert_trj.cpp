@@ -136,7 +136,9 @@ void ConvertTrj::optionsFinished(TrajectoryAnalysisSettings* settings)
 
 void ConvertTrj::initAnalysis(const TrajectoryAnalysisSettings& /*settings*/, const TopologyInformation& top)
 {
-    output_ = createTrajectoryFrameWriter(top.mtop(), sel_, name_,
+    output_ = createTrajectoryFrameWriter(top.mtop(),
+                                          sel_,
+                                          name_,
                                           top.hasTopology() ? top.copyAtoms() : nullptr,
                                           requirementsBuilder_.process());
 }

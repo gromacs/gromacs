@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,8 +146,7 @@ static int load_sharedlibrary_plugins(const char* fullpath, gmx_vmdplugin_t* vmd
     {
         if (debug)
         {
-            fprintf(debug, "\nUnable to open dynamic library %s.\n%s\n", fullpath,
-                    vmddlerror()); /*only to debug because of stdc++ erros */
+            fprintf(debug, "\nUnable to open dynamic library %s.\n%s\n", fullpath, vmddlerror()); /*only to debug because of stdc++ erros */
         }
         return 0;
     }

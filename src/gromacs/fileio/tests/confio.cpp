@@ -103,8 +103,13 @@ public:
 
     void writeReferenceFile()
     {
-        write_sto_conf(referenceFilename_.c_str(), *refTop_->name, &refTop_->atoms,
-                       as_rvec_array(refX_.data()), nullptr, PbcType::Unset, refBox_);
+        write_sto_conf(referenceFilename_.c_str(),
+                       *refTop_->name,
+                       &refTop_->atoms,
+                       as_rvec_array(refX_.data()),
+                       nullptr,
+                       PbcType::Unset,
+                       refBox_);
     }
 
     void readReferenceFileTps()
@@ -121,8 +126,8 @@ public:
 
     void writeTestFileAndTest()
     {
-        write_sto_conf(testFilename_.c_str(), *testTop_->name, &testTop_->atoms, testX_, nullptr,
-                       PbcType::Unset, testBox_);
+        write_sto_conf(
+                testFilename_.c_str(), *testTop_->name, &testTop_->atoms, testX_, nullptr, PbcType::Unset, testBox_);
         testFilesEqual(referenceFilename_, testFilename_);
     }
 

@@ -596,8 +596,7 @@ static void histogramming(FILE*                   log,
                     }
                     else if (debug)
                     {
-                        fprintf(debug, "Res. %d has imcomplete occupancy or bfacs > %g\n",
-                                dlist[i].resnr, bfac_max);
+                        fprintf(debug, "Res. %d has imcomplete occupancy or bfacs > %g\n", dlist[i].resnr, bfac_max);
                     }
                 }
                 else
@@ -767,8 +766,7 @@ static void histogramming(FILE*                   log,
                         break;
                     default:
                         sprintf(hisfile, "histo-chi%d%s", Dih - NONCHI + 1, residue_name);
-                        sprintf(title, "\\xc\\f{}\\s%d\\N Distribution for %s", Dih - NONCHI + 1,
-                                residue_name);
+                        sprintf(title, "\\xc\\f{}\\s%d\\N Distribution for %s", Dih - NONCHI + 1, residue_name);
                 }
                 std::strcpy(hhisfile, hisfile);
                 std::strcat(hhisfile, ".xvg");
@@ -987,8 +985,24 @@ static void do_rama(int                     nf,
                 lo += 180;
                 hi += 180;
                 nlevels = 20;
-                write_xpm3(fp, 0, "Omega/Ramachandran Plot", "Deg", "Phi", "Psi", NMAT, NMAT, axis,
-                           axis, mat, lo, 180.0, hi, rlo, rmid, rhi, &nlevels);
+                write_xpm3(fp,
+                           0,
+                           "Omega/Ramachandran Plot",
+                           "Deg",
+                           "Phi",
+                           "Psi",
+                           NMAT,
+                           NMAT,
+                           axis,
+                           axis,
+                           mat,
+                           lo,
+                           180.0,
+                           hi,
+                           rlo,
+                           rmid,
+                           rhi,
+                           &nlevels);
                 gmx_ffclose(fp);
                 for (j = 0; (j < NMAT); j++)
                 {
@@ -1000,8 +1014,11 @@ static void do_rama(int                     nf,
         if ((has_dihedral(edChi1, &(dlist[i]))) && (has_dihedral(edChi2, &(dlist[i]))))
         {
             sprintf(fn, "ramaX1X2%s.xvg", dlist[i].name);
-            fp  = rama_file(fn, "\\8c\\4\\s1\\N-\\8c\\4\\s2\\N Ramachandran Plot",
-                           "\\8c\\4\\s1\\N (deg)", "\\8c\\4\\s2\\N (deg)", oenv);
+            fp  = rama_file(fn,
+                           "\\8c\\4\\s1\\N-\\8c\\4\\s2\\N Ramachandran Plot",
+                           "\\8c\\4\\s1\\N (deg)",
+                           "\\8c\\4\\s2\\N (deg)",
+                           oenv);
             Xi1 = dlist[i].j0[edChi1];
             Xi2 = dlist[i].j0[edChi2];
             for (j = 0; (j < nf); j++)
@@ -1195,8 +1212,20 @@ static void order_params(FILE*                   log,
         z0 *= 10.0; /* nm -> angstrom */
         for (i = 0; (i < 10); i++)
         {
-            gmx_fprintf_pdb_atomline(fp, epdbATOM, atoms->nr + 1 + i, "CA", ' ', "LEG", ' ',
-                                     atoms->nres + 1, ' ', x0, y0, z0 + (1.2 * i), 0.0, -0.1 * i,
+            gmx_fprintf_pdb_atomline(fp,
+                                     epdbATOM,
+                                     atoms->nr + 1 + i,
+                                     "CA",
+                                     ' ',
+                                     "LEG",
+                                     ' ',
+                                     atoms->nres + 1,
+                                     ' ',
+                                     x0,
+                                     y0,
+                                     z0 + (1.2 * i),
+                                     0.0,
+                                     -0.1 * i,
                                      "");
         }
         gmx_ffclose(fp);
@@ -1435,8 +1464,8 @@ int gmx_chi(int argc, char* argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -1513,8 +1542,8 @@ int gmx_chi(int argc, char* argv[])
     snew(dih, ndih);
 
     /* COMPUTE ALL DIHEDRALS! */
-    read_ang_dih(ftp2fn(efTRX, NFILE, fnm), FALSE, TRUE, FALSE, bPBC, 1, &idum, &nf, &time, isize,
-                 index, &trans_frac, &aver_angle, dih, oenv);
+    read_ang_dih(
+            ftp2fn(efTRX, NFILE, fnm), FALSE, TRUE, FALSE, bPBC, 1, &idum, &nf, &time, isize, index, &trans_frac, &aver_angle, dih, oenv);
 
     dt = (time[nf - 1] - time[0]) / (nf - 1); /* might want this for corr or n. transit*/
     if (bCorr)
@@ -1536,9 +1565,27 @@ int gmx_chi(int argc, char* argv[])
     }
 
     /* Histogramming & J coupling constants & calc of S2 order params */
-    histogramming(log, nbin, &rt, nf, maxchi, dih, nlist, dlist, index, bPhi, bPsi, bOmega, bChi,
-                  bNormHisto, bSSHisto, ftp2fn(efDAT, NFILE, fnm), bfac_max, &atoms, bDo_jc,
-                  opt2fn("-jc", NFILE, fnm), oenv);
+    histogramming(log,
+                  nbin,
+                  &rt,
+                  nf,
+                  maxchi,
+                  dih,
+                  nlist,
+                  dlist,
+                  index,
+                  bPhi,
+                  bPsi,
+                  bOmega,
+                  bChi,
+                  bNormHisto,
+                  bSSHisto,
+                  ftp2fn(efDAT, NFILE, fnm),
+                  bfac_max,
+                  &atoms,
+                  bDo_jc,
+                  opt2fn("-jc", NFILE, fnm),
+                  oenv);
 
     /* transitions
      *
@@ -1567,12 +1614,39 @@ int gmx_chi(int argc, char* argv[])
     }
 
 
-    low_ana_dih_trans(bDo_ot, opt2fn("-ot", NFILE, fnm), bDo_oh, opt2fn("-oh", NFILE, fnm), maxchi, dih,
-                      nlist, dlist, nf, nactdih, grpname, multiplicity, time, FALSE, core_frac, oenv);
+    low_ana_dih_trans(bDo_ot,
+                      opt2fn("-ot", NFILE, fnm),
+                      bDo_oh,
+                      opt2fn("-oh", NFILE, fnm),
+                      maxchi,
+                      dih,
+                      nlist,
+                      dlist,
+                      nf,
+                      nactdih,
+                      grpname,
+                      multiplicity,
+                      time,
+                      FALSE,
+                      core_frac,
+                      oenv);
 
     /* Order parameters */
-    order_params(log, opt2fn("-o", NFILE, fnm), maxchi, nlist, dlist, ftp2fn_null(efPDB, NFILE, fnm),
-                 bfac_init, &atoms, x, pbcType, box, bPhi, bPsi, bChi, oenv);
+    order_params(log,
+                 opt2fn("-o", NFILE, fnm),
+                 maxchi,
+                 nlist,
+                 dlist,
+                 ftp2fn_null(efPDB, NFILE, fnm),
+                 bfac_init,
+                 &atoms,
+                 x,
+                 pbcType,
+                 box,
+                 bPhi,
+                 bPsi,
+                 bChi,
+                 oenv);
 
     /* Print ramachandran maps! */
     if (bRama)
@@ -1606,8 +1680,20 @@ int gmx_chi(int argc, char* argv[])
         }
         mk_chi_lookup(chi_lookup, maxchi, nlist, dlist);
 
-        get_chi_product_traj(dih, nf, nactdih, maxchi, dlist, time, chi_lookup, multiplicity, FALSE,
-                             bNormHisto, core_frac, bAll, opt2fn("-cp", NFILE, fnm), oenv);
+        get_chi_product_traj(dih,
+                             nf,
+                             nactdih,
+                             maxchi,
+                             dlist,
+                             time,
+                             chi_lookup,
+                             multiplicity,
+                             FALSE,
+                             bNormHisto,
+                             core_frac,
+                             bAll,
+                             opt2fn("-cp", NFILE, fnm),
+                             oenv);
 
         for (i = 0; i < nlist; i++)
         {
@@ -1618,8 +1704,7 @@ int gmx_chi(int argc, char* argv[])
     /* Correlation comes last because it messes up the angles */
     if (bCorr)
     {
-        do_dihcorr(opt2fn("-corr", NFILE, fnm), nf, ndih, dih, dt, nlist, dlist, time, maxchi, bPhi,
-                   bPsi, bChi, bOmega, oenv);
+        do_dihcorr(opt2fn("-corr", NFILE, fnm), nf, ndih, dih, dt, nlist, dlist, time, maxchi, bPhi, bPsi, bChi, bOmega, oenv);
     }
 
 

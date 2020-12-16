@@ -906,8 +906,8 @@ void AnalysisNeighborhoodSearchImpl::init(AnalysisNeighborhood::SearchMode     m
     }
     else if (bTryGrid_)
     {
-        bGrid_ = initGrid(pbc_, positions.count_, positions.x_,
-                          mode == AnalysisNeighborhood::eSearchMode_Grid);
+        bGrid_ = initGrid(
+                pbc_, positions.count_, positions.x_, mode == AnalysisNeighborhood::eSearchMode_Grid);
     }
     refIndices_ = positions.indices_;
     if (bGrid_)

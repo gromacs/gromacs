@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,8 +161,7 @@ public:
     {
         if (simulationNeedsReset_)
         {
-            if (resetCountersImpl(step, step_rel, mdlog, fplog, cr, nbv, nrnb, pme, pme_loadbal,
-                                  wcycle, walltime_accounting))
+            if (resetCountersImpl(step, step_rel, mdlog, fplog, cr, nbv, nrnb, pme, pme_loadbal, wcycle, walltime_accounting))
             {
                 // need to reset the counters only once
                 simulationNeedsReset_ = false;

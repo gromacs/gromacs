@@ -224,7 +224,8 @@ void runTest(TestFileManager*            fileManager,
         fprintf(stdout,
                 "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
-                simulationName.c_str(), numRanksAvailable,
+                simulationName.c_str(),
+                numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
         return;
     }
@@ -377,10 +378,13 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     SCOPED_TRACE(
             formatString("Comparing normal and two-part run of simulation '%s' "
                          "with integrator '%s'",
-                         simulationName.c_str(), integrator.c_str()));
+                         simulationName.c_str(),
+                         integrator.c_str()));
 
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(),
-                                                temperatureCoupling.c_str(), pressureCoupling.c_str());
+    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
+                                                integrator.c_str(),
+                                                temperatureCoupling.c_str(),
+                                                pressureCoupling.c_str());
     // The exact lambda state choice is unimportant, so long as there
     // is one when using an FEP input.
     mdpFieldValues["other"] += formatString("\ninit-lambda-state = %d", 3);
@@ -417,20 +421,19 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 
     if (pressureCoupling == "parrinello-rahman")
     {
-        energyTermsToCompare.insert(
-                { "Box-Vel-XX", relativeToleranceAsPrecisionDependentUlp(1e-12, ulpToleranceInMixed,
-                                                                         ulpToleranceInDouble) });
-        energyTermsToCompare.insert(
-                { "Box-Vel-YY", relativeToleranceAsPrecisionDependentUlp(1e-12, ulpToleranceInMixed,
-                                                                         ulpToleranceInDouble) });
-        energyTermsToCompare.insert(
-                { "Box-Vel-ZZ", relativeToleranceAsPrecisionDependentUlp(1e-12, ulpToleranceInMixed,
-                                                                         ulpToleranceInDouble) });
+        energyTermsToCompare.insert({ "Box-Vel-XX",
+                                      relativeToleranceAsPrecisionDependentUlp(
+                                              1e-12, ulpToleranceInMixed, ulpToleranceInDouble) });
+        energyTermsToCompare.insert({ "Box-Vel-YY",
+                                      relativeToleranceAsPrecisionDependentUlp(
+                                              1e-12, ulpToleranceInMixed, ulpToleranceInDouble) });
+        energyTermsToCompare.insert({ "Box-Vel-ZZ",
+                                      relativeToleranceAsPrecisionDependentUlp(
+                                              1e-12, ulpToleranceInMixed, ulpToleranceInDouble) });
     }
 
     int numWarningsToTolerate = 1;
-    runTest(&fileManager_, &runner_, simulationName, numWarningsToTolerate, mdpFieldValues,
-            energyTermsToCompare);
+    runTest(&fileManager_, &runner_, simulationName, numWarningsToTolerate, mdpFieldValues, energyTermsToCompare);
 }
 
 // TODO The time for OpenCL kernel compilation means these tests time

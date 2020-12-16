@@ -126,9 +126,11 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             DeviceStreamManager manager(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
             expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal });
-            expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal,
-                                             DeviceStreamType::Pme, DeviceStreamType::PmePpTransfer,
-                                             DeviceStreamType::UpdateAndConstraints });
+            expectInvalidStreams(&manager,
+                                 { DeviceStreamType::NonBondedNonLocal,
+                                   DeviceStreamType::Pme,
+                                   DeviceStreamType::PmePpTransfer,
+                                   DeviceStreamType::UpdateAndConstraints });
         }
 
         {
@@ -140,10 +142,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             bool                havePpDomainDecomposition = true;
             DeviceStreamManager manager(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
-            expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal,
-                                           DeviceStreamType::NonBondedNonLocal });
-            expectInvalidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::PmePpTransfer,
-                                             DeviceStreamType::UpdateAndConstraints });
+            expectValidStreams(
+                    &manager, { DeviceStreamType::NonBondedLocal, DeviceStreamType::NonBondedNonLocal });
+            expectInvalidStreams(&manager,
+                                 { DeviceStreamType::Pme,
+                                   DeviceStreamType::PmePpTransfer,
+                                   DeviceStreamType::UpdateAndConstraints });
         }
 
         {
@@ -155,9 +159,11 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             bool                havePpDomainDecomposition = false;
             DeviceStreamManager manager(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
-            expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
-                                           DeviceStreamType::PmePpTransfer,
-                                           DeviceStreamType::UpdateAndConstraints });
+            expectValidStreams(&manager,
+                               { DeviceStreamType::Pme,
+                                 DeviceStreamType::NonBondedLocal,
+                                 DeviceStreamType::PmePpTransfer,
+                                 DeviceStreamType::UpdateAndConstraints });
             expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal });
         }
 
@@ -170,9 +176,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             bool                havePpDomainDecomposition = true;
             DeviceStreamManager manager(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
-            expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
-                                           DeviceStreamType::NonBondedNonLocal, DeviceStreamType::PmePpTransfer,
-                                           DeviceStreamType::UpdateAndConstraints });
+            expectValidStreams(&manager,
+                               { DeviceStreamType::Pme,
+                                 DeviceStreamType::NonBondedLocal,
+                                 DeviceStreamType::NonBondedNonLocal,
+                                 DeviceStreamType::PmePpTransfer,
+                                 DeviceStreamType::UpdateAndConstraints });
         }
 
         {
@@ -184,10 +193,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             bool                havePpDomainDecomposition = false;
             DeviceStreamManager manager(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
-            expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal,
-                                           DeviceStreamType::UpdateAndConstraints });
-            expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal,
-                                             DeviceStreamType::Pme, DeviceStreamType::PmePpTransfer });
+            expectValidStreams(
+                    &manager, { DeviceStreamType::NonBondedLocal, DeviceStreamType::UpdateAndConstraints });
+            expectInvalidStreams(&manager,
+                                 { DeviceStreamType::NonBondedNonLocal,
+                                   DeviceStreamType::Pme,
+                                   DeviceStreamType::PmePpTransfer });
         }
 
         {
@@ -199,8 +210,10 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             bool                havePpDomainDecomposition = true;
             DeviceStreamManager manager(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
-            expectValidStreams(&manager, { DeviceStreamType::NonBondedLocal, DeviceStreamType::NonBondedNonLocal,
-                                           DeviceStreamType::UpdateAndConstraints });
+            expectValidStreams(&manager,
+                               { DeviceStreamType::NonBondedLocal,
+                                 DeviceStreamType::NonBondedNonLocal,
+                                 DeviceStreamType::UpdateAndConstraints });
             expectInvalidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::PmePpTransfer });
         }
 
@@ -213,9 +226,11 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             bool                havePpDomainDecomposition = false;
             DeviceStreamManager manager(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
-            expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
-                                           DeviceStreamType::PmePpTransfer,
-                                           DeviceStreamType::UpdateAndConstraints });
+            expectValidStreams(&manager,
+                               { DeviceStreamType::Pme,
+                                 DeviceStreamType::NonBondedLocal,
+                                 DeviceStreamType::PmePpTransfer,
+                                 DeviceStreamType::UpdateAndConstraints });
             expectInvalidStreams(&manager, { DeviceStreamType::NonBondedNonLocal });
         }
 
@@ -228,9 +243,12 @@ TEST_F(DeviceStreamManagerTest, CorrectStreamsAreReturnedOnNonbondedDevice)
             bool                havePpDomainDecomposition = true;
             DeviceStreamManager manager(deviceInfo, havePpDomainDecomposition, simulationWork, useTiming);
 
-            expectValidStreams(&manager, { DeviceStreamType::Pme, DeviceStreamType::NonBondedLocal,
-                                           DeviceStreamType::NonBondedNonLocal, DeviceStreamType::PmePpTransfer,
-                                           DeviceStreamType::UpdateAndConstraints });
+            expectValidStreams(&manager,
+                               { DeviceStreamType::Pme,
+                                 DeviceStreamType::NonBondedLocal,
+                                 DeviceStreamType::NonBondedNonLocal,
+                                 DeviceStreamType::PmePpTransfer,
+                                 DeviceStreamType::UpdateAndConstraints });
         }
     }
 }

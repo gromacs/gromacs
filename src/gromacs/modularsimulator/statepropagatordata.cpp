@@ -436,10 +436,18 @@ void StatePropagatorData::Element::write(gmx_mdoutf_t outf, Step currentStep, Ti
     // TODO: This is only used for CPT - needs to be filled when we turn CPT back on
     ObservablesHistory* observablesHistory = nullptr;
 
-    mdoutf_write_to_trajectory_files(
-            fplog_, cr_, outf, static_cast<int>(mdof_flags), statePropagatorData_->totalNumAtoms_,
-            currentStep, currentTime, localStateBackup_.get(), statePropagatorData_->globalState_,
-            observablesHistory, statePropagatorData_->f_.view().force(), &dummyCheckpointDataHolder_);
+    mdoutf_write_to_trajectory_files(fplog_,
+                                     cr_,
+                                     outf,
+                                     static_cast<int>(mdof_flags),
+                                     statePropagatorData_->totalNumAtoms_,
+                                     currentStep,
+                                     currentTime,
+                                     localStateBackup_.get(),
+                                     statePropagatorData_->globalState_,
+                                     observablesHistory,
+                                     statePropagatorData_->f_.view().force(),
+                                     &dummyCheckpointDataHolder_);
 
     if (currentStep != lastStep_ || !isRegularSimulationEnd_)
     {
@@ -495,10 +503,18 @@ void StatePropagatorData::Element::doCheckpointData(CheckpointData<operation>* c
         }
         if (operation == CheckpointDataOperation::Write)
         {
-            dd_collect_vec(cr->dd, statePropagatorData_->ddpCount_, statePropagatorData_->ddpCountCgGl_,
-                           statePropagatorData_->cgGl_, statePropagatorData_->x_, xGlobalRef);
-            dd_collect_vec(cr->dd, statePropagatorData_->ddpCount_, statePropagatorData_->ddpCountCgGl_,
-                           statePropagatorData_->cgGl_, statePropagatorData_->v_, vGlobalRef);
+            dd_collect_vec(cr->dd,
+                           statePropagatorData_->ddpCount_,
+                           statePropagatorData_->ddpCountCgGl_,
+                           statePropagatorData_->cgGl_,
+                           statePropagatorData_->x_,
+                           xGlobalRef);
+            dd_collect_vec(cr->dd,
+                           statePropagatorData_->ddpCount_,
+                           statePropagatorData_->ddpCountCgGl_,
+                           statePropagatorData_->cgGl_,
+                           statePropagatorData_->v_,
+                           vGlobalRef);
         }
     }
     else
@@ -557,9 +573,12 @@ void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadChec
     // Copy data to global state to be distributed by DD at setup stage
     if (DOMAINDECOMP(cr) && MASTER(cr))
     {
-        updateGlobalState(statePropagatorData_->globalState_, statePropagatorData_->xGlobal_,
-                          statePropagatorData_->vGlobal_, statePropagatorData_->box_,
-                          statePropagatorData_->ddpCount_, statePropagatorData_->ddpCountCgGl_,
+        updateGlobalState(statePropagatorData_->globalState_,
+                          statePropagatorData_->xGlobal_,
+                          statePropagatorData_->vGlobal_,
+                          statePropagatorData_->box_,
+                          statePropagatorData_->ddpCount_,
+                          statePropagatorData_->ddpCountCgGl_,
                           statePropagatorData_->cgGl_);
     }
 }
@@ -586,12 +605,20 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
     {
         auto globalXRef =
                 MASTER(cr_) ? statePropagatorData_->globalState_->x : gmx::ArrayRef<gmx::RVec>();
-        dd_collect_vec(cr_->dd, localStateBackup_->ddp_count, localStateBackup_->ddp_count_cg_gl,
-                       localStateBackup_->cg_gl, localStateBackup_->x, globalXRef);
+        dd_collect_vec(cr_->dd,
+                       localStateBackup_->ddp_count,
+                       localStateBackup_->ddp_count_cg_gl,
+                       localStateBackup_->cg_gl,
+                       localStateBackup_->x,
+                       globalXRef);
         auto globalVRef =
                 MASTER(cr_) ? statePropagatorData_->globalState_->v : gmx::ArrayRef<gmx::RVec>();
-        dd_collect_vec(cr_->dd, localStateBackup_->ddp_count, localStateBackup_->ddp_count_cg_gl,
-                       localStateBackup_->cg_gl, localStateBackup_->v, globalVRef);
+        dd_collect_vec(cr_->dd,
+                       localStateBackup_->ddp_count,
+                       localStateBackup_->ddp_count_cg_gl,
+                       localStateBackup_->cg_gl,
+                       localStateBackup_->v,
+                       globalVRef);
     }
     else
     {
@@ -605,12 +632,17 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
         if (canMoleculesBeDistributedOverPBC_ && !systemHasPeriodicMolecules_)
         {
             // Make molecules whole only for confout writing
-            do_pbc_mtop(pbcType_, localStateBackup_->box, top_global_,
+            do_pbc_mtop(pbcType_,
+                        localStateBackup_->box,
+                        top_global_,
                         statePropagatorData_->globalState_->x.rvec_array());
         }
-        write_sto_conf_mtop(finalConfigurationFilename_.c_str(), *top_global_->name, top_global_,
+        write_sto_conf_mtop(finalConfigurationFilename_.c_str(),
+                            *top_global_->name,
+                            top_global_,
                             statePropagatorData_->globalState_->x.rvec_array(),
-                            statePropagatorData_->globalState_->v.rvec_array(), pbcType_,
+                            statePropagatorData_->globalState_->v.rvec_array(),
+                            pbcType_,
                             localStateBackup_->box);
     }
     wallcycle_stop(mdoutf_get_wcycle(outf), ewcTRAJ);

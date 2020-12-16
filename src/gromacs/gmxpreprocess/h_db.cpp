@@ -98,8 +98,11 @@ void read_ab(char* line, const char* fn, MoleculePatch* hack)
     hack->tp = tp;
     if ((tp < 1) || (tp >= maxcontrol))
     {
-        gmx_fatal(FARGS, "Error in hdb file %s:\nH-type should be in 1-%d. Offending line:\n%s", fn,
-                  maxcontrol - 1, line);
+        gmx_fatal(FARGS,
+                  "Error in hdb file %s:\nH-type should be in 1-%d. Offending line:\n%s",
+                  fn,
+                  maxcontrol - 1,
+                  line);
     }
 
     hack->nctl = ns - 3;
@@ -108,7 +111,10 @@ void read_ab(char* line, const char* fn, MoleculePatch* hack)
         gmx_fatal(FARGS,
                   "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on "
                   "line:\n%s\n",
-                  fn, hack->nctl, ncontrol[hack->tp], line);
+                  fn,
+                  hack->nctl,
+                  ncontrol[hack->tp],
+                  line);
     }
     for (int i = 0; (i < hack->nctl); i++)
     {
@@ -167,7 +173,10 @@ static void read_h_db_file(const char* hfn, std::vector<MoleculePatchDatabase>* 
                     gmx_fatal(FARGS,
                               "Expected %d lines of hydrogens, found only %d "
                               "while reading Hydrogen Database %s residue %s",
-                              nab, i - 1, block->name.c_str(), hfn);
+                              nab,
+                              i - 1,
+                              block->name.c_str(),
+                              hfn);
                 }
                 if (nullptr == fgets(buf, STRLEN, in))
                 {
@@ -183,13 +192,16 @@ static void read_h_db_file(const char* hfn, std::vector<MoleculePatchDatabase>* 
     if (!globalPatches->empty())
     {
         /* Sort the list for searching later */
-        std::sort(globalPatches->begin(), globalPatches->end(),
+        std::sort(globalPatches->begin(),
+                  globalPatches->end(),
                   [](const MoleculePatchDatabase& a1, const MoleculePatchDatabase& a2) {
-                      return std::lexicographical_compare(
-                              a1.name.begin(), a1.name.end(), a2.name.begin(), a2.name.end(),
-                              [](const char& c1, const char& c2) {
-                                  return std::toupper(c1) < std::toupper(c2);
-                              });
+                      return std::lexicographical_compare(a1.name.begin(),
+                                                          a1.name.end(),
+                                                          a2.name.begin(),
+                                                          a2.name.end(),
+                                                          [](const char& c1, const char& c2) {
+                                                              return std::toupper(c1) < std::toupper(c2);
+                                                          });
                   });
     }
 }
@@ -212,7 +224,7 @@ int read_h_db(const char* ffdir, std::vector<MoleculePatchDatabase>* globalPatch
 gmx::ArrayRef<const MoleculePatchDatabase>::iterator
 search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char* key)
 {
-    return std::find_if(
-            globalPatches.begin(), globalPatches.end(),
-            [&key](const MoleculePatchDatabase& a) { return gmx::equalCaseInsensitive(key, a.name); });
+    return std::find_if(globalPatches.begin(), globalPatches.end(), [&key](const MoleculePatchDatabase& a) {
+        return gmx::equalCaseInsensitive(key, a.name);
+    });
 }

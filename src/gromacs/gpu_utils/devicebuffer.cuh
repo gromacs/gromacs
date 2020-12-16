@@ -129,18 +129,20 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     switch (transferKind)
     {
         case GpuApiCallBehavior::Async:
-            GMX_ASSERT(isHostMemoryPinned(hostBuffer),
-                       "Source host buffer was not pinned for CUDA");
-            stat = cudaMemcpyAsync(*((ValueType**)buffer) + startingOffset, hostBuffer, bytes,
-                                   cudaMemcpyHostToDevice, deviceStream.stream());
+            GMX_ASSERT(isHostMemoryPinned(hostBuffer), "Source host buffer was not pinned for CUDA");
+            stat = cudaMemcpyAsync(*((ValueType**)buffer) + startingOffset,
+                                   hostBuffer,
+                                   bytes,
+                                   cudaMemcpyHostToDevice,
+                                   deviceStream.stream());
             GMX_RELEASE_ASSERT(
                     stat == cudaSuccess,
                     ("Asynchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
             break;
 
         case GpuApiCallBehavior::Sync:
-            stat = cudaMemcpy(*((ValueType**)buffer) + startingOffset, hostBuffer, bytes,
-                              cudaMemcpyHostToDevice);
+            stat = cudaMemcpy(
+                    *((ValueType**)buffer) + startingOffset, hostBuffer, bytes, cudaMemcpyHostToDevice);
             GMX_RELEASE_ASSERT(
                     stat == cudaSuccess,
                     ("Synchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
@@ -186,16 +188,19 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
         case GpuApiCallBehavior::Async:
             GMX_ASSERT(isHostMemoryPinned(hostBuffer),
                        "Destination host buffer was not pinned for CUDA");
-            stat = cudaMemcpyAsync(hostBuffer, *((ValueType**)buffer) + startingOffset, bytes,
-                                   cudaMemcpyDeviceToHost, deviceStream.stream());
+            stat = cudaMemcpyAsync(hostBuffer,
+                                   *((ValueType**)buffer) + startingOffset,
+                                   bytes,
+                                   cudaMemcpyDeviceToHost,
+                                   deviceStream.stream());
             GMX_RELEASE_ASSERT(
                     stat == cudaSuccess,
                     ("Asynchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
             break;
 
         case GpuApiCallBehavior::Sync:
-            stat = cudaMemcpy(hostBuffer, *((ValueType**)buffer) + startingOffset, bytes,
-                              cudaMemcpyDeviceToHost);
+            stat = cudaMemcpy(
+                    hostBuffer, *((ValueType**)buffer) + startingOffset, bytes, cudaMemcpyDeviceToHost);
             GMX_RELEASE_ASSERT(
                     stat == cudaSuccess,
                     ("Synchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
@@ -224,8 +229,8 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     const size_t bytes   = numValues * sizeof(ValueType);
     const char   pattern = 0;
 
-    cudaError_t stat = cudaMemsetAsync(*((ValueType**)buffer) + startingOffset, pattern, bytes,
-                                       deviceStream.stream());
+    cudaError_t stat = cudaMemsetAsync(
+            *((ValueType**)buffer) + startingOffset, pattern, bytes, deviceStream.stream());
     GMX_RELEASE_ASSERT(stat == cudaSuccess,
                        ("Couldn't clear the device buffer. " + gmx::getDeviceErrorString(stat)).c_str());
 }

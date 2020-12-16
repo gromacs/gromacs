@@ -124,9 +124,22 @@ protected:
             }
         }
         real* ptr = result.data();
-        low_do_autocorr(nullptr, nullptr, nullptr, nrFrames_, 1, get_acfnout(), &ptr,
-                        data_->getDt(), mode, nrRestart, bAverage, bNormalize, bVerbose,
-                        data_->getStartTime(), data_->getEndTime(), effnNONE);
+        low_do_autocorr(nullptr,
+                        nullptr,
+                        nullptr,
+                        nrFrames_,
+                        1,
+                        get_acfnout(),
+                        &ptr,
+                        data_->getDt(),
+                        mode,
+                        nrRestart,
+                        bAverage,
+                        bNormalize,
+                        bVerbose,
+                        data_->getStartTime(),
+                        data_->getEndTime(),
+                        effnNONE);
 
         double testResult = 0;
         for (int i = 0; i < get_acfnout(); i++)

@@ -190,8 +190,8 @@ int gmx_enemat(int argc, char* argv[])
                        { efXVG, "-etot", "energy", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -254,7 +254,9 @@ int gmx_enemat(int argc, char* argv[])
                         fprintf(stderr,
                                 "WARNING! could not find group %s (%d,%d) "
                                 "in energy file\n",
-                                groupname, i, j);
+                                groupname,
+                                i,
+                                j);
                     }
                     else
                     {
@@ -330,7 +332,9 @@ int gmx_enemat(int argc, char* argv[])
     fprintf(stderr,
             "Will build energy half-matrix of %d groups, %d elements, "
             "over %d frames\n",
-            ngroups, nset, nenergy);
+            ngroups,
+            nset,
+            nenergy);
 
     snew(emat, egNR + egSP);
     for (j = 0; (j < egNR + egSP); j++)
@@ -476,7 +480,8 @@ int gmx_enemat(int argc, char* argv[])
                     fprintf(stderr,
                             "Matrix of %s energy is uniform at %f "
                             "(will not produce output).\n",
-                            egrp_nm[m], emax);
+                            egrp_nm[m],
+                            emax);
                 }
                 else
                 {
@@ -499,21 +504,62 @@ int gmx_enemat(int argc, char* argv[])
                     out = gmx_ffopen(fn, "w");
                     if (emin >= emid)
                     {
-                        write_xpm(out, 0, label, "Energy (kJ/mol)", "Residue Index",
-                                  "Residue Index", ngroups, ngroups, groupnr, groupnr, emat[m],
-                                  emid, emax, rmid, rhi, &nlevels);
+                        write_xpm(out,
+                                  0,
+                                  label,
+                                  "Energy (kJ/mol)",
+                                  "Residue Index",
+                                  "Residue Index",
+                                  ngroups,
+                                  ngroups,
+                                  groupnr,
+                                  groupnr,
+                                  emat[m],
+                                  emid,
+                                  emax,
+                                  rmid,
+                                  rhi,
+                                  &nlevels);
                     }
                     else if (emax <= emid)
                     {
-                        write_xpm(out, 0, label, "Energy (kJ/mol)", "Residue Index",
-                                  "Residue Index", ngroups, ngroups, groupnr, groupnr, emat[m],
-                                  emin, emid, rlo, rmid, &nlevels);
+                        write_xpm(out,
+                                  0,
+                                  label,
+                                  "Energy (kJ/mol)",
+                                  "Residue Index",
+                                  "Residue Index",
+                                  ngroups,
+                                  ngroups,
+                                  groupnr,
+                                  groupnr,
+                                  emat[m],
+                                  emin,
+                                  emid,
+                                  rlo,
+                                  rmid,
+                                  &nlevels);
                     }
                     else
                     {
-                        write_xpm3(out, 0, label, "Energy (kJ/mol)", "Residue Index",
-                                   "Residue Index", ngroups, ngroups, groupnr, groupnr, emat[m],
-                                   emin, emid, emax, rlo, rmid, rhi, &nlevels);
+                        write_xpm3(out,
+                                   0,
+                                   label,
+                                   "Energy (kJ/mol)",
+                                   "Residue Index",
+                                   "Residue Index",
+                                   ngroups,
+                                   ngroups,
+                                   groupnr,
+                                   groupnr,
+                                   emat[m],
+                                   emin,
+                                   emid,
+                                   emax,
+                                   rlo,
+                                   rmid,
+                                   rhi,
+                                   &nlevels);
                     }
                     gmx_ffclose(out);
                 }

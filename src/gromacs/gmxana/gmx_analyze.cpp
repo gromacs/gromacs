@@ -337,7 +337,8 @@ static void average(const char* avfile, int avbar_opt, int n, int nset, real** v
             fprintf(stdout,
                     "Errorbars: discarding %d points on both sides: %d%%"
                     " interval\n",
-                    edge, gmx::roundToInt(100. * (nset - 2 * edge) / nset));
+                    edge,
+                    gmx::roundToInt(100. * (nset - 2 * edge) / nset));
         }
         else
         {
@@ -575,8 +576,7 @@ static void estimate_error(const char*             eefile,
                  * to halfway between tau1_est and the total time (on log scale).
                  */
                 fitparm[2] = std::sqrt(tau1_est * (n - 1) * dt);
-                do_lmfit(nbs, ybs, fitsig, 0, tbs, 0, dt * n, oenv, bDebugMode(), effnERREST,
-                         fitparm, 0, nullptr);
+                do_lmfit(nbs, ybs, fitsig, 0, tbs, 0, dt * n, oenv, bDebugMode(), effnERREST, fitparm, 0, nullptr);
             }
             if (bSingleExpFit || fitparm[0] < 0 || fitparm[2] < 0 || fitparm[1] < 0
                 || (fitparm[1] > 1 && !bAllowNegLTCorr) || fitparm[2] > (n - 1) * dt)
@@ -594,8 +594,11 @@ static void estimate_error(const char*             eefile,
                     {
                         fprintf(stdout, "a fitted parameter is negative\n");
                     }
-                    fprintf(stdout, "invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
-                            optimal_error_estimate(sig[s], fitparm, n * dt), fitparm[1], fitparm[0],
+                    fprintf(stdout,
+                            "invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
+                            optimal_error_estimate(sig[s], fitparm, n * dt),
+                            fitparm[1],
+                            fitparm[0],
                             fitparm[2]);
                     /* Do a fit with tau2 fixed at the total time.
                      * One could also choose any other large value for tau2.
@@ -604,25 +607,26 @@ static void estimate_error(const char*             eefile,
                     fitparm[1] = 0.95;
                     fitparm[2] = (n - 1) * dt;
                     fprintf(stdout, "Will fix tau2 at the total time: %g\n", fitparm[2]);
-                    do_lmfit(nbs, ybs, fitsig, 0, tbs, 0, dt * n, oenv, bDebugMode(), effnERREST,
-                             fitparm, 4, nullptr);
+                    do_lmfit(nbs, ybs, fitsig, 0, tbs, 0, dt * n, oenv, bDebugMode(), effnERREST, fitparm, 4, nullptr);
                 }
                 if (bSingleExpFit || fitparm[0] < 0 || fitparm[1] < 0 || (fitparm[1] > 1 && !bAllowNegLTCorr))
                 {
                     if (!bSingleExpFit)
                     {
                         fprintf(stdout, "a fitted parameter is negative\n");
-                        fprintf(stdout, "invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
-                                optimal_error_estimate(sig[s], fitparm, n * dt), fitparm[1],
-                                fitparm[0], fitparm[2]);
+                        fprintf(stdout,
+                                "invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
+                                optimal_error_estimate(sig[s], fitparm, n * dt),
+                                fitparm[1],
+                                fitparm[0],
+                                fitparm[2]);
                     }
                     /* Do a single exponential fit */
                     fprintf(stderr, "Will use a single exponential fit for set %d\n", s + 1);
                     fitparm[0] = tau1_est;
                     fitparm[1] = 1.0;
                     fitparm[2] = 0.0;
-                    do_lmfit(nbs, ybs, fitsig, 0, tbs, 0, dt * n, oenv, bDebugMode(), effnERREST,
-                             fitparm, 6, nullptr);
+                    do_lmfit(nbs, ybs, fitsig, 0, tbs, 0, dt * n, oenv, bDebugMode(), effnERREST, fitparm, 6, nullptr);
                 }
             }
             ee   = optimal_error_estimate(sig[s], fitparm, n * dt);
@@ -634,18 +638,22 @@ static void estimate_error(const char*             eefile,
         if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgr)
         {
             fprintf(fp, "@ legend string %d \"av %f\"\n", 2 * s, av[s]);
-            fprintf(fp, "@ legend string %d \"ee %6g\"\n", 2 * s + 1,
+            fprintf(fp,
+                    "@ legend string %d \"ee %6g\"\n",
+                    2 * s + 1,
                     optimal_error_estimate(sig[s], fitparm, n * dt));
         }
         else if (output_env_get_xvg_format(oenv) == XvgFormat::Xmgrace)
         {
             fprintf(fp, "@ s%d legend \"av %f\"\n", 2 * s, av[s]);
-            fprintf(fp, "@ s%d legend \"ee %6g\"\n", 2 * s + 1,
-                    optimal_error_estimate(sig[s], fitparm, n * dt));
+            fprintf(fp, "@ s%d legend \"ee %6g\"\n", 2 * s + 1, optimal_error_estimate(sig[s], fitparm, n * dt));
         }
         for (i = 0; i < nbs; i++)
         {
-            fprintf(fp, "%g %g %g\n", tbs[i], sig[s] * std::sqrt(ybs[i] / (n * dt)),
+            fprintf(fp,
+                    "%g %g %g\n",
+                    tbs[i],
+                    sig[s] * std::sqrt(ybs[i] / (n * dt)),
                     sig[s] * std::sqrt(fit_function(effnERREST, fitparm, tbs[i]) / (n * dt)));
         }
 
@@ -668,8 +676,8 @@ static void estimate_error(const char*             eefile,
                     fitsig[i] = 1;
                 }
             }
-            low_do_autocorr(nullptr, oenv, nullptr, n, 1, -1, &ac, dt, eacNormal, 1, FALSE, TRUE,
-                            FALSE, 0, 0, effnNONE);
+            low_do_autocorr(
+                    nullptr, oenv, nullptr, n, 1, -1, &ac, dt, eacNormal, 1, FALSE, TRUE, FALSE, 0, 0, effnNONE);
 
             fitlen = n / nb_min;
 
@@ -690,17 +698,23 @@ static void estimate_error(const char*             eefile,
             ac_fit[0] = 0.5 * acint;
             ac_fit[1] = 0.95;
             ac_fit[2] = 10 * acint;
-            do_lmfit(n / nb_min, ac, fitsig, dt, nullptr, 0, fitlen * dt, oenv, bDebugMode(),
-                     effnEXPEXP, ac_fit, 0, nullptr);
+            do_lmfit(n / nb_min, ac, fitsig, dt, nullptr, 0, fitlen * dt, oenv, bDebugMode(), effnEXPEXP, ac_fit, 0, nullptr);
             ac_fit[3] = 1 - ac_fit[1];
 
-            fprintf(stdout, "Set %3d:  ac erest %g  a %g  tau1 %g  tau2 %g\n", s + 1,
-                    optimal_error_estimate(sig[s], ac_fit, n * dt), ac_fit[1], ac_fit[0], ac_fit[2]);
+            fprintf(stdout,
+                    "Set %3d:  ac erest %g  a %g  tau1 %g  tau2 %g\n",
+                    s + 1,
+                    optimal_error_estimate(sig[s], ac_fit, n * dt),
+                    ac_fit[1],
+                    ac_fit[0],
+                    ac_fit[2]);
 
             fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
             for (i = 0; i < nbs; i++)
             {
-                fprintf(fp, "%g %g\n", tbs[i],
+                fprintf(fp,
+                        "%g %g\n",
+                        tbs[i],
                         sig[s] * std::sqrt(fit_function(effnERREST, ac_fit, tbs[i])) / (n * dt));
             }
 
@@ -1173,8 +1187,8 @@ int gmx_analyze(int argc, char* argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0,
-                           nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -1195,8 +1209,17 @@ int gmx_analyze(int argc, char* argv[])
         fitfile = opt2fn_null("-g", NFILE, fnm);
     }
 
-    val = read_xvg_time(opt2fn("-f", NFILE, fnm), bHaveT, opt2parg_bSet("-b", npargs, ppa), tb,
-                        opt2parg_bSet("-e", npargs, ppa), te, nsets_in, &nset, &n, &dt, &t);
+    val = read_xvg_time(opt2fn("-f", NFILE, fnm),
+                        bHaveT,
+                        opt2parg_bSet("-b", npargs, ppa),
+                        tb,
+                        opt2parg_bSet("-e", npargs, ppa),
+                        te,
+                        nsets_in,
+                        &nset,
+                        &n,
+                        &dt,
+                        &t);
     printf("Read %d sets of %d points, dt = %g\n\n", nset, n, dt);
 
     if (bDer)
@@ -1235,8 +1258,8 @@ int gmx_analyze(int argc, char* argv[])
 
     if (fitfile != nullptr)
     {
-        print_fitted_function(fitfile, opt2fn_null("-fitted", NFILE, fnm), bXYdy, nset, n, t, val,
-                              npargs, ppa, oenv);
+        print_fitted_function(
+                fitfile, opt2fn_null("-fitted", NFILE, fnm), bXYdy, nset, n, t, val, npargs, ppa, oenv);
     }
 
     printf("                                      std. dev.    relative deviation of\n");
@@ -1276,7 +1299,11 @@ int gmx_analyze(int argc, char* argv[])
         {
             error = 0;
         }
-        printf("SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n", s + 1, av[s], sig[s], error,
+        printf("SS%d  %13.6e   %12.6e   %12.6e      %6.3f   %6.3f\n",
+               s + 1,
+               av[s],
+               sig[s],
+               error,
                sig[s] != 0.0 ? cum3 / (sig[s] * sig[s] * sig[s] * std::sqrt(8 / M_PI)) : 0,
                sig[s] != 0.0 ? cum4 / (sig[s] * sig[s] * sig[s] * sig[s] * 3) - 1 : 0);
     }

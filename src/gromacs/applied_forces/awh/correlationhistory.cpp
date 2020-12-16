@@ -77,8 +77,10 @@ CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid
 {
     CorrelationGridHistory correlationGridHistory;
 
-    initCorrelationGridHistory(&correlationGridHistory, correlationGrid.tensors().size(),
-                               correlationGrid.tensorSize(), correlationGrid.blockDataListSize());
+    initCorrelationGridHistory(&correlationGridHistory,
+                               correlationGrid.tensors().size(),
+                               correlationGrid.tensorSize(),
+                               correlationGrid.blockDataListSize());
 
     return correlationGridHistory;
 }

@@ -190,8 +190,8 @@ int gmx_spatial(int argc, char* argv[])
 
     /* This is the routine responsible for adding default options,
      * calling the X/motif interface, etc. */
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -284,10 +284,17 @@ int gmx_spatial(int argc, char* argv[])
             {
                 printf("There was an item outside of the allocated memory. Increase the value "
                        "given with the -nab option.\n");
-                printf("Memory was allocated for [%f,%f,%f]\tto\t[%f,%f,%f]\n", MINBIN[XX],
-                       MINBIN[YY], MINBIN[ZZ], MAXBIN[XX], MAXBIN[YY], MAXBIN[ZZ]);
-                printf("Memory was required for [%f,%f,%f]\n", fr.x[index[i]][XX],
-                       fr.x[index[i]][YY], fr.x[index[i]][ZZ]);
+                printf("Memory was allocated for [%f,%f,%f]\tto\t[%f,%f,%f]\n",
+                       MINBIN[XX],
+                       MINBIN[YY],
+                       MINBIN[ZZ],
+                       MAXBIN[XX],
+                       MAXBIN[YY],
+                       MAXBIN[ZZ]);
+                printf("Memory was required for [%f,%f,%f]\n",
+                       fr.x[index[i]][XX],
+                       fr.x[index[i]][YY],
+                       fr.x[index[i]][ZZ]);
                 exit(1);
             }
             x = static_cast<int>(std::ceil((fr.x[index[i]][XX] - MINBIN[XX]) / rBINWIDTH));
@@ -341,16 +348,15 @@ int gmx_spatial(int argc, char* argv[])
     flp = gmx_ffopen("grid.cube", "w");
     fprintf(flp, "Spatial Distribution Function\n");
     fprintf(flp, "test\n");
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", nidxp,
+    fprintf(flp,
+            "%5d%12.6f%12.6f%12.6f\n",
+            nidxp,
             (MINBIN[XX] + (minx + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr,
             (MINBIN[YY] + (miny + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr,
             (MINBIN[ZZ] + (minz + iIGNOREOUTER) * rBINWIDTH) * 10. / bohr);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxx - minx + 1 - (2 * iIGNOREOUTER),
-            rBINWIDTH * 10. / bohr, 0., 0.);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxy - miny + 1 - (2 * iIGNOREOUTER), 0.,
-            rBINWIDTH * 10. / bohr, 0.);
-    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxz - minz + 1 - (2 * iIGNOREOUTER), 0., 0.,
-            rBINWIDTH * 10. / bohr);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxx - minx + 1 - (2 * iIGNOREOUTER), rBINWIDTH * 10. / bohr, 0., 0.);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxy - miny + 1 - (2 * iIGNOREOUTER), 0., rBINWIDTH * 10. / bohr, 0.);
+    fprintf(flp, "%5d%12.6f%12.6f%12.6f\n", maxz - minz + 1 - (2 * iIGNOREOUTER), 0., 0., rBINWIDTH * 10. / bohr);
     for (i = 0; i < nidxp; i++)
     {
         v = 2;
@@ -374,8 +380,13 @@ int gmx_spatial(int argc, char* argv[])
         {
             v = 16;
         }
-        fprintf(flp, "%5d%12.6f%12.6f%12.6f%12.6f\n", v, 0., fr.x[indexp[i]][XX] * 10.0 / bohr,
-                fr.x[indexp[i]][YY] * 10.0 / bohr, fr.x[indexp[i]][ZZ] * 10.0 / bohr);
+        fprintf(flp,
+                "%5d%12.6f%12.6f%12.6f%12.6f\n",
+                v,
+                0.,
+                fr.x[indexp[i]][XX] * 10.0 / bohr,
+                fr.x[indexp[i]][YY] * 10.0 / bohr,
+                fr.x[indexp[i]][ZZ] * 10.0 / bohr);
     }
 
     tot = 0;
@@ -481,14 +492,18 @@ int gmx_spatial(int argc, char* argv[])
     if (bCALCDIV)
     {
         printf("Counts per frame in all %d cubes divided by %le\n", numcu, 1.0 / norm);
-        printf("Normalized data: average %le, min %le, max %le\n", 1.0, minval * norm / numfr,
+        printf("Normalized data: average %le, min %le, max %le\n",
+               1.0,
+               minval * norm / numfr,
                maxval * norm / numfr);
     }
     else
     {
         printf("grid.cube contains counts per frame in all %d cubes\n", numcu);
-        printf("Raw data: average %le, min %le, max %le\n", 1.0 / norm,
-               static_cast<double>(minval) / numfr, static_cast<double>(maxval) / numfr);
+        printf("Raw data: average %le, min %le, max %le\n",
+               1.0 / norm,
+               static_cast<double>(minval) / numfr,
+               static_cast<double>(maxval) / numfr);
     }
 
     return 0;

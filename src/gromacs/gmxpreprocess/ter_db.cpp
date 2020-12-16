@@ -120,7 +120,10 @@ static void read_atom(char* line, bool bAdd, std::string* nname, t_atom* a, Prep
         gmx_fatal(FARGS,
                   "Reading Termini Database: expected %d or %d items of atom data in stead of %d "
                   "on line\n%s",
-                  3, 4, nr, line);
+                  3,
+                  4,
+                  nr,
+                  line);
     }
     i = 0;
     if (!bAdd)
@@ -166,8 +169,9 @@ static void print_ter_db(const char*                                ff,
     {
         fprintf(out, "[ %s ]\n", modification.name.c_str());
 
-        if (std::any_of(modification.hack.begin(), modification.hack.end(),
-                        [](const auto& mod) { return mod.type() == MoleculePatchType::Replace; }))
+        if (std::any_of(modification.hack.begin(), modification.hack.end(), [](const auto& mod) {
+                return mod.type() == MoleculePatchType::Replace;
+            }))
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwRepl - ebtsNR - 1]);
             for (const auto& hack : modification.hack)
@@ -179,8 +183,9 @@ static void print_ter_db(const char*                                ff,
                 }
             }
         }
-        if (std::any_of(modification.hack.begin(), modification.hack.end(),
-                        [](const auto& mod) { return mod.type() == MoleculePatchType::Add; }))
+        if (std::any_of(modification.hack.begin(), modification.hack.end(), [](const auto& mod) {
+                return mod.type() == MoleculePatchType::Add;
+            }))
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwAdd - ebtsNR - 1]);
             for (const auto& hack : modification.hack)
@@ -192,8 +197,9 @@ static void print_ter_db(const char*                                ff,
                 }
             }
         }
-        if (std::any_of(modification.hack.begin(), modification.hack.end(),
-                        [](const auto& mod) { return mod.type() == MoleculePatchType::Delete; }))
+        if (std::any_of(modification.hack.begin(), modification.hack.end(), [](const auto& mod) {
+                return mod.type() == MoleculePatchType::Delete;
+            }))
         {
             fprintf(out, "[ %s ]\n", kw_names[ekwDel - ebtsNR - 1]);
             for (const auto& hack : modification.hack)
@@ -291,7 +297,8 @@ static void read_ter_db_file(const char*                         fn,
                         gmx_fatal(FARGS,
                                   "Reading Termini Database '%s': "
                                   "expected atom name on line\n%s",
-                                  fn, line);
+                                  fn,
+                                  line);
                     }
                     hack->oname = buf;
                     /* we only replace or delete one atom at a time */
@@ -309,8 +316,7 @@ static void read_ter_db_file(const char*                         fn,
                 if (kwnr == ekwRepl || kwnr == ekwAdd)
                 {
                     hack->atom.emplace_back();
-                    read_atom(line + n, kwnr == ekwAdd, &hack->nname, &hack->atom.back(), atype,
-                              &hack->cgnr);
+                    read_atom(line + n, kwnr == ekwAdd, &hack->nname, &hack->atom.back(), atype, &hack->cgnr);
                     if (hack->nname.empty())
                     {
                         if (!hack->oname.empty())
@@ -322,7 +328,8 @@ static void read_ter_db_file(const char*                         fn,
                             gmx_fatal(FARGS,
                                       "Reading Termini Database '%s': don't know which name the "
                                       "new atom should have on line\n%s",
-                                      fn, line);
+                                      fn,
+                                      line);
                         }
                     }
                 }
@@ -345,7 +352,10 @@ static void read_ter_db_file(const char*                         fn,
                         gmx_fatal(FARGS,
                                   "Reading Termini Database '%s': expected %d atom names (found "
                                   "%d) on line\n%s",
-                                  fn, btsNiatoms[kwnr], j - 1, line);
+                                  fn,
+                                  btsNiatoms[kwnr],
+                                  j - 1,
+                                  line);
                     }
                     n += ni;
                 }
@@ -501,7 +511,9 @@ MoleculePatchDatabase* choose_ter(gmx::ArrayRef<MoleculePatchDatabase*> tb, cons
     for (const auto& modification : tb)
     {
         bool bIsZwitterion = (0 == gmx_wcmatch("*ZWITTERION*", modification->name.c_str()));
-        printf("%2d: %s%s\n", i, modification->name.c_str(),
+        printf("%2d: %s%s\n",
+               i,
+               modification->name.c_str(),
                bIsZwitterion ? " (only use with zwitterions containing exactly one residue)" : "");
         i++;
     }

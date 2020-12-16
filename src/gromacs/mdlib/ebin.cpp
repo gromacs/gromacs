@@ -147,8 +147,13 @@ void add_ebin(t_ebin* eb, int entryIndex, int nener, const real ener[], gmx_bool
 
     if ((entryIndex + nener > eb->nener) || (entryIndex < 0))
     {
-        gmx_fatal(FARGS, "%s-%d: Energies out of range: entryIndex=%d nener=%d maxener=%d",
-                  __FILE__, __LINE__, entryIndex, nener, eb->nener);
+        gmx_fatal(FARGS,
+                  "%s-%d: Energies out of range: entryIndex=%d nener=%d maxener=%d",
+                  __FILE__,
+                  __LINE__,
+                  entryIndex,
+                  nener,
+                  eb->nener);
     }
 
     eg = &(eb->e[entryIndex]);
@@ -205,8 +210,10 @@ void add_ebin_indexed(t_ebin*                   eb,
 
     GMX_ASSERT(shouldUse.size() == ener.size(), "View sizes must match");
     GMX_ASSERT(entryIndex + std::count(shouldUse.begin(), shouldUse.end(), true) <= eb->nener,
-               gmx::formatString("Energies out of range: entryIndex=%d nener=%td maxener=%d", entryIndex,
-                                 std::count(shouldUse.begin(), shouldUse.end(), true), eb->nener)
+               gmx::formatString("Energies out of range: entryIndex=%d nener=%td maxener=%d",
+                                 entryIndex,
+                                 std::count(shouldUse.begin(), shouldUse.end(), true),
+                                 eb->nener)
                        .c_str());
     GMX_ASSERT(entryIndex >= 0, "Must have non-negative entry");
 

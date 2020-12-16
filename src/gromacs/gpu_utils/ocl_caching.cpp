@@ -75,8 +75,8 @@ std::string makeBinaryCacheFilename(const std::string& kernelFilename, cl_device
     // assume that sizeof(char) is one byte.
     std::array<char, 1024> deviceName;
     size_t                 deviceNameLength;
-    cl_int                 cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, deviceName.size(),
-                                      deviceName.data(), &deviceNameLength);
+    cl_int                 cl_error = clGetDeviceInfo(
+            deviceId, CL_DEVICE_NAME, deviceName.size(), deviceName.data(), &deviceNameLength);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError(formatString("Could not get OpenCL device name, error was %s",
@@ -94,8 +94,10 @@ std::string makeBinaryCacheFilename(const std::string& kernelFilename, cl_device
        (symbols), by permitting only alphanumeric characters from the
        current locale. We assume these work well enough in a
        filename. */
-    std::copy_if(deviceName.begin(), deviceName.begin() + deviceNameLength,
-                 std::back_inserter(cacheFilename), isalnum);
+    std::copy_if(deviceName.begin(),
+                 deviceName.begin() + deviceNameLength,
+                 std::back_inserter(cacheFilename),
+                 isalnum);
     cacheFilename += ".bin";
 
     return cacheFilename;
@@ -134,9 +136,8 @@ cl_program makeProgramFromCache(const std::string& filename, cl_context context,
 
     /* Create program from pre-built binary */
     cl_int     cl_error;
-    cl_program program = clCreateProgramWithBinary(context, 1, &deviceId, &fileSize,
-                                                   const_cast<const unsigned char**>(&binary),
-                                                   nullptr, &cl_error);
+    cl_program program = clCreateProgramWithBinary(
+            context, 1, &deviceId, &fileSize, const_cast<const unsigned char**>(&binary), nullptr, &cl_error);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not create OpenCL program from the cache file " + filename

@@ -274,8 +274,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
         cnb.flags = 0;
 
         /* Receive the send count, box and time step from the peer PP node */
-        MPI_Recv(&cnb, sizeof(cnb), MPI_BYTE, pme_pp->peerRankId, eCommType_CNB,
-                 pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
+        MPI_Recv(&cnb, sizeof(cnb), MPI_BYTE, pme_pp->peerRankId, eCommType_CNB, pme_pp->mpi_comm_mysim, MPI_STATUS_IGNORE);
 
         /* We accumulate all received flags */
         flags |= cnb.flags;
@@ -284,7 +283,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
 
         if (debug)
         {
-            fprintf(debug, "PME only rank receiving:%s%s%s%s%s\n",
+            fprintf(debug,
+                    "PME only rank receiving:%s%s%s%s%s\n",
                     (cnb.flags & PP_PME_CHARGE) ? " charges" : "",
                     (cnb.flags & PP_PME_COORD) ? " coordinates" : "",
                     (cnb.flags & PP_PME_FINISH) ? " finish" : "",
@@ -331,8 +331,13 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 }
                 else
                 {
-                    MPI_Irecv(&sender.numAtoms, sizeof(sender.numAtoms), MPI_BYTE, sender.rankId,
-                              eCommType_CNB, pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                    MPI_Irecv(&sender.numAtoms,
+                              sizeof(sender.numAtoms),
+                              MPI_BYTE,
+                              sender.rankId,
+                              eCommType_CNB,
+                              pme_pp->mpi_comm_mysim,
+                              &pme_pp->req[messages++]);
                 }
             }
             MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
@@ -399,12 +404,19 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 {
                     if (sender.numAtoms > 0)
                     {
-                        MPI_Irecv(bufferPtr + nat, sender.numAtoms * sizeof(real), MPI_BYTE,
-                                  sender.rankId, q, pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                        MPI_Irecv(bufferPtr + nat,
+                                  sender.numAtoms * sizeof(real),
+                                  MPI_BYTE,
+                                  sender.rankId,
+                                  q,
+                                  pme_pp->mpi_comm_mysim,
+                                  &pme_pp->req[messages++]);
                         nat += sender.numAtoms;
                         if (debug)
                         {
-                            fprintf(debug, "Received from PP rank %d: %d %s\n", sender.rankId,
+                            fprintf(debug,
+                                    "Received from PP rank %d: %d %s\n",
+                                    sender.rankId,
                                     sender.numAtoms,
                                     (q == eCommType_ChargeA || q == eCommType_ChargeB) ? "charges"
                                                                                        : "params");
@@ -460,8 +472,13 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                     }
                     else
                     {
-                        MPI_Irecv(pme_pp->x[nat], sender.numAtoms * sizeof(rvec), MPI_BYTE, sender.rankId,
-                                  eCommType_COORD, pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
+                        MPI_Irecv(pme_pp->x[nat],
+                                  sender.numAtoms * sizeof(rvec),
+                                  MPI_BYTE,
+                                  sender.rankId,
+                                  eCommType_COORD,
+                                  pme_pp->mpi_comm_mysim,
+                                  &pme_pp->req[messages++]);
                     }
                     nat += sender.numAtoms;
                     if (debug)
@@ -469,7 +486,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                         fprintf(debug,
                                 "Received from PP rank %d: %d "
                                 "coordinates\n",
-                                sender.rankId, sender.numAtoms);
+                                sender.rankId,
+                                sender.numAtoms);
                     }
                 }
             }
@@ -529,8 +547,13 @@ static void sendFToPP(void* sendbuf, PpRanks receiver, gmx_pme_pp* pme_pp, int* 
     else
     {
         // Send using MPI
-        MPI_Isend(sendbuf, receiver.numAtoms * sizeof(rvec), MPI_BYTE, receiver.rankId, 0,
-                  pme_pp->mpi_comm_mysim, &pme_pp->req[*messages]);
+        MPI_Isend(sendbuf,
+                  receiver.numAtoms * sizeof(rvec),
+                  MPI_BYTE,
+                  receiver.rankId,
+                  0,
+                  pme_pp->mpi_comm_mysim,
+                  &pme_pp->req[*messages]);
         *messages = *messages + 1;
     }
 }
@@ -582,8 +605,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     {
         fprintf(debug, "PME rank sending to PP rank %d: virial and energy\n", pme_pp->peerRankId);
     }
-    MPI_Isend(&cve, sizeof(cve), MPI_BYTE, pme_pp->peerRankId, 1, pme_pp->mpi_comm_mysim,
-              &pme_pp->req[messages++]);
+    MPI_Isend(&cve, sizeof(cve), MPI_BYTE, pme_pp->peerRankId, 1, pme_pp->mpi_comm_mysim, &pme_pp->req[messages++]);
 
     /* Wait for the forces to arrive */
     MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
@@ -640,17 +662,22 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
         if (c_enableGpuPmePpComms)
         {
             pme_pp->pmeCoordinateReceiverGpu = std::make_unique<gmx::PmeCoordinateReceiverGpu>(
-                    deviceStreamManager->stream(gmx::DeviceStreamType::Pme), pme_pp->mpi_comm_mysim,
+                    deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
+                    pme_pp->mpi_comm_mysim,
                     pme_pp->ppRanks);
             pme_pp->pmeForceSenderGpu = std::make_unique<gmx::PmeForceSenderGpu>(
-                    deviceStreamManager->stream(gmx::DeviceStreamType::Pme), pme_pp->mpi_comm_mysim,
+                    deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
+                    pme_pp->mpi_comm_mysim,
                     pme_pp->ppRanks);
         }
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.
         stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                &deviceStreamManager->stream(gmx::DeviceStreamType::Pme), deviceStreamManager->context(),
-                GpuApiCallBehavior::Async, pme_gpu_get_block_size(pme), wcycle);
+                &deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
+                deviceStreamManager->context(),
+                GpuApiCallBehavior::Async,
+                pme_gpu_get_block_size(pme),
+                wcycle);
     }
 
     clear_nrnb(mynrnb);
@@ -664,10 +691,22 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
             /* Domain decomposition */
             ivec newGridSize;
             real ewaldcoeff_q = 0, ewaldcoeff_lj = 0;
-            ret = gmx_pme_recv_coeffs_coords(pme, pme_pp.get(), &natoms, box, &maxshift_x, &maxshift_y,
-                                             &lambda_q, &lambda_lj, &computeEnergyAndVirial, &step,
-                                             &newGridSize, &ewaldcoeff_q, &ewaldcoeff_lj,
-                                             useGpuForPme, stateGpu.get(), runMode);
+            ret = gmx_pme_recv_coeffs_coords(pme,
+                                             pme_pp.get(),
+                                             &natoms,
+                                             box,
+                                             &maxshift_x,
+                                             &maxshift_y,
+                                             &lambda_q,
+                                             &lambda_lj,
+                                             &computeEnergyAndVirial,
+                                             &step,
+                                             &newGridSize,
+                                             &ewaldcoeff_q,
+                                             &ewaldcoeff_lj,
+                                             useGpuForPme,
+                                             stateGpu.get(),
+                                             runMode);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
@@ -734,12 +773,30 @@ int gmx_pmeonly(struct gmx_pme_t*               pme,
             GMX_ASSERT(pme_pp->x.size() == static_cast<size_t>(natoms),
                        "The coordinate buffer should have size natoms");
 
-            gmx_pme_do(pme, pme_pp->x, pme_pp->f, pme_pp->chargeA.data(), pme_pp->chargeB.data(),
-                       pme_pp->sqrt_c6A.data(), pme_pp->sqrt_c6B.data(), pme_pp->sigmaA.data(),
-                       pme_pp->sigmaB.data(), box, cr, maxshift_x, maxshift_y, mynrnb, wcycle,
-                       output.coulombVirial_, output.lennardJonesVirial_, &output.coulombEnergy_,
-                       &output.lennardJonesEnergy_, lambda_q, lambda_lj, &dvdlambda_q,
-                       &dvdlambda_lj, stepWork);
+            gmx_pme_do(pme,
+                       pme_pp->x,
+                       pme_pp->f,
+                       pme_pp->chargeA.data(),
+                       pme_pp->chargeB.data(),
+                       pme_pp->sqrt_c6A.data(),
+                       pme_pp->sqrt_c6B.data(),
+                       pme_pp->sigmaA.data(),
+                       pme_pp->sigmaB.data(),
+                       box,
+                       cr,
+                       maxshift_x,
+                       maxshift_y,
+                       mynrnb,
+                       wcycle,
+                       output.coulombVirial_,
+                       output.lennardJonesVirial_,
+                       &output.coulombEnergy_,
+                       &output.lennardJonesEnergy_,
+                       lambda_q,
+                       lambda_lj,
+                       &dvdlambda_q,
+                       &dvdlambda_lj,
+                       stepWork);
             output.forces_ = pme_pp->f;
         }
 

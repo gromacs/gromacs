@@ -111,8 +111,8 @@ void dd_move_x_constraints(gmx_domdec_t*            dd,
 {
     if (dd->constraint_comm)
     {
-        dd_move_x_specat(dd, dd->constraint_comm, box, as_rvec_array(x0.data()),
-                         as_rvec_array(x1.data()), bX1IsCoord);
+        dd_move_x_specat(
+                dd, dd->constraint_comm, box, as_rvec_array(x0.data()), as_rvec_array(x1.data()), bX1IsCoord);
 
         ddReopenBalanceRegionCpu(dd);
     }
@@ -221,8 +221,7 @@ static void walk_out(int                       con,
                 }
                 if (!ga2la.findHome(offset + b))
                 {
-                    walk_out(coni, con_offset, b, offset, nrec - 1, ia1, ia2, at2con, ga2la, FALSE,
-                             dc, dcc, il_local, ireq);
+                    walk_out(coni, con_offset, b, offset, nrec - 1, ia1, ia2, at2con, ga2la, FALSE, dc, dcc, il_local, ireq);
                 }
             }
         }
@@ -383,8 +382,7 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
                      * Therefore we call walk_out with nrec recursions to go
                      * after this first call.
                      */
-                    walk_out(con, con_offset, b_mol, offset, nrec, ia1, ia2, at2con, ga2la, TRUE,
-                             dc, dcc, ilc_local, ireq);
+                    walk_out(con, con_offset, b_mol, offset, nrec, ia1, ia2, at2con, ga2la, TRUE, dc, dcc, ilc_local, ireq);
                 }
             }
         }
@@ -397,7 +395,10 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
 
     if (debug)
     {
-        fprintf(debug, "Constraints: home %3d border %3d atoms: %3zu\n", nhome, dc->ncon - nhome,
+        fprintf(debug,
+                "Constraints: home %3d border %3d atoms: %3zu\n",
+                nhome,
+                dc->ncon - nhome,
                 dd->constraint_comm ? ireq->size() : 0);
     }
 }
@@ -536,8 +537,14 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
     {
         int nral1;
 
-        at_end = setup_specat_communication(dd, ireq, dd->constraint_comm, dd->constraints->ga2la.get(),
-                                            at_start, 2, "constraint", " or lincs-order");
+        at_end = setup_specat_communication(dd,
+                                            ireq,
+                                            dd->constraint_comm,
+                                            dd->constraints->ga2la.get(),
+                                            at_start,
+                                            2,
+                                            "constraint",
+                                            " or lincs-order");
 
         /* Fill in the missing indices */
         ga2la_specat = dd->constraints->ga2la.get();

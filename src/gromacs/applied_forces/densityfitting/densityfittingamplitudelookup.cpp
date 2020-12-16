@@ -121,7 +121,9 @@ const std::vector<real>& ChargesAsAmplitudes::operator()(const t_mdatoms& atoms,
         amplitude_.resize(localIndex.size());
     }
 
-    std::transform(std::begin(localIndex), std::end(localIndex), std::begin(amplitude_),
+    std::transform(std::begin(localIndex),
+                   std::end(localIndex),
+                   std::begin(amplitude_),
                    [&atoms](gmx::index index) { return atoms.chargeA[index]; });
     return amplitude_;
 }
@@ -151,7 +153,9 @@ const std::vector<real>& MassesAsAmplitudes::operator()(const t_mdatoms& atoms, 
         amplitude_.resize(localIndex.size());
     }
 
-    std::transform(std::begin(localIndex), std::end(localIndex), std::begin(amplitude_),
+    std::transform(std::begin(localIndex),
+                   std::end(localIndex),
+                   std::begin(amplitude_),
                    [&atoms](gmx::index index) { return atoms.massT[index]; });
     return amplitude_;
 }

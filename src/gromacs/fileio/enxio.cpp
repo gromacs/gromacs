@@ -336,7 +336,9 @@ static void enx_warning(const char* msg)
     }
     else
     {
-        gmx_fatal(FARGS, "%s\n%s", msg,
+        gmx_fatal(FARGS,
+                  "%s\n%s",
+                  msg,
                   "If you want to use the correct frames before the corrupted frame and avoid this "
                   "fatal error set the env.var. GMX_ENX_NO_FATAL");
     }
@@ -424,8 +426,11 @@ void do_enxnms(ener_file_t ef, int* nre, gmx_enxnm_t** nms)
         xdr_int(xdr, &file_version);
         if (file_version > enx_version)
         {
-            gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program",
-                      gmx_fio_getname(ef->fio), file_version, enx_version);
+            gmx_fatal(FARGS,
+                      "reading tpx file (%s) version %d with version %d program",
+                      gmx_fio_getname(ef->fio),
+                      file_version,
+                      enx_version);
         }
         xdr_int(xdr, nre);
     }
@@ -507,8 +512,11 @@ static gmx_bool do_eheader(ener_file_t ef,
         }
         if (*bOK && *file_version > enx_version)
         {
-            gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program",
-                      gmx_fio_getname(ef->fio), *file_version, enx_version);
+            gmx_fatal(FARGS,
+                      "reading tpx file (%s) version %d with version %d program",
+                      gmx_fio_getname(ef->fio),
+                      *file_version,
+                      enx_version);
         }
         if (!gmx_fio_do_double(ef->fio, fr->t))
         {
@@ -970,14 +978,12 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
     {
         if (bRead)
         {
-            fprintf(stderr, "\rLast energy frame read %d time %8.3f         ", ef->framenr - 1,
-                    ef->frametime);
+            fprintf(stderr, "\rLast energy frame read %d time %8.3f         ", ef->framenr - 1, ef->frametime);
             fflush(stderr);
 
             if (!bOK)
             {
-                fprintf(stderr, "\nWARNING: Incomplete energy frame: nr %d time %8.3f\n",
-                        ef->framenr, fr->t);
+                fprintf(stderr, "\nWARNING: Incomplete energy frame: nr %d time %8.3f\n", ef->framenr, fr->t);
             }
         }
         else
@@ -1004,10 +1010,15 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
     }
     if (!((fr->step >= 0) && bSane) && bRead)
     {
-        fprintf(stderr, "\nWARNING: there may be something wrong with energy file %s\n",
+        fprintf(stderr,
+                "\nWARNING: there may be something wrong with energy file %s\n",
                 gmx_fio_getname(ef->fio));
-        fprintf(stderr, "Found: step=%" PRId64 ", nre=%d, nblock=%d, time=%g.\n", fr->step, fr->nre,
-                fr->nblock, fr->t);
+        fprintf(stderr,
+                "Found: step=%" PRId64 ", nre=%d, nblock=%d, time=%g.\n",
+                fr->step,
+                fr->nre,
+                fr->nblock,
+                fr->t);
     }
     if (bRead && fr->nre > fr->e_alloc)
     {
@@ -1376,8 +1387,13 @@ static void cmp_energies(FILE*        fp,
         }
         if (!equal_real(e1[ind1[i]].e, e2[ind2[i]].e, ftol_i, abstol_i))
         {
-            fprintf(fp, "%-15s  step %3d:  %12g,  step %3d: %12g\n", enm1[ind1[i]].name, step1,
-                    e1[ind1[i]].e, step2, e2[ind2[i]].e);
+            fprintf(fp,
+                    "%-15s  step %3d:  %12g,  step %3d: %12g\n",
+                    enm1[ind1[i]].name,
+                    step1,
+                    e1[ind1[i]].e,
+                    step2,
+                    e2[ind2[i]].e);
         }
     }
 
@@ -1581,8 +1597,8 @@ void comp_enx(const char* fn1, const char* fn2, real ftol, real abstol, const ch
             /* cmp_int(stdout,"nre",-1,fr1->nre,fr2->nre); */
             if ((fr1->nre >= nre) && (fr2->nre >= nre))
             {
-                cmp_energies(stdout, fr1->step, fr1->step, fr1->ener, fr2->ener, enm1, ftol, abstol,
-                             nre, ind1, ind2, maxener);
+                cmp_energies(
+                        stdout, fr1->step, fr1->step, fr1->ener, fr2->ener, enm1, ftol, abstol, nre, ind1, ind2, maxener);
             }
             /*cmp_disres(fr1,fr2,ftol,abstol);*/
             cmp_eblocks(fr1, fr2, ftol, abstol);

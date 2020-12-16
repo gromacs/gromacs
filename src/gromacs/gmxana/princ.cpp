@@ -75,8 +75,7 @@ static void ptrans(char* s, real** inten, real d[], real e[])
         y = inten[m][2];
         z = inten[m][3];
         n = x * x + y * y + z * z;
-        fprintf(stderr, "%8s %8.3f %8.3f %8.3f, norm:%8.3f, d:%8.3f, e:%8.3f\n", s, x, y, z,
-                std::sqrt(n), d[m], e[m]);
+        fprintf(stderr, "%8s %8.3f %8.3f %8.3f, norm:%8.3f, d:%8.3f, e:%8.3f\n", s, x, y, z, std::sqrt(n), d[m], e[m]);
     }
     fprintf(stderr, "\n");
 }

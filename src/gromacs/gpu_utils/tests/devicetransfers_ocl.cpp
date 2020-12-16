@@ -64,8 +64,8 @@ void throwUponFailure(cl_int status, const char* message)
 {
     if (status != CL_SUCCESS)
     {
-        GMX_THROW(InternalError(formatString("Failure while %s, error was %s", message,
-                                             ocl_get_error_string(status).c_str())));
+        GMX_THROW(InternalError(formatString(
+                "Failure while %s, error was %s", message, ocl_get_error_string(status).c_str())));
     }
 }
 
@@ -90,11 +90,11 @@ void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char>
     auto devicePointer = clCreateBuffer(context, CL_MEM_READ_WRITE, input.size(), nullptr, &status);
     throwUponFailure(status, "creating buffer");
 
-    status = clEnqueueWriteBuffer(commandQueue, devicePointer, CL_TRUE, 0, input.size(),
-                                  input.data(), 0, nullptr, nullptr);
+    status = clEnqueueWriteBuffer(
+            commandQueue, devicePointer, CL_TRUE, 0, input.size(), input.data(), 0, nullptr, nullptr);
     throwUponFailure(status, "transferring host to device");
-    status = clEnqueueReadBuffer(commandQueue, devicePointer, CL_TRUE, 0, output.size(),
-                                 output.data(), 0, nullptr, nullptr);
+    status = clEnqueueReadBuffer(
+            commandQueue, devicePointer, CL_TRUE, 0, output.size(), output.data(), 0, nullptr, nullptr);
     throwUponFailure(status, "transferring device to host");
 
     status = clReleaseMemObject(devicePointer);

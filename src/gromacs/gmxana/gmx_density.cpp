@@ -144,8 +144,11 @@ static void center_coords(t_atoms* atoms, const int* index_center, int ncenter, 
         i = index_center[k];
         if (i >= atoms->nr)
         {
-            gmx_fatal(FARGS, "Index %d refers to atom %d, which is larger than natoms (%d).", k + 1,
-                      i + 1, atoms->nr);
+            gmx_fatal(FARGS,
+                      "Index %d refers to atom %d, which is larger than natoms (%d).",
+                      k + 1,
+                      i + 1,
+                      atoms->nr);
         }
         mm = atoms->atom[i].m;
         tmass += mm;
@@ -287,12 +290,16 @@ static void calc_electron_density(const char*             fn,
 
                 /* now find the number of electrons. This is not efficient. */
                 found = static_cast<t_electron*>(
-                        bsearch(&sought, eltab, nr, sizeof(t_electron),
+                        bsearch(&sought,
+                                eltab,
+                                nr,
+                                sizeof(t_electron),
                                 reinterpret_cast<int (*)(const void*, const void*)>(compare)));
 
                 if (found == nullptr)
                 {
-                    fprintf(stderr, "Couldn't find %s. Add it to the .dat file\n",
+                    fprintf(stderr,
+                            "Couldn't find %s. Add it to the .dat file\n",
                             *(top->atoms.atomname[index[n][i]]));
                 }
                 else
@@ -729,8 +736,8 @@ int gmx_density(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -774,18 +781,46 @@ int gmx_density(int argc, char* argv[])
         nr_electrons = get_electrons(&el_tab, ftp2fn(efDAT, NFILE, fnm));
         fprintf(stderr, "Read %d atomtypes from datafile\n", nr_electrons);
 
-        calc_electron_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, top,
-                              pbcType, axis, ngrps, &slWidth, el_tab, nr_electrons, bCenter,
-                              index_center, ncenter, bRelative, oenv);
+        calc_electron_density(ftp2fn(efTRX, NFILE, fnm),
+                              index,
+                              ngx,
+                              &density,
+                              &nslices,
+                              top,
+                              pbcType,
+                              axis,
+                              ngrps,
+                              &slWidth,
+                              el_tab,
+                              nr_electrons,
+                              bCenter,
+                              index_center,
+                              ncenter,
+                              bRelative,
+                              oenv);
     }
     else
     {
-        calc_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, top, pbcType, axis,
-                     ngrps, &slWidth, bCenter, index_center, ncenter, bRelative, oenv, dens_opt);
+        calc_density(ftp2fn(efTRX, NFILE, fnm),
+                     index,
+                     ngx,
+                     &density,
+                     &nslices,
+                     top,
+                     pbcType,
+                     axis,
+                     ngrps,
+                     &slWidth,
+                     bCenter,
+                     index_center,
+                     ncenter,
+                     bRelative,
+                     oenv,
+                     dens_opt);
     }
 
-    plot_density(density, opt2fn("-o", NFILE, fnm), nslices, ngrps, grpname, slWidth, dens_opt,
-                 bCenter, bRelative, bSymmetrize, oenv);
+    plot_density(
+            density, opt2fn("-o", NFILE, fnm), nslices, ngrps, grpname, slWidth, dens_opt, bCenter, bRelative, bSymmetrize, oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy"); /* view xvgr file */
     return 0;

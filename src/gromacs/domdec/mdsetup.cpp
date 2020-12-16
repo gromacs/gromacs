@@ -98,8 +98,12 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
         force->resize(numTotalAtoms);
     }
 
-    atoms2md(&top_global, ir, numAtomIndex,
-             usingDomDec ? cr->dd->globalAtomIndices : std::vector<int>(), numHomeAtoms, mdAtoms);
+    atoms2md(&top_global,
+             ir,
+             numAtomIndex,
+             usingDomDec ? cr->dd->globalAtomIndices : std::vector<int>(),
+             numHomeAtoms,
+             mdAtoms);
 
     auto mdatoms = mdAtoms->mdatoms();
     if (usingDomDec)
@@ -143,8 +147,14 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
 
     if (constr)
     {
-        constr->setConstraints(top, mdatoms->nr, mdatoms->homenr, mdatoms->massT, mdatoms->invmass,
-                               mdatoms->nMassPerturbed != 0, mdatoms->lambda, mdatoms->cFREEZE);
+        constr->setConstraints(top,
+                               mdatoms->nr,
+                               mdatoms->homenr,
+                               mdatoms->massT,
+                               mdatoms->invmass,
+                               mdatoms->nMassPerturbed != 0,
+                               mdatoms->lambda,
+                               mdatoms->cFREEZE);
     }
 }
 

@@ -249,8 +249,9 @@ public:
      */
     bool hasLambdaAxis() const
     {
-        return std::any_of(std::begin(axis_), std::end(axis_),
-                           [](const auto& axis) { return axis.isFepLambdaAxis(); });
+        return std::any_of(std::begin(axis_), std::end(axis_), [](const auto& axis) {
+            return axis.isFepLambdaAxis();
+        });
     }
 
     /*! \brief

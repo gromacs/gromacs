@@ -161,8 +161,8 @@ void ana_dih_trans(const char*             fn_trans,
         multiplicity[k] = 3;
     }
 
-    low_ana_dih_trans(TRUE, fn_trans, TRUE, fn_histo, maxchi, dih, nlist, dlist, nframes, nangles,
-                      grpname, multiplicity, time, bRb, 0.5, oenv);
+    low_ana_dih_trans(
+            TRUE, fn_trans, TRUE, fn_histo, maxchi, dih, nlist, dlist, nframes, nangles, grpname, multiplicity, time, bRb, 0.5, oenv);
     sfree(dlist);
     sfree(multiplicity);
 }
@@ -575,8 +575,7 @@ void get_chi_product_traj(real**                  dih,
             if (bAll)
             {
                 /* print cuml rotamer vs time */
-                print_one(oenv, "chiproduct", dlist[i].name, "chi product for",
-                          "cumulative rotamer", nframes, time, chi_prtrj);
+                print_one(oenv, "chiproduct", dlist[i].name, "chi product for", "cumulative rotamer", nframes, time, chi_prtrj);
             }
 
             /* make a histogram pf culm. rotamer occupancy too */
@@ -698,13 +697,12 @@ static void calc_angles(struct t_pbc* pbc, int n3, int index[], real ang[], rvec
 
     for (i = ix = 0; (ix < n3); i++, ix += 3)
     {
-        ang[i] = bond_angle(x_s[index[ix]], x_s[index[ix + 1]], x_s[index[ix + 2]], pbc, r_ij, r_kj,
-                            &costh, &t1, &t2);
+        ang[i] = bond_angle(
+                x_s[index[ix]], x_s[index[ix + 1]], x_s[index[ix + 2]], pbc, r_ij, r_kj, &costh, &t1, &t2);
     }
     if (debug)
     {
-        fprintf(debug, "Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n", ang[0], costh, index[0],
-                index[1], index[2]);
+        fprintf(debug, "Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n", ang[0], costh, index[0], index[1], index[2]);
         pr_rvec(debug, 0, "rij", r_ij, DIM, TRUE);
         pr_rvec(debug, 0, "rkj", r_kj, DIM, TRUE);
     }
@@ -747,8 +745,19 @@ static void calc_dihs(struct t_pbc* pbc, int n4, const int index[], real ang[], 
 
     for (i = ix = 0; (ix < n4); i++, ix += 4)
     {
-        aaa = dih_angle(x_s[index[ix]], x_s[index[ix + 1]], x_s[index[ix + 2]], x_s[index[ix + 3]],
-                        pbc, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+        aaa = dih_angle(x_s[index[ix]],
+                        x_s[index[ix + 1]],
+                        x_s[index[ix + 2]],
+                        x_s[index[ix + 3]],
+                        pbc,
+                        r_ij,
+                        r_kj,
+                        r_kl,
+                        m,
+                        n,
+                        &t1,
+                        &t2,
+                        &t3);
 
         ang[i] = aaa; /* not taking into account ryckaert bellemans yet */
     }
@@ -772,8 +781,7 @@ void make_histo(FILE* log, int ndata, real data[], int npoints, int histo[], rea
     dx = npoints / (maxx - minx);
     if (debug)
     {
-        fprintf(debug, "Histogramming: ndata=%d, nhisto=%d, minx=%g,maxx=%g,dx=%g\n", ndata,
-                npoints, minx, maxx, dx);
+        fprintf(debug, "Histogramming: ndata=%d, nhisto=%d, minx=%g,maxx=%g,dx=%g\n", ndata, npoints, minx, maxx, dx);
     }
     for (i = 0; (i < ndata); i++)
     {

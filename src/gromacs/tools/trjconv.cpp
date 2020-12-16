@@ -152,7 +152,10 @@ static void do_trunc(const char* fn, real t0)
             fprintf(stderr,
                     "Do you REALLY want to truncate this trajectory (%s) at:\n"
                     "frame %d, time %g, bytes %ld ??? (type YES if so)\n",
-                    fn, j, t, static_cast<long int>(fpos));
+                    fn,
+                    j,
+                    t,
+                    static_cast<long int>(fpos));
             if (1 != scanf("%s", yesno))
             {
                 gmx_fatal(FARGS, "Error reading user input");
@@ -521,8 +524,18 @@ int gmx_trjconv(int argc, char* argv[])
                        { efXVG, "-drop", "drop", ffOPTRD } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
+                           NFILE,
+                           fnm,
+                           NPA,
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv))
     {
         return 0;
     }
@@ -594,7 +607,10 @@ int gmx_trjconv(int argc, char* argv[])
                         "WARNING: Option for unitcell representation (-ur %s)\n"
                         "         only has effect in combination with -pbc %s, %s or %s.\n"
                         "         Ingoring unitcell representation.\n\n",
-                        unitcell_opt[0], pbc_opt[2], pbc_opt[3], pbc_opt[4]);
+                        unitcell_opt[0],
+                        pbc_opt[2],
+                        pbc_opt[3],
+                        pbc_opt[4]);
             }
         }
         if (bFit && bPBC)
@@ -676,8 +692,7 @@ int gmx_trjconv(int argc, char* argv[])
 
             if (0 == top->mols.nr && (bCluster || bPBCcomMol))
             {
-                gmx_fatal(FARGS, "Option -pbc %s requires a .tpr file for the -s option",
-                          pbc_opt[pbc_enum]);
+                gmx_fatal(FARGS, "Option -pbc %s requires a .tpr file for the -s option", pbc_opt[pbc_enum]);
             }
 
             /* top_title is only used for gro and pdb,
@@ -922,7 +937,9 @@ int gmx_trjconv(int argc, char* argv[])
                                   "Index[%d] %d is larger than the number of atoms in the\n"
                                   "trajectory file (%d). There is a mismatch in the contents\n"
                                   "of your -f, -s and/or -n files.",
-                                  i, index[i] + 1, natoms);
+                                  i,
+                                  index[i] + 1,
+                                  natoms);
                     }
                     bCopy = bCopy || (i != index[i]);
                 }
@@ -933,9 +950,14 @@ int gmx_trjconv(int argc, char* argv[])
             switch (ftp)
             {
                 case efTNG:
-                    trxout = trjtools_gmx_prepare_tng_writing(
-                            out_file, filemode[0], trxin, nullptr, nout, mtop.get(),
-                            gmx::arrayRefFromArray(index, nout), grpnm);
+                    trxout = trjtools_gmx_prepare_tng_writing(out_file,
+                                                              filemode[0],
+                                                              trxin,
+                                                              nullptr,
+                                                              nout,
+                                                              mtop.get(),
+                                                              gmx::arrayRefFromArray(index, nout),
+                                                              grpnm);
                     break;
                 case efXTC:
                 case efTRR:
@@ -1167,7 +1189,8 @@ int gmx_trjconv(int argc, char* argv[])
 
                     if (bTDump)
                     {
-                        fprintf(stderr, "\nDumping frame at t= %g %s\n",
+                        fprintf(stderr,
+                                "\nDumping frame at t= %g %s\n",
                                 output_env_conv_time(oenv, frout_time),
                                 output_env_get_time_unit(oenv).c_str());
                     }
@@ -1183,7 +1206,8 @@ int gmx_trjconv(int argc, char* argv[])
                         else
                         {
                             /* round() is not C89 compatible, so we do this:  */
-                            bDoIt = bRmod(std::floor(frout_time + 0.5), std::floor(tzero + 0.5),
+                            bDoIt = bRmod(std::floor(frout_time + 0.5),
+                                          std::floor(tzero + 0.5),
                                           std::floor(delta_t + 0.5));
                         }
                     }
@@ -1193,7 +1217,9 @@ int gmx_trjconv(int argc, char* argv[])
                         /* print sometimes */
                         if (((outframe % SKIP) == 0) || (outframe < SKIP))
                         {
-                            fprintf(stderr, " ->  frame %6d time %8.3f      \r", outframe,
+                            fprintf(stderr,
+                                    " ->  frame %6d time %8.3f      \r",
+                                    outframe,
                                     output_env_conv_time(oenv, frout_time));
                             fflush(stderr);
                         }
@@ -1243,20 +1269,20 @@ int gmx_trjconv(int argc, char* argv[])
                                     put_atoms_in_triclinic_unitcell(ecenter, fr.box, positionsArrayRef);
                                     break;
                                 case euCompact:
-                                    put_atoms_in_compact_unitcell(pbcType, ecenter, fr.box,
-                                                                  positionsArrayRef);
+                                    put_atoms_in_compact_unitcell(
+                                            pbcType, ecenter, fr.box, positionsArrayRef);
                                     break;
                             }
                         }
                         if (bPBCcomRes)
                         {
-                            put_residue_com_in_box(unitcell_enum, ecenter, natoms, atoms->atom,
-                                                   pbcType, fr.box, fr.x);
+                            put_residue_com_in_box(
+                                    unitcell_enum, ecenter, natoms, atoms->atom, pbcType, fr.box, fr.x);
                         }
                         if (bPBCcomMol)
                         {
-                            put_molecule_com_in_box(unitcell_enum, ecenter, &top->mols, natoms,
-                                                    atoms->atom, pbcType, fr.box, fr.x);
+                            put_molecule_com_in_box(
+                                    unitcell_enum, ecenter, &top->mols, natoms, atoms->atom, pbcType, fr.box, fr.x);
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
                         frout        = fr;
@@ -1314,7 +1340,8 @@ int gmx_trjconv(int argc, char* argv[])
                             /* round() is not C89 compatible, so we do this: */
                             bSplitHere = bSplit
                                          && bRmod(std::floor(frout.time + 0.5),
-                                                  std::floor(tzero + 0.5), std::floor(split_t + 0.5));
+                                                  std::floor(tzero + 0.5),
+                                                  std::floor(split_t + 0.5));
                         }
                         if (bSeparate || bSplitHere)
                         {
@@ -1373,8 +1400,12 @@ int gmx_trjconv(int argc, char* argv[])
                                 switch (ftp)
                                 {
                                     case efGRO:
-                                        write_hconf_p(out, title.c_str(), &useatoms, frout.x,
-                                                      frout.bV ? frout.v : nullptr, frout.box);
+                                        write_hconf_p(out,
+                                                      title.c_str(),
+                                                      &useatoms,
+                                                      frout.x,
+                                                      frout.bV ? frout.v : nullptr,
+                                                      frout.box);
                                         break;
                                     case efPDB:
                                         fprintf(out, "REMARK    GENERATED BY TRJCONV\n");
@@ -1389,8 +1420,15 @@ int gmx_trjconv(int argc, char* argv[])
                                         {
                                             model_nr++;
                                         }
-                                        write_pdbfile(out, title.c_str(), &useatoms, frout.x,
-                                                      frout.pbcType, frout.box, ' ', model_nr, gc);
+                                        write_pdbfile(out,
+                                                      title.c_str(),
+                                                      &useatoms,
+                                                      frout.x,
+                                                      frout.pbcType,
+                                                      frout.box,
+                                                      ' ',
+                                                      model_nr,
+                                                      gc);
                                         break;
                                     case efG96:
                                         const char* outputTitle = "";

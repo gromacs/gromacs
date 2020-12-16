@@ -97,17 +97,19 @@ public:
                 cl_ulong start_ns, end_ns;
                 cl_int gmx_unused cl_error;
 
-                cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_START,
-                                                   sizeof(cl_ulong), &start_ns, nullptr);
+                cl_error = clGetEventProfilingInfo(
+                        events_[i], CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start_ns, nullptr);
                 GMX_ASSERT(CL_SUCCESS == cl_error,
                            gmx::formatString("GPU timing update failure (OpenCL error %d: %s).",
-                                             cl_error, ocl_get_error_string(cl_error).c_str())
+                                             cl_error,
+                                             ocl_get_error_string(cl_error).c_str())
                                    .c_str());
-                cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_END,
-                                                   sizeof(cl_ulong), &end_ns, nullptr);
+                cl_error = clGetEventProfilingInfo(
+                        events_[i], CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end_ns, nullptr);
                 GMX_ASSERT(CL_SUCCESS == cl_error,
                            gmx::formatString("GPU timing update failure (OpenCL error %d: %s).",
-                                             cl_error, ocl_get_error_string(cl_error).c_str())
+                                             cl_error,
+                                             ocl_get_error_string(cl_error).c_str())
                                    .c_str());
                 milliseconds += (end_ns - start_ns) / 1000000.0;
             }

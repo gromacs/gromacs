@@ -212,8 +212,8 @@ void Update::update_coords(const t_inputrec&                                inpu
                            const t_commrec*                                 cr,
                            const bool                                       haveConstraints)
 {
-    return impl_->update_coords(inputRecord, step, md, state, f, fcdata, ekind, M, updatePart, cr,
-                                haveConstraints);
+    return impl_->update_coords(
+            inputRecord, step, md, state, f, fcdata, ekind, M, updatePart, cr, haveConstraints);
 }
 
 void Update::finish_update(const t_inputrec& inputRecord,
@@ -237,8 +237,8 @@ void Update::update_sd_second_half(const t_inputrec& inputRecord,
                                    bool              do_log,
                                    bool              do_ene)
 {
-    return impl_->update_sd_second_half(inputRecord, step, dvdlambda, md, state, cr, nrnb, wcycle,
-                                        constr, do_log, do_ene);
+    return impl_->update_sd_second_half(
+            inputRecord, step, dvdlambda, md, state, cr, nrnb, wcycle, constr, do_log, do_ene);
 }
 
 void Update::update_for_constraint_virial(const t_inputrec& inputRecord,
@@ -673,21 +673,18 @@ static void do_update_md(int         start,
 
         if (!doAcceleration)
         {
-            updateMDLeapfrogGeneral<AccelerationType::none>(start, nrend, doNoseHoover, dt,
-                                                            dtPressureCouple, accel, md, ekind, box, x,
-                                                            xprime, v, f, nh_vxi, nsttcouple, stepM);
+            updateMDLeapfrogGeneral<AccelerationType::none>(
+                    start, nrend, doNoseHoover, dt, dtPressureCouple, accel, md, ekind, box, x, xprime, v, f, nh_vxi, nsttcouple, stepM);
         }
         else if (ekind->bNEMD)
         {
             updateMDLeapfrogGeneral<AccelerationType::group>(
-                    start, nrend, doNoseHoover, dt, dtPressureCouple, accel, md, ekind, box, x,
-                    xprime, v, f, nh_vxi, nsttcouple, stepM);
+                    start, nrend, doNoseHoover, dt, dtPressureCouple, accel, md, ekind, box, x, xprime, v, f, nh_vxi, nsttcouple, stepM);
         }
         else
         {
             updateMDLeapfrogGeneral<AccelerationType::cosine>(
-                    start, nrend, doNoseHoover, dt, dtPressureCouple, accel, md, ekind, box, x,
-                    xprime, v, f, nh_vxi, nsttcouple, stepM);
+                    start, nrend, doNoseHoover, dt, dtPressureCouple, accel, md, ekind, box, x, xprime, v, f, nh_vxi, nsttcouple, stepM);
         }
     }
     else
@@ -731,17 +728,13 @@ static void do_update_md(int         start,
 
             if (haveSingleTempScaleValue)
             {
-                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::single,
-                                       ApplyParrinelloRahmanVScaling::diagonal>(
-                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x,
-                        xprime, v, f);
+                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::single, ApplyParrinelloRahmanVScaling::diagonal>(
+                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
             }
             else
             {
-                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::multiple,
-                                       ApplyParrinelloRahmanVScaling::diagonal>(
-                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x,
-                        xprime, v, f);
+                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::multiple, ApplyParrinelloRahmanVScaling::diagonal>(
+                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
             }
         }
         else
@@ -763,18 +756,14 @@ static void do_update_md(int         start,
                 else
 #endif
                 {
-                    updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::single,
-                                           ApplyParrinelloRahmanVScaling::no>(
-                            start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, nullptr,
-                            x, xprime, v, f);
+                    updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::single, ApplyParrinelloRahmanVScaling::no>(
+                            start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
                 }
             }
             else
             {
-                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::multiple,
-                                       ApplyParrinelloRahmanVScaling::no>(
-                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, nullptr, x,
-                        xprime, v, f);
+                updateMDLeapfrogSimple<StoreUpdatedVelocities::yes, NumTempScaleValues::multiple, ApplyParrinelloRahmanVScaling::no>(
+                        start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, nullptr, x, xprime, v, f);
             }
         }
     }
@@ -799,8 +788,8 @@ static void doUpdateMDDoNotUpdateVelocities(int         start,
 #if GMX_HAVE_SIMD_UPDATE
     if (!md.havePartiallyFrozenAtoms)
     {
-        updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::no>(start, nrend, dt, md.invmass, tcstat,
-                                                               x, xprime, v, f);
+        updateMDLeapfrogSimpleSimd<StoreUpdatedVelocities::no>(
+                start, nrend, dt, md.invmass, tcstat, x, xprime, v, f);
     }
     else
 #endif
@@ -1160,15 +1149,29 @@ static void do_update_sd(int         start,
     if (haveConstraints)
     {
         // With constraints, the SD update is done in 2 parts
-        doSDUpdateGeneral<SDUpdate::ForcesOnly>(sd, start, nrend, dt, accel, nFreeze, invmass,
-                                                ptype, cFREEZE, cACC, nullptr, x, xprime, v, f,
-                                                step, seed, nullptr);
+        doSDUpdateGeneral<SDUpdate::ForcesOnly>(
+                sd, start, nrend, dt, accel, nFreeze, invmass, ptype, cFREEZE, cACC, nullptr, x, xprime, v, f, step, seed, nullptr);
     }
     else
     {
-        doSDUpdateGeneral<SDUpdate::Combined>(
-                sd, start, nrend, dt, accel, nFreeze, invmass, ptype, cFREEZE, cACC, cTC, x, xprime,
-                v, f, step, seed, DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
+        doSDUpdateGeneral<SDUpdate::Combined>(sd,
+                                              start,
+                                              nrend,
+                                              dt,
+                                              accel,
+                                              nFreeze,
+                                              invmass,
+                                              ptype,
+                                              cFREEZE,
+                                              cACC,
+                                              cTC,
+                                              x,
+                                              xprime,
+                                              v,
+                                              f,
+                                              step,
+                                              seed,
+                                              DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
     }
 }
 
@@ -1308,19 +1311,23 @@ void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, co
         gmx_bcast(sizeof(n), &n, cr->mpi_comm_mygroup);
         for (i = 0; i < n; i++)
         {
-            gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinh[0][0]), ekind->tcstat[i].ekinh[0],
+            gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinh[0][0]),
+                      ekind->tcstat[i].ekinh[0],
                       cr->mpi_comm_mygroup);
-            gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinf[0][0]), ekind->tcstat[i].ekinf[0],
+            gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinf[0][0]),
+                      ekind->tcstat[i].ekinf[0],
                       cr->mpi_comm_mygroup);
             gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinh_old[0][0]),
-                      ekind->tcstat[i].ekinh_old[0], cr->mpi_comm_mygroup);
+                      ekind->tcstat[i].ekinh_old[0],
+                      cr->mpi_comm_mygroup);
 
-            gmx_bcast(sizeof(ekind->tcstat[i].ekinscalef_nhc), &(ekind->tcstat[i].ekinscalef_nhc),
+            gmx_bcast(sizeof(ekind->tcstat[i].ekinscalef_nhc),
+                      &(ekind->tcstat[i].ekinscalef_nhc),
                       cr->mpi_comm_mygroup);
-            gmx_bcast(sizeof(ekind->tcstat[i].ekinscaleh_nhc), &(ekind->tcstat[i].ekinscaleh_nhc),
+            gmx_bcast(sizeof(ekind->tcstat[i].ekinscaleh_nhc),
+                      &(ekind->tcstat[i].ekinscaleh_nhc),
                       cr->mpi_comm_mygroup);
-            gmx_bcast(sizeof(ekind->tcstat[i].vscale_nhc), &(ekind->tcstat[i].vscale_nhc),
-                      cr->mpi_comm_mygroup);
+            gmx_bcast(sizeof(ekind->tcstat[i].vscale_nhc), &(ekind->tcstat[i].vscale_nhc), cr->mpi_comm_mygroup);
         }
         gmx_bcast(DIM * DIM * sizeof(ekind->ekin[0][0]), ekind->ekin[0], cr->mpi_comm_mygroup);
 
@@ -1388,9 +1395,23 @@ void Update::Impl::update_sd_second_half(const t_inputrec& inputRecord,
                 getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
 
                 doSDUpdateGeneral<SDUpdate::FrictionAndNoiseOnly>(
-                        sd_, start_th, end_th, dt, inputRecord.opts.acc, inputRecord.opts.nFreeze,
-                        md->invmass, md->ptype, md->cFREEZE, nullptr, md->cTC, state->x.rvec_array(),
-                        xp_.rvec_array(), state->v.rvec_array(), nullptr, step, inputRecord.ld_seed,
+                        sd_,
+                        start_th,
+                        end_th,
+                        dt,
+                        inputRecord.opts.acc,
+                        inputRecord.opts.nFreeze,
+                        md->invmass,
+                        md->ptype,
+                        md->cFREEZE,
+                        nullptr,
+                        md->cTC,
+                        state->x.rvec_array(),
+                        xp_.rvec_array(),
+                        state->v.rvec_array(),
+                        nullptr,
+                        step,
+                        inputRecord.ld_seed,
                         DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -1400,10 +1421,21 @@ void Update::Impl::update_sd_second_half(const t_inputrec& inputRecord,
 
         /* Constrain the coordinates upd->xp for half a time step */
         bool computeVirial = false;
-        constr->apply(do_log, do_ene, step, 1, 0.5, state->x.arrayRefWithPadding(),
-                      xp_.arrayRefWithPadding(), ArrayRef<RVec>(), state->box,
-                      state->lambda[efptBONDED], dvdlambda, state->v.arrayRefWithPadding(),
-                      computeVirial, nullptr, ConstraintVariable::Positions);
+        constr->apply(do_log,
+                      do_ene,
+                      step,
+                      1,
+                      0.5,
+                      state->x.arrayRefWithPadding(),
+                      xp_.arrayRefWithPadding(),
+                      ArrayRef<RVec>(),
+                      state->box,
+                      state->lambda[efptBONDED],
+                      dvdlambda,
+                      state->v.arrayRefWithPadding(),
+                      computeVirial,
+                      nullptr,
+                      ConstraintVariable::Positions);
     }
 }
 
@@ -1513,21 +1545,63 @@ void Update::Impl::update_coords(const t_inputrec&                              
             switch (inputRecord.eI)
             {
                 case (eiMD):
-                    do_update_md(start_th, end_th, dt, step, x_rvec, xp_rvec, v_rvec, f_rvec,
-                                 inputRecord.opts.acc, inputRecord.etc, inputRecord.epc,
-                                 inputRecord.nsttcouple, inputRecord.nstpcouple, md, ekind,
-                                 state->box, state->nosehoover_vxi.data(), M);
+                    do_update_md(start_th,
+                                 end_th,
+                                 dt,
+                                 step,
+                                 x_rvec,
+                                 xp_rvec,
+                                 v_rvec,
+                                 f_rvec,
+                                 inputRecord.opts.acc,
+                                 inputRecord.etc,
+                                 inputRecord.epc,
+                                 inputRecord.nsttcouple,
+                                 inputRecord.nstpcouple,
+                                 md,
+                                 ekind,
+                                 state->box,
+                                 state->nosehoover_vxi.data(),
+                                 M);
                     break;
                 case (eiSD1):
-                    do_update_sd(start_th, end_th, dt, step, x_rvec, xp_rvec, v_rvec, f_rvec,
-                                 inputRecord.opts.acc, inputRecord.opts.nFreeze, md->invmass,
-                                 md->ptype, md->cFREEZE, md->cACC, md->cTC, inputRecord.ld_seed, cr,
-                                 sd_, haveConstraints);
+                    do_update_sd(start_th,
+                                 end_th,
+                                 dt,
+                                 step,
+                                 x_rvec,
+                                 xp_rvec,
+                                 v_rvec,
+                                 f_rvec,
+                                 inputRecord.opts.acc,
+                                 inputRecord.opts.nFreeze,
+                                 md->invmass,
+                                 md->ptype,
+                                 md->cFREEZE,
+                                 md->cACC,
+                                 md->cTC,
+                                 inputRecord.ld_seed,
+                                 cr,
+                                 sd_,
+                                 haveConstraints);
                     break;
                 case (eiBD):
-                    do_update_bd(start_th, end_th, dt, step, x_rvec, xp_rvec, v_rvec, f_rvec,
-                                 inputRecord.opts.nFreeze, md->invmass, md->ptype, md->cFREEZE,
-                                 md->cTC, inputRecord.bd_fric, sd_.bd_rf.data(), inputRecord.ld_seed,
+                    do_update_bd(start_th,
+                                 end_th,
+                                 dt,
+                                 step,
+                                 x_rvec,
+                                 xp_rvec,
+                                 v_rvec,
+                                 f_rvec,
+                                 inputRecord.opts.nFreeze,
+                                 md->invmass,
+                                 md->ptype,
+                                 md->cFREEZE,
+                                 md->cTC,
+                                 inputRecord.bd_fric,
+                                 sd_.bd_rf.data(),
+                                 inputRecord.ld_seed,
                                  DOMAINDECOMP(cr) ? cr->dd->globalAtomIndices.data() : nullptr);
                     break;
                 case (eiVV):
@@ -1542,14 +1616,33 @@ void Update::Impl::update_coords(const t_inputrec&                              
                     {
                         case etrtVELOCITY1:
                         case etrtVELOCITY2:
-                            do_update_vv_vel(start_th, end_th, dt, inputRecord.opts.acc,
-                                             inputRecord.opts.nFreeze, md->invmass, md->ptype, md->cFREEZE,
-                                             md->cACC, v_rvec, f_rvec, bExtended, state->veta, alpha);
+                            do_update_vv_vel(start_th,
+                                             end_th,
+                                             dt,
+                                             inputRecord.opts.acc,
+                                             inputRecord.opts.nFreeze,
+                                             md->invmass,
+                                             md->ptype,
+                                             md->cFREEZE,
+                                             md->cACC,
+                                             v_rvec,
+                                             f_rvec,
+                                             bExtended,
+                                             state->veta,
+                                             alpha);
                             break;
                         case etrtPOSITION:
-                            do_update_vv_pos(start_th, end_th, dt, inputRecord.opts.nFreeze,
-                                             md->ptype, md->cFREEZE, x_rvec, xp_rvec, v_rvec,
-                                             bExtended, state->veta);
+                            do_update_vv_pos(start_th,
+                                             end_th,
+                                             dt,
+                                             inputRecord.opts.nFreeze,
+                                             md->ptype,
+                                             md->cFREEZE,
+                                             x_rvec,
+                                             xp_rvec,
+                                             v_rvec,
+                                             bExtended,
+                                             state->veta);
                             break;
                     }
                     break;
@@ -1588,8 +1681,8 @@ void Update::Impl::update_for_constraint_virial(const t_inputrec& inputRecord,
             rvec*       v_rvec  = const_cast<rvec*>(state.v.rvec_array());
             const rvec* f_rvec  = as_rvec_array(f.unpaddedConstArrayRef().data());
 
-            doUpdateMDDoNotUpdateVelocities(start_th, end_th, dt, x_rvec, xp_rvec, v_rvec, f_rvec,
-                                            md, ekind);
+            doUpdateMDDoNotUpdateVelocities(
+                    start_th, end_th, dt, x_rvec, xp_rvec, v_rvec, f_rvec, md, ekind);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }

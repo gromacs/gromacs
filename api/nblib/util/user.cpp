@@ -118,7 +118,8 @@ static std::vector<Vec3> low_mspeed(real tempi, std::vector<real> const& masses,
         fprintf(debug,
                 "Velocities were taken from a Maxwell distribution\n"
                 "Initial generated temperature: %12.5e (scaled to: %12.5e)\n",
-                temp, tempi);
+                temp,
+                tempi);
     }
 
     return velocities;

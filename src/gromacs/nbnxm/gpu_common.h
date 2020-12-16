@@ -89,7 +89,8 @@ static inline void validateGpuAtomLocality(const AtomLocality atomLocality)
     std::string str = gmx::formatString(
             "Invalid atom locality passed (%d); valid here is only "
             "local (%d) or nonlocal (%d)",
-            static_cast<int>(atomLocality), static_cast<int>(AtomLocality::Local),
+            static_cast<int>(atomLocality),
+            static_cast<int>(AtomLocality::Local),
             static_cast<int>(AtomLocality::NonLocal));
 
     GMX_ASSERT(atomLocality == AtomLocality::Local || atomLocality == AtomLocality::NonLocal, str.c_str());
@@ -424,8 +425,13 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
 
         if (stepWork.computeEnergy || stepWork.computeVirial)
         {
-            gpu_reduce_staged_outputs(nb->nbst, iLocality, stepWork.computeEnergy, stepWork.computeVirial,
-                                      e_lj, e_el, as_rvec_array(shiftForces.data()));
+            gpu_reduce_staged_outputs(nb->nbst,
+                                      iLocality,
+                                      stepWork.computeEnergy,
+                                      stepWork.computeVirial,
+                                      e_lj,
+                                      e_el,
+                                      as_rvec_array(shiftForces.data()));
         }
     }
 

@@ -97,7 +97,9 @@ enum
  *  'lambda_and_pressure', 'temperature_lambda_pressure'?; Let's wait
  *  until we feel better about the pressure control methods giving
  *  exact ensembles.  Right now, we assume constant pressure */
-static const char* erename[ereNR] = { "temperature", "lambda", "end_single_marker",
+static const char* erename[ereNR] = { "temperature",
+                                      "lambda",
+                                      "end_single_marker",
                                       "temperature and lambda" };
 
 //! Working data for replica exchange.
@@ -249,8 +251,8 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     check_multi_int(fplog, ms, ir->eI, "the integrator", FALSE);
     check_multi_int64(fplog, ms, ir->init_step + ir->nsteps, "init_step+nsteps", FALSE);
     const int nst = replExParams.exchangeInterval;
-    check_multi_int64(fplog, ms, (ir->init_step + nst - 1) / nst,
-                      "first exchange step: init_step/-replex", FALSE);
+    check_multi_int64(
+            fplog, ms, (ir->init_step + nst - 1) / nst, "first exchange step: init_step/-replex", FALSE);
     check_multi_int(fplog, ms, ir->etc, "the temperature coupling", FALSE);
     check_multi_int(fplog, ms, ir->opts.ngtc, "the number of temperature coupling groups", FALSE);
     check_multi_int(fplog, ms, ir->epc, "the pressure coupling", FALSE);
@@ -302,7 +304,8 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
             gmx_fatal(FARGS,
                       "REMD with the %s thermostat does not produce correct potential energy "
                       "distributions, consider using the %s thermostat instead",
-                      ETCOUPLTYPE(ir->etc), ETCOUPLTYPE(etcVRESCALE));
+                      ETCOUPLTYPE(ir->etc),
+                      ETCOUPLTYPE(etcVRESCALE));
         }
     }
     if (bLambda)
@@ -362,7 +365,11 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
                     gmx_fatal(FARGS,
                               "Replicas with indices %d < %d have %ss %g > %g, please order your "
                               "replicas on increasing %s",
-                              i, j, erename[re->type], re->q[re->type][i], re->q[re->type][j],
+                              i,
+                              j,
+                              erename[re->type],
+                              re->q[re->type][i],
+                              re->q[re->type][j],
                               erename[re->type]);
                 }
                 else if (re->q[re->type][re->ind[j]] == re->q[re->type][re->ind[i]])
@@ -544,8 +551,7 @@ static void exchange_doubles(const gmx_multisim_t gmx_unused* ms, int gmx_unused
             MPI_Request mpi_req;
 
             MPI_Isend(v, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, &mpi_req);
-            MPI_Recv(buf, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_,
-                     MPI_STATUS_IGNORE);
+            MPI_Recv(buf, n * sizeof(double), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
 #endif
@@ -575,8 +581,7 @@ static void exchange_rvecs(const gmx_multisim_t gmx_unused* ms, int gmx_unused b
             MPI_Request mpi_req;
 
             MPI_Isend(v[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, &mpi_req);
-            MPI_Recv(buf[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_,
-                     MPI_STATUS_IGNORE);
+            MPI_Recv(buf[0], n * sizeof(rvec), MPI_BYTE, MSRANK(ms, b), 0, ms->mastersComm_, MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
 #endif
@@ -1319,8 +1324,9 @@ gmx_bool replica_exchange(FILE*                 fplog,
              * the velocities. */
             if (re->type == ereTEMP || re->type == ereTL)
             {
-                scale_velocities(state->v, std::sqrt(re->q[ereTEMP][replica_id]
-                                                     / re->q[ereTEMP][re->destinations[replica_id]]));
+                scale_velocities(state->v,
+                                 std::sqrt(re->q[ereTEMP][replica_id]
+                                           / re->q[ereTEMP][re->destinations[replica_id]]));
             }
         }
 
@@ -1343,8 +1349,11 @@ void print_replica_exchange_statistics(FILE* fplog, struct gmx_repl_ex* re)
 
     if (re->nex == 0)
     {
-        fprintf(fplog, "Repl  %d attempts, %d odd, %d even\n", re->nattempt[0] + re->nattempt[1],
-                re->nattempt[1], re->nattempt[0]);
+        fprintf(fplog,
+                "Repl  %d attempts, %d odd, %d even\n",
+                re->nattempt[0] + re->nattempt[1],
+                re->nattempt[1],
+                re->nattempt[0]);
 
         fprintf(fplog, "Repl  average probabilities:\n");
         for (i = 1; i < re->nrepl; i++)

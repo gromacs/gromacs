@@ -316,7 +316,8 @@ static void divide_bondeds_over_threads(bonded_threading_t*           bt,
                 fprintf(debug, "%16s", interaction_function[f].name);
                 for (t = 0; t < numThreads; t++)
                 {
-                    fprintf(debug, " %4d",
+                    fprintf(debug,
+                            " %4d",
                             (bt->workDivision.bound(f, t + 1) - bt->workDivision.bound(f, t))
                                     / (1 + NRAL(f)));
                 }
@@ -342,7 +343,8 @@ static void calc_bonded_reduction_mask(int                           natoms,
                   "You are using %d OpenMP threads, which is larger than GMX_OPENMP_MAX_THREADS "
                   "(%d). Decrease the number of OpenMP threads or rebuild GROMACS with a larger "
                   "value for GMX_OPENMP_MAX_THREADS passed to CMake.",
-                  bondedThreading.nthreads, GMX_OPENMP_MAX_THREADS);
+                  bondedThreading.nthreads,
+                  GMX_OPENMP_MAX_THREADS);
     }
     GMX_ASSERT(bondedThreading.nthreads <= BITMASK_SIZE,
                "We need at least nthreads bits in the mask");
@@ -481,7 +483,8 @@ void setup_bonded_threading(bonded_threading_t*           bt,
     if (debug)
     {
         fprintf(debug, "Number of %d atom blocks to reduce: %d\n", reduction_block_size, bt->nblock_used);
-        fprintf(debug, "Reduction density %.2f for touched blocks only %.2f\n",
+        fprintf(debug,
+                "Reduction density %.2f for touched blocks only %.2f\n",
                 ctot * reduction_block_size / static_cast<double>(numAtomsForce),
                 ctot / static_cast<double>(bt->nblock_used));
     }
@@ -531,7 +534,8 @@ bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergy
         sscanf(ptr, "%d", &max_nthread_uniform);
         if (fplog != nullptr)
         {
-            fprintf(fplog, "\nMax threads for uniform bonded distribution set to %d by env.var.\n",
+            fprintf(fplog,
+                    "\nMax threads for uniform bonded distribution set to %d by env.var.\n",
                     max_nthread_uniform);
         }
     }

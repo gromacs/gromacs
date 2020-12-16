@@ -257,8 +257,8 @@ int gmx_bundle(int argc, char* argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -298,31 +298,52 @@ int gmx_bundle(int argc, char* argv[])
     snew(bun.dir, n);
     snew(bun.len, n);
 
-    flen   = xvgropen(opt2fn("-ol", NFILE, fnm), "Axis lengths", output_env_get_xvgr_tlabel(oenv),
-                    "(nm)", oenv);
-    fdist  = xvgropen(opt2fn("-od", NFILE, fnm), "Distance of axis centers",
-                     output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
-    fz     = xvgropen(opt2fn("-oz", NFILE, fnm), "Z-shift of axis centers",
-                  output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
-    ftilt  = xvgropen(opt2fn("-ot", NFILE, fnm), "Axis tilts", output_env_get_xvgr_tlabel(oenv),
-                     "(degrees)", oenv);
-    ftiltr = xvgropen(opt2fn("-otr", NFILE, fnm), "Radial axis tilts",
-                      output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
-    ftiltl = xvgropen(opt2fn("-otl", NFILE, fnm), "Lateral axis tilts",
-                      output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
+    flen = xvgropen(
+            opt2fn("-ol", NFILE, fnm), "Axis lengths", output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
+    fdist = xvgropen(opt2fn("-od", NFILE, fnm),
+                     "Distance of axis centers",
+                     output_env_get_xvgr_tlabel(oenv),
+                     "(nm)",
+                     oenv);
+    fz    = xvgropen(opt2fn("-oz", NFILE, fnm),
+                  "Z-shift of axis centers",
+                  output_env_get_xvgr_tlabel(oenv),
+                  "(nm)",
+                  oenv);
+    ftilt = xvgropen(
+            opt2fn("-ot", NFILE, fnm), "Axis tilts", output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
+    ftiltr = xvgropen(opt2fn("-otr", NFILE, fnm),
+                      "Radial axis tilts",
+                      output_env_get_xvgr_tlabel(oenv),
+                      "(degrees)",
+                      oenv);
+    ftiltl = xvgropen(opt2fn("-otl", NFILE, fnm),
+                      "Lateral axis tilts",
+                      output_env_get_xvgr_tlabel(oenv),
+                      "(degrees)",
+                      oenv);
 
     if (bKink)
     {
-        fkink = xvgropen(opt2fn("-ok", NFILE, fnm), "Kink angles", output_env_get_xvgr_tlabel(oenv),
-                         "(degrees)", oenv);
-        fkinkr = xvgropen(opt2fn("-okr", NFILE, fnm), "Radial kink angles",
-                          output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
+        fkink  = xvgropen(opt2fn("-ok", NFILE, fnm),
+                         "Kink angles",
+                         output_env_get_xvgr_tlabel(oenv),
+                         "(degrees)",
+                         oenv);
+        fkinkr = xvgropen(opt2fn("-okr", NFILE, fnm),
+                          "Radial kink angles",
+                          output_env_get_xvgr_tlabel(oenv),
+                          "(degrees)",
+                          oenv);
         if (output_env_get_print_xvgr_codes(oenv))
         {
             fprintf(fkinkr, "@ subtitle \"+ = ) (   - = ( )\"\n");
         }
-        fkinkl = xvgropen(opt2fn("-okl", NFILE, fnm), "Lateral kink angles",
-                          output_env_get_xvgr_tlabel(oenv), "(degrees)", oenv);
+        fkinkl = xvgropen(opt2fn("-okl", NFILE, fnm),
+                          "Lateral kink angles",
+                          output_env_get_xvgr_tlabel(oenv),
+                          "(degrees)",
+                          oenv);
     }
 
     if (opt2bSet("-oa", NFILE, fnm))

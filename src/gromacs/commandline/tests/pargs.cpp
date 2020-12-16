@@ -83,8 +83,8 @@ public:
     void parseFromArgs(unsigned long flags, gmx::ArrayRef<t_filenm> fnm, gmx::ArrayRef<t_pargs> pa)
     {
         fileCount_ = fnm.size();
-        bool bOk   = parse_common_args(&args_.argc(), args_.argv(), flags, fnm.size(), fnm.data(),
-                                     pa.size(), pa.data(), 0, nullptr, 0, nullptr, &oenv_);
+        bool bOk   = parse_common_args(
+                &args_.argc(), args_.argv(), flags, fnm.size(), fnm.data(), pa.size(), pa.data(), 0, nullptr, 0, nullptr, &oenv_);
         EXPECT_TRUE(bOk);
     }
     void parseFromArray(gmx::ArrayRef<const char* const> cmdline,

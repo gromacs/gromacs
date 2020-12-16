@@ -183,8 +183,15 @@ public:
 
         double mdTimeStep = 0.1;
 
-        bias_ = std::make_unique<Bias>(-1, params.awhParams, params.awhBiasParams, params.dimParams,
-                                       params.beta, mdTimeStep, 1, "", Bias::ThisRankWillDoIO::No,
+        bias_ = std::make_unique<Bias>(-1,
+                                       params.awhParams,
+                                       params.awhBiasParams,
+                                       params.dimParams,
+                                       params.beta,
+                                       mdTimeStep,
+                                       1,
+                                       "",
+                                       Bias::ThisRankWillDoIO::No,
                                        disableUpdateSkips);
     }
 };
@@ -227,9 +234,17 @@ TEST_P(BiasFepLambdaStateTest, ForcesBiasPmf)
         int      umbrellaGridpointIndex = bias.state().coordState().umbrellaGridpoint();
         awh_dvec coordValue = { bias.getGridCoordValue(umbrellaGridpointIndex)[0], 0, 0, 0 };
         double   potential  = 0;
-        gmx::ArrayRef<const double> biasForce = bias.calcForceAndUpdateBias(
-                coordValue, neighborLambdaEnergies, neighborLambdaDhdl, &potential, &potentialJump,
-                nullptr, nullptr, step * mdTimeStep, step, seed_, nullptr);
+        gmx::ArrayRef<const double> biasForce = bias.calcForceAndUpdateBias(coordValue,
+                                                                            neighborLambdaEnergies,
+                                                                            neighborLambdaDhdl,
+                                                                            &potential,
+                                                                            &potentialJump,
+                                                                            nullptr,
+                                                                            nullptr,
+                                                                            step * mdTimeStep,
+                                                                            step,
+                                                                            seed_,
+                                                                            nullptr);
 
         force.push_back(biasForce[0]);
         pot.push_back(potential);
@@ -281,8 +296,15 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
 
     const double mdTimeStep = 0.1;
 
-    Bias bias(-1, params.awhParams, params.awhBiasParams, params.dimParams, params.beta, mdTimeStep,
-              1, "", Bias::ThisRankWillDoIO::No);
+    Bias bias(-1,
+              params.awhParams,
+              params.awhBiasParams,
+              params.dimParams,
+              params.beta,
+              mdTimeStep,
+              1,
+              "",
+              Bias::ThisRankWillDoIO::No);
 
     const int64_t exitStepRef = 320;
 
@@ -307,9 +329,17 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
 
         double potential     = 0;
         double potentialJump = 0;
-        bias.calcForceAndUpdateBias(coordValue, neighborLambdaEnergies, neighborLambdaDhdl,
-                                    &potential, &potentialJump, nullptr, nullptr, step, step,
-                                    params.awhParams.seed, nullptr);
+        bias.calcForceAndUpdateBias(coordValue,
+                                    neighborLambdaEnergies,
+                                    neighborLambdaDhdl,
+                                    &potential,
+                                    &potentialJump,
+                                    nullptr,
+                                    nullptr,
+                                    step,
+                                    step,
+                                    params.awhParams.seed,
+                                    nullptr);
 
         inInitialStage = bias.state().inInitialStage();
         if (!inInitialStage)

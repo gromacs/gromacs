@@ -509,8 +509,12 @@ static inline FloatingPointTolerance relativeToleranceAsPrecisionDependentUlp(do
                                                                               uint64_t doubleUlpDiff)
 {
     return FloatingPointTolerance(float(magnitude) * singleUlpDiff * GMX_FLOAT_EPS,
-                                  magnitude * doubleUlpDiff * GMX_DOUBLE_EPS, 0.0, 0.0,
-                                  singleUlpDiff, doubleUlpDiff, false);
+                                  magnitude * doubleUlpDiff * GMX_DOUBLE_EPS,
+                                  0.0,
+                                  0.0,
+                                  singleUlpDiff,
+                                  doubleUlpDiff,
+                                  false);
 }
 
 /*! \brief
@@ -573,7 +577,8 @@ static inline FloatingPointTolerance defaultRealTolerance()
 static inline FloatingPointTolerance defaultFloatTolerance()
 {
     return relativeToleranceAsPrecisionDependentUlp(
-            1.0, detail::g_defaultUlpTolerance,
+            1.0,
+            detail::g_defaultUlpTolerance,
             static_cast<uint64_t>(detail::g_defaultUlpTolerance * (GMX_FLOAT_EPS / GMX_DOUBLE_EPS)));
 }
 

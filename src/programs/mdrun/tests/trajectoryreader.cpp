@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,8 +118,8 @@ bool TrajectoryFrameReader::readNextFrame()
     {
         t_trxstatus* trajectoryFile;
         int          flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
-        nextFrameExists_   = read_first_frame(oenvGuard_.get(), &trajectoryFile, filename_.c_str(),
-                                            trxframeGuard_.get(), flags);
+        nextFrameExists_   = read_first_frame(
+                oenvGuard_.get(), &trajectoryFile, filename_.c_str(), trxframeGuard_.get(), flags);
         if (!trajectoryFile)
         {
             GMX_THROW(FileIOError("Could not open trajectory file " + filename_ + " for reading"));

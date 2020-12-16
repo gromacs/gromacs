@@ -250,8 +250,8 @@ static inline void mtopGetAtomAndResidueName(const gmx_mtop_t& mtop,
                                              const char**      residueName,
                                              int*              globalResidueIndex)
 {
-    mtopGetAtomAndResidueName(&mtop, globalAtomIndex, moleculeBlock, atomName, residueNumber,
-                              residueName, globalResidueIndex);
+    mtopGetAtomAndResidueName(
+            &mtop, globalAtomIndex, moleculeBlock, atomName, residueNumber, residueName, globalResidueIndex);
 }
 
 /*! \brief Returns residue information for an atom based on global atom index

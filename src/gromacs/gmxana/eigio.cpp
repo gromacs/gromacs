@@ -84,8 +84,11 @@ void read_eigenvectors(const char* file,
         *bFit = (head.lambda > -0.5);
         if (*bFit)
         {
-            fprintf(stderr, "Read %smass weighted reference structure with %d atoms from %s\n",
-                    *bDMR ? "" : "non ", *natoms, file);
+            fprintf(stderr,
+                    "Read %smass weighted reference structure with %d atoms from %s\n",
+                    *bDMR ? "" : "non ",
+                    *natoms,
+                    file);
         }
         else
         {
@@ -112,8 +115,11 @@ void read_eigenvectors(const char* file,
     }
     else
     {
-        fprintf(stderr, "Read %smass weighted average/minimum structure with %d atoms from %s\n",
-                *bDMA ? "" : "non ", *natoms, file);
+        fprintf(stderr,
+                "Read %smass weighted average/minimum structure with %d atoms from %s\n",
+                *bDMA ? "" : "non ",
+                *natoms,
+                file);
     }
 
     snew(x, *natoms);
@@ -171,8 +177,12 @@ void write_eigenvectors(const char* trrname,
     clear_mat(zerobox);
     snew(x, natoms);
 
-    fprintf(stderr, "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
-            (WriteXref == eWXR_YES) ? "reference, " : "", begin, end, trrname);
+    fprintf(stderr,
+            "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
+            (WriteXref == eWXR_YES) ? "reference, " : "",
+            begin,
+            end,
+            trrname);
 
     trrout = gmx_trr_open(trrname, "w");
     if (WriteXref == eWXR_YES)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,11 +84,16 @@ TEST_F(RdfModuleTest, BasicTest)
 
 TEST_F(RdfModuleTest, SelectionsSolelyFromIndexFileWork)
 {
-    const char* const cmdline[] = { "rdf", "-bin", "0.05",
+    const char* const cmdline[] = { "rdf",
+                                    "-bin",
+                                    "0.05",
                                     // Use selection that names a group in the index file
-                                    "-ref", "name_OW",
+                                    "-ref",
+                                    "name_OW",
                                     // Use selections that name groups in the index file
-                                    "-sel", "name_OW", "not_name_OW" };
+                                    "-sel",
+                                    "name_OW",
+                                    "not_name_OW" };
     // Note not supplying a topology file to -s
     setTrajectory("spc216.gro");
     setInputFile("-n", "index.ndx");
@@ -99,11 +104,16 @@ TEST_F(RdfModuleTest, SelectionsSolelyFromIndexFileWork)
 
 TEST_F(RdfModuleTest, SelectionsFromBothTopologyFileAndIndexFileWork)
 {
-    const char* const cmdline[] = { "rdf", "-bin", "0.05",
+    const char* const cmdline[] = { "rdf",
+                                    "-bin",
+                                    "0.05",
                                     // Use selection whose parsing requires topology file
-                                    "-ref", "name OW",
+                                    "-ref",
+                                    "name OW",
                                     // Use selections that name groups in the index file
-                                    "-sel", "name_OW", "not_name_OW" };
+                                    "-sel",
+                                    "name_OW",
+                                    "not_name_OW" };
     // Note supplying a topology file to -s
     setTopology("spc216.gro");
     setInputFile("-n", "index.ndx");

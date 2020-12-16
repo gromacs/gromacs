@@ -266,8 +266,10 @@ static void clust_size(const char*             ndx,
                                 {
                                     if (clust_size[cj] <= 0)
                                     {
-                                        gmx_fatal(FARGS, "negative cluster size %d for element %d",
-                                                  clust_size[cj], cj);
+                                        gmx_fatal(FARGS,
+                                                  "negative cluster size %d for element %d",
+                                                  clust_size[cj],
+                                                  cj);
                                     }
                                     clust_size[cj]--;
                                     clust_index[k] = ci;
@@ -430,8 +432,24 @@ static void clust_size(const char*             ndx,
     fprintf(stderr, "cmid: %g, cmax: %g, max_size: %d\n", cmid, cmax, max_size);
     cmid = 1;
     fp   = gmx_ffopen(xpm, "w");
-    write_xpm3(fp, 0, "Cluster size distribution", "# clusters", timeLabel, "Size", n_x, max_size,
-               t_x, t_y, cs_dist, 0, cmid, cmax, rlo, rmid, rhi, &nlevels);
+    write_xpm3(fp,
+               0,
+               "Cluster size distribution",
+               "# clusters",
+               timeLabel,
+               "Size",
+               n_x,
+               max_size,
+               t_x,
+               t_y,
+               cs_dist,
+               0,
+               cmid,
+               cmax,
+               rlo,
+               rmid,
+               rhi,
+               &nlevels);
     gmx_ffclose(fp);
     cmid = 100.0;
     cmax = 0.0;
@@ -449,8 +467,24 @@ static void clust_size(const char*             ndx,
     }
     fprintf(stderr, "cmid: %g, cmax: %g, max_size: %d\n", cmid, cmax, max_size);
     fp = gmx_ffopen(xpmw, "w");
-    write_xpm3(fp, 0, "Weighted cluster size distribution", "Fraction", timeLabel, "Size", n_x,
-               max_size, t_x, t_y, cs_dist, 0, cmid, cmax, rlo, rmid, rhi, &nlevels);
+    write_xpm3(fp,
+               0,
+               "Weighted cluster size distribution",
+               "Fraction",
+               timeLabel,
+               "Size",
+               n_x,
+               max_size,
+               t_x,
+               t_y,
+               cs_dist,
+               0,
+               cmid,
+               cmax,
+               rlo,
+               rmid,
+               rhi,
+               &nlevels);
     gmx_ffclose(fp);
     delete mtop;
     sfree(t_x);
@@ -546,8 +580,8 @@ int gmx_clustsize(int argc, char* argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm,
-                           NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -566,10 +600,26 @@ int gmx_clustsize(int argc, char* argv[])
         gmx_fatal(FARGS, "You need a tpr file for the -mol option");
     }
 
-    clust_size(fnNDX, ftp2fn(efTRX, NFILE, fnm), opt2fn("-o", NFILE, fnm), opt2fn("-ow", NFILE, fnm),
-               opt2fn("-nc", NFILE, fnm), opt2fn("-ac", NFILE, fnm), opt2fn("-mc", NFILE, fnm),
-               opt2fn("-hc", NFILE, fnm), opt2fn("-temp", NFILE, fnm), opt2fn("-mcn", NFILE, fnm),
-               bMol, bPBC, fnTPR, cutoff, nskip, nlevels, rgblo, rgbhi, ndf, oenv);
+    clust_size(fnNDX,
+               ftp2fn(efTRX, NFILE, fnm),
+               opt2fn("-o", NFILE, fnm),
+               opt2fn("-ow", NFILE, fnm),
+               opt2fn("-nc", NFILE, fnm),
+               opt2fn("-ac", NFILE, fnm),
+               opt2fn("-mc", NFILE, fnm),
+               opt2fn("-hc", NFILE, fnm),
+               opt2fn("-temp", NFILE, fnm),
+               opt2fn("-mcn", NFILE, fnm),
+               bMol,
+               bPBC,
+               fnTPR,
+               cutoff,
+               nskip,
+               nlevels,
+               rgblo,
+               rgbhi,
+               ndf,
+               oenv);
 
     output_env_done(oenv);
 

@@ -324,8 +324,8 @@ void PositionCalculationTest::checkPositions(gmx::test::TestReferenceChecker* ch
     for (int i = 0; i < p->count(); ++i)
     {
         gmx::test::TestReferenceChecker posCompound(compound.checkCompound("Position", nullptr));
-        posCompound.checkSequence(&p->m.mapb.a[p->m.mapb.index[i]],
-                                  &p->m.mapb.a[p->m.mapb.index[i + 1]], "Atoms");
+        posCompound.checkSequence(
+                &p->m.mapb.a[p->m.mapb.index[i]], &p->m.mapb.a[p->m.mapb.index[i + 1]], "Atoms");
         posCompound.checkInteger(p->m.refid[i], "RefId");
         if (bCoordinates)
         {

@@ -153,7 +153,9 @@ enum epmelb
 };
 
 /*! \brief Descriptive strings matching ::epmelb */
-static const char* pmelblim_str[epmelblimNR] = { "no", "box size", "domain decompostion",
+static const char* pmelblim_str[epmelblimNR] = { "no",
+                                                 "box size",
+                                                 "domain decompostion",
                                                  "PME grid restriction",
                                                  "maximum allowed grid scaling" };
 
@@ -262,8 +264,7 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
 
     if (!pme_lb->bSepPMERanks)
     {
-        GMX_RELEASE_ASSERT(pmedata,
-                           "On ranks doing both PP and PME we need a valid pmedata object");
+        GMX_RELEASE_ASSERT(pmedata, "On ranks doing both PP and PME we need a valid pmedata object");
         pme_lb->setup[0].pmedata = pmedata;
     }
 
@@ -377,16 +378,21 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t* pme_lb, int pm
 
         fac *= 1.01;
         clear_ivec(set.grid);
-        sp = calcFftGrid(nullptr, pme_lb->box_start, fac * pme_lb->setup[pme_lb->cur].spacing,
-                         minimalPmeGridSize(pme_order), &set.grid[XX], &set.grid[YY], &set.grid[ZZ]);
+        sp = calcFftGrid(nullptr,
+                         pme_lb->box_start,
+                         fac * pme_lb->setup[pme_lb->cur].spacing,
+                         minimalPmeGridSize(pme_order),
+                         &set.grid[XX],
+                         &set.grid[YY],
+                         &set.grid[ZZ]);
 
         /* As here we can't easily check if one of the PME ranks
          * uses threading, we do a conservative grid check.
          * This means we can't use pme_order or less grid lines
          * per PME rank along x, which is not a strong restriction.
          */
-        grid_ok = gmx_pme_check_restrictions(pme_order, set.grid[XX], set.grid[YY], set.grid[ZZ],
-                                             numPmeDomains.x, true, false);
+        grid_ok = gmx_pme_check_restrictions(
+                pme_order, set.grid[XX], set.grid[YY], set.grid[ZZ], numPmeDomains.x, true, false);
     } while (sp <= 1.001 * pme_lb->setup[pme_lb->cur].spacing || !grid_ok);
 
     set.rcut_coulomb = pme_lb->cut_spacing * sp;
@@ -438,8 +444,12 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t* pme_lb, int pm
 
     if (debug)
     {
-        fprintf(debug, "PME loadbal: grid %d %d %d, coulomb cutoff %f\n", set.grid[XX],
-                set.grid[YY], set.grid[ZZ], set.rcut_coulomb);
+        fprintf(debug,
+                "PME loadbal: grid %d %d %d, coulomb cutoff %f\n",
+                set.grid[XX],
+                set.grid[YY],
+                set.grid[ZZ],
+                set.rcut_coulomb);
     }
     pme_lb->setup.push_back(set);
     return TRUE;
@@ -448,8 +458,13 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t* pme_lb, int pm
 /*! \brief Print the PME grid */
 static void print_grid(FILE* fp_err, FILE* fp_log, const char* pre, const char* desc, const pme_setup_t* set, double cycles)
 {
-    auto buf = gmx::formatString("%-11s%10s pme grid %d %d %d, coulomb cutoff %.3f", pre, desc,
-                                 set->grid[XX], set->grid[YY], set->grid[ZZ], set->rcut_coulomb);
+    auto buf = gmx::formatString("%-11s%10s pme grid %d %d %d, coulomb cutoff %.3f",
+                                 pre,
+                                 desc,
+                                 set->grid[XX],
+                                 set->grid[YY],
+                                 set->grid[ZZ],
+                                 set->rcut_coulomb);
     if (cycles >= 0)
     {
         buf += gmx::formatString(": %.1f M-cycles", cycles * 1e-6);
@@ -484,7 +499,8 @@ static void print_loadbal_limited(FILE* fp_err, FILE* fp_log, int64_t step, pme_
 {
     auto buf = gmx::formatString(
             "step %4s: the %s limits the PME load balancing to a coulomb cut-off of %.3f",
-            gmx::int64ToString(step).c_str(), pmelblim_str[pme_lb->elimited],
+            gmx::int64ToString(step).c_str(),
+            pmelblim_str[pme_lb->elimited],
             pme_lb->setup[pme_loadbal_end(pme_lb) - 1].rcut_coulomb);
     if (fp_err != nullptr)
     {
@@ -612,8 +628,13 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
                         "is more than %f\n"
                         "Increased the number stages to %d"
                         " and ignoring the previous performance\n",
-                        set->grid[XX], set->grid[YY], set->grid[ZZ], set->cycles * 1e-6,
-                        cycles * 1e-6, maxFluctuationAccepted, pme_lb->nstage);
+                        set->grid[XX],
+                        set->grid[YY],
+                        set->grid[ZZ],
+                        set->cycles * 1e-6,
+                        cycles * 1e-6,
+                        maxFluctuationAccepted,
+                        pme_lb->nstage);
             }
         }
         set->cycles = std::min(set->cycles, cycles);
@@ -852,8 +873,8 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
             /* Generate a new PME data structure,
              * copying part of the old pointers.
              */
-            gmx_pme_reinit(&set->pmedata, cr, pme_lb->setup[0].pmedata, &ir, set->grid,
-                           set->ewaldcoeff_q, set->ewaldcoeff_lj);
+            gmx_pme_reinit(
+                    &set->pmedata, cr, pme_lb->setup[0].pmedata, &ir, set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
         }
         *pmedata = set->pmedata;
     }
@@ -1037,8 +1058,19 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
          * since init_step might not be a multiple of nstlist,
          * but the first data collected is skipped anyhow.
          */
-        pme_load_balance(pme_lb, cr, fp_err, fp_log, mdlog, ir, box, x,
-                         pme_lb->cycles_c - cycles_prev, fr->ic, fr->nbv.get(), &fr->pmedata, step);
+        pme_load_balance(pme_lb,
+                         cr,
+                         fp_err,
+                         fp_log,
+                         mdlog,
+                         ir,
+                         box,
+                         x,
+                         pme_lb->cycles_c - cycles_prev,
+                         fr->ic,
+                         fr->nbv.get(),
+                         &fr->pmedata,
+                         step);
 
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */
         fr->rlist = fr->nbv->pairlistOuterRadius();
@@ -1078,9 +1110,16 @@ static int pme_grid_points(const pme_setup_t* setup)
 /*! \brief Print one load-balancing setting */
 static void print_pme_loadbal_setting(FILE* fplog, const char* name, const pme_setup_t* setup)
 {
-    fprintf(fplog, "   %-7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n", name,
-            setup->rcut_coulomb, setup->rlistInner, setup->grid[XX], setup->grid[YY],
-            setup->grid[ZZ], setup->spacing, 1 / setup->ewaldcoeff_q);
+    fprintf(fplog,
+            "   %-7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n",
+            name,
+            setup->rcut_coulomb,
+            setup->rlistInner,
+            setup->grid[XX],
+            setup->grid[YY],
+            setup->grid[ZZ],
+            setup->spacing,
+            1 / setup->ewaldcoeff_q);
 }
 
 /*! \brief Print all load-balancing settings */
@@ -1103,7 +1142,8 @@ static void print_pme_loadbal_settings(pme_load_balancing_t* pme_lb,
     /* Here we only warn when the optimal setting is the last one */
     if (pme_lb->elimited != epmelblimNO && pme_lb->cur == pme_loadbal_end(pme_lb) - 1)
     {
-        fprintf(fplog, " NOTE: The PP/PME load balancing was limited by the %s,\n",
+        fprintf(fplog,
+                " NOTE: The PP/PME load balancing was limited by the %s,\n",
                 pmelblim_str[pme_lb->elimited]);
         fprintf(fplog, "       you might not have reached a good load balance.\n");
         if (pme_lb->elimited == epmelblimDD)

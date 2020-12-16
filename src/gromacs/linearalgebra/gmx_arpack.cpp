@@ -841,8 +841,7 @@ static void F77_FUNC(dsapps, DSAPPS)(int*    n,
     if (h__[*kev + 1 + h_dim1] > 0.)
     {
         F77_FUNC(dgemv, DGEMV)
-        ("N", n, &kplusp, &c_b5, &v[v_offset], ldv, &q[(*kev + 1) * q_dim1 + 1], &c__1, &c_b4,
-         &workd[*n + 1], &c__1);
+        ("N", n, &kplusp, &c_b5, &v[v_offset], ldv, &q[(*kev + 1) * q_dim1 + 1], &c__1, &c_b4, &workd[*n + 1], &c__1);
     }
 
     i__1 = *kev;
@@ -850,8 +849,7 @@ static void F77_FUNC(dsapps, DSAPPS)(int*    n,
     {
         i__2 = kplusp - i__ + 1;
         F77_FUNC(dgemv, DGEMV)
-        ("N", n, &i__2, &c_b5, &v[v_offset], ldv, &q[(*kev - i__ + 1) * q_dim1 + 1], &c__1, &c_b4,
-         &workd[1], &c__1);
+        ("N", n, &i__2, &c_b5, &v[v_offset], ldv, &q[(*kev - i__ + 1) * q_dim1 + 1], &c__1, &c_b4, &workd[1], &c__1);
         F77_FUNC(dcopy, DCOPY)(n, &workd[1], &c__1, &v[(kplusp - i__ + 1) * v_dim1 + 1], &c__1);
     }
 
@@ -1461,8 +1459,20 @@ L20:
 L30:
 
     F77_FUNC(dgetv0, DGETV0)
-    (ido, bmat, &iwork[11], &c__0, n, &iwork[12], &v[v_offset], ldv, &resid[1], rnorm, &ipntr[1],
-     &workd[1], &iwork[21], &iwork[7]);
+    (ido,
+     bmat,
+     &iwork[11],
+     &c__0,
+     n,
+     &iwork[12],
+     &v[v_offset],
+     ldv,
+     &resid[1],
+     rnorm,
+     &ipntr[1],
+     &workd[1],
+     &iwork[21],
+     &iwork[7]);
     if (*ido != 99)
     {
         goto L9000;
@@ -1554,14 +1564,12 @@ L65:
     if (*mode != 2)
     {
         F77_FUNC(dgemv, DGEMV)
-        ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]], &c__1, &c_b42,
-         &workd[iwork[9]], &c__1);
+        ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]], &c__1, &c_b42, &workd[iwork[9]], &c__1);
     }
     else
     {
         F77_FUNC(dgemv, DGEMV)
-        ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[10]], &c__1, &c_b42,
-         &workd[iwork[9]], &c__1);
+        ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[10]], &c__1, &c_b42, &workd[iwork[9]], &c__1);
     }
 
     F77_FUNC(dgemv, DGEMV)
@@ -1615,8 +1623,7 @@ L70:
 L80:
 
     F77_FUNC(dgemv, DGEMV)
-    ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]], &c__1, &c_b42,
-     &workd[iwork[9]], &c__1);
+    ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]], &c__1, &c_b42, &workd[iwork[9]], &c__1);
 
     F77_FUNC(dgemv, DGEMV)
     ("N", n, &iwork[12], &c_b50, &v[v_offset], ldv, &workd[iwork[9]], &c__1, &c_b18, &resid[1], &c__1);
@@ -1808,8 +1815,20 @@ static void F77_FUNC(dsaup2, DSAUP2)(int*        ido,
     if (iwork[2] == 1)
     {
         F77_FUNC(dgetv0, DGETV0)
-        (ido, bmat, &c__1, &iwork[3], n, &c__1, &v[v_offset], ldv, &resid[1], &workd[*n * 3 + 1],
-         &ipntr[1], &workd[1], &iwork[41], info);
+        (ido,
+         bmat,
+         &c__1,
+         &iwork[3],
+         n,
+         &c__1,
+         &v[v_offset],
+         ldv,
+         &resid[1],
+         &workd[*n * 3 + 1],
+         &ipntr[1],
+         &workd[1],
+         &iwork[41],
+         info);
 
         if (*ido != 99)
         {
@@ -1842,8 +1861,22 @@ static void F77_FUNC(dsaup2, DSAUP2)(int*        ido,
     }
 
     F77_FUNC(dsaitr, DSAITR)
-    (ido, bmat, n, &c__0, &iwork[9], mode, &resid[1], &workd[*n * 3 + 1], &v[v_offset], ldv,
-     &h__[h_offset], ldh, &ipntr[1], &workd[1], &iwork[21], info);
+    (ido,
+     bmat,
+     n,
+     &c__0,
+     &iwork[9],
+     mode,
+     &resid[1],
+     &workd[*n * 3 + 1],
+     &v[v_offset],
+     ldv,
+     &h__[h_offset],
+     ldh,
+     &ipntr[1],
+     &workd[1],
+     &iwork[21],
+     info);
 
     if (*ido != 99)
     {
@@ -1869,8 +1902,22 @@ L20:
     iwork[4] = 1;
 
     F77_FUNC(dsaitr, DSAITR)
-    (ido, bmat, n, nev, np, mode, &resid[1], &workd[*n * 3 + 1], &v[v_offset], ldv, &h__[h_offset],
-     ldh, &ipntr[1], &workd[1], &iwork[21], info);
+    (ido,
+     bmat,
+     n,
+     nev,
+     np,
+     mode,
+     &resid[1],
+     &workd[*n * 3 + 1],
+     &v[v_offset],
+     ldv,
+     &h__[h_offset],
+     ldh,
+     &ipntr[1],
+     &workd[1],
+     &iwork[21],
+     info);
 
     if (*ido != 99)
     {
@@ -2050,8 +2097,7 @@ L50:
     }
 
     F77_FUNC(dsapps, DSAPPS)
-    (n, nev, np, &ritz[1], &v[v_offset], ldv, &h__[h_offset], ldh, &resid[1], &q[q_offset], ldq,
-     &workd[1]);
+    (n, nev, np, &ritz[1], &v[v_offset], ldv, &h__[h_offset], ldh, &resid[1], &q[q_offset], ldq, &workd[1]);
 
     iwork[1] = 1;
     if (*bmat == 'G')
@@ -2235,9 +2281,31 @@ void F77_FUNC(dsaupd, DSAUPD)(int*        ido,
     }
 
     F77_FUNC(dsaup2, DSAUP2)
-    (ido, bmat, n, which, &iwork[13], &iwork[15], tol, &resid[1], &iwork[11], &iwork[6], &iwork[5],
-     &iwork[10], &v[v_offset], ldv, &workl[iwork[3]], &iwork[8], &workl[iwork[16]], &workl[iwork[1]],
-     &workl[iwork[4]], &iwork[9], &workl[iwork[7]], &ipntr[1], &workd[1], &iwork[21], info);
+    (ido,
+     bmat,
+     n,
+     which,
+     &iwork[13],
+     &iwork[15],
+     tol,
+     &resid[1],
+     &iwork[11],
+     &iwork[6],
+     &iwork[5],
+     &iwork[10],
+     &v[v_offset],
+     ldv,
+     &workl[iwork[3]],
+     &iwork[8],
+     &workl[iwork[16]],
+     &workl[iwork[1]],
+     &workl[iwork[4]],
+     &iwork[9],
+     &workl[iwork[7]],
+     &ipntr[1],
+     &workd[1],
+     &iwork[21],
+     info);
 
     if (*ido == 3)
     {
@@ -2673,8 +2741,18 @@ void F77_FUNC(dseupd, DSEUPD)(int*        rvec,
         (ncv, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &workl[ihb], &ierr);
 
         F77_FUNC(dorm2r, DORM2R)
-        ("Right", "Notranspose", n, ncv, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &v[v_offset],
-         ldv, &workd[*n + 1], &ierr);
+        ("Right",
+         "Notranspose",
+         n,
+         ncv,
+         &nconv,
+         &workl[iq],
+         &ldq,
+         &workl[iw + *ncv],
+         &v[v_offset],
+         ldv,
+         &workd[*n + 1],
+         &ierr);
         F77_FUNC(dlacpy, DLACPY)("All", n, &nconv, &v[v_offset], ldv, &z__[z_offset], ldz);
 
         i__1 = *ncv - 1;
@@ -2684,8 +2762,7 @@ void F77_FUNC(dseupd, DSEUPD)(int*        rvec,
         }
         workl[ihb + *ncv - 1] = 1.;
         F77_FUNC(dorm2r, DORM2R)
-        ("Left", "Transpose", ncv, &c__1, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &workl[ihb],
-         ncv, &temp, &ierr);
+        ("Left", "Transpose", ncv, &c__1, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &workl[ihb], ncv, &temp, &ierr);
     }
     else if (*rvec && *howmny == 'S')
     {
@@ -3562,8 +3639,7 @@ static void F77_FUNC(ssapps, SSAPPS)(int*   n,
     if (h__[*kev + 1 + h_dim1] > 0.)
     {
         F77_FUNC(sgemv, SGEMV)
-        ("N", n, &kplusp, &c_b5, &v[v_offset], ldv, &q[(*kev + 1) * q_dim1 + 1], &c__1, &c_b4,
-         &workd[*n + 1], &c__1);
+        ("N", n, &kplusp, &c_b5, &v[v_offset], ldv, &q[(*kev + 1) * q_dim1 + 1], &c__1, &c_b4, &workd[*n + 1], &c__1);
     }
 
     i__1 = *kev;
@@ -3571,8 +3647,7 @@ static void F77_FUNC(ssapps, SSAPPS)(int*   n,
     {
         i__2 = kplusp - i__ + 1;
         F77_FUNC(sgemv, SGEMV)
-        ("N", n, &i__2, &c_b5, &v[v_offset], ldv, &q[(*kev - i__ + 1) * q_dim1 + 1], &c__1, &c_b4,
-         &workd[1], &c__1);
+        ("N", n, &i__2, &c_b5, &v[v_offset], ldv, &q[(*kev - i__ + 1) * q_dim1 + 1], &c__1, &c_b4, &workd[1], &c__1);
         F77_FUNC(scopy, SCOPY)(n, &workd[1], &c__1, &v[(kplusp - i__ + 1) * v_dim1 + 1], &c__1);
     }
 
@@ -4177,8 +4252,20 @@ L20:
 L30:
 
     F77_FUNC(sgetv0, sgetv0)
-    (ido, bmat, &iwork[11], &c__0, n, &iwork[12], &v[v_offset], ldv, &resid[1], rnorm, &ipntr[1],
-     &workd[1], &iwork[21], &iwork[7]);
+    (ido,
+     bmat,
+     &iwork[11],
+     &c__0,
+     n,
+     &iwork[12],
+     &v[v_offset],
+     ldv,
+     &resid[1],
+     rnorm,
+     &ipntr[1],
+     &workd[1],
+     &iwork[21],
+     &iwork[7]);
     if (*ido != 99)
     {
         goto L9000;
@@ -4270,14 +4357,12 @@ L65:
     if (*mode != 2)
     {
         F77_FUNC(sgemv, SGEMV)
-        ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]], &c__1, &c_b42,
-         &workd[iwork[9]], &c__1);
+        ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]], &c__1, &c_b42, &workd[iwork[9]], &c__1);
     }
     else
     {
         F77_FUNC(sgemv, SGEMV)
-        ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[10]], &c__1, &c_b42,
-         &workd[iwork[9]], &c__1);
+        ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[10]], &c__1, &c_b42, &workd[iwork[9]], &c__1);
     }
 
     F77_FUNC(sgemv, SGEMV)
@@ -4331,8 +4416,7 @@ L70:
 L80:
 
     F77_FUNC(sgemv, SGEMV)
-    ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]], &c__1, &c_b42,
-     &workd[iwork[9]], &c__1);
+    ("T", n, &iwork[12], &c_b18, &v[v_offset], ldv, &workd[iwork[8]], &c__1, &c_b42, &workd[iwork[9]], &c__1);
 
     F77_FUNC(sgemv, SGEMV)
     ("N", n, &iwork[12], &c_b50, &v[v_offset], ldv, &workd[iwork[9]], &c__1, &c_b18, &resid[1], &c__1);
@@ -4524,8 +4608,20 @@ static void F77_FUNC(ssaup2, SSAUP2)(int*        ido,
     if (iwork[2] == 1)
     {
         F77_FUNC(sgetv0, SGETV0)
-        (ido, bmat, &c__1, &iwork[3], n, &c__1, &v[v_offset], ldv, &resid[1], &workd[*n * 3 + 1],
-         &ipntr[1], &workd[1], &iwork[41], info);
+        (ido,
+         bmat,
+         &c__1,
+         &iwork[3],
+         n,
+         &c__1,
+         &v[v_offset],
+         ldv,
+         &resid[1],
+         &workd[*n * 3 + 1],
+         &ipntr[1],
+         &workd[1],
+         &iwork[41],
+         info);
 
         if (*ido != 99)
         {
@@ -4558,8 +4654,22 @@ static void F77_FUNC(ssaup2, SSAUP2)(int*        ido,
     }
 
     F77_FUNC(ssaitr, SSAITR)
-    (ido, bmat, n, &c__0, &iwork[9], mode, &resid[1], &workd[*n * 3 + 1], &v[v_offset], ldv,
-     &h__[h_offset], ldh, &ipntr[1], &workd[1], &iwork[21], info);
+    (ido,
+     bmat,
+     n,
+     &c__0,
+     &iwork[9],
+     mode,
+     &resid[1],
+     &workd[*n * 3 + 1],
+     &v[v_offset],
+     ldv,
+     &h__[h_offset],
+     ldh,
+     &ipntr[1],
+     &workd[1],
+     &iwork[21],
+     info);
 
     if (*ido != 99)
     {
@@ -4585,8 +4695,22 @@ L20:
     iwork[4] = 1;
 
     F77_FUNC(ssaitr, SSAITR)
-    (ido, bmat, n, nev, np, mode, &resid[1], &workd[*n * 3 + 1], &v[v_offset], ldv, &h__[h_offset],
-     ldh, &ipntr[1], &workd[1], &iwork[21], info);
+    (ido,
+     bmat,
+     n,
+     nev,
+     np,
+     mode,
+     &resid[1],
+     &workd[*n * 3 + 1],
+     &v[v_offset],
+     ldv,
+     &h__[h_offset],
+     ldh,
+     &ipntr[1],
+     &workd[1],
+     &iwork[21],
+     info);
 
     if (*ido != 99)
     {
@@ -4767,8 +4891,7 @@ L50:
     }
 
     F77_FUNC(ssapps, SSAPPS)
-    (n, nev, np, &ritz[1], &v[v_offset], ldv, &h__[h_offset], ldh, &resid[1], &q[q_offset], ldq,
-     &workd[1]);
+    (n, nev, np, &ritz[1], &v[v_offset], ldv, &h__[h_offset], ldh, &resid[1], &q[q_offset], ldq, &workd[1]);
 
     iwork[1] = 1;
     if (*bmat == 'G')
@@ -4952,9 +5075,31 @@ void F77_FUNC(ssaupd, SSAUPD)(int*        ido,
     }
 
     F77_FUNC(ssaup2, SSAUP2)
-    (ido, bmat, n, which, &iwork[13], &iwork[15], tol, &resid[1], &iwork[11], &iwork[6], &iwork[5],
-     &iwork[10], &v[v_offset], ldv, &workl[iwork[3]], &iwork[8], &workl[iwork[16]], &workl[iwork[1]],
-     &workl[iwork[4]], &iwork[9], &workl[iwork[7]], &ipntr[1], &workd[1], &iwork[21], info);
+    (ido,
+     bmat,
+     n,
+     which,
+     &iwork[13],
+     &iwork[15],
+     tol,
+     &resid[1],
+     &iwork[11],
+     &iwork[6],
+     &iwork[5],
+     &iwork[10],
+     &v[v_offset],
+     ldv,
+     &workl[iwork[3]],
+     &iwork[8],
+     &workl[iwork[16]],
+     &workl[iwork[1]],
+     &workl[iwork[4]],
+     &iwork[9],
+     &workl[iwork[7]],
+     &ipntr[1],
+     &workd[1],
+     &iwork[21],
+     info);
 
     if (*ido == 3)
     {
@@ -5390,8 +5535,18 @@ void F77_FUNC(sseupd, SSEUPD)(int*        rvec,
         (ncv, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &workl[ihb], &ierr);
 
         F77_FUNC(sorm2r, SORM2R)
-        ("Right", "Notranspose", n, ncv, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &v[v_offset],
-         ldv, &workd[*n + 1], &ierr);
+        ("Right",
+         "Notranspose",
+         n,
+         ncv,
+         &nconv,
+         &workl[iq],
+         &ldq,
+         &workl[iw + *ncv],
+         &v[v_offset],
+         ldv,
+         &workd[*n + 1],
+         &ierr);
         F77_FUNC(slacpy, SLACPY)("All", n, &nconv, &v[v_offset], ldv, &z__[z_offset], ldz);
 
         i__1 = *ncv - 1;
@@ -5401,8 +5556,7 @@ void F77_FUNC(sseupd, SSEUPD)(int*        rvec,
         }
         workl[ihb + *ncv - 1] = 1.;
         F77_FUNC(sorm2r, SORM2R)
-        ("Left", "Transpose", ncv, &c__1, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &workl[ihb],
-         ncv, &temp, &ierr);
+        ("Left", "Transpose", ncv, &c__1, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &workl[ihb], ncv, &temp, &ierr);
     }
     else if (*rvec && *howmny == 'S')
     {

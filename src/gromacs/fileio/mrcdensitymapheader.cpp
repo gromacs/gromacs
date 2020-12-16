@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,8 +65,9 @@ bool anySmallerZero(Container values)
 template<typename Container>
 bool anyLargerThanValue(Container values, typename Container::value_type boundaryValue)
 {
-    return std::any_of(std::begin(values), std::end(values),
-                       [boundaryValue](auto v) { return v > boundaryValue; });
+    return std::any_of(std::begin(values), std::end(values), [boundaryValue](auto v) {
+        return v > boundaryValue;
+    });
 }
 
 } // namespace
@@ -92,7 +93,8 @@ TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader
     RVec       scale = { header.extent_[XX] / (header.cellLength_[XX] * c_AAtoNmConversion),
                    header.extent_[YY] / (header.cellLength_[YY] * c_AAtoNmConversion),
                    header.extent_[ZZ] / (header.cellLength_[ZZ] * c_AAtoNmConversion) };
-    const RVec emdbOrigin{ header.userDefinedFloat_[12], header.userDefinedFloat_[13],
+    const RVec emdbOrigin{ header.userDefinedFloat_[12],
+                           header.userDefinedFloat_[13],
                            header.userDefinedFloat_[14] };
     RVec       translation;
     if (emdbOrigin[XX] == 0. && emdbOrigin[YY] == 0. && emdbOrigin[ZZ] == 0.)
@@ -103,7 +105,8 @@ TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader
     }
     else
     {
-        translation = { -emdbOrigin[XX] * c_AAtoNmConversion, -emdbOrigin[YY] * c_AAtoNmConversion,
+        translation = { -emdbOrigin[XX] * c_AAtoNmConversion,
+                        -emdbOrigin[YY] * c_AAtoNmConversion,
                         -emdbOrigin[ZZ] * c_AAtoNmConversion };
     }
     return { scale, translation };
@@ -111,7 +114,8 @@ TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader
 
 dynamicExtents3D getDynamicExtents3D(const MrcDensityMapHeader& header)
 {
-    return { header.numColumnRowSection_[ZZ], header.numColumnRowSection_[YY],
+    return { header.numColumnRowSection_[ZZ],
+             header.numColumnRowSection_[YY],
              header.numColumnRowSection_[XX] };
 };
 

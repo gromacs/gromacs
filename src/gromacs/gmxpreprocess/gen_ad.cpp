@@ -129,9 +129,10 @@ static bool dcomp(const InteractionOfType& d1, const InteractionOfType& d2)
     {
         // AMBER force fields with type 9 dihedrals can reach here, where we sort on
         // the contents of the string that names the macro for the parameters.
-        return std::lexicographical_compare(
-                d1.interactionTypeName().begin(), d1.interactionTypeName().end(),
-                d2.interactionTypeName().begin(), d2.interactionTypeName().end());
+        return std::lexicographical_compare(d1.interactionTypeName().begin(),
+                                            d1.interactionTypeName().end(),
+                                            d2.interactionTypeName().begin(),
+                                            d2.interactionTypeName().end());
     }
 }
 
@@ -299,7 +300,8 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
                 int minh = 2;
                 int next = dihedral->second + 1;
                 for (int l = dihedral->second;
-                     (l < next && is_dihedral_on_same_bond(dihedral->first, dih[l])); l++)
+                     (l < next && is_dihedral_on_same_bond(dihedral->first, dih[l]));
+                     l++)
                 {
                     int nh = n_hydro(dih[l].atoms(), atoms->atomname);
                     if (nh < minh)
@@ -354,8 +356,8 @@ static std::vector<InteractionOfType> get_impropers(t_atoms*                    
                 std::vector<int> ai;
                 for (int k = 0; (k < 4) && !bStop; k++)
                 {
-                    const int entry = search_atom(bondeds.a[k].c_str(), start, atoms, "improper",
-                                                  bAllowMissing, cyclicBondsIndex);
+                    const int entry = search_atom(
+                            bondeds.a[k].c_str(), start, atoms, "improper", bAllowMissing, cyclicBondsIndex);
 
                     if (entry != -1)
                     {
@@ -913,8 +915,7 @@ void gen_pad(t_atoms*                               atoms,
     if (!dih.empty())
     {
         fprintf(stderr, "Before cleaning: %zu dihedrals\n", dih.size());
-        dih = clean_dih(dih, improper, atoms, rtpFFDB[0].bKeepAllGeneratedDihedrals,
-                        rtpFFDB[0].bRemoveDihedralIfWithImproper);
+        dih = clean_dih(dih, improper, atoms, rtpFFDB[0].bKeepAllGeneratedDihedrals, rtpFFDB[0].bRemoveDihedralIfWithImproper);
     }
 
     /* Now we have unique lists of angles and dihedrals

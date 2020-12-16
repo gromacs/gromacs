@@ -90,7 +90,9 @@ void init_orires(FILE*                 fplog,
         gmx_fatal(FARGS,
                   "The system has %d orientation restraints, but at least %d are required, since "
                   "there are %d fitting parameters.",
-                  od->nr, numFitParams + 1, numFitParams);
+                  od->nr,
+                  numFitParams + 1,
+                  numFitParams);
     }
 
     if (ir->bPeriodicMols)
@@ -282,8 +284,7 @@ void init_orires(FILE*                 fplog,
 
     if (ms)
     {
-        fprintf(fplog, "  the orientation restraints are ensemble averaged over %d systems\n",
-                ms->numSimulations_);
+        fprintf(fplog, "  the orientation restraints are ensemble averaged over %d systems\n", ms->numSimulations_);
 
         check_multi_int(fplog, ms, od->nr, "the number of orientation restraints", FALSE);
         check_multi_int(fplog, ms, od->nref, "the number of fit atoms for orientation restraining", FALSE);
@@ -374,8 +375,12 @@ void print_orires_log(FILE* log, t_oriresdata* od)
         fprintf(log, "    order parameter: %g\n", eig[0]);
         for (int i = 0; i < DIM; i++)
         {
-            fprintf(log, "    eig: %6.3f   %6.3f %6.3f %6.3f\n", (eig[0] != 0) ? eig[i] / eig[0] : eig[i],
-                    eig[DIM + i * DIM + XX], eig[DIM + i * DIM + YY], eig[DIM + i * DIM + ZZ]);
+            fprintf(log,
+                    "    eig: %6.3f   %6.3f %6.3f %6.3f\n",
+                    (eig[0] != 0) ? eig[i] / eig[0] : eig[i],
+                    eig[DIM + i * DIM + XX],
+                    eig[DIM + i * DIM + YY],
+                    eig[DIM + i * DIM + ZZ]);
         }
         fprintf(log, "\n");
     }

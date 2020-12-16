@@ -133,8 +133,8 @@ std::optional<std::string> checkMtsInterval(ArrayRef<const MtsLevel> mtsLevels, 
     }
     else
     {
-        return gmx::formatString("With MTS, %s = %d should be a multiple of mts-factor = %d", param,
-                                 nstValue, mtsFactor);
+        return gmx::formatString(
+                "With MTS, %s = %d should be a multiple of mts-factor = %d", param, nstValue, mtsFactor);
     }
 }
 
@@ -157,7 +157,8 @@ std::vector<std::string> checkMtsRequirements(const t_inputrec& ir)
     {
         errorMessages.push_back(gmx::formatString(
                 "Multiple time stepping is only supported with integrators %s and %s",
-                ei_names[eiMD], ei_names[eiSD1]));
+                ei_names[eiMD],
+                ei_names[eiSD1]));
     }
 
     if ((EEL_FULL(ir.coulombtype) || EVDW_PME(ir.vdwtype))

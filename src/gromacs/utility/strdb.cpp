@@ -70,7 +70,8 @@ gmx_bool get_a_line(FILE* fp, char line[], int n)
         else if (static_cast<int>(std::strlen(line0)) == n)
         {
             fprintf(stderr,
-                    "Warning: line length exceeds buffer length (%d), data might be corrupted\n", n);
+                    "Warning: line length exceeds buffer length (%d), data might be corrupted\n",
+                    n);
             line0[n - 1] = '\0';
         }
         else

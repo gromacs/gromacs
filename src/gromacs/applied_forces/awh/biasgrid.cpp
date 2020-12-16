@@ -897,7 +897,8 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
         std::string mesg = gmx::formatString(
                 "Could not extract data properly from %s. Wrong data format?"
                 "\n\n%s",
-                dataFilename.c_str(), correctFormatMessage.c_str());
+                dataFilename.c_str(),
+                correctFormatMessage.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
 
@@ -912,8 +913,8 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
         }
         else
         {
-            axis_.emplace_back(data[d][0], data[d][numDataPoints - 1], grid.axis(d).period(),
-                               numPoints[d], false);
+            axis_.emplace_back(
+                    data[d][0], data[d][numDataPoints - 1], grid.axis(d).period(), numPoints[d], false);
         }
     }
 
@@ -930,7 +931,8 @@ void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
                     "%s does not contain data for all coordinate values. "
                     "Make sure your input data covers the whole sampling domain "
                     "and is correctly formatted. \n\n%s",
-                    dataFilename.c_str(), correctFormatMessage.c_str());
+                    dataFilename.c_str(),
+                    correctFormatMessage.c_str());
             GMX_THROW(InvalidInputError(mesg));
         }
         (*gridpointToDatapoint)[m] = getNearestIndexInGrid(grid.point(m).coordValue, axis_);

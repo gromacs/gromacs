@@ -52,16 +52,48 @@
 
 /* Must correspond to the Directive enum in grompp_impl.h */
 static gmx::EnumerationArray<Directive, const char*> directive_names = {
-    { "defaults", "atomtypes", "bondtypes", "constrainttypes", "pairtypes", "angletypes",
-      "dihedraltypes", "nonbond_params", "implicit_genborn_params", "implicit_surface_params",
+    { "defaults",
+      "atomtypes",
+      "bondtypes",
+      "constrainttypes",
+      "pairtypes",
+      "angletypes",
+      "dihedraltypes",
+      "nonbond_params",
+      "implicit_genborn_params",
+      "implicit_surface_params",
       "cmaptypes",
       /* All the directives above can not appear after moleculetype */
-      "moleculetype", "atoms", "virtual_sites2", "virtual_sites3", "virtual_sites4",
-      "virtual_sitesn", "bonds", "exclusions", "pairs", "pairs_nb", "angles", "dihedrals",
-      "constraints", "settles", "polarization", "water_polarization", "thole_polarization",
-      "system", "molecules", "position_restraints", "angle_restraints", "angle_restraints_z",
-      "distance_restraints", "orientation_restraints", "dihedral_restraints", "cmap",
-      "intermolecular_interactions", "maxdirs", "invalid", "none" }
+      "moleculetype",
+      "atoms",
+      "virtual_sites2",
+      "virtual_sites3",
+      "virtual_sites4",
+      "virtual_sitesn",
+      "bonds",
+      "exclusions",
+      "pairs",
+      "pairs_nb",
+      "angles",
+      "dihedrals",
+      "constraints",
+      "settles",
+      "polarization",
+      "water_polarization",
+      "thole_polarization",
+      "system",
+      "molecules",
+      "position_restraints",
+      "angle_restraints",
+      "angle_restraints_z",
+      "distance_restraints",
+      "orientation_restraints",
+      "dihedral_restraints",
+      "cmap",
+      "intermolecular_interactions",
+      "maxdirs",
+      "invalid",
+      "none" }
 };
 
 int ifunc_index(Directive d, int type)
@@ -271,10 +303,8 @@ void DS_Init(DirStack** DS)
         // be in the same place that was valid in old versions (ie. child
         // directive of [atomtypes]) but any relevant case will
         // satisfy that.
-        set_nec(&(necessary[Directive::d_implicit_genborn_params]), Directive::d_atomtypes,
-                Directive::d_none);
-        set_nec(&(necessary[Directive::d_implicit_surface_params]), Directive::d_atomtypes,
-                Directive::d_none);
+        set_nec(&(necessary[Directive::d_implicit_genborn_params]), Directive::d_atomtypes, Directive::d_none);
+        set_nec(&(necessary[Directive::d_implicit_surface_params]), Directive::d_atomtypes, Directive::d_none);
         set_nec(&(necessary[Directive::d_cmaptypes]), Directive::d_atomtypes, Directive::d_none);
         set_nec(&(necessary[Directive::d_moleculetype]), Directive::d_atomtypes, Directive::d_none);
         set_nec(&(necessary[Directive::d_atoms]), Directive::d_moleculetype, Directive::d_none);
@@ -283,8 +313,11 @@ void DS_Init(DirStack** DS)
         set_nec(&(necessary[Directive::d_vsites4]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_vsitesn]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_bonds]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_exclusions]), Directive::d_bonds, Directive::d_constraints,
-                Directive::d_settles, Directive::d_none);
+        set_nec(&(necessary[Directive::d_exclusions]),
+                Directive::d_bonds,
+                Directive::d_constraints,
+                Directive::d_settles,
+                Directive::d_none);
         set_nec(&(necessary[Directive::d_pairs]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_pairs_nb]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_angles]), Directive::d_atoms, Directive::d_none);
@@ -303,7 +336,8 @@ void DS_Init(DirStack** DS)
         set_nec(&(necessary[Directive::d_orientation_restraints]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_dihedral_restraints]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_cmap]), Directive::d_atoms, Directive::d_none);
-        set_nec(&(necessary[Directive::d_intermolecular_interactions]), Directive::d_molecules,
+        set_nec(&(necessary[Directive::d_intermolecular_interactions]),
+                Directive::d_molecules,
                 Directive::d_none);
     }
     *DS = nullptr;

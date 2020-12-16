@@ -405,8 +405,8 @@ void checkTrajectoryAgainstReferenceData(const std::string&          trajectoryF
                                          const TrajectoryComparison& trajectoryComparison,
                                          TestReferenceChecker*       checker)
 {
-    checkTrajectoryAgainstReferenceData(trajectoryFilename, trajectoryComparison, checker,
-                                        MaxNumFrames::compareAllFrames());
+    checkTrajectoryAgainstReferenceData(
+            trajectoryFilename, trajectoryComparison, checker, MaxNumFrames::compareAllFrames());
 }
 
 void checkTrajectoryAgainstReferenceData(const std::string&          trajectoryFilename,

@@ -176,63 +176,82 @@ void registerLegacyModules(gmx::CommandLineModuleManager* manager)
     gmx::ICommandLineOptionsModule::registerModuleFactory(
             manager, gmx::DumpInfo::name, gmx::DumpInfo::shortDescription, &gmx::DumpInfo::create);
     registerModule(manager, &gmx_grompp, "grompp", "Make a run input file");
-    gmx::ICommandLineOptionsModule::registerModuleFactory(manager, gmx::ConvertTprInfo::name,
+    gmx::ICommandLineOptionsModule::registerModuleFactory(manager,
+                                                          gmx::ConvertTprInfo::name,
                                                           gmx::ConvertTprInfo::shortDescription,
                                                           &gmx::ConvertTprInfo::create);
     registerObsoleteTool(manager, "tpbconv");
     registerModule(manager, &gmx_x2top, "x2top", "Generate a primitive topology from coordinates");
 
     registerModuleNoNice(
-            manager, &gmx::gmx_mdrun, "mdrun",
+            manager,
+            &gmx::gmx_mdrun,
+            "mdrun",
             "Perform a simulation, do a normal mode analysis or an energy minimization");
 
-    gmx::ICommandLineOptionsModule::registerModuleFactory(
-            manager, gmx::NonbondedBenchmarkInfo::name,
-            gmx::NonbondedBenchmarkInfo::shortDescription, &gmx::NonbondedBenchmarkInfo::create);
+    gmx::ICommandLineOptionsModule::registerModuleFactory(manager,
+                                                          gmx::NonbondedBenchmarkInfo::name,
+                                                          gmx::NonbondedBenchmarkInfo::shortDescription,
+                                                          &gmx::NonbondedBenchmarkInfo::create);
 
-    gmx::ICommandLineOptionsModule::registerModuleFactory(manager, gmx::InsertMoleculesInfo::name(),
+    gmx::ICommandLineOptionsModule::registerModuleFactory(manager,
+                                                          gmx::InsertMoleculesInfo::name(),
                                                           gmx::InsertMoleculesInfo::shortDescription(),
                                                           &gmx::InsertMoleculesInfo::create);
 
-    gmx::ICommandLineOptionsModule::registerModuleFactory(manager, gmx::ReportMethodsInfo::name,
+    gmx::ICommandLineOptionsModule::registerModuleFactory(manager,
+                                                          gmx::ReportMethodsInfo::name,
                                                           gmx::ReportMethodsInfo::shortDescription,
                                                           &gmx::ReportMethodsInfo::create);
 
-    gmx::ICommandLineOptionsModule::registerModuleFactory(manager, gmx::pdb2gmxInfo::name,
-                                                          gmx::pdb2gmxInfo::shortDescription,
-                                                          &gmx::pdb2gmxInfo::create);
+    gmx::ICommandLineOptionsModule::registerModuleFactory(
+            manager, gmx::pdb2gmxInfo::name, gmx::pdb2gmxInfo::shortDescription, &gmx::pdb2gmxInfo::create);
 
     // Modules from gmx_ana.h.
-    registerModule(manager, &gmx_do_dssp, "do_dssp",
+    registerModule(manager,
+                   &gmx_do_dssp,
+                   "do_dssp",
                    "Assign secondary structure and calculate solvent accessible surface area");
     registerModule(manager, &gmx_editconf, "editconf", "Convert and manipulates structure files");
     registerModule(manager, &gmx_eneconv, "eneconv", "Convert energy files");
     registerModule(manager, &gmx_solvate, "solvate", "Solvate a system");
     registerObsoleteTool(manager, "genbox");
-    registerModule(manager, &gmx_genconf, "genconf",
-                   "Multiply a conformation in 'random' orientations");
-    registerModule(manager, &gmx_genion, "genion",
+    registerModule(
+            manager, &gmx_genconf, "genconf", "Multiply a conformation in 'random' orientations");
+    registerModule(manager,
+                   &gmx_genion,
+                   "genion",
                    "Generate monoatomic ions on energetically favorable positions");
-    registerModule(manager, &gmx_genrestr, "genrestr",
+    registerModule(manager,
+                   &gmx_genrestr,
+                   "genrestr",
                    "Generate position restraints or distance restraints for index groups");
-    registerModule(manager, &gmx_make_edi, "make_edi",
+    registerModule(manager,
+                   &gmx_make_edi,
+                   "make_edi",
                    "Generate input files for essential dynamics sampling");
     registerModule(manager, &gmx_make_ndx, "make_ndx", "Make index files");
     registerModule(manager, &gmx_mk_angndx, "mk_angndx", "Generate index files for 'gmx angle'");
     registerModule(manager, &gmx_trjcat, "trjcat", "Concatenate trajectory files");
     registerModule(manager, &gmx_trjconv, "trjconv", "Convert and manipulates trajectory files");
-    registerModule(manager, &gmx_trjorder, "trjorder",
+    registerModule(manager,
+                   &gmx_trjorder,
+                   "trjorder",
                    "Order molecules according to their distance to a group");
-    registerModule(manager, &gmx_xpm2ps, "xpm2ps",
-                   "Convert XPM (XPixelMap) matrices to postscript or XPM");
+    registerModule(
+            manager, &gmx_xpm2ps, "xpm2ps", "Convert XPM (XPixelMap) matrices to postscript or XPM");
 
     registerModule(manager, &gmx_anaeig, "anaeig", "Analyze eigenvectors/normal modes");
     registerModule(manager, &gmx_analyze, "analyze", "Analyze data sets");
-    registerModule(manager, &gmx_g_angle, "angle",
+    registerModule(manager,
+                   &gmx_g_angle,
+                   "angle",
                    "Calculate distributions and correlations for angles and dihedrals");
-    registerModule(manager, &gmx_awh, "awh",
-                   "Extract data from an accelerated weight histogram (AWH) run");
-    registerModule(manager, &gmx_bar, "bar",
+    registerModule(
+            manager, &gmx_awh, "awh", "Extract data from an accelerated weight histogram (AWH) run");
+    registerModule(manager,
+                   &gmx_bar,
+                   "bar",
                    "Calculate free energy difference estimates through Bennett's acceptance ratio");
     registerObsoleteTool(manager, "bond");
     registerObsoleteTool(manager, "dist");
@@ -240,90 +259,134 @@ void registerLegacyModules(gmx::CommandLineModuleManager* manager)
     registerObsoleteTool(manager, "sgangle");
 
     registerModule(manager, &gmx_bundle, "bundle", "Analyze bundles of axes, e.g., helices");
-    registerModule(manager, &gmx_chi, "chi",
+    registerModule(manager,
+                   &gmx_chi,
+                   "chi",
                    "Calculate everything you want to know about chi and other dihedrals");
     registerModule(manager, &gmx_cluster, "cluster", "Cluster structures");
-    registerModule(manager, &gmx_clustsize, "clustsize",
-                   "Calculate size distributions of atomic clusters");
+    registerModule(
+            manager, &gmx_clustsize, "clustsize", "Calculate size distributions of atomic clusters");
     registerModule(manager, &gmx_confrms, "confrms", "Fit two structures and calculates the RMSD");
     registerModule(manager, &gmx_covar, "covar", "Calculate and diagonalize the covariance matrix");
-    registerModule(manager, &gmx_current, "current",
+    registerModule(manager,
+                   &gmx_current,
+                   "current",
                    "Calculate dielectric constants and current autocorrelation function");
     registerModule(manager, &gmx_density, "density", "Calculate the density of the system");
-    registerModule(manager, &gmx_densmap, "densmap",
-                   "Calculate 2D planar or axial-radial density maps");
+    registerModule(
+            manager, &gmx_densmap, "densmap", "Calculate 2D planar or axial-radial density maps");
     registerModule(manager, &gmx_densorder, "densorder", "Calculate surface fluctuations");
-    registerModule(manager, &gmx_dielectric, "dielectric",
+    registerModule(manager,
+                   &gmx_dielectric,
+                   "dielectric",
                    "Calculate frequency dependent dielectric constants");
     registerModule(manager, &gmx_dipoles, "dipoles", "Compute the total dipole plus fluctuations");
     registerModule(manager, &gmx_disre, "disre", "Analyze distance restraints");
-    registerModule(manager, &gmx_dos, "dos",
-                   "Analyze density of states and properties based on that");
+    registerModule(
+            manager, &gmx_dos, "dos", "Analyze density of states and properties based on that");
     registerModule(manager, &gmx_dyecoupl, "dyecoupl", "Extract dye dynamics from trajectories");
     registerModule(manager, &gmx_enemat, "enemat", "Extract an energy matrix from an energy file");
-    registerModule(manager, &gmx_energy, "energy",
-                   "Writes energies to xvg files and display averages");
-    registerModule(manager, &gmx_filter, "filter",
+    registerModule(
+            manager, &gmx_energy, "energy", "Writes energies to xvg files and display averages");
+    registerModule(manager,
+                   &gmx_filter,
+                   "filter",
                    "Frequency filter trajectories, useful for making smooth movies");
     registerModule(manager, &gmx_gyrate, "gyrate", "Calculate the radius of gyration");
     registerModule(manager, &gmx_h2order, "h2order", "Compute the orientation of water molecules");
     registerModule(manager, &gmx_hbond, "hbond", "Compute and analyze hydrogen bonds");
     registerModule(manager, &gmx_helix, "helix", "Calculate basic properties of alpha helices");
-    registerModule(manager, &gmx_helixorient, "helixorient",
+    registerModule(manager,
+                   &gmx_helixorient,
+                   "helixorient",
                    "Calculate local pitch/bending/rotation/orientation inside helices");
-    registerModule(manager, &gmx_hydorder, "hydorder",
+    registerModule(manager,
+                   &gmx_hydorder,
+                   "hydorder",
                    "Compute tetrahedrality parameters around a given atom");
     registerModule(manager, &gmx_lie, "lie", "Estimate free energy from linear combinations");
     registerModule(manager, &gmx_mdmat, "mdmat", "Calculate residue contact maps");
-    registerModule(manager, &gmx_mindist, "mindist",
-                   "Calculate the minimum distance between two groups");
+    registerModule(
+            manager, &gmx_mindist, "mindist", "Calculate the minimum distance between two groups");
     registerModule(manager, &gmx_msd, "msd", "Calculates mean square displacements");
     registerModule(manager, &gmx_nmeig, "nmeig", "Diagonalize the Hessian for normal mode analysis");
-    registerModule(manager, &gmx_nmens, "nmens",
+    registerModule(manager,
+                   &gmx_nmens,
+                   "nmens",
                    "Generate an ensemble of structures from the normal modes");
-    registerModule(manager, &gmx_nmr, "nmr",
+    registerModule(manager,
+                   &gmx_nmr,
+                   "nmr",
                    "Analyze nuclear magnetic resonance properties from an energy file");
-    registerModule(manager, &gmx_nmtraj, "nmtraj",
+    registerModule(manager,
+                   &gmx_nmtraj,
+                   "nmtraj",
                    "Generate a virtual oscillating trajectory from an eigenvector");
-    registerModule(manager, &gmx_order, "order",
-                   "Compute the order parameter per atom for carbon tails");
-    registerModule(manager, &gmx_pme_error, "pme_error",
+    registerModule(
+            manager, &gmx_order, "order", "Compute the order parameter per atom for carbon tails");
+    registerModule(manager,
+                   &gmx_pme_error,
+                   "pme_error",
                    "Estimate the error of using PME with a given input file");
     registerModule(manager, &gmx_polystat, "polystat", "Calculate static properties of polymers");
-    registerModule(manager, &gmx_potential, "potential",
+    registerModule(manager,
+                   &gmx_potential,
+                   "potential",
                    "Calculate the electrostatic potential across the box");
-    registerModule(manager, &gmx_principal, "principal",
+    registerModule(manager,
+                   &gmx_principal,
+                   "principal",
                    "Calculate principal axes of inertia for a group of atoms");
     registerModule(manager, &gmx_rama, "rama", "Compute Ramachandran plots");
-    registerModule(manager, &gmx_rms, "rms",
+    registerModule(manager,
+                   &gmx_rms,
+                   "rms",
                    "Calculate RMSDs with a reference structure and RMSD matrices");
-    registerModule(manager, &gmx_rmsdist, "rmsdist",
+    registerModule(manager,
+                   &gmx_rmsdist,
+                   "rmsdist",
                    "Calculate atom pair distances averaged with power -2, -3 or -6");
     registerModule(manager, &gmx_rmsf, "rmsf", "Calculate atomic fluctuations");
-    registerModule(manager, &gmx_rotacf, "rotacf",
+    registerModule(manager,
+                   &gmx_rotacf,
+                   "rotacf",
                    "Calculate the rotational correlation function for molecules");
-    registerModule(manager, &gmx_rotmat, "rotmat",
+    registerModule(manager,
+                   &gmx_rotmat,
+                   "rotmat",
                    "Plot the rotation matrix for fitting to a reference structure");
     registerModule(manager, &gmx_saltbr, "saltbr", "Compute salt bridges");
     registerModule(manager, &gmx_sans, "sans", "Compute small angle neutron scattering spectra");
     registerModule(manager, &gmx_saxs, "saxs", "Compute small angle X-ray scattering spectra");
-    registerModule(manager, &gmx_sham, "sham",
-                   "Compute free energies or other histograms from histograms");
-    registerModule(manager, &gmx_sigeps, "sigeps",
+    registerModule(
+            manager, &gmx_sham, "sham", "Compute free energies or other histograms from histograms");
+    registerModule(manager,
+                   &gmx_sigeps,
+                   "sigeps",
                    "Convert c6/12 or c6/cn combinations to and from sigma/epsilon");
     registerModule(manager, &gmx_sorient, "sorient", "Analyze solvent orientation around solutes");
     registerModule(manager, &gmx_spatial, "spatial", "Calculate the spatial distribution function");
-    registerModule(manager, &gmx_spol, "spol",
+    registerModule(manager,
+                   &gmx_spol,
+                   "spol",
                    "Analyze solvent dipole orientation and polarization around solutes");
     registerModule(manager, &gmx_tcaf, "tcaf", "Calculate viscosities of liquids");
-    registerModule(manager, &gmx_traj, "traj",
+    registerModule(manager,
+                   &gmx_traj,
+                   "traj",
                    "Plot x, v, f, box, temperature and rotational energy from trajectories");
-    registerModule(manager, &gmx_tune_pme, "tune_pme",
+    registerModule(manager,
+                   &gmx_tune_pme,
+                   "tune_pme",
                    "Time mdrun as a function of PME ranks to optimize settings");
-    registerModule(manager, &gmx_vanhove, "vanhove",
+    registerModule(manager,
+                   &gmx_vanhove,
+                   "vanhove",
                    "Compute Van Hove displacement and correlation functions");
     registerModule(manager, &gmx_velacc, "velacc", "Calculate velocity autocorrelation functions");
-    registerModule(manager, &gmx_wham, "wham",
+    registerModule(manager,
+                   &gmx_wham,
+                   "wham",
                    "Perform weighted histogram analysis after umbrella sampling");
     registerModule(manager, &gmx_wheel, "wheel", "Plot helical wheels");
     registerModuleNoNice(manager, &gmx_view, "view", "View a trajectory on an X-Windows terminal");

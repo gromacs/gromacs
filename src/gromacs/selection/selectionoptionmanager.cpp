@@ -176,7 +176,10 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(const SelectionList
                         formatString("Too few selections provided for '%s': "
                                      "Expected %d selections, but only %d left "
                                      "after assigning the first %d to other selections.",
-                                     request.name().c_str(), request.count(), remaining, assigned)));
+                                     request.name().c_str(),
+                                     request.count(),
+                                     remaining,
+                                     assigned)));
             }
             last = first + request.count();
         }
@@ -195,7 +198,10 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(const SelectionList
                                      "selections to be assigned to '%s'. "
                                      "Resolution for such cases is not implemented, "
                                      "and may be impossible.",
-                                     name, conflictName, name, conflictName)));
+                                     name,
+                                     conflictName,
+                                     name,
+                                     conflictName)));
             }
             last = selections.end();
         }
@@ -212,7 +218,9 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(const SelectionList
                 formatString("Too many selections provided: "
                              "Expected %d selections, but %d provided. "
                              "Last %d selections could not be assigned to any option.",
-                             assigned, count, remaining)));
+                             assigned,
+                             count,
+                             remaining)));
     }
 }
 
@@ -291,8 +299,8 @@ void SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
     for (i = impl_->requests_.begin(); i != impl_->requests_.end(); ++i)
     {
         const Impl::SelectionRequest& request = *i;
-        std::string   context = formatString("for option '%s'\n(%s)", request.name().c_str(),
-                                           request.description().c_str());
+        std::string                   context = formatString(
+                "for option '%s'\n(%s)", request.name().c_str(), request.description().c_str());
         SelectionList selections =
                 impl_->collection_.parseFromStdin(request.count(), bInteractive, context);
         request.storage_->addSelections(selections, true);

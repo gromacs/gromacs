@@ -439,7 +439,8 @@ void Sasa::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* s
         "from the full surface.[PAR]",
 
         "The average and standard deviation of the area over the trajectory",
-        "can be calculated per residue and atom (options [TT]-or[tt] and", "[TT]-oa[tt]).[PAR]",
+        "can be calculated per residue and atom (options [TT]-or[tt] and",
+        "[TT]-oa[tt]).[PAR]",
         //"In combination with the latter option an [REF].itp[ref] file can be",
         //"generated (option [TT]-i[tt])",
         //"which can be used to restrain surface atoms.[PAR]",
@@ -610,8 +611,8 @@ void Sasa::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topolo
         if (bDGsol)
         {
             real dgsFactor;
-            if (!aps.setAtomProperty(epropDGsol, *(atoms_->resinfo[resind].name),
-                                     *(atoms_->atomtype[ii]), &dgsFactor))
+            if (!aps.setAtomProperty(
+                        epropDGsol, *(atoms_->resinfo[resind].name), *(atoms_->atomtype[ii]), &dgsFactor))
             {
                 dgsFactor = dgsDefault_;
             }
@@ -640,7 +641,8 @@ void Sasa::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topolo
                         "Output selection '%s' is not a subset of "
                         "the surface selection (atom %d is the first "
                         "atom not in the surface selection)",
-                        outputSel_[g].name(), outputIndices[i] + 1);
+                        outputSel_[g].name(),
+                        outputIndices[i] + 1);
                 GMX_THROW(InconsistentInputError(message));
             }
             outputSel_[g].setOriginalId(i, j);
@@ -950,8 +952,15 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
     real  totarea, totvolume;
     real *area = nullptr, *surfacedots = nullptr;
     int   nsurfacedots;
-    calculator_.calculate(surfaceSel.coordinates().data(), pbc, frameData.index_.size(),
-                          frameData.index_.data(), flag, &totarea, &totvolume, &area, &surfacedots,
+    calculator_.calculate(surfaceSel.coordinates().data(),
+                          pbc,
+                          frameData.index_.size(),
+                          frameData.index_.data(),
+                          flag,
+                          &totarea,
+                          &totvolume,
+                          &area,
+                          &surfacedots,
                           &nsurfacedots);
     // Unpack the atomwise areas into the frameData.atomAreas_ array for easier
     // indexing in the case of dynamic surfaceSel.
@@ -985,8 +994,15 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
         // structures.  But since it is only used in the first frame, and no
         // one else uses the topology after initialization, it may just work
         // even with future parallelization.
-        connolly_plot(fnConnolly_.c_str(), nsurfacedots, surfacedots, fr.x, atoms_.get(),
-                      &mtop_->symtab, fr.pbcType, fr.box, bIncludeSolute_);
+        connolly_plot(fnConnolly_.c_str(),
+                      nsurfacedots,
+                      surfacedots,
+                      fr.x,
+                      atoms_.get(),
+                      &mtop_->symtab,
+                      fr.pbcType,
+                      fr.box,
+                      bIncludeSolute_);
     }
 
     ah.startFrame(frnr, fr.time);
@@ -1005,8 +1021,15 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
     real totalArea, dgsolv;
     if (bResAt || bDGsol)
     {
-        computeAreas(surfaceSel, surfaceSel, frameData.atomAreas_, dgsFactor_, &totalArea, &dgsolv,
-                     aah, rah, &frameData.res_a_);
+        computeAreas(surfaceSel,
+                     surfaceSel,
+                     frameData.atomAreas_,
+                     dgsFactor_,
+                     &totalArea,
+                     &dgsolv,
+                     aah,
+                     rah,
+                     &frameData.res_a_);
         if (bDGsol)
         {
             dgh.setPoint(0, dgsolv);
@@ -1019,8 +1042,15 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
             aah.selectDataSet(g + 1);
             rah.selectDataSet(g + 1);
         }
-        computeAreas(surfaceSel, outputSel[g], frameData.atomAreas_, dgsFactor_, &totalArea,
-                     &dgsolv, aah, rah, &frameData.res_a_);
+        computeAreas(surfaceSel,
+                     outputSel[g],
+                     frameData.atomAreas_,
+                     dgsFactor_,
+                     &totalArea,
+                     &dgsolv,
+                     aah,
+                     rah,
+                     &frameData.res_a_);
         ah.setPoint(g + 1, totalArea);
         if (bDGsol)
         {

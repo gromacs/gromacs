@@ -184,17 +184,24 @@ static void print_cg_move(FILE*               fplog,
     mesg += gmx::formatString(" in direction %c\n", dim2char(dim));
     fprintf(fplog, "%s", mesg.c_str());
 
-    fprintf(fplog, "distance out of cell %f\n",
+    fprintf(fplog,
+            "distance out of cell %f\n",
             dir == 1 ? pos_d - comm->cell_x1[dim] : pos_d - comm->cell_x0[dim]);
     if (bHaveCgcmOld)
     {
         fprintf(fplog, "Old coordinates: %8.3f %8.3f %8.3f\n", cm_old[XX], cm_old[YY], cm_old[ZZ]);
     }
     fprintf(fplog, "New coordinates: %8.3f %8.3f %8.3f\n", cm_new[XX], cm_new[YY], cm_new[ZZ]);
-    fprintf(fplog, "Old cell boundaries in direction %c: %8.3f %8.3f\n", dim2char(dim),
-            comm->old_cell_x0[dim], comm->old_cell_x1[dim]);
-    fprintf(fplog, "New cell boundaries in direction %c: %8.3f %8.3f\n", dim2char(dim),
-            comm->cell_x0[dim], comm->cell_x1[dim]);
+    fprintf(fplog,
+            "Old cell boundaries in direction %c: %8.3f %8.3f\n",
+            dim2char(dim),
+            comm->old_cell_x0[dim],
+            comm->old_cell_x1[dim]);
+    fprintf(fplog,
+            "New cell boundaries in direction %c: %8.3f %8.3f\n",
+            dim2char(dim),
+            comm->cell_x0[dim],
+            comm->cell_x1[dim]);
 }
 
 [[noreturn]] static void cg_move_error(FILE*               fplog,
@@ -363,8 +370,8 @@ static void calc_cg_move(FILE*              fplog,
                 {
                     if (pos_d >= moveLimits.upper[d])
                     {
-                        cg_move_error(fplog, dd, step, a, d, 1, false, moveLimits.distance[d],
-                                      cm_new, cm_new, pos_d);
+                        cg_move_error(
+                                fplog, dd, step, a, d, 1, false, moveLimits.distance[d], cm_new, cm_new, pos_d);
                     }
                     dev[d] = 1;
                     if (dd->ci[d] == dd->numCells[d] - 1)
@@ -386,8 +393,8 @@ static void calc_cg_move(FILE*              fplog,
                 {
                     if (pos_d < moveLimits.lower[d])
                     {
-                        cg_move_error(fplog, dd, step, a, d, -1, false, moveLimits.distance[d],
-                                      cm_new, cm_new, pos_d);
+                        cg_move_error(
+                                fplog, dd, step, a, d, -1, false, moveLimits.distance[d], cm_new, cm_new, pos_d);
                     }
                     dev[d] = -1;
                     if (dd->ci[d] == 0)
@@ -486,8 +493,8 @@ static void calcGroupMove(FILE*                     fplog,
                 {
                     if (pos_d >= moveLimits.upper[d])
                     {
-                        cg_move_error(fplog, dd, step, g, d, 1, true, moveLimits.distance[d],
-                                      cogOld, cog, pos_d);
+                        cg_move_error(
+                                fplog, dd, step, g, d, 1, true, moveLimits.distance[d], cogOld, cog, pos_d);
                     }
                     dev[d] = 1;
                     if (dd->ci[d] == dd->numCells[d] - 1)
@@ -499,8 +506,8 @@ static void calcGroupMove(FILE*                     fplog,
                 {
                     if (pos_d < moveLimits.lower[d])
                     {
-                        cg_move_error(fplog, dd, step, g, d, -1, true, moveLimits.distance[d],
-                                      cogOld, cog, pos_d);
+                        cg_move_error(
+                                fplog, dd, step, g, d, -1, true, moveLimits.distance[d], cogOld, cog, pos_d);
                     }
                     dev[d] = -1;
                     if (dd->ci[d] == 0)
@@ -629,21 +636,43 @@ void dd_redistribute_cg(FILE*         fplog,
             {
                 const auto& updateGroupsCog = *comm->updateGroupsCog;
                 const int   numGroups       = updateGroupsCog.numCogs();
-                calcGroupMove(fplog, step, dd, state, tric_dir, tcm, cell_x0, cell_x1, moveLimits,
-                              (thread * numGroups) / nthread, ((thread + 1) * numGroups) / nthread,
+                calcGroupMove(fplog,
+                              step,
+                              dd,
+                              state,
+                              tric_dir,
+                              tcm,
+                              cell_x0,
+                              cell_x1,
+                              moveLimits,
+                              (thread * numGroups) / nthread,
+                              ((thread + 1) * numGroups) / nthread,
                               pbcAndFlags);
                 /* We need a barrier as atoms below can be in a COG of a different thread */
 #pragma omp barrier
                 const int numHomeAtoms = comm->atomRanges.numHomeAtoms();
-                applyPbcAndSetMoveFlags(updateGroupsCog, pbcAndFlags, (thread * numHomeAtoms) / nthread,
-                                        ((thread + 1) * numHomeAtoms) / nthread, state->x, move);
+                applyPbcAndSetMoveFlags(updateGroupsCog,
+                                        pbcAndFlags,
+                                        (thread * numHomeAtoms) / nthread,
+                                        ((thread + 1) * numHomeAtoms) / nthread,
+                                        state->x,
+                                        move);
             }
             else
             {
                 /* Here we handle single atoms or charge groups */
-                calc_cg_move(fplog, step, dd, state, tric_dir, tcm, cell_x0, cell_x1, moveLimits,
+                calc_cg_move(fplog,
+                             step,
+                             dd,
+                             state,
+                             tric_dir,
+                             tcm,
+                             cell_x0,
+                             cell_x1,
+                             moveLimits,
                              (thread * dd->ncg_home) / nthread,
-                             ((thread + 1) * dd->ncg_home) / nthread, move);
+                             ((thread + 1) * dd->ncg_home) / nthread,
+                             move);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -764,16 +793,26 @@ void dd_redistribute_cg(FILE*         fplog,
             flagBuffer.resize((ncg_recv + rbuf[0]) * DD_CGIBS);
 
             /* Communicate the charge group indices, sizes and flags */
-            ddSendrecv(dd, d, dir, comm->cggl_flag[cdd].data(), sbuf[0] * DD_CGIBS,
-                       flagBuffer.buffer.data() + ncg_recv * DD_CGIBS, rbuf[0] * DD_CGIBS);
+            ddSendrecv(dd,
+                       d,
+                       dir,
+                       comm->cggl_flag[cdd].data(),
+                       sbuf[0] * DD_CGIBS,
+                       flagBuffer.buffer.data() + ncg_recv * DD_CGIBS,
+                       rbuf[0] * DD_CGIBS);
 
             const int nvs = ncg[cdd] + nat[cdd] * nvec;
             const int i   = rbuf[0] + rbuf[1] * nvec;
             rvecBuffer.resize(nvr + i);
 
             /* Communicate cgcm and state */
-            ddSendrecv(dd, d, dir, as_rvec_array(comm->cgcm_state[cdd].data()), nvs,
-                       as_rvec_array(rvecBuffer.buffer.data()) + nvr, i);
+            ddSendrecv(dd,
+                       d,
+                       dir,
+                       as_rvec_array(comm->cgcm_state[cdd].data()),
+                       nvs,
+                       as_rvec_array(rvecBuffer.buffer.data()) + nvr,
+                       i);
             ncg_recv += rbuf[0];
             nvr += i;
         }
@@ -797,8 +836,8 @@ void dd_redistribute_cg(FILE*         fplog,
                     || ((flag & DD_FLAG_BW(d)) && cog[dim] < cell_x0[dim]))
                 {
                     rvec pos = { cog[0], cog[1], cog[2] };
-                    cg_move_error(fplog, dd, step, cg, dim, (flag & DD_FLAG_FW(d)) ? 1 : 0, false,
-                                  0, pos, pos, pos[dim]);
+                    cg_move_error(
+                            fplog, dd, step, cg, dim, (flag & DD_FLAG_FW(d)) ? 1 : 0, false, 0, pos, pos, pos[dim]);
                 }
             }
 
@@ -927,8 +966,10 @@ void dd_redistribute_cg(FILE*         fplog,
                 }
                 /* Copy from the receive to the send buffers */
                 memcpy(comm->cggl_flag[mc].data() + ncg[mc] * DD_CGIBS,
-                       flagBuffer.buffer.data() + cg * DD_CGIBS, DD_CGIBS * sizeof(int));
-                memcpy(comm->cgcm_state[mc][nvr], rvecBuffer.buffer.data() + buf_pos,
+                       flagBuffer.buffer.data() + cg * DD_CGIBS,
+                       DD_CGIBS * sizeof(int));
+                memcpy(comm->cgcm_state[mc][nvr],
+                       rvecBuffer.buffer.data() + buf_pos,
                        (1 + nrcg * nvec) * sizeof(rvec));
                 buf_pos += 1 + nrcg * nvec;
                 ncg[mc] += 1;
@@ -957,7 +998,9 @@ void dd_redistribute_cg(FILE*         fplog,
 
     if (debug)
     {
-        fprintf(debug, "Finished repartitioning: cgs moved out %d, new home %d\n", *ncg_moved,
+        fprintf(debug,
+                "Finished repartitioning: cgs moved out %d, new home %d\n",
+                *ncg_moved,
                 dd->ncg_home - *ncg_moved);
     }
 }

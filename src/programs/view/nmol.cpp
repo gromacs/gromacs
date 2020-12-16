@@ -590,8 +590,18 @@ void draw_mol(t_x11* x11, t_manager* man)
     }
 
     /* Draw the objects */
-    draw_objects(x11->disp, win->self, x11->gc, nvis, man->obj, man->ix, man->x, man->col,
-                 man->size, mw->bShowHydrogen, mw->bond_type, man->bPlus);
+    draw_objects(x11->disp,
+                 win->self,
+                 x11->gc,
+                 nvis,
+                 man->obj,
+                 man->ix,
+                 man->x,
+                 man->col,
+                 man->size,
+                 mw->bShowHydrogen,
+                 mw->bond_type,
+                 man->bPlus);
 
     /* Draw the labels */
     XSetForeground(x11->disp, x11->gc, WHITE);
@@ -599,8 +609,13 @@ void draw_mol(t_x11* x11, t_manager* man)
     {
         if (man->bLabel[i] && man->bVis[i])
         {
-            XDrawString(x11->disp, win->self, x11->gc, vec2[i][XX] + 2, vec2[i][YY] - 2,
-                        man->szLab[i], std::strlen(man->szLab[i]));
+            XDrawString(x11->disp,
+                        win->self,
+                        x11->gc,
+                        vec2[i][XX] + 2,
+                        vec2[i][YY] - 2,
+                        man->szLab[i],
+                        std::strlen(man->szLab[i]));
         }
     }
 

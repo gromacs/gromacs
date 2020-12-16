@@ -549,9 +549,13 @@ ISimulatorElement* getElementPointer(LegacySimulatorData*                    leg
                                      GlobalCommunicationHelper*  globalCommunicationHelper,
                                      Args&&... args)
 {
-    return Element::getElementPointerImpl(legacySimulatorData, builderHelper, statePropagatorData,
-                                          energyData, freeEnergyPerturbationData,
-                                          globalCommunicationHelper, std::forward<Args>(args)...);
+    return Element::getElementPointerImpl(legacySimulatorData,
+                                          builderHelper,
+                                          statePropagatorData,
+                                          energyData,
+                                          freeEnergyPerturbationData,
+                                          globalCommunicationHelper,
+                                          std::forward<Args>(args)...);
 }
 
 template<typename Element, typename... Args>
@@ -564,10 +568,13 @@ void ModularSimulatorAlgorithmBuilder::add(Args&&... args)
     }
 
     // Get element from factory method
-    auto* element = static_cast<Element*>(getElementPointer<Element>(
-            legacySimulatorData_, &elementAdditionHelper_, statePropagatorData_.get(),
-            energyData_.get(), freeEnergyPerturbationData_.get(), &globalCommunicationHelper_,
-            std::forward<Args>(args)...));
+    auto* element = static_cast<Element*>(getElementPointer<Element>(legacySimulatorData_,
+                                                                     &elementAdditionHelper_,
+                                                                     statePropagatorData_.get(),
+                                                                     energyData_.get(),
+                                                                     freeEnergyPerturbationData_.get(),
+                                                                     &globalCommunicationHelper_,
+                                                                     std::forward<Args>(args)...));
 
     // Make sure returned element pointer is owned by *this
     // Ensuring this makes sure we can control the life time

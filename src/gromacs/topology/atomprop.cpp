@@ -211,7 +211,9 @@ static int findPropertyIndex(AtomProperty*      ap,
         }
         else
         {
-            fprintf(debug, " match: %4s %4s\n", ap->entry[j].residueName.c_str(),
+            fprintf(debug,
+                    " match: %4s %4s\n",
+                    ap->entry[j].residueName.c_str(),
                     ap->entry[j].atomName.c_str());
         }
     }
@@ -248,16 +250,26 @@ static void addProperty(AtomProperty*      ap,
     {
         if (ap->entry[j].value == propValue)
         {
-            fprintf(stderr, "Warning double identical entries for %s %s %g on line %d in file %s\n",
-                    residueName.c_str(), atomName.c_str(), propValue, line, ap->db.c_str());
+            fprintf(stderr,
+                    "Warning double identical entries for %s %s %g on line %d in file %s\n",
+                    residueName.c_str(),
+                    atomName.c_str(),
+                    propValue,
+                    line,
+                    ap->db.c_str());
         }
         else
         {
             fprintf(stderr,
                     "Warning double different entries %s %s %g and %g on line %d in file %s\n"
                     "Using last entry (%g)\n",
-                    residueName.c_str(), atomName.c_str(), propValue, ap->entry[j].value, line,
-                    ap->db.c_str(), propValue);
+                    residueName.c_str(),
+                    atomName.c_str(),
+                    propValue,
+                    ap->entry[j].value,
+                    line,
+                    ap->db.c_str(),
+                    propValue);
             ap->entry[j].value = propValue;
         }
     }
@@ -309,10 +321,11 @@ static void readProperty(AtomProperty* ap, ResidueType* restype, double factor)
  */
 static bool setProperties(AtomProperty* ap, ResidueType* restype, int eprop, bool haveBeenWarned)
 {
-    const char* fns[epropNR] = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat",
-                                 "elements.dat" };
-    double      fac[epropNR] = { 1.0, 1.0, 418.4, 1.0, 1.0 };
-    double      def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
+    const char* fns[epropNR] = {
+        "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat"
+    };
+    double fac[epropNR] = { 1.0, 1.0, 418.4, 1.0, 1.0 };
+    double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
 
     bool printWarning = false;
     if (!ap->isSet)
@@ -364,7 +377,8 @@ static void printvdwWarning(FILE* fp)
 {
     if (nullptr != fp)
     {
-        fprintf(fp, "NOTE: From version 5.0 %s uses the Van der Waals radii\n",
+        fprintf(fp,
+                "NOTE: From version 5.0 %s uses the Van der Waals radii\n",
                 gmx::getProgramContext().displayName());
         fprintf(fp, "from the source below. This means the results may be different\n");
         fprintf(fp, "compared to previous GROMACS versions.\n");

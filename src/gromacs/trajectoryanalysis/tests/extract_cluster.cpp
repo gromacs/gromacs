@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,8 +146,9 @@ TEST_F(ExtractClusterModuleTest, WorksWithAllAtoms)
 TEST_F(ExtractClusterModuleTest, WorksWithAtomSubset)
 {
     std::string       realFileName = TestFileManager::getTestSpecificFileName("test.g96");
-    const char* const cmdline[]    = { "extract-cluster", "-o", realFileName.c_str(), "-select",
-                                    "atomnr 1 2" };
+    const char* const cmdline[]    = {
+        "extract-cluster", "-o", realFileName.c_str(), "-select", "atomnr 1 2"
+    };
 
     runTest(CommandLine(cmdline));
     compareFiles();

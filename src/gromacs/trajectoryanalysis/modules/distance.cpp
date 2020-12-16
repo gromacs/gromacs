@@ -214,7 +214,8 @@ void checkSelections(const SelectionList& sel)
             std::string message = formatString(
                     "Selection '%s' does not evaluate into an even number of positions "
                     "(there are %d positions)",
-                    sel[g].name(), sel[g].posCount());
+                    sel[g].name(),
+                    sel[g].posCount());
             GMX_THROW(InconsistentInputError(message));
         }
         if (sel[g].isDynamic())

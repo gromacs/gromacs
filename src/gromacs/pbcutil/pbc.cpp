@@ -63,8 +63,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-const gmx::EnumerationArray<PbcType, std::string> c_pbcTypeNames = { { "xyz", "no", "xy", "screw",
-                                                                       "unset" } };
+const gmx::EnumerationArray<PbcType, std::string> c_pbcTypeNames = {
+    { "xyz", "no", "xy", "screw", "unset" }
+};
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum
@@ -233,7 +234,9 @@ PbcType guessPbcType(const matrix box)
             fprintf(stderr,
                     "WARNING: Unsupported box diagonal %f %f %f, "
                     "will not use periodic boundary conditions\n\n",
-                    box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
+                    box[XX][XX],
+                    box[YY][YY],
+                    box[ZZ][ZZ]);
             bWarnedGuess = TRUE;
         }
         pbcType = PbcType::No;
@@ -550,9 +553,18 @@ static void low_set_pbc(t_pbc* pbc, PbcType pbcType, const ivec dd_pbc, const ma
                                             fprintf(debug,
                                                     "  tricvec %2d = %2d %2d %2d  %5.2f %5.2f  "
                                                     "%5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
-                                                    pbc->ntric_vec, i, j, k, sqrt(d2old),
-                                                    sqrt(d2new), trial[XX], trial[YY], trial[ZZ],
-                                                    pos[XX], pos[YY], pos[ZZ]);
+                                                    pbc->ntric_vec,
+                                                    i,
+                                                    j,
+                                                    k,
+                                                    sqrt(d2old),
+                                                    sqrt(d2new),
+                                                    trial[XX],
+                                                    trial[YY],
+                                                    trial[ZZ],
+                                                    pos[XX],
+                                                    pos[YY],
+                                                    pos[ZZ]);
                                         }
                                     }
                                 }

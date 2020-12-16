@@ -85,8 +85,19 @@ static void calc_dihs(t_xrama* xr)
     for (i = 0; (i < xr->ndih); i++)
     {
         dd      = &(xr->dih[i]);
-        dd->ang = dih_angle(xr->x[dd->ai[0]], xr->x[dd->ai[1]], xr->x[dd->ai[2]], xr->x[dd->ai[3]],
-                            nullptr, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+        dd->ang = dih_angle(xr->x[dd->ai[0]],
+                            xr->x[dd->ai[1]],
+                            xr->x[dd->ai[2]],
+                            xr->x[dd->ai[3]],
+                            nullptr,
+                            r_ij,
+                            r_kj,
+                            r_kl,
+                            m,
+                            n,
+                            &t1,
+                            &t2,
+                            &t3);
     }
 }
 
@@ -136,7 +147,9 @@ static void add_xr(t_xrama* xr, const int ff[5], const t_atoms* atoms)
     xr->pp[xr->npp].iphi  = xr->ndih - 2;
     xr->pp[xr->npp].ipsi  = xr->ndih - 1;
     xr->pp[xr->npp].bShow = FALSE;
-    sprintf(buf, "%s-%d", *atoms->resinfo[atoms->atom[ff[1]].resind].name,
+    sprintf(buf,
+            "%s-%d",
+            *atoms->resinfo[atoms->atom[ff[1]].resind].name,
             atoms->resinfo[atoms->atom[ff[1]].resind].nr);
     xr->pp[xr->npp].label = gmx_strdup(buf);
     xr->npp++;
@@ -229,8 +242,11 @@ static void get_dih_props(t_xrama* xr, const t_idef* idef, int mult)
     {
         if (xr->dih[i].mult == 0)
         {
-            fprintf(stderr, "Dihedral around %d,%d not found in topology. Using mult=%d\n",
-                    xr->dih[i].ai[1], xr->dih[i].ai[2], mult);
+            fprintf(stderr,
+                    "Dihedral around %d,%d not found in topology. Using mult=%d\n",
+                    xr->dih[i].ai[1],
+                    xr->dih[i].ai[2],
+                    mult);
             xr->dih[i].mult = mult;
             xr->dih[i].phi0 = 180;
         }

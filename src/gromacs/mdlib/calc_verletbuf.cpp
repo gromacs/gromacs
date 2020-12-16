@@ -311,8 +311,11 @@ static void get_vsite_masses(const gmx_moltype_t&  moltype,
             }
             if (gmx_debug_at)
             {
-                fprintf(debug, "atom %4d %-20s mass %6.3f\n", a1,
-                        interaction_function[ilist.functionType].longname, vsite_m[a1]);
+                fprintf(debug,
+                        "atom %4d %-20s mass %6.3f\n",
+                        a1,
+                        interaction_function[ilist.functionType].longname,
+                        vsite_m[a1]);
             }
         }
     }
@@ -421,10 +424,16 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
     {
         for (size_t a = 0; a < att.size(); a++)
         {
-            fprintf(debug, "type %zu: m %5.2f t %d q %6.3f con %s con_m %5.3f con_l %5.3f n %d\n",
-                    a, att[a].prop.mass, att[a].prop.type, att[a].prop.q,
-                    gmx::boolToString(att[a].prop.bConstr), att[a].prop.con_mass,
-                    att[a].prop.con_len, att[a].n);
+            fprintf(debug,
+                    "type %zu: m %5.2f t %d q %6.3f con %s con_m %5.3f con_l %5.3f n %d\n",
+                    a,
+                    att[a].prop.mass,
+                    att[a].prop.type,
+                    att[a].prop.q,
+                    gmx::boolToString(att[a].prop.bConstr),
+                    att[a].prop.con_mass,
+                    att[a].prop.con_len,
+                    att[a].n);
         }
     }
 
@@ -657,8 +666,8 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
             lj.d2  = c6 * ljDisp->d2 + c12 * ljRep->d2;
             lj.md3 = c6 * ljDisp->md3 + c12 * ljRep->md3;
 
-            real pot_lj = energyDriftAtomPair(prop_i->bConstr, prop_j->bConstr, s2, s2i_2d, s2j_2d,
-                                              rlist - rlj, &lj);
+            real pot_lj = energyDriftAtomPair(
+                    prop_i->bConstr, prop_j->bConstr, s2, s2i_2d, s2j_2d, rlist - rlj, &lj);
 
             // Set -V' and V'' at the cut-off for Coulomb
             pot_derivatives_t elec_qq;
@@ -666,8 +675,8 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
             elec_qq.d2  = elec->d2 * prop_i->q * prop_j->q;
             elec_qq.md3 = 0;
 
-            real pot_q = energyDriftAtomPair(prop_i->bConstr, prop_j->bConstr, s2, s2i_2d, s2j_2d,
-                                             rlist - rcoulomb, &elec_qq);
+            real pot_q = energyDriftAtomPair(
+                    prop_i->bConstr, prop_j->bConstr, s2, s2i_2d, s2j_2d, rlist - rcoulomb, &elec_qq);
 
             // Note that attractive and repulsive potentials for individual
             // pairs can partially cancel.
@@ -1053,8 +1062,8 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
          */
-        drift = energyDrift(att, &mtop.ffparams, kT_fac, &ljDisp, &ljRep, &elec, ir.rvdw,
-                            ir.rcoulomb, rl, boxVolume);
+        drift = energyDrift(
+                att, &mtop.ffparams, kT_fac, &ljDisp, &ljRep, &elec, ir.rvdw, ir.rcoulomb, rl, boxVolume);
 
         /* Correct for the fact that we are using a Ni x Nj particle pair list
          * and not a 1 x 1 particle pair list. This reduces the drift.
@@ -1070,9 +1079,16 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
 
         if (debug)
         {
-            fprintf(debug, "ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %.1e\n", ib0, ib, ib1, rb,
-                    listSetup.cluster_size_i, listSetup.cluster_size_j,
-                    nb_clust_frac_pairs_not_in_list_at_cutoff, drift);
+            fprintf(debug,
+                    "ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %.1e\n",
+                    ib0,
+                    ib,
+                    ib1,
+                    rb,
+                    listSetup.cluster_size_i,
+                    listSetup.cluster_size_j,
+                    nb_clust_frac_pairs_not_in_list_at_cutoff,
+                    drift);
         }
 
         if (std::abs(drift) > ir.verletbuf_tol)
@@ -1120,8 +1136,8 @@ static real chanceOfAtomCrossingCell(gmx::ArrayRef<const VerletbufAtomtype> atom
         real                                 s2_3d;
         get_atom_sigma2(kT_fac, &propAtom, &s2_2d, &s2_3d);
 
-        real chancePerAtom = energyDriftAtomPair(propAtom.bConstr, false, s2_2d + s2_3d, s2_2d, 0,
-                                                 cellSize, &boundaryInteraction);
+        real chancePerAtom = energyDriftAtomPair(
+                propAtom.bConstr, false, s2_2d + s2_3d, s2_2d, 0, cellSize, &boundaryInteraction);
 
         if (propAtom.bConstr)
         {
@@ -1273,8 +1289,8 @@ static real chanceOfUpdateGroupCrossingCell(const gmx_moltype_t&          moltyp
             }
         }
         real s2_3d = kT_fac / massSum;
-        chance += energyDriftAtomPair(false, false, s2_3d, 0, 0, cellSize - 2 * maxComCogDistance,
-                                      &boundaryInteraction);
+        chance += energyDriftAtomPair(
+                false, false, s2_3d, 0, 0, cellSize - 2 * maxComCogDistance, &boundaryInteraction);
     }
 
     return chance;
@@ -1294,8 +1310,8 @@ static real chanceOfUpdateGroupCrossingCell(const gmx_mtop_t&      mtop,
     {
         const gmx_moltype_t& moltype = mtop.moltype[molblock.type];
         chance += molblock.nmol
-                  * chanceOfUpdateGroupCrossingCell(moltype, mtop.ffparams,
-                                                    updateGrouping[molblock.type], kT_fac, cellSize);
+                  * chanceOfUpdateGroupCrossingCell(
+                            moltype, mtop.ffparams, updateGrouping[molblock.type], kT_fac, cellSize);
     }
 
     return chance;

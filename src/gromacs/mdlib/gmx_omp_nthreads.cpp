@@ -127,7 +127,9 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, int m, gmx_bool bSe
 
         if (!bOMP)
         {
-            gmx_warning("%s=%d is set, but %s is compiled without OpenMP!", modth_env_var[m], nth,
+            gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
+                        modth_env_var[m],
+                        nth,
                         gmx::getProgramContext().displayName());
         }
 
@@ -138,7 +140,8 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, int m, gmx_bool bSe
             gmx_warning(
                     "%s=%d is set, the default number of threads also "
                     "needs to be set with OMP_NUM_THREADS!",
-                    modth_env_var[m], nth);
+                    modth_env_var[m],
+                    nth);
         }
 
         /* only babble if we are really overriding with a different value */
@@ -147,7 +150,9 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, int m, gmx_bool bSe
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted("%s=%d set, overriding the default number of %s threads",
-                                         modth_env_var[m], nth, mod_name[m]);
+                                         modth_env_var[m],
+                                         nth,
+                                         mod_name[m]);
         }
     }
     else
@@ -184,7 +189,8 @@ void gmx_omp_nthreads_read_env(const gmx::MDLogger& mdlog, int* nthreads_omp)
                       "Environment variable OMP_NUM_THREADS (%d) and the number of threads "
                       "requested on the command line (%d) have different values. Either omit one, "
                       "or set them both to the same value.",
-                      nt_omp, *nthreads_omp);
+                      nt_omp,
+                      *nthreads_omp);
         }
 
         /* Setting the number of OpenMP threads. */
@@ -405,7 +411,9 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
     if (nth_max == nth_min)
     {
         GMX_LOG(mdlog.warning)
-                .appendTextFormatted("Using %d OpenMP thread%s %s", nth_min, nth_min > 1 ? "s" : "",
+                .appendTextFormatted("Using %d OpenMP thread%s %s",
+                                     nth_min,
+                                     nth_min > 1 ? "s" : "",
                                      cr->nnodes > 1 ? mpi_str : "");
     }
     else
@@ -418,14 +426,16 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
         if (nth_pme_max == nth_pme_min)
         {
             GMX_LOG(mdlog.warning)
-                    .appendTextFormatted("Using %d OpenMP thread%s %s for PME", nth_pme_min,
-                                         nth_pme_min > 1 ? "s" : "", cr->nnodes > 1 ? mpi_str : "");
+                    .appendTextFormatted("Using %d OpenMP thread%s %s for PME",
+                                         nth_pme_min,
+                                         nth_pme_min > 1 ? "s" : "",
+                                         cr->nnodes > 1 ? mpi_str : "");
         }
         else
         {
             GMX_LOG(mdlog.warning)
-                    .appendTextFormatted("Using %d - %d OpenMP threads %s for PME", nth_pme_min,
-                                         nth_pme_max, mpi_str);
+                    .appendTextFormatted(
+                            "Using %d - %d OpenMP threads %s for PME", nth_pme_min, nth_pme_max, mpi_str);
         }
     }
     GMX_LOG(mdlog.warning);
@@ -445,8 +455,15 @@ void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
 
     bSepPME = (thisRankHasDuty(cr, DUTY_PP) != thisRankHasDuty(cr, DUTY_PME));
 
-    manage_number_of_openmp_threads(mdlog, cr, bOMP, nthreads_hw_avail, omp_nthreads_req,
-                                    omp_nthreads_pme_req, bThisNodePMEOnly, numRanksOnThisNode, bSepPME);
+    manage_number_of_openmp_threads(mdlog,
+                                    cr,
+                                    bOMP,
+                                    nthreads_hw_avail,
+                                    omp_nthreads_req,
+                                    omp_nthreads_pme_req,
+                                    bThisNodePMEOnly,
+                                    numRanksOnThisNode,
+                                    bSepPME);
 #if GMX_THREAD_MPI
     /* Non-master threads have to wait for the OpenMP management to be
      * done, so that code elsewhere that uses OpenMP can be certain

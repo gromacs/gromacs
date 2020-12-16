@@ -158,7 +158,8 @@ void export_context(py::module& m)
     // Add argument type before it is used for more sensible automatic bindings behavior.
     py::class_<MDArgs, std::unique_ptr<MDArgs>> mdargs(m, "MDArgs");
     mdargs.def(py::init(), "Create an empty MDArgs object.");
-    mdargs.def("set", [](MDArgs* self, const py::dict& params) { setMDArgs(self, params); },
+    mdargs.def("set",
+               [](MDArgs* self, const py::dict& params) { setMDArgs(self, params); },
                "Assign parameters in MDArgs from Python dict.");
 
     // Export execution context class

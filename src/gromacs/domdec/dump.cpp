@@ -119,8 +119,21 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
                         cx[YY] = grid_r[i * 2 + y][YY];
                         cx[ZZ] = grid_r[i * 2 + z][ZZ];
                         mvmul(tric, cx, r);
-                        gmx_fprintf_pdb_atomline(out, epdbATOM, a++, "CA", ' ', "GLY", ' ', i + 1, ' ',
-                                                 10 * r[XX], 10 * r[YY], 10 * r[ZZ], 1.0, vol, "");
+                        gmx_fprintf_pdb_atomline(out,
+                                                 epdbATOM,
+                                                 a++,
+                                                 "CA",
+                                                 ' ',
+                                                 "GLY",
+                                                 ' ',
+                                                 i + 1,
+                                                 ' ',
+                                                 10 * r[XX],
+                                                 10 * r[YY],
+                                                 10 * r[ZZ],
+                                                 1.0,
+                                                 vol,
+                                                 "");
                     }
                 }
             }
@@ -194,8 +207,21 @@ void write_dd_pdb(const char*       fn,
         {
             b = dd->comm->zones.n + 1;
         }
-        gmx_fprintf_pdb_atomline(out, epdbATOM, ii + 1, atomname, ' ', resname, ' ', resnr, ' ',
-                                 10 * x[i][XX], 10 * x[i][YY], 10 * x[i][ZZ], 1.0, b, "");
+        gmx_fprintf_pdb_atomline(out,
+                                 epdbATOM,
+                                 ii + 1,
+                                 atomname,
+                                 ' ',
+                                 resname,
+                                 ' ',
+                                 resnr,
+                                 ' ',
+                                 10 * x[i][XX],
+                                 10 * x[i][YY],
+                                 10 * x[i][ZZ],
+                                 1.0,
+                                 b,
+                                 "");
     }
     fprintf(out, "TER\n");
 

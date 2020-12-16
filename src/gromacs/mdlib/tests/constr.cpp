@@ -151,7 +151,12 @@ public:
                     "rij = %f, which is not equal to r0 = %f for constraint #%zd, between atoms %d "
                     "and %d"
                     " (before constraining rij was %f).",
-                    d1, r0, c, i, j, d0);
+                    d1,
+                    r0,
+                    c,
+                    i,
+                    j,
+                    d0);
         }
     }
 
@@ -274,7 +279,8 @@ public:
                         << gmx::formatString(
                                    "Values in virial tensor at [%d][%d] are not within the "
                                    "tolerance from reference value.",
-                                   i, j);
+                                   i,
+                                   j);
             }
         }
     }
@@ -323,18 +329,36 @@ TEST_P(ConstraintsTest, SingleConstraint)
     int  lincslincsExpansionOrder = 4;
     real lincsWarnAngle           = 30.0;
 
-    std::unique_ptr<ConstraintsTestData> testData = std::make_unique<ConstraintsTestData>(
-            title, numAtoms, masses, constraints, constraintsR0, true, virialScaledRef, false, 0,
-            real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
-            lincslincsExpansionOrder, lincsWarnAngle);
+    std::unique_ptr<ConstraintsTestData> testData =
+            std::make_unique<ConstraintsTestData>(title,
+                                                  numAtoms,
+                                                  masses,
+                                                  constraints,
+                                                  constraintsR0,
+                                                  true,
+                                                  virialScaledRef,
+                                                  false,
+                                                  0,
+                                                  real(0.0),
+                                                  real(0.001),
+                                                  x,
+                                                  xPrime,
+                                                  v,
+                                                  shakeTolerance,
+                                                  shakeUseSOR,
+                                                  lincsNIter,
+                                                  lincslincsExpansionOrder,
+                                                  lincsWarnAngle);
 
     t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
-                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.",
+                                  testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(),
+                                  runner->name().c_str()));
 
         testData->reset();
 
@@ -381,18 +405,36 @@ TEST_P(ConstraintsTest, TwoDisjointConstraints)
     int  lincslincsExpansionOrder = 4;
     real lincsWarnAngle           = 30.0;
 
-    std::unique_ptr<ConstraintsTestData> testData = std::make_unique<ConstraintsTestData>(
-            title, numAtoms, masses, constraints, constraintsR0, true, virialScaledRef, false, 0,
-            real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
-            lincslincsExpansionOrder, lincsWarnAngle);
+    std::unique_ptr<ConstraintsTestData> testData =
+            std::make_unique<ConstraintsTestData>(title,
+                                                  numAtoms,
+                                                  masses,
+                                                  constraints,
+                                                  constraintsR0,
+                                                  true,
+                                                  virialScaledRef,
+                                                  false,
+                                                  0,
+                                                  real(0.0),
+                                                  real(0.001),
+                                                  x,
+                                                  xPrime,
+                                                  v,
+                                                  shakeTolerance,
+                                                  shakeUseSOR,
+                                                  lincsNIter,
+                                                  lincslincsExpansionOrder,
+                                                  lincsWarnAngle);
 
     t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
-                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.",
+                                  testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(),
+                                  runner->name().c_str()));
 
         testData->reset();
 
@@ -439,18 +481,36 @@ TEST_P(ConstraintsTest, ThreeSequentialConstraints)
     int  lincslincsExpansionOrder = 4;
     real lincsWarnAngle           = 30.0;
 
-    std::unique_ptr<ConstraintsTestData> testData = std::make_unique<ConstraintsTestData>(
-            title, numAtoms, masses, constraints, constraintsR0, true, virialScaledRef, false, 0,
-            real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
-            lincslincsExpansionOrder, lincsWarnAngle);
+    std::unique_ptr<ConstraintsTestData> testData =
+            std::make_unique<ConstraintsTestData>(title,
+                                                  numAtoms,
+                                                  masses,
+                                                  constraints,
+                                                  constraintsR0,
+                                                  true,
+                                                  virialScaledRef,
+                                                  false,
+                                                  0,
+                                                  real(0.0),
+                                                  real(0.001),
+                                                  x,
+                                                  xPrime,
+                                                  v,
+                                                  shakeTolerance,
+                                                  shakeUseSOR,
+                                                  lincsNIter,
+                                                  lincslincsExpansionOrder,
+                                                  lincsWarnAngle);
 
     t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
-                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.",
+                                  testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(),
+                                  runner->name().c_str()));
 
         testData->reset();
 
@@ -498,18 +558,36 @@ TEST_P(ConstraintsTest, ThreeConstraintsWithCentralAtom)
     int  lincslincsExpansionOrder = 4;
     real lincsWarnAngle           = 30.0;
 
-    std::unique_ptr<ConstraintsTestData> testData = std::make_unique<ConstraintsTestData>(
-            title, numAtoms, masses, constraints, constraintsR0, true, virialScaledRef, false, 0,
-            real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
-            lincslincsExpansionOrder, lincsWarnAngle);
+    std::unique_ptr<ConstraintsTestData> testData =
+            std::make_unique<ConstraintsTestData>(title,
+                                                  numAtoms,
+                                                  masses,
+                                                  constraints,
+                                                  constraintsR0,
+                                                  true,
+                                                  virialScaledRef,
+                                                  false,
+                                                  0,
+                                                  real(0.0),
+                                                  real(0.001),
+                                                  x,
+                                                  xPrime,
+                                                  v,
+                                                  shakeTolerance,
+                                                  shakeUseSOR,
+                                                  lincsNIter,
+                                                  lincslincsExpansionOrder,
+                                                  lincsWarnAngle);
 
     t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
-                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.",
+                                  testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(),
+                                  runner->name().c_str()));
 
         testData->reset();
 
@@ -556,18 +634,36 @@ TEST_P(ConstraintsTest, FourSequentialConstraints)
     int  lincslincsExpansionOrder = 8;
     real lincsWarnAngle           = 30.0;
 
-    std::unique_ptr<ConstraintsTestData> testData = std::make_unique<ConstraintsTestData>(
-            title, numAtoms, masses, constraints, constraintsR0, true, virialScaledRef, false, 0,
-            real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
-            lincslincsExpansionOrder, lincsWarnAngle);
+    std::unique_ptr<ConstraintsTestData> testData =
+            std::make_unique<ConstraintsTestData>(title,
+                                                  numAtoms,
+                                                  masses,
+                                                  constraints,
+                                                  constraintsR0,
+                                                  true,
+                                                  virialScaledRef,
+                                                  false,
+                                                  0,
+                                                  real(0.0),
+                                                  real(0.001),
+                                                  x,
+                                                  xPrime,
+                                                  v,
+                                                  shakeTolerance,
+                                                  shakeUseSOR,
+                                                  lincsNIter,
+                                                  lincslincsExpansionOrder,
+                                                  lincsWarnAngle);
 
     t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
-                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.",
+                                  testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(),
+                                  runner->name().c_str()));
 
         testData->reset();
 
@@ -613,18 +709,36 @@ TEST_P(ConstraintsTest, TriangleOfConstraints)
     int  lincslincsExpansionOrder = 4;
     real lincsWarnAngle           = 30.0;
 
-    std::unique_ptr<ConstraintsTestData> testData = std::make_unique<ConstraintsTestData>(
-            title, numAtoms, masses, constraints, constraintsR0, true, virialScaledRef, false, 0,
-            real(0.0), real(0.001), x, xPrime, v, shakeTolerance, shakeUseSOR, lincsNIter,
-            lincslincsExpansionOrder, lincsWarnAngle);
+    std::unique_ptr<ConstraintsTestData> testData =
+            std::make_unique<ConstraintsTestData>(title,
+                                                  numAtoms,
+                                                  masses,
+                                                  constraints,
+                                                  constraintsR0,
+                                                  true,
+                                                  virialScaledRef,
+                                                  false,
+                                                  0,
+                                                  real(0.0),
+                                                  real(0.001),
+                                                  x,
+                                                  xPrime,
+                                                  v,
+                                                  shakeTolerance,
+                                                  shakeUseSOR,
+                                                  lincsNIter,
+                                                  lincslincsExpansionOrder,
+                                                  lincsWarnAngle);
 
     t_pbc pbc = GetParam();
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
     {
-        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.", testData->title_.c_str(),
-                                  c_pbcTypeNames[pbc.pbcType].c_str(), runner->name().c_str()));
+        SCOPED_TRACE(formatString("Testing %s with %s PBC using %s.",
+                                  testData->title_.c_str(),
+                                  c_pbcTypeNames[pbc.pbcType].c_str(),
+                                  runner->name().c_str()));
 
         testData->reset();
 

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -548,8 +548,8 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext& context)
         SynopsisFormatter synopsisFormatter(writerContext);
         synopsisFormatter.start(context.moduleDisplayName());
         filter.formatSelected(OptionsFilter::eSelectInputFileOptions, &synopsisFormatter, impl_->options_);
-        filter.formatSelected(OptionsFilter::eSelectInputOutputFileOptions, &synopsisFormatter,
-                              impl_->options_);
+        filter.formatSelected(
+                OptionsFilter::eSelectInputOutputFileOptions, &synopsisFormatter, impl_->options_);
         filter.formatSelected(OptionsFilter::eSelectOutputFileOptions, &synopsisFormatter, impl_->options_);
         filter.formatSelected(OptionsFilter::eSelectOtherOptions, &synopsisFormatter, impl_->options_);
         synopsisFormatter.finish();

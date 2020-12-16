@@ -335,8 +335,14 @@ static void apply_forces_coord(struct pull_t*               pull,
 
     if (pcrd.params.eGeom == epullgCYL)
     {
-        apply_forces_cyl_grp(&pull->dyna[coord], pcrd.spatialData.cyl_dev, masses, forces.force01,
-                             pcrd.scalarForce, -1, f, pull->nthreads);
+        apply_forces_cyl_grp(&pull->dyna[coord],
+                             pcrd.spatialData.cyl_dev,
+                             masses,
+                             forces.force01,
+                             pcrd.scalarForce,
+                             -1,
+                             f,
+                             pull->nthreads);
 
         /* Sum the force along the vector and the radial force */
         dvec f_tot;
@@ -358,24 +364,22 @@ static void apply_forces_coord(struct pull_t*               pull,
 
         if (!pull->group[pcrd.params.group[0]].params.ind.empty())
         {
-            apply_forces_grp(&pull->group[pcrd.params.group[0]], masses, forces.force01, -1, f,
-                             pull->nthreads);
+            apply_forces_grp(
+                    &pull->group[pcrd.params.group[0]], masses, forces.force01, -1, f, pull->nthreads);
         }
         apply_forces_grp(&pull->group[pcrd.params.group[1]], masses, forces.force01, 1, f, pull->nthreads);
 
         if (pcrd.params.ngroup >= 4)
         {
-            apply_forces_grp(&pull->group[pcrd.params.group[2]], masses, forces.force23, -1, f,
-                             pull->nthreads);
-            apply_forces_grp(&pull->group[pcrd.params.group[3]], masses, forces.force23, 1, f,
-                             pull->nthreads);
+            apply_forces_grp(
+                    &pull->group[pcrd.params.group[2]], masses, forces.force23, -1, f, pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd.params.group[3]], masses, forces.force23, 1, f, pull->nthreads);
         }
         if (pcrd.params.ngroup >= 6)
         {
-            apply_forces_grp(&pull->group[pcrd.params.group[4]], masses, forces.force45, -1, f,
-                             pull->nthreads);
-            apply_forces_grp(&pull->group[pcrd.params.group[5]], masses, forces.force45, 1, f,
-                             pull->nthreads);
+            apply_forces_grp(
+                    &pull->group[pcrd.params.group[4]], masses, forces.force45, -1, f, pull->nthreads);
+            apply_forces_grp(&pull->group[pcrd.params.group[5]], masses, forces.force45, 1, f, pull->nthreads);
         }
     }
 }
@@ -502,8 +506,14 @@ static void low_get_pull_coord_dr(const struct pull_t*     pull,
         gmx_fatal(FARGS,
                   "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the "
                   "box size (%f).\n%s",
-                  pcrd->params.group[0], pcrd->params.group[1], sqrt(dr2),
-                  sqrt(0.98 * 0.98 * max_dist2), pcrd->params.eGeom == epullgDIR ? "You might want to consider using \"pull-geometry = direction-periodic\" instead.\n" : "");
+                  pcrd->params.group[0],
+                  pcrd->params.group[1],
+                  sqrt(dr2),
+                  sqrt(0.98 * 0.98 * max_dist2),
+                  pcrd->params.eGeom == epullgDIR
+                          ? "You might want to consider using \"pull-geometry = "
+                            "direction-periodic\" instead.\n"
+                          : "");
     }
 
     if (pcrd->params.eGeom == epullgDIRPBC)
@@ -556,8 +566,14 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
         }
         if (debug)
         {
-            fprintf(debug, "pull coord %d vector: %6.3f %6.3f %6.3f normalized: %6.3f %6.3f %6.3f\n",
-                    coord_ind, vec[XX], vec[YY], vec[ZZ], spatialData.vec[XX], spatialData.vec[YY],
+            fprintf(debug,
+                    "pull coord %d vector: %6.3f %6.3f %6.3f normalized: %6.3f %6.3f %6.3f\n",
+                    coord_ind,
+                    vec[XX],
+                    vec[YY],
+                    vec[ZZ],
+                    spatialData.vec[XX],
+                    spatialData.vec[YY],
                     spatialData.vec[ZZ]);
         }
     }
@@ -565,8 +581,12 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
     pull_group_work_t* pgrp0 = &pull->group[pcrd->params.group[0]];
     pull_group_work_t* pgrp1 = &pull->group[pcrd->params.group[1]];
 
-    low_get_pull_coord_dr(pull, pcrd, pbc, pgrp1->x,
-                          pcrd->params.eGeom == epullgCYL ? pull->dyna[coord_ind].x : pgrp0->x, md2,
+    low_get_pull_coord_dr(pull,
+                          pcrd,
+                          pbc,
+                          pgrp1->x,
+                          pcrd->params.eGeom == epullgCYL ? pull->dyna[coord_ind].x : pgrp0->x,
+                          md2,
                           spatialData.dr01);
 
     if (pcrd->params.ngroup >= 4)
@@ -615,7 +635,8 @@ static void low_set_pull_coord_reference_value(pull_coord_work_t* pcrd, int coor
         {
             gmx_fatal(FARGS,
                       "Pull reference distance for coordinate %d (%f) needs to be non-negative",
-                      coord_ind + 1, value_ref);
+                      coord_ind + 1,
+                      value_ref);
         }
     }
     else if (pcrd->params.eGeom == epullgANGLE || pcrd->params.eGeom == epullgANGLEAXIS)
@@ -823,8 +844,12 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
         const PullCoordSpatialData& spatialData = pcrd->spatialData;
         if (debug)
         {
-            fprintf(debug, "Pull coord %zu dr %f %f %f\n", c, spatialData.dr01[XX],
-                    spatialData.dr01[YY], spatialData.dr01[ZZ]);
+            fprintf(debug,
+                    "Pull coord %zu dr %f %f %f\n",
+                    c,
+                    spatialData.dr01[XX],
+                    spatialData.dr01[YY],
+                    spatialData.dr01[ZZ]);
         }
 
         if (pcrd->params.eGeom == epullgDIR || pcrd->params.eGeom == epullgDIRPBC)
@@ -879,8 +904,8 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
             pgrp1 = &pull->group[pcrd->params.group[1]];
 
             /* Get the current difference vector */
-            low_get_pull_coord_dr(pull, pcrd, pbc, rnew[pcrd->params.group[1]],
-                                  rnew[pcrd->params.group[0]], -1, unc_ij);
+            low_get_pull_coord_dr(
+                    pull, pcrd, pbc, rnew[pcrd->params.group[1]], rnew[pcrd->params.group[0]], -1, unc_ij);
 
             if (debug)
             {
@@ -897,7 +922,8 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
                         gmx_fatal(
                                 FARGS,
                                 "The pull constraint reference distance for group %zu is <= 0 (%f)",
-                                c, pcrd->value_ref);
+                                c,
+                                pcrd->value_ref);
                     }
 
                     {
@@ -920,8 +946,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
 
                         if (debug)
                         {
-                            fprintf(debug, "Pull ax^2+bx+c=0: a=%e b=%e c=%e lambda=%e\n", c_a, c_b,
-                                    c_c, lambda);
+                            fprintf(debug, "Pull ax^2+bx+c=0: a=%e b=%e c=%e lambda=%e\n", c_a, c_b, c_c, lambda);
                         }
                     }
 
@@ -965,12 +990,33 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
                 g1 = pcrd->params.group[1];
                 low_get_pull_coord_dr(pull, pcrd, pbc, rnew[g1], rnew[g0], -1, tmp);
                 low_get_pull_coord_dr(pull, pcrd, pbc, dr1, dr0, -1, tmp3);
-                fprintf(debug, "Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n", rnew[g0][0],
-                        rnew[g0][1], rnew[g0][2], rnew[g1][0], rnew[g1][1], rnew[g1][2], dnorm(tmp));
-                fprintf(debug, "Pull ref %8s %8s %8s   %8s %8s %8s d: %8.5f\n", "", "", "", "", "",
-                        "", pcrd->value_ref);
-                fprintf(debug, "Pull cor %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n", dr0[0],
-                        dr0[1], dr0[2], dr1[0], dr1[1], dr1[2], dnorm(tmp3));
+                fprintf(debug,
+                        "Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
+                        rnew[g0][0],
+                        rnew[g0][1],
+                        rnew[g0][2],
+                        rnew[g1][0],
+                        rnew[g1][1],
+                        rnew[g1][2],
+                        dnorm(tmp));
+                fprintf(debug,
+                        "Pull ref %8s %8s %8s   %8s %8s %8s d: %8.5f\n",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        pcrd->value_ref);
+                fprintf(debug,
+                        "Pull cor %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
+                        dr0[0],
+                        dr0[1],
+                        dr0[2],
+                        dr1[0],
+                        dr1[1],
+                        dr1[2],
+                        dnorm(tmp3));
             } /* END DEBUG */
 
             /* Update the COMs with dr */
@@ -986,8 +1032,8 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
                 continue;
             }
 
-            low_get_pull_coord_dr(pull, &coord, pbc, rnew[coord.params.group[1]],
-                                  rnew[coord.params.group[0]], -1, unc_ij);
+            low_get_pull_coord_dr(
+                    pull, &coord, pbc, rnew[coord.params.group[1]], rnew[coord.params.group[0]], -1, unc_ij);
 
             switch (coord.params.eGeom)
             {
@@ -1015,7 +1061,10 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
                             "Pull constraint not converged: "
                             "groups %d %d,"
                             "d_ref = %f, current d = %f\n",
-                            coord.params.group[0], coord.params.group[1], coord.value_ref, dnorm(unc_ij));
+                            coord.params.group[0],
+                            coord.params.group[1],
+                            coord.value_ref,
+                            dnorm(unc_ij));
                 }
 
                 bConverged_all = FALSE;
@@ -1311,9 +1360,8 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
             dist_32        = sqrdist_32 * inv_dist_32;
 
             /* Forces on groups 0, 1 */
-            a_01 = pcrd.scalarForce * dist_32 / m2; /* scalarForce is -dV/dphi */
-            dsvmul(-a_01, spatialData.planevec_m,
-                   forces.force01); /* added sign to get force on group 1, not 0 */
+            a_01 = pcrd.scalarForce * dist_32 / m2;                /* scalarForce is -dV/dphi */
+            dsvmul(-a_01, spatialData.planevec_m, forces.force01); /* added sign to get force on group 1, not 0 */
 
             /* Forces on groups 4, 5 */
             a_45 = -pcrd.scalarForce * dist_32 / n2;
@@ -1366,7 +1414,10 @@ void register_external_pull_potential(struct pull_t* pull, int coord_index, cons
         gmx_fatal(FARGS,
                   "Module '%s' attempted to register an external potential for pull coordinate %d "
                   "which is out of the pull coordinate range %d - %zu\n",
-                  provider, coord_index + 1, 1, pull->coord.size());
+                  provider,
+                  coord_index + 1,
+                  1,
+                  pull->coord.size());
     }
 
     pull_coord_work_t* pcrd = &pull->coord[coord_index];
@@ -1377,7 +1428,10 @@ void register_external_pull_potential(struct pull_t* pull, int coord_index, cons
                 FARGS,
                 "Module '%s' attempted to register an external potential for pull coordinate %d "
                 "which of type '%s', whereas external potentials are only supported with type '%s'",
-                provider, coord_index + 1, epull_names[pcrd->params.eType], epull_names[epullEXTERNAL]);
+                provider,
+                coord_index + 1,
+                epull_names[pcrd->params.eType],
+                epull_names[epullEXTERNAL]);
     }
 
     GMX_RELEASE_ASSERT(!pcrd->params.externalPotentialProvider.empty(),
@@ -1388,7 +1442,9 @@ void register_external_pull_potential(struct pull_t* pull, int coord_index, cons
         gmx_fatal(FARGS,
                   "Module '%s' attempted to register an external potential for pull coordinate %d "
                   "which expects the external potential to be provided by a module named '%s'",
-                  provider, coord_index + 1, pcrd->params.externalPotentialProvider.c_str());
+                  provider,
+                  coord_index + 1,
+                  pcrd->params.externalPotentialProvider.c_str());
     }
 
     /* Lock to avoid (extremely unlikely) simultaneous reading and writing of
@@ -1402,7 +1458,8 @@ void register_external_pull_potential(struct pull_t* pull, int coord_index, cons
         gmx_fatal(FARGS,
                   "Module '%s' attempted to register an external potential for pull coordinate %d "
                   "more than once",
-                  provider, coord_index + 1);
+                  provider,
+                  coord_index + 1);
     }
 
     pcrd->bExternalPotentialProviderHasBeenRegistered = true;
@@ -1434,7 +1491,8 @@ static void check_external_potential_registration(const struct pull_t* pull)
                   "No external provider for external pull potentials have been provided for %d "
                   "pull coordinates. The first coordinate without provider is number %zu, which "
                   "expects a module named '%s' to provide the external potential.",
-                  pull->numUnregisteredExternalPotentials, c + 1,
+                  pull->numUnregisteredExternalPotentials,
+                  c + 1,
                   pull->coord[c].params.externalPotentialProvider.c_str());
     }
 }
@@ -1481,8 +1539,8 @@ void apply_external_pull_coord_force(struct pull_t*        pull,
             forceWithVirial->addVirialContribution(virial);
         }
 
-        apply_forces_coord(pull, coord_index, pullCoordForces, masses,
-                           as_rvec_array(forceWithVirial->force_.data()));
+        apply_forces_coord(
+                pull, coord_index, pullCoordForces, masses, as_rvec_array(forceWithVirial->force_.data()));
     }
 
     pull->numExternalPotentialsStillToBeAppliedThisStep--;
@@ -1662,8 +1720,11 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
 
         if (debug && dd != nullptr)
         {
-            fprintf(debug, "Our DD rank (%3d) pull #atoms>0 or master: %s, will be part %s\n", dd->rank,
-                    gmx::boolToString(bMustParticipate), gmx::boolToString(bWillParticipate));
+            fprintf(debug,
+                    "Our DD rank (%3d) pull #atoms>0 or master: %s, will be part %s\n",
+                    dd->rank,
+                    gmx::boolToString(bMustParticipate),
+                    gmx::boolToString(bWillParticipate));
         }
 
         if (bWillParticipate)
@@ -1842,8 +1903,10 @@ static void init_pull_group_index(FILE*              fplog,
         }
         else
         {
-            gmx_fatal(FARGS, "The total%s mass of pull group %d is zero",
-                      !pg->params.weight.empty() ? " weighted" : "", g);
+            gmx_fatal(FARGS,
+                      "The total%s mass of pull group %d is zero",
+                      !pg->params.weight.empty() ? " weighted" : "",
+                      g);
         }
     }
     if (fplog)
@@ -1903,7 +1966,8 @@ struct pull_t* init_pull(FILE*                     fplog,
 
     for (int i = 0; i < pull_params->ngroup; ++i)
     {
-        pull->group.emplace_back(pull_params->group[i], atomSets->add(pull_params->group[i].ind),
+        pull->group.emplace_back(pull_params->group[i],
+                                 atomSets->add(pull_params->group[i].ind),
                                  pull_params->bSetPbcRefToPrevStepCOM);
     }
 
@@ -1967,7 +2031,9 @@ struct pull_t* init_pull(FILE*                     fplog,
                           "%d in the input is larger than that supported by the code (up to %d). "
                           "You are probably reading a tpr file generated with a newer version of "
                           "Gromacs with an binary from an older version of Gromacs.",
-                          c + 1, pcrd->params.eGeom, epullgNR - 1);
+                          c + 1,
+                          pcrd->params.eGeom,
+                          epullgNR - 1);
         }
 
         if (pcrd->params.eType == epullCONSTRAINT)
@@ -1980,7 +2046,8 @@ struct pull_t* init_pull(FILE*                     fplog,
                 gmx_fatal(FARGS,
                           "Pulling of type %s can not be combined with geometry %s. Consider using "
                           "pull type %s.",
-                          epull_names[pcrd->params.eType], epullg_names[pcrd->params.eGeom],
+                          epull_names[pcrd->params.eType],
+                          epullg_names[pcrd->params.eGeom],
                           epull_names[epullUMBRELLA]);
             }
 
@@ -2025,8 +2092,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             if (pcrd->params.eType != epullEXTERNAL)
             {
                 low_set_pull_coord_reference_value(
-                        pcrd, c,
-                        pcrd->params.init * pull_conversion_factor_userinput2internal(&pcrd->params));
+                        pcrd, c, pcrd->params.init * pull_conversion_factor_userinput2internal(&pcrd->params));
             }
             else
             {
@@ -2092,8 +2158,12 @@ struct pull_t* init_pull(FILE*                     fplog,
         int numRealGroups = pull->group.size() - 1;
         GMX_RELEASE_ASSERT(numRealGroups > 0,
                            "The reference absolute position pull group should always be present");
-        fprintf(fplog, "with %zu pull coordinate%s and %d group%s\n", pull->coord.size(),
-                pull->coord.size() == 1 ? "" : "s", numRealGroups, numRealGroups == 1 ? "" : "s");
+        fprintf(fplog,
+                "with %zu pull coordinate%s and %d group%s\n",
+                pull->coord.size(),
+                pull->coord.size() == 1 ? "" : "s",
+                numRealGroups,
+                numRealGroups == 1 ? "" : "s");
         if (bAbs)
         {
             fprintf(fplog, "with an absolute reference\n");
@@ -2229,8 +2299,8 @@ struct pull_t* init_pull(FILE*                     fplog,
                 }
             }
             const auto& referenceGroup = pull->group[coord.params.group[0]];
-            pull->dyna.emplace_back(referenceGroup.params, referenceGroup.atomSet,
-                                    pull->params.bSetPbcRefToPrevStepCOM);
+            pull->dyna.emplace_back(
+                    referenceGroup.params, referenceGroup.atomSet, pull->params.bSetPbcRefToPrevStepCOM);
         }
     }
 
@@ -2319,7 +2389,8 @@ void preparePrevStepPullCom(const t_inputrec* ir,
         {
             /* Only the master rank has the checkpointed COM from the previous step */
             gmx_bcast(sizeof(double) * state->pull_com_prev_step.size(),
-                      &state->pull_com_prev_step[0], cr->mpi_comm_mygroup);
+                      &state->pull_com_prev_step[0],
+                      cr->mpi_comm_mygroup);
         }
         setPrevStepPullComFromState(pull_work, state);
     }

@@ -50,8 +50,14 @@ namespace gmx
 Matrix3x3 transpose(Matrix3x3ConstSpan matrixView)
 {
 
-    return Matrix3x3({ matrixView(0, 0), matrixView(1, 0), matrixView(2, 0), matrixView(0, 1),
-                       matrixView(1, 1), matrixView(2, 1), matrixView(0, 2), matrixView(1, 2),
+    return Matrix3x3({ matrixView(0, 0),
+                       matrixView(1, 0),
+                       matrixView(2, 0),
+                       matrixView(0, 1),
+                       matrixView(1, 1),
+                       matrixView(2, 1),
+                       matrixView(0, 2),
+                       matrixView(1, 2),
                        matrixView(2, 2) });
 }
 

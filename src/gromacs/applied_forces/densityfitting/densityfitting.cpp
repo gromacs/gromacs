@@ -163,8 +163,8 @@ public:
             GMX_THROW(InternalError("Need to set reference density before normalizing it."));
         }
 
-        const real sumOfDensityData = std::accumulate(begin(referenceDensity_->asView()),
-                                                      end(referenceDensity_->asView()), 0.);
+        const real sumOfDensityData = std::accumulate(
+                begin(referenceDensity_->asView()), end(referenceDensity_->asView()), 0.);
         for (float& referenceDensityVoxel : referenceDensity_->asView())
         {
             referenceDensityVoxel /= sumOfDensityData;
@@ -359,11 +359,13 @@ public:
                 densityFittingSimulationParameters_.normalizeReferenceDensity();
             }
             forceProvider_ = std::make_unique<DensityFittingForceProvider>(
-                    parameters, densityFittingSimulationParameters_.referenceDensity(),
+                    parameters,
+                    densityFittingSimulationParameters_.referenceDensity(),
                     densityFittingSimulationParameters_.transformationToDensityLattice(),
                     densityFittingSimulationParameters_.localAtomSet(),
                     densityFittingSimulationParameters_.periodicBoundaryConditionType(),
-                    densityFittingSimulationParameters_.simulationTimeStep(), densityFittingState_);
+                    densityFittingSimulationParameters_.simulationTimeStep(),
+                    densityFittingState_);
             forceProviders->addForceProvider(forceProvider_.get());
         }
     }

@@ -207,9 +207,15 @@ static void corr_print(t_corr*                 curr,
     out = xvgropen(fn, title, output_env_get_xvgr_tlabel(oenv), yaxis, oenv);
     if (DD)
     {
-        fprintf(out, "# MSD gathered over %g %s with %d restarts\n", msdtime,
-                output_env_get_time_unit(oenv).c_str(), curr->nrestart);
-        fprintf(out, "# Diffusion constants fitted from time %g to %g %s\n", beginfit, endfit,
+        fprintf(out,
+                "# MSD gathered over %g %s with %d restarts\n",
+                msdtime,
+                output_env_get_time_unit(oenv).c_str(),
+                curr->nrestart);
+        fprintf(out,
+                "# Diffusion constants fitted from time %g to %g %s\n",
+                beginfit,
+                endfit,
                 output_env_get_time_unit(oenv).c_str());
         for (i = 0; i < curr->ngrp; i++)
         {
@@ -224,9 +230,14 @@ static void corr_print(t_corr*                 curr,
             fprintf(out, "  %10g", curr->data[j][i]);
             if (bTen)
             {
-                fprintf(out, " %10g %10g %10g %10g %10g %10g", curr->datam[j][i][XX][XX],
-                        curr->datam[j][i][YY][YY], curr->datam[j][i][ZZ][ZZ], curr->datam[j][i][YY][XX],
-                        curr->datam[j][i][ZZ][XX], curr->datam[j][i][ZZ][YY]);
+                fprintf(out,
+                        " %10g %10g %10g %10g %10g %10g",
+                        curr->datam[j][i][XX][XX],
+                        curr->datam[j][i][YY][YY],
+                        curr->datam[j][i][ZZ][ZZ],
+                        curr->datam[j][i][YY][XX],
+                        curr->datam[j][i][ZZ][XX],
+                        curr->datam[j][i][ZZ][YY]);
             }
         }
         fprintf(out, "\n");
@@ -628,8 +639,7 @@ static void printmol(t_corr*                 curr,
     Dav /= curr->nmol;
     D2av /= curr->nmol;
     VarD = D2av - gmx::square(Dav);
-    printf("<D> = %.4f Std. Dev. = %.4f Error = %.4f\n", Dav, std::sqrt(VarD),
-           std::sqrt(VarD / curr->nmol));
+    printf("<D> = %.4f Std. Dev. = %.4f Error = %.4f\n", Dav, std::sqrt(VarD), std::sqrt(VarD / curr->nmol));
 
     if (fn_pdb && x)
     {
@@ -692,7 +702,8 @@ static int corr_loop(t_corr*                  curr,
         fprintf(stderr,
                 "WARNING: The trajectory only contains part of the system (%d of %d atoms) and "
                 "therefore the COM motion of only this part of the system will be removed\n",
-                natoms, top->atoms.nr);
+                natoms,
+                top->atoms.nr);
     }
 
     snew(x[prev], natoms);
@@ -849,8 +860,11 @@ static int corr_loop(t_corr*                  curr,
 
         curr->nframes++;
     } while (read_next_x(oenv, status, &t, x[cur], box));
-    fprintf(stderr, "\nUsed %d restart points spaced %g %s over %g %s\n\n", curr->nrestart,
-            output_env_conv_time(oenv, dt), output_env_get_time_unit(oenv).c_str(),
+    fprintf(stderr,
+            "\nUsed %d restart points spaced %g %s over %g %s\n\n",
+            curr->nrestart,
+            output_env_conv_time(oenv, dt),
+            output_env_get_time_unit(oenv).c_str(),
             output_env_conv_time(oenv, curr->time[curr->nframes - 1]),
             output_env_get_time_unit(oenv).c_str());
 
@@ -952,12 +966,25 @@ static void do_corr(const char*             trx_file,
         index_atom2mol(&gnx[0], index[0], &top->mols);
     }
 
-    msd = std::make_unique<t_corr>(nrgrp, type, axis, dim_factor, mol_file == nullptr ? 0 : gnx[0],
-                                   bTen, bMW, dt, top, beginfit, endfit);
+    msd = std::make_unique<t_corr>(
+            nrgrp, type, axis, dim_factor, mol_file == nullptr ? 0 : gnx[0], bTen, bMW, dt, top, beginfit, endfit);
 
-    nat_trx = corr_loop(msd.get(), trx_file, top, pbcType, mol_file ? gnx[0] != 0 : false, gnx.data(),
-                        index, (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
-                        bTen, gnx_com, index_com, dt, t_pdb, pdb_file ? &x : nullptr, box, oenv);
+    nat_trx = corr_loop(msd.get(),
+                        trx_file,
+                        top,
+                        pbcType,
+                        mol_file ? gnx[0] != 0 : false,
+                        gnx.data(),
+                        index,
+                        (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
+                        bTen,
+                        gnx_com,
+                        index_com,
+                        dt,
+                        t_pdb,
+                        pdb_file ? &x : nullptr,
+                        box,
+                        oenv);
 
     /* Correct for the number of points */
     for (j = 0; (j < msd->ngrp); j++)
@@ -979,7 +1006,8 @@ static void do_corr(const char*             trx_file,
             fprintf(stderr,
                     "\nNo frame found need time tpdb = %g ps\n"
                     "Can not write %s\n\n",
-                    t_pdb, pdb_file);
+                    t_pdb,
+                    pdb_file);
         }
         i             = top->atoms.nr;
         top->atoms.nr = nat_trx;
@@ -1010,8 +1038,7 @@ static void do_corr(const char*             trx_file,
     {
         for (i1 = i0; i1 < msd->nframes && msd->time[i1] <= endfit; i1++) {}
     }
-    fprintf(stdout, "Fitting from %g to %g %s\n\n", beginfit, endfit,
-            output_env_get_time_unit(oenv).c_str());
+    fprintf(stdout, "Fitting from %g to %g %s\n\n", beginfit, endfit, output_env_get_time_unit(oenv).c_str());
 
     N = i1 - i0;
     if (N <= 2)
@@ -1051,8 +1078,18 @@ static void do_corr(const char*             trx_file,
         }
     }
     /* Print mean square displacement */
-    corr_print(msd.get(), bTen, msd_file, "Mean Square Displacement", "MSD (nm\\S2\\N)",
-               msd->time[msd->nframes - 1], beginfit, endfit, DD.data(), SigmaD.data(), grpname, oenv);
+    corr_print(msd.get(),
+               bTen,
+               msd_file,
+               "Mean Square Displacement",
+               "MSD (nm\\S2\\N)",
+               msd->time[msd->nframes - 1],
+               beginfit,
+               endfit,
+               DD.data(),
+               SigmaD.data(),
+               grpname,
+               oenv);
 }
 
 int gmx_msd(int argc, char* argv[])
@@ -1147,8 +1184,18 @@ int gmx_msd(int argc, char* argv[])
     real              dim_factor;
     gmx_output_env_t* oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT,
+                           NFILE,
+                           fnm,
+                           asize(pa),
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv))
     {
         return 0;
     }
@@ -1217,8 +1264,25 @@ int gmx_msd(int argc, char* argv[])
         gmx_fatal(FARGS, "Could not read a topology from %s. Try a tpr file instead.", tps_file);
     }
 
-    do_corr(trx_file, ndx_file, msd_file, mol_file, pdb_file, t_pdb, ngroup, &top, pbcType, bTen,
-            bMW, bRmCOMM, type, dim_factor, axis, dt, beginfit, endfit, oenv);
+    do_corr(trx_file,
+            ndx_file,
+            msd_file,
+            mol_file,
+            pdb_file,
+            t_pdb,
+            ngroup,
+            &top,
+            pbcType,
+            bTen,
+            bMW,
+            bRmCOMM,
+            type,
+            dim_factor,
+            axis,
+            dt,
+            beginfit,
+            endfit,
+            oenv);
 
     done_top(&top);
     view_all(oenv, NFILE, fnm);

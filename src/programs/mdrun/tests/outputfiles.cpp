@@ -81,7 +81,8 @@ TEST_P(OutputFiles, FilesArePresent)
     SCOPED_TRACE(
             formatString("Checking for presence of expected output files using "
                          "simulation '%s' with integrator '%s'",
-                         simulationName.c_str(), integrator.c_str()));
+                         simulationName.c_str(),
+                         integrator.c_str()));
 
     // Prepare the .tpr file
     {
@@ -98,8 +99,10 @@ TEST_P(OutputFiles, FilesArePresent)
     }
     // Check if expected files are present
     {
-        for (const auto& file : { runner_.fullPrecisionTrajectoryFileName_, runner_.logFileName_,
-                                  runner_.edrFileName_, fileManager_.getTemporaryFilePath("state.gro"),
+        for (const auto& file : { runner_.fullPrecisionTrajectoryFileName_,
+                                  runner_.logFileName_,
+                                  runner_.edrFileName_,
+                                  fileManager_.getTemporaryFilePath("state.gro"),
                                   fileManager_.getTemporaryFilePath("state.cpt") })
         {
             EXPECT_TRUE(File::exists(file, File::returnFalseOnError))

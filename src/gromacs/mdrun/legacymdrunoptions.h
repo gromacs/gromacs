@@ -142,15 +142,22 @@ public:
 
     /*! \brief Command line options, defaults, docs and storage for them to fill. */
     /*! \{ */
-    rvec        realddxyz                                                    = { 0, 0, 0 };
-    const char* ddrank_opt_choices[static_cast<int>(DdRankOrder::Count) + 1] = {
-        nullptr, "interleave", "pp_pme", "cartesian", nullptr
-    };
-    const char* dddlb_opt_choices[static_cast<int>(DlbOption::Count) + 1] = { nullptr, "auto", "no",
-                                                                              "yes", nullptr };
-    const char* thread_aff_opt_choices[static_cast<int>(ThreadAffinity::Count) + 1] = {
-        nullptr, "auto", "on", "off", nullptr
-    };
+    rvec        realddxyz                                                           = { 0, 0, 0 };
+    const char* ddrank_opt_choices[static_cast<int>(DdRankOrder::Count) + 1]        = { nullptr,
+                                                                                 "interleave",
+                                                                                 "pp_pme",
+                                                                                 "cartesian",
+                                                                                 nullptr };
+    const char* dddlb_opt_choices[static_cast<int>(DlbOption::Count) + 1]           = { nullptr,
+                                                                              "auto",
+                                                                              "no",
+                                                                              "yes",
+                                                                              nullptr };
+    const char* thread_aff_opt_choices[static_cast<int>(ThreadAffinity::Count) + 1] = { nullptr,
+                                                                                        "auto",
+                                                                                        "on",
+                                                                                        "off",
+                                                                                        nullptr };
     const char* nbpu_opt_choices[5]    = { nullptr, "auto", "cpu", "gpu", nullptr };
     const char* pme_opt_choices[5]     = { nullptr, "auto", "cpu", "gpu", nullptr };
     const char* pme_fft_opt_choices[5] = { nullptr, "auto", "cpu", "gpu", nullptr };

@@ -218,8 +218,8 @@ std::vector<const hwloc_obj*> getHwLocDescendantsByType(const hwloc_topology*  t
     // Go through children; if this object has no children obj->arity is 0,
     // and we'll return an empty vector.
     hwloc_obj_t tempNode = nullptr;
-    while ((tempNode = hwloc_get_next_child(const_cast<hwloc_topology_t>(topo),
-                                            const_cast<hwloc_obj_t>(obj), tempNode))
+    while ((tempNode = hwloc_get_next_child(
+                    const_cast<hwloc_topology_t>(topo), const_cast<hwloc_obj_t>(obj), tempNode))
            != nullptr)
     {
         std::vector<const hwloc_obj*> v2 = getHwLocDescendantsByType(topo, tempNode, type);
@@ -463,7 +463,9 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
         // assign stuff
         for (auto& v : machine->numa.relativeLatency)
         {
-            std::transform(v.begin(), v.end(), v.begin(),
+            std::transform(v.begin(),
+                           v.end(),
+                           v.begin(),
                            std::bind(std::multiplies<float>(), std::placeholders::_1, 1.0 / minLatency));
         }
         machine->numa.baseLatency = 1.0; // latencies still do not have any units in hwloc-2.x
@@ -589,9 +591,13 @@ bool parseHwLocDevices(hwloc_topology_t topo, HardwareTopology::Machine* machine
 
         GMX_RELEASE_ASSERT(p->attr, "Attributes should not be NULL for hwloc PCI object");
 
-        machine->devices.push_back({ p->attr->pcidev.vendor_id, p->attr->pcidev.device_id,
-                                     p->attr->pcidev.class_id, p->attr->pcidev.domain,
-                                     p->attr->pcidev.bus, p->attr->pcidev.dev, p->attr->pcidev.func,
+        machine->devices.push_back({ p->attr->pcidev.vendor_id,
+                                     p->attr->pcidev.device_id,
+                                     p->attr->pcidev.class_id,
+                                     p->attr->pcidev.domain,
+                                     p->attr->pcidev.bus,
+                                     p->attr->pcidev.dev,
+                                     p->attr->pcidev.func,
                                      numaId });
     }
     return !pcidevs.empty();

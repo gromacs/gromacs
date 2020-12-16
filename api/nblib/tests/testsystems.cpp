@@ -180,8 +180,8 @@ Topology WaterTopologyBuilder::buildTopology(int numMolecules)
     std::vector<std::string>  typeNames = { "Ow", "H" };
     for (const auto& name : typeNames)
     {
-        interactions.add(ParticleTypeName(name), library.c6(ParticleName(name)),
-                         library.c12(ParticleName(name)));
+        interactions.add(
+                ParticleTypeName(name), library.c6(ParticleName(name)), library.c12(ParticleName(name)));
     }
 
     // Add some molecules to the topology
@@ -208,8 +208,8 @@ Topology SpcMethanolTopologyBuilder::buildTopology(int numWater, int numMethanol
     std::vector<std::string>  typeNames = { "Ow", "H", "OMet", "CMet" };
     for (const auto& name : typeNames)
     {
-        interactions.add(ParticleTypeName(name), library.c6(ParticleName(name)),
-                         library.c12(ParticleName(name)));
+        interactions.add(
+                ParticleTypeName(name), library.c6(ParticleName(name)), library.c12(ParticleName(name)));
     }
 
     // Add some molecules to the topology
@@ -239,8 +239,8 @@ ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numParticles)
     ParticleLibrary library;
 
     ParticleTypesInteractions nbinteractions;
-    nbinteractions.add(ParticleTypeName("Ar"), library.c6(ParticleName("Ar")),
-                       library.c12(ParticleName("Ar")));
+    nbinteractions.add(
+            ParticleTypeName("Ar"), library.c6(ParticleName("Ar")), library.c12(ParticleName("Ar")));
 
     Molecule argonMolecule(MoleculeName("AR"));
     argonMolecule.addParticle(ParticleName("AR"), library.type("Ar"));

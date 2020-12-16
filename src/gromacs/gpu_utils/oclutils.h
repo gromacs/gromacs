@@ -189,9 +189,15 @@ inline void launchGpuKernel(cl_kernel                 kernel,
     {
         globalWorkSize[i] = config.gridSize[i] * config.blockSize[i];
     }
-    cl_int clError = clEnqueueNDRangeKernel(deviceStream.stream(), kernel, workDimensions,
-                                            globalWorkOffset, globalWorkSize, config.blockSize,
-                                            waitListSize, waitList, timingEvent);
+    cl_int clError = clEnqueueNDRangeKernel(deviceStream.stream(),
+                                            kernel,
+                                            workDimensions,
+                                            globalWorkOffset,
+                                            globalWorkSize,
+                                            config.blockSize,
+                                            waitListSize,
+                                            waitList,
+                                            timingEvent);
     if (CL_SUCCESS != clError)
     {
         const std::string errorMessage = "GPU kernel (" + std::string(kernelName)

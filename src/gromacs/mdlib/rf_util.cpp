@@ -69,7 +69,12 @@ void calc_rffac(FILE* fplog, real eps_r, real eps_rf, real Rc, real* krf, real* 
         fprintf(fplog,
                 "%s:\n"
                 "epsRF = %g, rc = %g, krf = %g, crf = %g, epsfac = %g\n",
-                eel_names[eelRF], eps_rf, Rc, *krf, *crf, ONE_4PI_EPS0 / eps_r);
+                eel_names[eelRF],
+                eps_rf,
+                Rc,
+                *krf,
+                *crf,
+                ONE_4PI_EPS0 / eps_r);
         // Make sure we don't lose resolution in pow() by casting real arg to double
         real rmin = gmx::invcbrt(static_cast<double>(*krf * 2.0));
         fprintf(fplog, "The electrostatics potential has its minimum at r = %g\n", rmin);

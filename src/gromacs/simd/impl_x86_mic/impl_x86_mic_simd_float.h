@@ -251,7 +251,8 @@ static inline SimdFloat gmx_simdcall maskzMul(SimdFloat a, SimdFloat b, SimdFBoo
 
 static inline SimdFloat gmx_simdcall maskzFma(SimdFloat a, SimdFloat b, SimdFloat c, SimdFBool m)
 {
-    return { _mm512_mask_mov_ps(_mm512_setzero_ps(), m.simdInternal_,
+    return { _mm512_mask_mov_ps(_mm512_setzero_ps(),
+                                m.simdInternal_,
                                 _mm512_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)) };
 }
 
@@ -305,19 +306,19 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
         __mmask16 valueIsNonZero =
                 _mm512_cmp_ps_mask(_mm512_setzero_ps(), value.simdInternal_, _CMP_NEQ_OQ);
         rExponent = _mm512_mask_getexp_ps(_mm512_setzero_ps(), valueIsNonZero, value.simdInternal_);
-        iExponent = _mm512_cvtfxpnt_round_adjustps_epi32(rExponent, _MM_FROUND_TO_NEAREST_INT,
-                                                         _MM_EXPADJ_NONE);
+        iExponent = _mm512_cvtfxpnt_round_adjustps_epi32(
+                rExponent, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE);
         iExponent = _mm512_mask_add_epi32(iExponent, valueIsNonZero, iExponent, _mm512_set1_epi32(1));
 
         // Set result to input value when the latter is +-0
-        result = _mm512_mask_getmant_ps(value.simdInternal_, valueIsNonZero, value.simdInternal_,
-                                        _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        result = _mm512_mask_getmant_ps(
+                value.simdInternal_, valueIsNonZero, value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
     }
     else
     {
         rExponent = _mm512_getexp_ps(value.simdInternal_);
-        iExponent = _mm512_cvtfxpnt_round_adjustps_epi32(rExponent, _MM_FROUND_TO_NEAREST_INT,
-                                                         _MM_EXPADJ_NONE);
+        iExponent = _mm512_cvtfxpnt_round_adjustps_epi32(
+                rExponent, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE);
         iExponent = _mm512_add_epi32(iExponent, _mm512_set1_epi32(1));
         result    = _mm512_getmant_ps(value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
     }
@@ -494,8 +495,8 @@ static inline SimdFInt32 gmx_simdcall blend(SimdFInt32 a, SimdFInt32 b, SimdFIBo
 
 static inline SimdFInt32 gmx_simdcall cvtR2I(SimdFloat a)
 {
-    return { _mm512_cvtfxpnt_round_adjustps_epi32(a.simdInternal_, _MM_FROUND_TO_NEAREST_INT,
-                                                  _MM_EXPADJ_NONE) };
+    return { _mm512_cvtfxpnt_round_adjustps_epi32(
+            a.simdInternal_, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE) };
 }
 
 static inline SimdFInt32 gmx_simdcall cvttR2I(SimdFloat a)
@@ -505,8 +506,8 @@ static inline SimdFInt32 gmx_simdcall cvttR2I(SimdFloat a)
 
 static inline SimdFloat gmx_simdcall cvtI2R(SimdFInt32 a)
 {
-    return { _mm512_cvtfxpnt_round_adjustepi32_ps(a.simdInternal_, _MM_FROUND_TO_NEAREST_INT,
-                                                  _MM_EXPADJ_NONE) };
+    return { _mm512_cvtfxpnt_round_adjustepi32_ps(
+            a.simdInternal_, _MM_FROUND_TO_NEAREST_INT, _MM_EXPADJ_NONE) };
 }
 
 static inline SimdFIBool gmx_simdcall cvtB2IB(SimdFBool a)

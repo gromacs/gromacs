@@ -89,7 +89,8 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     stat |= clReleaseKernel(solveYZXKernelB);
     stat |= clReleaseKernel(solveYZXEnergyKernelB);
     GMX_ASSERT(stat == CL_SUCCESS,
-               gmx::formatString("Failed to release PME OpenCL resources %d: %s", stat,
+               gmx::formatString("Failed to release PME OpenCL resources %d: %s",
+                                 stat,
                                  ocl_get_error_string(stat).c_str())
                        .c_str());
 }
@@ -116,7 +117,10 @@ static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, cons
                     "PME OpenCL kernels require >=%d execution width, but the %s kernel "
                     "has been compiled for the device %s to a %d width and therefore it can not "
                     "execute correctly.",
-                    minKernelWarpSize, kernelName, deviceInfo.device_name, kernelWarpSize);
+                    minKernelWarpSize,
+                    kernelName,
+                    deviceInfo.device_name,
+                    kernelWarpSize);
             GMX_THROW(gmx::InternalError(errorString));
         }
     }
@@ -150,17 +154,30 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
                 "-DDIM=%d -DXX=%d -DYY=%d -DZZ=%d "
                 // decomposition parameter placeholders
                 "-DwrapX=true -DwrapY=true ",
-                warpSize_, c_pmeGpuOrder, c_pmeGpuOrder * c_pmeGpuOrder,
-                static_cast<float>(c_pmeMaxUnitcellShift), static_cast<int>(c_skipNeutralAtoms),
-                c_virialAndEnergyCount, spreadWorkGroupSize, solveMaxWorkGroupSize,
-                gatherWorkGroupSize, DIM, XX, YY, ZZ);
+                warpSize_,
+                c_pmeGpuOrder,
+                c_pmeGpuOrder * c_pmeGpuOrder,
+                static_cast<float>(c_pmeMaxUnitcellShift),
+                static_cast<int>(c_skipNeutralAtoms),
+                c_virialAndEnergyCount,
+                spreadWorkGroupSize,
+                solveMaxWorkGroupSize,
+                gatherWorkGroupSize,
+                DIM,
+                XX,
+                YY,
+                ZZ);
         try
         {
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
-            program = gmx::ocl::compileProgram(stderr, "gromacs/ewald", "pme_program.cl",
-                                               commonDefines, deviceContext_.context(),
-                                               deviceInfo.oclDeviceId, deviceInfo.deviceVendor);
+            program = gmx::ocl::compileProgram(stderr,
+                                               "gromacs/ewald",
+                                               "pme_program.cl",
+                                               commonDefines,
+                                               deviceContext_.context(),
+                                               deviceInfo.oclDeviceId,
+                                               deviceInfo.deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {
@@ -181,7 +198,9 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
     {
         const std::string errorString = gmx::formatString(
                 "Failed to create kernels for PME on GPU #%s:\n OpenCL error %d: %s",
-                deviceInfo.device_name, clError, ocl_get_error_string(clError).c_str());
+                deviceInfo.device_name,
+                clError,
+                ocl_get_error_string(clError).c_str());
         GMX_THROW(gmx::InternalError(errorString));
     }
     kernels.resize(actualKernelCount);
@@ -189,13 +208,15 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
     std::array<char, 100> kernelNamesBuffer;
     for (const auto& kernel : kernels)
     {
-        clError = clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME, kernelNamesBuffer.size(),
-                                  kernelNamesBuffer.data(), nullptr);
+        clError = clGetKernelInfo(
+                kernel, CL_KERNEL_FUNCTION_NAME, kernelNamesBuffer.size(), kernelNamesBuffer.data(), nullptr);
         if (clError != CL_SUCCESS)
         {
             const std::string errorString = gmx::formatString(
                     "Failed to parse kernels for PME on GPU #%s:\n OpenCL error %d: %s",
-                    deviceInfo.device_name, clError, ocl_get_error_string(clError).c_str());
+                    deviceInfo.device_name,
+                    clError,
+                    ocl_get_error_string(clError).c_str());
             GMX_THROW(gmx::InternalError(errorString));
         }
 

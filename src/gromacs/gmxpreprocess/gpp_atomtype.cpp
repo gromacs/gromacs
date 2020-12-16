@@ -96,8 +96,9 @@ bool PreprocessingAtomTypes::isSet(int nt) const
 int PreprocessingAtomTypes::atomTypeFromName(const std::string& str) const
 {
     /* Atom types are always case sensitive */
-    auto found = std::find_if(impl_->types.begin(), impl_->types.end(),
-                              [&str](const auto& type) { return str == *type.name_; });
+    auto found = std::find_if(impl_->types.begin(), impl_->types.end(), [&str](const auto& type) {
+        return str == *type.name_;
+    });
     if (found == impl_->types.end())
     {
         return NOTSET;
@@ -216,12 +217,24 @@ int PreprocessingAtomTypes::setType(int                      nt,
 void PreprocessingAtomTypes::printTypes(FILE* out)
 {
     fprintf(out, "[ %s ]\n", dir2str(Directive::d_atomtypes));
-    fprintf(out, "; %6s  %8s  %8s  %8s  %12s  %12s\n", "type", "mass", "charge", "particle", "c6",
+    fprintf(out,
+            "; %6s  %8s  %8s  %8s  %12s  %12s\n",
+            "type",
+            "mass",
+            "charge",
+            "particle",
+            "c6",
             "c12");
     for (auto& entry : impl_->types)
     {
-        fprintf(out, "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n", *(entry.name_), entry.atom_.m,
-                entry.atom_.q, "A", entry.nb_.c0(), entry.nb_.c1());
+        fprintf(out,
+                "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
+                *(entry.name_),
+                entry.atom_.m,
+                entry.atom_.q,
+                "A",
+                entry.nb_.c0(),
+                entry.nb_.c1());
     }
 
     fprintf(out, "\n");
@@ -328,10 +341,10 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
         const t_atoms* atoms = &moltype.atoms;
         for (int i = 0; (i < atoms->nr); i++)
         {
-            atoms->atom[i].type  = search_atomtypes(this, &nat, typelist, atoms->atom[i].type,
-                                                   plist[ftype].interactionTypes, ftype);
-            atoms->atom[i].typeB = search_atomtypes(this, &nat, typelist, atoms->atom[i].typeB,
-                                                    plist[ftype].interactionTypes, ftype);
+            atoms->atom[i].type = search_atomtypes(
+                    this, &nat, typelist, atoms->atom[i].type, plist[ftype].interactionTypes, ftype);
+            atoms->atom[i].typeB = search_atomtypes(
+                    this, &nat, typelist, atoms->atom[i].typeB, plist[ftype].interactionTypes, ftype);
         }
     }
 
@@ -339,8 +352,8 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
     {
         if (wall_atomtype[i] >= 0)
         {
-            wall_atomtype[i] = search_atomtypes(this, &nat, typelist, wall_atomtype[i],
-                                                plist[ftype].interactionTypes, ftype);
+            wall_atomtype[i] = search_atomtypes(
+                    this, &nat, typelist, wall_atomtype[i], plist[ftype].interactionTypes, ftype);
         }
     }
 
@@ -357,7 +370,8 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
         {
             int                      mj              = typelist[j];
             const InteractionOfType& interactionType = plist[ftype].interactionTypes[ntype * mi + mj];
-            nbsnew.emplace_back(interactionType.atoms(), interactionType.forceParam(),
+            nbsnew.emplace_back(interactionType.atoms(),
+                                interactionType.forceParam(),
                                 interactionType.interactionTypeName());
         }
         new_types.push_back(impl_->types[mi]);

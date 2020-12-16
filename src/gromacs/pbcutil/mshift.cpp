@@ -124,7 +124,8 @@ static bool mk_igraph(EdgesGenerator* edgesG, int ftype, const T& il, int at_end
                           "You are probably trying to use a trajectory which does "
                           "not match the first %d atoms of the run input file.\n"
                           "You can make a matching run input file with gmx convert-tpr.",
-                          at_end, at_end);
+                          at_end,
+                          at_end);
             }
             if (ftype == F_SETTLE)
             {
@@ -186,10 +187,14 @@ void p_graph(FILE* log, const char* title, const t_graph* g)
     {
         if (!g->edges[i].empty())
         {
-            fprintf(log, "%5d%7d%7d%7d %1s%5zu", g->edgeAtomBegin + i + 1,
-                    g->ishift[g->edgeAtomBegin + i][XX], g->ishift[g->edgeAtomBegin + i][YY],
+            fprintf(log,
+                    "%5d%7d%7d%7d %1s%5zu",
+                    g->edgeAtomBegin + i + 1,
+                    g->ishift[g->edgeAtomBegin + i][XX],
+                    g->ishift[g->edgeAtomBegin + i][YY],
                     g->ishift[g->edgeAtomBegin + i][ZZ],
-                    (!g->edgeColor.empty()) ? cc[g->edgeColor[i]] : " ", g->edges[i].size());
+                    (!g->edgeColor.empty()) ? cc[g->edgeColor[i]] : " ",
+                    g->edges[i].size());
             for (const int edge : g->edges[i])
             {
                 fprintf(log, " %5d", edge + 1);
@@ -293,7 +298,9 @@ static gmx_bool determine_graph_parts(const EdgesGenerator& edgesG, ArrayRef<int
         }
         if (debug)
         {
-            fprintf(debug, "graph partNr[] numAtomsChanged=%d, bMultiPart=%s\n", numAtomsChanged,
+            fprintf(debug,
+                    "graph partNr[] numAtomsChanged=%d, bMultiPart=%s\n",
+                    numAtomsChanged,
                     gmx::boolToString(haveMultipleParts));
         }
     } while (numAtomsChanged > 0);
@@ -625,8 +632,17 @@ static int mk_grey(ArrayRef<egCol> edgeColor,
                         "mk_grey: shifts for atom %d due to atom %d\n"
                         "are (%d,%d,%d), should be (%d,%d,%d)\n"
                         "dx = (%g,%g,%g)\n",
-                        aj + 1, ai + 1, is_aj[XX], is_aj[YY], is_aj[ZZ], g->ishift[aj][XX],
-                        g->ishift[aj][YY], g->ishift[aj][ZZ], dx[XX], dx[YY], dx[ZZ]);
+                        aj + 1,
+                        ai + 1,
+                        is_aj[XX],
+                        is_aj[YY],
+                        is_aj[ZZ],
+                        g->ishift[aj][XX],
+                        g->ishift[aj][YY],
+                        g->ishift[aj][ZZ],
+                        dx[XX],
+                        dx[YY],
+                        dx[ZZ]);
             }
             (*nerror)++;
         }
@@ -788,7 +804,9 @@ void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const r
                     "There are inconsistent shifts over periodic boundaries in a molecule type "
                     "consisting of %d atoms. The longest distance involved in such interactions is "
                     "%.3f nm which is %s half the box length.",
-                    g->shiftAtomEnd, maxDistance, maxDistance >= 0.5 * minBoxSize ? "above" : "close to");
+                    g->shiftAtomEnd,
+                    maxDistance,
+                    maxDistance >= 0.5 * minBoxSize ? "above" : "close to");
 
             switch (g->parts)
             {

@@ -316,8 +316,10 @@ int SimulationRunner::callMdrun(const CommandLine& callerRef)
     caller.addOption("-ntomp", g_numOpenMPThreads);
 #endif
 
-    return gmx_mdrun(MdrunTestFixtureBase::communicator_, *MdrunTestFixtureBase::hwinfo_,
-                     caller.argc(), caller.argv());
+    return gmx_mdrun(MdrunTestFixtureBase::communicator_,
+                     *MdrunTestFixtureBase::hwinfo_,
+                     caller.argc(),
+                     caller.argv());
 }
 
 int SimulationRunner::callMdrun()

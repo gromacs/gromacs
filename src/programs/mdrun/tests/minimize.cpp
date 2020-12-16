@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,7 +101,8 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
     auto simulationName = std::get<0>(params);
     auto minimizer      = std::get<1>(params);
     SCOPED_TRACE(formatString("Comparing '%s' energy minimization for simulation '%s'",
-                              minimizer.c_str(), simulationName.c_str()));
+                              minimizer.c_str(),
+                              simulationName.c_str()));
 
     // TODO At some point we should also test PME-only ranks.
     int numRanksAvailable = getNumberOfTestMpiRanks();
@@ -110,7 +111,8 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
         fprintf(stdout,
                 "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
-                simulationName.c_str(), numRanksAvailable,
+                simulationName.c_str(),
+                numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
         return;
     }
@@ -168,7 +170,8 @@ std::vector<std::string> unconstrainedSystemsToTest_g = { "argon12",
                                                           "glycine_no_constraints_vacuo" };
 std::vector<std::string> minimizersToTest_g           = { "steep", "cg", "l-bfgs" };
 
-std::vector<std::string> constrainedSystemsToTest_g        = { "tip3p5", "glycine_vacuo",
+std::vector<std::string> constrainedSystemsToTest_g        = { "tip3p5",
+                                                        "glycine_vacuo",
                                                         "alanine_vsite_vacuo" };
 std::vector<std::string> minimizersToTestWithConstraints_g = { "steep", "cg" };
 //! \}

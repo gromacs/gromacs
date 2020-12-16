@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -145,9 +145,8 @@ void throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>       
     }
     if (!isConsistent)
     {
-        GMX_THROW(InconsistentInputError(
-                formatString("Derivative inconsistent with numerical vector for elements %zu-%zu",
-                             minFail + 1, maxFail + 1)));
+        GMX_THROW(InconsistentInputError(formatString(
+                "Derivative inconsistent with numerical vector for elements %zu-%zu", minFail + 1, maxFail + 1)));
     }
 }
 
@@ -219,9 +218,9 @@ real findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>   
 
     for (std::size_t i = firstIndex + 1; (i + 1) < lastIndex; i++)
     {
-        minQuotient = std::min(
-                minQuotient, quotientOfFunctionAndSecondDerivative(function[i - 1], function[i],
-                                                                   function[i + 1], inputSpacing));
+        minQuotient = std::min(minQuotient,
+                               quotientOfFunctionAndSecondDerivative(
+                                       function[i - 1], function[i], function[i + 1], inputSpacing));
     }
     return static_cast<real>(minQuotient);
 }
@@ -281,8 +280,8 @@ real findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double
     for (double x = newRange.first; x <= newRange.second; x += dx)
     {
         minQuotient = std::min(minQuotient,
-                               quotientOfFunctionAndThirdDerivative(f(x - 2 * h), f(x - h), f(x),
-                                                                    f(x + h), f(x + 2 * h), h));
+                               quotientOfFunctionAndThirdDerivative(
+                                       f(x - 2 * h), f(x - h), f(x), f(x + h), f(x + 2 * h), h));
     }
     return static_cast<real>(minQuotient);
 }
@@ -299,9 +298,10 @@ real findSmallestQuotientOfFunctionAndThirdDerivative(ArrayRef<const double>    
 
     for (std::size_t i = firstIndex + 2; (i + 2) < lastIndex; i++)
     {
-        minQuotient = std::min(minQuotient, quotientOfFunctionAndThirdDerivative(
-                                                    function[i - 2], function[i - 1], function[i],
-                                                    function[i + 1], function[i + 2], inputSpacing));
+        minQuotient = std::min(
+                minQuotient,
+                quotientOfFunctionAndThirdDerivative(
+                        function[i - 2], function[i - 1], function[i], function[i + 1], function[i + 2], inputSpacing));
     }
     return static_cast<real>(minQuotient);
 }

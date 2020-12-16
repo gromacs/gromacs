@@ -116,17 +116,21 @@ TEST(NBlibTest, IntegratorWorks)
                         << formatString(
                                    "Coordinate {} of atom {} is different from analytical solution "
                                    "at step {}.",
-                                   d, i, step);
+                                   d,
+                                   i,
+                                   step);
 
                 EXPECT_REAL_EQ_TOL(vAnalytical[d], simulationState.velocities()[i][d], tolerance)
                         << formatString(
                                    "Velocity component {} of atom {} is different from analytical "
                                    "solution at step {}.",
-                                   d, i, step);
+                                   d,
+                                   i,
+                                   step);
             }
         }
-        integrator.integrate(dt, simulationState.coordinates(), simulationState.velocities(),
-                             simulationState.forces());
+        integrator.integrate(
+                dt, simulationState.coordinates(), simulationState.velocities(), simulationState.forces());
     }
 }
 

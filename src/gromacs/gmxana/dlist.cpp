@@ -246,7 +246,8 @@ t_dlist* mk_dlist(FILE*          log,
             fprintf(debug,
                     "Could not find N atom but could find other atoms"
                     " in residue %s%d\n",
-                    thisres, ires + r0);
+                    thisres,
+                    ires + r0);
         }
     }
     fprintf(stderr, "\n");
@@ -404,29 +405,45 @@ void pr_dlist(FILE*    fp,
         }
         if (bPhi)
         {
-            fprintf(fp, "   Phi [%5d,%5d,%5d,%5d]",
-                    (dl[i].atm.H == -1) ? 1 + dl[i].atm.minC : 1 + dl[i].atm.H, 1 + dl[i].atm.N,
-                    1 + dl[i].atm.Cn[1], 1 + dl[i].atm.C);
+            fprintf(fp,
+                    "   Phi [%5d,%5d,%5d,%5d]",
+                    (dl[i].atm.H == -1) ? 1 + dl[i].atm.minC : 1 + dl[i].atm.H,
+                    1 + dl[i].atm.N,
+                    1 + dl[i].atm.Cn[1],
+                    1 + dl[i].atm.C);
             pr_props(fp, &dl[i], edPhi, dt);
         }
         if (bPsi)
         {
-            fprintf(fp, "   Psi [%5d,%5d,%5d,%5d]", 1 + dl[i].atm.N, 1 + dl[i].atm.Cn[1],
-                    1 + dl[i].atm.C, 1 + dl[i].atm.O);
+            fprintf(fp,
+                    "   Psi [%5d,%5d,%5d,%5d]",
+                    1 + dl[i].atm.N,
+                    1 + dl[i].atm.Cn[1],
+                    1 + dl[i].atm.C,
+                    1 + dl[i].atm.O);
             pr_props(fp, &dl[i], edPsi, dt);
         }
         if (bOmega && has_dihedral(edOmega, &(dl[i])))
         {
-            fprintf(fp, " Omega [%5d,%5d,%5d,%5d]", 1 + dl[i].atm.minCalpha, 1 + dl[i].atm.minC,
-                    1 + dl[i].atm.N, 1 + dl[i].atm.Cn[1]);
+            fprintf(fp,
+                    " Omega [%5d,%5d,%5d,%5d]",
+                    1 + dl[i].atm.minCalpha,
+                    1 + dl[i].atm.minC,
+                    1 + dl[i].atm.N,
+                    1 + dl[i].atm.Cn[1]);
             pr_props(fp, &dl[i], edOmega, dt);
         }
         for (Xi = 0; Xi < MAXCHI; Xi++)
         {
             if (bChi && (Xi < maxchi) && (dl[i].atm.Cn[Xi + 3] != -1))
             {
-                fprintf(fp, "   Chi%d[%5d,%5d,%5d,%5d]", Xi + 1, 1 + dl[i].atm.Cn[Xi],
-                        1 + dl[i].atm.Cn[Xi + 1], 1 + dl[i].atm.Cn[Xi + 2], 1 + dl[i].atm.Cn[Xi + 3]);
+                fprintf(fp,
+                        "   Chi%d[%5d,%5d,%5d,%5d]",
+                        Xi + 1,
+                        1 + dl[i].atm.Cn[Xi],
+                        1 + dl[i].atm.Cn[Xi + 1],
+                        1 + dl[i].atm.Cn[Xi + 2],
+                        1 + dl[i].atm.Cn[Xi + 3]);
                 pr_props(fp, &dl[i], Xi + edChi1, dt); /* Xi+2 was wrong here */
             }
         }

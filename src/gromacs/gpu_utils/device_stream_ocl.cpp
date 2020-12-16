@@ -63,7 +63,8 @@ DeviceStream::DeviceStream(const DeviceContext& deviceContext,
     {
         GMX_THROW(gmx::InternalError(gmx::formatString(
                 "Failed to create OpenCL command queue on GPU %s (OpenCL error ID %d).",
-                deviceInfo.device_name, clError)));
+                deviceInfo.device_name,
+                clError)));
     }
 }
 

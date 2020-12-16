@@ -398,8 +398,8 @@ static gmx_bool UpdateWeights(int           nlim,
 
             /* then increment weights (uses count) */
             pks = 0.0;
-            GenerateWeightedGibbsProbabilities(weighted_lamee, p_k, &pks, nlim, dfhist->wl_histo,
-                                               dfhist->wl_delta);
+            GenerateWeightedGibbsProbabilities(
+                    weighted_lamee, p_k, &pks, nlim, dfhist->wl_histo, dfhist->wl_delta);
 
             for (i = 0; i < nlim; i++)
             {
@@ -922,11 +922,16 @@ static int ChooseNewLambda(int               nlim,
                             "Something wrong in choosing new lambda state with a Gibbs move -- "
                             "probably underflow in weight determination.\nDenominator is: "
                             "%3d%17.10e\n  i                dE        numerator          weights\n",
-                            0, pks);
+                            0,
+                            pks);
                     for (ifep = minfep; ifep <= maxfep; ifep++)
                     {
-                        loc += sprintf(&errorstr[loc], "%3d %17.10e%17.10e%17.10e\n", ifep,
-                                       weighted_lamee[ifep], p_k[ifep], dfhist->sum_weights[ifep]);
+                        loc += sprintf(&errorstr[loc],
+                                       "%3d %17.10e%17.10e%17.10e\n",
+                                       ifep,
+                                       weighted_lamee[ifep],
+                                       p_k[ifep],
+                                       dfhist->sum_weights[ifep]);
                     }
                     gmx_fatal(FARGS, "%s", errorstr);
                 }
@@ -1108,8 +1113,12 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
             }
             if (expand->elamstats == elamstatsMINVAR)
             {
-                fprintf(outfile, " %10.5f %10.5f %10.5f %10.5f", dfhist->sum_weights[ifep],
-                        dfhist->sum_dg[ifep], dg, dv);
+                fprintf(outfile,
+                        " %10.5f %10.5f %10.5f %10.5f",
+                        dfhist->sum_weights[ifep],
+                        dfhist->sum_dg[ifep],
+                        dg,
+                        dv);
             }
             else
             {
@@ -1315,13 +1324,15 @@ int ExpandedEnsembleDynamics(FILE*                 log,
     {
         if (log)
         {
-            fprintf(log, "\nStep %" PRId64 ": Weights have equilibrated, using criteria: %s\n",
-                    step, elmceq_names[expand->elmceq]);
+            fprintf(log,
+                    "\nStep %" PRId64 ": Weights have equilibrated, using criteria: %s\n",
+                    step,
+                    elmceq_names[expand->elmceq]);
         }
     }
 
-    lamnew = ChooseNewLambda(nlim, expand, dfhist, fep_state, weighted_lamee, p_k,
-                             ir->expandedvals->lmc_seed, step);
+    lamnew = ChooseNewLambda(
+            nlim, expand, dfhist, fep_state, weighted_lamee, p_k, ir->expandedvals->lmc_seed, step);
     /* if using simulated tempering, we need to adjust the temperatures */
     if (ir->bSimTemp && (lamnew != fep_state)) /* only need to change the temperatures if we change the state */
     {

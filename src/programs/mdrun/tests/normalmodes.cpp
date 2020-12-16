@@ -102,7 +102,8 @@ TEST_P(NormalModesTest, WithinTolerances)
         fprintf(stdout,
                 "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
-                simulationName.c_str(), numRanksAvailable,
+                simulationName.c_str(),
+                numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
         return;
     }
@@ -151,7 +152,10 @@ TEST_P(NormalModesTest, WithinTolerances)
 
 //! Containers of systems and integrators to test.
 //! \{
-std::vector<std::string> systemsToTest_g     = { "scaled-water", "villin", "spc-dimer", "one-tip5p",
+std::vector<std::string> systemsToTest_g     = { "scaled-water",
+                                             "villin",
+                                             "spc-dimer",
+                                             "one-tip5p",
                                              "sw-dimer" };
 std::vector<std::string> integratorsToTest_g = { "nm" };
 

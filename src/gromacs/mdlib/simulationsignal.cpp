@@ -85,7 +85,9 @@ gmx::ArrayRef<real> SimulationSignaller::getCommunicationBuffer()
 {
     if (doIntraSim_)
     {
-        std::transform(std::begin(*signals_), std::end(*signals_), std::begin(mpiBuffer_),
+        std::transform(std::begin(*signals_),
+                       std::end(*signals_),
+                       std::begin(mpiBuffer_),
                        [](const SimulationSignals::value_type& s) { return s.sig; });
 
         return mpiBuffer_;

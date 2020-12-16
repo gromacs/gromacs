@@ -263,8 +263,13 @@ void LeapFrogGpu::integrate(const DeviceBuffer<float3>        d_x,
             {
                 h_lambdas_[i] = tcstat[i].lambda;
             }
-            copyToDeviceBuffer(&d_lambdas_, h_lambdas_.data(), 0, numTempScaleValues_,
-                               deviceStream_, GpuApiCallBehavior::Async, nullptr);
+            copyToDeviceBuffer(&d_lambdas_,
+                               h_lambdas_.data(),
+                               0,
+                               numTempScaleValues_,
+                               deviceStream_,
+                               GpuApiCallBehavior::Async,
+                               nullptr);
         }
         VelocityScalingType prVelocityScalingType = VelocityScalingType::None;
         if (doParrinelloRahman)
@@ -285,9 +290,18 @@ void LeapFrogGpu::integrate(const DeviceBuffer<float3>        d_x,
         kernelPtr = selectLeapFrogKernelPtr(doTemperatureScaling, numTempScaleValues_, prVelocityScalingType);
     }
 
-    const auto kernelArgs = prepareGpuKernelArguments(
-            kernelPtr, kernelLaunchConfig_, &numAtoms_, &d_x, &d_xp, &d_v, &d_f, &d_inverseMasses_,
-            &dt, &d_lambdas_, &d_tempScaleGroups_, &prVelocityScalingMatrixDiagonal_);
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
+                                                      kernelLaunchConfig_,
+                                                      &numAtoms_,
+                                                      &d_x,
+                                                      &d_xp,
+                                                      &d_v,
+                                                      &d_f,
+                                                      &d_inverseMasses_,
+                                                      &dt,
+                                                      &d_lambdas_,
+                                                      &d_tempScaleGroups_,
+                                                      &prVelocityScalingMatrixDiagonal_);
     launchGpuKernel(kernelPtr, kernelLaunchConfig_, deviceStream_, nullptr, "leapfrog_kernel", kernelArgs);
 
     return;
@@ -322,26 +336,26 @@ void LeapFrogGpu::set(const int             numAtoms,
 
     numTempScaleValues_ = numTempScaleValues;
 
-    reallocateDeviceBuffer(&d_inverseMasses_, numAtoms_, &numInverseMasses_,
-                           &numInverseMassesAlloc_, deviceContext_);
-    copyToDeviceBuffer(&d_inverseMasses_, (float*)inverseMasses, 0, numAtoms_, deviceStream_,
-                       GpuApiCallBehavior::Sync, nullptr);
+    reallocateDeviceBuffer(
+            &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
+    copyToDeviceBuffer(
+            &d_inverseMasses_, (float*)inverseMasses, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
 
     // Temperature scale group map only used if there are more then one group
     if (numTempScaleValues > 1)
     {
-        reallocateDeviceBuffer(&d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_,
-                               &numTempScaleGroupsAlloc_, deviceContext_);
-        copyToDeviceBuffer(&d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, deviceStream_,
-                           GpuApiCallBehavior::Sync, nullptr);
+        reallocateDeviceBuffer(
+                &d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_, &numTempScaleGroupsAlloc_, deviceContext_);
+        copyToDeviceBuffer(
+                &d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
     }
 
     // If the temperature coupling is enabled, we need to make space for scaling factors
     if (numTempScaleValues_ > 0)
     {
         h_lambdas_.resize(numTempScaleValues);
-        reallocateDeviceBuffer(&d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_,
-                               deviceContext_);
+        reallocateDeviceBuffer(
+                &d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_, deviceContext_);
     }
 }
 

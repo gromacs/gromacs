@@ -116,8 +116,17 @@ void ParrinelloRahmanBarostat::scheduleTask(Step step,
 void ParrinelloRahmanBarostat::integrateBoxVelocityEquations(Step step)
 {
     auto box = statePropagatorData_->constBox();
-    parrinellorahman_pcoupl(fplog_, step, inputrec_, couplingTimeStep_, energyData_->pressure(step),
-                            box, boxRel_, boxVelocity_, scalingTensor_.data(), mu_, false);
+    parrinellorahman_pcoupl(fplog_,
+                            step,
+                            inputrec_,
+                            couplingTimeStep_,
+                            energyData_->pressure(step),
+                            box,
+                            boxRel_,
+                            boxVelocity_,
+                            scalingTensor_.data(),
+                            mu_,
+                            false);
     // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
     msmul(scalingTensor_.data(), couplingTimeStep_, scalingTensor_.data());
 }
@@ -175,8 +184,17 @@ void ParrinelloRahmanBarostat::elementSetup()
         // The call to parrinellorahman_pcoupl is using nullptr for fplog (since we don't expect any
         // output here) and for the pressure (since it might not be calculated yet, and we don't need it).
         auto box = statePropagatorData_->constBox();
-        parrinellorahman_pcoupl(nullptr, initStep_, inputrec_, couplingTimeStep_, nullptr, box,
-                                boxRel_, boxVelocity_, scalingTensor_.data(), mu_, true);
+        parrinellorahman_pcoupl(nullptr,
+                                initStep_,
+                                inputrec_,
+                                couplingTimeStep_,
+                                nullptr,
+                                box,
+                                boxRel_,
+                                boxVelocity_,
+                                scalingTensor_.data(),
+                                mu_,
+                                true);
         // multiply matrix by the coupling time step to avoid having the propagator needing to know about that
         msmul(scalingTensor_.data(), couplingTimeStep_, scalingTensor_.data());
 
@@ -285,10 +303,15 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         int                                   offset)
 {
     auto* element  = builderHelper->storeElement(std::make_unique<ParrinelloRahmanBarostat>(
-            legacySimulatorData->inputrec->nstpcouple, offset,
+            legacySimulatorData->inputrec->nstpcouple,
+            offset,
             legacySimulatorData->inputrec->delta_t * legacySimulatorData->inputrec->nstpcouple,
-            legacySimulatorData->inputrec->init_step, statePropagatorData, energyData,
-            legacySimulatorData->fplog, legacySimulatorData->inputrec, legacySimulatorData->mdAtoms));
+            legacySimulatorData->inputrec->init_step,
+            statePropagatorData,
+            energyData,
+            legacySimulatorData->fplog,
+            legacySimulatorData->inputrec,
+            legacySimulatorData->mdAtoms));
     auto* barostat = static_cast<ParrinelloRahmanBarostat*>(element);
     builderHelper->registerBarostat([barostat](const PropagatorBarostatConnection& connection) {
         barostat->connectWithPropagator(connection);

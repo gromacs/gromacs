@@ -108,9 +108,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 
         auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
-        EXPECT_NE(
-                std::string::npos,
-                logFileContents.find("Restarting from checkpoint, appending to previous log file"))
+        EXPECT_NE(std::string::npos, logFileContents.find("Restarting from checkpoint, appending to previous log file"))
                 << "appending was not detected";
     }
 }
@@ -297,9 +295,7 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile
 
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
         auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
-        EXPECT_EQ(
-                std::string::npos,
-                logFileContents.find("Restarting from checkpoint, appending to previous log file"))
+        EXPECT_EQ(std::string::npos, logFileContents.find("Restarting from checkpoint, appending to previous log file"))
                 << "appending was not detected";
     }
 }

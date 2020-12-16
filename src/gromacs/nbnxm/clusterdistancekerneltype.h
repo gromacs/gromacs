@@ -87,8 +87,7 @@ static inline ClusterDistanceKernelType getClusterDistanceKernelType(const Pairl
 #elif GMX_SIMD && GMX_SIMD_REAL_WIDTH == 8
         return ClusterDistanceKernelType::CpuSimd_2xMM;
 #else
-        GMX_RELEASE_ASSERT(false,
-                           "Expect 4-wide or 8-wide SIMD with 4x4 list and nbat SIMD layout");
+        GMX_RELEASE_ASSERT(false, "Expect 4-wide or 8-wide SIMD with 4x4 list and nbat SIMD layout");
 #endif
     }
     else

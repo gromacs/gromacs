@@ -245,7 +245,8 @@ void init_disres(FILE*                 fplog,
             gmx_fatal(FARGS,
                       "GMX_DISRE_ENSEMBLE_SIZE (%d) is not equal to 1 or the number of systems "
                       "(option -multidir) %d",
-                      dd->nsystems, ms->numSimulations_);
+                      dd->nsystems,
+                      ms->numSimulations_);
         }
         if (fplog)
         {
@@ -278,8 +279,7 @@ void init_disres(FILE*                 fplog,
     {
         if (fplog)
         {
-            fprintf(fplog, "There are %d distance restraints involving %d atom pairs\n", dd->nres,
-                    dd->npair);
+            fprintf(fplog, "There are %d distance restraints involving %d atom pairs\n", dd->nres, dd->npair);
         }
         /* Have to avoid g_disre de-referencing cr blindly, mdrun not
          * doing consistency checks for ensemble-averaged distance

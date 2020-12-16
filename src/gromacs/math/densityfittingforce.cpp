@@ -107,8 +107,8 @@ RVec DensityFittingForce::Impl::evaluateForce(const GaussianSpreadKernelParamete
     {
         // multiply with amplitude so that Gauss3D = (amplitude * Gauss_x) * Gauss_y * Gauss_z
         const float gauss1DAmplitude = dimension > XX ? 1.0 : localParameters.amplitude_;
-        gauss1d_[dimension].spread(gauss1DAmplitude, localParameters.coordinate_[dimension]
-                                                             - closestLatticePoint[dimension]);
+        gauss1d_[dimension].spread(
+                gauss1DAmplitude, localParameters.coordinate_[dimension] - closestLatticePoint[dimension]);
     }
 
     const auto spreadZY = outerProductZY_(gauss1d_[ZZ].view(), gauss1d_[YY].view());
@@ -117,7 +117,8 @@ RVec DensityFittingForce::Impl::evaluateForce(const GaussianSpreadKernelParamete
                                 latticeSpreadRange_[YY] - closestLatticePoint[YY],
                                 latticeSpreadRange_[ZZ] - closestLatticePoint[ZZ]);
 
-    const DVec differenceVectorScale  = { 1. / (square(sigma_[XX])), 1. / (square(sigma_[YY])),
+    const DVec differenceVectorScale  = { 1. / (square(sigma_[XX])),
+                                         1. / (square(sigma_[YY])),
                                          1. / (square(sigma_[ZZ])) };
     const DVec differenceVectorOffset = scaleByVector(
             spreadRange.begin().toDVec() - localParameters.coordinate_.toDVec(), differenceVectorScale);

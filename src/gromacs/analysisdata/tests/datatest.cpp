@@ -216,12 +216,15 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput& inpu
         {
             if (points.hasError(j))
             {
-                handle.setPoint(j + points.firstColumn(), points.y(j), points.error(j),
+                handle.setPoint(j + points.firstColumn(),
+                                points.y(j),
+                                points.error(j),
                                 AnalysisDataTestInputPointSet::present(j));
             }
             else
             {
-                handle.setPoint(j + points.firstColumn(), points.y(j),
+                handle.setPoint(j + points.firstColumn(),
+                                points.y(j),
                                 AnalysisDataTestInputPointSet::present(j));
             }
         }

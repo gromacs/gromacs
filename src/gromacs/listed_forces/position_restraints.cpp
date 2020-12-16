@@ -231,8 +231,18 @@ real fbposres(int                   nbonds,
         pr   = &forceparams[type];
 
         /* same calculation as for normal posres, but with identical A and B states, and lambda==0 */
-        posres_dx(x[ai], forceparams[type].fbposres.pos0, forceparams[type].fbposres.pos0, com_sc,
-                  com_sc, 0.0, pbc, refcoord_scaling, npbcdim, dx, rdist, dpdl);
+        posres_dx(x[ai],
+                  forceparams[type].fbposres.pos0,
+                  forceparams[type].fbposres.pos0,
+                  com_sc,
+                  com_sc,
+                  0.0,
+                  pbc,
+                  refcoord_scaling,
+                  npbcdim,
+                  dx,
+                  rdist,
+                  dpdl);
 
         clear_rvec(fm);
         v = 0.0;
@@ -372,8 +382,18 @@ real posres(int                   nbonds,
         pr   = &forceparams[type];
 
         /* return dx, rdist, and dpdl */
-        posres_dx(x[ai], forceparams[type].posres.pos0A, forceparams[type].posres.pos0B, comA_sc,
-                  comB_sc, lambda, pbc, refcoord_scaling, npbcdim, dx, rdist, dpdl);
+        posres_dx(x[ai],
+                  forceparams[type].posres.pos0A,
+                  forceparams[type].posres.pos0B,
+                  comA_sc,
+                  comB_sc,
+                  lambda,
+                  pbc,
+                  refcoord_scaling,
+                  npbcdim,
+                  dx,
+                  rdist,
+                  dpdl);
 
         for (m = 0; (m < DIM); m++)
         {
@@ -413,10 +433,18 @@ void posres_wrapper(t_nrnb*                       nrnb,
     real v, dvdl;
 
     dvdl = 0;
-    v    = posres<true>(idef.il[F_POSRES].size(), idef.il[F_POSRES].iatoms.data(),
-                     idef.iparams_posres.data(), x, forceWithVirial,
-                     fr->pbcType == PbcType::No ? nullptr : pbc, lambda[efptRESTRAINT], &dvdl,
-                     fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
+    v    = posres<true>(idef.il[F_POSRES].size(),
+                     idef.il[F_POSRES].iatoms.data(),
+                     idef.iparams_posres.data(),
+                     x,
+                     forceWithVirial,
+                     fr->pbcType == PbcType::No ? nullptr : pbc,
+                     lambda[efptRESTRAINT],
+                     &dvdl,
+                     fr->rc_scaling,
+                     fr->pbcType,
+                     fr->posres_com,
+                     fr->posres_comB);
     enerd->term[F_POSRES] += v;
     /* If just the force constant changes, the FEP term is linear,
      * but if k changes, it is not.
@@ -443,10 +471,18 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
 
         const real lambda_dum =
                 (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
-        const real v = posres<false>(idef.il[F_POSRES].size(), idef.il[F_POSRES].iatoms.data(),
-                                     idef.iparams_posres.data(), x, nullptr,
-                                     fr->pbcType == PbcType::No ? nullptr : pbc, lambda_dum, &dvdl,
-                                     fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
+        const real v = posres<false>(idef.il[F_POSRES].size(),
+                                     idef.il[F_POSRES].iatoms.data(),
+                                     idef.iparams_posres.data(),
+                                     x,
+                                     nullptr,
+                                     fr->pbcType == PbcType::No ? nullptr : pbc,
+                                     lambda_dum,
+                                     &dvdl,
+                                     fr->rc_scaling,
+                                     fr->pbcType,
+                                     fr->posres_com,
+                                     fr->posres_comB);
         foreignTerms.accumulate(i, v, dvdl);
     }
     wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
@@ -464,9 +500,15 @@ void fbposres_wrapper(t_nrnb*                       nrnb,
 {
     real v;
 
-    v = fbposres(idef.il[F_FBPOSRES].size(), idef.il[F_FBPOSRES].iatoms.data(),
-                 idef.iparams_fbposres.data(), x, forceWithVirial,
-                 fr->pbcType == PbcType::No ? nullptr : pbc, fr->rc_scaling, fr->pbcType, fr->posres_com);
+    v = fbposres(idef.il[F_FBPOSRES].size(),
+                 idef.il[F_FBPOSRES].iatoms.data(),
+                 idef.iparams_fbposres.data(),
+                 x,
+                 forceWithVirial,
+                 fr->pbcType == PbcType::No ? nullptr : pbc,
+                 fr->rc_scaling,
+                 fr->pbcType,
+                 fr->posres_com);
     enerd->term[F_FBPOSRES] += v;
     inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef.il[F_FBPOSRES].size(), 2));
 }

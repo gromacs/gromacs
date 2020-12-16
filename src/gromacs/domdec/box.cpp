@@ -144,8 +144,13 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
                               "Domain decomposition has not been implemented for box vectors that "
                               "have non-zero components in directions that do not use domain "
                               "decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
-                              (*dd_nc)[XX], (*dd_nc)[YY], (*dd_nc)[ZZ], j + 1, box[j][XX],
-                              box[j][YY], box[j][ZZ]);
+                              (*dd_nc)[XX],
+                              (*dd_nc)[YY],
+                              (*dd_nc)[ZZ],
+                              j + 1,
+                              box[j][XX],
+                              box[j][YY],
+                              box[j][ZZ]);
                 }
             }
         }
@@ -210,8 +215,7 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
             if (debug)
             {
                 fprintf(debug, "skew_fac[%d] = %f\n", d, ddbox->skew_fac[d]);
-                fprintf(debug, "normal[%d]  %.3f %.3f %.3f\n", d, normal[d][XX], normal[d][YY],
-                        normal[d][ZZ]);
+                fprintf(debug, "normal[%d]  %.3f %.3f %.3f\n", d, normal[d][XX], normal[d][YY], normal[d][ZZ]);
             }
         }
         else
@@ -289,9 +293,14 @@ void set_ddbox(const gmx_domdec_t&            dd,
         gmx::ArrayRef<const gmx::RVec> xRef = constArrayRefFromArray(
                 x.data(), masterRankHasTheSystemState ? x.size() : dd.comm->atomRanges.numHomeAtoms());
 
-        low_set_ddbox(dd.unitCellInfo.npbcdim, dd.unitCellInfo.numBoundedDimensions, &dd.numCells,
-                      box, calculateUnboundedSize, xRef,
-                      needToReduceCoordinateData ? &dd.mpi_comm_all : nullptr, ddbox);
+        low_set_ddbox(dd.unitCellInfo.npbcdim,
+                      dd.unitCellInfo.numBoundedDimensions,
+                      &dd.numCells,
+                      box,
+                      calculateUnboundedSize,
+                      xRef,
+                      needToReduceCoordinateData ? &dd.mpi_comm_all : nullptr,
+                      ddbox);
     }
 
     if (masterRankHasTheSystemState)
@@ -310,8 +319,8 @@ void set_ddbox_cr(DDRole                         ddRole,
 {
     if (ddRole == DDRole::Master)
     {
-        low_set_ddbox(numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), dd_nc, box, true, x,
-                      nullptr, ddbox);
+        low_set_ddbox(
+                numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), dd_nc, box, true, x, nullptr, ddbox);
     }
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, communicator);

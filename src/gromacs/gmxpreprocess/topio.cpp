@@ -164,8 +164,13 @@ double check_mol(const gmx_mtop_t* mtop, warninp* wi)
             if (((m <= 0.0) || (mB <= 0.0)) && ((pt == eptAtom) || (pt == eptNucleus)))
             {
                 ri = atoms->atom[i].resind;
-                sprintf(buf, "atom %s (Res %s-%d) has mass %g (state A) / %g (state B)\n",
-                        *(atoms->atomname[i]), *(atoms->resinfo[ri].name), atoms->resinfo[ri].nr, m, mB);
+                sprintf(buf,
+                        "atom %s (Res %s-%d) has mass %g (state A) / %g (state B)\n",
+                        *(atoms->atomname[i]),
+                        *(atoms->resinfo[ri].name),
+                        atoms->resinfo[ri].nr,
+                        m,
+                        mB);
                 warning_error(wi, buf);
             }
             else if (((m != 0) || (mB != 0)) && (pt == eptVSite))
@@ -175,7 +180,11 @@ double check_mol(const gmx_mtop_t* mtop, warninp* wi)
                         "virtual site %s (Res %s-%d) has non-zero mass %g (state A) / %g (state "
                         "B)\n"
                         "     Check your topology.\n",
-                        *(atoms->atomname[i]), *(atoms->resinfo[ri].name), atoms->resinfo[ri].nr, m, mB);
+                        *(atoms->atomname[i]),
+                        *(atoms->resinfo[ri].name),
+                        atoms->resinfo[ri].nr,
+                        m,
+                        mB);
                 warning_error(wi, buf);
                 /* The following statements make LINCS break! */
                 /* atoms->atom[i].m=0; */
@@ -553,8 +562,10 @@ static char** read_topol(const char*                           infile,
                         {
                             /* we should print here which directives should have
                                been present, and which actually are */
-                            gmx_fatal(FARGS, "%s\nInvalid order for directive %s",
-                                      cpp_error(&handle, eCPP_SYNTAX), dir2str(newd));
+                            gmx_fatal(FARGS,
+                                      "%s\nInvalid order for directive %s",
+                                      cpp_error(&handle, eCPP_SYNTAX),
+                                      dir2str(newd));
                             /* d = Directive::d_invalid; */
                         }
 
@@ -586,12 +597,13 @@ static char** read_topol(const char*                           infile,
                         case Directive::d_defaults:
                             if (bReadDefaults)
                             {
-                                gmx_fatal(FARGS, "%s\nFound a second defaults directive.\n",
+                                gmx_fatal(FARGS,
+                                          "%s\nFound a second defaults directive.\n",
                                           cpp_error(&handle, eCPP_SYNTAX));
                             }
                             bReadDefaults = TRUE;
-                            nscan = sscanf(pline, "%s%s%s%lf%lf%lf", nb_str, comb_str, genpairs,
-                                           &fLJ, &fQQ, &fPOW);
+                            nscan         = sscanf(
+                                    pline, "%s%s%s%lf%lf%lf", nb_str, comb_str, genpairs, &fLJ, &fQQ, &fPOW);
                             if (nscan < 2)
                             {
                                 too_few(wi);
@@ -630,8 +642,14 @@ static char** read_topol(const char*                           infile,
 
                             break;
                         case Directive::d_atomtypes:
-                            push_at(symtab, atypes, &bondAtomType, pline, nb_funct, &nbparam,
-                                    bGenPairs ? &pair : nullptr, wi);
+                            push_at(symtab,
+                                    atypes,
+                                    &bondAtomType,
+                                    pline,
+                                    nb_funct,
+                                    &nbparam,
+                                    bGenPairs ? &pair : nullptr,
+                                    wi);
                             break;
 
                         case Directive::d_bondtypes: // Intended to fall through
@@ -686,32 +704,36 @@ static char** read_topol(const char*                           infile,
                                         || opts->couple_lam1 == ecouplamNONE
                                         || opts->couple_lam1 == ecouplamQ))
                                 {
-                                    dcatt = add_atomtype_decoupled(symtab, atypes, &nbparam,
-                                                                   bGenPairs ? &pair : nullptr);
+                                    dcatt = add_atomtype_decoupled(
+                                            symtab, atypes, &nbparam, bGenPairs ? &pair : nullptr);
                                 }
                                 ntype  = atypes->size();
                                 ncombs = (ntype * (ntype + 1)) / 2;
-                                generate_nbparams(*combination_rule, nb_funct,
-                                                  &(interactions[nb_funct]), atypes, wi);
+                                generate_nbparams(
+                                        *combination_rule, nb_funct, &(interactions[nb_funct]), atypes, wi);
                                 ncopy = copy_nbparams(nbparam, nb_funct, &(interactions[nb_funct]), ntype);
                                 GMX_LOG(logger.info)
                                         .asParagraph()
                                         .appendTextFormatted(
                                                 "Generated %d of the %d non-bonded parameter "
                                                 "combinations",
-                                                ncombs - ncopy, ncombs);
+                                                ncombs - ncopy,
+                                                ncombs);
                                 free_nbparam(nbparam, ntype);
                                 if (bGenPairs)
                                 {
-                                    gen_pairs((interactions[nb_funct]), &(interactions[F_LJ14]),
-                                              fudgeLJ, *combination_rule);
+                                    gen_pairs((interactions[nb_funct]),
+                                              &(interactions[F_LJ14]),
+                                              fudgeLJ,
+                                              *combination_rule);
                                     ncopy = copy_nbparams(pair, nb_funct, &(interactions[F_LJ14]), ntype);
                                     GMX_LOG(logger.info)
                                             .asParagraph()
                                             .appendTextFormatted(
                                                     "Generated %d of the %d 1-4 parameter "
                                                     "combinations",
-                                                    ncombs - ncopy, ncombs);
+                                                    ncombs - ncopy,
+                                                    ncombs);
                                     free_nbparam(pair, ntype);
                                 }
                                 /* Copy GBSA parameters to atomtype array? */
@@ -737,15 +759,35 @@ static char** read_topol(const char*                           infile,
                             GMX_RELEASE_ASSERT(
                                     mi0,
                                     "Need to have a valid MoleculeInformation object to work on");
-                            push_bond(d, interactions, mi0->interactions, &(mi0->atoms), atypes,
-                                      pline, FALSE, bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
+                            push_bond(d,
+                                      interactions,
+                                      mi0->interactions,
+                                      &(mi0->atoms),
+                                      atypes,
+                                      pline,
+                                      FALSE,
+                                      bGenPairs,
+                                      *fudgeQQ,
+                                      bZero,
+                                      &bWarn_copy_A_B,
+                                      wi);
                             break;
                         case Directive::d_pairs_nb:
                             GMX_RELEASE_ASSERT(
                                     mi0,
                                     "Need to have a valid MoleculeInformation object to work on");
-                            push_bond(d, interactions, mi0->interactions, &(mi0->atoms), atypes,
-                                      pline, FALSE, FALSE, 1.0, bZero, &bWarn_copy_A_B, wi);
+                            push_bond(d,
+                                      interactions,
+                                      mi0->interactions,
+                                      &(mi0->atoms),
+                                      atypes,
+                                      pline,
+                                      FALSE,
+                                      FALSE,
+                                      1.0,
+                                      bZero,
+                                      &bWarn_copy_A_B,
+                                      wi);
                             break;
 
                         case Directive::d_vsites2:
@@ -768,8 +810,18 @@ static char** read_topol(const char*                           infile,
                             GMX_RELEASE_ASSERT(
                                     mi0,
                                     "Need to have a valid MoleculeInformation object to work on");
-                            push_bond(d, interactions, mi0->interactions, &(mi0->atoms), atypes,
-                                      pline, TRUE, bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
+                            push_bond(d,
+                                      interactions,
+                                      mi0->interactions,
+                                      &(mi0->atoms),
+                                      atypes,
+                                      pline,
+                                      TRUE,
+                                      bGenPairs,
+                                      *fudgeQQ,
+                                      bZero,
+                                      &bWarn_copy_A_B,
+                                      wi);
                             break;
                         case Directive::d_cmap:
                             GMX_RELEASE_ASSERT(
@@ -828,7 +880,8 @@ static char** read_topol(const char*                           infile,
                                     .asParagraph()
                                     .appendTextFormatted(
                                             "Excluding %d bonded neighbours molecule type '%s'",
-                                            mi0->nrexcl, *mi0->name);
+                                            mi0->nrexcl,
+                                            *mi0->name);
                             sum_q(&mi0->atoms, nrcopies, &qt, &qBt);
                             if (!mi0->bProcessed)
                             {
@@ -838,9 +891,15 @@ static char** read_topol(const char*                           infile,
 
                                 if (bCouple)
                                 {
-                                    convert_moltype_couple(mi0, dcatt, *fudgeQQ, opts->couple_lam0,
-                                                           opts->couple_lam1, opts->bCoupleIntra,
-                                                           nb_funct, &(interactions[nb_funct]), wi);
+                                    convert_moltype_couple(mi0,
+                                                           dcatt,
+                                                           *fudgeQQ,
+                                                           opts->couple_lam0,
+                                                           opts->couple_lam1,
+                                                           opts->bCoupleIntra,
+                                                           nb_funct,
+                                                           &(interactions[nb_funct]),
+                                                           wi);
                                 }
                                 stupid_fill_block(&mi0->mols, mi0->atoms.nr, TRUE);
                                 mi0->bProcessed = TRUE;
@@ -918,8 +977,8 @@ static char** read_topol(const char*                           infile,
         }
         GMX_LOG(logger.info)
                 .asParagraph()
-                .appendTextFormatted("Coupling %d copies of molecule type '%s'", nmol_couple,
-                                     opts->couple_moltype);
+                .appendTextFormatted(
+                        "Coupling %d copies of molecule type '%s'", nmol_couple, opts->couple_moltype);
     }
 
     /* this is not very clean, but fixes core dump on empty system name */
@@ -935,8 +994,7 @@ static char** read_topol(const char*                           infile,
     }
     if (fabs(qBt) > 1e-4 && !gmx_within_tol(qBt, qt, 1e-6))
     {
-        sprintf(warn_buf, "State B has non-zero total charge: %.6f\n%s\n", qBt,
-                floating_point_arithmetic_tip);
+        sprintf(warn_buf, "State B has non-zero total charge: %.6f\n%s\n", qBt, floating_point_arithmetic_tip);
         warning_note(wi, warn_buf);
     }
     if (usingFullRangeElectrostatics && (fabs(qt) > 1e-4 || fabs(qBt) > 1e-4))
@@ -995,10 +1053,26 @@ char** do_top(bool                                  bVerbose,
     {
         GMX_LOG(logger.info).asParagraph().appendTextFormatted("processing topology...");
     }
-    title = read_topol(topfile, tmpfile, opts->define, opts->include, symtab, atypes, molinfo,
-                       intermolecular_interactions, interactions, combination_rule, repulsion_power,
-                       opts, fudgeQQ, molblock, ffParametrizedWithHBondConstraints,
-                       ir->efep != efepNO, bZero, EEL_FULL(ir->coulombtype), wi, logger);
+    title = read_topol(topfile,
+                       tmpfile,
+                       opts->define,
+                       opts->include,
+                       symtab,
+                       atypes,
+                       molinfo,
+                       intermolecular_interactions,
+                       interactions,
+                       combination_rule,
+                       repulsion_power,
+                       opts,
+                       fudgeQQ,
+                       molblock,
+                       ffParametrizedWithHBondConstraints,
+                       ir->efep != efepNO,
+                       bZero,
+                       EEL_FULL(ir->coulombtype),
+                       wi,
+                       logger);
 
     if ((*combination_rule != eCOMB_GEOMETRIC) && (ir->vdwtype == evdwUSER))
     {

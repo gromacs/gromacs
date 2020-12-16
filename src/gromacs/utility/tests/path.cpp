@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,10 +76,17 @@ TEST(PathTest, SearchOperationsWork)
 {
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker rootChecker(data.rootChecker());
-    for (const std::string& input :
-         { "", "md.log", "md", "/tmp/absolute.txt", "simpledir/traj.tng", "simpledir/traj",
-           "windowsdir\\traj.tng", "complex.dir/traj.tng", "complex.dir/traj",
-           "nested/dir/conf.pdb", "/tmp/absolutedir/conf.pdb" })
+    for (const std::string& input : { "",
+                                      "md.log",
+                                      "md",
+                                      "/tmp/absolute.txt",
+                                      "simpledir/traj.tng",
+                                      "simpledir/traj",
+                                      "windowsdir\\traj.tng",
+                                      "complex.dir/traj.tng",
+                                      "complex.dir/traj",
+                                      "nested/dir/conf.pdb",
+                                      "/tmp/absolutedir/conf.pdb" })
     {
         SCOPED_TRACE(std::string("for input '") + input + "'");
         auto checker = rootChecker.checkCompound("PathToTest", input);

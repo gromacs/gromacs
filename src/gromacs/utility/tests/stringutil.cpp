@@ -241,8 +241,8 @@ TEST(formatAndJoinTest, Works)
 {
     const char* const words[] = { "The", "quick", "brown", "fox" };
     EXPECT_EQ("The       .quick     .brown     .fox       ",
-              gmx::formatAndJoin(gmx::ArrayRef<const char* const>(words), ".",
-                                 gmx::StringFormatter("%-10s")));
+              gmx::formatAndJoin(
+                      gmx::ArrayRef<const char* const>(words), ".", gmx::StringFormatter("%-10s")));
 
     const int values[] = { 0, 1, 4 };
     EXPECT_EQ("0,1,4",

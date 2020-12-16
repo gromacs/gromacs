@@ -185,23 +185,27 @@ void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKer
     Nbnxm::KernelSetup kernelSetup = getKernelSetup(options);
 
     PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
-    Nbnxm::GridSet gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType,
-                           false, numThreads, pinPolicy);
-    auto           pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
-    auto           pairSearch =
-            std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
-                                         pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    Nbnxm::GridSet gridSet(
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
+    auto pairSearch   = std::make_unique<PairSearch>(
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
 
     // Put everything together
-    auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
-                                                    std::move(atomData), kernelSetup, nullptr,
-                                                    nullWallcycle);
+    auto nbv = std::make_unique<nonbonded_verlet_t>(
+            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullWallcycle);
 
     // Needs to be called with the number of unique ParticleTypes
-    nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
-                        numParticleTypes, nonbondedParameters_, 1, numThreads);
+    nbnxn_atomdata_init(gmx::MDLogger(),
+                        nbv->nbat.get(),
+                        kernelSetup.kernelType,
+                        combinationRule,
+                        numParticleTypes,
+                        nonbondedParameters_,
+                        1,
+                        numThreads);
 
     gmxForceCalculator_->nbv_ = std::move(nbv);
 }
@@ -264,7 +268,8 @@ void NbvSetupUtil::setupInteractionConst(const NBKernelOptions& options)
         gmxForceCalculator_->interactionConst_->epsfac = 0;
     }
 
-    calc_rffac(nullptr, gmxForceCalculator_->interactionConst_->epsilon_r,
+    calc_rffac(nullptr,
+               gmxForceCalculator_->interactionConst_->epsilon_r,
                gmxForceCalculator_->interactionConst_->epsilon_rf,
                gmxForceCalculator_->interactionConst_->rcoulomb,
                &gmxForceCalculator_->interactionConst_->k_rf,
@@ -299,8 +304,8 @@ void NbvSetupUtil::setParticlesOnGrid(const std::vector<Vec3>& coordinates, cons
 
 void NbvSetupUtil::constructPairList(const gmx::ListOfLists<int>& exclusions)
 {
-    gmxForceCalculator_->nbv_->constructPairlist(gmx::InteractionLocality::Local, exclusions, 0,
-                                                 gmxForceCalculator_->nrnb_.get());
+    gmxForceCalculator_->nbv_->constructPairlist(
+            gmx::InteractionLocality::Local, exclusions, 0, gmxForceCalculator_->nrnb_.get());
 }
 
 

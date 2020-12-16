@@ -79,8 +79,7 @@ GaussianSpreadKernelParameters::Shape makeSpreadKernel(real sigma, real nSigma, 
 {
     RVec sigmaInLatticeCoordinates{ sigma, sigma, sigma };
     scaleToLattice(&sigmaInLatticeCoordinates);
-    return { DVec{ sigmaInLatticeCoordinates[XX], sigmaInLatticeCoordinates[YY],
-                   sigmaInLatticeCoordinates[ZZ] },
+    return { DVec{ sigmaInLatticeCoordinates[XX], sigmaInLatticeCoordinates[YY], sigmaInLatticeCoordinates[ZZ] },
              nSigma };
 }
 
@@ -102,10 +101,10 @@ const std::string DensityFittingForceProviderState::stepsSinceLastCalculationNam
 void DensityFittingForceProviderState::writeState(KeyValueTreeObjectBuilder kvtBuilder,
                                                   const std::string&        identifier) const
 {
-    writeKvtCheckpointValue(stepsSinceLastCalculation_, stepsSinceLastCalculationName_, identifier,
-                            kvtBuilder);
-    writeKvtCheckpointValue(adaptiveForceConstantScale_, adaptiveForceConstantScaleName_,
-                            identifier, kvtBuilder);
+    writeKvtCheckpointValue(
+            stepsSinceLastCalculation_, stepsSinceLastCalculationName_, identifier, kvtBuilder);
+    writeKvtCheckpointValue(
+            adaptiveForceConstantScale_, adaptiveForceConstantScaleName_, identifier, kvtBuilder);
 
     KeyValueTreeObjectBuilder exponentialMovingAverageKvtEntry =
             kvtBuilder.addObject(identifier + "-" + exponentialMovingAverageStateName_);
@@ -117,9 +116,13 @@ void DensityFittingForceProviderState::readState(const KeyValueTreeObject& kvtDa
                                                  const std::string&        identifier)
 {
     readKvtCheckpointValue(compat::make_not_null(&stepsSinceLastCalculation_),
-                           stepsSinceLastCalculationName_, identifier, kvtData);
+                           stepsSinceLastCalculationName_,
+                           identifier,
+                           kvtData);
     readKvtCheckpointValue(compat::make_not_null(&adaptiveForceConstantScale_),
-                           adaptiveForceConstantScaleName_, identifier, kvtData);
+                           adaptiveForceConstantScaleName_,
+                           identifier,
+                           kvtData);
 
     if (kvtData.keyExists(identifier + "-" + exponentialMovingAverageStateName_))
     {
@@ -266,7 +269,8 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
 
     transformedCoordinates_.resize(localAtomSet_.numAtomsLocal());
     // pick and copy atom coordinates
-    std::transform(std::cbegin(localAtomSet_.localIndex()), std::cend(localAtomSet_.localIndex()),
+    std::transform(std::cbegin(localAtomSet_.localIndex()),
+                   std::cend(localAtomSet_.localIndex()),
                    std::begin(transformedCoordinates_),
                    [&forceProviderInput](int index) { return forceProviderInput.x_[index]; });
 
@@ -323,7 +327,8 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     {
         // \todo update to real once GaussTransform class returns real
         gmx_sumf(gaussTransform_.view().mapping().required_span_size(),
-                 gaussTransform_.view().data(), &forceProviderInput.cr_);
+                 gaussTransform_.view().data(),
+                 &forceProviderInput.cr_);
     }
 
     // calculate grid derivative
@@ -332,8 +337,11 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     // calculate forces
     forces_.resize(localAtomSet_.numAtomsLocal());
     std::transform(
-            std::begin(transformedCoordinates_), std::end(transformedCoordinates_), std::begin(amplitudes),
-            std::begin(forces_), [&densityDerivative, this](const RVec r, real amplitude) {
+            std::begin(transformedCoordinates_),
+            std::end(transformedCoordinates_),
+            std::begin(amplitudes),
+            std::begin(forces_),
+            [&densityDerivative, this](const RVec r, real amplitude) {
                 return densityFittingForce_.evaluateForce({ r, amplitude }, densityDerivative);
             });
 

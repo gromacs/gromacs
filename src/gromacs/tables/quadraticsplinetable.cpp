@@ -247,8 +247,7 @@ void fillDdfzTableData(const std::vector<real>& functionTableData,
                        const std::vector<real>& derivativeTableData,
                        std::vector<real>*       ddfzTableData)
 {
-    GMX_ASSERT(functionTableData.size() == derivativeTableData.size(),
-               "Mismatching vector lengths");
+    GMX_ASSERT(functionTableData.size() == derivativeTableData.size(), "Mismatching vector lengths");
 
     std::size_t points = functionTableData.size();
 
@@ -342,16 +341,20 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<AnalyticalSplin
             std::vector<real> tmpDerTableData;
             std::vector<real> tmpDdfzTableData;
 
-            fillSingleQuadraticSplineTableData(thisFuncInput.function, thisFuncInput.derivative,
-                                               range_, spacing, &tmpFuncTableData, &tmpDerTableData);
+            fillSingleQuadraticSplineTableData(thisFuncInput.function,
+                                               thisFuncInput.derivative,
+                                               range_,
+                                               spacing,
+                                               &tmpFuncTableData,
+                                               &tmpDerTableData);
 
             fillDdfzTableData(tmpFuncTableData, tmpDerTableData, &tmpDdfzTableData);
 
-            internal::fillMultiplexedTableData(tmpDerTableData, &derivativeMultiTableData_, 1,
-                                               numFuncInTable_, funcIndex);
+            internal::fillMultiplexedTableData(
+                    tmpDerTableData, &derivativeMultiTableData_, 1, numFuncInTable_, funcIndex);
 
-            internal::fillMultiplexedTableData(tmpDdfzTableData, &ddfzMultiTableData_, 4,
-                                               numFuncInTable_, funcIndex);
+            internal::fillMultiplexedTableData(
+                    tmpDdfzTableData, &ddfzMultiTableData_, 4, numFuncInTable_, funcIndex);
 
             funcIndex++;
         }
@@ -458,17 +461,21 @@ QuadraticSplineTable::QuadraticSplineTable(std::initializer_list<NumericalSpline
             std::vector<real> tmpDerTableData;
             std::vector<real> tmpDdfzTableData;
 
-            fillSingleQuadraticSplineTableData(thisFuncInput.function, thisFuncInput.derivative,
-                                               thisFuncInput.spacing, range, spacing,
-                                               &tmpFuncTableData, &tmpDerTableData);
+            fillSingleQuadraticSplineTableData(thisFuncInput.function,
+                                               thisFuncInput.derivative,
+                                               thisFuncInput.spacing,
+                                               range,
+                                               spacing,
+                                               &tmpFuncTableData,
+                                               &tmpDerTableData);
 
             fillDdfzTableData(tmpFuncTableData, tmpDerTableData, &tmpDdfzTableData);
 
-            internal::fillMultiplexedTableData(tmpDerTableData, &derivativeMultiTableData_, 1,
-                                               numFuncInTable_, funcIndex);
+            internal::fillMultiplexedTableData(
+                    tmpDerTableData, &derivativeMultiTableData_, 1, numFuncInTable_, funcIndex);
 
-            internal::fillMultiplexedTableData(tmpDdfzTableData, &ddfzMultiTableData_, 4,
-                                               numFuncInTable_, funcIndex);
+            internal::fillMultiplexedTableData(
+                    tmpDdfzTableData, &ddfzMultiTableData_, 4, numFuncInTable_, funcIndex);
 
             funcIndex++;
         }

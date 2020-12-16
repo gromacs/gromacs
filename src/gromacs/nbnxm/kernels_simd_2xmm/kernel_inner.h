@@ -219,8 +219,8 @@
     ajz = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-    gmx_load_simd_2xnn_interactions(static_cast<int>(l_cj[cjind].excl), filter_S0, filter_S2,
-                                    &interact_S0, &interact_S2);
+    gmx_load_simd_2xnn_interactions(
+            static_cast<int>(l_cj[cjind].excl), filter_S0, filter_S2, &interact_S0, &interact_S2);
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
@@ -634,11 +634,13 @@
             c6_S2 * fma(sixth_S, rinvsix_S2, v_fswitch_pr(rsw_S2, rsw2_S2, p6_6cpot_S, p6_vc3_S, p6_vc4_S));
 #            endif
     SimdReal VLJ12_S0 = c12_S0
-                        * fma(twelveth_S, rinvsix_S0 * rinvsix_S0,
+                        * fma(twelveth_S,
+                              rinvsix_S0 * rinvsix_S0,
                               v_fswitch_pr(rsw_S0, rsw2_S0, p12_12cpot_S, p12_vc3_S, p12_vc4_S));
 #            ifndef HALF_LJ
     SimdReal VLJ12_S2 = c12_S2
-                        * fma(twelveth_S, rinvsix_S2 * rinvsix_S2,
+                        * fma(twelveth_S,
+                              rinvsix_S2 * rinvsix_S2,
                               v_fswitch_pr(rsw_S2, rsw2_S2, p12_12cpot_S, p12_vc3_S, p12_vc4_S));
 #            endif
 #            undef v_fswitch_pr
@@ -756,10 +758,12 @@
          * r^-6*cexp*(1 + cr2 + cr2^2/2 + cr2^3/6) = cexp*(r^-6*poly + c^6/6)
          */
         frLJ_S0 = fma(c6grid_S0,
-                      fnma(expmcr2_S0, fma(rinvsix_nm_S0, poly_S0, lje_c6_6_S), rinvsix_nm_S0), frLJ_S0);
+                      fnma(expmcr2_S0, fma(rinvsix_nm_S0, poly_S0, lje_c6_6_S), rinvsix_nm_S0),
+                      frLJ_S0);
 #        ifndef HALF_LJ
         frLJ_S2 = fma(c6grid_S2,
-                      fnma(expmcr2_S2, fma(rinvsix_nm_S2, poly_S2, lje_c6_6_S), rinvsix_nm_S2), frLJ_S2);
+                      fnma(expmcr2_S2, fma(rinvsix_nm_S2, poly_S2, lje_c6_6_S), rinvsix_nm_S2),
+                      frLJ_S2);
 #        endif
 
 #        ifdef CALC_ENERGIES
@@ -776,10 +780,12 @@
 #            endif
 
         VLJ_S0 = fma(sixth_S * c6grid_S0,
-                     fma(rinvsix_nm_S0, fnma(expmcr2_S0, poly_S0, one_S), sh_mask_S0), VLJ_S0);
+                     fma(rinvsix_nm_S0, fnma(expmcr2_S0, poly_S0, one_S), sh_mask_S0),
+                     VLJ_S0);
 #            ifndef HALF_LJ
         VLJ_S2 = fma(sixth_S * c6grid_S2,
-                     fma(rinvsix_nm_S2, fnma(expmcr2_S2, poly_S2, one_S), sh_mask_S2), VLJ_S2);
+                     fma(rinvsix_nm_S2, fnma(expmcr2_S2, poly_S2, one_S), sh_mask_S2),
+                     VLJ_S2);
 #            endif
 #        endif /* CALC_ENERGIES */
     }

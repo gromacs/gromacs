@@ -227,8 +227,8 @@ std::unique_ptr<CheckpointHelper> CheckpointHelperBuilder::build(Args&&... args)
 
     std::vector<std::tuple<std::string, ICheckpointHelperClient*>>&& clients = { clientsMap_.begin(),
                                                                                  clientsMap_.end() };
-    return std::make_unique<CheckpointHelper>(std::move(clients), std::move(checkpointHandler_),
-                                              std::forward<Args>(args)...);
+    return std::make_unique<CheckpointHelper>(
+            std::move(clients), std::move(checkpointHandler_), std::forward<Args>(args)...);
 }
 
 } // namespace gmx

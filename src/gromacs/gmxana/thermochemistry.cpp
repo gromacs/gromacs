@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,8 +80,13 @@ double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval, real temp
                 double dEvib = hwkT * (0.5 + 1.0 / (std::expm1(hwkT)));
                 if (debug)
                 {
-                    fprintf(debug, "i %d eigval %g omega %g hwkT %g dEvib %g\n",
-                            static_cast<int>(i + 1), static_cast<double>(eigval[i]), omega, hwkT, dEvib);
+                    fprintf(debug,
+                            "i %d eigval %g omega %g hwkT %g dEvib %g\n",
+                            static_cast<int>(i + 1),
+                            static_cast<double>(eigval[i]),
+                            omega,
+                            hwkT,
+                            dEvib);
                 }
                 Evib += dEvib;
             }
@@ -107,8 +112,13 @@ double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval, real temper
                 double dcv = std::exp(hwkT) * gmx::square(hwkT / std::expm1(hwkT));
                 if (debug)
                 {
-                    fprintf(debug, "i %d eigval %g omega %g hwkT %g dcv %g\n",
-                            static_cast<int>(i + 1), static_cast<double>(eigval[i]), omega, hwkT, dcv);
+                    fprintf(debug,
+                            "i %d eigval %g omega %g hwkT %g dcv %g\n",
+                            static_cast<int>(i + 1),
+                            static_cast<double>(eigval[i]),
+                            omega,
+                            hwkT,
+                            dcv);
                 }
                 cv += dcv;
             }
@@ -170,8 +180,13 @@ double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval, real temperatu
             S += dS;
             if (debug)
             {
-                fprintf(debug, "i = %5d eigval = %10g w = %10g hwkT = %10g dS = %10g\n",
-                        static_cast<int>(i + 1), static_cast<double>(eigval[i]), omega, hwkT, dS);
+                fprintf(debug,
+                        "i = %5d eigval = %10g w = %10g hwkT = %10g dS = %10g\n",
+                        static_cast<int>(i + 1),
+                        static_cast<double>(eigval[i]),
+                        omega,
+                        hwkT,
+                        dS);
             }
         }
         else if (debug)

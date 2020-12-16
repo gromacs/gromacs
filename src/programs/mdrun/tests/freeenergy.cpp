@@ -158,8 +158,8 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     }
     else
     {
-        checkTrajectoryAgainstReferenceData(simulationTrajectoryFileName, trajectoryComparison,
-                                            &rootChecker, MaxNumFrames(1));
+        checkTrajectoryAgainstReferenceData(
+                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(1));
     }
     if (File::exists(simulationDhdlFileName, File::returnFalseOnError))
     {

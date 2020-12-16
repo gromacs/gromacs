@@ -68,8 +68,17 @@ void nbnxn_put_on_grid(nonbonded_verlet_t*            nb_verlet,
                        int                            numAtomsMoved,
                        const int*                     move)
 {
-    nb_verlet->pairSearch_->putOnGrid(box, gridIndex, lowerCorner, upperCorner, updateGroupsCog,
-                                      atomRange, atomDensity, atomInfo, x, numAtomsMoved, move,
+    nb_verlet->pairSearch_->putOnGrid(box,
+                                      gridIndex,
+                                      lowerCorner,
+                                      upperCorner,
+                                      updateGroupsCog,
+                                      atomRange,
+                                      atomDensity,
+                                      atomInfo,
+                                      x,
+                                      numAtomsMoved,
+                                      move,
                                       nb_verlet->nbat.get());
 }
 
@@ -88,8 +97,17 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*              nbv,
             c1[d] = zones->size[zone].bb_x1[d];
         }
 
-        nbnxn_put_on_grid(nbv, nullptr, zone, c0, c1, nullptr,
-                          { zones->cg_range[zone], zones->cg_range[zone + 1] }, -1, atomInfo, x, 0,
+        nbnxn_put_on_grid(nbv,
+                          nullptr,
+                          zone,
+                          c0,
+                          c1,
+                          nullptr,
+                          { zones->cg_range[zone], zones->cg_range[zone + 1] },
+                          -1,
+                          atomInfo,
+                          x,
+                          0,
                           nullptr);
     }
 }
@@ -133,8 +151,8 @@ void nonbonded_verlet_t::convertCoordinates(const gmx::AtomLocality        local
     wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
     wallcycle_sub_start(wcycle_, ewcsNB_X_BUF_OPS);
 
-    nbnxn_atomdata_copy_x_to_nbat_x(pairSearch_->gridSet(), locality, fillLocal,
-                                    as_rvec_array(coordinates.data()), nbat.get());
+    nbnxn_atomdata_copy_x_to_nbat_x(
+            pairSearch_->gridSet(), locality, fillLocal, as_rvec_array(coordinates.data()), nbat.get());
 
     wallcycle_sub_stop(wcycle_, ewcsNB_X_BUF_OPS);
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);

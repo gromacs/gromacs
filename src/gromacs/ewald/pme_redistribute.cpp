@@ -135,8 +135,12 @@ static void pme_calc_pidx_wrapper(gmx::ArrayRef<const gmx::RVec> x, const matrix
         try
         {
             const int natoms = x.ssize();
-            pme_calc_pidx(natoms * thread / nthread, natoms * (thread + 1) / nthread, recipbox, x,
-                          atc, atc->count_thread[thread].data());
+            pme_calc_pidx(natoms * thread / nthread,
+                          natoms * (thread + 1) / nthread,
+                          recipbox,
+                          x,
+                          atc,
+                          atc->count_thread[thread].data());
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
@@ -264,8 +268,8 @@ static void pme_dd_sendrecv(PmeAtomComm gmx_unused* atc,
 
     if (nbyte_s > 0 && nbyte_r > 0)
     {
-        MPI_Sendrecv(buf_s, nbyte_s, MPI_BYTE, dest, shift, buf_r, nbyte_r, MPI_BYTE, src, shift,
-                     atc->mpi_comm, &stat);
+        MPI_Sendrecv(
+                buf_s, nbyte_s, MPI_BYTE, dest, shift, buf_r, nbyte_r, MPI_BYTE, src, shift, atc->mpi_comm, &stat);
     }
     else if (nbyte_s > 0)
     {
@@ -306,7 +310,9 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
                     "%zd particles communicated to PME rank %d are more than 2/3 times the cut-off "
                     "out of the domain decomposition cell of their charge group in dimension %c.\n"
                     "This usually means that your system is not well equilibrated.",
-                    x.ssize() - (sendCount[atc->nodeid] + nsend), pme->nodeid, 'x' + atc->dimind);
+                    x.ssize() - (sendCount[atc->nodeid] + nsend),
+                    pme->nodeid,
+                    'x' + atc->dimind);
         }
 
         if (nsend > pme->buf_nalloc)
@@ -324,11 +330,10 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
             /* Communicate the count */
             if (debug)
             {
-                fprintf(debug, "dimind %d PME rank %d send to rank %d: %d\n", atc->dimind,
-                        atc->nodeid, commnode, scount);
+                fprintf(debug, "dimind %d PME rank %d send to rank %d: %d\n", atc->dimind, atc->nodeid, commnode, scount);
             }
-            pme_dd_sendrecv(atc, FALSE, i, &scount, sizeof(int), &atc->slabCommSetup[i].rcount,
-                            sizeof(int));
+            pme_dd_sendrecv(
+                    atc, FALSE, i, &scount, sizeof(int), &atc->slabCommSetup[i].rcount, sizeof(int));
             numAtoms += atc->slabCommSetup[i].rcount;
         }
 
@@ -372,12 +377,22 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
             if (bX)
             {
                 /* Communicate the coordinates */
-                pme_dd_sendrecv(atc, FALSE, i, pme->bufv + buf_pos, scount * sizeof(rvec),
-                                atc->xBuffer.data() + local_pos, rcount * sizeof(rvec));
+                pme_dd_sendrecv(atc,
+                                FALSE,
+                                i,
+                                pme->bufv + buf_pos,
+                                scount * sizeof(rvec),
+                                atc->xBuffer.data() + local_pos,
+                                rcount * sizeof(rvec));
             }
             /* Communicate the coefficients */
-            pme_dd_sendrecv(atc, FALSE, i, pme->bufr + buf_pos, scount * sizeof(real),
-                            atc->coefficientBuffer.data() + local_pos, rcount * sizeof(real));
+            pme_dd_sendrecv(atc,
+                            FALSE,
+                            i,
+                            pme->bufr + buf_pos,
+                            scount * sizeof(real),
+                            atc->coefficientBuffer.data() + local_pos,
+                            rcount * sizeof(real));
             buf_pos += scount;
             local_pos += atc->slabCommSetup[i].rcount;
         }
@@ -401,8 +416,13 @@ void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::
         if (scount > 0 || rcount > 0)
         {
             /* Communicate the forces */
-            pme_dd_sendrecv(atc, TRUE, i, atc->f.data() + local_pos, scount * sizeof(rvec),
-                            pme->bufv + buf_pos, rcount * sizeof(rvec));
+            pme_dd_sendrecv(atc,
+                            TRUE,
+                            i,
+                            atc->f.data() + local_pos,
+                            scount * sizeof(rvec),
+                            pme->bufv + buf_pos,
+                            rcount * sizeof(rvec));
             local_pos += scount;
         }
         atc->slabCommSetup[commnode].buf_index = buf_pos;

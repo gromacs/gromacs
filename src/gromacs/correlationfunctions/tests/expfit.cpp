@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -130,9 +130,19 @@ protected:
             GMX_THROW(InvalidInputError("testType out of range"));
         }
         output_env_init_default(&oenv);
-        do_lmfit(data_[testType].nrLines_, &(data_[testType].y_[0]), nullptr, data_[testType].dt_,
-                 &(data_[testType].x_[0]), data_[testType].startTime_, data_[testType].endTime_,
-                 oenv, false, type, result, 0, nullptr);
+        do_lmfit(data_[testType].nrLines_,
+                 &(data_[testType].y_[0]),
+                 nullptr,
+                 data_[testType].dt_,
+                 &(data_[testType].x_[0]),
+                 data_[testType].startTime_,
+                 data_[testType].endTime_,
+                 oenv,
+                 false,
+                 type,
+                 result,
+                 0,
+                 nullptr);
         output_env_done(oenv);
         checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, tolerance));
         checker_.checkSequenceArray(nfitparm, result, "result");

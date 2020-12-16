@@ -331,9 +331,10 @@ static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
         // precision fields, but a bit below we'll need a corresponding integer variable with 4x
         // 32-bit fields. Since AVX1 does not support shuffling across the upper/lower 128-bit
         // lanes, we need to extract those first, and then shuffle between two 128-bit variables.
-        __m128i iValueIsZero = _mm_castps_si128(_mm_shuffle_ps(
-                _mm256_extractf128_ps(_mm256_castpd_ps(valueIsZero), 0x0),
-                _mm256_extractf128_ps(_mm256_castpd_ps(valueIsZero), 0x1), _MM_SHUFFLE(2, 0, 2, 0)));
+        __m128i iValueIsZero = _mm_castps_si128(
+                _mm_shuffle_ps(_mm256_extractf128_ps(_mm256_castpd_ps(valueIsZero), 0x0),
+                               _mm256_extractf128_ps(_mm256_castpd_ps(valueIsZero), 0x1),
+                               _MM_SHUFFLE(2, 0, 2, 0)));
 
         // Set exponent to 0 when input value was zero
         iExponentLow = _mm_andnot_si128(iValueIsZero, iExponentLow);

@@ -65,22 +65,29 @@ static void atom_not_found(int         fatal_errno,
     {
         if (0 != strcmp(bondtype, "atom"))
         {
-            snprintf(message_buffer, 1024,
+            snprintf(message_buffer,
+                     1024,
                      "Residue %d named %s of a molecule in the input file was mapped\n"
                      "to an entry in the topology database, but the atom %s used in\n"
                      "an interaction of type %s in that entry is not found in the\n"
                      "input file. Perhaps your atom and/or residue naming needs to be\n"
                      "fixed.\n",
-                     resind + 1, resname, atomname, bondtype);
+                     resind + 1,
+                     resname,
+                     atomname,
+                     bondtype);
         }
         else
         {
-            snprintf(message_buffer, 1024,
+            snprintf(message_buffer,
+                     1024,
                      "Residue %d named %s of a molecule in the input file was mapped\n"
                      "to an entry in the topology database, but the atom %s used in\n"
                      "that entry is not found in the input file. Perhaps your atom\n"
                      "and/or residue naming needs to be fixed.\n",
-                     resind + 1, resname, atomname);
+                     resind + 1,
+                     resname,
+                     atomname);
         }
         if (bAllowMissing)
         {
@@ -148,8 +155,7 @@ int search_atom(const char*              type,
         }
         if (!(bNext && at[start].resind == at[natoms - 1].resind))
         {
-            atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype,
-                           bAllowMissing);
+            atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
         }
     }
     else
@@ -188,8 +194,7 @@ int search_atom(const char*              type,
         }
         if (start > 0)
         {
-            atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype,
-                           bAllowMissing);
+            atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
         }
     }
     return -1;

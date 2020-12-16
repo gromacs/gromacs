@@ -232,8 +232,17 @@ int gmx_genrestr(int argc, char* argv[])
         {
             fprintf(out, "; distance restraints for %s of %s\n\n", indexGroupNames, title);
             fprintf(out, "[ distance_restraints ]\n");
-            fprintf(out, ";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n", "i", "j", "?", "label",
-                    "funct", "lo", "up1", "up2", "weight");
+            fprintf(out,
+                    ";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n",
+                    "i",
+                    "j",
+                    "?",
+                    "label",
+                    "funct",
+                    "lo",
+                    "up1",
+                    "up2",
+                    "weight");
         }
         for (i = k = 0; i < igrp; i++)
         {
@@ -259,8 +268,17 @@ int gmx_genrestr(int argc, char* argv[])
                         }
                         lo = std::max(0.0_real, d - dd);
                         hi = d + dd;
-                        fprintf(out, "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n", indexGroups[i] + 1,
-                                indexGroups[j] + 1, 1, k, 1, lo, hi, hi + disre_up2, 1.0);
+                        fprintf(out,
+                                "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
+                                indexGroups[i] + 1,
+                                indexGroups[j] + 1,
+                                1,
+                                k,
+                                1,
+                                lo,
+                                hi,
+                                hi + disre_up2,
+                                1.0);
                     }
                 }
             }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,8 +88,7 @@ TEST(DensitySimilarityTest, InnerProductGradientIsCorrect)
     std::iota(begin(comparedDensity), end(comparedDensity), -18);
 
     std::vector<float> expectedSimilarityGradient;
-    std::copy(begin(referenceDensity), end(referenceDensity),
-              std::back_inserter(expectedSimilarityGradient));
+    std::copy(begin(referenceDensity), end(referenceDensity), std::back_inserter(expectedSimilarityGradient));
     for (auto& x : expectedSimilarityGradient)
     {
         x /= comparedDensity.asConstView().mapping().required_span_size();

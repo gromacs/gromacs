@@ -192,8 +192,8 @@ int gmx_g_angle(int argc, char* argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -240,7 +240,8 @@ int gmx_g_angle(int argc, char* argv[])
         gmx_fatal(FARGS,
                   "number of index elements not multiple of %d, "
                   "these can not be %s\n",
-                  mult, (mult == 3) ? "angle triplets" : "dihedral quadruplets");
+                  mult,
+                  (mult == 3) ? "angle triplets" : "dihedral quadruplets");
     }
 
 
@@ -287,9 +288,21 @@ int gmx_g_angle(int argc, char* argv[])
 
     snew(angstat, maxangstat);
 
-    read_ang_dih(ftp2fn(efTRX, NFILE, fnm), (mult == 3),
-                 bALL || bCorr || bTrans || opt2bSet("-or", NFILE, fnm), bRb, bPBC, maxangstat,
-                 angstat, &nframes, &time, isize, index, &trans_frac, &aver_angle, dih, oenv);
+    read_ang_dih(ftp2fn(efTRX, NFILE, fnm),
+                 (mult == 3),
+                 bALL || bCorr || bTrans || opt2bSet("-or", NFILE, fnm),
+                 bRb,
+                 bPBC,
+                 maxangstat,
+                 angstat,
+                 &nframes,
+                 &time,
+                 isize,
+                 index,
+                 &trans_frac,
+                 &aver_angle,
+                 dih,
+                 oenv);
 
     dt = (time[nframes - 1] - time[0]) / (nframes - 1);
 
@@ -343,8 +356,8 @@ int gmx_g_angle(int argc, char* argv[])
 
     if (bTrans)
     {
-        ana_dih_trans(opt2fn("-ot", NFILE, fnm), opt2fn("-oh", NFILE, fnm), dih, nframes, nangles,
-                      grpname, time, bRb, oenv);
+        ana_dih_trans(
+                opt2fn("-ot", NFILE, fnm), opt2fn("-oh", NFILE, fnm), dih, nframes, nangles, grpname, time, bRb, oenv);
     }
 
     if (bCorr)
@@ -394,8 +407,15 @@ int gmx_g_angle(int argc, char* argv[])
             {
                 mode = eacCos;
             }
-            do_autocorr(opt2fn("-oc", NFILE, fnm), oenv, "Dihedral Autocorrelation Function",
-                        nframes, nangles, dih, dt, mode, bAverCorr);
+            do_autocorr(opt2fn("-oc", NFILE, fnm),
+                        oenv,
+                        "Dihedral Autocorrelation Function",
+                        nframes,
+                        nangles,
+                        dih,
+                        dt,
+                        mode,
+                        bAverCorr);
         }
     }
 

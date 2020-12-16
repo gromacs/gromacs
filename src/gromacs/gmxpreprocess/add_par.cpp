@@ -159,7 +159,9 @@ int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool
     }
     if (jmax == -1)
     {
-        gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s", searchname,
+        gmx_fatal(FARGS,
+                  "Atom %s not found in rtp database in residue %s",
+                  searchname,
                   localPpResidue.resname.c_str());
     }
     if (kmax != strlen(searchname))
@@ -167,7 +169,9 @@ int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool
         gmx_fatal(FARGS,
                   "Atom %s not found in rtp database in residue %s, "
                   "it looks a bit like %s",
-                  searchname, localPpResidue.resname.c_str(), *(localPpResidue.atomname[jmax]));
+                  searchname,
+                  localPpResidue.resname.c_str(),
+                  *(localPpResidue.atomname[jmax]));
     }
     return jmax;
 }

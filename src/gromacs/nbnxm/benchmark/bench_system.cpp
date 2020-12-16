@@ -115,8 +115,11 @@ static void generateCoordinates(int multiplicationFactor, std::vector<gmx::RVec>
             dim = 0;
         }
     }
-    printf("Stacking a box of %zu atoms %d x %d x %d times\n", coordinates1000.size(), factors[XX],
-           factors[YY], factors[ZZ]);
+    printf("Stacking a box of %zu atoms %d x %d x %d times\n",
+           coordinates1000.size(),
+           factors[XX],
+           factors[YY],
+           factors[ZZ]);
 
     coordinates->resize(factors[XX] * factors[YY] * factors[ZZ] * coordinates1000.size());
 

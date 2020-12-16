@@ -356,8 +356,10 @@ gmx_ana_selmethod_t sm_insolidangle = {
     &init_frame_insolidangle,
     nullptr,
     &evaluate_insolidangle,
-    { "insolidangle center POS span POS_EXPR [cutoff REAL]", "Selecting atoms in a solid angle",
-      asize(help_insolidangle), help_insolidangle },
+    { "insolidangle center POS span POS_EXPR [cutoff REAL]",
+      "Selecting atoms in a solid angle",
+      asize(help_insolidangle),
+      help_insolidangle },
 };
 
 static void* init_data_insolidangle(int /* npar */, gmx_ana_selparam_t* param)

@@ -360,7 +360,8 @@ std::string FileNameOptionStorage::processValue(const std::string& value) const
                 "File '%s' cannot be used by GROMACS because it "
                 "does not have a recognizable extension.\n"
                 "The following extensions are possible for this option:\n  %s",
-                value.c_str(), joinStrings(extensions(), ", ").c_str());
+                value.c_str(),
+                joinStrings(extensions(), ", ").c_str());
         GMX_THROW(InvalidInputError(message));
     }
     else if (!isValidType(fileType))
@@ -368,7 +369,8 @@ std::string FileNameOptionStorage::processValue(const std::string& value) const
         std::string message = formatString(
                 "File name '%s' cannot be used for this option.\n"
                 "Only the following extensions are possible:\n  %s",
-                value.c_str(), joinStrings(extensions(), ", ").c_str());
+                value.c_str(),
+                joinStrings(extensions(), ", ").c_str());
         GMX_THROW(InvalidInputError(message));
     }
     return value;

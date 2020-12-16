@@ -274,8 +274,8 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     /* Spreading */
     if (spreadCharges)
     {
-        spread_charges<order, wrapX, wrapY, 0, threadsPerAtom>(kernelParams, &atomCharge,
-                                                               sm_gridlineIndices, sm_theta);
+        spread_charges<order, wrapX, wrapY, 0, threadsPerAtom>(
+                kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
     }
     if (numGrids == 2)
     {
@@ -293,8 +293,8 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         }
         if (spreadCharges)
         {
-            spread_charges<order, wrapX, wrapY, 1, threadsPerAtom>(kernelParams, &atomCharge,
-                                                                   sm_gridlineIndices, sm_theta);
+            spread_charges<order, wrapX, wrapY, 1, threadsPerAtom>(
+                    kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
         }
     }
 }

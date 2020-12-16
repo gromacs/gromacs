@@ -128,10 +128,15 @@ void GpuForceReduction::Impl::reinit(float3*               baseForcePtr,
     cellInfo_.cell    = cell.data();
 
     wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
-    reallocateDeviceBuffer(&cellInfo_.d_cell, numAtoms_, &cellInfo_.cellSize,
-                           &cellInfo_.cellSizeAlloc, deviceContext_);
-    copyToDeviceBuffer(&cellInfo_.d_cell, &(cellInfo_.cell[atomStart]), 0, numAtoms_, deviceStream_,
-                       GpuApiCallBehavior::Async, nullptr);
+    reallocateDeviceBuffer(
+            &cellInfo_.d_cell, numAtoms_, &cellInfo_.cellSize, &cellInfo_.cellSizeAlloc, deviceContext_);
+    copyToDeviceBuffer(&cellInfo_.d_cell,
+                       &(cellInfo_.cell[atomStart]),
+                       0,
+                       numAtoms_,
+                       deviceStream_,
+                       GpuApiCallBehavior::Async,
+                       nullptr);
     wallcycle_stop(wcycle_, ewcLAUNCH_GPU);
 
     dependencyList_.clear();
@@ -189,8 +194,8 @@ void GpuForceReduction::Impl::execute()
                             ? (accumulate_ ? reduceKernel<true, true> : reduceKernel<true, false>)
                             : (accumulate_ ? reduceKernel<false, true> : reduceKernel<false, false>);
 
-    const auto kernelArgs = prepareGpuKernelArguments(kernelFn, config, &d_nbnxmForce, &d_rvecForceToAdd,
-                                                      &baseForce_, &cellInfo_.d_cell, &numAtoms_);
+    const auto kernelArgs = prepareGpuKernelArguments(
+            kernelFn, config, &d_nbnxmForce, &d_rvecForceToAdd, &baseForce_, &cellInfo_.d_cell, &numAtoms_);
 
     launchGpuKernel(kernelFn, config, deviceStream_, nullptr, "Force Reduction", kernelArgs);
 

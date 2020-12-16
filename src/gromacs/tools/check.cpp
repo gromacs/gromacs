@@ -271,8 +271,12 @@ static void chk_bonds(const InteractionDefinitions* idef, PbcType pbcType, rvec*
                     deviation = gmx::square(blen - b0);
                     if (std::sqrt(deviation / gmx::square(b0)) > tol)
                     {
-                        fprintf(stderr, "Distance between atoms %d and %d is %.3f, should be %.3f\n",
-                                ai + 1, aj + 1, blen, b0);
+                        fprintf(stderr,
+                                "Distance between atoms %d and %d is %.3f, should be %.3f\n",
+                                ai + 1,
+                                aj + 1,
+                                blen,
+                                b0);
                     }
                 }
             }
@@ -357,8 +361,12 @@ static void chk_trj(const gmx_output_env_t* oenv, const char* fn, const char* tp
                 > 0.1 * (std::fabs(fr.time - old_t1) + std::fabs(old_t1 - old_t2)))
             {
                 bShowTimestep = FALSE;
-                fprintf(stderr, "%sTimesteps at t=%g don't match (%g, %g)\n", newline ? "\n" : "",
-                        old_t1, old_t1 - old_t2, fr.time - old_t1);
+                fprintf(stderr,
+                        "%sTimesteps at t=%g don't match (%g, %g)\n",
+                        newline ? "\n" : "",
+                        old_t1,
+                        old_t1 - old_t2,
+                        fr.time - old_t1);
             }
         }
         natoms = new_natoms;
@@ -494,7 +502,10 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
                 "Natoms * %d or Natoms * %d,\n"
                 "the velocities correspond to a temperature of the system\n"
                 "of %g K or %g K respectively.\n\n",
-                DIM, DIM - 1, temp1, temp2);
+                DIM,
+                DIM - 1,
+                temp1,
+                temp2);
     }
 
     /* check coordinates */
@@ -507,17 +518,25 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
         fprintf(stderr,
                 "Checking for atoms closer than %g and not between %g and %g,\n"
                 "relative to sum of Van der Waals distance:\n",
-                vdw_fac, bon_lo, bon_hi);
+                vdw_fac,
+                bon_lo,
+                bon_hi);
         snew(atom_vdw, natom);
         AtomProperties aps;
         for (i = 0; (i < natom); i++)
         {
-            aps.setAtomProperty(epropVDW, *(atoms->resinfo[atoms->atom[i].resind].name),
-                                *(atoms->atomname[i]), &(atom_vdw[i]));
+            aps.setAtomProperty(epropVDW,
+                                *(atoms->resinfo[atoms->atom[i].resind].name),
+                                *(atoms->atomname[i]),
+                                &(atom_vdw[i]));
             if (debug)
             {
-                fprintf(debug, "%5d %4s %4s %7g\n", i + 1, *(atoms->resinfo[atoms->atom[i].resind].name),
-                        *(atoms->atomname[i]), atom_vdw[i]);
+                fprintf(debug,
+                        "%5d %4s %4s %7g\n",
+                        i + 1,
+                        *(atoms->resinfo[atoms->atom[i].resind].name),
+                        *(atoms->atomname[i]),
+                        atom_vdw[i]);
             }
         }
         if (bB)
@@ -549,15 +568,32 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
                 {
                     if (bFirst)
                     {
-                        fprintf(stderr, "\r%5s %4s %8s %5s  %5s %4s %8s %5s  %6s\n", "atom#", "name",
-                                "residue", "r_vdw", "atom#", "name", "residue", "r_vdw", "distance");
+                        fprintf(stderr,
+                                "\r%5s %4s %8s %5s  %5s %4s %8s %5s  %6s\n",
+                                "atom#",
+                                "name",
+                                "residue",
+                                "r_vdw",
+                                "atom#",
+                                "name",
+                                "residue",
+                                "r_vdw",
+                                "distance");
                         bFirst = FALSE;
                     }
-                    fprintf(stderr, "\r%5d %4s %4s%4d %-5.3g  %5d %4s %4s%4d %-5.3g  %-6.4g\n", i + 1,
-                            *(atoms->atomname[i]), *(atoms->resinfo[atoms->atom[i].resind].name),
-                            atoms->resinfo[atoms->atom[i].resind].nr, atom_vdw[i], j + 1,
-                            *(atoms->atomname[j]), *(atoms->resinfo[atoms->atom[j].resind].name),
-                            atoms->resinfo[atoms->atom[j].resind].nr, atom_vdw[j], std::sqrt(r2));
+                    fprintf(stderr,
+                            "\r%5d %4s %4s%4d %-5.3g  %5d %4s %4s%4d %-5.3g  %-6.4g\n",
+                            i + 1,
+                            *(atoms->atomname[i]),
+                            *(atoms->resinfo[atoms->atom[i].resind].name),
+                            atoms->resinfo[atoms->atom[i].resind].nr,
+                            atom_vdw[i],
+                            j + 1,
+                            *(atoms->atomname[j]),
+                            *(atoms->resinfo[atoms->atom[j].resind].name),
+                            atoms->resinfo[atoms->atom[j].resind].nr,
+                            atom_vdw[j],
+                            std::sqrt(r2));
                 }
             }
         }
@@ -593,12 +629,20 @@ static void chk_tps(const char* fn, real vdw_fac, real bon_lo, real bon_hi)
                                 "):\n"
                                 "(These may occur often and are normally not a problem)\n"
                                 "%5s %4s %8s %5s  %s\n",
-                                "atom#", "name", "residue", "r_vdw", "coordinate");
+                                "atom#",
+                                "name",
+                                "residue",
+                                "r_vdw",
+                                "coordinate");
                         bFirst = FALSE;
                     }
-                    fprintf(stderr, "%5d %4s %4s%4d %-5.3g", i, *(atoms->atomname[i]),
+                    fprintf(stderr,
+                            "%5d %4s %4s%4d %-5.3g",
+                            i,
+                            *(atoms->atomname[i]),
                             *(atoms->resinfo[atoms->atom[i].resind].name),
-                            atoms->resinfo[atoms->atom[i].resind].nr, atom_vdw[i]);
+                            atoms->resinfo[atoms->atom[i].resind].nr,
+                            atom_vdw[i]);
                     for (j = 0; (j < DIM); j++)
                     {
                         fprintf(stderr, " %6.3g", x[i][j]);
@@ -637,8 +681,12 @@ static void chk_ndx(const char* fn)
         printf("Nr.   Group               #Entries   First    Last\n");
         for (i = 0; (i < grps->nr); i++)
         {
-            printf("%4d  %-20s%8d%8d%8d\n", i, grpname[i], grps->index[i + 1] - grps->index[i],
-                   grps->a[grps->index[i]] + 1, grps->a[grps->index[i + 1] - 1] + 1);
+            printf("%4d  %-20s%8d%8d%8d\n",
+                   i,
+                   grpname[i],
+                   grps->index[i + 1] - grps->index[i],
+                   grps->a[grps->index[i]] + 1,
+                   grps->a[grps->index[i + 1] - 1] + 1);
         }
     }
     for (i = 0; (i < grps->nr); i++)
@@ -681,8 +729,7 @@ static void chk_enx(const char* fn)
                 > 0.1 * (fabs(fr->t - old_t1) + std::fabs(old_t1 - old_t2)))
             {
                 bShowTStep = FALSE;
-                fprintf(stderr, "\nTimesteps at t=%g don't match (%g, %g)\n", old_t1,
-                        old_t1 - old_t2, fr->t - old_t1);
+                fprintf(stderr, "\nTimesteps at t=%g don't match (%g, %g)\n", old_t1, old_t1 - old_t2, fr->t - old_t1);
             }
         }
         old_t2 = old_t1;
@@ -694,8 +741,7 @@ static void chk_enx(const char* fn)
         }
         if (fnr == 0)
         {
-            fprintf(stderr, "\rframe: %6s (index %6d), t: %10.3f\n", gmx_step_str(fr->step, buf),
-                    fnr, fr->t);
+            fprintf(stderr, "\rframe: %6s (index %6d), t: %10.3f\n", gmx_step_str(fr->step, buf), fnr, fr->t);
         }
         fnr++;
     }

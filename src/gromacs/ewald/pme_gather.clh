@@ -390,8 +390,8 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
 
     if (chargeCheck)
     {
-        sumForceComponents(&fx, &fy, &fz, ixBase, nx, pny, pnz, constOffset, splineIndexBase, tdy,
-                           tdz, sm_splineParams, gm_gridA);
+        sumForceComponents(
+                &fx, &fy, &fz, ixBase, nx, pny, pnz, constOffset, splineIndexBase, tdy, tdz, sm_splineParams, gm_gridA);
     }
 
     // Reduction of partial force contributions
@@ -400,8 +400,16 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     __local float  sm_forceReduction[totalSharedMemory];
     __local float* sm_forceTemp[DIM];
 
-    reduce_atom_forces(sm_forces, atomIndexLocal, splineIndex, lineIndex,
-                       kernelParams.grid.realGridSizeFP, fx, fy, fz, sm_forceReduction, sm_forceTemp);
+    reduce_atom_forces(sm_forces,
+                       atomIndexLocal,
+                       splineIndex,
+                       lineIndex,
+                       kernelParams.grid.realGridSizeFP,
+                       fx,
+                       fy,
+                       fz,
+                       sm_forceReduction,
+                       sm_forceTemp);
     barrier(CLK_LOCAL_MEM_FENCE);
 
     /* Calculating the final forces with no component branching, atomsPerBlock threads */
@@ -410,8 +418,8 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     const float scale            = kernelParams.current.scale;
     if (forceIndexLocal < atomsPerBlock)
     {
-        calculateAndStoreGridForces(sm_forces, forceIndexLocal, forceIndexGlobal,
-                                    kernelParams.current.recipBox, scale, gm_coefficientsA);
+        calculateAndStoreGridForces(
+                sm_forces, forceIndexLocal, forceIndexGlobal, kernelParams.current.recipBox, scale, gm_coefficientsA);
     }
 
 #if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_)
@@ -448,16 +456,28 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
         chargeCheck = pme_gpu_check_atom_charge(gm_coefficientsB[atomIndexGlobal]);
         if (chargeCheck)
         {
-            sumForceComponents(&fx, &fy, &fz, ixBase, nx, pny, pnz, constOffset, splineIndexBase,
-                               tdy, tdz, sm_splineParams, gm_gridB);
+            sumForceComponents(
+                    &fx, &fy, &fz, ixBase, nx, pny, pnz, constOffset, splineIndexBase, tdy, tdz, sm_splineParams, gm_gridB);
         }
-        reduce_atom_forces(sm_forces, atomIndexLocal, splineIndex, lineIndex,
-                           kernelParams.grid.realGridSizeFP, fx, fy, fz, sm_forceReduction, sm_forceTemp);
+        reduce_atom_forces(sm_forces,
+                           atomIndexLocal,
+                           splineIndex,
+                           lineIndex,
+                           kernelParams.grid.realGridSizeFP,
+                           fx,
+                           fy,
+                           fz,
+                           sm_forceReduction,
+                           sm_forceTemp);
         barrier(CLK_LOCAL_MEM_FENCE);
         if (forceIndexLocal < atomsPerBlock)
         {
-            calculateAndStoreGridForces(sm_forces, forceIndexLocal, forceIndexGlobal,
-                                        kernelParams.current.recipBox, 1.0F - scale, gm_coefficientsB);
+            calculateAndStoreGridForces(sm_forces,
+                                        forceIndexLocal,
+                                        forceIndexGlobal,
+                                        kernelParams.current.recipBox,
+                                        1.0F - scale,
+                                        gm_coefficientsB);
         }
 
 #if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_)

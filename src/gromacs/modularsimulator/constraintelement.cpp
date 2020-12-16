@@ -95,16 +95,22 @@ void ConstraintsElement<variable>::elementSetup()
                                           ? freeEnergyPerturbationData_->constLambdaView()[efptBONDED]
                                           : 0;
         // Constrain the initial coordinates and velocities
-        do_constrain_first(
-                fplog_, constr_, inputrec_, statePropagatorData_->totalNumAtoms(),
-                statePropagatorData_->localNumAtoms(), statePropagatorData_->positionsView(),
-                statePropagatorData_->velocitiesView(), statePropagatorData_->box(), lambdaBonded);
+        do_constrain_first(fplog_,
+                           constr_,
+                           inputrec_,
+                           statePropagatorData_->totalNumAtoms(),
+                           statePropagatorData_->localNumAtoms(),
+                           statePropagatorData_->positionsView(),
+                           statePropagatorData_->velocitiesView(),
+                           statePropagatorData_->box(),
+                           lambdaBonded);
 
         if (isMasterRank_)
         {
             if (inputrec_->eConstrAlg == econtLINCS)
             {
-                fprintf(fplog_, "RMS relative constraint deviation after constraining: %.2e\n",
+                fprintf(fplog_,
+                        "RMS relative constraint deviation after constraining: %.2e\n",
                         constr_->rmsd());
             }
         }
@@ -155,8 +161,21 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
         default: gmx_fatal(FARGS, "Constraint algorithm not implemented for modular simulator.");
     }
 
-    constr_->apply(writeLog, writeEnergy, step, 1, 1.0, x, xprime, min_proj, statePropagatorData_->box(),
-                   lambdaBonded, &dvdlambda, v, calculateVirial, vir_con, variable);
+    constr_->apply(writeLog,
+                   writeEnergy,
+                   step,
+                   1,
+                   1.0,
+                   x,
+                   xprime,
+                   min_proj,
+                   statePropagatorData_->box(),
+                   lambdaBonded,
+                   &dvdlambda,
+                   v,
+                   calculateVirial,
+                   vir_con,
+                   variable);
 
     if (calculateVirial)
     {
@@ -216,10 +235,15 @@ ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
 {
-    return builderHelper->storeElement(std::make_unique<ConstraintsElement<variable>>(
-            legacySimulatorData->constr, statePropagatorData, energyData,
-            freeEnergyPerturbationData, MASTER(legacySimulatorData->cr), legacySimulatorData->fplog,
-            legacySimulatorData->inputrec, legacySimulatorData->mdAtoms->mdatoms()));
+    return builderHelper->storeElement(
+            std::make_unique<ConstraintsElement<variable>>(legacySimulatorData->constr,
+                                                           statePropagatorData,
+                                                           energyData,
+                                                           freeEnergyPerturbationData,
+                                                           MASTER(legacySimulatorData->cr),
+                                                           legacySimulatorData->fplog,
+                                                           legacySimulatorData->inputrec,
+                                                           legacySimulatorData->mdAtoms->mdatoms()));
 }
 
 // Explicit template initializations

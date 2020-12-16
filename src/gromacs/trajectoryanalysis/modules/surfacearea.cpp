@@ -193,8 +193,17 @@ static std::vector<real> ico_dot_arc(int densit)
                 for (tl = 1; tl < tess; tl++)
                 {
                     GMX_ASSERT(tn < ndot, "Inconsistent precomputed surface dot count");
-                    divarc(xus[3 * i], xus[1 + 3 * i], xus[2 + 3 * i], xus[3 * j], xus[1 + 3 * j],
-                           xus[2 + 3 * j], tl, tess, &xus[3 * tn], &xus[1 + 3 * tn], &xus[2 + 3 * tn]);
+                    divarc(xus[3 * i],
+                           xus[1 + 3 * i],
+                           xus[2 + 3 * i],
+                           xus[3 * j],
+                           xus[1 + 3 * j],
+                           xus[2 + 3 * j],
+                           tl,
+                           tess,
+                           &xus[3 * tn],
+                           &xus[1 + 3 * tn],
+                           &xus[2 + 3 * tn]);
                     tn++;
                 }
             }
@@ -233,21 +242,75 @@ static std::vector<real> ico_dot_arc(int densit)
                     }
                     for (tl = 1; tl < tess - 1; tl++)
                     {
-                        divarc(xus[3 * j], xus[1 + 3 * j], xus[2 + 3 * j], xus[3 * i],
-                               xus[1 + 3 * i], xus[2 + 3 * i], tl, tess, &xji, &yji, &zji);
-                        divarc(xus[3 * k], xus[1 + 3 * k], xus[2 + 3 * k], xus[3 * i],
-                               xus[1 + 3 * i], xus[2 + 3 * i], tl, tess, &xki, &yki, &zki);
+                        divarc(xus[3 * j],
+                               xus[1 + 3 * j],
+                               xus[2 + 3 * j],
+                               xus[3 * i],
+                               xus[1 + 3 * i],
+                               xus[2 + 3 * i],
+                               tl,
+                               tess,
+                               &xji,
+                               &yji,
+                               &zji);
+                        divarc(xus[3 * k],
+                               xus[1 + 3 * k],
+                               xus[2 + 3 * k],
+                               xus[3 * i],
+                               xus[1 + 3 * i],
+                               xus[2 + 3 * i],
+                               tl,
+                               tess,
+                               &xki,
+                               &yki,
+                               &zki);
 
                         for (tl2 = 1; tl2 < tess - tl; tl2++)
                         {
-                            divarc(xus[3 * i], xus[1 + 3 * i], xus[2 + 3 * i], xus[3 * j],
-                                   xus[1 + 3 * j], xus[2 + 3 * j], tl2, tess, &xij, &yij, &zij);
-                            divarc(xus[3 * k], xus[1 + 3 * k], xus[2 + 3 * k], xus[3 * j],
-                                   xus[1 + 3 * j], xus[2 + 3 * j], tl2, tess, &xkj, &ykj, &zkj);
-                            divarc(xus[3 * i], xus[1 + 3 * i], xus[2 + 3 * i], xus[3 * k], xus[1 + 3 * k],
-                                   xus[2 + 3 * k], tess - tl - tl2, tess, &xik, &yik, &zik);
-                            divarc(xus[3 * j], xus[1 + 3 * j], xus[2 + 3 * j], xus[3 * k], xus[1 + 3 * k],
-                                   xus[2 + 3 * k], tess - tl - tl2, tess, &xjk, &yjk, &zjk);
+                            divarc(xus[3 * i],
+                                   xus[1 + 3 * i],
+                                   xus[2 + 3 * i],
+                                   xus[3 * j],
+                                   xus[1 + 3 * j],
+                                   xus[2 + 3 * j],
+                                   tl2,
+                                   tess,
+                                   &xij,
+                                   &yij,
+                                   &zij);
+                            divarc(xus[3 * k],
+                                   xus[1 + 3 * k],
+                                   xus[2 + 3 * k],
+                                   xus[3 * j],
+                                   xus[1 + 3 * j],
+                                   xus[2 + 3 * j],
+                                   tl2,
+                                   tess,
+                                   &xkj,
+                                   &ykj,
+                                   &zkj);
+                            divarc(xus[3 * i],
+                                   xus[1 + 3 * i],
+                                   xus[2 + 3 * i],
+                                   xus[3 * k],
+                                   xus[1 + 3 * k],
+                                   xus[2 + 3 * k],
+                                   tess - tl - tl2,
+                                   tess,
+                                   &xik,
+                                   &yik,
+                                   &zik);
+                            divarc(xus[3 * j],
+                                   xus[1 + 3 * j],
+                                   xus[2 + 3 * j],
+                                   xus[3 * k],
+                                   xus[1 + 3 * k],
+                                   xus[2 + 3 * k],
+                                   tess - tl - tl2,
+                                   tess,
+                                   &xjk,
+                                   &yjk,
+                                   &zjk);
                             divarc(xki, yki, zki, xji, yji, zji, tl2, tess - tl, &x, &y, &z);
                             divarc(xkj, ykj, zkj, xij, yij, zij, tl, tess - tl2, &x2, &y2, &z2);
                             divarc(xjk, yjk, zjk, xik, yik, zik, tl, tl + tl2, &x3, &y3, &z3);
@@ -368,8 +431,17 @@ static std::vector<real> ico_dot_dod(int densit)
                 for (tl = 1; tl < tess; tl++)
                 {
                     GMX_ASSERT(tn < ndot, "Inconsistent precomputed surface dot count");
-                    divarc(xus[3 * i], xus[1 + 3 * i], xus[2 + 3 * i], xus[3 * j], xus[1 + 3 * j],
-                           xus[2 + 3 * j], tl, tess, &xus[3 * tn], &xus[1 + 3 * tn], &xus[2 + 3 * tn]);
+                    divarc(xus[3 * i],
+                           xus[1 + 3 * i],
+                           xus[2 + 3 * i],
+                           xus[3 * j],
+                           xus[1 + 3 * j],
+                           xus[2 + 3 * j],
+                           tl,
+                           tess,
+                           &xus[3 * tn],
+                           &xus[1 + 3 * tn],
+                           &xus[2 + 3 * tn]);
                     tn++;
                 }
             }
@@ -408,21 +480,75 @@ static std::vector<real> ico_dot_dod(int densit)
                     }
                     for (tl = 1; tl < tess - 1; tl++)
                     {
-                        divarc(xus[3 * j], xus[1 + 3 * j], xus[2 + 3 * j], xus[3 * i],
-                               xus[1 + 3 * i], xus[2 + 3 * i], tl, tess, &xji, &yji, &zji);
-                        divarc(xus[3 * k], xus[1 + 3 * k], xus[2 + 3 * k], xus[3 * i],
-                               xus[1 + 3 * i], xus[2 + 3 * i], tl, tess, &xki, &yki, &zki);
+                        divarc(xus[3 * j],
+                               xus[1 + 3 * j],
+                               xus[2 + 3 * j],
+                               xus[3 * i],
+                               xus[1 + 3 * i],
+                               xus[2 + 3 * i],
+                               tl,
+                               tess,
+                               &xji,
+                               &yji,
+                               &zji);
+                        divarc(xus[3 * k],
+                               xus[1 + 3 * k],
+                               xus[2 + 3 * k],
+                               xus[3 * i],
+                               xus[1 + 3 * i],
+                               xus[2 + 3 * i],
+                               tl,
+                               tess,
+                               &xki,
+                               &yki,
+                               &zki);
 
                         for (tl2 = 1; tl2 < tess - tl; tl2++)
                         {
-                            divarc(xus[3 * i], xus[1 + 3 * i], xus[2 + 3 * i], xus[3 * j],
-                                   xus[1 + 3 * j], xus[2 + 3 * j], tl2, tess, &xij, &yij, &zij);
-                            divarc(xus[3 * k], xus[1 + 3 * k], xus[2 + 3 * k], xus[3 * j],
-                                   xus[1 + 3 * j], xus[2 + 3 * j], tl2, tess, &xkj, &ykj, &zkj);
-                            divarc(xus[3 * i], xus[1 + 3 * i], xus[2 + 3 * i], xus[3 * k], xus[1 + 3 * k],
-                                   xus[2 + 3 * k], tess - tl - tl2, tess, &xik, &yik, &zik);
-                            divarc(xus[3 * j], xus[1 + 3 * j], xus[2 + 3 * j], xus[3 * k], xus[1 + 3 * k],
-                                   xus[2 + 3 * k], tess - tl - tl2, tess, &xjk, &yjk, &zjk);
+                            divarc(xus[3 * i],
+                                   xus[1 + 3 * i],
+                                   xus[2 + 3 * i],
+                                   xus[3 * j],
+                                   xus[1 + 3 * j],
+                                   xus[2 + 3 * j],
+                                   tl2,
+                                   tess,
+                                   &xij,
+                                   &yij,
+                                   &zij);
+                            divarc(xus[3 * k],
+                                   xus[1 + 3 * k],
+                                   xus[2 + 3 * k],
+                                   xus[3 * j],
+                                   xus[1 + 3 * j],
+                                   xus[2 + 3 * j],
+                                   tl2,
+                                   tess,
+                                   &xkj,
+                                   &ykj,
+                                   &zkj);
+                            divarc(xus[3 * i],
+                                   xus[1 + 3 * i],
+                                   xus[2 + 3 * i],
+                                   xus[3 * k],
+                                   xus[1 + 3 * k],
+                                   xus[2 + 3 * k],
+                                   tess - tl - tl2,
+                                   tess,
+                                   &xik,
+                                   &yik,
+                                   &zik);
+                            divarc(xus[3 * j],
+                                   xus[1 + 3 * j],
+                                   xus[2 + 3 * j],
+                                   xus[3 * k],
+                                   xus[1 + 3 * k],
+                                   xus[2 + 3 * k],
+                                   tess - tl - tl2,
+                                   tess,
+                                   &xjk,
+                                   &yjk,
+                                   &zjk);
                             divarc(xki, yki, zki, xji, yji, zji, tl2, tess - tl, &x, &y, &z);
                             divarc(xkj, ykj, zkj, xij, yij, zij, tl, tess - tl2, &x2, &y2, &z2);
                             divarc(xjk, yjk, zjk, xik, yik, zik, tl, tl + tl2, &x3, &y3, &z3);
@@ -875,8 +1001,20 @@ void SurfaceAreaCalculator::calculate(const rvec*  x,
     {
         *n_dots = 0;
     }
-    nsc_dclm_pbc(x, impl_->radius_, nat, &impl_->unitSphereDots_[0], impl_->unitSphereDots_.size() / 3,
-                 flags, area, at_area, volume, lidots, n_dots, index, &impl_->nb_, pbc);
+    nsc_dclm_pbc(x,
+                 impl_->radius_,
+                 nat,
+                 &impl_->unitSphereDots_[0],
+                 impl_->unitSphereDots_.size() / 3,
+                 flags,
+                 area,
+                 at_area,
+                 volume,
+                 lidots,
+                 n_dots,
+                 index,
+                 &impl_->nb_,
+                 pbc);
 }
 
 } // namespace gmx

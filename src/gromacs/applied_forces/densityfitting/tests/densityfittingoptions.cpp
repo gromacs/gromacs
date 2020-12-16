@@ -95,8 +95,7 @@ public:
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue("density-guided-simulation-active",
-                                              std::string("yes"));
+        mdpValueBuilder.rootObject().addValue("density-guided-simulation-active", std::string("yes"));
         return mdpValueBuilder.build();
     }
 
@@ -104,8 +103,9 @@ public:
     {
         done_blocka(&defaultGroups_);
         stupid_fill_blocka(&defaultGroups_, 3);
-        std::vector<std::string> groupNames   = { "A", "protein", "C" };
-        const char* const namesAsConstChar[3] = { groupNames[0].c_str(), groupNames[1].c_str(),
+        std::vector<std::string> groupNames          = { "A", "protein", "C" };
+        const char* const        namesAsConstChar[3] = { groupNames[0].c_str(),
+                                                  groupNames[1].c_str(),
                                                   groupNames[2].c_str() };
         return { defaultGroups_, namesAsConstChar };
     }
@@ -114,8 +114,9 @@ public:
     {
         done_blocka(&defaultGroups_);
         stupid_fill_blocka(&defaultGroups_, 3);
-        std::vector<std::string> groupNames   = { "protein", "C", "A" };
-        const char* const namesAsConstChar[3] = { groupNames[0].c_str(), groupNames[1].c_str(),
+        std::vector<std::string> groupNames          = { "protein", "C", "A" };
+        const char* const        namesAsConstChar[3] = { groupNames[0].c_str(),
+                                                  groupNames[1].c_str(),
                                                   groupNames[2].c_str() };
         return { defaultGroups_, namesAsConstChar };
     }

@@ -132,8 +132,8 @@ public:
     }
     void expectPinningMessage(bool userSpecifiedStride, int stride)
     {
-        std::string pattern = formatString("Pinning threads .* %s.* stride of %d",
-                                           userSpecifiedStride ? "user" : "auto", stride);
+        std::string pattern = formatString(
+                "Pinning threads .* %s.* stride of %d", userSpecifiedStride ? "user" : "auto", stride);
         expectInfoMatchingRegex(pattern.c_str());
     }
     void expectLogMessageMatchingRegexIf(MDLogger::LogLevel level, const char* re, bool condition)
@@ -152,10 +152,15 @@ public:
         }
         gmx::PhysicalNodeCommunicator comm(MPI_COMM_WORLD, physicalNodeId_);
         int                           numThreadsOnThisNode, indexWithinNodeOfFirstThreadOnThisRank;
-        analyzeThreadsOnThisNode(comm, numThreadsOnThisRank, &numThreadsOnThisNode,
-                                 &indexWithinNodeOfFirstThreadOnThisRank);
-        gmx_set_thread_affinity(logHelper_.logger(), cr_, &hwOpt_, *hwTop_, numThreadsOnThisRank,
-                                numThreadsOnThisNode, indexWithinNodeOfFirstThreadOnThisRank,
+        analyzeThreadsOnThisNode(
+                comm, numThreadsOnThisRank, &numThreadsOnThisNode, &indexWithinNodeOfFirstThreadOnThisRank);
+        gmx_set_thread_affinity(logHelper_.logger(),
+                                cr_,
+                                &hwOpt_,
+                                *hwTop_,
+                                numThreadsOnThisRank,
+                                numThreadsOnThisNode,
+                                indexWithinNodeOfFirstThreadOnThisRank,
                                 &affinityAccess_);
     }
 

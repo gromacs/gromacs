@@ -234,8 +234,13 @@ void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<RVec>              
         GMX_ASSERT(atomsStartAt + numAtomsToCopy <= h_data.ssize(),
                    "The host buffer is smaller than the requested copy range.");
 
-        copyToDeviceBuffer(&d_data, reinterpret_cast<const RVec*>(&h_data.data()[atomsStartAt]),
-                           atomsStartAt, numAtomsToCopy, deviceStream, transferKind_, nullptr);
+        copyToDeviceBuffer(&d_data,
+                           reinterpret_cast<const RVec*>(&h_data.data()[atomsStartAt]),
+                           atomsStartAt,
+                           numAtomsToCopy,
+                           deviceStream,
+                           transferKind_,
+                           nullptr);
     }
 }
 
@@ -263,8 +268,13 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_dat
         GMX_ASSERT(atomsStartAt + numAtomsToCopy <= h_data.ssize(),
                    "The host buffer is smaller than the requested copy range.");
 
-        copyFromDeviceBuffer(reinterpret_cast<RVec*>(&h_data.data()[atomsStartAt]), &d_data,
-                             atomsStartAt, numAtomsToCopy, deviceStream, transferKind_, nullptr);
+        copyFromDeviceBuffer(reinterpret_cast<RVec*>(&h_data.data()[atomsStartAt]),
+                             &d_data,
+                             atomsStartAt,
+                             numAtomsToCopy,
+                             deviceStream,
+                             transferKind_,
+                             nullptr);
     }
 }
 

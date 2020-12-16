@@ -296,7 +296,8 @@ int Selection::initOriginalIdsToGroup(const gmx_mtop_t* top, e_index_t type)
         std::string message = formatString(
                 "Cannot group selection '%s' into %s, because some "
                 "positions have atoms from more than one such group.",
-                name(), type == INDEX_MOL ? "molecules" : "residues");
+                name(),
+                type == INDEX_MOL ? "molecules" : "residues");
         GMX_THROW(InconsistentInputError(message));
     }
 }
@@ -304,8 +305,14 @@ int Selection::initOriginalIdsToGroup(const gmx_mtop_t* top, e_index_t type)
 
 void Selection::printInfo(FILE* fp) const
 {
-    fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", name(), posCount(), posCount() == 1 ? "" : "s",
-            atomCount(), atomCount() == 1 ? "" : "s", isDynamic() ? ", dynamic" : "");
+    fprintf(fp,
+            "\"%s\" (%d position%s, %d atom%s%s)",
+            name(),
+            posCount(),
+            posCount() == 1 ? "" : "s",
+            atomCount(),
+            atomCount() == 1 ? "" : "s",
+            isDynamic() ? ", dynamic" : "");
     fprintf(fp, "\n");
 }
 

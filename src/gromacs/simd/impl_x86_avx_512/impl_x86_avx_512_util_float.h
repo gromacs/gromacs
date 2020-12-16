@@ -173,16 +173,20 @@ static inline void gmx_simdcall
         t[3] = _mm512_shuffle_ps(t6, v2.simdInternal_, _MM_SHUFFLE(3, 3, 3, 2));
         for (i = 0; i < 4; i++)
         {
-            _mm512_mask_storeu_ps(base + o[i], avx512Int2Mask(7),
+            _mm512_mask_storeu_ps(base + o[i],
+                                  avx512Int2Mask(7),
                                   _mm512_castps128_ps512(_mm_add_ps(_mm_loadu_ps(base + o[i]),
                                                                     _mm512_castps512_ps128(t[i]))));
-            _mm512_mask_storeu_ps(base + o[4 + i], avx512Int2Mask(7),
+            _mm512_mask_storeu_ps(base + o[4 + i],
+                                  avx512Int2Mask(7),
                                   _mm512_castps128_ps512(_mm_add_ps(_mm_loadu_ps(base + o[4 + i]),
                                                                     _mm512_extractf32x4_ps(t[i], 1))));
-            _mm512_mask_storeu_ps(base + o[8 + i], avx512Int2Mask(7),
+            _mm512_mask_storeu_ps(base + o[8 + i],
+                                  avx512Int2Mask(7),
                                   _mm512_castps128_ps512(_mm_add_ps(_mm_loadu_ps(base + o[8 + i]),
                                                                     _mm512_extractf32x4_ps(t[i], 2))));
-            _mm512_mask_storeu_ps(base + o[12 + i], avx512Int2Mask(7),
+            _mm512_mask_storeu_ps(base + o[12 + i],
+                                  avx512Int2Mask(7),
                                   _mm512_castps128_ps512(_mm_add_ps(_mm_loadu_ps(base + o[12 + i]),
                                                                     _mm512_extractf32x4_ps(t[i], 3))));
         }
@@ -208,8 +212,8 @@ static inline void gmx_simdcall
                              _mm_add_ps(_mm_load_ps(base + o[4 + i]), _mm512_extractf32x4_ps(t[i], 1)));
                 _mm_store_ps(base + o[8 + i],
                              _mm_add_ps(_mm_load_ps(base + o[8 + i]), _mm512_extractf32x4_ps(t[i], 2)));
-                _mm_store_ps(base + o[12 + i], _mm_add_ps(_mm_load_ps(base + o[12 + i]),
-                                                          _mm512_extractf32x4_ps(t[i], 3)));
+                _mm_store_ps(base + o[12 + i],
+                             _mm_add_ps(_mm_load_ps(base + o[12 + i]), _mm512_extractf32x4_ps(t[i], 3)));
             }
         }
         else
@@ -218,12 +222,12 @@ static inline void gmx_simdcall
             {
                 _mm_storeu_ps(base + o[i],
                               _mm_add_ps(_mm_loadu_ps(base + o[i]), _mm512_castps512_ps128(t[i])));
-                _mm_storeu_ps(base + o[4 + i], _mm_add_ps(_mm_loadu_ps(base + o[4 + i]),
-                                                          _mm512_extractf32x4_ps(t[i], 1)));
-                _mm_storeu_ps(base + o[8 + i], _mm_add_ps(_mm_loadu_ps(base + o[8 + i]),
-                                                          _mm512_extractf32x4_ps(t[i], 2)));
-                _mm_storeu_ps(base + o[12 + i], _mm_add_ps(_mm_loadu_ps(base + o[12 + i]),
-                                                           _mm512_extractf32x4_ps(t[i], 3)));
+                _mm_storeu_ps(base + o[4 + i],
+                              _mm_add_ps(_mm_loadu_ps(base + o[4 + i]), _mm512_extractf32x4_ps(t[i], 1)));
+                _mm_storeu_ps(base + o[8 + i],
+                              _mm_add_ps(_mm_loadu_ps(base + o[8 + i]), _mm512_extractf32x4_ps(t[i], 2)));
+                _mm_storeu_ps(base + o[12 + i],
+                              _mm_add_ps(_mm_loadu_ps(base + o[12 + i]), _mm512_extractf32x4_ps(t[i], 3)));
             }
         }
     }
@@ -247,16 +251,20 @@ static inline void gmx_simdcall
         t[3] = _mm512_shuffle_ps(t6, v2.simdInternal_, _MM_SHUFFLE(3, 3, 3, 2));
         for (i = 0; i < 4; i++)
         {
-            _mm512_mask_storeu_ps(base + o[i], avx512Int2Mask(7),
+            _mm512_mask_storeu_ps(base + o[i],
+                                  avx512Int2Mask(7),
                                   _mm512_castps128_ps512(_mm_sub_ps(_mm_loadu_ps(base + o[i]),
                                                                     _mm512_castps512_ps128(t[i]))));
-            _mm512_mask_storeu_ps(base + o[4 + i], avx512Int2Mask(7),
+            _mm512_mask_storeu_ps(base + o[4 + i],
+                                  avx512Int2Mask(7),
                                   _mm512_castps128_ps512(_mm_sub_ps(_mm_loadu_ps(base + o[4 + i]),
                                                                     _mm512_extractf32x4_ps(t[i], 1))));
-            _mm512_mask_storeu_ps(base + o[8 + i], avx512Int2Mask(7),
+            _mm512_mask_storeu_ps(base + o[8 + i],
+                                  avx512Int2Mask(7),
                                   _mm512_castps128_ps512(_mm_sub_ps(_mm_loadu_ps(base + o[8 + i]),
                                                                     _mm512_extractf32x4_ps(t[i], 2))));
-            _mm512_mask_storeu_ps(base + o[12 + i], avx512Int2Mask(7),
+            _mm512_mask_storeu_ps(base + o[12 + i],
+                                  avx512Int2Mask(7),
                                   _mm512_castps128_ps512(_mm_sub_ps(_mm_loadu_ps(base + o[12 + i]),
                                                                     _mm512_extractf32x4_ps(t[i], 3))));
         }
@@ -282,8 +290,8 @@ static inline void gmx_simdcall
                              _mm_sub_ps(_mm_load_ps(base + o[4 + i]), _mm512_extractf32x4_ps(t[i], 1)));
                 _mm_store_ps(base + o[8 + i],
                              _mm_sub_ps(_mm_load_ps(base + o[8 + i]), _mm512_extractf32x4_ps(t[i], 2)));
-                _mm_store_ps(base + o[12 + i], _mm_sub_ps(_mm_load_ps(base + o[12 + i]),
-                                                          _mm512_extractf32x4_ps(t[i], 3)));
+                _mm_store_ps(base + o[12 + i],
+                             _mm_sub_ps(_mm_load_ps(base + o[12 + i]), _mm512_extractf32x4_ps(t[i], 3)));
             }
         }
         else
@@ -292,12 +300,12 @@ static inline void gmx_simdcall
             {
                 _mm_storeu_ps(base + o[i],
                               _mm_sub_ps(_mm_loadu_ps(base + o[i]), _mm512_castps512_ps128(t[i])));
-                _mm_storeu_ps(base + o[4 + i], _mm_sub_ps(_mm_loadu_ps(base + o[4 + i]),
-                                                          _mm512_extractf32x4_ps(t[i], 1)));
-                _mm_storeu_ps(base + o[8 + i], _mm_sub_ps(_mm_loadu_ps(base + o[8 + i]),
-                                                          _mm512_extractf32x4_ps(t[i], 2)));
-                _mm_storeu_ps(base + o[12 + i], _mm_sub_ps(_mm_loadu_ps(base + o[12 + i]),
-                                                           _mm512_extractf32x4_ps(t[i], 3)));
+                _mm_storeu_ps(base + o[4 + i],
+                              _mm_sub_ps(_mm_loadu_ps(base + o[4 + i]), _mm512_extractf32x4_ps(t[i], 1)));
+                _mm_storeu_ps(base + o[8 + i],
+                              _mm_sub_ps(_mm_loadu_ps(base + o[8 + i]), _mm512_extractf32x4_ps(t[i], 2)));
+                _mm_storeu_ps(base + o[12 + i],
+                              _mm_sub_ps(_mm_loadu_ps(base + o[12 + i]), _mm512_extractf32x4_ps(t[i], 3)));
             }
         }
     }
@@ -326,11 +334,11 @@ static inline float gmx_simdcall reduceIncr4ReturnSum(float* m, SimdFloat v0, Si
     assert(std::size_t(m) % 16 == 0);
 
     t0 = _mm512_add_ps(v0.simdInternal_, _mm512_permute_ps(v0.simdInternal_, 0x4E));
-    t0 = _mm512_mask_add_ps(t0, avx512Int2Mask(0xCCCC), v2.simdInternal_,
-                            _mm512_permute_ps(v2.simdInternal_, 0x4E));
+    t0 = _mm512_mask_add_ps(
+            t0, avx512Int2Mask(0xCCCC), v2.simdInternal_, _mm512_permute_ps(v2.simdInternal_, 0x4E));
     t1 = _mm512_add_ps(v1.simdInternal_, _mm512_permute_ps(v1.simdInternal_, 0x4E));
-    t1 = _mm512_mask_add_ps(t1, avx512Int2Mask(0xCCCC), v3.simdInternal_,
-                            _mm512_permute_ps(v3.simdInternal_, 0x4E));
+    t1 = _mm512_mask_add_ps(
+            t1, avx512Int2Mask(0xCCCC), v3.simdInternal_, _mm512_permute_ps(v3.simdInternal_, 0x4E));
     t2 = _mm512_add_ps(t0, _mm512_permute_ps(t0, 0xB1));
     t2 = _mm512_mask_add_ps(t2, avx512Int2Mask(0xAAAA), t1, _mm512_permute_ps(t1, 0xB1));
 
@@ -355,7 +363,8 @@ static inline SimdFloat gmx_simdcall loadDualHsimd(const float* m0, const float*
 
     return { _mm512_castpd_ps(_mm512_insertf64x4(
             _mm512_castpd256_pd512(_mm256_load_pd(reinterpret_cast<const double*>(m0))),
-            _mm256_load_pd(reinterpret_cast<const double*>(m1)), 1)) };
+            _mm256_load_pd(reinterpret_cast<const double*>(m1)),
+            1)) };
 }
 
 static inline SimdFloat gmx_simdcall loadDuplicateHsimd(const float* m)
@@ -366,8 +375,8 @@ static inline SimdFloat gmx_simdcall loadDuplicateHsimd(const float* m)
 
 static inline SimdFloat gmx_simdcall loadU1DualHsimd(const float* m)
 {
-    return { _mm512_shuffle_f32x4(_mm512_broadcastss_ps(_mm_load_ss(m)),
-                                  _mm512_broadcastss_ps(_mm_load_ss(m + 1)), 0x44) };
+    return { _mm512_shuffle_f32x4(
+            _mm512_broadcastss_ps(_mm_load_ss(m)), _mm512_broadcastss_ps(_mm_load_ss(m + 1)), 0x44) };
 }
 
 

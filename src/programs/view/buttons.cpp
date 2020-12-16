@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -178,10 +178,15 @@ t_butbox* init_vbox(t_x11* x11, Window Parent, Window SendTo, unsigned long fg, 
 
     /* VBox holder */
     y0 = XTextHeight(x11->font) + 2 * AIR + 2;
-    InitWin(&vb->wd, 0, 0, vb->nbut * (play_width + AIR) + AIR, y0 + play_height + 2 * AIR, 1,
+    InitWin(&vb->wd,
+            0,
+            0,
+            vb->nbut * (play_width + AIR) + AIR,
+            y0 + play_height + 2 * AIR,
+            1,
             "VCR - Control");
-    vb->wd.self = XCreateSimpleWindow(x11->disp, Parent, vb->wd.x, vb->wd.y, vb->wd.width,
-                                      vb->wd.height, vb->wd.bwidth, fg, bg);
+    vb->wd.self = XCreateSimpleWindow(
+            x11->disp, Parent, vb->wd.x, vb->wd.y, vb->wd.width, vb->wd.height, vb->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, vb->wd.self, Parent, VBCallBack, vb);
     x11->SetInputMask(x11, vb->wd.self, ExposureMask);
 
@@ -199,12 +204,12 @@ t_butbox* init_vbox(t_x11* x11, Window Parent, Window SendTo, unsigned long fg, 
             default: fprintf(stderr, "Invalid bitmap in init_vbox %d\n", ID); std::exit(1);
         }
         /* Rely on the fact that all bitmaps are equal size */
-        pm = XCreatePixmapFromBitmapData(x11->disp, x11->root, (char*)data, play_width, play_height,
-                                         BLACK, LIGHTGREY, x11->depth);
+        pm = XCreatePixmapFromBitmapData(
+                x11->disp, x11->root, (char*)data, play_width, play_height, BLACK, LIGHTGREY, x11->depth);
         vb->b[i].ID        = ID;
         vb->b[i].wd.Parent = SendTo;
-        vb->b[i].wd.self   = XCreateSimpleWindow(x11->disp, vb->wd.self, x, y0 + AIR, play_width,
-                                               play_height, 0, WHITE, BLACK);
+        vb->b[i].wd.self   = XCreateSimpleWindow(
+                x11->disp, vb->wd.self, x, y0 + AIR, play_width, play_height, 0, WHITE, BLACK);
         XSetWindowBackgroundPixmap(x11->disp, vb->b[i].wd.self, pm);
 
         x11->RegisterCallback(x11, vb->b[i].wd.self, vb->wd.self, ButtonCallBack, &(vb->b[i]));
@@ -245,8 +250,8 @@ t_butbox* init_bbox(t_x11* x11, Window Parent, Window SendTo, int width, unsigne
 
     InitWin(&(bbox->wd), 0, 0, /*width,(y0+AIR)*IDBUTNR+AIR+2*BORDER,*/ 1, 1, 1, "Button Box");
     width -= 2 * AIR + 2 * BORDER;
-    bbox->wd.self = XCreateSimpleWindow(x11->disp, Parent, bbox->wd.x, bbox->wd.y, bbox->wd.width,
-                                        bbox->wd.height, bbox->wd.bwidth, fg, bg);
+    bbox->wd.self = XCreateSimpleWindow(
+            x11->disp, Parent, bbox->wd.x, bbox->wd.y, bbox->wd.width, bbox->wd.height, bbox->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, bbox->wd.self, Parent, BBCallBack, bbox);
     x11->SetInputMask(x11, bbox->wd.self, StructureNotifyMask);
 
@@ -259,8 +264,8 @@ t_butbox* init_bbox(t_x11* x11, Window Parent, Window SendTo, int width, unsigne
         h0 += y0 + AIR;
         but->wd.Parent = SendTo;
         but->ID        = i;
-        but->wd.self   = XCreateSimpleWindow(x11->disp, DrawOn, but->wd.x, but->wd.y, but->wd.width,
-                                           but->wd.height, but->wd.bwidth, bg, bg);
+        but->wd.self   = XCreateSimpleWindow(
+                x11->disp, DrawOn, but->wd.x, but->wd.y, but->wd.width, but->wd.height, but->wd.bwidth, bg, bg);
         x11->RegisterCallback(x11, but->wd.self, DrawOn, ButtonCallBack, but);
         x11->SetInputMask(x11, but->wd.self, ExposureMask | ButtonPressMask | EnterLeave);
     }

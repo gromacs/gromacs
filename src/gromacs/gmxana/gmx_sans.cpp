@@ -157,8 +157,8 @@ int gmx_sans(int argc, char* argv[])
 
     nthreads = gmx_omp_get_max_threads();
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -213,8 +213,7 @@ int gmx_sans(int argc, char* argv[])
     fnTRX = ftp2fn(efTRX, NFILE, fnm);
 
     gnsf = gmx_neutronstructurefactors_init(fnDAT);
-    fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n",
-            gnsf->nratoms, fnDAT);
+    fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT);
 
     snew(top, 1);
     snew(grpname, 1);
@@ -237,8 +236,10 @@ int gmx_sans(int argc, char* argv[])
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
     if (natoms != top->atoms.nr)
     {
-        fprintf(stderr, "\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n",
-                natoms, top->atoms.nr);
+        fprintf(stderr,
+                "\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n",
+                natoms,
+                top->atoms.nr);
     }
 
     do
@@ -254,8 +255,8 @@ int gmx_sans(int argc, char* argv[])
             snew(pr, 1);
         }
         /*  realy calc p(r) */
-        prframecurrent = calc_radial_distribution_histogram(gsans, x, box, index, isize, binwidth,
-                                                            bMC, bNORM, mcover, seed);
+        prframecurrent = calc_radial_distribution_histogram(
+                gsans, x, box, index, isize, binwidth, bMC, bNORM, mcover, seed);
         /* copy prframecurrent -> pr and summ up pr->gr[i] */
         /* allocate and/or resize memory for pr->gr[i] and pr->r[i] */
         if (pr->gr == nullptr)
@@ -296,8 +297,11 @@ int gmx_sans(int argc, char* argv[])
             auto fnmdup = filenames;
             sprintf(suffix, "-t%.2f", t);
             add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
-            fp = xvgropen(opt2fn_null("-prframe", NFILE, fnmdup.data()), hdr, "Distance (nm)",
-                          "Probability", oenv);
+            fp = xvgropen(opt2fn_null("-prframe", NFILE, fnmdup.data()),
+                          hdr,
+                          "Distance (nm)",
+                          "Probability",
+                          oenv);
             for (i = 0; i < prframecurrent->grn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", prframecurrent->r[i], prframecurrent->gr[i]);
@@ -316,8 +320,8 @@ int gmx_sans(int argc, char* argv[])
             auto fnmdup = filenames;
             sprintf(suffix, "-t%.2f", t);
             add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
-            fp = xvgropen(opt2fn_null("-sqframe", NFILE, fnmdup.data()), hdr, "q (nm^-1)",
-                          "s(q)/s(0)", oenv);
+            fp = xvgropen(
+                    opt2fn_null("-sqframe", NFILE, fnmdup.data()), hdr, "q (nm^-1)", "s(q)/s(0)", oenv);
             for (i = 0; i < sqframecurrent->qn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", sqframecurrent->q[i], sqframecurrent->s[i]);

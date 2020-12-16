@@ -1341,17 +1341,17 @@ void gmx_ana_poscalc_update(gmx_ana_poscalc_t* pc,
                 break;
             default:
                 // TODO: It would probably be better to do this without the type casts.
-                gmx_calc_comg_block(top, fr->x, reinterpret_cast<t_block*>(&pc->b), index.data(),
-                                    bMass, p->x);
+                gmx_calc_comg_block(
+                        top, fr->x, reinterpret_cast<t_block*>(&pc->b), index.data(), bMass, p->x);
                 if (p->v && fr->bV)
                 {
-                    gmx_calc_comg_block(top, fr->v, reinterpret_cast<t_block*>(&pc->b),
-                                        index.data(), bMass, p->v);
+                    gmx_calc_comg_block(
+                            top, fr->v, reinterpret_cast<t_block*>(&pc->b), index.data(), bMass, p->v);
                 }
                 if (p->f && fr->bF)
                 {
-                    gmx_calc_comg_f_block(top, fr->f, reinterpret_cast<t_block*>(&pc->b),
-                                          index.data(), bMass, p->f);
+                    gmx_calc_comg_f_block(
+                            top, fr->f, reinterpret_cast<t_block*>(&pc->b), index.data(), bMass, p->f);
                 }
                 break;
         }

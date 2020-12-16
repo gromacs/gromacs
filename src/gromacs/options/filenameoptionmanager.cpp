@@ -211,7 +211,8 @@ std::string FileNameOptionManager::completeFileName(const std::string& value, co
                 std::string message = formatString(
                         "File '%s' does not exist or is not accessible.\n"
                         "The following extensions were tried to complete the file name:\n  %s",
-                        value.c_str(), joinStrings(option.extensions(), ", ").c_str());
+                        value.c_str(),
+                        joinStrings(option.extensions(), ", ").c_str());
                 GMX_THROW(InvalidInputError(message));
             }
         }
@@ -276,7 +277,8 @@ std::string FileNameOptionManager::completeDefaultFileName(const std::string&   
                     "No file name was provided, and the default file "
                     "'%s' does not exist or is not accessible.\n"
                     "The following extensions were tried to complete the file name:\n  %s",
-                    prefix.c_str(), joinStrings(option.extensions(), ", ").c_str());
+                    prefix.c_str(),
+                    joinStrings(option.extensions(), ", ").c_str());
             GMX_THROW(InvalidInputError(message));
         }
         else if (option.isRequired())
@@ -285,7 +287,8 @@ std::string FileNameOptionManager::completeDefaultFileName(const std::string&   
                     "Required option was not provided, and the default file "
                     "'%s' does not exist or is not accessible.\n"
                     "The following extensions were tried to complete the file name:\n  %s",
-                    prefix.c_str(), joinStrings(option.extensions(), ", ").c_str());
+                    prefix.c_str(),
+                    joinStrings(option.extensions(), ", ").c_str());
             GMX_THROW(InvalidInputError(message));
         }
         // We get here with the legacy optional behavior.

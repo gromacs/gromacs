@@ -247,8 +247,9 @@ void gmx::LegacySimulator::do_rerun()
     {
         gmx_fatal(FARGS, "Multiple simulations not supported by rerun.");
     }
-    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc,
-                    [](int i) { return i != eannNO; }))
+    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc, [](int i) {
+            return i != eannNO;
+        }))
     {
         gmx_fatal(FARGS, "Simulated annealing not supported by rerun.");
     }
@@ -283,18 +284,38 @@ void gmx::LegacySimulator::do_rerun()
     gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
     initialize_lambdas(fplog, *ir, MASTER(cr), fep_state, lambda);
     const bool        simulationsShareState = false;
-    gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
-                                   mdModulesNotifier, ir, top_global, oenv, wcycle,
-                                   StartingBehavior::NewSimulation, simulationsShareState, ms);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, ir, pull_work,
-                                   mdoutf_get_fp_dhdl(outf), true, StartingBehavior::NewSimulation,
-                                   simulationsShareState, mdModulesNotifier);
+    gmx_mdoutf*       outf                  = init_mdoutf(fplog,
+                                   nfile,
+                                   fnm,
+                                   mdrunOptions,
+                                   cr,
+                                   outputProvider,
+                                   mdModulesNotifier,
+                                   ir,
+                                   top_global,
+                                   oenv,
+                                   wcycle,
+                                   StartingBehavior::NewSimulation,
+                                   simulationsShareState,
+                                   ms);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf),
+                                   top_global,
+                                   ir,
+                                   pull_work,
+                                   mdoutf_get_fp_dhdl(outf),
+                                   true,
+                                   StartingBehavior::NewSimulation,
+                                   simulationsShareState,
+                                   mdModulesNotifier);
 
     gstat = global_stat_init(ir);
 
     /* Check for polarizable models and flexible constraints */
-    shellfc = init_shell_flexcon(fplog, top_global, constr ? constr->numFlexibleConstraints() : 0,
-                                 ir->nstcalcenergy, DOMAINDECOMP(cr),
+    shellfc = init_shell_flexcon(fplog,
+                                 top_global,
+                                 constr ? constr->numFlexibleConstraints() : 0,
+                                 ir->nstcalcenergy,
+                                 DOMAINDECOMP(cr),
                                  runScheduleWork->simulationWork.useGpuPme);
 
     {
@@ -316,9 +337,27 @@ void gmx::LegacySimulator::do_rerun()
         dd_init_local_state(cr->dd, state_global, state);
 
         /* Distribute the charge groups over the nodes from the master node */
-        dd_partition_system(fplog, mdlog, ir->init_step, cr, TRUE, 1, state_global, *top_global, ir,
-                            imdSession, pull_work, state, &f, mdAtoms, &top, fr, vsite, constr,
-                            nrnb, nullptr, FALSE);
+        dd_partition_system(fplog,
+                            mdlog,
+                            ir->init_step,
+                            cr,
+                            TRUE,
+                            1,
+                            state_global,
+                            *top_global,
+                            ir,
+                            imdSession,
+                            pull_work,
+                            state,
+                            &f,
+                            mdAtoms,
+                            &top,
+                            fr,
+                            vsite,
+                            constr,
+                            nrnb,
+                            nullptr,
+                            FALSE);
         shouldCheckNumberOfBondedInteractions = true;
     }
     else
@@ -350,13 +389,37 @@ void gmx::LegacySimulator::do_rerun()
                  | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
         bool   bSumEkinhOld = false;
         t_vcm* vcm          = nullptr;
-        compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                        makeConstArrayRef(state->v), state->box, mdatoms, nrnb, vcm, nullptr, enerd,
-                        force_vir, shake_vir, total_vir, pres, constr, &nullSignaller, state->box,
-                        &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
+        compute_globals(gstat,
+                        cr,
+                        ir,
+                        fr,
+                        ekind,
+                        makeConstArrayRef(state->x),
+                        makeConstArrayRef(state->v),
+                        state->box,
+                        mdatoms,
+                        nrnb,
+                        vcm,
+                        nullptr,
+                        enerd,
+                        force_vir,
+                        shake_vir,
+                        total_vir,
+                        pres,
+                        constr,
+                        &nullSignaller,
+                        state->box,
+                        &totalNumberOfBondedInteractions,
+                        &bSumEkinhOld,
+                        cglo_flags);
     }
-    checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions, top_global, &top,
-                                    makeConstArrayRef(state->x), state->box,
+    checkNumberOfBondedInteractions(mdlog,
+                                    cr,
+                                    totalNumberOfBondedInteractions,
+                                    top_global,
+                                    &top,
+                                    makeConstArrayRef(state->x),
+                                    state->box,
                                     &shouldCheckNumberOfBondedInteractions);
 
     if (MASTER(cr))
@@ -364,7 +427,8 @@ void gmx::LegacySimulator::do_rerun()
         fprintf(stderr,
                 "starting md rerun '%s', reading coordinates from"
                 " input trajectory '%s'\n\n",
-                *(top_global->name), opt2fn("-rerun", nfile, fnm));
+                *(top_global->name),
+                opt2fn("-rerun", nfile, fnm));
         if (mdrunOptions.verbose)
         {
             fprintf(stderr,
@@ -401,7 +465,8 @@ void gmx::LegacySimulator::do_rerun()
             gmx_fatal(FARGS,
                       "Number of atoms in trajectory (%d) does not match the "
                       "run input file (%d)\n",
-                      rerun_fr.natoms, top_global->natoms);
+                      rerun_fr.natoms,
+                      top_global->natoms);
         }
 
         if (ir->pbcType != PbcType::No)
@@ -412,7 +477,8 @@ void gmx::LegacySimulator::do_rerun()
                           "Rerun trajectory frame step %" PRId64
                           " time %f "
                           "does not contain a box, while pbc is used",
-                          rerun_fr.step, rerun_fr.time);
+                          rerun_fr.step,
+                          rerun_fr.time);
             }
             if (max_cutoff2(ir->pbcType, rerun_fr.box) < gmx::square(fr->rlist))
             {
@@ -420,7 +486,8 @@ void gmx::LegacySimulator::do_rerun()
                           "Rerun trajectory frame step %" PRId64
                           " time %f "
                           "has too small box dimensions",
-                          rerun_fr.step, rerun_fr.time);
+                          rerun_fr.step,
+                          rerun_fr.time);
             }
         }
     }
@@ -448,9 +515,18 @@ void gmx::LegacySimulator::do_rerun()
     step_rel = 0;
 
     auto stopHandler = stopHandlerBuilder->getStopHandlerMD(
-            compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]), false, MASTER(cr),
-            ir->nstlist, mdrunOptions.reproducible, nstglobalcomm, mdrunOptions.maximumHoursToRun,
-            ir->nstlist == 0, fplog, step, bNS, walltime_accounting);
+            compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
+            false,
+            MASTER(cr),
+            ir->nstlist,
+            mdrunOptions.reproducible,
+            nstglobalcomm,
+            mdrunOptions.maximumHoursToRun,
+            ir->nstlist == 0,
+            fplog,
+            step,
+            bNS,
+            walltime_accounting);
 
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(walltime_accounting);
@@ -513,9 +589,27 @@ void gmx::LegacySimulator::do_rerun()
         {
             /* Repartition the domain decomposition */
             const bool bMasterState = true;
-            dd_partition_system(fplog, mdlog, step, cr, bMasterState, nstglobalcomm, state_global,
-                                *top_global, ir, imdSession, pull_work, state, &f, mdAtoms, &top,
-                                fr, vsite, constr, nrnb, wcycle, mdrunOptions.verbose);
+            dd_partition_system(fplog,
+                                mdlog,
+                                step,
+                                cr,
+                                bMasterState,
+                                nstglobalcomm,
+                                state_global,
+                                *top_global,
+                                ir,
+                                imdSession,
+                                pull_work,
+                                state,
+                                &f,
+                                mdAtoms,
+                                &top,
+                                fr,
+                                vsite,
+                                constr,
+                                nrnb,
+                                wcycle,
+                                mdrunOptions.verbose);
             shouldCheckNumberOfBondedInteractions = true;
         }
 
@@ -536,12 +630,38 @@ void gmx::LegacySimulator::do_rerun()
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            relax_shell_flexcon(fplog, cr, ms, mdrunOptions.verbose, enforcedRotation, step, ir,
-                                imdSession, pull_work, bNS, force_flags, &top, constr, enerd,
-                                state->natoms, state->x.arrayRefWithPadding(),
-                                state->v.arrayRefWithPadding(), state->box, state->lambda,
-                                &state->hist, &f.view(), force_vir, mdatoms, nrnb, wcycle, shellfc,
-                                fr, runScheduleWork, t, mu_tot, vsite, ddBalanceRegionHandler);
+            relax_shell_flexcon(fplog,
+                                cr,
+                                ms,
+                                mdrunOptions.verbose,
+                                enforcedRotation,
+                                step,
+                                ir,
+                                imdSession,
+                                pull_work,
+                                bNS,
+                                force_flags,
+                                &top,
+                                constr,
+                                enerd,
+                                state->natoms,
+                                state->x.arrayRefWithPadding(),
+                                state->v.arrayRefWithPadding(),
+                                state->box,
+                                state->lambda,
+                                &state->hist,
+                                &f.view(),
+                                force_vir,
+                                mdatoms,
+                                nrnb,
+                                wcycle,
+                                shellfc,
+                                fr,
+                                runScheduleWork,
+                                t,
+                                mu_tot,
+                                vsite,
+                                ddBalanceRegionHandler);
         }
         else
         {
@@ -552,10 +672,34 @@ void gmx::LegacySimulator::do_rerun()
              */
             Awh*       awh = nullptr;
             gmx_edsam* ed  = nullptr;
-            do_force(fplog, cr, ms, ir, awh, enforcedRotation, imdSession, pull_work, step, nrnb,
-                     wcycle, &top, state->box, state->x.arrayRefWithPadding(), &state->hist,
-                     &f.view(), force_vir, mdatoms, enerd, state->lambda, fr, runScheduleWork,
-                     vsite, mu_tot, t, ed, GMX_FORCE_NS | force_flags, ddBalanceRegionHandler);
+            do_force(fplog,
+                     cr,
+                     ms,
+                     ir,
+                     awh,
+                     enforcedRotation,
+                     imdSession,
+                     pull_work,
+                     step,
+                     nrnb,
+                     wcycle,
+                     &top,
+                     state->box,
+                     state->x.arrayRefWithPadding(),
+                     &state->hist,
+                     &f.view(),
+                     force_vir,
+                     mdatoms,
+                     enerd,
+                     state->lambda,
+                     fr,
+                     runScheduleWork,
+                     vsite,
+                     mu_tot,
+                     t,
+                     ed,
+                     GMX_FORCE_NS | force_flags,
+                     ddBalanceRegionHandler);
         }
 
         /* Now we have the energies and forces corresponding to the
@@ -565,10 +709,28 @@ void gmx::LegacySimulator::do_rerun()
             const bool isCheckpointingStep = false;
             const bool doRerun             = true;
             const bool bSumEkinhOld        = false;
-            do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t, ir, state,
-                                     state_global, observablesHistory, top_global, fr, outf,
-                                     energyOutput, ekind, f.view().force(), isCheckpointingStep,
-                                     doRerun, isLastStep, mdrunOptions.writeConfout, bSumEkinhOld);
+            do_md_trajectory_writing(fplog,
+                                     cr,
+                                     nfile,
+                                     fnm,
+                                     step,
+                                     step_rel,
+                                     t,
+                                     ir,
+                                     state,
+                                     state_global,
+                                     observablesHistory,
+                                     top_global,
+                                     fr,
+                                     outf,
+                                     energyOutput,
+                                     ekind,
+                                     f.view().force(),
+                                     isCheckpointingStep,
+                                     doRerun,
+                                     isLastStep,
+                                     mdrunOptions.writeConfout,
+                                     bSumEkinhOld);
         }
 
         stopHandler->setSignal();
@@ -587,15 +749,38 @@ void gmx::LegacySimulator::do_rerun()
             t_vcm*              vcm              = nullptr;
             SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
-            compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                            makeConstArrayRef(state->v), state->box, mdatoms, nrnb, vcm, wcycle,
-                            enerd, force_vir, shake_vir, total_vir, pres, constr, &signaller,
-                            state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
+            compute_globals(gstat,
+                            cr,
+                            ir,
+                            fr,
+                            ekind,
+                            makeConstArrayRef(state->x),
+                            makeConstArrayRef(state->v),
+                            state->box,
+                            mdatoms,
+                            nrnb,
+                            vcm,
+                            wcycle,
+                            enerd,
+                            force_vir,
+                            shake_vir,
+                            total_vir,
+                            pres,
+                            constr,
+                            &signaller,
+                            state->box,
+                            &totalNumberOfBondedInteractions,
+                            &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_ENERGY
                                     | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
                                                                              : 0));
-            checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions, top_global,
-                                            &top, makeConstArrayRef(state->x), state->box,
+            checkNumberOfBondedInteractions(mdlog,
+                                            cr,
+                                            totalNumberOfBondedInteractions,
+                                            top_global,
+                                            &top,
+                                            makeConstArrayRef(state->x),
+                                            state->box,
                                             &shouldCheckNumberOfBondedInteractions);
         }
 
@@ -608,12 +793,27 @@ void gmx::LegacySimulator::do_rerun()
         if (MASTER(cr))
         {
             const bool bCalcEnerStep = true;
-            energyOutput.addDataAtEnergyStep(
-                    doFreeEnergyPerturbation, bCalcEnerStep, t, mdatoms->tmass, enerd, ir->fepvals,
-                    ir->expandedvals, state->box,
-                    PTCouplingArrays({ state->boxv, state->nosehoover_xi, state->nosehoover_vxi,
-                                       state->nhpres_xi, state->nhpres_vxi }),
-                    state->fep_state, shake_vir, force_vir, total_vir, pres, ekind, mu_tot, constr);
+            energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation,
+                                             bCalcEnerStep,
+                                             t,
+                                             mdatoms->tmass,
+                                             enerd,
+                                             ir->fepvals,
+                                             ir->expandedvals,
+                                             state->box,
+                                             PTCouplingArrays({ state->boxv,
+                                                                state->nosehoover_xi,
+                                                                state->nosehoover_vxi,
+                                                                state->nhpres_xi,
+                                                                state->nhpres_vxi }),
+                                             state->fep_state,
+                                             shake_vir,
+                                             force_vir,
+                                             total_vir,
+                                             pres,
+                                             ekind,
+                                             mu_tot,
+                                             constr);
 
             const bool do_ene = true;
             const bool do_log = true;
@@ -622,8 +822,15 @@ void gmx::LegacySimulator::do_rerun()
             const bool do_or  = ir->nstorireout != 0;
 
             EnergyOutput::printAnnealingTemperatures(do_log ? fplog : nullptr, groups, &(ir->opts));
-            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or,
-                                               do_log ? fplog : nullptr, step, t, fr->fcdata.get(), awh);
+            energyOutput.printStepToEnergyFile(mdoutf_get_fp_ene(outf),
+                                               do_ene,
+                                               do_dr,
+                                               do_or,
+                                               do_log ? fplog : nullptr,
+                                               step,
+                                               t,
+                                               fr->fcdata.get(),
+                                               awh);
 
             if (do_per_step(step, ir->nstlog))
             {
@@ -650,8 +857,16 @@ void gmx::LegacySimulator::do_rerun()
         if ((ir->eSwapCoords != eswapNO) && (step > 0) && !isLastStep && do_per_step(step, ir->swap->nstswap))
         {
             const bool doRerun = true;
-            do_swapcoords(cr, step, t, ir, swap, wcycle, rerun_fr.x, rerun_fr.box,
-                          MASTER(cr) && mdrunOptions.verbose, doRerun);
+            do_swapcoords(cr,
+                          step,
+                          t,
+                          ir,
+                          swap,
+                          wcycle,
+                          rerun_fr.x,
+                          rerun_fr.box,
+                          MASTER(cr) && mdrunOptions.verbose,
+                          doRerun);
         }
 
         if (MASTER(cr))

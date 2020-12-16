@@ -120,8 +120,8 @@ int gmx_nmens(int argc, char* argv[])
 
     indexfile = ftp2fn_null(efNDX, NFILE, fnm);
 
-    read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit, &xref, &bDMR, &xav, &bDMA, &nvec,
-                      &eignr, &eigvec, &eigval);
+    read_eigenvectors(
+            opt2fn("-v", NFILE, fnm), &natoms, &bFit, &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, box, bDMA);
     atoms = &top.atoms;

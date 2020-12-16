@@ -195,7 +195,8 @@ void AnalysisDataLifetimeModule::dataFinished()
         // if explicitly requested.
         std::vector<Impl::LifetimeHistogram>::iterator histogram;
         for (histogram = impl_->lifetimeHistograms_.begin();
-             histogram != impl_->lifetimeHistograms_.end(); ++histogram)
+             histogram != impl_->lifetimeHistograms_.end();
+             ++histogram)
         {
             Impl::LifetimeHistogram::iterator shorter, longer;
             for (shorter = histogram->begin(); shorter != histogram->end(); ++shorter)
@@ -221,8 +222,8 @@ void AnalysisDataLifetimeModule::dataFinished()
     setColumnCount(impl_->lifetimeHistograms_.size());
     std::vector<Impl::LifetimeHistogram>::const_iterator histogram;
     size_t                                               maxLifetime = 1;
-    for (histogram = impl_->lifetimeHistograms_.begin();
-         histogram != impl_->lifetimeHistograms_.end(); ++histogram)
+    for (histogram = impl_->lifetimeHistograms_.begin(); histogram != impl_->lifetimeHistograms_.end();
+         ++histogram)
     {
         maxLifetime = std::max(maxLifetime, histogram->size());
     }
@@ -231,8 +232,8 @@ void AnalysisDataLifetimeModule::dataFinished()
     // Fill up the output data from the histograms.
     allocateValues();
     int column = 0;
-    for (histogram = impl_->lifetimeHistograms_.begin();
-         histogram != impl_->lifetimeHistograms_.end(); ++histogram, ++column)
+    for (histogram = impl_->lifetimeHistograms_.begin(); histogram != impl_->lifetimeHistograms_.end();
+         ++histogram, ++column)
     {
         int                                     row = 0;
         Impl::LifetimeHistogram::const_iterator i;

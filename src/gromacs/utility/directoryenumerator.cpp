@@ -139,8 +139,8 @@ public:
                 }
                 else
                 {
-                    GMX_THROW_WITH_ERRNO(FileIOError("Failed to list files in a directory"),
-                                         "_findnext", errno);
+                    GMX_THROW_WITH_ERRNO(
+                            FileIOError("Failed to list files in a directory"), "_findnext", errno);
                 }
             }
             *filename = finddata.name;

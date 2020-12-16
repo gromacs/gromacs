@@ -155,8 +155,10 @@ nbnxn_kernel_prune_rolling_opencl
             /* We don't need q, but using float4 in shmem avoids bank conflicts */
             const float4 tmp = xq[ai];
             const float4 xi  = tmp
-                              + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1],
-                                         shift_vec[3 * nb_sci.shift + 2], 0.0F);
+                              + (float4)(shift_vec[3 * nb_sci.shift],
+                                         shift_vec[3 * nb_sci.shift + 1],
+                                         shift_vec[3 * nb_sci.shift + 2],
+                                         0.0F);
             xib[(tidxj + i) * c_clSize + tidxi] = xi;
         }
     }

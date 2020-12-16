@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -226,8 +226,8 @@ static int WndProcGB(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
     {
         case Expose:
             XSetForeground(x11->disp, x11->gc, x11->fg);
-            XDrawRoundRect(x11->disp, win->self, x11->gc, 0, y / 2, win->width - 1,
-                           win->height - y / 2 - 1);
+            XDrawRoundRect(
+                    x11->disp, win->self, x11->gc, 0, y / 2, win->width - 1, win->height - y / 2 - 1);
             XClearArea(x11->disp, win->self, OFFS_X, 0, x + OFFS_X, y, False);
             TextInRect(x11, win->self, win->text, 2 * OFFS_X, 0, x, y, eXCenter, eYCenter);
             break;
@@ -296,8 +296,7 @@ static int WndProcST(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
             dy = XTextHeight(x11->font) + OFFS_Y;
             for (i = 0; (i < st->nlines); i++)
             {
-                TextInRect(x11, win->self, st->lines[i], 0, OFFS_Y + i * dy, win->width, dy, eXLeft,
-                           eYCenter);
+                TextInRect(x11, win->self, st->lines[i], 0, OFFS_Y + i * dy, win->width, dy, eXLeft, eYCenter);
             }
             break;
         default: return DefWndProc(x11, dlgitem, event);

@@ -304,9 +304,20 @@ void push_at(t_symtab*                  symtab,
     snew(atom, 1);
 
     /* First assign input line to temporary array */
-    nfields = sscanf(line, "%s%s%s%s%s%s%s%s%s%s%s%s", tmpfield[0], tmpfield[1], tmpfield[2],
-                     tmpfield[3], tmpfield[4], tmpfield[5], tmpfield[6], tmpfield[7], tmpfield[8],
-                     tmpfield[9], tmpfield[10], tmpfield[11]);
+    nfields = sscanf(line,
+                     "%s%s%s%s%s%s%s%s%s%s%s%s",
+                     tmpfield[0],
+                     tmpfield[1],
+                     tmpfield[2],
+                     tmpfield[3],
+                     tmpfield[4],
+                     tmpfield[5],
+                     tmpfield[6],
+                     tmpfield[7],
+                     tmpfield[8],
+                     tmpfield[9],
+                     tmpfield[10],
+                     tmpfield[11]);
 
     /* Comments on optional fields in the atomtypes section:
      *
@@ -373,8 +384,8 @@ void push_at(t_symtab*                  symtab,
             {
                 if (have_bonded_type)
                 {
-                    nread = sscanf(line, "%s%s%d%lf%lf%s%lf%lf", type, btype, &atomnr, &m, &q,
-                                   ptype, &c[0], &c[1]);
+                    nread = sscanf(
+                            line, "%s%s%d%lf%lf%s%lf%lf", type, btype, &atomnr, &m, &q, ptype, &c[0], &c[1]);
                     if (nread < 8)
                     {
                         too_few(wi);
@@ -435,8 +446,8 @@ void push_at(t_symtab*                  symtab,
             {
                 if (have_bonded_type)
                 {
-                    nread = sscanf(line, "%s%s%d%lf%lf%s%lf%lf%lf", type, btype, &atomnr, &m, &q,
-                                   ptype, &c[0], &c[1], &c[2]);
+                    nread = sscanf(
+                            line, "%s%s%d%lf%lf%s%lf%lf%lf", type, btype, &atomnr, &m, &q, ptype, &c[0], &c[1], &c[2]);
                     if (nread < 9)
                     {
                         too_few(wi);
@@ -446,8 +457,8 @@ void push_at(t_symtab*                  symtab,
                 else
                 {
                     /* have_atomic_number && !have_bonded_type */
-                    nread = sscanf(line, "%s%d%lf%lf%s%lf%lf%lf", type, &atomnr, &m, &q, ptype,
-                                   &c[0], &c[1], &c[2]);
+                    nread = sscanf(
+                            line, "%s%d%lf%lf%s%lf%lf%lf", type, &atomnr, &m, &q, ptype, &c[0], &c[1], &c[2]);
                     if (nread < 8)
                     {
                         too_few(wi);
@@ -460,8 +471,8 @@ void push_at(t_symtab*                  symtab,
                 if (have_bonded_type)
                 {
                     /* !have_atomic_number && have_bonded_type */
-                    nread = sscanf(line, "%s%s%lf%lf%s%lf%lf%lf", type, btype, &m, &q, ptype, &c[0],
-                                   &c[1], &c[2]);
+                    nread = sscanf(
+                            line, "%s%s%lf%lf%s%lf%lf%lf", type, btype, &m, &q, ptype, &c[0], &c[1], &c[2]);
                     if (nread < 8)
                     {
                         too_few(wi);
@@ -634,9 +645,9 @@ static void push_bondtype(InteractionsOfType*      bt,
             GMX_ASSERT(nrfp <= MAXFORCEPARAM,
                        "This is ensured in other places, but we need this assert to keep the clang "
                        "analyzer happy");
-            const bool identicalParameters = std::equal(
-                    bt->interactionTypes[i].forceParam().begin(),
-                    bt->interactionTypes[i].forceParam().begin() + nrfp, b.forceParam().begin());
+            const bool identicalParameters = std::equal(bt->interactionTypes[i].forceParam().begin(),
+                                                        bt->interactionTypes[i].forceParam().begin() + nrfp,
+                                                        b.forceParam().begin());
 
             if (!bAllowRepeat || identicalParameters)
             {
@@ -813,8 +824,8 @@ void push_bt(Directive                         d,
     nrfpA = interaction_function[ftype].nrfpA;
     strcpy(f1, formnl[nral]);
     strcat(f1, formlf);
-    if ((nn = sscanf(line, f1, &c[0], &c[1], &c[2], &c[3], &c[4], &c[5], &c[6], &c[7], &c[8], &c[9],
-                     &c[10], &c[11], &c[12]))
+    if ((nn = sscanf(
+                 line, f1, &c[0], &c[1], &c[2], &c[3], &c[4], &c[5], &c[6], &c[7], &c[8], &c[9], &c[10], &c[11], &c[12]))
         != nrfp)
     {
         if (nn == nrfpA)
@@ -961,8 +972,8 @@ void push_dihedraltype(Directive                         d,
     strcat(f1, formlf[nrfp - 1]);
 
     /* Check number of parameters given */
-    if ((nn = sscanf(line, f1, &c[0], &c[1], &c[2], &c[3], &c[4], &c[5], &c[6], &c[7], &c[8], &c[9],
-                     &c[10], &c[11]))
+    if ((nn = sscanf(
+                 line, f1, &c[0], &c[1], &c[2], &c[3], &c[4], &c[5], &c[6], &c[7], &c[8], &c[9], &c[10], &c[11]))
         != nrfp)
     {
         if (nn == nrfpA)
@@ -1223,7 +1234,11 @@ void push_cmaptype(Directive                         d,
         {
             auto message =
                     gmx::formatString("Error in reading cmap parameter for angle %s %s %s %s %s",
-                                      alc[0], alc[1], alc[2], alc[3], alc[4]);
+                                      alc[0],
+                                      alc[1],
+                                      alc[2],
+                                      alc[3],
+                                      alc[4]);
             warning_error(wi, message);
         }
     }
@@ -1275,8 +1290,8 @@ void push_cmaptype(Directive                         d,
     /* Check for the correct number of atoms (again) */
     if (bt[F_CMAP].nct() != nct)
     {
-        auto message = gmx::formatString("Incorrect number of atom types (%d) in cmap type %d\n",
-                                         nct, bt[F_CMAP].cmapAngles);
+        auto message = gmx::formatString(
+                "Incorrect number of atom types (%d) in cmap type %d\n", nct, bt[F_CMAP].cmapAngles);
         warning_error(wi, message);
     }
     std::vector<int> atomTypes =
@@ -1315,7 +1330,8 @@ static void push_atom_now(t_symtab* symtab,
         auto message = gmx::formatString(
                 "Atoms in the .top are not numbered consecutively from 1 (rather, "
                 "atomnr = %d, while at->nr = %d)",
-                atomnr, at->nr);
+                atomnr,
+                at->nr);
         warning_error_and_exit(wi, message, FARGS);
     }
 
@@ -1452,8 +1468,23 @@ void push_atom(t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atypes, ch
         }
     }
 
-    push_atom_now(symtab, at, atomnr, atypes->atomNumberFromAtomType(type), type, ctype, ptype,
-                  resnumberic, resname, name, m0, q0, typeB, typeB == type ? ctype : ctypeB, mB, qB, wi);
+    push_atom_now(symtab,
+                  at,
+                  atomnr,
+                  atypes->atomNumberFromAtomType(type),
+                  type,
+                  ctype,
+                  ptype,
+                  resnumberic,
+                  resname,
+                  name,
+                  m0,
+                  q0,
+                  typeB,
+                  typeB == type ? ctype : ctypeB,
+                  mB,
+                  qB,
+                  wi);
 }
 
 void push_molt(t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* line, warninp* wi)
@@ -1467,8 +1498,8 @@ void push_molt(t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* li
     }
 
     /* Test if this moleculetype overwrites another */
-    const auto found = std::find_if(mol->begin(), mol->end(),
-                                    [&type](const auto& m) { return strcmp(*(m.name), type) == 0; });
+    const auto found = std::find_if(
+            mol->begin(), mol->end(), [&type](const auto& m) { return strcmp(*(m.name), type) == 0; });
     if (found != mol->end())
     {
         auto message = gmx::formatString("moleculetype %s is redefined", type);
@@ -1574,7 +1605,8 @@ static bool default_nb_params(int                               ftype,
     if (!bFound)
     {
         auto foundParameter =
-                std::find_if(bt[ftype].interactionTypes.begin(), bt[ftype].interactionTypes.end(),
+                std::find_if(bt[ftype].interactionTypes.begin(),
+                             bt[ftype].interactionTypes.end(),
                              [&paramAtoms, &at, &bB](const auto& param) {
                                  return findIfAllNBAtomsMatch(param.atoms(), paramAtoms, at, bB);
                              });
@@ -1661,8 +1693,12 @@ static bool default_cmap_params(gmx::ArrayRef<InteractionsOfType> bondtype,
     /* If we did not find a matching type for this cmap torsion */
     if (!bFound)
     {
-        auto message = gmx::formatString("Unknown cmap torsion between atoms %d %d %d %d %d", p->ai() + 1,
-                                         p->aj() + 1, p->ak() + 1, p->al() + 1, p->am() + 1);
+        auto message = gmx::formatString("Unknown cmap torsion between atoms %d %d %d %d %d",
+                                         p->ai() + 1,
+                                         p->aj() + 1,
+                                         p->ak() + 1,
+                                         p->al() + 1,
+                                         p->am() + 1);
         warning_error_and_exit(wi, message, FARGS);
     }
 
@@ -1704,15 +1740,21 @@ static int findNumberOfDihedralAtomMatches(const InteractionOfType& currentParam
 {
     if (bB)
     {
-        return natom_match(currentParamFromParameterArray, at->atom[parameterToAdd.ai()].typeB,
-                           at->atom[parameterToAdd.aj()].typeB, at->atom[parameterToAdd.ak()].typeB,
-                           at->atom[parameterToAdd.al()].typeB, atypes);
+        return natom_match(currentParamFromParameterArray,
+                           at->atom[parameterToAdd.ai()].typeB,
+                           at->atom[parameterToAdd.aj()].typeB,
+                           at->atom[parameterToAdd.ak()].typeB,
+                           at->atom[parameterToAdd.al()].typeB,
+                           atypes);
     }
     else
     {
-        return natom_match(currentParamFromParameterArray, at->atom[parameterToAdd.ai()].type,
-                           at->atom[parameterToAdd.aj()].type, at->atom[parameterToAdd.ak()].type,
-                           at->atom[parameterToAdd.al()].type, atypes);
+        return natom_match(currentParamFromParameterArray,
+                           at->atom[parameterToAdd.ai()].type,
+                           at->atom[parameterToAdd.aj()].type,
+                           at->atom[parameterToAdd.ak()].type,
+                           at->atom[parameterToAdd.al()].type,
+                           atypes);
     }
 }
 
@@ -1782,7 +1824,8 @@ static std::vector<InteractionOfType>::iterator defaultInteractionsOfType(int ft
         auto pos     = bt[ftype].interactionTypes.begin();
         while (pos != bt[ftype].interactionTypes.end() && nmatch_max < 4)
         {
-            pos = std::find_if(bt[ftype].interactionTypes.begin(), bt[ftype].interactionTypes.end(),
+            pos = std::find_if(bt[ftype].interactionTypes.begin(),
+                               bt[ftype].interactionTypes.end(),
                                [&p, &at, &atypes, &bB, &nmatch_max](const auto& param) {
                                    return (findNumberOfDihedralAtomMatches(param, p, at, atypes, bB)
                                            > nmatch_max);
@@ -1829,11 +1872,12 @@ static std::vector<InteractionOfType>::iterator defaultInteractionsOfType(int ft
     else /* Not a dihedral */
     {
         gmx::ArrayRef<const int> atomParam = p.atoms();
-        auto                     found     = std::find_if(
-                bt[ftype].interactionTypes.begin(), bt[ftype].interactionTypes.end(),
-                [&atomParam, &at, &atypes, &bB](const auto& param) {
-                    return findIfAllParameterAtomsMatch(param.atoms(), atomParam, at, atypes, bB);
-                });
+        auto                     found     = std::find_if(bt[ftype].interactionTypes.begin(),
+                                  bt[ftype].interactionTypes.end(),
+                                  [&atomParam, &at, &atypes, &bB](const auto& param) {
+                                      return findIfAllParameterAtomsMatch(
+                                              param.atoms(), atomParam, at, atypes, bB);
+                                  });
         if (found != bt[ftype].interactionTypes.end())
         {
             nparam_found = 1;
@@ -1944,7 +1988,11 @@ void push_bond(Directive                         d,
                     "This probably means that you have inserted topology section \"%s\"\n"
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
-                    aa[i], dir2str(d), at->nr, dir2str(d), dir2str(d));
+                    aa[i],
+                    dir2str(d),
+                    at->nr,
+                    dir2str(d),
+                    dir2str(d));
             warning_error_and_exit(wi, message, FARGS);
         }
         for (int j = i + 1; (j < nral); j++)
@@ -2056,8 +2104,21 @@ void push_bond(Directive                         d,
         strcpy(format, asformat[nral_fmt - 1]);
         strcat(format, ccformat);
 
-        nread = sscanf(line, format, &cc[0], &cc[1], &cc[2], &cc[3], &cc[4], &cc[5], &cc[6], &cc[7],
-                       &cc[8], &cc[9], &cc[10], &cc[11], &cc[12]);
+        nread = sscanf(line,
+                       format,
+                       &cc[0],
+                       &cc[1],
+                       &cc[2],
+                       &cc[3],
+                       &cc[4],
+                       &cc[5],
+                       &cc[6],
+                       &cc[7],
+                       &cc[8],
+                       &cc[9],
+                       &cc[10],
+                       &cc[11],
+                       &cc[12]);
 
         if ((nread == NRFPA(ftype)) && (NRFPB(ftype) != 0))
         {
@@ -2100,7 +2161,10 @@ void push_bond(Directive                         d,
             auto message = gmx::formatString(
                     "Incorrect number of parameters - found %d, expected %d "
                     "or %d for %s (after the function type).",
-                    nread, NRFPA(ftype), NRFP(ftype), interaction_function[ftype].longname);
+                    nread,
+                    NRFPA(ftype),
+                    NRFP(ftype),
+                    interaction_function[ftype].longname);
             warning_error_and_exit(wi, message, FARGS);
         }
 
@@ -2166,7 +2230,8 @@ void push_bond(Directive                         d,
                 {
                     if (bZero)
                     {
-                        fprintf(stderr, "NOTE: No default %s types, using zeroes\n",
+                        fprintf(stderr,
+                                "NOTE: No default %s types, using zeroes\n",
                                 interaction_function[ftype].longname);
                     }
                     else
@@ -2214,7 +2279,8 @@ void push_bond(Directive                         d,
     if ((ftype == F_PDIHS || ftype == F_ANGRES || ftype == F_ANGRESZ) && paramValue[5] != paramValue[2])
     {
         auto message = gmx::formatString("%s multiplicity can not be perturbed %f!=%f",
-                                         interaction_function[ftype].longname, paramValue[2],
+                                         interaction_function[ftype].longname,
+                                         paramValue[2],
                                          paramValue[5]);
         warning_error_and_exit(wi, message, FARGS);
     }
@@ -2223,7 +2289,8 @@ void push_bond(Directive                         d,
     {
         auto message = gmx::formatString("%s table number can not be perturbed %d!=%d",
                                          interaction_function[ftype].longname,
-                                         gmx::roundToInt(param.c0()), gmx::roundToInt(param.c0()));
+                                         gmx::roundToInt(param.c0()),
+                                         gmx::roundToInt(param.c0()));
         warning_error_and_exit(wi, message, FARGS);
     }
 
@@ -2313,7 +2380,11 @@ void push_cmap(Directive                         d,
                     "This probably means that you have inserted topology section \"%s\"\n"
                     "in a part belonging to a different molecule than you intended to.\n"
                     "In that case move the \"%s\" section to the right molecule.",
-                    aa[i], dir2str(d), at->nr, dir2str(d), dir2str(d));
+                    aa[i],
+                    dir2str(d),
+                    at->nr,
+                    dir2str(d),
+                    dir2str(d));
             warning_error_and_exit(wi, message, FARGS);
         }
 
@@ -2348,9 +2419,13 @@ void push_cmap(Directive                         d,
     else
     {
         /* This is essentially the same check as in default_cmap_params() done one more time */
-        auto message = gmx::formatString(
-                "Unable to assign a cmap type to torsion %d %d %d %d and %d\n", param.ai() + 1,
-                param.aj() + 1, param.ak() + 1, param.al() + 1, param.am() + 1);
+        auto message =
+                gmx::formatString("Unable to assign a cmap type to torsion %d %d %d %d and %d\n",
+                                  param.ai() + 1,
+                                  param.aj() + 1,
+                                  param.ak() + 1,
+                                  param.al() + 1,
+                                  param.am() + 1);
         warning_error_and_exit(wi, message, FARGS);
     }
 }
@@ -2410,7 +2485,8 @@ void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* 
                         auto message = gmx::formatString(
                                 "No weight or negative weight found for vsiten "
                                 "constructing atom %d (atom index %d)",
-                                nj + 1, atc[nj] + 1);
+                                nj + 1,
+                                atc[nj] + 1);
                         warning_error_and_exit(wi, message, FARGS);
                     }
                     break;
@@ -2498,7 +2574,9 @@ void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmo
                     "For moleculetype '%s' in [ system ] %d case insensitive "
                     "matches, but %d case sensitive matches were found. Check "
                     "the case of the characters in the moleculetypes.",
-                    type, nrci, nrcs);
+                    type,
+                    nrci,
+                    nrcs);
             warning_error_and_exit(wi, message, FARGS);
         }
         if (nrci == 1)
@@ -2602,8 +2680,9 @@ static void convert_pairs_to_pairsQ(gmx::ArrayRef<InteractionsOfType> interactio
 
     for (const auto& param : paramp1)
     {
-        std::vector<real> forceParam = { fudgeQQ, atoms->atom[param.ai()].q,
-                                         atoms->atom[param.aj()].q, param.c0(), param.c1() };
+        std::vector<real> forceParam = {
+            fudgeQQ, atoms->atom[param.ai()].q, atoms->atom[param.aj()].q, param.c0(), param.c1()
+        };
         paramnew.emplace_back(InteractionOfType(param.atoms(), forceParam, ""));
     }
 
@@ -2651,7 +2730,9 @@ static void generate_LJCpairsNB(MoleculeInformation* mol, int nb_funct, Interact
                 }
                 std::vector<int>  atoms      = { i, j };
                 std::vector<real> forceParam = {
-                    atom[i].q, atom[j].q, nbp->interactionTypes[ntype * atom[i].type + atom[j].type].c0(),
+                    atom[i].q,
+                    atom[j].q,
+                    nbp->interactionTypes[ntype * atom[i].type + atom[j].type].c0(),
                     nbp->interactionTypes[ntype * atom[i].type + atom[j].type].c1()
                 };
                 add_param_to_list(&mol->interactions[F_LJC_PAIRS_NB], InteractionOfType(atoms, forceParam));
@@ -2698,7 +2779,9 @@ static void decouple_atoms(t_atoms*    atoms,
                     "charges and/or atom types set in the topology file as well "
                     "as through the mdp option '%s'. You can not use both "
                     "these methods simultaneously.",
-                    i + 1, mol_name, "couple-moltype");
+                    i + 1,
+                    mol_name,
+                    "couple-moltype");
             warning_error_and_exit(wi, message, FARGS);
         }
 

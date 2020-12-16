@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -144,8 +144,14 @@ void SelectionTester::analyzeFrame(int /*frnr*/,
         for (int i = 0; i < n; ++i)
         {
             const SelectionPosition& p = sel.position(i);
-            fprintf(stderr, "    (%.2f,%.2f,%.2f) r=%d, m=%d, n=%d\n", p.x()[XX], p.x()[YY],
-                    p.x()[ZZ], p.refId(), p.mappedId(), p.atomCount());
+            fprintf(stderr,
+                    "    (%.2f,%.2f,%.2f) r=%d, m=%d, n=%d\n",
+                    p.x()[XX],
+                    p.x()[YY],
+                    p.x()[ZZ],
+                    p.refId(),
+                    p.mappedId(),
+                    p.atomCount());
         }
         if (n < sel.posCount())
         {

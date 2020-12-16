@@ -104,7 +104,9 @@ TEST_P(EwaldSurfaceTermTest, WithinTolerances)
         fprintf(stdout,
                 "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are %s 1.\n",
-                simulationName.c_str(), numRanksAvailable, numRanksAvailable == 1 ? ">" : "=");
+                simulationName.c_str(),
+                numRanksAvailable,
+                numRanksAvailable == 1 ? ">" : "=");
         return;
     }
 

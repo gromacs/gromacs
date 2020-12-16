@@ -97,8 +97,10 @@ void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numStep
 
     auto integrator = std::make_unique<LeapFrogGpu>(deviceContext, deviceStream);
 
-    integrator->set(testData->numAtoms_, testData->inverseMasses_.data(),
-                    testData->numTCoupleGroups_, testData->mdAtoms_.cTC);
+    integrator->set(testData->numAtoms_,
+                    testData->inverseMasses_.data(),
+                    testData->numTCoupleGroups_,
+                    testData->mdAtoms_.cTC);
 
     bool doTempCouple = testData->numTCoupleGroups_ > 0;
     for (int step = 0; step < numSteps; step++)
@@ -107,9 +109,16 @@ void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numStep
         bool doPressureCouple = testData->doPressureCouple_
                                 && do_per_step(step + testData->inputRecord_.nstpcouple - 1,
                                                testData->inputRecord_.nstpcouple);
-        integrator->integrate(d_x, d_xp, d_v, d_f, testData->timestep_, doTempCouple,
-                              testData->kineticEnergyData_.tcstat, doPressureCouple,
-                              testData->dtPressureCouple_, testData->velocityScalingMatrix_);
+        integrator->integrate(d_x,
+                              d_xp,
+                              d_v,
+                              d_f,
+                              testData->timestep_,
+                              doTempCouple,
+                              testData->kineticEnergyData_.tcstat,
+                              doPressureCouple,
+                              testData->dtPressureCouple_,
+                              testData->velocityScalingMatrix_);
     }
 
     copyFromDeviceBuffer(h_xp, &d_x, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);

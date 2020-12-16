@@ -614,10 +614,22 @@ static void dielectric(FILE*                   fmj,
         mj2 += iprod(mtrans[nfr], mtrans[nfr]);
         md2 += iprod(mu[nfr], mu[nfr]);
 
-        fprintf(fmj, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr], mtrans[nfr][XX],
-                mtrans[nfr][YY], mtrans[nfr][ZZ], mj2 / refr, norm(mja_tmp) / refr);
-        fprintf(fmd, "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n", time[nfr], mu[nfr][XX],
-                mu[nfr][YY], mu[nfr][ZZ], md2 / refr, norm(mdvec) / refr);
+        fprintf(fmj,
+                "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n",
+                time[nfr],
+                mtrans[nfr][XX],
+                mtrans[nfr][YY],
+                mtrans[nfr][ZZ],
+                mj2 / refr,
+                norm(mja_tmp) / refr);
+        fprintf(fmd,
+                "%.3f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\t%8.5f\n",
+                time[nfr],
+                mu[nfr][XX],
+                mu[nfr][YY],
+                mu[nfr][ZZ],
+                md2 / refr,
+                norm(mdvec) / refr);
 
         nfr++;
 
@@ -657,9 +669,17 @@ static void dielectric(FILE*                   fmj,
 
     printf("\n\nAverage translational dipole moment M_J [enm] after %d frames (|M|^2): %f %f %f "
            "(%f)\n",
-           nfr, mja_tmp[XX], mja_tmp[YY], mja_tmp[ZZ], mj2);
+           nfr,
+           mja_tmp[XX],
+           mja_tmp[YY],
+           mja_tmp[ZZ],
+           mj2);
     printf("\n\nAverage molecular dipole moment M_D [enm] after %d frames (|M|^2): %f %f %f (%f)\n",
-           nfr, mdvec[XX], mdvec[YY], mdvec[ZZ], md2);
+           nfr,
+           mdvec[XX],
+           mdvec[YY],
+           mdvec[ZZ],
+           md2);
 
     if (v0 != nullptr)
     {
@@ -716,8 +736,7 @@ static void dielectric(FILE*                   fmj,
 
     dk_f = calceps(prefactor, md2 - mdav2, mj2 - mj, mjd - mjdav, eps_rf, FALSE);
     fprintf(stderr, "\n\nFluctuations:\n epsilon=%f\n\n", dk_f);
-    fprintf(stderr, "\n deltaM_D , deltaM_J, deltaM_JD:  (%f, %f, %f)\n", md2 - mdav2, mj2 - mj,
-            mjd - mjdav);
+    fprintf(stderr, "\n deltaM_D , deltaM_J, deltaM_JD:  (%f, %f, %f)\n", md2 - mdav2, mj2 - mj, mjd - mjdav);
     fprintf(stderr, "\n********************************************\n");
     if (bINT)
     {
@@ -734,8 +753,7 @@ static void dielectric(FILE*                   fmj,
     if (bACF && (ii < nvfr))
     {
         fprintf(stderr, "Integral and integrated fit to the current acf yields at t=%f:\n", time[vfr[ii]]);
-        fprintf(stderr, "sigma=%8.3f (pure integral: %.3f)\n",
-                sgk - malt * std::pow(time[vfr[ii]], sigma), sgk);
+        fprintf(stderr, "sigma=%8.3f (pure integral: %.3f)\n", sgk - malt * std::pow(time[vfr[ii]], sigma), sgk);
     }
 
     if (ei > bi)
@@ -934,8 +952,8 @@ int gmx_current(int argc, char* argv[])
 
 
     /* At first the arguments will be parsed and the system information processed */
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -976,41 +994,81 @@ int gmx_current(int argc, char* argv[])
     {
         if (bACF)
         {
-            outf = xvgropen(opt2fn("-caf", NFILE, fnm), "Current autocorrelation function",
-                            output_env_get_xvgr_tlabel(oenv), "ACF (e nm/ps)\\S2", oenv);
+            outf = xvgropen(opt2fn("-caf", NFILE, fnm),
+                            "Current autocorrelation function",
+                            output_env_get_xvgr_tlabel(oenv),
+                            "ACF (e nm/ps)\\S2",
+                            oenv);
             fprintf(outf, "# time\t acf\t average \t std.dev\n");
         }
-        fcur = xvgropen(opt2fn("-o", NFILE, fnm), "Current", output_env_get_xvgr_tlabel(oenv),
-                        "J(t) (e nm/ps)", oenv);
+        fcur = xvgropen(opt2fn("-o", NFILE, fnm),
+                        "Current",
+                        output_env_get_xvgr_tlabel(oenv),
+                        "J(t) (e nm/ps)",
+                        oenv);
         fprintf(fcur, "# time\t Jx\t Jy \t J_z \n");
         if (bINT)
         {
             mcor = xvgropen(opt2fn("-mc", NFILE, fnm),
                             "M\\sD\\N - current  autocorrelation function",
                             output_env_get_xvgr_tlabel(oenv),
-                            "< M\\sD\\N (0)\\c7\\CJ(t) >  (e nm/ps)\\S2", oenv);
+                            "< M\\sD\\N (0)\\c7\\CJ(t) >  (e nm/ps)\\S2",
+                            oenv);
             fprintf(mcor, "# time\t M_D(0) J(t) acf \t Integral acf\n");
         }
     }
 
-    fmj = xvgropen(opt2fn("-mj", NFILE, fnm), "Averaged translational part of M",
-                   output_env_get_xvgr_tlabel(oenv), "< M\\sJ\\N > (enm)", oenv);
+    fmj = xvgropen(opt2fn("-mj", NFILE, fnm),
+                   "Averaged translational part of M",
+                   output_env_get_xvgr_tlabel(oenv),
+                   "< M\\sJ\\N > (enm)",
+                   oenv);
     fprintf(fmj, "# time\t x\t y \t z \t average of M_J^2 \t std.dev\n");
-    fmd = xvgropen(opt2fn("-md", NFILE, fnm), "Averaged rotational part of M",
-                   output_env_get_xvgr_tlabel(oenv), "< M\\sD\\N > (enm)", oenv);
+    fmd = xvgropen(opt2fn("-md", NFILE, fnm),
+                   "Averaged rotational part of M",
+                   output_env_get_xvgr_tlabel(oenv),
+                   "< M\\sD\\N > (enm)",
+                   oenv);
     fprintf(fmd, "# time\t x\t y \t z \t average of M_D^2 \t std.dev\n");
 
     fmjdsp = xvgropen(
-            opt2fn("-dsp", NFILE, fnm), "MSD of the squared translational dipole moment M",
+            opt2fn("-dsp", NFILE, fnm),
+            "MSD of the squared translational dipole moment M",
             output_env_get_xvgr_tlabel(oenv),
-            "<|M\\sJ\\N(t)-M\\sJ\\N(0)|\\S2\\N > / 6.0*V*k\\sB\\N*T / Sm\\S-1\\Nps\\S-1\\N", oenv);
+            "<|M\\sJ\\N(t)-M\\sJ\\N(0)|\\S2\\N > / 6.0*V*k\\sB\\N*T / Sm\\S-1\\Nps\\S-1\\N",
+            oenv);
 
 
     /* System information is read and prepared, dielectric() processes the frames
      * and calculates the requested quantities */
 
-    dielectric(fmj, fmd, outf, fcur, mcor, fmjdsp, bNoJump, bACF, bINT, pbcType, top, fr, temp, bfit, efit,
-               bvit, evit, status, isize, nmols, nshift, index0, indexm, mass2, qmol, eps_rf, oenv);
+    dielectric(fmj,
+               fmd,
+               outf,
+               fcur,
+               mcor,
+               fmjdsp,
+               bNoJump,
+               bACF,
+               bINT,
+               pbcType,
+               top,
+               fr,
+               temp,
+               bfit,
+               efit,
+               bvit,
+               evit,
+               status,
+               isize,
+               nmols,
+               nshift,
+               index0,
+               indexm,
+               mass2,
+               qmol,
+               eps_rf,
+               oenv);
 
     xvgrclose(fmj);
     xvgrclose(fmd);

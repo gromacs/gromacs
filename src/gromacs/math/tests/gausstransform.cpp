@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,10 +90,11 @@ TEST(GaussianOn1DLattice, isCorrect)
     FloatingPointTolerance tolerance(defaultFloatTolerance());
     const real             amplitude = 1.0;
     gauss1d.spread(amplitude, shift);
-    std::array<float, 2 * spreadWidth + 1> expected = {
-        0.0047816522419452667236328125, 0.2613909542560577392578125, 0.65811407566070556640625,
-        0.07631497085094451904296875, 0.000407583254855126142501831054688
-    };
+    std::array<float, 2 * spreadWidth + 1> expected = { 0.0047816522419452667236328125,
+                                                        0.2613909542560577392578125,
+                                                        0.65811407566070556640625,
+                                                        0.07631497085094451904296875,
+                                                        0.000407583254855126142501831054688 };
     EXPECT_THAT(expected, Pointwise(FloatEq(tolerance), viewOnResult));
 }
 
@@ -109,13 +110,14 @@ TEST(GaussianOn1DLattice, complementaryAmplitudesSumToZero)
     gauss1d.spread(amplitude, shift);
     std::vector<float> sumOfComplementaryGaussians;
     // keep a copy of the first Gaussian
-    std::copy(std::begin(viewOnResult), std::end(viewOnResult),
-              std::back_inserter(sumOfComplementaryGaussians));
+    std::copy(std::begin(viewOnResult), std::end(viewOnResult), std::back_inserter(sumOfComplementaryGaussians));
 
     gauss1d.spread(-amplitude, shift);
     // add the two spread Gaussians
-    std::transform(std::begin(viewOnResult), std::end(viewOnResult),
-                   std::begin(sumOfComplementaryGaussians), std::begin(sumOfComplementaryGaussians),
+    std::transform(std::begin(viewOnResult),
+                   std::end(viewOnResult),
+                   std::begin(sumOfComplementaryGaussians),
+                   std::begin(sumOfComplementaryGaussians),
                    std::plus<>());
     // Expect all zeros
     std::array<float, 2 * spreadWidth + 1> expected = {};

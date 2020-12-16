@@ -458,14 +458,36 @@ real calc_one_bond(int                           thread,
                nice to account to its own subtimer, but first
                wallcycle needs to be extended to support calling from
                multiple threads. */
-            v = cmap_dihs(nbn, iatoms.data() + nb0, iparams.data(), &idef.cmap_grid, x, f, fshift,
-                          pbc, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd, global_atom_index);
+            v = cmap_dihs(nbn,
+                          iatoms.data() + nb0,
+                          iparams.data(),
+                          &idef.cmap_grid,
+                          x,
+                          f,
+                          fshift,
+                          pbc,
+                          lambda[efptFTYPE],
+                          &(dvdl[efptFTYPE]),
+                          md,
+                          fcd,
+                          global_atom_index);
         }
         else
         {
-            v = calculateSimpleBond(ftype, nbn, iatoms.data() + nb0, iparams.data(), x, f, fshift,
-                                    pbc, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd,
-                                    global_atom_index, flavor);
+            v = calculateSimpleBond(ftype,
+                                    nbn,
+                                    iatoms.data() + nb0,
+                                    iparams.data(),
+                                    x,
+                                    f,
+                                    fshift,
+                                    pbc,
+                                    lambda[efptFTYPE],
+                                    &(dvdl[efptFTYPE]),
+                                    md,
+                                    fcd,
+                                    global_atom_index,
+                                    flavor);
         }
     }
     else
@@ -473,8 +495,22 @@ real calc_one_bond(int                           thread,
         /* TODO The execution time for pairs might be nice to account
            to its own subtimer, but first wallcycle needs to be
            extended to support calling from multiple threads. */
-        do_pairs(ftype, nbn, iatoms.data() + nb0, iparams.data(), x, f, fshift, pbc, lambda, dvdl,
-                 md, fr, havePerturbedInteractions, stepWork, grpp, global_atom_index);
+        do_pairs(ftype,
+                 nbn,
+                 iatoms.data() + nb0,
+                 iparams.data(),
+                 x,
+                 f,
+                 fshift,
+                 pbc,
+                 lambda,
+                 dvdl,
+                 md,
+                 fr,
+                 havePerturbedInteractions,
+                 stepWork,
+                 grpp,
+                 global_atom_index);
     }
 
     if (thread == 0)
@@ -545,9 +581,25 @@ static void calcBondedForces(const InteractionDefinitions& idef,
                 if (!ilist.empty() && ftype_is_bonded_potential(ftype))
                 {
                     ArrayRef<const int> iatoms = gmx::makeConstArrayRef(ilist.iatoms);
-                    v = calc_one_bond(thread, ftype, idef, iatoms, idef.numNonperturbedInteractions[ftype],
-                                      bt->workDivision, x, ft, fshift, fr, pbc_null, grpp, nrnb,
-                                      lambda, dvdlt, md, fcd, stepWork, global_atom_index);
+                    v                          = calc_one_bond(thread,
+                                      ftype,
+                                      idef,
+                                      iatoms,
+                                      idef.numNonperturbedInteractions[ftype],
+                                      bt->workDivision,
+                                      x,
+                                      ft,
+                                      fshift,
+                                      fr,
+                                      pbc_null,
+                                      grpp,
+                                      nrnb,
+                                      lambda,
+                                      dvdlt,
+                                      md,
+                                      fcd,
+                                      stepWork,
+                                      global_atom_index);
                     epot[ftype] += v;
                 }
             }
@@ -601,9 +653,20 @@ void calc_listed(struct gmx_wallcycle*         wcycle,
         /* The dummy array is to have a place to store the dhdl at other values
            of lambda, which will be thrown away in the end */
         real dvdl[efptNR] = { 0 };
-        calcBondedForces(idef, bt, x, fr, fr->bMolPBC ? pbc : nullptr,
-                         as_rvec_array(forceWithShiftForces.shiftForces().data()), enerd, nrnb,
-                         lambda, dvdl, md, fcd, stepWork, global_atom_index);
+        calcBondedForces(idef,
+                         bt,
+                         x,
+                         fr,
+                         fr->bMolPBC ? pbc : nullptr,
+                         as_rvec_array(forceWithShiftForces.shiftForces().data()),
+                         enerd,
+                         nrnb,
+                         lambda,
+                         dvdl,
+                         md,
+                         fcd,
+                         stepWork,
+                         global_atom_index);
         wallcycle_sub_stop(wcycle, ewcsLISTED);
 
         wallcycle_sub_start(wcycle, ewcsLISTED_BUF_OPS);
@@ -661,7 +724,8 @@ void calc_listed_lambda(const InteractionDefinitions& idef,
 
     /* We already have the forces, so we use temp buffers here */
     std::fill(forceBufferLambda.begin(), forceBufferLambda.end(), 0.0_real);
-    std::fill(shiftForceBufferLambda.begin(), shiftForceBufferLambda.end(),
+    std::fill(shiftForceBufferLambda.begin(),
+              shiftForceBufferLambda.end(),
               gmx::RVec{ 0.0_real, 0.0_real, 0.0_real });
     rvec4* f      = reinterpret_cast<rvec4*>(forceBufferLambda.data());
     rvec*  fshift = as_rvec_array(shiftForceBufferLambda.data());
@@ -684,9 +748,25 @@ void calc_listed_lambda(const InteractionDefinitions& idef,
 
                 gmx::StepWorkload tempFlags;
                 tempFlags.computeEnergy = true;
-                real v = calc_one_bond(0, ftype, idef, iatomsPerturbed, iatomsPerturbed.ssize(),
-                                       workDivision, x, f, fshift, fr, pbc_null, grpp, nrnb, lambda,
-                                       dvdl.data(), md, fcd, tempFlags, global_atom_index);
+                real v                  = calc_one_bond(0,
+                                       ftype,
+                                       idef,
+                                       iatomsPerturbed,
+                                       iatomsPerturbed.ssize(),
+                                       workDivision,
+                                       x,
+                                       f,
+                                       fshift,
+                                       fr,
+                                       pbc_null,
+                                       grpp,
+                                       nrnb,
+                                       lambda,
+                                       dvdl.data(),
+                                       md,
+                                       fcd,
+                                       tempFlags,
+                                       global_atom_index);
                 epot[ftype] += v;
             }
         }
@@ -754,21 +834,33 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         if (fcdata->orires->nr > 0)
         {
             GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orienation restraints");
-            enerd->term[F_ORIRESDEV] = calc_orires_dev(
-                    ms, idef.il[F_ORIRES].size(), idef.il[F_ORIRES].iatoms.data(), idef.iparams.data(),
-                    md, xWholeMolecules, x, fr->bMolPBC ? pbc : nullptr, fcdata->orires, hist);
+            enerd->term[F_ORIRESDEV] = calc_orires_dev(ms,
+                                                       idef.il[F_ORIRES].size(),
+                                                       idef.il[F_ORIRES].iatoms.data(),
+                                                       idef.iparams.data(),
+                                                       md,
+                                                       xWholeMolecules,
+                                                       x,
+                                                       fr->bMolPBC ? pbc : nullptr,
+                                                       fcdata->orires,
+                                                       hist);
         }
         if (fcdata->disres->nres > 0)
         {
-            calc_disres_R_6(cr, ms, idef.il[F_DISRES].size(), idef.il[F_DISRES].iatoms.data(), x,
-                            fr->bMolPBC ? pbc : nullptr, fcdata->disres, hist);
+            calc_disres_R_6(cr,
+                            ms,
+                            idef.il[F_DISRES].size(),
+                            idef.il[F_DISRES].iatoms.data(),
+                            x,
+                            fr->bMolPBC ? pbc : nullptr,
+                            fcdata->disres,
+                            hist);
         }
 
         wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
     }
 
-    calc_listed(wcycle, idef, threading_.get(), x, forceOutputs, fr, pbc, enerd, nrnb, lambda, md,
-                fcdata, global_atom_index, stepWork);
+    calc_listed(wcycle, idef, threading_.get(), x, forceOutputs, fr, pbc, enerd, nrnb, lambda, md, fcdata, global_atom_index, stepWork);
 
     /* Check if we have to determine energy differences
      * at foreign lambda's.
@@ -796,9 +888,21 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                 {
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i - 1]);
                 }
-                calc_listed_lambda(idef, threading_.get(), x, fr, pbc, forceBufferLambda_,
-                                   shiftForceBufferLambda_, &(enerd->foreign_grpp), enerd->foreign_term,
-                                   dvdl, nrnb, lam_i, md, fcdata, global_atom_index);
+                calc_listed_lambda(idef,
+                                   threading_.get(),
+                                   x,
+                                   fr,
+                                   pbc,
+                                   forceBufferLambda_,
+                                   shiftForceBufferLambda_,
+                                   &(enerd->foreign_grpp),
+                                   enerd->foreign_term,
+                                   dvdl,
+                                   nrnb,
+                                   lam_i,
+                                   md,
+                                   fcdata,
+                                   global_atom_index);
                 sum_epot(enerd->foreign_grpp, enerd->foreign_term);
                 const double dvdlSum = std::accumulate(std::begin(dvdl), std::end(dvdl), 0.);
                 std::fill(std::begin(dvdl), std::end(dvdl), 0.0);

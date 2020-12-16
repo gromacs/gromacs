@@ -110,7 +110,8 @@ static size_t roundUpToMultipleOfFactor(size_t number)
 static void reallocSimdAlignedAndPadded(real** ptr, int unpaddedNumElements)
 {
     sfree_aligned(*ptr);
-    snew_aligned(*ptr, roundUpToMultipleOfFactor<c_simdWidth>(unpaddedNumElements),
+    snew_aligned(*ptr,
+                 roundUpToMultipleOfFactor<c_simdWidth>(unpaddedNumElements),
                  c_simdWidth * sizeof(real));
 }
 
@@ -359,8 +360,8 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
     nz = pme->nkz;
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
-    gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_QA], complex_order, local_ndata,
-                                      local_offset, local_size);
+    gmx_parallel_3dfft_complex_limits(
+            pme->pfft_setup[PME_GRID_QA], complex_order, local_ndata, local_offset, local_size);
 
     rxx = pme->recipbox[XX][XX];
     ryx = pme->recipbox[YY][XX];
@@ -480,7 +481,9 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
             }
 
             calc_exponentials_q(
-                    kxstart, kxend, elfac,
+                    kxstart,
+                    kxend,
+                    elfac,
                     ArrayRef<PME_T>(denom, denom + roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
                     ArrayRef<PME_T>(tmp1, tmp1 + roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
                     ArrayRef<PME_T>(eterm, eterm + roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
@@ -546,7 +549,9 @@ int solve_pme_yzx(const gmx_pme_t* pme, t_complex* grid, real vol, bool computeE
             }
 
             calc_exponentials_q(
-                    kxstart, kxend, elfac,
+                    kxstart,
+                    kxend,
+                    elfac,
                     ArrayRef<PME_T>(denom, denom + roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
                     ArrayRef<PME_T>(tmp1, tmp1 + roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
                     ArrayRef<PME_T>(eterm, eterm + roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
@@ -618,8 +623,8 @@ int solve_pme_lj_yzx(const gmx_pme_t* pme,
     nz = pme->nkz;
 
     /* Dimensions should be identical for A/B grid, so we just use A here */
-    gmx_parallel_3dfft_complex_limits(pme->pfft_setup[PME_GRID_C6A], complex_order, local_ndata,
-                                      local_offset, local_size);
+    gmx_parallel_3dfft_complex_limits(
+            pme->pfft_setup[PME_GRID_C6A], complex_order, local_ndata, local_offset, local_size);
     rxx = pme->recipbox[XX][XX];
     ryx = pme->recipbox[YY][XX];
     ryy = pme->recipbox[YY][YY];
@@ -726,7 +731,8 @@ int solve_pme_lj_yzx(const gmx_pme_t* pme,
             }
 
             calc_exponentials_lj(
-                    kxstart, kxend,
+                    kxstart,
+                    kxend,
                     ArrayRef<PME_T>(tmp1, tmp1 + roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
                     ArrayRef<PME_T>(tmp2, tmp2 + roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
                     ArrayRef<PME_T>(denom, denom + roundUpToMultipleOfFactor<c_simdWidth>(kxend)));
@@ -868,7 +874,8 @@ int solve_pme_lj_yzx(const gmx_pme_t* pme,
             }
 
             calc_exponentials_lj(
-                    kxstart, kxend,
+                    kxstart,
+                    kxend,
                     ArrayRef<PME_T>(tmp1, tmp1 + roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
                     ArrayRef<PME_T>(tmp2, tmp2 + roundUpToMultipleOfFactor<c_simdWidth>(kxend)),
                     ArrayRef<PME_T>(denom, denom + roundUpToMultipleOfFactor<c_simdWidth>(kxend)));

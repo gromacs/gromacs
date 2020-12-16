@@ -208,7 +208,9 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
                     {
                         fprintf(debug,
                                 "Hack '%s' %d, replacing nname '%s' with '%s' (old name '%s')\n",
-                                localAtomName.c_str(), pos, patch->nname.c_str(),
+                                localAtomName.c_str(),
+                                pos,
+                                patch->nname.c_str(),
                                 singlePatch.nname.c_str(),
                                 patch->oname.empty() ? "" : patch->oname.c_str());
                     }
@@ -240,8 +242,11 @@ static void expand_hackblocks_one(const MoleculePatchDatabase& newPatch,
                 for (int k = 0; k < singlePatch.nr; k++)
                 {
                     expand_hackblocks_one(
-                            newPatch, globalPatches->at(globalPatches->size() - singlePatch.nr + k).nname,
-                            globalPatches, bN, bC);
+                            newPatch,
+                            globalPatches->at(globalPatches->size() - singlePatch.nr + k).nname,
+                            globalPatches,
+                            bN,
+                            bC);
                 }
             }
         }
@@ -347,8 +352,12 @@ static void calc_all_pos(const t_atoms*                            pdba,
                 bool bFoundAll = true;
                 for (int m = 0; (m < patch->nctl && bFoundAll); m++)
                 {
-                    int ia = pdbasearch_atom(patch->a[m].c_str(), rnr, pdba, bCheckMissing ? "atom" : "check",
-                                             !bCheckMissing, cyclicBondsIndex);
+                    int ia = pdbasearch_atom(patch->a[m].c_str(),
+                                             rnr,
+                                             pdba,
+                                             bCheckMissing ? "atom" : "check",
+                                             !bCheckMissing,
+                                             cyclicBondsIndex);
                     if (ia < 0)
                     {
                         /* not found in original atoms, might still be in
@@ -367,8 +376,10 @@ static void calc_all_pos(const t_atoms*                            pdba,
                                           "Atom %s not found in residue %s %d"
                                           ", rtp entry %s"
                                           " while adding hydrogens",
-                                          patch->a[m].c_str(), *pdba->resinfo[rnr].name,
-                                          pdba->resinfo[rnr].nr, *pdba->resinfo[rnr].rtp);
+                                          patch->a[m].c_str(),
+                                          *pdba->resinfo[rnr].name,
+                                          pdba->resinfo[rnr].nr,
+                                          *pdba->resinfo[rnr].rtp);
                             }
                         }
                     }
@@ -510,7 +521,9 @@ static int add_h_low(t_atoms**                                   initialAtoms,
                     {
                         if (gmx_debug_at)
                         {
-                            fprintf(debug, "Replacing %d '%s' with (old name '%s') %s\n", newi,
+                            fprintf(debug,
+                                    "Replacing %d '%s' with (old name '%s') %s\n",
+                                    newi,
                                     ((*modifiedAtoms)->atomname[newi] && *(*modifiedAtoms)->atomname[newi])
                                             ? *(*modifiedAtoms)->atomname[newi]
                                             : "",
@@ -525,8 +538,11 @@ static int add_h_low(t_atoms**                                   initialAtoms,
                     }
                     if (debug)
                     {
-                        fprintf(debug, " %s %g %g", *(*modifiedAtoms)->atomname[newi],
-                                (*modifiedAtoms)->atom[newi].m, (*modifiedAtoms)->atom[newi].q);
+                        fprintf(debug,
+                                " %s %g %g",
+                                *(*modifiedAtoms)->atomname[newi],
+                                (*modifiedAtoms)->atom[newi].m,
+                                (*modifiedAtoms)->atom[newi].q);
                     }
                 }
             }
@@ -567,8 +583,8 @@ int add_h(t_atoms**                                   initialAtoms,
     do
     {
         nold = nnew;
-        nnew = add_h_low(initialAtoms, localAtoms, xptr, globalPatches, symtab, nterpairs, ntdb,
-                         ctdb, rN, rC, FALSE, cyclicBondsIndex);
+        nnew = add_h_low(
+                initialAtoms, localAtoms, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN, rC, FALSE, cyclicBondsIndex);
         niter++;
         if (niter > 100)
         {
@@ -581,8 +597,7 @@ int add_h(t_atoms**                                   initialAtoms,
     if (!bAllowMissing)
     {
         /* Call add_h_low once more, now only for the missing atoms check */
-        add_h_low(initialAtoms, localAtoms, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN,
-                  rC, TRUE, cyclicBondsIndex);
+        add_h_low(initialAtoms, localAtoms, xptr, globalPatches, symtab, nterpairs, ntdb, ctdb, rN, rC, TRUE, cyclicBondsIndex);
     }
 
     return nnew;

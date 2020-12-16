@@ -243,8 +243,7 @@ static void mc_optimize(FILE*             log,
                 nuphill++;
             }
 
-            fprintf(log, "Iter: %d Swapped %4d and %4d (energy: %g prob: %g)\n", i, iswap, jswap,
-                    enext, prob);
+            fprintf(log, "Iter: %d Swapped %4d and %4d (energy: %g prob: %g)\n", i, iswap, jswap, enext, prob);
             if (nullptr != fp)
             {
                 fprintf(fp, "%6d  %10g\n", i, enext);
@@ -266,7 +265,10 @@ static void mc_optimize(FILE*             log,
     fprintf(log, "Swapped time and frame indices and RMSD to next neighbor:\n");
     for (i = 0; (i < m->nn); i++)
     {
-        fprintf(log, "%10g  %5d  %10g\n", time[m->m_ind[i]], m->m_ind[i],
+        fprintf(log,
+                "%10g  %5d  %10g\n",
+                time[m->m_ind[i]],
+                m->m_ind[i],
                 (i < m->nn - 1) ? m->mat[m->m_ind[i]][m->m_ind[i + 1]] : 0);
     }
 
@@ -942,16 +944,33 @@ static void ana_trans(t_clusters*             clust,
                                                  trans[clust->cl[i] - 1][clust->cl[i - 1] - 1]));
         }
     }
-    ffprintf_dd(stderr, log, buf,
+    ffprintf_dd(stderr,
+                log,
+                buf,
                 "Counted %d transitions in total, "
                 "max %d between two specific clusters\n",
-                ntranst, maxtrans);
+                ntranst,
+                maxtrans);
     if (transfn)
     {
         fp = gmx_ffopen(transfn, "w");
         i  = std::min(maxtrans + 1, 80);
-        write_xpm(fp, 0, "Cluster Transitions", "# transitions", "from cluster", "to cluster",
-                  clust->ncl, clust->ncl, axis, axis, trans, 0, maxtrans, rlo, rhi, &i);
+        write_xpm(fp,
+                  0,
+                  "Cluster Transitions",
+                  "# transitions",
+                  "from cluster",
+                  "to cluster",
+                  clust->ncl,
+                  clust->ncl,
+                  axis,
+                  axis,
+                  trans,
+                  0,
+                  maxtrans,
+                  rlo,
+                  rhi,
+                  &i);
         gmx_ffclose(fp);
     }
     if (ntransfn)
@@ -1026,8 +1045,12 @@ static void analyze_clusters(int                     nf,
             trxsfn = parse_filename(trxfn, std::max(write_ncl, clust->ncl));
             snew(bWrite, nf);
         }
-        ffprintf_ss(stderr, log, buf, "Writing %s structure for each cluster to %s\n",
-                    bAverage ? "average" : "middle", trxfn);
+        ffprintf_ss(stderr,
+                    log,
+                    buf,
+                    "Writing %s structure for each cluster to %s\n",
+                    bAverage ? "average" : "middle",
+                    trxfn);
         if (write_ncl)
         {
             /* find out what we want to tell the user:
@@ -1107,7 +1130,12 @@ static void analyze_clusters(int                     nf,
     }
 
     snew(structure, nf);
-    fprintf(log, "\n%3s | %3s  %4s | %6s %4s | cluster members\n", "cl.", "#st", "rmsd", "middle",
+    fprintf(log,
+            "\n%3s | %3s  %4s | %6s %4s | cluster members\n",
+            "cl.",
+            "#st",
+            "rmsd",
+            "middle",
             "rmsd");
     for (cl = 1; cl <= clust->ncl; cl++)
     {
@@ -1266,8 +1294,16 @@ static void analyze_clusters(int                     nf,
                     }
                     if (bWrite[i])
                     {
-                        write_trx(trxsout, iosize, outidx, atoms, i, time[structure[i]],
-                                  boxes[structure[i]], xx[structure[i]], nullptr, nullptr);
+                        write_trx(trxsout,
+                                  iosize,
+                                  outidx,
+                                  atoms,
+                                  i,
+                                  time[structure[i]],
+                                  boxes[structure[i]],
+                                  xx[structure[i]],
+                                  nullptr,
+                                  nullptr);
                     }
                 }
                 close_trx(trxsout);
@@ -1565,8 +1601,18 @@ int gmx_cluster(int argc, char* argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm,
-                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
+                           NFILE,
+                           fnm,
+                           asize(pa),
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv))
     {
         return 0;
     }
@@ -1586,8 +1632,10 @@ int gmx_cluster(int argc, char* argv[])
     }
     if (bReadMat && output_env_get_time_factor(oenv) != 1)
     {
-        fprintf(stderr, "\nWarning: assuming the time unit in %s is %s\n",
-                opt2fn("-dm", NFILE, fnm), output_env_get_time_unit(oenv).c_str());
+        fprintf(stderr,
+                "\nWarning: assuming the time unit in %s is %s\n",
+                opt2fn("-dm", NFILE, fnm),
+                output_env_get_time_unit(oenv).c_str());
     }
     if (trx_out_fn && !bReadTraj)
     {
@@ -1766,7 +1814,9 @@ int gmx_cluster(int argc, char* argv[])
             gmx_fatal(FARGS,
                       "Matrix size (%dx%d) does not match the number of "
                       "frames (%d)",
-                      readmat[0].nx, readmat[0].ny, nf);
+                      readmat[0].nx,
+                      readmat[0].ny,
+                      nf);
         }
 
         nf = readmat[0].nx;
@@ -1863,7 +1913,9 @@ int gmx_cluster(int argc, char* argv[])
         fprintf(stderr,
                 "WARNING: rmsd cutoff %g is outside range of rmsd values "
                 "%g to %g\n",
-                rmsdcut, rms->minrms, rms->maxrms);
+                rmsdcut,
+                rms->minrms,
+                rms->maxrms);
     }
     if (bAnalyze && (rmsmin < rms->minrms))
     {
@@ -1910,8 +1962,11 @@ int gmx_cluster(int argc, char* argv[])
             eigensolver(eigenvectors, nf, 0, nf, eigenvalues, rms->mat[0]);
             sfree(eigenvectors);
 
-            fp = xvgropen(opt2fn("-ev", NFILE, fnm), "RMSD matrix Eigenvalues", "Eigenvector index",
-                          "Eigenvalues (nm\\S2\\N)", oenv);
+            fp = xvgropen(opt2fn("-ev", NFILE, fnm),
+                          "RMSD matrix Eigenvalues",
+                          "Eigenvector index",
+                          "Eigenvalues (nm\\S2\\N)",
+                          oenv);
             for (i = 0; (i < nf); i++)
             {
                 fprintf(fp, "%10d  %10g\n", i, eigenvalues[i]);
@@ -1957,12 +2012,36 @@ int gmx_cluster(int argc, char* argv[])
             copy_rvec(xtps[index[i]], usextps[i]);
         }
         useatoms.nr = isize;
-        analyze_clusters(nf, &clust, rms->mat, isize, &useatoms, usextps, mass, xx, time, boxes,
-                         frameindices, ifsize, fitidx, iosize, outidx,
-                         bReadTraj ? trx_out_fn : nullptr, opt2fn_null("-sz", NFILE, fnm),
-                         opt2fn_null("-tr", NFILE, fnm), opt2fn_null("-ntr", NFILE, fnm),
-                         opt2fn_null("-clid", NFILE, fnm), opt2fn_null("-clndx", NFILE, fnm),
-                         bAverage, write_ncl, write_nst, rmsmin, bFit, log, rlo_bot, rhi_bot, oenv);
+        analyze_clusters(nf,
+                         &clust,
+                         rms->mat,
+                         isize,
+                         &useatoms,
+                         usextps,
+                         mass,
+                         xx,
+                         time,
+                         boxes,
+                         frameindices,
+                         ifsize,
+                         fitidx,
+                         iosize,
+                         outidx,
+                         bReadTraj ? trx_out_fn : nullptr,
+                         opt2fn_null("-sz", NFILE, fnm),
+                         opt2fn_null("-tr", NFILE, fnm),
+                         opt2fn_null("-ntr", NFILE, fnm),
+                         opt2fn_null("-clid", NFILE, fnm),
+                         opt2fn_null("-clndx", NFILE, fnm),
+                         bAverage,
+                         write_ncl,
+                         write_nst,
+                         rmsmin,
+                         bFit,
+                         log,
+                         rlo_bot,
+                         rhi_bot,
+                         oenv);
         sfree(boxes);
         sfree(frameindices);
     }
@@ -1987,9 +2066,22 @@ int gmx_cluster(int argc, char* argv[])
     fprintf(stderr, "Writing rms distance/clustering matrix ");
     if (bReadMat)
     {
-        write_xpm(fp, 0, readmat[0].title, readmat[0].legend, readmat[0].label_x,
-                  readmat[0].label_y, nf, nf, readmat[0].axis_x.data(), readmat[0].axis_y.data(),
-                  rms->mat, 0.0, rms->maxrms, rlo_top, rhi_top, &nlevels);
+        write_xpm(fp,
+                  0,
+                  readmat[0].title,
+                  readmat[0].legend,
+                  readmat[0].label_x,
+                  readmat[0].label_y,
+                  nf,
+                  nf,
+                  readmat[0].axis_x.data(),
+                  readmat[0].axis_y.data(),
+                  rms->mat,
+                  0.0,
+                  rms->maxrms,
+                  rlo_top,
+                  rhi_top,
+                  &nlevels);
     }
     else
     {
@@ -1997,14 +2089,47 @@ int gmx_cluster(int argc, char* argv[])
         auto title = gmx::formatString("RMS%sDeviation / Cluster Index", bRMSdist ? " Distance " : " ");
         if (minstruct > 1)
         {
-            write_xpm_split(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel, nf, nf, time, time,
-                            rms->mat, 0.0, rms->maxrms, &nlevels, rlo_top, rhi_top, 0.0, ncluster,
-                            &ncluster, TRUE, rlo_bot, rhi_bot);
+            write_xpm_split(fp,
+                            0,
+                            title,
+                            "RMSD (nm)",
+                            timeLabel,
+                            timeLabel,
+                            nf,
+                            nf,
+                            time,
+                            time,
+                            rms->mat,
+                            0.0,
+                            rms->maxrms,
+                            &nlevels,
+                            rlo_top,
+                            rhi_top,
+                            0.0,
+                            ncluster,
+                            &ncluster,
+                            TRUE,
+                            rlo_bot,
+                            rhi_bot);
         }
         else
         {
-            write_xpm(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel, nf, nf, time, time, rms->mat,
-                      0.0, rms->maxrms, rlo_top, rhi_top, &nlevels);
+            write_xpm(fp,
+                      0,
+                      title,
+                      "RMSD (nm)",
+                      timeLabel,
+                      timeLabel,
+                      nf,
+                      nf,
+                      time,
+                      time,
+                      rms->mat,
+                      0.0,
+                      rms->maxrms,
+                      rlo_top,
+                      rhi_top,
+                      &nlevels);
         }
     }
     fprintf(stderr, "\n");
@@ -2014,8 +2139,22 @@ int gmx_cluster(int argc, char* argv[])
         fp             = opt2FILE("-om", NFILE, fnm, "w");
         auto timeLabel = output_env_get_time_label(oenv);
         auto title     = gmx::formatString("RMS%sDeviation", bRMSdist ? " Distance " : " ");
-        write_xpm(fp, 0, title, "RMSD (nm)", timeLabel, timeLabel, nf, nf, time, time, orig->mat,
-                  0.0, orig->maxrms, rlo_top, rhi_top, &nlevels);
+        write_xpm(fp,
+                  0,
+                  title,
+                  "RMSD (nm)",
+                  timeLabel,
+                  timeLabel,
+                  nf,
+                  nf,
+                  time,
+                  time,
+                  orig->mat,
+                  0.0,
+                  orig->maxrms,
+                  rlo_top,
+                  rhi_top,
+                  &nlevels);
         gmx_ffclose(fp);
         done_mat(&orig);
         sfree(orig);

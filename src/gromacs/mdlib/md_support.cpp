@@ -381,9 +381,20 @@ void compute_globals(gmx_global_stat*               gstat,
             if (PAR(cr))
             {
                 wallcycle_start(wcycle, ewcMoveE);
-                global_stat(gstat, cr, enerd, force_vir, shake_vir, ir, ekind, constr,
-                            bStopCM ? vcm : nullptr, signalBuffer.size(), signalBuffer.data(),
-                            totalNumberOfBondedInteractions, *bSumEkinhOld, flags);
+                global_stat(gstat,
+                            cr,
+                            enerd,
+                            force_vir,
+                            shake_vir,
+                            ir,
+                            ekind,
+                            constr,
+                            bStopCM ? vcm : nullptr,
+                            signalBuffer.size(),
+                            signalBuffer.data(),
+                            totalNumberOfBondedInteractions,
+                            *bSumEkinhOld,
+                            flags);
                 wallcycle_stop(wcycle, ewcMoveE);
             }
             signalCoordinator->finalizeSignals();
@@ -485,7 +496,9 @@ int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, t_inputrec* ir,
              * here a leftover of the twin-range scheme? Can we remove
              * nstlist when we remove the group scheme?
              */
-            nstglobalcomm = lcd4(ir->nstcalcenergy, ir->nstlist, ir->etc != etcNO ? ir->nsttcouple : 0,
+            nstglobalcomm = lcd4(ir->nstcalcenergy,
+                                 ir->nstlist,
+                                 ir->etc != etcNO ? ir->nsttcouple : 0,
                                  ir->epc != epcNO ? ir->nstpcouple : 0);
         }
     }
@@ -589,8 +602,7 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
         state->flags |= (1 << estTHERM_INT);
     }
 
-    init_gtc_state(state, state->ngtc, state->nnhpres,
-                   ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
+    init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
     init_ekinstate(&state->ekinstate, ir);
 
     if (ir->bExpanded)

@@ -159,10 +159,22 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                          * the forces in the normal, single forceWithVirial->force_ array.
                          */
                         const rvec* x = as_rvec_array(coordinates.data());
-                        ewald_LRcorrection(md->homenr, cr, nthreads, t, *fr, *ir, md->chargeA,
-                                           md->chargeB, (md->nChargePerturbed != 0), x, box, mu_tot,
+                        ewald_LRcorrection(md->homenr,
+                                           cr,
+                                           nthreads,
+                                           t,
+                                           *fr,
+                                           *ir,
+                                           md->chargeA,
+                                           md->chargeB,
+                                           (md->nChargePerturbed != 0),
+                                           x,
+                                           box,
+                                           mu_tot,
                                            as_rvec_array(forceWithVirial->force_.data()),
-                                           &ewc_t.Vcorr_q, lambda[efptCOUL], &ewc_t.dvdl[efptCOUL]);
+                                           &ewc_t.Vcorr_q,
+                                           lambda[efptCOUL],
+                                           &ewc_t.dvdl[efptCOUL]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                 }
@@ -197,13 +209,28 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                     status = gmx_pme_do(
                             fr->pmedata,
                             gmx::constArrayRefFromArray(coordinates.data(), md->homenr - fr->n_tpi),
-                            forceWithVirial->force_, md->chargeA, md->chargeB, md->sqrt_c6A,
-                            md->sqrt_c6B, md->sigmaA, md->sigmaB, box, cr,
+                            forceWithVirial->force_,
+                            md->chargeA,
+                            md->chargeB,
+                            md->sqrt_c6A,
+                            md->sqrt_c6B,
+                            md->sigmaA,
+                            md->sigmaB,
+                            box,
+                            cr,
                             DOMAINDECOMP(cr) ? dd_pme_maxshift_x(cr->dd) : 0,
-                            DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0, nrnb, wcycle,
-                            ewaldOutput.vir_q, ewaldOutput.vir_lj, &Vlr_q, &Vlr_lj,
-                            lambda[efptCOUL], lambda[efptVDW], &ewaldOutput.dvdl[efptCOUL],
-                            &ewaldOutput.dvdl[efptVDW], stepWork);
+                            DOMAINDECOMP(cr) ? dd_pme_maxshift_y(cr->dd) : 0,
+                            nrnb,
+                            wcycle,
+                            ewaldOutput.vir_q,
+                            ewaldOutput.vir_lj,
+                            &Vlr_q,
+                            &Vlr_lj,
+                            lambda[efptCOUL],
+                            lambda[efptVDW],
+                            &ewaldOutput.dvdl[efptCOUL],
+                            &ewaldOutput.dvdl[efptVDW],
+                            stepWork);
                     wallcycle_stop(wcycle, ewcPMEMESH);
                     if (status != 0)
                     {
@@ -224,7 +251,8 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                      * with the PME grid potential of the other charges.
                      */
                     gmx_pme_calc_energy(
-                            fr->pmedata, coordinates.subArray(md->homenr - fr->n_tpi, fr->n_tpi),
+                            fr->pmedata,
+                            coordinates.subArray(md->homenr - fr->n_tpi, fr->n_tpi),
                             gmx::arrayRefFromArray(md->chargeA + md->homenr - fr->n_tpi, fr->n_tpi),
                             &Vlr_q);
                 }
@@ -234,9 +262,19 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
         if (fr->ic->eeltype == eelEWALD)
         {
             const rvec* x = as_rvec_array(coordinates.data());
-            Vlr_q = do_ewald(ir, x, as_rvec_array(forceWithVirial->force_.data()), md->chargeA,
-                             md->chargeB, box, cr, md->homenr, ewaldOutput.vir_q, fr->ic->ewaldcoeff_q,
-                             lambda[efptCOUL], &ewaldOutput.dvdl[efptCOUL], fr->ewald_table);
+            Vlr_q         = do_ewald(ir,
+                             x,
+                             as_rvec_array(forceWithVirial->force_.data()),
+                             md->chargeA,
+                             md->chargeB,
+                             box,
+                             cr,
+                             md->homenr,
+                             ewaldOutput.vir_q,
+                             fr->ic->ewaldcoeff_q,
+                             lambda[efptCOUL],
+                             &ewaldOutput.dvdl[efptCOUL],
+                             fr->ewald_table);
         }
 
         /* Note that with separate PME nodes we get the real energies later */
@@ -251,11 +289,17 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
 
         if (debug)
         {
-            fprintf(debug, "Vlr_q = %g, Vcorr_q = %g, Vlr_corr_q = %g\n", Vlr_q,
-                    ewaldOutput.Vcorr_q, enerd->term[F_COUL_RECIP]);
+            fprintf(debug,
+                    "Vlr_q = %g, Vcorr_q = %g, Vlr_corr_q = %g\n",
+                    Vlr_q,
+                    ewaldOutput.Vcorr_q,
+                    enerd->term[F_COUL_RECIP]);
             pr_rvecs(debug, 0, "vir_el_recip after corr", ewaldOutput.vir_q, DIM);
-            fprintf(debug, "Vlr_lj: %g, Vcorr_lj = %g, Vlr_corr_lj = %g\n", Vlr_lj,
-                    ewaldOutput.Vcorr_lj, enerd->term[F_LJ_RECIP]);
+            fprintf(debug,
+                    "Vlr_lj: %g, Vcorr_lj = %g, Vlr_corr_lj = %g\n",
+                    Vlr_lj,
+                    ewaldOutput.Vcorr_lj,
+                    enerd->term[F_LJ_RECIP]);
             pr_rvecs(debug, 0, "vir_lj_recip after corr", ewaldOutput.vir_lj, DIM);
         }
     }

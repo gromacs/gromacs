@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,8 +62,13 @@ static bool PDCallBack(t_x11* x11, XEvent* event, Window w, void* data)
             XDrawLine(x11->disp, w, x11->gc, 0, y - 1, pd->wd.width, y - 1);
             for (i = 0; (i < pd->nmenu); i++)
             {
-                XDrawString(x11->disp, pd->wd.self, x11->gc, pd->xpos[i], x11->font->ascent,
-                            pd->title[i], std::strlen(pd->title[i]));
+                XDrawString(x11->disp,
+                            pd->wd.self,
+                            x11->gc,
+                            pd->xpos[i],
+                            x11->font->ascent,
+                            pd->title[i],
+                            std::strlen(pd->title[i]));
             }
             break;
         case ButtonPress:
@@ -116,11 +121,11 @@ t_pulldown* init_pd(t_x11*        x11,
     }
 
     InitWin(&(pd->wd), 0, 0, width, XTextHeight(x11->font) + 2, 0, "PullDown");
-    pd->wd.self = XCreateSimpleWindow(x11->disp, Parent, pd->wd.x, pd->wd.y, pd->wd.width,
-                                      pd->wd.height, pd->wd.bwidth, fg, bg);
+    pd->wd.self = XCreateSimpleWindow(
+            x11->disp, Parent, pd->wd.x, pd->wd.y, pd->wd.width, pd->wd.height, pd->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, pd->wd.self, Parent, PDCallBack, pd);
-    x11->SetInputMask(x11, pd->wd.self,
-                      ExposureMask | ButtonPressMask | OwnerGrabButtonMask | ButtonReleaseMask);
+    x11->SetInputMask(
+            x11, pd->wd.self, ExposureMask | ButtonPressMask | OwnerGrabButtonMask | ButtonReleaseMask);
     XMapWindow(x11->disp, pd->wd.self);
 
     for (i = 0; (i < nmenu); i++)

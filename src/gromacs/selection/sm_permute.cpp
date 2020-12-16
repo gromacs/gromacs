@@ -206,8 +206,8 @@ static void init_output_permute(const gmx_mtop_t* /* top */, gmx_ana_selvalue_t*
     int                   i, j, b;
 
     out->u.p->m.type = d->p.m.type;
-    gmx_ana_pos_reserve_for_append(out->u.p, d->p.count(), d->p.m.b.nra, d->p.v != nullptr,
-                                   d->p.f != nullptr);
+    gmx_ana_pos_reserve_for_append(
+            out->u.p, d->p.count(), d->p.m.b.nra, d->p.v != nullptr, d->p.f != nullptr);
     gmx_ana_pos_empty_init(out->u.p);
     for (i = 0; i < d->p.count(); i += d->n)
     {

@@ -172,7 +172,8 @@ void initTestUtils(const char* dataPath,
                         "NOTE: You are running %s on %d MPI ranks, "
                         "but it is does not contain MPI-enabled tests. "
                         "The test will now exit.\n",
-                        context.programName(), gmx_node_num());
+                        context.programName(),
+                        gmx_node_num());
             }
             finalizeForCommandLine();
             std::exit(1);

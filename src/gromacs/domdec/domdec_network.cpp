@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008-2019, by the GROMACS development team, led by
+ * Copyright (c) 2008-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,9 +83,18 @@ void ddSendrecv(const struct gmx_domdec_t* dd,
     MPI_Status    mpiStatus;
     if (numElementsToSend > 0 && numElementsToReceive > 0)
     {
-        MPI_Sendrecv(sendBuffer, numElementsToSend * sizeof(T), MPI_BYTE, sendRank, mpiTag,
-                     receiveBuffer, numElementsToReceive * sizeof(T), MPI_BYTE, receiveRank, mpiTag,
-                     dd->mpi_comm_all, &mpiStatus);
+        MPI_Sendrecv(sendBuffer,
+                     numElementsToSend * sizeof(T),
+                     MPI_BYTE,
+                     sendRank,
+                     mpiTag,
+                     receiveBuffer,
+                     numElementsToReceive * sizeof(T),
+                     MPI_BYTE,
+                     receiveRank,
+                     mpiTag,
+                     dd->mpi_comm_all,
+                     &mpiStatus);
     }
     else if (numElementsToSend > 0)
     {
@@ -93,8 +102,7 @@ void ddSendrecv(const struct gmx_domdec_t* dd,
     }
     else if (numElementsToReceive > 0)
     {
-        MPI_Recv(receiveBuffer, numElementsToReceive * sizeof(T), MPI_BYTE, receiveRank, mpiTag,
-                 dd->mpi_comm_all, &mpiStatus);
+        MPI_Recv(receiveBuffer, numElementsToReceive * sizeof(T), MPI_BYTE, receiveRank, mpiTag, dd->mpi_comm_all, &mpiStatus);
     }
 #else  // GMX_MPI
     GMX_UNUSED_VALUE(dd);
@@ -121,8 +129,13 @@ void ddSendrecv(const gmx_domdec_t* dd,
                 gmx::ArrayRef<T>    sendBuffer,
                 gmx::ArrayRef<T>    receiveBuffer)
 {
-    ddSendrecv(dd, ddDimensionIndex, direction, sendBuffer.data(), sendBuffer.size(),
-               receiveBuffer.data(), receiveBuffer.size());
+    ddSendrecv(dd,
+               ddDimensionIndex,
+               direction,
+               sendBuffer.data(),
+               sendBuffer.size(),
+               receiveBuffer.data(),
+               receiveBuffer.size());
 }
 
 //! Specialization of extern template for int
@@ -164,23 +177,19 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
         nreq = 0;
         if (n_r_fw)
         {
-            MPI_Irecv(buf_r_fw[0], n_r_fw * sizeof(rvec), MPI_BYTE, rank_bw, 0, dd->mpi_comm_all,
-                      &req[nreq++]);
+            MPI_Irecv(buf_r_fw[0], n_r_fw * sizeof(rvec), MPI_BYTE, rank_bw, 0, dd->mpi_comm_all, &req[nreq++]);
         }
         if (n_r_bw)
         {
-            MPI_Irecv(buf_r_bw[0], n_r_bw * sizeof(rvec), MPI_BYTE, rank_fw, 1, dd->mpi_comm_all,
-                      &req[nreq++]);
+            MPI_Irecv(buf_r_bw[0], n_r_bw * sizeof(rvec), MPI_BYTE, rank_fw, 1, dd->mpi_comm_all, &req[nreq++]);
         }
         if (n_s_fw)
         {
-            MPI_Isend(buf_s_fw[0], n_s_fw * sizeof(rvec), MPI_BYTE, rank_fw, 0, dd->mpi_comm_all,
-                      &req[nreq++]);
+            MPI_Isend(buf_s_fw[0], n_s_fw * sizeof(rvec), MPI_BYTE, rank_fw, 0, dd->mpi_comm_all, &req[nreq++]);
         }
         if (n_s_bw)
         {
-            MPI_Isend(buf_s_bw[0], n_s_bw * sizeof(rvec), MPI_BYTE, rank_bw, 1, dd->mpi_comm_all,
-                      &req[nreq++]);
+            MPI_Isend(buf_s_bw[0], n_s_bw * sizeof(rvec), MPI_BYTE, rank_bw, 1, dd->mpi_comm_all, &req[nreq++]);
         }
         if (nreq)
         {
@@ -194,11 +203,31 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
          * with a single full-duplex network connection per machine.
          */
         /* Forward */
-        MPI_Sendrecv(buf_s_fw[0], n_s_fw * sizeof(rvec), MPI_BYTE, rank_fw, 0, buf_r_fw[0],
-                     n_r_fw * sizeof(rvec), MPI_BYTE, rank_bw, 0, dd->mpi_comm_all, &stat[0]);
+        MPI_Sendrecv(buf_s_fw[0],
+                     n_s_fw * sizeof(rvec),
+                     MPI_BYTE,
+                     rank_fw,
+                     0,
+                     buf_r_fw[0],
+                     n_r_fw * sizeof(rvec),
+                     MPI_BYTE,
+                     rank_bw,
+                     0,
+                     dd->mpi_comm_all,
+                     &stat[0]);
         /* Backward */
-        MPI_Sendrecv(buf_s_bw[0], n_s_bw * sizeof(rvec), MPI_BYTE, rank_bw, 0, buf_r_bw[0],
-                     n_r_bw * sizeof(rvec), MPI_BYTE, rank_fw, 0, dd->mpi_comm_all, &stat[0]);
+        MPI_Sendrecv(buf_s_bw[0],
+                     n_s_bw * sizeof(rvec),
+                     MPI_BYTE,
+                     rank_bw,
+                     0,
+                     buf_r_bw[0],
+                     n_r_bw * sizeof(rvec),
+                     MPI_BYTE,
+                     rank_fw,
+                     0,
+                     dd->mpi_comm_all,
+                     &stat[0]);
     }
 #endif
 }
@@ -233,8 +262,7 @@ void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const 
     if (dd->nnodes > 1)
     {
         /* Some MPI implementions don't specify const */
-        MPI_Scatter(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE,
-                    DDMASTERRANK(dd), dd->mpi_comm_all);
+        MPI_Scatter(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
     }
     else
 #endif
@@ -254,8 +282,7 @@ void dd_gather(const gmx_domdec_t gmx_unused* dd,
 {
 #if GMX_MPI
     /* Some MPI implementions don't specify const */
-    MPI_Gather(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMASTERRANK(dd),
-               dd->mpi_comm_all);
+    MPI_Gather(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
 #endif
 }
 
@@ -277,8 +304,8 @@ void dd_scatterv(const gmx_domdec_t gmx_unused* dd,
             rbuf = &dum;
         }
         /* Some MPI implementions don't specify const */
-        MPI_Scatterv(const_cast<void*>(sbuf), scounts, disps, MPI_BYTE, rbuf, rcount, MPI_BYTE,
-                     DDMASTERRANK(dd), dd->mpi_comm_all);
+        MPI_Scatterv(
+                const_cast<void*>(sbuf), scounts, disps, MPI_BYTE, rbuf, rcount, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
     }
     else
 #endif
@@ -307,7 +334,7 @@ void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
         sbuf = &dum;
     }
     /* Some MPI implementions don't specify const */
-    MPI_Gatherv(const_cast<void*>(sbuf), scount, MPI_BYTE, rbuf, rcounts, disps, MPI_BYTE,
-                DDMASTERRANK(dd), dd->mpi_comm_all);
+    MPI_Gatherv(
+            const_cast<void*>(sbuf), scount, MPI_BYTE, rbuf, rcounts, disps, MPI_BYTE, DDMASTERRANK(dd), dd->mpi_comm_all);
 #endif
 }

@@ -609,7 +609,9 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                     "threads per rank, which is most likely inefficient. The optimum is usually "
                     "between %d and"
                     " %d threads per rank.",
-                    nth_omp_max, nthreads_omp_mpi_ok_min, nthreads_omp_mpi_target_max);
+                    nth_omp_max,
+                    nthreads_omp_mpi_ok_min,
+                    nthreads_omp_mpi_target_max);
 
             if (bNtOmpOptionSet)
             {
@@ -625,7 +627,8 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                           "%s If you want to run with this setup, specify the -ntomp option. But "
                           "we suggest to "
                           "change the number of MPI ranks%s.",
-                          buf, mpi_option);
+                          buf,
+                          mpi_option);
             }
         }
     }
@@ -653,9 +656,14 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
 //! Dump a \c hw_opt to \c fp.
 static void print_hw_opt(FILE* fp, const gmx_hw_opt_t* hw_opt)
 {
-    fprintf(fp, "hw_opt: nt %d ntmpi %d ntomp %d ntomp_pme %d gpu_id '%s' gputasks '%s'\n",
-            hw_opt->nthreads_tot, hw_opt->nthreads_tmpi, hw_opt->nthreads_omp, hw_opt->nthreads_omp_pme,
-            hw_opt->gpuIdsAvailable.c_str(), hw_opt->userGpuTaskAssignment.c_str());
+    fprintf(fp,
+            "hw_opt: nt %d ntmpi %d ntomp %d ntomp_pme %d gpu_id '%s' gputasks '%s'\n",
+            hw_opt->nthreads_tot,
+            hw_opt->nthreads_tmpi,
+            hw_opt->nthreads_omp,
+            hw_opt->nthreads_omp_pme,
+            hw_opt->gpuIdsAvailable.c_str(),
+            hw_opt->userGpuTaskAssignment.c_str());
 }
 
 void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
@@ -772,7 +780,9 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
                       "The total number of threads requested (%d) does not match the thread-MPI "
                       "ranks (%d) "
                       "times the OpenMP threads (%d) requested",
-                      hw_opt->nthreads_tot, hw_opt->nthreads_tmpi, hw_opt->nthreads_omp);
+                      hw_opt->nthreads_tot,
+                      hw_opt->nthreads_tmpi,
+                      hw_opt->nthreads_omp);
         }
 
         if (hw_opt->nthreads_tmpi > 0 && hw_opt->nthreads_tot % hw_opt->nthreads_tmpi != 0)
@@ -781,7 +791,8 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
                       "The total number of threads requested (%d) is not divisible by the number "
                       "of thread-MPI "
                       "ranks requested (%d)",
-                      hw_opt->nthreads_tot, hw_opt->nthreads_tmpi);
+                      hw_opt->nthreads_tot,
+                      hw_opt->nthreads_tmpi);
         }
 
         if (hw_opt->nthreads_omp > 0 && hw_opt->nthreads_tot % hw_opt->nthreads_omp != 0)
@@ -790,7 +801,8 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
                       "The total number of threads requested (%d) is not divisible by the number "
                       "of OpenMP "
                       "threads requested (%d)",
-                      hw_opt->nthreads_tot, hw_opt->nthreads_omp);
+                      hw_opt->nthreads_tot,
+                      hw_opt->nthreads_omp);
         }
     }
 
@@ -802,7 +814,8 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
                       "You requested %d OpenMP threads with %d total threads. Choose a total "
                       "number of threads "
                       "that is a multiple of the number of OpenMP threads.",
-                      hw_opt->nthreads_omp, hw_opt->nthreads_tot);
+                      hw_opt->nthreads_omp,
+                      hw_opt->nthreads_tot);
         }
 
         if (hw_opt->nthreads_tmpi > hw_opt->nthreads_tot)
@@ -811,7 +824,8 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
                       "You requested %d thread-MPI ranks with %d total threads. Choose a total "
                       "number of "
                       "threads that is a multiple of the number of thread-MPI ranks.",
-                      hw_opt->nthreads_tmpi, hw_opt->nthreads_tot);
+                      hw_opt->nthreads_tmpi,
+                      hw_opt->nthreads_tot);
         }
     }
 

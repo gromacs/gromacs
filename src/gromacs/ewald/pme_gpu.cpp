@@ -260,8 +260,7 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle, co
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
                 for (int thread = 0; thread < pme->nthread; thread++)
                 {
-                    solve_pme_yzx(pme, cfftgrid, pme->boxVolume, computeEnergyAndVirial,
-                                  pme->nthread, thread);
+                    solve_pme_yzx(pme, cfftgrid, pme->boxVolume, computeEnergyAndVirial, pme->nthread, thread);
                 }
                 wallcycle_stop(wcycle, ewcPME_SOLVE_MIXED_MODE);
             }
@@ -373,8 +372,8 @@ bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
     pme_gpu_update_timings(pme->gpu);
     // There's no support for computing energy without virial, or vice versa
     const bool computeEnergyAndVirial = stepWork.computeEnergy || stepWork.computeVirial;
-    PmeOutput  output                 = pme_gpu_getOutput(*pme, computeEnergyAndVirial,
-                                         pme->gpu->common->ngrids > 1 ? lambdaQ : 1.0);
+    PmeOutput  output                 = pme_gpu_getOutput(
+            *pme, computeEnergyAndVirial, pme->gpu->common->ngrids > 1 ? lambdaQ : 1.0);
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
 
     GMX_ASSERT(pme->gpu->settings.useGpuForceReduction == !output.haveForceOutput_,
@@ -402,8 +401,8 @@ PmeOutput pme_gpu_wait_finish_task(gmx_pme_t*     pme,
         pme_gpu_synchronize(pme->gpu);
     }
 
-    PmeOutput output = pme_gpu_getOutput(*pme, computeEnergyAndVirial,
-                                         pme->gpu->common->ngrids > 1 ? lambdaQ : 1.0);
+    PmeOutput output = pme_gpu_getOutput(
+            *pme, computeEnergyAndVirial, pme->gpu->common->ngrids > 1 ? lambdaQ : 1.0);
     wallcycle_stop(wcycle, ewcWAIT_GPU_PME_GATHER);
     return output;
 }

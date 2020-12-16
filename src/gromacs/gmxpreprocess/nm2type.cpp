@@ -151,8 +151,7 @@ void dump_nm2type(FILE* fp, int nnm, t_nm2type nm2t[])
     fprintf(fp, "; nm2type database\n");
     for (i = 0; (i < nnm); i++)
     {
-        fprintf(fp, "%-8s %-8s %8.4f %8.4f %-4d", nm2t[i].elem, nm2t[i].type, nm2t[i].q, nm2t[i].m,
-                nm2t[i].nbonds);
+        fprintf(fp, "%-8s %-8s %8.4f %8.4f %-4d", nm2t[i].elem, nm2t[i].type, nm2t[i].q, nm2t[i].m, nm2t[i].nbonds);
         for (j = 0; (j < nm2t[i].nbonds); j++)
         {
             fprintf(fp, " %-5s %6.4f", nm2t[i].bond[j], nm2t[i].blen[j]);
@@ -340,8 +339,8 @@ int nm2type(int                     nnm,
             {
                 atoms->atom[i].qB = alpha;
                 atoms->atom[i].m = atoms->atom[i].mB = mm;
-                k = atype->addType(tab, atoms->atom[i], type, InteractionOfType({}, {}),
-                                   atoms->atom[i].type, atomnr);
+                k                                    = atype->addType(
+                        tab, atoms->atom[i], type, InteractionOfType({}, {}), atoms->atom[i].type, atomnr);
             }
             atoms->atom[i].type  = k;
             atoms->atom[i].typeB = k;
@@ -353,8 +352,11 @@ int nm2type(int                     nnm,
         }
         else
         {
-            fprintf(stderr, "Can not find forcefield for atom %s-%d with %d bonds\n",
-                    *atoms->atomname[i], i + 1, nb);
+            fprintf(stderr,
+                    "Can not find forcefield for atom %s-%d with %d bonds\n",
+                    *atoms->atomname[i],
+                    i + 1,
+                    nb);
         }
     }
     sfree(bbb);

@@ -170,8 +170,18 @@ int gmx_polystat(int argc, char* argv[])
     char **           legp, buf[STRLEN];
     gmx_rmpbc_t       gpbc = nullptr;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm,
-                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
+                           NFILE,
+                           fnm,
+                           asize(pa),
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv))
     {
         return 0;
     }
@@ -213,8 +223,11 @@ int gmx_polystat(int argc, char* argv[])
 
     if (opt2bSet("-v", NFILE, fnm))
     {
-        outv = xvgropen(opt2fn("-v", NFILE, fnm), "Principal components",
-                        output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
+        outv = xvgropen(opt2fn("-v", NFILE, fnm),
+                        "Principal components",
+                        output_env_get_xvgr_tlabel(oenv),
+                        "(nm)",
+                        oenv);
         snew(legp, DIM * DIM);
         for (d = 0; d < DIM; d++)
         {
@@ -233,8 +246,11 @@ int gmx_polystat(int argc, char* argv[])
 
     if (opt2bSet("-p", NFILE, fnm))
     {
-        outp = xvgropen(opt2fn("-p", NFILE, fnm), "Persistence length",
-                        output_env_get_xvgr_tlabel(oenv), "bonds", oenv);
+        outp = xvgropen(opt2fn("-p", NFILE, fnm),
+                        "Persistence length",
+                        output_env_get_xvgr_tlabel(oenv),
+                        "bonds",
+                        oenv);
         snew(bond, nat_max - 1);
         snew(sum_inp, nat_min / 2);
         snew(ninp, nat_min / 2);
@@ -246,9 +262,9 @@ int gmx_polystat(int argc, char* argv[])
 
     if (opt2bSet("-i", NFILE, fnm))
     {
-        outi = xvgropen(opt2fn("-i", NFILE, fnm), "Internal distances", "n",
-                        "<R\\S2\\N(n)>/n (nm\\S2\\N)", oenv);
-        i    = index[molind[1] - 1] - index[molind[0]]; /* Length of polymer -1 */
+        outi = xvgropen(
+                opt2fn("-i", NFILE, fnm), "Internal distances", "n", "<R\\S2\\N(n)>/n (nm\\S2\\N)", oenv);
+        i = index[molind[1] - 1] - index[molind[0]]; /* Length of polymer -1 */
         snew(intd, i);
     }
     else
@@ -391,8 +407,13 @@ int gmx_polystat(int argc, char* argv[])
 
         gyro_eigen(gyr_all, eig, eigv, ord);
 
-        fprintf(out, "%10.3f %8.4f %8.4f %8.4f %8.4f %8.4f", t * output_env_get_time_factor(oenv),
-                std::sqrt(sum_eed2), sqrt(sum_gyro), std::sqrt(eig[ord[0]]), std::sqrt(eig[ord[1]]),
+        fprintf(out,
+                "%10.3f %8.4f %8.4f %8.4f %8.4f %8.4f",
+                t * output_env_get_time_factor(oenv),
+                std::sqrt(sum_eed2),
+                sqrt(sum_gyro),
+                std::sqrt(eig[ord[0]]),
+                std::sqrt(eig[ord[1]]),
                 std::sqrt(eig[ord[2]]));
         if (bPC)
         {

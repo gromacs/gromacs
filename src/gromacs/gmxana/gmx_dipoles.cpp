@@ -257,8 +257,19 @@ static void do_gkr(t_gkrbin*     gb,
                     copy_rvec(xcm[grp1][j], xk);
                     rvec_add(xj, mu[gi], xi);
                     rvec_add(xk, mu[gj], xl);
-                    phi  = dih_angle(xi, xj, xk, xl, &pbc, r_ij, r_kj, r_kl, mm, nn, /* out */
-                                    &t1, &t2, &t3);
+                    phi  = dih_angle(xi,
+                                    xj,
+                                    xk,
+                                    xl,
+                                    &pbc,
+                                    r_ij,
+                                    r_kj,
+                                    r_kl,
+                                    mm,
+                                    nn, /* out */
+                                    &t1,
+                                    &t2,
+                                    &t3);
                     cosa = std::cos(phi);
                 }
                 else
@@ -271,8 +282,18 @@ static void do_gkr(t_gkrbin*     gb,
                     fprintf(debug ? debug : stderr,
                             "mu[%d] = %5.2f %5.2f %5.2f |mi| = %5.2f, mu[%d] = %5.2f %5.2f %5.2f "
                             "|mj| = %5.2f rr = %5.2f cosa = %5.2f\n",
-                            gi, mu[gi][XX], mu[gi][YY], mu[gi][ZZ], norm(mu[gi]), gj, mu[gj][XX],
-                            mu[gj][YY], mu[gj][ZZ], norm(mu[gj]), rr, cosa);
+                            gi,
+                            mu[gi][XX],
+                            mu[gi][YY],
+                            mu[gi][ZZ],
+                            norm(mu[gi]),
+                            gj,
+                            mu[gj][XX],
+                            mu[gj][YY],
+                            mu[gj][ZZ],
+                            norm(mu[gj]),
+                            rr,
+                            cosa);
                 }
 
                 add2gkr(gb, rr, cosa, phi);
@@ -334,8 +355,22 @@ static void print_cmap(const char* cmap, t_gkrbin* gb, int* nlevels)
         /*2.0*j/(gb->ny-1.0)-1.0;*/
     }
     out = gmx_ffopen(cmap, "w");
-    write_xpm(out, 0, "Dipole Orientation Distribution", "Fraction", "r (nm)", gb->bPhi ? "Phi" : "Alpha",
-              gb->nx, gb->ny, xaxis, yaxis, gb->cmap, 0, hi, rlo, rhi, nlevels);
+    write_xpm(out,
+              0,
+              "Dipole Orientation Distribution",
+              "Fraction",
+              "r (nm)",
+              gb->bPhi ? "Phi" : "Alpha",
+              gb->nx,
+              gb->ny,
+              xaxis,
+              yaxis,
+              gb->cmap,
+              0,
+              hi,
+              rlo,
+              rhi,
+              nlevels);
     gmx_ffclose(out);
     sfree(xaxis);
     sfree(yaxis);
@@ -428,7 +463,10 @@ read_mu_from_enx(ener_file_t fmu, int Vol, const ivec iMu, rvec mu, real* vol, r
         fprintf(stderr,
                 "Something strange: expected %d entries in energy file at step %s\n(time %g) but "
                 "found %d entries\n",
-                nre, gmx_step_str(fr->step, buf), fr->t, fr->nre);
+                nre,
+                gmx_step_str(fr->step, buf),
+                fr->t,
+                fr->nre);
     }
 
     if (bCont)
@@ -678,8 +716,10 @@ static void dump_slab_dipoles(const char*             fn,
     char        buf[STRLEN];
     int         i;
     real        mutot;
-    const char* leg_dim[4] = { "\\f{12}m\\f{4}\\sX\\N", "\\f{12}m\\f{4}\\sY\\N",
-                               "\\f{12}m\\f{4}\\sZ\\N", "\\f{12}m\\f{4}\\stot\\N" };
+    const char* leg_dim[4] = { "\\f{12}m\\f{4}\\sX\\N",
+                               "\\f{12}m\\f{4}\\sY\\N",
+                               "\\f{12}m\\f{4}\\sZ\\N",
+                               "\\f{12}m\\f{4}\\stot\\N" };
 
     sprintf(buf, "Box-%c (nm)", 'X' + idim);
     fp = xvgropen(fn, "Average dipole moment per slab", buf, "\\f{12}m\\f{4} (D)", oenv);
@@ -687,9 +727,13 @@ static void dump_slab_dipoles(const char*             fn,
     for (i = 0; (i < nslice); i++)
     {
         mutot = norm(slab_dipole[i]) / nframes;
-        fprintf(fp, "%10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
-                ((i + 0.5) * box[idim][idim]) / nslice, slab_dipole[i][XX] / nframes,
-                slab_dipole[i][YY] / nframes, slab_dipole[i][ZZ] / nframes, mutot);
+        fprintf(fp,
+                "%10.3f  %10.3f  %10.3f  %10.3f  %10.3f\n",
+                ((i + 0.5) * box[idim][idim]) / nslice,
+                slab_dipole[i][XX] / nframes,
+                slab_dipole[i][YY] / nframes,
+                slab_dipole[i][ZZ] / nframes,
+                mutot);
     }
     xvgrclose(fp);
     do_view(oenv, fn, "-autoscale xy -nxy");
@@ -768,10 +812,13 @@ static void do_dip(const t_topology*       top,
 #define NLEGMTOT asize(leg_mtot)
     const char* leg_eps[] = { "epsilon", "G\\sk", "g\\sk" };
 #define NLEGEPS asize(leg_eps)
-    const char* leg_aver[] = { "< |M|\\S2\\N >", "< |M| >\\S2\\N", "< |M|\\S2\\N > - < |M| >\\S2\\N",
+    const char* leg_aver[] = { "< |M|\\S2\\N >",
+                               "< |M| >\\S2\\N",
+                               "< |M|\\S2\\N > - < |M| >\\S2\\N",
                                "< |M| >\\S2\\N / < |M|\\S2\\N >" };
 #define NLEGAVER asize(leg_aver)
-    const char* leg_cosaver[] = { "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>", "RMSD cos",
+    const char* leg_cosaver[] = { "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
+                                  "RMSD cos",
                                   "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
                                   "\\f{4}<|cos\\f{12}q\\f{4}\\siY\\N|>",
                                   "\\f{4}<|cos\\f{12}q\\f{4}\\siZ\\N|>" };
@@ -896,8 +943,11 @@ static void do_dip(const t_topology*       top,
     mulsq = gmx_stats_init();
 
     /* Open all the files */
-    outmtot = xvgropen(out_mtot, "Total dipole moment of the simulation box vs. time", "Time (ps)",
-                       "Total Dipole Moment (Debye)", oenv);
+    outmtot = xvgropen(out_mtot,
+                       "Total dipole moment of the simulation box vs. time",
+                       "Time (ps)",
+                       "Total Dipole Moment (Debye)",
+                       oenv);
     outeps  = xvgropen(out_eps, "Epsilon and Kirkwood factors", "Time (ps)", "", oenv);
     outaver = xvgropen(out_aver, "Total dipole moment", "Time (ps)", "D", oenv);
     if (bSlab)
@@ -930,8 +980,11 @@ static void do_dip(const t_topology*       top,
     }
     if (cosaver)
     {
-        caver = xvgropen(cosaver, bPairs ? "Average pair orientation" : "Average absolute dipole orientation",
-                         "Time (ps)", "", oenv);
+        caver = xvgropen(cosaver,
+                         bPairs ? "Average pair orientation" : "Average absolute dipole orientation",
+                         "Time (ps)",
+                         "",
+                         oenv);
         xvgr_legend(caver, NLEGCOSAVER, bPairs ? leg_cosaver : &(leg_cosaver[1]), oenv);
     }
 
@@ -1171,9 +1224,16 @@ static void do_dip(const t_topology*       top,
                         {
                             fprintf(dip3d,
                                     "set arrow %d from %f, %f, %f to %f, %f, %f lt %d  # %d %d\n",
-                                    i + 1, x[ind0][XX], x[ind0][YY], x[ind0][ZZ],
-                                    x[ind0][XX] + dipole[i][XX] / 25, x[ind0][YY] + dipole[i][YY] / 25,
-                                    x[ind0][ZZ] + dipole[i][ZZ] / 25, ncolour, ind0, i);
+                                    i + 1,
+                                    x[ind0][XX],
+                                    x[ind0][YY],
+                                    x[ind0][ZZ],
+                                    x[ind0][XX] + dipole[i][XX] / 25,
+                                    x[ind0][YY] + dipole[i][YY] / 25,
+                                    x[ind0][ZZ] + dipole[i][ZZ] / 25,
+                                    ncolour,
+                                    ind0,
+                                    i);
                         }
                     }
                 } /* End loop of all molecules in frame */
@@ -1202,13 +1262,24 @@ static void do_dip(const t_topology*       top,
                                 + gmx::square(dipaxis[ZZ] - 0.5));
             if (bPairs)
             {
-                fprintf(caver, "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n", t, dd, rms_cos,
-                        dipaxis[XX], dipaxis[YY], dipaxis[ZZ]);
+                fprintf(caver,
+                        "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
+                        t,
+                        dd,
+                        rms_cos,
+                        dipaxis[XX],
+                        dipaxis[YY],
+                        dipaxis[ZZ]);
             }
             else
             {
-                fprintf(caver, "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n", t, rms_cos, dipaxis[XX],
-                        dipaxis[YY], dipaxis[ZZ]);
+                fprintf(caver,
+                        "%10.3e  %10.3e  %10.3e  %10.3e  %10.3e\n",
+                        t,
+                        rms_cos,
+                        dipaxis[XX],
+                        dipaxis[YY],
+                        dipaxis[ZZ]);
             }
         }
 
@@ -1230,7 +1301,12 @@ static void do_dip(const t_topology*       top,
          */
         if ((skip == 0) || ((teller % skip) == 0))
         {
-            fprintf(outmtot, "%10g  %12.8e %12.8e %12.8e %12.8e\n", t, M_av[XX], M_av[YY], M_av[ZZ],
+            fprintf(outmtot,
+                    "%10g  %12.8e %12.8e %12.8e %12.8e\n",
+                    t,
+                    M_av[XX],
+                    M_av[YY],
+                    M_av[ZZ],
                     std::sqrt(M_av2[XX] + M_av2[YY] + M_av2[ZZ]));
         }
 
@@ -1270,8 +1346,7 @@ static void do_dip(const t_topology*       top,
              * the two. Here M is sum mu_i. Further write the finite system
              * Kirkwood G factor and epsilon.
              */
-            fprintf(outaver, "%10g  %10.3e %10.3e %10.3e %10.3e\n", t, M2_ave, M_ave2, M_diff,
-                    M_ave2 / M2_ave);
+            fprintf(outaver, "%10g  %10.3e %10.3e %10.3e %10.3e\n", t, M2_ave, M_ave2, M_diff, M_ave2 / M2_ave);
 
             if (fnadip)
             {
@@ -1377,13 +1452,20 @@ static void do_dip(const t_topology*       top,
 
             if (bTotal)
             {
-                do_autocorr(corf, oenv, "Autocorrelation Function of Total Dipole", teller, 1,
-                            muall, dt, mode, TRUE);
+                do_autocorr(
+                        corf, oenv, "Autocorrelation Function of Total Dipole", teller, 1, muall, dt, mode, TRUE);
             }
             else
             {
-                do_autocorr(corf, oenv, "Dipole Autocorrelation Function", teller, gnx_tot, muall,
-                            dt, mode, std::strcmp(corrtype, "molsep") != 0);
+                do_autocorr(corf,
+                            oenv,
+                            "Dipole Autocorrelation Function",
+                            teller,
+                            gnx_tot,
+                            muall,
+                            dt,
+                            mode,
+                            std::strcmp(corrtype, "molsep") != 0);
             }
         }
     }
@@ -1465,8 +1547,10 @@ static void dipole_atom2molindex(int* n, int* index, const t_block* mols)
         }
         if (m == mols->nr)
         {
-            gmx_fatal(FARGS, "index[%d]=%d does not correspond to the first atom of a molecule",
-                      i + 1, index[i] + 1);
+            gmx_fatal(FARGS,
+                      "index[%d]=%d does not correspond to the first atom of a molecule",
+                      i + 1,
+                      index[i] + 1);
         }
         for (j = mols->index[m]; j < mols->index[m + 1]; j++)
         {
@@ -1629,8 +1713,8 @@ int gmx_dipoles(int argc, char* argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -1695,13 +1779,44 @@ int gmx_dipoles(int argc, char* argv[])
     }
     nFF[0] = nFA;
     nFF[1] = nFB;
-    do_dip(top, pbcType, det(box), ftp2fn(efTRX, NFILE, fnm), opt2fn("-o", NFILE, fnm),
-           opt2fn("-eps", NFILE, fnm), opt2fn("-a", NFILE, fnm), opt2fn("-d", NFILE, fnm),
-           opt2fn_null("-cos", NFILE, fnm), opt2fn_null("-dip3d", NFILE, fnm),
-           opt2fn_null("-adip", NFILE, fnm), bPairs, corrtype[0], opt2fn("-c", NFILE, fnm), bGkr,
-           opt2fn("-g", NFILE, fnm), bPhi, &nlevels, ndegrees, ncos, opt2fn("-cmap", NFILE, fnm),
-           rcmax, bQuad, bMU, opt2fn("-en", NFILE, fnm), gnx, grpindex, mu_max, mu_aver, epsilonRF,
-           temp, nFF, skip, bSlab, nslices, axtitle, opt2fn("-slab", NFILE, fnm), oenv);
+    do_dip(top,
+           pbcType,
+           det(box),
+           ftp2fn(efTRX, NFILE, fnm),
+           opt2fn("-o", NFILE, fnm),
+           opt2fn("-eps", NFILE, fnm),
+           opt2fn("-a", NFILE, fnm),
+           opt2fn("-d", NFILE, fnm),
+           opt2fn_null("-cos", NFILE, fnm),
+           opt2fn_null("-dip3d", NFILE, fnm),
+           opt2fn_null("-adip", NFILE, fnm),
+           bPairs,
+           corrtype[0],
+           opt2fn("-c", NFILE, fnm),
+           bGkr,
+           opt2fn("-g", NFILE, fnm),
+           bPhi,
+           &nlevels,
+           ndegrees,
+           ncos,
+           opt2fn("-cmap", NFILE, fnm),
+           rcmax,
+           bQuad,
+           bMU,
+           opt2fn("-en", NFILE, fnm),
+           gnx,
+           grpindex,
+           mu_max,
+           mu_aver,
+           epsilonRF,
+           temp,
+           nFF,
+           skip,
+           bSlab,
+           nslices,
+           axtitle,
+           opt2fn("-slab", NFILE, fnm),
+           oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-autoscale xy -nxy");
     do_view(oenv, opt2fn("-eps", NFILE, fnm), "-autoscale xy -nxy");

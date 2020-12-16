@@ -88,8 +88,9 @@ enum class RotationType : int
     None,
     Count
 };
-static const gmx::EnumerationArray<RotationType, const char*> c_rotationTypeNames = { { "xyz", "z",
-                                                                                        "none" } };
+static const gmx::EnumerationArray<RotationType, const char*> c_rotationTypeNames = {
+    { "xyz", "z", "none" }
+};
 
 static void center_molecule(gmx::ArrayRef<RVec> x)
 {
@@ -264,8 +265,11 @@ static void insert_mols(int                  nmol_insrt,
             // Skip a position if ntry trials were not successful.
             if (trial >= firstTrial + ntry)
             {
-                fprintf(stderr, " skipped position (%.3f, %.3f, %.3f)\n", rpos[XX][mol],
-                        rpos[YY][mol], rpos[ZZ][mol]);
+                fprintf(stderr,
+                        " skipped position (%.3f, %.3f, %.3f)\n",
+                        rpos[XX][mol],
+                        rpos[YY][mol],
+                        rpos[ZZ][mol]);
                 ++mol;
                 ++failed;
                 firstTrial = trial;
@@ -282,11 +286,12 @@ static void insert_mols(int                  nmol_insrt,
         generate_trial_conf(x_insrt, offset_x, enum_rot, &rng, &x_n);
         gmx::AnalysisNeighborhoodPositions pos(*x);
         gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
-        if (isInsertionAllowed(&search, exclusionDistances, x_n, exclusionDistances_insrt, *atoms,
-                               removableAtoms, &remover))
+        if (isInsertionAllowed(
+                    &search, exclusionDistances, x_n, exclusionDistances_insrt, *atoms, removableAtoms, &remover))
         {
             x->insert(x->end(), x_n.begin(), x_n.end());
-            exclusionDistances.insert(exclusionDistances.end(), exclusionDistances_insrt.begin(),
+            exclusionDistances.insert(exclusionDistances.end(),
+                                      exclusionDistances_insrt.begin(),
                                       exclusionDistances_insrt.end());
             builder.mergeAtoms(atoms_insrt);
             ++mol;
@@ -306,7 +311,9 @@ static void insert_mols(int                  nmol_insrt,
     remover.removeMarkedAtoms(atoms);
     if (atoms->nr < originalAtomCount)
     {
-        fprintf(stderr, "Replaced %d residues (%d atoms)\n", originalResidueCount - atoms->nres,
+        fprintf(stderr,
+                "Replaced %d residues (%d atoms)\n",
+                originalResidueCount - atoms->nres,
                 originalAtomCount - atoms->nr);
     }
 
@@ -508,8 +515,8 @@ void InsertMolecules::optionsFinished()
         bool  bTprFileWasRead;
         rvec* temporaryX = nullptr;
         fprintf(stderr, "Reading solute configuration\n");
-        readConfAndTopology(inputConfFile_.c_str(), &bTprFileWasRead, &top_, &pbcType_, &temporaryX,
-                            nullptr, box_);
+        readConfAndTopology(
+                inputConfFile_.c_str(), &bTprFileWasRead, &top_, &pbcType_, &temporaryX, nullptr, box_);
         x_.assign(temporaryX, temporaryX + top_.natoms);
         sfree(temporaryX);
         if (top_.natoms == 0)
@@ -563,8 +570,8 @@ int InsertMolecules::run()
         PbcType pbcType_dummy;
         matrix  box_dummy;
         rvec*   temporaryX;
-        readConfAndTopology(insertConfFile_.c_str(), &bTprFileWasRead, &topInserted, &pbcType_dummy,
-                            &temporaryX, nullptr, box_dummy);
+        readConfAndTopology(
+                insertConfFile_.c_str(), &bTprFileWasRead, &topInserted, &pbcType_dummy, &temporaryX, nullptr, box_dummy);
         xInserted.assign(temporaryX, temporaryX + topInserted.natoms);
         sfree(temporaryX);
         atomsInserted = gmx_mtop_global_atoms(&topInserted);
@@ -586,14 +593,27 @@ int InsertMolecules::run()
 
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
-    insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_, &atoms, &top_.symtab,
-                &x_, removableAtoms, atomsInserted, xInserted, pbcTypeForOutput, box_,
-                positionFile_, deltaR_, enumRot_);
+    insert_mols(nmolIns_,
+                nmolTry_,
+                seed_,
+                defaultDistance_,
+                scaleFactor_,
+                &atoms,
+                &top_.symtab,
+                &x_,
+                removableAtoms,
+                atomsInserted,
+                xInserted,
+                pbcTypeForOutput,
+                box_,
+                positionFile_,
+                deltaR_,
+                enumRot_);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n", outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), *top_.name, &atoms, as_rvec_array(x_.data()), nullptr,
-                   pbcTypeForOutput, box_);
+    write_sto_conf(
+            outputConfFile_.c_str(), *top_.name, &atoms, as_rvec_array(x_.data()), nullptr, pbcTypeForOutput, box_);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n", atoms.nr, atoms.nres);

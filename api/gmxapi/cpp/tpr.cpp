@@ -745,9 +745,11 @@ bool copy_tprfile(const gmxapicompat::TprReadHandle& input, const std::string& o
     {
         return false;
     }
-    gmxapicompat::writeTprFile(
-            outFile, *gmxapicompat::getMdParams(input), *gmxapicompat::getStructureSource(input),
-            *gmxapicompat::getSimulationState(input), *gmxapicompat::getTopologySource(input));
+    gmxapicompat::writeTprFile(outFile,
+                               *gmxapicompat::getMdParams(input),
+                               *gmxapicompat::getStructureSource(input),
+                               *gmxapicompat::getSimulationState(input),
+                               *gmxapicompat::getTopologySource(input));
     return true;
 }
 

@@ -126,8 +126,8 @@ static void writeOclBuildLog(FILE*              fplog,
         buildLogGuard.reset(buildLog);
 
         /* Get the actual compilation log */
-        cl_error = clGetProgramBuildInfo(program, deviceId, CL_PROGRAM_BUILD_LOG, buildLogSize,
-                                         buildLog, nullptr);
+        cl_error = clGetProgramBuildInfo(
+                program, deviceId, CL_PROGRAM_BUILD_LOG, buildLogSize, buildLog, nullptr);
         if (cl_error != CL_SUCCESS)
         {
             GMX_THROW(InternalError("Could not get OpenCL program build log, error was "
@@ -248,9 +248,8 @@ static std::string getSourceRootPath(const std::string& sourceRelativePath)
 size_t getKernelWarpSize(cl_kernel kernel, cl_device_id deviceId)
 {
     size_t warpSize = 0;
-    cl_int cl_error =
-            clGetKernelWorkGroupInfo(kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
-                                     sizeof(warpSize), &warpSize, nullptr);
+    cl_int cl_error = clGetKernelWorkGroupInfo(
+            kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(warpSize), &warpSize, nullptr);
     if (cl_error != CL_SUCCESS)
     {
         GMX_THROW(InternalError("Could not query OpenCL preferred workgroup size, error was "
@@ -450,7 +449,8 @@ cl_program compileProgram(FILE*              fplog,
                 // Failing to read from the cache is not a critical error
                 formatExceptionMessageToFile(fplog, e);
             }
-            fprintf(fplog, "OpenCL binary cache file %s is present, will load kernels.\n",
+            fprintf(fplog,
+                    "OpenCL binary cache file %s is present, will load kernels.\n",
                     cacheFilename.c_str());
         }
         else
@@ -487,8 +487,7 @@ cl_program compileProgram(FILE*              fplog,
 
     /* Write log first, and then throw exception that the user know what is
        the issue even if the build fails. */
-    writeOclBuildLog(fplog, program, deviceId, kernelFilename, preprocessorOptions,
-                     buildStatus != CL_SUCCESS);
+    writeOclBuildLog(fplog, program, deviceId, kernelFilename, preprocessorOptions, buildStatus != CL_SUCCESS);
 
     if (buildStatus != CL_SUCCESS)
     {

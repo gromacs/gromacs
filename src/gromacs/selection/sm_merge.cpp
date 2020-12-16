@@ -242,8 +242,11 @@ static void init_output_common(const gmx_mtop_t* top, gmx_ana_selvalue_t* out, v
     {
         out->u.p->m.type = d->p1.m.type;
     }
-    gmx_ana_pos_reserve_for_append(out->u.p, d->p1.count() + d->p2.count(),
-                                   d->p1.m.b.nra + d->p2.m.b.nra, d->p1.v != nullptr, d->p1.f != nullptr);
+    gmx_ana_pos_reserve_for_append(out->u.p,
+                                   d->p1.count() + d->p2.count(),
+                                   d->p1.m.b.nra + d->p2.m.b.nra,
+                                   d->p1.v != nullptr,
+                                   d->p1.f != nullptr);
     gmx_ana_pos_empty_init(out->u.p);
 }
 

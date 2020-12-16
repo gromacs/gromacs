@@ -194,7 +194,8 @@ static void calc_potential(const char*             fn,
                 gmx_fatal(FARGS,
                           "You selected a group with %d atoms, but only %d atoms\n"
                           "were found in the trajectory.\n",
-                          gnx[n], natoms);
+                          gnx[n],
+                          natoms);
             }
             for (i = 0; i < gnx[n]; i++) /* loop over all atoms in index file */
             {
@@ -499,8 +500,8 @@ int gmx_potential(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -517,11 +518,34 @@ int gmx_potential(int argc, char* argv[])
     rd_index(ftp2fn(efNDX, NFILE, fnm), ngrps, ngx, index, grpname);
 
 
-    calc_potential(ftp2fn(efTRX, NFILE, fnm), index, ngx, &potential, &charge, &field, &nslices,
-                   top, pbcType, axis, ngrps, &slWidth, fudge_z, bSpherical, bCorrect, oenv);
+    calc_potential(ftp2fn(efTRX, NFILE, fnm),
+                   index,
+                   ngx,
+                   &potential,
+                   &charge,
+                   &field,
+                   &nslices,
+                   top,
+                   pbcType,
+                   axis,
+                   ngrps,
+                   &slWidth,
+                   fudge_z,
+                   bSpherical,
+                   bCorrect,
+                   oenv);
 
-    plot_potential(potential, charge, field, opt2fn("-o", NFILE, fnm), opt2fn("-oc", NFILE, fnm),
-                   opt2fn("-of", NFILE, fnm), nslices, ngrps, grpname, slWidth, oenv);
+    plot_potential(potential,
+                   charge,
+                   field,
+                   opt2fn("-o", NFILE, fnm),
+                   opt2fn("-oc", NFILE, fnm),
+                   opt2fn("-of", NFILE, fnm),
+                   nslices,
+                   ngrps,
+                   grpname,
+                   slWidth,
+                   oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), nullptr);  /* view xvgr file */
     do_view(oenv, opt2fn("-oc", NFILE, fnm), nullptr); /* view xvgr file */

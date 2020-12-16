@@ -85,8 +85,18 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
         PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;
     }
 
-    if (!parse_common_args(&argc, argv, PCA_Flags, ssize(filenames), filenames.data(), asize(pa),
-                           pa, ssize(desc), desc.data(), 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_Flags,
+                           ssize(filenames),
+                           filenames.data(),
+                           asize(pa),
+                           pa,
+                           ssize(desc),
+                           desc.data(),
+                           0,
+                           nullptr,
+                           &oenv))
     {
         return 0;
     }

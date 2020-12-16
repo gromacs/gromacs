@@ -256,10 +256,12 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
                 "which could influence performance. This build might have been configured on "
                 "a login node with only a single AVX-512 FMA unit (in which case AVX2 is faster), "
                 "while the node you are running on has dual AVX-512 FMA units.",
-                simdString(wanted).c_str(), simdString(compiled).c_str()));
+                simdString(wanted).c_str(),
+                simdString(compiled).c_str()));
         warnMsg = wrapper.wrapToString(formatString(
                 "Compiled SIMD: %s, but for this host/run %s might be better (see log).",
-                simdString(compiled).c_str(), simdString(wanted).c_str()));
+                simdString(compiled).c_str(),
+                simdString(wanted).c_str()));
     }
     else if (compiled == SimdType::X86_Avx512 && wanted == SimdType::X86_Avx2
              && identifyAvx512FmaUnits() == 1)
@@ -273,10 +275,12 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
                 "which could influence performance."
                 "This host supports AVX-512, but since it only has 1 AVX-512"
                 "FMA unit, it would be faster to use AVX2 instead.",
-                simdString(wanted).c_str(), simdString(compiled).c_str()));
+                simdString(wanted).c_str(),
+                simdString(compiled).c_str()));
         warnMsg = wrapper.wrapToString(formatString(
                 "Compiled SIMD: %s, but for this host/run %s might be better (see log).",
-                simdString(compiled).c_str(), simdString(wanted).c_str()));
+                simdString(compiled).c_str(),
+                simdString(wanted).c_str()));
     }
     else if (compiled == SimdType::X86_Avx2 && wanted == SimdType::X86_Avx2_128)
     {
@@ -294,7 +298,8 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
                 formatString("Highest SIMD level requested by all nodes in run: %s\n"
                              "SIMD instructions selected at compile time:       %s\n"
                              "Compiled SIMD newer than requested; program might crash.",
-                             simdString(wanted).c_str(), simdString(compiled).c_str()));
+                             simdString(wanted).c_str(),
+                             simdString(compiled).c_str()));
         warnMsg = logMsg;
     }
     else if (wanted != compiled)
@@ -305,10 +310,12 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
                 "SIMD instructions selected at compile time:       %s\n"
                 "This program was compiled for different hardware than you are running on, "
                 "which could influence performance.",
-                simdString(wanted).c_str(), simdString(compiled).c_str()));
+                simdString(wanted).c_str(),
+                simdString(compiled).c_str()));
         warnMsg = wrapper.wrapToString(formatString(
                 "Compiled SIMD: %s, but for this host/run %s might be better (see log).",
-                simdString(compiled).c_str(), simdString(wanted).c_str()));
+                simdString(compiled).c_str(),
+                simdString(wanted).c_str()));
 #if GMX_SIMD_ARM_SVE
     }
     else if ((compiled == SimdType::Arm_Sve) && (svcntb() != GMX_SIMD_ARM_SVE_LENGTH_VALUE / 8))
@@ -319,10 +326,12 @@ bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
                 "This program was compiled for different hardware than you are running on, "
                 "which will lead to incorrect behavior.\n"
                 "Aborting",
-                GMX_SIMD_ARM_SVE_LENGTH_VALUE, svcntb() * 8));
+                GMX_SIMD_ARM_SVE_LENGTH_VALUE,
+                svcntb() * 8));
         warnMsg = wrapper.wrapToString(formatString(
                 "Compiled SVE Length: %d, but for this process requires %ld (see log).",
-                GMX_SIMD_ARM_SVE_LENGTH_VALUE, svcntb() * 8));
+                GMX_SIMD_ARM_SVE_LENGTH_VALUE,
+                svcntb() * 8));
 #endif
     }
 

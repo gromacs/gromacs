@@ -128,12 +128,14 @@ std::vector<int> getCompatibleDeviceIds(const std::vector<std::unique_ptr<Device
 bool deviceIdIsCompatible(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
                           const int                                              deviceId)
 {
-    auto foundIt = std::find_if(deviceInfoList.begin(), deviceInfoList.end(),
+    auto foundIt = std::find_if(deviceInfoList.begin(),
+                                deviceInfoList.end(),
                                 [deviceId](auto& deviceInfo) { return deviceInfo->id == deviceId; });
     if (foundIt == deviceInfoList.end())
     {
         GMX_THROW(gmx::RangeError(gmx::formatString(
-                "Device ID %d did not correspond to any of the %zu detected device(s)", deviceId,
+                "Device ID %d did not correspond to any of the %zu detected device(s)",
+                deviceId,
                 deviceInfoList.size())));
     }
     return (*foundIt)->status == DeviceStatus::Compatible;

@@ -97,7 +97,8 @@ TEST(XvgTests, CheckMissing)
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
-        const char* const input[] = { "0     2905.86    -410.199", "0.2     6656.67    -430.437",
+        const char* const input[] = { "0     2905.86    -410.199",
+                                      "0.2     6656.67    -430.437",
                                       "0.4     5262.44    -409.399" };
         // Now check with missing data
         TestReferenceData      data(ReferenceDataMode::Compare);

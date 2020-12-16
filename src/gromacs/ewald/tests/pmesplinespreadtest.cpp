@@ -145,18 +145,25 @@ public:
             {
                 /* Describing the test uniquely in case it fails */
 
-                SCOPED_TRACE(formatString(
-                        "Testing %s on %s for PME grid size %d %d %d"
-                        ", order %d, %zu atoms",
-                        option.second.c_str(), pmeTestHardwareContext->description().c_str(),
-                        gridSize[XX], gridSize[YY], gridSize[ZZ], pmeOrder, atomCount));
+                SCOPED_TRACE(
+                        formatString("Testing %s on %s for PME grid size %d %d %d"
+                                     ", order %d, %zu atoms",
+                                     option.second.c_str(),
+                                     pmeTestHardwareContext->description().c_str(),
+                                     gridSize[XX],
+                                     gridSize[YY],
+                                     gridSize[ZZ],
+                                     pmeOrder,
+                                     atomCount));
 
                 /* Running the test */
 
-                PmeSafePointer pmeSafe =
-                        pmeInitWrapper(&inputRec, codePath, pmeTestHardwareContext->deviceContext(),
-                                       pmeTestHardwareContext->deviceStream(),
-                                       pmeTestHardwareContext->pmeGpuProgram(), box);
+                PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
+                                                        codePath,
+                                                        pmeTestHardwareContext->deviceContext(),
+                                                        pmeTestHardwareContext->deviceStream(),
+                                                        pmeTestHardwareContext->pmeGpuProgram(),
+                                                        box);
                 std::unique_ptr<StatePropagatorDataGpu> stateGpu =
                         (codePath == CodePath::GPU)
                                 ? makeStatePropagatorDataGpu(*pmeSafe.get(),
@@ -211,8 +218,8 @@ public:
                     {
                         auto splineValuesDim =
                                 pmeGetSplineData(pmeSafe.get(), codePath, PmeSplineDataType::Values, i);
-                        splineValuesChecker.checkSequence(splineValuesDim.begin(),
-                                                          splineValuesDim.end(), dimString[i]);
+                        splineValuesChecker.checkSequence(
+                                splineValuesDim.begin(), splineValuesDim.end(), dimString[i]);
                     }
 
                     /* Spline derivatives */
@@ -234,8 +241,8 @@ public:
 
                     /* Particle gridline indices */
                     auto gridLineIndices = pmeGetGridlineIndices(pmeSafe.get(), codePath);
-                    rootChecker.checkSequence(gridLineIndices.begin(), gridLineIndices.end(),
-                                              "Gridline indices");
+                    rootChecker.checkSequence(
+                            gridLineIndices.begin(), gridLineIndices.end(), "Gridline indices");
                 }
 
                 if (spreadCharges)
@@ -308,28 +315,40 @@ auto const c_sampleCharges13 = ChargesVector(c_sampleChargesFull).subArray(3, 13
 //! Random coordinate vectors
 CoordinatesVector const c_sampleCoordinatesFull{ { 5.59F, 1.37F, 0.95F },
                                                  {
-                                                         16.0F, 1.02F, 0.22F // 2 box lengths in x
+                                                         16.0F,
+                                                         1.02F,
+                                                         0.22F // 2 box lengths in x
                                                  },
                                                  { 0.034F, 1.65F, 0.22F },
                                                  { 0.33F, 0.92F, 1.56F },
                                                  { 1.16F, 0.75F, 0.39F },
                                                  { 0.5F, 1.63F, 1.14F },
                                                  {
-                                                         16.0001F, 1.52F, 1.19F // > 2 box lengths in x
+                                                         16.0001F,
+                                                         1.52F,
+                                                         1.19F // > 2 box lengths in x
                                                  },
                                                  {
-                                                         1.43F, 1.1F, 4.1F // > 2 box lengths in z
+                                                         1.43F,
+                                                         1.1F,
+                                                         4.1F // > 2 box lengths in z
                                                  },
                                                  {
-                                                         -1.08F, 1.19F, 0.08F // negative x
+                                                         -1.08F,
+                                                         1.19F,
+                                                         0.08F // negative x
                                                  },
                                                  { 1.6F, 0.93F, 0.53F },
                                                  {
-                                                         1.32F, -1.48F, 0.16F // negative y
+                                                         1.32F,
+                                                         -1.48F,
+                                                         0.16F // negative y
                                                  },
                                                  { 0.87F, 0.0F, 0.33F },
                                                  {
-                                                         0.95F, 7.7F, -0.48F // > 2 box lengths in y, negative z
+                                                         0.95F,
+                                                         7.7F,
+                                                         -0.48F // > 2 box lengths in y, negative z
                                                  },
                                                  { 1.23F, 0.91F, 0.68F },
                                                  { 0.19F, 1.45F, 0.94F },

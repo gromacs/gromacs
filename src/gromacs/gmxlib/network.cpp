@@ -190,7 +190,9 @@ void gmx_setup_nodecomm(FILE gmx_unused* fplog, t_commrec* cr)
         nc->bUse = TRUE;
         if (fplog)
         {
-            fprintf(fplog, "Using two step summing over %d groups of on average %.1f ranks\n\n", ng,
+            fprintf(fplog,
+                    "Using two step summing over %d groups of on average %.1f ranks\n\n",
+                    ng,
                     (real)n / (real)ng);
         }
         if (nc->rank_intra > 0)

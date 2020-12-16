@@ -138,7 +138,8 @@ ParticleTypesInteractions& ParticleTypesInteractions::add(const ParticleTypeName
             std::string message = formatString(
                     "Attempting to add nonbonded interaction parameters between the particle types "
                     "{} {} twice",
-                    particleTypeName1.value(), particleTypeName2.value());
+                    particleTypeName1.value(),
+                    particleTypeName2.value());
             throw InputException(message);
         }
     }
@@ -163,8 +164,8 @@ NonBondedInteractionMap ParticleTypesInteractions::generateTable() const
             C6  c6_combo{ combineNonbondedParameters(c6_1, c6_2, combinationRule_) };
             C12 c12_combo{ combineNonbondedParameters(c12_1, c12_2, combinationRule_) };
 
-            nonbondedParameters_.setInteractions(particleType1.first, particleType2.first, c6_combo,
-                                                 c12_combo);
+            nonbondedParameters_.setInteractions(
+                    particleType1.first, particleType2.first, c6_combo, c12_combo);
         }
     }
 
@@ -195,7 +196,8 @@ NonBondedInteractionMap ParticleTypesInteractions::generateTable() const
             if (nonbondedParameters_.count(interactionKey) == 0)
             {
                 std::string message = formatString("Missing interaction between {} {}",
-                                                   particleTypeName1.value(), particleTypeName2.value());
+                                                   particleTypeName1.value(),
+                                                   particleTypeName2.value());
                 throw InputException(message);
             }
         }
@@ -217,7 +219,9 @@ void ParticleTypesInteractions::merge(const ParticleTypesInteractions& other)
 
     for (const auto& keyval : other.twoParticlesInteractionsMap_)
     {
-        add(std::get<0>(keyval.first), std::get<1>(keyval.first), std::get<0>(keyval.second),
+        add(std::get<0>(keyval.first),
+            std::get<1>(keyval.first),
+            std::get<0>(keyval.second),
             std::get<1>(keyval.second));
     }
 }

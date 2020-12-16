@@ -494,14 +494,29 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     const int ithyMax = (threadsPerAtom == ThreadsPerAtom::Order) ? order : threadIdx.y + 1;
     if (chargeCheck)
     {
-        sumForceComponents<order, atomsPerWarp, wrapX, wrapY>(
-                &fx, &fy, &fz, ithyMin, ithyMax, ixBase, iz, nx, ny, pny, pnz, atomIndexLocal,
-                splineIndexBase, tdz, sm_gridlineIndices, sm_theta, sm_dtheta, gm_gridA);
+        sumForceComponents<order, atomsPerWarp, wrapX, wrapY>(&fx,
+                                                              &fy,
+                                                              &fz,
+                                                              ithyMin,
+                                                              ithyMax,
+                                                              ixBase,
+                                                              iz,
+                                                              nx,
+                                                              ny,
+                                                              pny,
+                                                              pnz,
+                                                              atomIndexLocal,
+                                                              splineIndexBase,
+                                                              tdz,
+                                                              sm_gridlineIndices,
+                                                              sm_theta,
+                                                              sm_dtheta,
+                                                              gm_gridA);
     }
     // Reduction of partial force contributions
     __shared__ float3 sm_forces[atomsPerBlock];
-    reduce_atom_forces<order, atomDataSize, blockSize>(sm_forces, atomIndexLocal, splineIndex, lineIndex,
-                                                       kernelParams.grid.realGridSizeFP, fx, fy, fz);
+    reduce_atom_forces<order, atomDataSize, blockSize>(
+            sm_forces, atomIndexLocal, splineIndex, lineIndex, kernelParams.grid.realGridSizeFP, fx, fy, fz);
     __syncthreads();
 
     /* Calculating the final forces with no component branching, atomsPerBlock threads */
@@ -510,8 +525,8 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     const float scale            = kernelParams.current.scale;
     if (forceIndexLocal < atomsPerBlock)
     {
-        calculateAndStoreGridForces(sm_forces, forceIndexLocal, forceIndexGlobal,
-                                    kernelParams.current.recipBox, scale, gm_coefficientsA);
+        calculateAndStoreGridForces(
+                sm_forces, forceIndexLocal, forceIndexGlobal, kernelParams.current.recipBox, scale, gm_coefficientsA);
     }
 
     __syncwarp();
@@ -543,21 +558,39 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
         const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficientsB[atomIndexGlobal]);
         if (chargeCheck)
         {
-            sumForceComponents<order, atomsPerWarp, wrapX, wrapY>(
-                    &fx, &fy, &fz, ithyMin, ithyMax, ixBase, iz, nx, ny, pny, pnz, atomIndexLocal,
-                    splineIndexBase, tdz, sm_gridlineIndices, sm_theta, sm_dtheta, gm_gridB);
+            sumForceComponents<order, atomsPerWarp, wrapX, wrapY>(&fx,
+                                                                  &fy,
+                                                                  &fz,
+                                                                  ithyMin,
+                                                                  ithyMax,
+                                                                  ixBase,
+                                                                  iz,
+                                                                  nx,
+                                                                  ny,
+                                                                  pny,
+                                                                  pnz,
+                                                                  atomIndexLocal,
+                                                                  splineIndexBase,
+                                                                  tdz,
+                                                                  sm_gridlineIndices,
+                                                                  sm_theta,
+                                                                  sm_dtheta,
+                                                                  gm_gridB);
         }
         // Reduction of partial force contributions
-        reduce_atom_forces<order, atomDataSize, blockSize>(sm_forces, atomIndexLocal, splineIndex,
-                                                           lineIndex, kernelParams.grid.realGridSizeFP,
-                                                           fx, fy, fz);
+        reduce_atom_forces<order, atomDataSize, blockSize>(
+                sm_forces, atomIndexLocal, splineIndex, lineIndex, kernelParams.grid.realGridSizeFP, fx, fy, fz);
         __syncthreads();
 
         /* Calculating the final forces with no component branching, atomsPerBlock threads */
         if (forceIndexLocal < atomsPerBlock)
         {
-            calculateAndStoreGridForces(sm_forces, forceIndexLocal, forceIndexGlobal,
-                                        kernelParams.current.recipBox, 1.0F - scale, gm_coefficientsB);
+            calculateAndStoreGridForces(sm_forces,
+                                        forceIndexLocal,
+                                        forceIndexGlobal,
+                                        kernelParams.current.recipBox,
+                                        1.0F - scale,
+                                        gm_coefficientsB);
         }
 
         __syncwarp();

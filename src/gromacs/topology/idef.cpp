@@ -54,9 +54,15 @@ static void printHarmonicInteraction(gmx::TextWriter* writer,
                                      const char*      r,
                                      const char*      kr)
 {
-    writer->writeLineFormatted("%sA=%12.5e, %sA=%12.5e, %sB=%12.5e, %sB=%12.5e", r,
-                               iparams.harmonic.rA, kr, iparams.harmonic.krA, r,
-                               iparams.harmonic.rB, kr, iparams.harmonic.krB);
+    writer->writeLineFormatted("%sA=%12.5e, %sA=%12.5e, %sB=%12.5e, %sB=%12.5e",
+                               r,
+                               iparams.harmonic.rA,
+                               kr,
+                               iparams.harmonic.krA,
+                               r,
+                               iparams.harmonic.rB,
+                               kr,
+                               iparams.harmonic.krB);
 }
 
 void pr_iparams(FILE* fp, t_functype ftype, const t_iparams& iparams)
@@ -76,25 +82,37 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
         case F_ANGLES:
         case F_G96ANGLES: printHarmonicInteraction(writer, iparams, "th", "ct"); break;
         case F_CROSS_BOND_BONDS:
-            writer->writeLineFormatted("r1e=%15.8e, r2e=%15.8e, krr=%15.8e", iparams.cross_bb.r1e,
-                                       iparams.cross_bb.r2e, iparams.cross_bb.krr);
+            writer->writeLineFormatted("r1e=%15.8e, r2e=%15.8e, krr=%15.8e",
+                                       iparams.cross_bb.r1e,
+                                       iparams.cross_bb.r2e,
+                                       iparams.cross_bb.krr);
             break;
         case F_CROSS_BOND_ANGLES:
             writer->writeLineFormatted("r1e=%15.8e, r1e=%15.8e, r3e=%15.8e, krt=%15.8e",
-                                       iparams.cross_ba.r1e, iparams.cross_ba.r2e,
-                                       iparams.cross_ba.r3e, iparams.cross_ba.krt);
+                                       iparams.cross_ba.r1e,
+                                       iparams.cross_ba.r2e,
+                                       iparams.cross_ba.r3e,
+                                       iparams.cross_ba.krt);
             break;
         case F_LINEAR_ANGLES:
             writer->writeLineFormatted("klinA=%15.8e, aA=%15.8e, klinB=%15.8e, aB=%15.8e",
-                                       iparams.linangle.klinA, iparams.linangle.aA,
-                                       iparams.linangle.klinB, iparams.linangle.aB);
+                                       iparams.linangle.klinA,
+                                       iparams.linangle.aA,
+                                       iparams.linangle.klinB,
+                                       iparams.linangle.aB);
             break;
         case F_UREY_BRADLEY:
             writer->writeLineFormatted(
                     "thetaA=%15.8e, kthetaA=%15.8e, r13A=%15.8e, kUBA=%15.8e, thetaB=%15.8e, "
                     "kthetaB=%15.8e, r13B=%15.8e, kUBB=%15.8e",
-                    iparams.u_b.thetaA, iparams.u_b.kthetaA, iparams.u_b.r13A, iparams.u_b.kUBA,
-                    iparams.u_b.thetaB, iparams.u_b.kthetaB, iparams.u_b.r13B, iparams.u_b.kUBB);
+                    iparams.u_b.thetaA,
+                    iparams.u_b.kthetaA,
+                    iparams.u_b.r13A,
+                    iparams.u_b.kUBA,
+                    iparams.u_b.thetaB,
+                    iparams.u_b.kthetaB,
+                    iparams.u_b.r13B,
+                    iparams.u_b.kUBB);
             break;
         case F_QUARTIC_ANGLES:
             writer->writeStringFormatted("theta=%15.8e", iparams.qangle.theta);
@@ -105,8 +123,8 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
             writer->ensureLineBreak();
             break;
         case F_BHAM:
-            writer->writeLineFormatted("a=%15.8e, b=%15.8e, c=%15.8e", iparams.bham.a,
-                                       iparams.bham.b, iparams.bham.c);
+            writer->writeLineFormatted(
+                    "a=%15.8e, b=%15.8e, c=%15.8e", iparams.bham.a, iparams.bham.b, iparams.bham.c);
             break;
         case F_BONDS:
         case F_G96BONDS:
@@ -115,12 +133,18 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
         case F_MORSE:
             writer->writeLineFormatted(
                     "b0A=%15.8e, cbA=%15.8e, betaA=%15.8e, b0B=%15.8e, cbB=%15.8e, betaB=%15.8e",
-                    iparams.morse.b0A, iparams.morse.cbA, iparams.morse.betaA, iparams.morse.b0B,
-                    iparams.morse.cbB, iparams.morse.betaB);
+                    iparams.morse.b0A,
+                    iparams.morse.cbA,
+                    iparams.morse.betaA,
+                    iparams.morse.b0B,
+                    iparams.morse.cbB,
+                    iparams.morse.betaB);
             break;
         case F_CUBICBONDS:
-            writer->writeLineFormatted("b0=%15.8e, kb=%15.8e, kcub=%15.8e", iparams.cubic.b0,
-                                       iparams.cubic.kb, iparams.cubic.kcub);
+            writer->writeLineFormatted("b0=%15.8e, kb=%15.8e, kcub=%15.8e",
+                                       iparams.cubic.b0,
+                                       iparams.cubic.kb,
+                                       iparams.cubic.kcub);
             break;
         case F_CONNBONDS: writer->ensureEmptyLine(); break;
         case F_FENEBONDS:
@@ -130,106 +154,153 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
             writer->writeLineFormatted(
                     "lowA=%15.8e, up1A=%15.8e, up2A=%15.8e, kA=%15.8e, lowB=%15.8e, up1B=%15.8e, "
                     "up2B=%15.8e, kB=%15.8e,",
-                    iparams.restraint.lowA, iparams.restraint.up1A, iparams.restraint.up2A,
-                    iparams.restraint.kA, iparams.restraint.lowB, iparams.restraint.up1B,
-                    iparams.restraint.up2B, iparams.restraint.kB);
+                    iparams.restraint.lowA,
+                    iparams.restraint.up1A,
+                    iparams.restraint.up2A,
+                    iparams.restraint.kA,
+                    iparams.restraint.lowB,
+                    iparams.restraint.up1B,
+                    iparams.restraint.up2B,
+                    iparams.restraint.kB);
             break;
         case F_TABBONDS:
         case F_TABBONDSNC:
         case F_TABANGLES:
         case F_TABDIHS:
-            writer->writeLineFormatted("tab=%d, kA=%15.8e, kB=%15.8e", iparams.tab.table,
-                                       iparams.tab.kA, iparams.tab.kB);
+            writer->writeLineFormatted(
+                    "tab=%d, kA=%15.8e, kB=%15.8e", iparams.tab.table, iparams.tab.kA, iparams.tab.kB);
             break;
         case F_POLARIZATION:
             writer->writeLineFormatted("alpha=%15.8e", iparams.polarize.alpha);
             break;
         case F_ANHARM_POL:
             writer->writeLineFormatted("alpha=%15.8e drcut=%15.8e khyp=%15.8e",
-                                       iparams.anharm_polarize.alpha, iparams.anharm_polarize.drcut,
+                                       iparams.anharm_polarize.alpha,
+                                       iparams.anharm_polarize.drcut,
                                        iparams.anharm_polarize.khyp);
             break;
         case F_THOLE_POL:
             writer->writeLineFormatted("a=%15.8e, alpha1=%15.8e, alpha2=%15.8e, rfac=%15.8e",
-                                       iparams.thole.a, iparams.thole.alpha1, iparams.thole.alpha2,
+                                       iparams.thole.a,
+                                       iparams.thole.alpha1,
+                                       iparams.thole.alpha2,
                                        iparams.thole.rfac);
             break;
         case F_WATER_POL:
             writer->writeLineFormatted(
                     "al_x=%15.8e, al_y=%15.8e, al_z=%15.8e, rOH=%9.6f, rHH=%9.6f, rOD=%9.6f",
-                    iparams.wpol.al_x, iparams.wpol.al_y, iparams.wpol.al_z, iparams.wpol.rOH,
-                    iparams.wpol.rHH, iparams.wpol.rOD);
+                    iparams.wpol.al_x,
+                    iparams.wpol.al_y,
+                    iparams.wpol.al_z,
+                    iparams.wpol.rOH,
+                    iparams.wpol.rHH,
+                    iparams.wpol.rOD);
             break;
         case F_LJ:
             writer->writeLineFormatted("c6=%15.8e, c12=%15.8e", iparams.lj.c6, iparams.lj.c12);
             break;
         case F_LJ14:
             writer->writeLineFormatted("c6A=%15.8e, c12A=%15.8e, c6B=%15.8e, c12B=%15.8e",
-                                       iparams.lj14.c6A, iparams.lj14.c12A, iparams.lj14.c6B,
+                                       iparams.lj14.c6A,
+                                       iparams.lj14.c12A,
+                                       iparams.lj14.c6B,
                                        iparams.lj14.c12B);
             break;
         case F_LJC14_Q:
             writer->writeLineFormatted("fqq=%15.8e, qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e",
-                                       iparams.ljc14.fqq, iparams.ljc14.qi, iparams.ljc14.qj,
-                                       iparams.ljc14.c6, iparams.ljc14.c12);
+                                       iparams.ljc14.fqq,
+                                       iparams.ljc14.qi,
+                                       iparams.ljc14.qj,
+                                       iparams.ljc14.c6,
+                                       iparams.ljc14.c12);
             break;
         case F_LJC_PAIRS_NB:
-            writer->writeLineFormatted("qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e", iparams.ljcnb.qi,
-                                       iparams.ljcnb.qj, iparams.ljcnb.c6, iparams.ljcnb.c12);
+            writer->writeLineFormatted("qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e",
+                                       iparams.ljcnb.qi,
+                                       iparams.ljcnb.qj,
+                                       iparams.ljcnb.c6,
+                                       iparams.ljcnb.c12);
             break;
         case F_PDIHS:
         case F_PIDIHS:
         case F_ANGRES:
         case F_ANGRESZ:
             writer->writeLineFormatted("phiA=%15.8e, cpA=%15.8e, phiB=%15.8e, cpB=%15.8e, mult=%d",
-                                       iparams.pdihs.phiA, iparams.pdihs.cpA, iparams.pdihs.phiB,
-                                       iparams.pdihs.cpB, iparams.pdihs.mult);
+                                       iparams.pdihs.phiA,
+                                       iparams.pdihs.cpA,
+                                       iparams.pdihs.phiB,
+                                       iparams.pdihs.cpB,
+                                       iparams.pdihs.mult);
             break;
         case F_DISRES:
             writer->writeLineFormatted(
                     "label=%4d, type=%1d, low=%15.8e, up1=%15.8e, up2=%15.8e, fac=%15.8e)",
-                    iparams.disres.label, iparams.disres.type, iparams.disres.low,
-                    iparams.disres.up1, iparams.disres.up2, iparams.disres.kfac);
+                    iparams.disres.label,
+                    iparams.disres.type,
+                    iparams.disres.low,
+                    iparams.disres.up1,
+                    iparams.disres.up2,
+                    iparams.disres.kfac);
             break;
         case F_ORIRES:
             writer->writeLineFormatted(
                     "ex=%4d, label=%d, power=%4d, c=%15.8e, obs=%15.8e, kfac=%15.8e)",
-                    iparams.orires.ex, iparams.orires.label, iparams.orires.power, iparams.orires.c,
-                    iparams.orires.obs, iparams.orires.kfac);
+                    iparams.orires.ex,
+                    iparams.orires.label,
+                    iparams.orires.power,
+                    iparams.orires.c,
+                    iparams.orires.obs,
+                    iparams.orires.kfac);
             break;
         case F_DIHRES:
             writer->writeLineFormatted(
                     "phiA=%15.8e, dphiA=%15.8e, kfacA=%15.8e, phiB=%15.8e, dphiB=%15.8e, "
                     "kfacB=%15.8e",
-                    iparams.dihres.phiA, iparams.dihres.dphiA, iparams.dihres.kfacA,
-                    iparams.dihres.phiB, iparams.dihres.dphiB, iparams.dihres.kfacB);
+                    iparams.dihres.phiA,
+                    iparams.dihres.dphiA,
+                    iparams.dihres.kfacA,
+                    iparams.dihres.phiB,
+                    iparams.dihres.dphiB,
+                    iparams.dihres.kfacB);
             break;
         case F_POSRES:
             writer->writeLineFormatted(
                     "pos0A=(%15.8e,%15.8e,%15.8e), fcA=(%15.8e,%15.8e,%15.8e), "
                     "pos0B=(%15.8e,%15.8e,%15.8e), fcB=(%15.8e,%15.8e,%15.8e)",
-                    iparams.posres.pos0A[XX], iparams.posres.pos0A[YY], iparams.posres.pos0A[ZZ],
-                    iparams.posres.fcA[XX], iparams.posres.fcA[YY], iparams.posres.fcA[ZZ],
-                    iparams.posres.pos0B[XX], iparams.posres.pos0B[YY], iparams.posres.pos0B[ZZ],
-                    iparams.posres.fcB[XX], iparams.posres.fcB[YY], iparams.posres.fcB[ZZ]);
+                    iparams.posres.pos0A[XX],
+                    iparams.posres.pos0A[YY],
+                    iparams.posres.pos0A[ZZ],
+                    iparams.posres.fcA[XX],
+                    iparams.posres.fcA[YY],
+                    iparams.posres.fcA[ZZ],
+                    iparams.posres.pos0B[XX],
+                    iparams.posres.pos0B[YY],
+                    iparams.posres.pos0B[ZZ],
+                    iparams.posres.fcB[XX],
+                    iparams.posres.fcB[YY],
+                    iparams.posres.fcB[ZZ]);
             break;
         case F_FBPOSRES:
             writer->writeLineFormatted(
                     "pos0=(%15.8e,%15.8e,%15.8e), geometry=%d, r=%15.8e, k=%15.8e",
-                    iparams.fbposres.pos0[XX], iparams.fbposres.pos0[YY], iparams.fbposres.pos0[ZZ],
-                    iparams.fbposres.geom, iparams.fbposres.r, iparams.fbposres.k);
+                    iparams.fbposres.pos0[XX],
+                    iparams.fbposres.pos0[YY],
+                    iparams.fbposres.pos0[ZZ],
+                    iparams.fbposres.geom,
+                    iparams.fbposres.r,
+                    iparams.fbposres.k);
             break;
         case F_RBDIHS:
             for (int i = 0; i < NR_RBDIHS; i++)
             {
-                writer->writeStringFormatted("%srbcA[%d]=%15.8e", i == 0 ? "" : ", ", i,
-                                             iparams.rbdihs.rbcA[i]);
+                writer->writeStringFormatted(
+                        "%srbcA[%d]=%15.8e", i == 0 ? "" : ", ", i, iparams.rbdihs.rbcA[i]);
             }
             writer->ensureLineBreak();
             for (int i = 0; i < NR_RBDIHS; i++)
             {
-                writer->writeStringFormatted("%srbcB[%d]=%15.8e", i == 0 ? "" : ", ", i,
-                                             iparams.rbdihs.rbcB[i]);
+                writer->writeStringFormatted(
+                        "%srbcB[%d]=%15.8e", i == 0 ? "" : ", ", i, iparams.rbdihs.rbcB[i]);
             }
             writer->ensureLineBreak();
             break;
@@ -281,8 +352,8 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
         case F_VSITE3OUT:
         case F_VSITE4FD:
         case F_VSITE4FDN:
-            writer->writeLineFormatted("a=%15.8e, b=%15.8e, c=%15.8e", iparams.vsite.a,
-                                       iparams.vsite.b, iparams.vsite.c);
+            writer->writeLineFormatted(
+                    "a=%15.8e, b=%15.8e, c=%15.8e", iparams.vsite.a, iparams.vsite.b, iparams.vsite.c);
             break;
         case F_VSITEN:
             writer->writeLineFormatted("n=%2d, a=%15.8e", iparams.vsiten.n, iparams.vsiten.a);
@@ -312,8 +383,12 @@ void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const
             writer->ensureLineBreak();
             break;
         default:
-            gmx_fatal(FARGS, "unknown function type %d (%s) in %s line %d", ftype,
-                      interaction_function[ftype].name, __FILE__, __LINE__);
+            gmx_fatal(FARGS,
+                      "unknown function type %d (%s) in %s line %d",
+                      ftype,
+                      interaction_function[ftype].name,
+                      __FILE__,
+                      __LINE__);
     }
 }
 
@@ -388,7 +463,9 @@ void pr_idef(FILE* fp, int indent, const char* title, const t_idef* idef, gmx_bo
         for (i = 0; i < idef->ntypes; i++)
         {
             pr_indent(fp, indent + INDENT);
-            fprintf(fp, "functype[%d]=%s, ", bShowNumbers ? i : -1,
+            fprintf(fp,
+                    "functype[%d]=%s, ",
+                    bShowNumbers ? i : -1,
                     interaction_function[idef->functype[i]].name);
             pr_iparams(fp, idef->functype[i], idef->iparams[i]);
         }
@@ -396,8 +473,14 @@ void pr_idef(FILE* fp, int indent, const char* title, const t_idef* idef, gmx_bo
 
         for (j = 0; (j < F_NRE); j++)
         {
-            printIlist(fp, indent, interaction_function[j].longname, idef->functype, idef->il[j],
-                       bShowNumbers, bShowParameters, idef->iparams);
+            printIlist(fp,
+                       indent,
+                       interaction_function[j].longname,
+                       idef->functype,
+                       idef->il[j],
+                       bShowNumbers,
+                       bShowParameters,
+                       idef->iparams);
         }
     }
 }

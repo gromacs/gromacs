@@ -429,13 +429,15 @@ static void atomcat(t_atoms* dest, const t_atoms* src, int copies, int maxres_re
     /* residue information */
     for (l = dest->nres, j = 0; (j < copies); j++, l += src->nres)
     {
-        memcpy(reinterpret_cast<char*>(&(dest->resinfo[l])), reinterpret_cast<char*>(&(src->resinfo[0])),
+        memcpy(reinterpret_cast<char*>(&(dest->resinfo[l])),
+               reinterpret_cast<char*>(&(src->resinfo[0])),
                static_cast<size_t>(src->nres * sizeof(src->resinfo[0])));
     }
 
     for (l = destnr, j = 0; (j < copies); j++, l += srcnr)
     {
-        memcpy(reinterpret_cast<char*>(&(dest->atom[l])), reinterpret_cast<char*>(&(src->atom[0])),
+        memcpy(reinterpret_cast<char*>(&(dest->atom[l])),
+               reinterpret_cast<char*>(&(src->atom[0])),
                static_cast<size_t>(srcnr * sizeof(src->atom[0])));
         memcpy(reinterpret_cast<char*>(&(dest->atomname[l])),
                reinterpret_cast<char*>(&(src->atomname[0])),
@@ -495,8 +497,11 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop)
     int maxresnr = mtop->maxResNumberNotRenumbered();
     for (const gmx_molblock_t& molb : mtop->molblock)
     {
-        atomcat(&atoms, &mtop->moltype[molb.type].atoms, molb.nmol,
-                mtop->maxResiduesPerMoleculeToTriggerRenumber(), &maxresnr);
+        atomcat(&atoms,
+                &mtop->moltype[molb.type].atoms,
+                molb.nmol,
+                mtop->maxResiduesPerMoleculeToTriggerRenumber(),
+                &maxresnr);
     }
 
     return atoms;
@@ -715,10 +720,8 @@ static void copyIListsFromMtop(const gmx_mtop_t& mtop, IdefType* idef, bool merg
                  */
                 for (int mol = 0; mol < molb.nmol; mol++)
                 {
-                    ilistcat(ftype, &idef->il[F_CONSTR], molt.ilist[F_CONSTR], 1,
-                             destnr + mol * srcnr, srcnr);
-                    ilistcat(ftype, &idef->il[F_CONSTR], molt.ilist[F_CONSTRNC], 1,
-                             destnr + mol * srcnr, srcnr);
+                    ilistcat(ftype, &idef->il[F_CONSTR], molt.ilist[F_CONSTR], 1, destnr + mol * srcnr, srcnr);
+                    ilistcat(ftype, &idef->il[F_CONSTR], molt.ilist[F_CONSTRNC], 1, destnr + mol * srcnr, srcnr);
                 }
             }
             else if (!(mergeConstr && ftype == F_CONSTRNC))
@@ -766,7 +769,8 @@ static void copyAtomtypesFromMtop(const gmx_mtop_t& mtop, t_atomtypes* atomtypes
     if (mtop.atomtypes.atomnumber)
     {
         snew(atomtypes->atomnumber, mtop.atomtypes.nr);
-        std::copy(mtop.atomtypes.atomnumber, mtop.atomtypes.atomnumber + mtop.atomtypes.nr,
+        std::copy(mtop.atomtypes.atomnumber,
+                  mtop.atomtypes.atomnumber + mtop.atomtypes.nr,
                   atomtypes->atomnumber);
     }
     else

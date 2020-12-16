@@ -141,14 +141,14 @@ public:
         dimParams.push_back(DimParams::pullDimParams(1.0, 15.0, params.beta));
         dimParams.push_back(DimParams::pullDimParams(1.0, 15.0, params.beta));
         BiasGrid   grid(dimParams, awhBiasParams.dimParams);
-        BiasParams biasParams(awhParams, awhBiasParams, dimParams, 1.0, 1.0,
-                              BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
+        BiasParams biasParams(
+                awhParams, awhBiasParams, dimParams, 1.0, 1.0, BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
         biasState_ = std::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid);
 
         // Here we initialize the grid point state using the input file
         std::string filename = gmx::test::TestFileManager::getInputFilePath(GetParam());
-        biasState_->initGridPointState(awhBiasParams, dimParams, grid, biasParams, filename,
-                                       params.awhParams.numBias);
+        biasState_->initGridPointState(
+                awhBiasParams, dimParams, grid, biasParams, filename, params.awhParams.numBias);
 
         sfree(params.awhParams.awhBiasParams[0].dimParams);
         sfree(params.awhParams.awhBiasParams);

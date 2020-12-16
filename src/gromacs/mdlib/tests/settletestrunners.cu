@@ -101,14 +101,14 @@ void SettleDeviceTestRunner::applySettle(SettleTestData* testData,
     {
         copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     }
-    settleGpu->apply(d_x, d_xp, updateVelocities, d_v, testData->reciprocalTimeStep_, calcVirial,
-                     testData->virial_, pbcAiuc);
+    settleGpu->apply(
+            d_x, d_xp, updateVelocities, d_v, testData->reciprocalTimeStep_, calcVirial, testData->virial_, pbcAiuc);
 
     copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     if (updateVelocities)
     {
-        copyFromDeviceBuffer((float3*)h_v, &d_v, 0, numAtoms, deviceStream,
-                             GpuApiCallBehavior::Sync, nullptr);
+        copyFromDeviceBuffer(
+                (float3*)h_v, &d_v, 0, numAtoms, deviceStream, GpuApiCallBehavior::Sync, nullptr);
     }
 
     freeDeviceBuffer(&d_x);

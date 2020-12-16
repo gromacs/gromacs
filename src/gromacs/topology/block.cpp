@@ -277,8 +277,12 @@ void pr_block(FILE* fp, int indent, const char* title, const t_block* block, gmx
                 }
                 else
                 {
-                    fprintf(fp, "%s[%d]={%d..%d}\n", title, bShowNumbers ? i : -1,
-                            bShowNumbers ? start : -1, bShowNumbers ? end - 1 : -1);
+                    fprintf(fp,
+                            "%s[%d]={%d..%d}\n",
+                            title,
+                            bShowNumbers ? i : -1,
+                            bShowNumbers ? start : -1,
+                            bShowNumbers ? end - 1 : -1);
                 }
                 start = end;
             }
@@ -311,8 +315,12 @@ void pr_blocka(FILE* fp, int indent, const char* title, const t_blocka* block, g
                 }
                 else
                 {
-                    size += fprintf(fp, "%s[%d][%d..%d]={", title, bShowNumbers ? i : -1,
-                                    bShowNumbers ? start : -1, bShowNumbers ? end - 1 : -1);
+                    size += fprintf(fp,
+                                    "%s[%d][%d..%d]={",
+                                    title,
+                                    bShowNumbers ? i : -1,
+                                    bShowNumbers ? start : -1,
+                                    bShowNumbers ? end - 1 : -1);
                 }
                 for (j = start; j < end; j++)
                 {

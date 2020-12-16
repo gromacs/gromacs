@@ -116,29 +116,29 @@ static inline Simd4Double gmx_simdcall simd4SetZeroD()
 static inline Simd4Double gmx_simdcall operator&(Simd4Double a, Simd4Double b)
 {
     svbool_t pg = svptrue_b64();
-    return { svreinterpret_f64_s64(svand_s64_z(pg, svreinterpret_s64_f64(a.simdInternal_),
-                                               svreinterpret_s64_f64(b.simdInternal_))) };
+    return { svreinterpret_f64_s64(svand_s64_z(
+            pg, svreinterpret_s64_f64(a.simdInternal_), svreinterpret_s64_f64(b.simdInternal_))) };
 }
 
 static inline Simd4Double gmx_simdcall andNot(Simd4Double a, Simd4Double b)
 {
     svbool_t pg = svptrue_b64();
-    return { svreinterpret_f64_s64(svbic_s64_z(pg, svreinterpret_s64_f64(b.simdInternal_),
-                                               svreinterpret_s64_f64(a.simdInternal_))) };
+    return { svreinterpret_f64_s64(svbic_s64_z(
+            pg, svreinterpret_s64_f64(b.simdInternal_), svreinterpret_s64_f64(a.simdInternal_))) };
 }
 
 static inline Simd4Double gmx_simdcall operator|(Simd4Double a, Simd4Double b)
 {
     svbool_t pg = svptrue_b64();
-    return { svreinterpret_f64_s64(svorr_s64_z(pg, svreinterpret_s64_f64(a.simdInternal_),
-                                               svreinterpret_s64_f64(b.simdInternal_))) };
+    return { svreinterpret_f64_s64(svorr_s64_z(
+            pg, svreinterpret_s64_f64(a.simdInternal_), svreinterpret_s64_f64(b.simdInternal_))) };
 }
 
 static inline Simd4Double gmx_simdcall operator^(Simd4Double a, Simd4Double b)
 {
     svbool_t pg = svptrue_b64();
-    return { svreinterpret_f64_s64(sveor_s64_z(pg, svreinterpret_s64_f64(a.simdInternal_),
-                                               svreinterpret_s64_f64(b.simdInternal_))) };
+    return { svreinterpret_f64_s64(sveor_s64_z(
+            pg, svreinterpret_s64_f64(a.simdInternal_), svreinterpret_s64_f64(b.simdInternal_))) };
 }
 
 static inline Simd4Double gmx_simdcall operator+(Simd4Double a, Simd4Double b)

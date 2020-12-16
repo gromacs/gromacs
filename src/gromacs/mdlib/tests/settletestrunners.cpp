@@ -65,16 +65,25 @@ void SettleHostTestRunner::applySettle(SettleTestData*    testData,
 {
     SettleData settled(testData->mtop_);
 
-    settled.setConstraints(testData->idef_->il[F_SETTLE], testData->numAtoms_,
-                           testData->masses_.data(), testData->inverseMasses_.data());
+    settled.setConstraints(testData->idef_->il[F_SETTLE],
+                           testData->numAtoms_,
+                           testData->masses_.data(),
+                           testData->inverseMasses_.data());
 
     bool errorOccured;
     int  numThreads  = 1;
     int  threadIndex = 0;
-    csettle(settled, numThreads, threadIndex, &pbc, testData->x_.arrayRefWithPadding(),
-            testData->xPrime_.arrayRefWithPadding(), testData->reciprocalTimeStep_,
+    csettle(settled,
+            numThreads,
+            threadIndex,
+            &pbc,
+            testData->x_.arrayRefWithPadding(),
+            testData->xPrime_.arrayRefWithPadding(),
+            testData->reciprocalTimeStep_,
             updateVelocities ? testData->v_.arrayRefWithPadding() : ArrayRefWithPadding<RVec>(),
-            calcVirial, testData->virial_, &errorOccured);
+            calcVirial,
+            testData->virial_,
+            &errorOccured);
     EXPECT_FALSE(errorOccured) << testDescription;
 }
 

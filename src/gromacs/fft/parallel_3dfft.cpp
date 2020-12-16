@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,12 +87,19 @@ int gmx_parallel_3dfft_init(gmx_parallel_3dfft_t* pfft_setup,
         Kb = M; /* currently always true because ORDER_YZ always set */
     }
 
-    (*pfft_setup)->p1 = fft5d_plan_3d(rN, M, K, rcomm, flags, reinterpret_cast<t_complex**>(real_data),
-                                      complex_data, &buf1, &buf2, nthreads, realGridAllocation);
+    (*pfft_setup)->p1 = fft5d_plan_3d(
+            rN, M, K, rcomm, flags, reinterpret_cast<t_complex**>(real_data), complex_data, &buf1, &buf2, nthreads, realGridAllocation);
 
-    (*pfft_setup)->p2 = fft5d_plan_3d(
-            Nb, Mb, Kb, rcomm, (flags | FFT5D_BACKWARD | FFT5D_NOMALLOC) ^ FFT5D_ORDER_YZ,
-            complex_data, reinterpret_cast<t_complex**>(real_data), &buf1, &buf2, nthreads);
+    (*pfft_setup)->p2 = fft5d_plan_3d(Nb,
+                                      Mb,
+                                      Kb,
+                                      rcomm,
+                                      (flags | FFT5D_BACKWARD | FFT5D_NOMALLOC) ^ FFT5D_ORDER_YZ,
+                                      complex_data,
+                                      reinterpret_cast<t_complex**>(real_data),
+                                      &buf1,
+                                      &buf2,
+                                      nthreads);
 
     return static_cast<int>((*pfft_setup)->p1 != nullptr && (*pfft_setup)->p2 != nullptr);
 }
@@ -168,8 +175,7 @@ int gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t   pfft_setup,
     if (((pfft_setup->p1->flags & FFT5D_REALCOMPLEX) == 0)
         ^ (dir == GMX_FFT_FORWARD || dir == GMX_FFT_BACKWARD))
     {
-        gmx_fatal(FARGS,
-                  "Invalid transform. Plan and execution don't match regarding reel/complex");
+        gmx_fatal(FARGS, "Invalid transform. Plan and execution don't match regarding reel/complex");
     }
     if (dir == GMX_FFT_FORWARD || dir == GMX_FFT_REAL_TO_COMPLEX)
     {

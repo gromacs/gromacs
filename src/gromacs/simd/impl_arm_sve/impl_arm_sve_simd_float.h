@@ -211,29 +211,29 @@ gmx_simdcall static inline float extract(SimdFloat a)
 static inline SimdFloat gmx_simdcall operator&(SimdFloat a, SimdFloat b)
 {
     svbool_t pg = svptrue_b32();
-    return { svreinterpret_f32_s32(svand_s32_x(pg, svreinterpret_s32_f32(a.simdInternal_),
-                                               svreinterpret_s32_f32(b.simdInternal_))) };
+    return { svreinterpret_f32_s32(svand_s32_x(
+            pg, svreinterpret_s32_f32(a.simdInternal_), svreinterpret_s32_f32(b.simdInternal_))) };
 }
 
 static inline SimdFloat gmx_simdcall andNot(SimdFloat a, SimdFloat b)
 {
     svbool_t pg = svptrue_b32();
-    return { svreinterpret_f32_s32(svbic_s32_x(pg, svreinterpret_s32_f32(b.simdInternal_),
-                                               svreinterpret_s32_f32(a.simdInternal_))) };
+    return { svreinterpret_f32_s32(svbic_s32_x(
+            pg, svreinterpret_s32_f32(b.simdInternal_), svreinterpret_s32_f32(a.simdInternal_))) };
 }
 
 static inline SimdFloat gmx_simdcall operator|(SimdFloat a, SimdFloat b)
 {
     svbool_t pg = svptrue_b32();
-    return { svreinterpret_f32_s32(svorr_s32_x(pg, svreinterpret_s32_f32(a.simdInternal_),
-                                               svreinterpret_s32_f32(b.simdInternal_))) };
+    return { svreinterpret_f32_s32(svorr_s32_x(
+            pg, svreinterpret_s32_f32(a.simdInternal_), svreinterpret_s32_f32(b.simdInternal_))) };
 }
 
 static inline SimdFloat gmx_simdcall operator^(SimdFloat a, SimdFloat b)
 {
     svbool_t pg = svptrue_b32();
-    return { svreinterpret_f32_s32(sveor_s32_x(pg, svreinterpret_s32_f32(a.simdInternal_),
-                                               svreinterpret_s32_f32(b.simdInternal_))) };
+    return { svreinterpret_f32_s32(sveor_s32_x(
+            pg, svreinterpret_s32_f32(a.simdInternal_), svreinterpret_s32_f32(b.simdInternal_))) };
 }
 
 static inline SimdFloat gmx_simdcall operator+(SimdFloat a, SimdFloat b)
@@ -394,9 +394,10 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
             pg, svreinterpret_s32_u32(svlsr_n_u32_x(pg, svreinterpret_u32_s32(iExponent), 23)), exponentBias);
     exponent->simdInternal_ = iExponent;
 
-    return { svreinterpret_f32_s32(svorr_s32_x(
-            pg, svand_s32_x(pg, svreinterpret_s32_f32(value.simdInternal_), mantissaMask),
-            svreinterpret_s32_f32(half))) };
+    return { svreinterpret_f32_s32(
+            svorr_s32_x(pg,
+                        svand_s32_x(pg, svreinterpret_s32_f32(value.simdInternal_), mantissaMask),
+                        svreinterpret_s32_f32(half))) };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

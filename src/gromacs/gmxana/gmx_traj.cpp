@@ -478,8 +478,12 @@ static void write_pdb_bfac(const char*             fname,
         fp = xvgropen(xname, title, "Atom", "Spatial component", oenv);
         for (i = 0; i < isize; i++)
         {
-            fprintf(fp, "%-5d  %10.3f  %10.3f  %10.3f\n", 1 + i, sum[index[i]][XX],
-                    sum[index[i]][YY], sum[index[i]][ZZ]);
+            fprintf(fp,
+                    "%-5d  %10.3f  %10.3f  %10.3f\n",
+                    1 + i,
+                    sum[index[i]][XX],
+                    sum[index[i]][YY],
+                    sum[index[i]][ZZ]);
         }
         xvgrclose(fp);
         max  = 0;
@@ -516,8 +520,12 @@ static void write_pdb_bfac(const char*             fname,
             }
         }
 
-        printf("Maximum %s is %g on atom %d %s, res. %s %d\n", title, std::sqrt(max), maxi + 1,
-               *(atoms->atomname[maxi]), *(atoms->resinfo[atoms->atom[maxi].resind].name),
+        printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
+               title,
+               std::sqrt(max),
+               maxi + 1,
+               *(atoms->atomname[maxi]),
+               *(atoms->resinfo[atoms->atom[maxi].resind].name),
                atoms->resinfo[atoms->atom[maxi].resind].nr);
 
         if (atoms->pdbinfo == nullptr)
@@ -707,8 +715,18 @@ int gmx_traj(int argc, char* argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW, NFILE, fnm,
-                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
+                           NFILE,
+                           fnm,
+                           asize(pa),
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv))
     {
         return 0;
     }
@@ -751,7 +769,12 @@ int gmx_traj(int argc, char* argv[])
     }
     std::string sffmt6 = gmx::formatString("%s%s%s%s%s%s", sffmt, sffmt, sffmt, sffmt, sffmt, sffmt);
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, topbox,
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
+                         &top,
+                         &pbcType,
+                         &xtop,
+                         nullptr,
+                         topbox,
                          bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
     sfree(xtop);
     if ((bMol || bCV || bCF) && !bTop)
@@ -788,8 +811,7 @@ int gmx_traj(int argc, char* argv[])
         {
             if (index0[0][i] < 0 || index0[0][i] >= mols->nr)
             {
-                gmx_fatal(FARGS, "Molecule index (%d) is out of range (%d-%d)", index0[0][i] + 1, 1,
-                          mols->nr);
+                gmx_fatal(FARGS, "Molecule index (%d) is out of range (%d-%d)", index0[0][i] + 1, 1, mols->nr);
             }
             isize[i] = atndx[index0[0][i] + 1] - atndx[index0[0][i]];
             snew(index[i], isize[i]);
@@ -822,8 +844,11 @@ int gmx_traj(int argc, char* argv[])
     if (bOX)
     {
         flags = flags | TRX_READ_X;
-        outx  = xvgropen(opt2fn("-ox", NFILE, fnm), bCom ? "Center of mass" : "Coordinate", label,
-                        "Coordinate (nm)", oenv);
+        outx  = xvgropen(opt2fn("-ox", NFILE, fnm),
+                        bCom ? "Center of mass" : "Coordinate",
+                        label,
+                        "Coordinate (nm)",
+                        oenv);
         make_legend(outx, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOXT)
@@ -834,15 +859,18 @@ int gmx_traj(int argc, char* argv[])
     if (bOV)
     {
         flags = flags | TRX_READ_V;
-        outv  = xvgropen(opt2fn("-ov", NFILE, fnm), bCom ? "Center of mass velocity" : "Velocity",
-                        label, "Velocity (nm/ps)", oenv);
+        outv  = xvgropen(opt2fn("-ov", NFILE, fnm),
+                        bCom ? "Center of mass velocity" : "Velocity",
+                        label,
+                        "Velocity (nm/ps)",
+                        oenv);
         make_legend(outv, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOF)
     {
         flags = flags | TRX_READ_F;
-        outf  = xvgropen(opt2fn("-of", NFILE, fnm), "Force", label,
-                        "Force (kJ mol\\S-1\\N nm\\S-1\\N)", oenv);
+        outf  = xvgropen(
+                opt2fn("-of", NFILE, fnm), "Force", label, "Force (kJ mol\\S-1\\N nm\\S-1\\N)", oenv);
         make_legend(outf, ngroups, isize0[0], index0[0], grpname, bCom, bMol, bDim, oenv);
     }
     if (bOB)
@@ -868,8 +896,11 @@ int gmx_traj(int argc, char* argv[])
         bDum[ZZ]  = FALSE;
         bDum[DIM] = TRUE;
         flags     = flags | TRX_READ_V;
-        outekt    = xvgropen(opt2fn("-ekt", NFILE, fnm), "Center of mass translation", label,
-                          "Energy (kJ mol\\S-1\\N)", oenv);
+        outekt    = xvgropen(opt2fn("-ekt", NFILE, fnm),
+                          "Center of mass translation",
+                          label,
+                          "Energy (kJ mol\\S-1\\N)",
+                          oenv);
         make_legend(outekt, ngroups, isize[0], index[0], grpname, bCom, bMol, bDum, oenv);
     }
     if (bEKR)
@@ -879,8 +910,11 @@ int gmx_traj(int argc, char* argv[])
         bDum[ZZ]  = FALSE;
         bDum[DIM] = TRUE;
         flags     = flags | TRX_READ_X | TRX_READ_V;
-        outekr    = xvgropen(opt2fn("-ekr", NFILE, fnm), "Center of mass rotation", label,
-                          "Energy (kJ mol\\S-1\\N)", oenv);
+        outekr    = xvgropen(opt2fn("-ekr", NFILE, fnm),
+                          "Center of mass rotation",
+                          label,
+                          "Energy (kJ mol\\S-1\\N)",
+                          oenv);
         make_legend(outekr, ngroups, isize[0], index[0], grpname, bCom, bMol, bDum, oenv);
     }
     if (bVD)
@@ -989,8 +1023,14 @@ int gmx_traj(int argc, char* argv[])
         if (bOB && fr.bBox)
         {
             fprintf(outb, "\t%g", fr.time);
-            fprintf(outb, sffmt6.c_str(), fr.box[XX][XX], fr.box[YY][YY], fr.box[ZZ][ZZ],
-                    fr.box[YY][XX], fr.box[ZZ][XX], fr.box[ZZ][YY]);
+            fprintf(outb,
+                    sffmt6.c_str(),
+                    fr.box[XX][XX],
+                    fr.box[YY][YY],
+                    fr.box[ZZ][ZZ],
+                    fr.box[YY][XX],
+                    fr.box[ZZ][XX],
+                    fr.box[ZZ][YY]);
             fprintf(outb, "\n");
         }
         if (bOT && fr.bV)
@@ -1117,15 +1157,39 @@ int gmx_traj(int argc, char* argv[])
     }
     if (bCV)
     {
-        write_pdb_bfac(opt2fn("-cv", NFILE, fnm), opt2fn("-av", NFILE, fnm), "average velocity",
-                       &(top.atoms), pbcType, topbox, isize[0], index[0], nr_xfr, sumx, nr_vfr,
-                       sumv, bDim, scale, oenv);
+        write_pdb_bfac(opt2fn("-cv", NFILE, fnm),
+                       opt2fn("-av", NFILE, fnm),
+                       "average velocity",
+                       &(top.atoms),
+                       pbcType,
+                       topbox,
+                       isize[0],
+                       index[0],
+                       nr_xfr,
+                       sumx,
+                       nr_vfr,
+                       sumv,
+                       bDim,
+                       scale,
+                       oenv);
     }
     if (bCF)
     {
-        write_pdb_bfac(opt2fn("-cf", NFILE, fnm), opt2fn("-af", NFILE, fnm), "average force",
-                       &(top.atoms), pbcType, topbox, isize[0], index[0], nr_xfr, sumx, nr_ffr,
-                       sumf, bDim, scale, oenv);
+        write_pdb_bfac(opt2fn("-cf", NFILE, fnm),
+                       opt2fn("-af", NFILE, fnm),
+                       "average force",
+                       &(top.atoms),
+                       pbcType,
+                       topbox,
+                       isize[0],
+                       index[0],
+                       nr_xfr,
+                       sumx,
+                       nr_ffr,
+                       sumf,
+                       bDim,
+                       scale,
+                       oenv);
     }
 
     /* view it */

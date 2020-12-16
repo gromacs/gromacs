@@ -105,7 +105,8 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
         gmx_fatal(FARGS,
                   "The neighborlist cluster size in the GPU reference kernel is %d, expected it to "
                   "be %d",
-                  nbl->na_ci, c_clSize);
+                  nbl->na_ci,
+                  c_clSize);
     }
 
     if (clearF == enbvClearFYes)
@@ -366,14 +367,20 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
 
     if (debug)
     {
-        fprintf(debug, "number of half %dx%d atom pairs: %d after pruning: %d fraction %4.2f\n",
-                nbl->na_ci, nbl->na_ci, nhwu, nhwu_pruned, nhwu_pruned / static_cast<double>(nhwu));
-        fprintf(debug, "generic kernel pair interactions:            %d\n",
-                nhwu * nbl->na_ci / 2 * nbl->na_ci);
-        fprintf(debug, "generic kernel post-prune pair interactions: %d\n",
+        fprintf(debug,
+                "number of half %dx%d atom pairs: %d after pruning: %d fraction %4.2f\n",
+                nbl->na_ci,
+                nbl->na_ci,
+                nhwu,
+                nhwu_pruned,
+                nhwu_pruned / static_cast<double>(nhwu));
+        fprintf(debug, "generic kernel pair interactions:            %d\n", nhwu * nbl->na_ci / 2 * nbl->na_ci);
+        fprintf(debug,
+                "generic kernel post-prune pair interactions: %d\n",
                 nhwu_pruned * nbl->na_ci / 2 * nbl->na_ci);
         fprintf(debug, "generic kernel non-zero pair interactions:   %d\n", npair_tot);
-        fprintf(debug, "ratio non-zero/post-prune pair interactions: %4.2f\n",
+        fprintf(debug,
+                "ratio non-zero/post-prune pair interactions: %4.2f\n",
                 npair_tot / static_cast<double>(nhwu_pruned * gmx::exactDiv(nbl->na_ci, 2) * nbl->na_ci));
     }
 }

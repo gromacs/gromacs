@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,8 +169,11 @@ bool lmfit_exp(int          nfit,
         chisq = gmx::square(status->fnorm);
         if (bVerbose)
         {
-            printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n", status->fnorm,
-                   status->nfev, status->userbreak, lm_infmsg[status->outcome]);
+            printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n",
+                   status->fnorm,
+                   status->nfev,
+                   status->userbreak,
+                   lm_infmsg[status->outcome]);
         }
         if (bVerbose)
         {

@@ -446,7 +446,8 @@ static int init_mem_at(mem_t* mem_p, gmx_mtop_t* mtop, rvec* r, matrix box, pos_
                   "so that one membrane is distributed over two periodic box images. Another "
                   "possibility is that\n"
                   "your water layer is not thick enough.\n",
-                  zmax, zmin);
+                  zmax,
+                  zmin);
     }
     mem_p->zmin = zmin;
     mem_p->zmax = zmax;
@@ -515,8 +516,12 @@ static void init_resize(t_block* ins_at, rvec* r_ins, pos_ins_t* pos_ins, mem_t*
             pos_ins->geom_cent[i][ZZ] = mem_p->zmed;
         }
 
-        fprintf(stderr, "Embedding piece %d with center of geometry: %f %f %f\n", i,
-                pos_ins->geom_cent[i][XX], pos_ins->geom_cent[i][YY], pos_ins->geom_cent[i][ZZ]);
+        fprintf(stderr,
+                "Embedding piece %d with center of geometry: %f %f %f\n",
+                i,
+                pos_ins->geom_cent[i][XX],
+                pos_ins->geom_cent[i][YY],
+                pos_ins->geom_cent[i][ZZ]);
     }
     fprintf(stderr, "\n");
 }
@@ -1066,8 +1071,18 @@ gmx_membed_t* init_membed(FILE*          fplog,
         /* get input data out membed file */
         try
         {
-            get_input(opt2fn("-membed", nfile, fnm), &xy_fac, &xy_max, &z_fac, &z_max, &it_xy,
-                      &it_z, &probe_rad, &low_up_rm, &maxwarn, &pieces, &bALLOW_ASYMMETRY);
+            get_input(opt2fn("-membed", nfile, fnm),
+                      &xy_fac,
+                      &xy_max,
+                      &z_fac,
+                      &z_max,
+                      &it_xy,
+                      &it_z,
+                      &probe_rad,
+                      &low_up_rm,
+                      &maxwarn,
+                      &pieces,
+                      &bALLOW_ASYMMETRY);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
@@ -1118,8 +1133,12 @@ gmx_membed_t* init_membed(FILE*          fplog,
             ins_grp_id = std::distance(gnames.begin(), found);
         }
         fprintf(stderr, "\nSelect a group to embed %s into (e.g. the membrane):\n", ins);
-        get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(mem_p->mem_at.nr),
-                  &(mem_p->mem_at.index), &(mem_p->name));
+        get_index(&atoms,
+                  opt2fn_null("-mn", nfile, fnm),
+                  1,
+                  &(mem_p->mem_at.nr),
+                  &(mem_p->mem_at.index),
+                  &(mem_p->name));
 
         pos_ins->pieces = pieces;
         snew(pos_ins->nidx, pieces);
@@ -1128,8 +1147,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
         if (pieces > 1)
         {
             fprintf(stderr, "\nSelect pieces to embed:\n");
-            get_index(&atoms, opt2fn_null("-mn", nfile, fnm), pieces, pos_ins->nidx,
-                      pos_ins->subindex, piecename);
+            get_index(&atoms, opt2fn_null("-mn", nfile, fnm), pieces, pos_ins->nidx, pos_ins->subindex, piecename);
         }
         else
         {
@@ -1162,7 +1180,9 @@ gmx_membed_t* init_membed(FILE*          fplog,
             fprintf(stderr,
                     "\nWarning %d;\nThe number of steps used to grow the xy-coordinates of %s (%d)"
                     " is probably too small.\nIncrease -nxy or.\n\n",
-                    warn, ins, it_xy);
+                    warn,
+                    ins,
+                    it_xy);
         }
 
         if ((it_z < min_it_z) && (z_fac < 0.99999999 || z_fac > 1.0000001))
@@ -1172,7 +1192,9 @@ gmx_membed_t* init_membed(FILE*          fplog,
                     "\nWarning %d;\nThe number of steps used to grow the z-coordinate of %s (%d)"
                     " is probably too small.\nIncrease -nz or the maxwarn setting in the membed "
                     "input file.\n\n",
-                    warn, ins, it_z);
+                    warn,
+                    ins,
+                    it_z);
         }
 
         if (it_xy + it_z > inputrec->nsteps)
@@ -1284,7 +1306,8 @@ gmx_membed_t* init_membed(FILE*          fplog,
         printf("The estimated area of the protein in the membrane is %.3f nm^2\n", prot_area);
         printf("\nThere are %d lipids in the membrane part that overlaps the protein.\n"
                "The area per lipid is %.4f nm^2.\n",
-               mem_p->nmol, mem_p->lip_area);
+               mem_p->nmol,
+               mem_p->lip_area);
 
         /* Maximum number of lipids to be removed*/
         max_lip_rm = static_cast<int>(2 * prot_area / mem_p->lip_area);
@@ -1295,7 +1318,10 @@ gmx_membed_t* init_membed(FILE*          fplog,
                "This resizing will be done with respect to the geometrical center of all protein "
                "atoms\n"
                "that span the membrane region, i.e. z between %.3f and %.3f\n\n",
-               xy_fac, z_fac, mem_p->zmin, mem_p->zmax);
+               xy_fac,
+               z_fac,
+               mem_p->zmin,
+               mem_p->zmax);
 
         /* resize the protein by xy and by z if necessary*/
         snew(r_ins, ins_at->nr);
@@ -1314,8 +1340,8 @@ gmx_membed_t* init_membed(FILE*          fplog,
         set_pbc(pbc, inputrec->pbcType, state->box);
 
         snew(rm_p, 1);
-        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, state->x.rvec_array(), mem_p,
-                             pos_ins, probe_rad, low_up_rm, bALLOW_ASYMMETRY);
+        lip_rm = gen_rm_list(
+                rm_p, ins_at, rest_at, pbc, mtop, state->x.rvec_array(), mem_p, pos_ins, probe_rad, low_up_rm, bALLOW_ASYMMETRY);
         lip_rm -= low_up_rm;
 
         if (fplog)
@@ -1361,7 +1387,8 @@ gmx_membed_t* init_membed(FILE*          fplog,
                     "while %d atoms are embedded. Make sure that the atoms to be embedded are not "
                     "in the same"
                     "molecule type as atoms that are not to be embedded.\n",
-                    rm_bonded_at, ins_at->nr);
+                    rm_bonded_at,
+                    ins_at->nr);
         }
 
         if (warn > maxwarn)

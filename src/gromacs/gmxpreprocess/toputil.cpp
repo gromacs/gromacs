@@ -252,8 +252,19 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
 
     as = dir2str(Directive::d_atoms);
     fprintf(out, "[ %s ]\n", as);
-    fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n", "nr", "type", "resnr",
-            "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
+    fprintf(out,
+            "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
+            "nr",
+            "type",
+            "resnr",
+            "residue",
+            "atom",
+            "cgnr",
+            "charge",
+            "mass",
+            "typeB",
+            "chargeB",
+            "massB");
 
     qtot = 0;
 
@@ -266,8 +277,11 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
             if ((i == 0 || ri != at->atom[i - 1].resind) && at->resinfo[ri].rtp != nullptr)
             {
                 qres = get_residue_charge(at, i);
-                fprintf(out, "; residue %3d %-3s rtp %-4s q ", at->resinfo[ri].nr,
-                        *at->resinfo[ri].name, *at->resinfo[ri].rtp);
+                fprintf(out,
+                        "; residue %3d %-3s rtp %-4s q ",
+                        at->resinfo[ri].nr,
+                        *at->resinfo[ri].name,
+                        *at->resinfo[ri].rtp);
                 if (fabs(qres) < 0.001)
                 {
                     fprintf(out, " %s", "0.0");
@@ -287,11 +301,18 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
             /* This is true by construction, but static analysers don't know */
             GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp,
                        "-rtpres did not have residue name available");
-            fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g", i + 1, tpnmA, at->resinfo[ri].nr,
+            fprintf(out,
+                    "%6d %10s %6d%c %5s %6s %6d %10g %10g",
+                    i + 1,
+                    tpnmA,
+                    at->resinfo[ri].nr,
                     at->resinfo[ri].ic,
                     bRTPresname ? *(at->resinfo[at->atom[i].resind].rtp)
                                 : *(at->resinfo[at->atom[i].resind].name),
-                    *(at->atomname[i]), cgnr[i], at->atom[i].q, at->atom[i].m);
+                    *(at->atomname[i]),
+                    cgnr[i],
+                    at->atom[i].q,
+                    at->atom[i].m);
             if (PERTURBED(at->atom[i]))
             {
                 tpB = at->atom[i].typeB;

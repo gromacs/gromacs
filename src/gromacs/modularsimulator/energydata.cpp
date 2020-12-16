@@ -166,9 +166,15 @@ void EnergyData::Element::trajectoryWriterSetup(gmx_mdoutf* outf)
 void EnergyData::setup(gmx_mdoutf* outf)
 {
     pull_t* pull_work = nullptr;
-    energyOutput_     = std::make_unique<EnergyOutput>(
-            mdoutf_get_fp_ene(outf), top_global_, inputrec_, pull_work, mdoutf_get_fp_dhdl(outf),
-            false, startingBehavior_, simulationsShareState_, mdModulesNotifier_);
+    energyOutput_     = std::make_unique<EnergyOutput>(mdoutf_get_fp_ene(outf),
+                                                   top_global_,
+                                                   inputrec_,
+                                                   pull_work,
+                                                   mdoutf_get_fp_dhdl(outf),
+                                                   false,
+                                                   startingBehavior_,
+                                                   simulationsShareState_,
+                                                   mdModulesNotifier_);
 
     if (!isMasterRank_)
     {
@@ -237,8 +243,8 @@ void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEner
     enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
     if (freeEnergyPerturbationData_)
     {
-        accumulateKineticLambdaComponents(enerd_, freeEnergyPerturbationData_->constLambdaView(),
-                                          *inputrec_->fepvals);
+        accumulateKineticLambdaComponents(
+                enerd_, freeEnergyPerturbationData_->constLambdaView(), *inputrec_->fepvals);
     }
     if (integratorHasConservedEnergyQuantity(inputrec_))
     {
@@ -251,15 +257,27 @@ void EnergyData::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEner
     }
     matrix nullMatrix = {};
     energyOutput_->addDataAtEnergyStep(
-            isFreeEnergyCalculationStep, isEnergyCalculationStep, time, mdAtoms_->mdatoms()->tmass, enerd_,
-            inputrec_->fepvals, inputrec_->expandedvals, statePropagatorData_->constPreviousBox(),
+            isFreeEnergyCalculationStep,
+            isEnergyCalculationStep,
+            time,
+            mdAtoms_->mdatoms()->tmass,
+            enerd_,
+            inputrec_->fepvals,
+            inputrec_->expandedvals,
+            statePropagatorData_->constPreviousBox(),
             PTCouplingArrays({ parrinelloRahmanBarostat_ ? parrinelloRahmanBarostat_->boxVelocities() : nullMatrix,
                                {},
                                {},
                                {},
                                {} }),
             freeEnergyPerturbationData_ ? freeEnergyPerturbationData_->currentFEPState() : 0,
-            shakeVirial_, forceVirial_, totalVirial_, pressure_, ekind_, muTot_, constr_);
+            shakeVirial_,
+            forceVirial_,
+            totalVirial_,
+            pressure_,
+            ekind_,
+            muTot_,
+            constr_);
 }
 
 void EnergyData::write(gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool writeLog)
@@ -274,8 +292,8 @@ void EnergyData::write(gmx_mdoutf* outf, Step step, Time time, bool writeTraject
 
     // energyOutput_->printAnnealingTemperatures(writeLog ? fplog_ : nullptr, groups_, &(inputrec_->opts));
     Awh* awh = nullptr;
-    energyOutput_->printStepToEnergyFile(mdoutf_get_fp_ene(outf), writeTrajectory, do_dr, do_or,
-                                         writeLog ? fplog_ : nullptr, step, time, fcd_, awh);
+    energyOutput_->printStepToEnergyFile(
+            mdoutf_get_fp_ene(outf), writeTrajectory, do_dr, do_or, writeLog ? fplog_ : nullptr, step, time, fcd_, awh);
 }
 
 void EnergyData::addToForceVirial(const tensor virial, Step step)
@@ -341,8 +359,7 @@ rvec* EnergyData::pressure(Step gmx_unused step)
         pressureStep_ = step;
         clear_mat(pressure_);
     }
-    GMX_ASSERT(step >= pressureStep_ || pressureStep_ == -1,
-               "Asked for pressure of previous step.");
+    GMX_ASSERT(step >= pressureStep_ || pressureStep_ == -1, "Asked for pressure of previous step.");
     return pressure_;
 }
 
@@ -427,7 +444,8 @@ void EnergyData::Element::restoreCheckpointState(std::optional<ReadCheckpointDat
     energyData_->hasReadEkinFromCheckpoint_ = MASTER(cr) ? energyData_->ekinstate_.bUpToDate : false;
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(hasReadEkinFromCheckpoint_), &energyData_->hasReadEkinFromCheckpoint_,
+        gmx_bcast(sizeof(hasReadEkinFromCheckpoint_),
+                  &energyData_->hasReadEkinFromCheckpoint_,
                   cr->mpi_comm_mygroup);
     }
     if (energyData_->hasReadEkinFromCheckpoint_)

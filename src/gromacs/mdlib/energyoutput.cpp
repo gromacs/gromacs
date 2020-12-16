@@ -287,8 +287,10 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     }
     if (bDynBox_)
     {
-        ib_    = get_ebin_space(ebin_, bTricl_ ? tricl_boxs_nm.size() : boxs_nm.size(),
-                             bTricl_ ? tricl_boxs_nm.data() : boxs_nm.data(), unit_length);
+        ib_    = get_ebin_space(ebin_,
+                             bTricl_ ? tricl_boxs_nm.size() : boxs_nm.size(),
+                             bTricl_ ? tricl_boxs_nm.data() : boxs_nm.data(),
+                             unit_length);
         ivol_  = get_ebin_space(ebin_, 1, vol_nm, unit_volume);
         idens_ = get_ebin_space(ebin_, 1, dens_nm, unit_density_SI);
         if (bDiagPres_)
@@ -371,7 +373,10 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
                 {
                     if (bEInd_[k])
                     {
-                        sprintf(gnm[kk], "%s:%s-%s", egrp_nm[k], *(groups->groupNames[ni]),
+                        sprintf(gnm[kk],
+                                "%s:%s-%s",
+                                egrp_nm[k],
+                                *(groups->groupNames[ni]),
                                 *(groups->groupNames[nj]));
                         kk++;
                     }
@@ -693,8 +698,8 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     {
         title   = gmx::formatString("%s and %s", dhdl, deltag);
         label_x = gmx::formatString("Time (ps)");
-        label_y = gmx::formatString("%s and %s (%s %s)", dhdl, deltag, unit_energy,
-                                    "[\\8l\\4]\\S-1\\N");
+        label_y = gmx::formatString(
+                "%s and %s (%s %s)", dhdl, deltag, unit_energy, "[\\8l\\4]\\S-1\\N");
     }
     fp = gmx_fio_fopen(filename, "w+");
     xvgr_header(fp, title.c_str(), label_x, label_y, exvggtXNY, oenv);
@@ -715,8 +720,8 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
         {
             print_lambda_vector(fep, fep->init_fep_state, true, false, lambda_vec_str);
             print_lambda_vector(fep, fep->init_fep_state, true, true, lambda_name_str);
-            buf += gmx::formatString("%s %d: %s = %s", lambdastate, fep->init_fep_state,
-                                     lambda_name_str, lambda_vec_str);
+            buf += gmx::formatString(
+                    "%s %d: %s = %s", lambdastate, fep->init_fep_state, lambda_name_str, lambda_vec_str);
         }
     }
     xvgr_subtitle(fp, buf.c_str(), oenv);
@@ -1146,8 +1151,8 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             }
             store_energy = enerd->term[F_ETOT];
             /* store_dh is dE */
-            mde_delta_h_coll_add_dh(dhc_, static_cast<double>(fep_state), store_energy, pv,
-                                    store_dhdl, dE_ + fep->lambda_start_n, time);
+            mde_delta_h_coll_add_dh(
+                    dhc_, static_cast<double>(fep_state), store_energy, pv, store_dhdl, dE_ + fep->lambda_start_n, time);
         }
     }
 
@@ -1170,7 +1175,10 @@ void EnergyOutput::printHeader(FILE* log, int64_t steps, double time)
     fprintf(log,
             "   %12s   %12s\n"
             "   %12s   %12.5f\n\n",
-            "Step", "Time", gmx_step_str(steps, buf), time);
+            "Step",
+            "Time",
+            gmx_step_str(steps, buf),
+            time);
 }
 
 void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
@@ -1322,7 +1330,8 @@ void EnergyOutput::printAnnealingTemperatures(FILE* log, const SimulationGroups*
             {
                 if (opts->annealing[i] != eannNO)
                 {
-                    fprintf(log, "Current ref_t for group %s: %8.1f\n",
+                    fprintf(log,
+                            "Current ref_t for group %s: %8.1f\n",
                             *(groups->groupNames[groups->groups[SimulationAtomGroupType::TemperatureCoupling][i]]),
                             opts->ref_t[i]);
                 }
@@ -1351,8 +1360,10 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
         fprintf(log, "\t<====  A V E R A G E S  ====>\n");
         fprintf(log, "\t<==  ###############  ======>\n\n");
 
-        fprintf(log, "\tStatistics over %s steps using %s frames\n",
-                gmx_step_str(ebin_->nsteps_sim, buf1), gmx_step_str(ebin_->nsum_sim, buf2));
+        fprintf(log,
+                "\tStatistics over %s steps using %s frames\n",
+                gmx_step_str(ebin_->nsteps_sim, buf1),
+                gmx_step_str(ebin_->nsum_sim, buf2));
         fprintf(log, "\n");
 
         fprintf(log, "   Energies (%s)\n", unit_energy);
@@ -1411,8 +1422,7 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
                     int nj = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
                     int padding =
                             14 - (strlen(*(groups->groupNames[ni])) + strlen(*(groups->groupNames[nj])));
-                    fprintf(log, "%*s%s-%s", padding, "", *(groups->groupNames[ni]),
-                            *(groups->groupNames[nj]));
+                    fprintf(log, "%*s%s-%s", padding, "", *(groups->groupNames[ni]), *(groups->groupNames[nj]));
                     pr_ebin(log, ebin_, igrp_[n], nEc_, nEc_, eprAVER, false);
                     n++;
                 }
@@ -1486,7 +1496,9 @@ void EnergyOutput::restoreFromEnergyHistory(const energyhistory_t& enerhist)
         gmx_fatal(FARGS,
                   "Mismatch between number of energies in run input (%u) and checkpoint file (%zu "
                   "or %zu).",
-                  nener, enerhist.ener_sum.size(), enerhist.ener_sum_sim.size());
+                  nener,
+                  enerhist.ener_sum.size(),
+                  enerhist.ener_sum_sim.size());
     }
 
     ebin_->nsteps     = enerhist.nsteps;

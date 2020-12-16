@@ -420,8 +420,7 @@ t_bb* mkbbind(const char* fn,
         bb[i].Nnext = bb[i + 1].N;
     }
     rnr = std::max(0, i1 - i0 + 1);
-    fprintf(stderr, "There are %d complete backbone residues (from %d to %d)\n", rnr, bb[i0].resno,
-            bb[i1].resno);
+    fprintf(stderr, "There are %d complete backbone residues (from %d to %d)\n", rnr, bb[i0].resno, bb[i1].resno);
     if (rnr == 0)
     {
         gmx_fatal(FARGS, "Zero complete backbone residues were found, cannot proceed");
@@ -496,11 +495,33 @@ void calc_hxprops(int nres, t_bb bb[], const rvec x[])
         }
 
         bb[i].phi = RAD2DEG
-                    * dih_angle(x[bb[i].Cprev], x[bb[i].N], x[bb[i].CA], x[bb[i].C], nullptr, r_ij,
-                                r_kj, r_kl, m, n, &t1, &t2, &t3);
+                    * dih_angle(x[bb[i].Cprev],
+                                x[bb[i].N],
+                                x[bb[i].CA],
+                                x[bb[i].C],
+                                nullptr,
+                                r_ij,
+                                r_kj,
+                                r_kl,
+                                m,
+                                n,
+                                &t1,
+                                &t2,
+                                &t3);
         bb[i].psi = RAD2DEG
-                    * dih_angle(x[bb[i].N], x[bb[i].CA], x[bb[i].C], x[bb[i].Nnext], nullptr, r_ij,
-                                r_kj, r_kl, m, n, &t1, &t2, &t3);
+                    * dih_angle(x[bb[i].N],
+                                x[bb[i].CA],
+                                x[bb[i].C],
+                                x[bb[i].Nnext],
+                                nullptr,
+                                r_ij,
+                                r_kj,
+                                r_kl,
+                                m,
+                                n,
+                                &t1,
+                                &t2,
+                                &t3);
         bb[i].pprms2 = gmx::square(bb[i].phi - PHI_AHX) + gmx::square(bb[i].psi - PSI_AHX);
 
         bb[i].jcaha += 1.4 * std::sin((bb[i].psi + 138.0) * DEG2RAD)
@@ -581,12 +602,33 @@ void pr_bb(FILE* fp, int nres, t_bb bb[])
     int i;
 
     fprintf(fp, "\n");
-    fprintf(fp, "%3s %3s %3s %3s %3s %7s %7s %7s %7s %7s %3s\n", "AA", "N", "Ca", "C", "O", "Phi",
-            "Psi", "D3", "D4", "D5", "Hx?");
+    fprintf(fp,
+            "%3s %3s %3s %3s %3s %7s %7s %7s %7s %7s %3s\n",
+            "AA",
+            "N",
+            "Ca",
+            "C",
+            "O",
+            "Phi",
+            "Psi",
+            "D3",
+            "D4",
+            "D5",
+            "Hx?");
     for (i = 0; (i < nres); i++)
     {
-        fprintf(fp, "%3d %3d %3d %3d %3d %7.2f %7.2f %7.3f %7.3f %7.3f %3s\n", bb[i].resno, bb[i].N,
-                bb[i].CA, bb[i].C, bb[i].O, bb[i].phi, bb[i].psi, bb[i].d3, bb[i].d4, bb[i].d5,
+        fprintf(fp,
+                "%3d %3d %3d %3d %3d %7.2f %7.2f %7.3f %7.3f %7.3f %3s\n",
+                bb[i].resno,
+                bb[i].N,
+                bb[i].CA,
+                bb[i].C,
+                bb[i].O,
+                bb[i].phi,
+                bb[i].psi,
+                bb[i].d3,
+                bb[i].d4,
+                bb[i].d5,
                 bb[i].bHelix ? "Yes" : "No");
     }
     fprintf(fp, "\n");

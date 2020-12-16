@@ -706,8 +706,8 @@ static SelectionTreeElementPointer init_keyword_internal(gmx_ana_selmethod_t*   
         SelectionParserParameterList params;
         params.push_back(SelectionParserParameter::createFromExpression(nullptr, child));
         params.push_back(SelectionParserParameter::create(nullptr, std::move(args), location));
-        _gmx_sel_parse_params(params, root->u.expr.method->nparams, root->u.expr.method->param,
-                              root, scanner);
+        _gmx_sel_parse_params(
+                params, root->u.expr.method->nparams, root->u.expr.method->param, root, scanner);
     }
     set_refpos_type(&sc->pcc, child, rpost);
 
@@ -847,8 +847,8 @@ SelectionTreeElementPointer _gmx_sel_init_modifier(gmx_ana_selmethod_t*         
         root = modifier;
     }
     /* Process the parameters */
-    _gmx_sel_parse_params(*params, modifier->u.expr.method->nparams, modifier->u.expr.method->param,
-                          modifier, scanner);
+    _gmx_sel_parse_params(
+            *params, modifier->u.expr.method->nparams, modifier->u.expr.method->param, modifier, scanner);
 
     return root;
 }

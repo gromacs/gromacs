@@ -243,14 +243,16 @@ TEST_F(SimdFloatingpointTest, frexp)
 
 
     fraction = frexp(rSimd_Exp, &exponent);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.609548660288905419513128, 0.5833690139241746175358116,
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.609548660288905419513128,
+                                              0.5833690139241746175358116,
                                               -0.584452007502232362412542),
                             fraction);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(61, -40, 55), exponent);
 
     // Test the unsafe flavor too, in case they use different branches
     fraction = frexp<MathOptimization::Unsafe>(rSimd_Exp, &exponent);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.609548660288905419513128, 0.5833690139241746175358116,
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.609548660288905419513128,
+                                              0.5833690139241746175358116,
                                               -0.584452007502232362412542),
                             fraction);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(61, -40, 55), exponent);

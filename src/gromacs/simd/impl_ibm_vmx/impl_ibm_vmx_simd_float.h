@@ -191,8 +191,8 @@ static inline SimdFloat gmx_simdcall operator-(SimdFloat x)
 
 static inline SimdFloat gmx_simdcall operator*(SimdFloat a, SimdFloat b)
 {
-    return { vec_madd(a.simdInternal_, b.simdInternal_,
-                      reinterpret_cast<__vector float>(vec_splat_u32(0))) };
+    return { vec_madd(
+            a.simdInternal_, b.simdInternal_, reinterpret_cast<__vector float>(vec_splat_u32(0))) };
 }
 
 static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
@@ -335,7 +335,8 @@ static inline SimdFloat gmx_simdcall ldexp(SimdFloat value, SimdFInt32 exponent)
 
     iExponent = vec_sl(iExponent, vec_add(vec_splat_u32(15), vec_splat_u32(8)));
 
-    return { vec_madd(value.simdInternal_, reinterpret_cast<__vector float>(iExponent),
+    return { vec_madd(value.simdInternal_,
+                      reinterpret_cast<__vector float>(iExponent),
                       reinterpret_cast<__vector float>(vec_splat_u32(0))) };
 }
 

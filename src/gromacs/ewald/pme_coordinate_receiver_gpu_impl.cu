@@ -99,8 +99,7 @@ void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpCudaDirect(in
 
 #if GMX_MPI
     // Receive event from PP task
-    MPI_Irecv(&ppSync_[recvCount_], sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_,
-              &request_[recvCount_]);
+    MPI_Irecv(&ppSync_[recvCount_], sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_, &request_[recvCount_]);
     recvCount_++;
 #else
     GMX_UNUSED_VALUE(ppRank);

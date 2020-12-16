@@ -265,8 +265,10 @@ void FreeVolume::initAnalysis(const TrajectoryAnalysisSettings& settings, const 
             nnovdw++;
             if (nnovdw < maxnovdw)
             {
-                fprintf(stderr, "Could not determine VDW radius for %s-%s. Set to zero.\n",
-                        *(atoms->resinfo[resnr].name), *(atoms->atomname[i]));
+                fprintf(stderr,
+                        "Could not determine VDW radius for %s-%s. Set to zero.\n",
+                        *(atoms->resinfo[resnr].name),
+                        *(atoms->atomname[i]));
             }
             vdw_radius_.push_back(0.0);
         }

@@ -237,14 +237,17 @@ void ewald_LRcorrection(const int         numAtomsLocal,
     if (debug)
     {
         fprintf(debug, "Long Range corrections for Ewald interactions:\n");
-        fprintf(debug, "q2sum = %g, Vself_q=%g\n", L1_q * fr.q2sum[0] + lambda_q * fr.q2sum[1],
+        fprintf(debug,
+                "q2sum = %g, Vself_q=%g\n",
+                L1_q * fr.q2sum[0] + lambda_q * fr.q2sum[1],
                 L1_q * Vself_q[0] + lambda_q * Vself_q[1]);
         fprintf(debug, "Electrostatic Long Range correction: Vexcl=%g\n", Vexcl_q);
         if (MASTER(cr) && thread == 0)
         {
             if (ir.epsilon_surface > 0 || ir.ewald_geometry == eewg3DC)
             {
-                fprintf(debug, "Total dipole correction: Vdipole=%g\n",
+                fprintf(debug,
+                        "Total dipole correction: Vdipole=%g\n",
                         L1_q * Vdipole[0] + lambda_q * Vdipole[1]);
             }
         }

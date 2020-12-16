@@ -120,9 +120,21 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
     const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
     t_commrec      dummyCommrec  = { 0 };
     NumPmeDomains  numPmeDomains = { 1, 1 };
-    gmx_pme_t* pmeDataRaw = gmx_pme_init(&dummyCommrec, numPmeDomains, inputRec, false, false, true,
-                                         ewaldCoeff_q, ewaldCoeff_lj, 1, runMode, nullptr,
-                                         deviceContext, deviceStream, pmeGpuProgram, dummyLogger);
+    gmx_pme_t*     pmeDataRaw    = gmx_pme_init(&dummyCommrec,
+                                         numPmeDomains,
+                                         inputRec,
+                                         false,
+                                         false,
+                                         true,
+                                         ewaldCoeff_q,
+                                         ewaldCoeff_lj,
+                                         1,
+                                         runMode,
+                                         nullptr,
+                                         deviceContext,
+                                         deviceStream,
+                                         pmeGpuProgram,
+                                         dummyLogger);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
@@ -166,8 +178,8 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     // TODO: Pin the host buffer and use async memory copies
     // TODO: Special constructor for PME-only rank / PME-tests is used here. There should be a mechanism to
     //       restrict one from using other constructor here.
-    return std::make_unique<StatePropagatorDataGpu>(deviceStream, *deviceContext, GpuApiCallBehavior::Sync,
-                                                    pme_gpu_get_block_size(&pme), nullptr);
+    return std::make_unique<StatePropagatorDataGpu>(
+            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(&pme), nullptr);
 }
 
 //! PME initialization with atom data
@@ -227,8 +239,8 @@ static void pmeGetRealGridSizesInternal(const gmx_pme_t* pme,
     switch (mode)
     {
         case CodePath::CPU:
-            gmx_parallel_3dfft_real_limits(pme->pfft_setup[gridIndex], gridSize, gridOffsetUnused,
-                                           paddedGridSize);
+            gmx_parallel_3dfft_real_limits(
+                    pme->pfft_setup[gridIndex], gridSize, gridOffsetUnused, paddedGridSize);
             break;
 
         case CodePath::GPU:
@@ -253,8 +265,8 @@ static void pmeGetComplexGridSizesInternal(const gmx_pme_t* pme,
 {
     const size_t gridIndex = 0;
     IVec         gridOffsetUnused, complexOrderUnused;
-    gmx_parallel_3dfft_complex_limits(pme->pfft_setup[gridIndex], complexOrderUnused, gridSize,
-                                      gridOffsetUnused, paddedGridSize); // TODO: what about YZX ordering?
+    gmx_parallel_3dfft_complex_limits(
+            pme->pfft_setup[gridIndex], complexOrderUnused, gridSize, gridOffsetUnused, paddedGridSize); // TODO: what about YZX ordering?
 }
 
 //! Getting the PME grid memory buffer and its sizes - template definition
@@ -305,9 +317,14 @@ void pmePerformSplineAndSpread(gmx_pme_t* pme,
     switch (mode)
     {
         case CodePath::CPU:
-            spread_on_grid(pme, atc, &pme->pmegrid[gridIndex], computeSplines, spreadCharges,
+            spread_on_grid(pme,
+                           atc,
+                           &pme->pmegrid[gridIndex],
+                           computeSplines,
+                           spreadCharges,
                            fftgrid != nullptr ? fftgrid[gridIndex] : nullptr,
-                           computeSplinesForZeroCharges, gridIndex);
+                           computeSplinesForZeroCharges,
+                           gridIndex);
             if (spreadCharges && !pme->bUseThreads)
             {
                 wrap_periodic_pmegrid(pme, pmegrid);
@@ -381,8 +398,13 @@ void pmePerformSolve(const gmx_pme_t*  pme,
                     break;
 
                 case PmeSolveAlgorithm::LennardJones:
-                    solve_pme_lj_yzx(pme, &h_grid, useLorentzBerthelot, cellVolume,
-                                     computeEnergyAndVirial, pme->nthread, threadIndex);
+                    solve_pme_lj_yzx(pme,
+                                     &h_grid,
+                                     useLorentzBerthelot,
+                                     cellVolume,
+                                     computeEnergyAndVirial,
+                                     pme->nthread,
+                                     threadIndex);
                     break;
 
                 default: GMX_THROW(InternalError("Test not implemented for this mode"));
@@ -659,7 +681,8 @@ void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesV
     switch (mode)
     {
         case CodePath::GPU:
-            memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices, gridLineIndices.data(),
+            memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices,
+                   gridLineIndices.data(),
                    atomCount * sizeof(gridLineIndices[0]));
             break;
 
@@ -705,8 +728,7 @@ static void pmeSetGridInternal(const gmx_pme_t*                        pme,
     {
         case CodePath::GPU: // intentional absence of break, the grid will be copied from the host buffer in testing mode
         case CodePath::CPU:
-            std::memset(grid, 0,
-                        paddedGridSize[XX] * paddedGridSize[YY] * paddedGridSize[ZZ] * sizeof(ValueType));
+            std::memset(grid, 0, paddedGridSize[XX] * paddedGridSize[YY] * paddedGridSize[ZZ] * sizeof(ValueType));
             for (const auto& gridValue : gridValues)
             {
                 for (int i = 0; i < DIM; i++)

@@ -73,8 +73,13 @@ void GmxForceCalculator::compute(gmx::ArrayRef<const gmx::RVec> coordinateInput,
     // update the coordinates in the backend
     nbv_->convertCoordinates(gmx::AtomLocality::Local, false, coordinateInput);
 
-    nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local, *interactionConst_, *stepWork_,
-                                  enbvClearFYes, *forcerec_, enerd_.get(), nrnb_.get());
+    nbv_->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
+                                  *interactionConst_,
+                                  *stepWork_,
+                                  enbvClearFYes,
+                                  *forcerec_,
+                                  enerd_.get(),
+                                  nrnb_.get());
 
     nbv_->atomdata_add_nbat_f_to_f(gmx::AtomLocality::All, forceOutput);
 }
@@ -94,9 +99,18 @@ void GmxForceCalculator::setParticlesOnGrid(gmx::ArrayRef<const int>       parti
 
     const real particleDensity = coordinates.size() / det(legacyBox);
 
-    nbnxn_put_on_grid(nbv_.get(), legacyBox, 0, lowerCorner, upperCorner, nullptr,
-                      { 0, int(coordinates.size()) }, particleDensity, particleInfoAllVdw,
-                      coordinates, 0, nullptr);
+    nbnxn_put_on_grid(nbv_.get(),
+                      legacyBox,
+                      0,
+                      lowerCorner,
+                      upperCorner,
+                      nullptr,
+                      { 0, int(coordinates.size()) },
+                      particleDensity,
+                      particleInfoAllVdw,
+                      coordinates,
+                      0,
+                      nullptr);
 }
 
 } // namespace nblib

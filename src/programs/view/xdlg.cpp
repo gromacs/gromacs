@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,8 +179,12 @@ bool SetDlgItemSize(t_dlg* dlg, t_id id, int w, int h)
             dlgitem->win.height = h;
         }
 #ifdef DEBUG
-        std::fprintf(dlg->x11->console, "Size window from: %dx%d to %dx%d\n", old_w, old_h,
-                     dlgitem->win.width, dlgitem->win.height);
+        std::fprintf(dlg->x11->console,
+                     "Size window from: %dx%d to %dx%d\n",
+                     old_w,
+                     old_h,
+                     dlgitem->win.width,
+                     dlgitem->win.height);
         dlg->x11->Flush(dlg->x11);
 #endif
         if (dlgitem->win.self)
@@ -359,16 +363,15 @@ void HideDlg(t_dlg* dlg)
 void NoHelp(t_dlg* dlg)
 {
     const char* lines[2] = { "Error", "No help for this item" };
-    MessageBox(dlg->x11, dlg->wDad, "No Help", 2, lines, MB_OK | MB_ICONSTOP | MB_APPLMODAL,
-               nullptr, nullptr);
+    MessageBox(dlg->x11, dlg->wDad, "No Help", 2, lines, MB_OK | MB_ICONSTOP | MB_APPLMODAL, nullptr, nullptr);
 }
 
 void HelpDlg(t_dlg* dlg)
 {
     const char* lines[] = { "Place the cursor over one of the items",
-                            "and press the F1 key to get more help.", "First press the OK button." };
-    MessageBox(dlg->x11, dlg->win.self, "Help Dialogbox", 3, lines,
-               MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
+                            "and press the F1 key to get more help.",
+                            "First press the OK button." };
+    MessageBox(dlg->x11, dlg->win.self, "Help Dialogbox", 3, lines, MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
 }
 
 void HelpNow(t_dlg* dlg, t_dlgitem* dlgitem)
@@ -416,8 +419,7 @@ void HelpNow(t_dlg* dlg, t_dlgitem* dlgitem)
             }
         }
     } while (bCont);
-    MessageBox(dlg->x11, dlg->wDad, "Help", nlines, lines,
-               MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
+    MessageBox(dlg->x11, dlg->wDad, "Help", nlines, lines, MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
     for (i = 0; (i < nlines); i++)
     {
         sfree(lines[i]);
@@ -429,9 +431,10 @@ static void EnterDlg(t_dlg* dlg)
 {
     if (dlg->flags & DLG_APPLMODAL)
     {
-        dlg->bGrab = GrabOK(dlg->x11->console,
-                            XGrabPointer(dlg->x11->disp, dlg->win.self, True, 0, GrabModeAsync,
-                                         GrabModeAsync, dlg->win.self, None, CurrentTime));
+        dlg->bGrab = GrabOK(
+                dlg->x11->console,
+                XGrabPointer(
+                        dlg->x11->disp, dlg->win.self, True, 0, GrabModeAsync, GrabModeAsync, dlg->win.self, None, CurrentTime));
     }
     dlg->x11->Flush(dlg->x11);
 }
@@ -483,8 +486,10 @@ static bool DlgCB(t_x11* x11, XEvent* event, Window w, void* data)
                     {
                         if ((dlg->dlgitem[i]->type == edlgBN) && (dlg->dlgitem[i]->u.button.bDefault))
                         {
-                            PushMouse(x11->disp, dlg->dlgitem[i]->win.self,
-                                      dlg->dlgitem[i]->win.width / 2, dlg->dlgitem[i]->win.height / 2);
+                            PushMouse(x11->disp,
+                                      dlg->dlgitem[i]->win.self,
+                                      dlg->dlgitem[i]->win.width / 2,
+                                      dlg->dlgitem[i]->win.height / 2);
                             break;
                         }
                     }
@@ -585,9 +590,18 @@ static void DoCreateDlg(t_dlg* dlg)
     attr.save_under        = True;
     attr.cursor            = XCreateFontCursor(dlg->x11->disp, XC_hand2);
     Val           = CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWSaveUnder | CWCursor;
-    dlg->win.self = XCreateWindow(dlg->x11->disp, dlg->wDad, dlg->win.x, dlg->win.y, dlg->win.width,
-                                  dlg->win.height, dlg->win.bwidth, CopyFromParent, InputOutput,
-                                  CopyFromParent, Val, &attr);
+    dlg->win.self = XCreateWindow(dlg->x11->disp,
+                                  dlg->wDad,
+                                  dlg->win.x,
+                                  dlg->win.y,
+                                  dlg->win.width,
+                                  dlg->win.height,
+                                  dlg->win.bwidth,
+                                  CopyFromParent,
+                                  InputOutput,
+                                  CopyFromParent,
+                                  Val,
+                                  &attr);
     dlg->x11->RegisterCallback(dlg->x11, dlg->win.self, dlg->wDad, DlgCB, dlg);
     dlg->x11->SetInputMask(dlg->x11, dlg->win.self, ExposureMask | ButtonPressMask | KeyPressMask);
 
@@ -624,9 +638,15 @@ void AddDlgItem(t_dlg* dlg, t_dlgitem* item)
     {
         gmx_fatal(FARGS, "dlgitem not allocated");
     }
-    item->win.self = XCreateSimpleWindow(dlg->x11->disp, dlg->win.self, item->win.x, item->win.y,
-                                         item->win.width, item->win.height, item->win.bwidth,
-                                         dlg->x11->fg, dlg->x11->bg);
+    item->win.self = XCreateSimpleWindow(dlg->x11->disp,
+                                         dlg->win.self,
+                                         item->win.x,
+                                         item->win.y,
+                                         item->win.width,
+                                         item->win.height,
+                                         item->win.bwidth,
+                                         dlg->x11->fg,
+                                         dlg->x11->bg);
     CheckWindow(item->win.self);
 
     dlg->x11->RegisterCallback(dlg->x11, item->win.self, dlg->win.self, DlgCB, dlg);
@@ -799,8 +819,12 @@ void SetDlgSize(t_dlg* dlg, int w, int h, bool bAutoPosition)
     dlg->win.height = h;
 
 #ifdef DEBUG
-    std::fprintf(dlg->x11->console, "SetDlgSize: Dialog is %dx%d, at %d,%d\n", dlg->win.width,
-                 dlg->win.height, dlg->win.x, dlg->win.y);
+    std::fprintf(dlg->x11->console,
+                 "SetDlgSize: Dialog is %dx%d, at %d,%d\n",
+                 dlg->win.width,
+                 dlg->win.height,
+                 dlg->win.x,
+                 dlg->win.y);
     dlg->x11->Flush(dlg->x11);
 #endif
     if (dlg->win.self)

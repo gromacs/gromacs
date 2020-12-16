@@ -271,8 +271,17 @@ static void pr_atom(FILE* fp, int indent, const char* title, const t_atom* atom,
             fprintf(fp,
                     "%s[%6d]={type=%3hu, typeB=%3hu, ptype=%8s, m=%12.5e, "
                     "q=%12.5e, mB=%12.5e, qB=%12.5e, resind=%5d, atomnumber=%3d}\n",
-                    title, i, atom[i].type, atom[i].typeB, ptype_str[atom[i].ptype], atom[i].m,
-                    atom[i].q, atom[i].mB, atom[i].qB, atom[i].resind, atom[i].atomnumber);
+                    title,
+                    i,
+                    atom[i].type,
+                    atom[i].typeB,
+                    ptype_str[atom[i].ptype],
+                    atom[i].m,
+                    atom[i].q,
+                    atom[i].mB,
+                    atom[i].qB,
+                    atom[i].resind,
+                    atom[i].atomnumber);
         }
     }
 }
@@ -287,8 +296,7 @@ static void pr_strings2(FILE* fp, int indent, const char* title, char*** nm, cha
         for (i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
-            fprintf(fp, "%s[%d]={name=\"%s\",nameB=\"%s\"}\n", title, bShowNumbers ? i : -1,
-                    *(nm[i]), *(nmB[i]));
+            fprintf(fp, "%s[%d]={name=\"%s\",nameB=\"%s\"}\n", title, bShowNumbers ? i : -1, *(nm[i]), *(nmB[i]));
         }
     }
 }
@@ -303,8 +311,13 @@ static void pr_resinfo(FILE* fp, int indent, const char* title, const t_resinfo*
         for (i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
-            fprintf(fp, "%s[%d]={name=\"%s\", nr=%d, ic='%c'}\n", title, bShowNumbers ? i : -1,
-                    *(resinfo[i].name), resinfo[i].nr, (resinfo[i].ic == '\0') ? ' ' : resinfo[i].ic);
+            fprintf(fp,
+                    "%s[%d]={name=\"%s\", nr=%d, ic='%c'}\n",
+                    title,
+                    bShowNumbers ? i : -1,
+                    *(resinfo[i].name),
+                    resinfo[i].nr,
+                    (resinfo[i].ic == '\0') ? ' ' : resinfo[i].ic);
         }
     }
 }
@@ -331,8 +344,7 @@ void pr_atomtypes(FILE* fp, int indent, const char* title, const t_atomtypes* at
         for (i = 0; i < atomtypes->nr; i++)
         {
             pr_indent(fp, indent);
-            fprintf(fp, "atomtype[%3d]={atomnumber=%4d}\n", bShowNumbers ? i : -1,
-                    atomtypes->atomnumber[i]);
+            fprintf(fp, "atomtype[%3d]={atomnumber=%4d}\n", bShowNumbers ? i : -1, atomtypes->atomnumber[i]);
         }
     }
 }
@@ -466,15 +478,19 @@ void atomsSetMassesBasedOnNames(t_atoms* atoms, gmx_bool printMissingMasses)
     bool haveMass = true;
     for (int i = 0; i < atoms->nr; i++)
     {
-        if (!aps.setAtomProperty(epropMass, *atoms->resinfo[atoms->atom[i].resind].name,
-                                 *atoms->atomname[i], &atoms->atom[i].m))
+        if (!aps.setAtomProperty(epropMass,
+                                 *atoms->resinfo[atoms->atom[i].resind].name,
+                                 *atoms->atomname[i],
+                                 &atoms->atom[i].m))
         {
             haveMass = false;
 
             if (numWarn < maxWarn)
             {
-                fprintf(stderr, "Can not find mass in database for atom %s in residue %d %s\n",
-                        *atoms->atomname[i], atoms->resinfo[atoms->atom[i].resind].nr,
+                fprintf(stderr,
+                        "Can not find mass in database for atom %s in residue %d %s\n",
+                        *atoms->atomname[i],
+                        atoms->resinfo[atoms->atom[i].resind].nr,
                         *atoms->resinfo[atoms->atom[i].resind].name);
                 numWarn++;
             }

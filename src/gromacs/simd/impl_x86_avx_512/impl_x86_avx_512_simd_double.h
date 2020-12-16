@@ -315,8 +315,8 @@ static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
         iExponent = _mm256_add_epi32(iExponent, _mm256_set1_epi32(1));
 
         // Set result to value (+-0) when it is zero.
-        result = _mm512_mask_getmant_pd(value.simdInternal_, valueIsNonZero, value.simdInternal_,
-                                        _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        result = _mm512_mask_getmant_pd(
+                value.simdInternal_, valueIsNonZero, value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
     }
     else
     {
@@ -423,7 +423,8 @@ static inline SimdDouble gmx_simdcall copysign(SimdDouble a, SimdDouble b)
 {
     return { _mm512_castsi512_pd(_mm512_ternarylogic_epi64(_mm512_castpd_si512(a.simdInternal_),
                                                            _mm512_castpd_si512(b.simdInternal_),
-                                                           _mm512_set1_epi64(INT64_MIN), 0xD8)) };
+                                                           _mm512_set1_epi64(INT64_MIN),
+                                                           0xD8)) };
 }
 
 static inline SimdDInt32 gmx_simdcall operator&(SimdDInt32 a, SimdDInt32 b)
@@ -463,20 +464,25 @@ static inline SimdDInt32 gmx_simdcall operator*(SimdDInt32 a, SimdDInt32 b)
 
 static inline SimdDIBool gmx_simdcall operator==(SimdDInt32 a, SimdDInt32 b)
 {
-    return { _mm512_mask_cmp_epi32_mask(avx512Int2Mask(0xFF), _mm512_castsi256_si512(a.simdInternal_),
-                                        _mm512_castsi256_si512(b.simdInternal_), _MM_CMPINT_EQ) };
+    return { _mm512_mask_cmp_epi32_mask(avx512Int2Mask(0xFF),
+                                        _mm512_castsi256_si512(a.simdInternal_),
+                                        _mm512_castsi256_si512(b.simdInternal_),
+                                        _MM_CMPINT_EQ) };
 }
 
 static inline SimdDIBool gmx_simdcall testBits(SimdDInt32 a)
 {
-    return { _mm512_mask_test_epi32_mask(avx512Int2Mask(0xFF), _mm512_castsi256_si512(a.simdInternal_),
+    return { _mm512_mask_test_epi32_mask(avx512Int2Mask(0xFF),
+                                         _mm512_castsi256_si512(a.simdInternal_),
                                          _mm512_castsi256_si512(a.simdInternal_)) };
 }
 
 static inline SimdDIBool gmx_simdcall operator<(SimdDInt32 a, SimdDInt32 b)
 {
-    return { _mm512_mask_cmp_epi32_mask(avx512Int2Mask(0xFF), _mm512_castsi256_si512(a.simdInternal_),
-                                        _mm512_castsi256_si512(b.simdInternal_), _MM_CMPINT_LT) };
+    return { _mm512_mask_cmp_epi32_mask(avx512Int2Mask(0xFF),
+                                        _mm512_castsi256_si512(a.simdInternal_),
+                                        _mm512_castsi256_si512(b.simdInternal_),
+                                        _MM_CMPINT_LT) };
 }
 
 static inline SimdDIBool gmx_simdcall operator&&(SimdDIBool a, SimdDIBool b)
@@ -508,9 +514,9 @@ static inline SimdDInt32 gmx_simdcall selectByNotMask(SimdDInt32 a, SimdDIBool m
 
 static inline SimdDInt32 gmx_simdcall blend(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
 {
-    return { _mm512_castsi512_si256(
-            _mm512_mask_blend_epi32(sel.simdInternal_, _mm512_castsi256_si512(a.simdInternal_),
-                                    _mm512_castsi256_si512(b.simdInternal_))) };
+    return { _mm512_castsi512_si256(_mm512_mask_blend_epi32(sel.simdInternal_,
+                                                            _mm512_castsi256_si512(a.simdInternal_),
+                                                            _mm512_castsi256_si512(b.simdInternal_))) };
 }
 
 static inline SimdDInt32 gmx_simdcall cvtR2I(SimdDouble a)

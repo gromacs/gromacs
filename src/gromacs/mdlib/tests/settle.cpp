@@ -335,8 +335,11 @@ TEST_P(SettleTest, SatisfiesConstraints)
         // being tested, to help make failing tests comprehensible.
         std::string testDescription = formatString(
                 "Testing %s with %d SETTLEs, %s, %svelocities and %scalculating the virial.",
-                runner->hardwareDescription().c_str(), numSettles, pbcName.c_str(),
-                updateVelocities ? "with " : "without ", calcVirial ? "" : "not ");
+                runner->hardwareDescription().c_str(),
+                numSettles,
+                pbcName.c_str(),
+                updateVelocities ? "with " : "without ",
+                calcVirial ? "" : "not ");
 
         SCOPED_TRACE(testDescription);
 

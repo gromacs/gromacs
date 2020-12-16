@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,7 +75,8 @@ void export_system(py::module& m)
     // required to maintain and to pass to the API.
     py::class_<::gmxapi::Session, std::shared_ptr<::gmxapi::Session>> session(m, "MDSession");
     session.def("run", &::gmxapi::Session::run, "Run the simulation workflow");
-    session.def("close", &::gmxapi::Session::close,
+    session.def("close",
+                &::gmxapi::Session::close,
                 "Shut down the execution environment and close the session.");
 
     // Export system container class
@@ -88,7 +89,8 @@ void export_system(py::module& m)
                "Launch the configured workflow in the provided context.");
 
     // Module-level function
-    m.def("from_tpr", &gmxpy::from_tpr,
+    m.def("from_tpr",
+          &gmxpy::from_tpr,
           "Return a system container initialized from the given input record.");
 }
 

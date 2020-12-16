@@ -295,8 +295,7 @@ void _inc_nrnb(t_nrnb* nrnb, int enr, int inc, char gmx_unused* file, int gmx_un
 {
     nrnb->n[enr] += inc;
 #ifdef DEBUG_NRNB
-    printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n", nbdata[enr].name, enr, inc,
-           file, line);
+    printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n", nbdata[enr].name, enr, inc, file, line);
 #endif
 }
 
@@ -439,8 +438,7 @@ void print_perf(FILE*   out,
     if (time_per_node > 0)
     {
         fprintf(out, "%12s %12s %12s %10s\n", "", "Core t (s)", "Wall t (s)", "(%)");
-        fprintf(out, "%12s %12.3f %12.3f %10.1f\n", "Time:", time_per_thread, time_per_node,
-                100.0 * time_per_thread / time_per_node);
+        fprintf(out, "%12s %12.3f %12.3f %10.1f\n", "Time:", time_per_thread, time_per_node, 100.0 * time_per_thread / time_per_node);
         /* only print day-hour-sec format if time_per_node is more than 30 min */
         if (time_per_node > 30 * 60)
         {
@@ -455,15 +453,27 @@ void print_perf(FILE*   out,
             if (getenv("GMX_DETAILED_PERF_STATS") == nullptr)
             {
                 fprintf(out, "%12s %12s %12s\n", "", "(ns/day)", "(hour/ns)");
-                fprintf(out, "%12s %12.3f %12.3f\n", "Performance:", wallclocktime * 24 * 3.6 / time_per_node,
+                fprintf(out,
+                        "%12s %12.3f %12.3f\n",
+                        "Performance:",
+                        wallclocktime * 24 * 3.6 / time_per_node,
                         1000 * time_per_node / (3600 * wallclocktime));
             }
             else
             {
-                fprintf(out, "%12s %12s %12s %12s %12s\n", "", "(Mnbf/s)",
-                        (mflop > 1000) ? "(GFlops)" : "(MFlops)", "(ns/day)", "(hour/ns)");
-                fprintf(out, "%12s %12.3f %12.3f %12.3f %12.3f\n", "Performance:", nbfs / time_per_node,
-                        (mflop > 1000) ? (mflop / 1000) : mflop, wallclocktime * 24 * 3.6 / time_per_node,
+                fprintf(out,
+                        "%12s %12s %12s %12s %12s\n",
+                        "",
+                        "(Mnbf/s)",
+                        (mflop > 1000) ? "(GFlops)" : "(MFlops)",
+                        "(ns/day)",
+                        "(hour/ns)");
+                fprintf(out,
+                        "%12s %12.3f %12.3f %12.3f %12.3f\n",
+                        "Performance:",
+                        nbfs / time_per_node,
+                        (mflop > 1000) ? (mflop / 1000) : mflop,
+                        wallclocktime * 24 * 3.6 / time_per_node,
                         1000 * time_per_node / (3600 * wallclocktime));
             }
         }
@@ -476,10 +486,18 @@ void print_perf(FILE*   out,
             }
             else
             {
-                fprintf(out, "%12s %12s %12s %14s\n", "", "(Mnbf/s)",
-                        (mflop > 1000) ? "(GFlops)" : "(MFlops)", "(steps/hour)");
-                fprintf(out, "%12s %12.3f %12.3f %14.1f\n", "Performance:", nbfs / time_per_node,
-                        (mflop > 1000) ? (mflop / 1000) : mflop, nsteps * 3600.0 / time_per_node);
+                fprintf(out,
+                        "%12s %12s %12s %14s\n",
+                        "",
+                        "(Mnbf/s)",
+                        (mflop > 1000) ? "(GFlops)" : "(MFlops)",
+                        "(steps/hour)");
+                fprintf(out,
+                        "%12s %12.3f %12.3f %14.1f\n",
+                        "Performance:",
+                        nbfs / time_per_node,
+                        (mflop > 1000) ? (mflop / 1000) : mflop,
+                        nsteps * 3600.0 / time_per_node);
             }
         }
     }

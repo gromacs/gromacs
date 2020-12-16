@@ -146,8 +146,8 @@ void do_md_trajectory_writing(FILE*                          fplog,
         // Note that part of the following code is duplicated in StatePropagatorData::trajectoryWriterTeardown.
         // This duplication is needed while both legacy and modular code paths are in use.
         // TODO: Remove duplication asap, make sure to keep in sync in the meantime.
-        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global->natoms, step, t, state,
-                                         state_global, observablesHistory, f, &checkpointDataHolder);
+        mdoutf_write_to_trajectory_files(
+                fplog, cr, outf, mdof_flags, top_global->natoms, step, t, state, state_global, observablesHistory, f, &checkpointDataHolder);
         if (bLastStep && step_rel == ir->nsteps && bDoConfOut && MASTER(cr) && !bRerunMD)
         {
             if (fr->bMolPBC && state == state_global)
@@ -179,8 +179,13 @@ void do_md_trajectory_writing(FILE*                          fplog,
                 /* Make molecules whole only for confout writing */
                 do_pbc_mtop(ir->pbcType, state->box, top_global, x_for_confout);
             }
-            write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm), *top_global->name, top_global,
-                                x_for_confout, state_global->v.rvec_array(), ir->pbcType, state->box);
+            write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
+                                *top_global->name,
+                                top_global,
+                                x_for_confout,
+                                state_global->v.rvec_array(),
+                                ir->pbcType,
+                                state->box);
             if (fr->bMolPBC && state == state_global)
             {
                 sfree(x_for_confout);

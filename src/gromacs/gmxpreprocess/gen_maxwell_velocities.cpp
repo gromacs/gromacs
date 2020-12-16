@@ -99,7 +99,8 @@ static void low_mspeed(real tempi, gmx_mtop_t* mtop, rvec v[], gmx::ThreeFry2x64
         fprintf(debug,
                 "Velocities were taken from a Maxwell distribution\n"
                 "Initial generated temperature: %12.5e (scaled to: %12.5e)\n",
-                temp, tempi);
+                temp,
+                tempi);
     }
 }
 

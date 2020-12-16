@@ -100,8 +100,20 @@ void ListedGmxCalculator::compute(const std::vector<gmx::RVec>&      x,
     energies.fill(0);
     std::fill(enerd.term, enerd.term + F_NRE, 0.0);
 
-    calc_listed(wcycle, *idef, &bondedThreading, xdata, &forceOutputs, &fr, &pbc, &enerd, &nrnb,
-                lambdaBuffer.data(), nullptr, nullptr, nullptr, stepWork);
+    calc_listed(wcycle,
+                *idef,
+                &bondedThreading,
+                xdata,
+                &forceOutputs,
+                &fr,
+                &pbc,
+                &enerd,
+                &nrnb,
+                lambdaBuffer.data(),
+                nullptr,
+                nullptr,
+                nullptr,
+                stepWork);
 
     auto transferEnergy = [&energies, this](auto& interactionElement) {
         using InteractionType = typename std::decay_t<decltype(interactionElement)>::type;

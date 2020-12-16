@@ -120,11 +120,15 @@ static void constr_recur(const ListOfLists<int>&        at2con,
                 if (debug)
                 {
                     fprintf(debug,
-                            "Found longer constraint distance: r0 %5.3f r1 %5.3f rmax %5.3f\n", rn0,
-                            rn1, sqrt(*r2max));
+                            "Found longer constraint distance: r0 %5.3f r1 %5.3f rmax %5.3f\n",
+                            rn0,
+                            rn1,
+                            sqrt(*r2max));
                     for (int a1 = 0; a1 < depth; a1++)
                     {
-                        fprintf(debug, " %d %5.3f", path[a1],
+                        fprintf(debug,
+                                " %d %5.3f",
+                                path[a1],
                                 iparams[constr_iatomptr(ia1, ia2, con)[0]].constr.dA);
                     }
                     fprintf(debug, " %d %5.3f\n", con, len);
@@ -185,8 +189,8 @@ static real constr_r_max_moltype(const gmx_moltype_t*           molt,
         r1 = 0;
 
         count = 0;
-        constr_recur(at2con, molt->ilist, iparams, FALSE, at, 0, 1 + ir->nProjOrder, path, r0, r1,
-                     &r2maxA, &count);
+        constr_recur(
+                at2con, molt->ilist, iparams, FALSE, at, 0, 1 + ir->nProjOrder, path, r0, r1, &r2maxA, &count);
     }
     if (ir->efep == efepNO)
     {
@@ -200,8 +204,8 @@ static real constr_r_max_moltype(const gmx_moltype_t*           molt,
             r0    = 0;
             r1    = 0;
             count = 0;
-            constr_recur(at2con, molt->ilist, iparams, TRUE, at, 0, 1 + ir->nProjOrder, path, r0,
-                         r1, &r2maxB, &count);
+            constr_recur(
+                    at2con, molt->ilist, iparams, TRUE, at, 0, 1 + ir->nProjOrder, path, r0, r1, &r2maxB, &count);
         }
         lam0 = ir->fepvals->init_lambda;
         if (EI_DYNAMICS(ir->eI))
@@ -230,7 +234,8 @@ real constr_r_max(const MDLogger& mdlog, const gmx_mtop_t* mtop, const t_inputre
     GMX_LOG(mdlog.info)
             .appendTextFormatted(
                     "Maximum distance for %d constraints, at 120 deg. angles, all-trans: %.3f nm",
-                    1 + ir->nProjOrder, rmax);
+                    1 + ir->nProjOrder,
+                    rmax);
 
     return rmax;
 }

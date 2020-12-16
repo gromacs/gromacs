@@ -193,8 +193,8 @@ void GridSet::putOnGrid(const matrix                   box,
     const int ddZone = (domainSetup_.doTestParticleInsertion ? 0 : gridIndex);
     // grid data used in GPU transfers inherits the gridset pinning policy
     auto pinPolicy = gridSetData_.cells.get_allocator().pinningPolicy();
-    grid.setDimensions(ddZone, n - numAtomsMoved, lowerCorner, upperCorner, atomDensity,
-                       maxAtomGroupRadius, haveFep_, pinPolicy);
+    grid.setDimensions(
+            ddZone, n - numAtomsMoved, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius, haveFep_, pinPolicy);
 
     for (GridWork& work : gridWork_)
     {
@@ -212,15 +212,23 @@ void GridSet::putOnGrid(const matrix                   box,
     {
         try
         {
-            Grid::calcColumnIndices(grid.dimensions(), updateGroupsCog, atomRange, x, ddZone, move, thread,
-                                    nthread, gridSetData_.cells, gridWork_[thread].numAtomsPerColumn);
+            Grid::calcColumnIndices(grid.dimensions(),
+                                    updateGroupsCog,
+                                    atomRange,
+                                    x,
+                                    ddZone,
+                                    move,
+                                    thread,
+                                    nthread,
+                                    gridSetData_.cells,
+                                    gridWork_[thread].numAtomsPerColumn);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
     /* Copy the already computed cell indices to the grid and sort, when needed */
-    grid.setCellIndices(ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo.data(), x,
-                        numAtomsMoved, nbat);
+    grid.setCellIndices(
+            ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo.data(), x, numAtomsMoved, nbat);
 
     if (gridIndex == 0)
     {

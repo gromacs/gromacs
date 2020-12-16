@@ -257,14 +257,14 @@ void printCurrentStatus(TextWriter*              writer,
         }
         for (size_t i = firstSelection; i < sc->sel.size(); ++i)
         {
-            writer->writeString(formatString(" %2d. %s\n", static_cast<int>(i - firstSelection + 1),
-                                             sc->sel[i]->selectionText()));
+            writer->writeString(formatString(
+                    " %2d. %s\n", static_cast<int>(i - firstSelection + 1), sc->sel[i]->selectionText()));
         }
         if (maxCount > 0)
         {
             const int remaining = maxCount - static_cast<int>(sc->sel.size() - firstSelection);
-            writer->writeString(formatString("(%d more selection%s required)\n", remaining,
-                                             remaining > 1 ? "s" : ""));
+            writer->writeString(formatString(
+                    "(%d more selection%s required)\n", remaining, remaining > 1 ? "s" : ""));
         }
     }
 }
@@ -688,8 +688,8 @@ bool SelectionCollection::requiresIndexGroups() const
 SelectionList SelectionCollection::parseFromStdin(int count, bool bInteractive, const std::string& context)
 {
     StandardInputStream inputStream;
-    return parseInteractive(count, &inputStream,
-                            bInteractive ? &TextOutputFile::standardError() : nullptr, context);
+    return parseInteractive(
+            count, &inputStream, bInteractive ? &TextOutputFile::standardError() : nullptr, context);
 }
 
 namespace
@@ -717,8 +717,8 @@ SelectionList SelectionCollection::parseInteractive(int                count,
     yyscan_t scanner;
 
     const std::unique_ptr<TextWriter> statusWriter(initStatusWriter(statusStream));
-    _gmx_sel_init_lexer(&scanner, &impl_->sc_, statusWriter.get(), count,
-                        impl_->bExternalGroupsSet_, impl_->grps_);
+    _gmx_sel_init_lexer(
+            &scanner, &impl_->sc_, statusWriter.get(), count, impl_->bExternalGroupsSet_, impl_->grps_);
     return runParser(scanner, inputStream, true, count, context);
 }
 
@@ -853,7 +853,8 @@ void SelectionCollection::evaluate(t_trxframe* fr, t_pbc* pbc)
                     "Trajectory has less atoms (%d) than what is required for "
                     "evaluating the provided selections (atoms up to index %d "
                     "are required).",
-                    fr->natoms, maxAtomIndex + 1);
+                    fr->natoms,
+                    maxAtomIndex + 1);
             GMX_THROW(InconsistentInputError(message));
         }
     }

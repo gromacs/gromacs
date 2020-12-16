@@ -188,8 +188,11 @@ static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
     kernel = clCreateKernel(nb->dev_rundata->program, kernel_name, &cl_error);
     if (CL_SUCCESS != cl_error)
     {
-        gmx_fatal(FARGS, "Failed to create kernel '%s' for GPU #%s: OpenCL error %d", kernel_name,
-                  nb->deviceContext_->deviceInfo().device_name, cl_error);
+        gmx_fatal(FARGS,
+                  "Failed to create kernel '%s' for GPU #%s: OpenCL error %d",
+                  kernel_name,
+                  nb->deviceContext_->deviceInfo().device_name,
+                  cl_error);
     }
 
     return kernel;
@@ -224,8 +227,8 @@ static void nbnxn_ocl_clear_e_fshift(NbnxmGpu* nb)
     cl_error |= clSetKernelArg(zero_e_fshift, arg_no++, sizeof(cl_uint), &shifts);
     GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 
-    cl_error = clEnqueueNDRangeKernel(ls, zero_e_fshift, 3, nullptr, global_work_size,
-                                      local_work_size, 0, nullptr, nullptr);
+    cl_error = clEnqueueNDRangeKernel(
+            ls, zero_e_fshift, 3, nullptr, global_work_size, local_work_size, 0, nullptr, nullptr);
     GMX_ASSERT(cl_error == CL_SUCCESS, ocl_get_error_string(cl_error).c_str());
 }
 
@@ -401,8 +404,13 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
     {
         GMX_ASSERT(sizeof(float) * DIM == sizeof(*nbatom->shift_vec.data()),
                    "Sizes of host- and device-side shift vectors should be the same.");
-        copyToDeviceBuffer(&adat->shift_vec, reinterpret_cast<const float*>(nbatom->shift_vec.data()),
-                           0, SHIFTS * DIM, deviceStream, GpuApiCallBehavior::Async, nullptr);
+        copyToDeviceBuffer(&adat->shift_vec,
+                           reinterpret_cast<const float*>(nbatom->shift_vec.data()),
+                           0,
+                           SHIFTS * DIM,
+                           deviceStream,
+                           GpuApiCallBehavior::Async,
+                           nullptr);
         adat->bShiftVecUploaded = CL_TRUE;
     }
 }
@@ -474,16 +482,25 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     {
         GMX_ASSERT(sizeof(float) == sizeof(*nbat->params().lj_comb.data()),
                    "Size of the LJ parameters element should be equal to the size of float2.");
-        copyToDeviceBuffer(&d_atdat->lj_comb, nbat->params().lj_comb.data(), 0, 2 * natoms,
-                           deviceStream, GpuApiCallBehavior::Async,
+        copyToDeviceBuffer(&d_atdat->lj_comb,
+                           nbat->params().lj_comb.data(),
+                           0,
+                           2 * natoms,
+                           deviceStream,
+                           GpuApiCallBehavior::Async,
                            bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
     else
     {
         GMX_ASSERT(sizeof(int) == sizeof(*nbat->params().type.data()),
                    "Sizes of host- and device-side atom types should be the same.");
-        copyToDeviceBuffer(&d_atdat->atom_types, nbat->params().type.data(), 0, natoms, deviceStream,
-                           GpuApiCallBehavior::Async, bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
+        copyToDeviceBuffer(&d_atdat->atom_types,
+                           nbat->params().type.data(),
+                           0,
+                           natoms,
+                           deviceStream,
+                           GpuApiCallBehavior::Async,
+                           bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
 
     if (bDoTime)

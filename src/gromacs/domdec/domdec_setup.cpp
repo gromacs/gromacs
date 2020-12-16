@@ -253,7 +253,11 @@ static int guess_npme(const gmx::MDLogger& mdlog,
                   "grid_y=%d).\n"
                   "Use the -npme option of mdrun or change the number of ranks or the PME grid "
                   "dimensions, see the manual for details.",
-                  ratio, gmx::roundToInt(0.95 * ratio * nrank_tot), nrank_tot / 2, ir.nkx, ir.nky);
+                  ratio,
+                  gmx::roundToInt(0.95 * ratio * nrank_tot),
+                  nrank_tot / 2,
+                  ir.nkx,
+                  ir.nky);
     }
     else
     {
@@ -261,7 +265,8 @@ static int guess_npme(const gmx::MDLogger& mdlog,
                 .appendTextFormatted(
                         "Will use %d particle-particle and %d PME only ranks\n"
                         "This is a guess, check the performance at the end of the log file",
-                        nrank_tot - npme, npme);
+                        nrank_tot - npme,
+                        npme);
     }
 
     return npme;
@@ -446,8 +451,8 @@ static float comm_cost_est(real               limit,
          */
         bool useThreads     = true;
         bool errorsAreFatal = false;
-        if (!gmx_pme_check_restrictions(ir.pme_order, ir.nkx, ir.nky, ir.nkz, npme_x, useThreads,
-                                        errorsAreFatal))
+        if (!gmx_pme_check_restrictions(
+                    ir.pme_order, ir.nkx, ir.nky, ir.nkz, npme_x, useThreads, errorsAreFatal))
         {
             return -1;
         }
@@ -542,9 +547,17 @@ static float comm_cost_est(real               limit,
 
     if (debug)
     {
-        fprintf(debug, "nc %2d %2d %2d %2d %2d vol pp %6.4f pbcdx %6.4f pme %9.3e tot %9.3e\n",
-                nc[XX], nc[YY], nc[ZZ], npme[XX], npme[YY], comm_vol, cost_pbcdx,
-                comm_pme / (3 * natoms), comm_vol + cost_pbcdx + comm_pme / (3 * natoms));
+        fprintf(debug,
+                "nc %2d %2d %2d %2d %2d vol pp %6.4f pbcdx %6.4f pme %9.3e tot %9.3e\n",
+                nc[XX],
+                nc[YY],
+                nc[ZZ],
+                npme[XX],
+                npme[YY],
+                comm_vol,
+                cost_pbcdx,
+                comm_pme / (3 * natoms),
+                comm_vol + cost_pbcdx + comm_pme / (3 * natoms));
     }
 
     return 3 * natoms * (comm_vol + cost_pbcdx) + comm_pme;
@@ -602,8 +615,8 @@ static void assign_factors(const real         limit,
             }
 
             /* recurse */
-            assign_factors(limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme, ndiv - 1, div + 1,
-                           mdiv + 1, irTryPtr, opt);
+            assign_factors(
+                    limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme, ndiv - 1, div + 1, mdiv + 1, irTryPtr, opt);
 
             for (i = 0; i < mdiv[0] - x - y; i++)
             {
@@ -643,7 +656,8 @@ static gmx::IVec optimizeDDCells(const gmx::MDLogger& mdlog,
     GMX_LOG(mdlog.info)
             .appendTextFormatted(
                     "Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm",
-                    numPPRanks, cellSizeLimit);
+                    numPPRanks,
+                    cellSizeLimit);
     if (inhomogeneous_z(ir))
     {
         GMX_LOG(mdlog.info)
@@ -706,8 +720,19 @@ static gmx::IVec optimizeDDCells(const gmx::MDLogger& mdlog,
 
     gmx::IVec itry       = { 1, 1, 1 };
     gmx::IVec numDomains = { 0, 0, 0 };
-    assign_factors(cellSizeLimit, systemInfo.cutoff, box, ddbox, mtop.natoms, ir, pbcdxr,
-                   numRanksDoingPmeWork, div.size(), div.data(), mdiv.data(), &itry, &numDomains);
+    assign_factors(cellSizeLimit,
+                   systemInfo.cutoff,
+                   box,
+                   ddbox,
+                   mtop.natoms,
+                   ir,
+                   pbcdxr,
+                   numRanksDoingPmeWork,
+                   div.size(),
+                   div.data(),
+                   mdiv.data(),
+                   &itry,
+                   &numDomains);
 
     return numDomains;
 }
@@ -729,8 +754,7 @@ real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
         }
         GMX_LOG(mdlog.info)
                 .appendTextFormatted(
-                        "Scaling the initial minimum size with 1/%g (option -dds) = %g", dlb_scale,
-                        1 / dlb_scale);
+                        "Scaling the initial minimum size with 1/%g (option -dds) = %g", dlb_scale, 1 / dlb_scale);
         cellSizeLimit /= dlb_scale;
     }
     else if (ir.epc != epcNO)
@@ -758,7 +782,8 @@ void checkForValidRankCountRequests(const int  numRanksRequested,
             gmx_fatal(FARGS,
                       "Cannot have %d separate PME ranks with only %d PP ranks, choose fewer or no "
                       "separate PME ranks",
-                      numPmeRanksRequested, numPPRanksRequested);
+                      numPmeRanksRequested,
+                      numPPRanksRequested);
         }
     }
 
@@ -776,7 +801,8 @@ void checkForValidRankCountRequests(const int  numRanksRequested,
                       "contains a large prime factor %d. In most cases this will lead to "
                       "bad performance. Choose a number with smaller prime factors or "
                       "set the decomposition (option -dd) manually.",
-                      numPPRanksRequested, largestDivisor);
+                      numPPRanksRequested,
+                      largestDivisor);
         }
     }
 }
@@ -917,8 +943,8 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&           mdlog,
 
         if (ddRole == DDRole::Master)
         {
-            numDomains = optimizeDDCells(mdlog, numRanksRequested, numPmeOnlyRanks, cellSizeLimit,
-                                         mtop, box, *ddbox, ir, systemInfo);
+            numDomains = optimizeDDCells(
+                    mdlog, numRanksRequested, numPmeOnlyRanks, cellSizeLimit, mtop, box, *ddbox, ir, systemInfo);
         }
     }
 

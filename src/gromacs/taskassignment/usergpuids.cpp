@@ -222,7 +222,8 @@ void checkUserGpuIds(const std::vector<std::unique_ptr<DeviceInformation>>& devi
         if (std::find(compatibleGpus.begin(), compatibleGpus.end(), gpuId) == compatibleGpus.end())
         {
             foundIncompatibleGpuIds = true;
-            message += gmx::formatString("    GPU #%d: %s\n", gpuId,
+            message += gmx::formatString("    GPU #%d: %s\n",
+                                         gpuId,
                                          getDeviceCompatibilityDescription(deviceInfoList, gpuId).c_str());
         }
     }

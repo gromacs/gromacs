@@ -155,8 +155,11 @@ static void insert_ion(int                      nsa,
         gmx_fatal(FARGS, "No more replaceable solvent!");
     }
 
-    fprintf(stderr, "Replacing solvent molecule %d (atom %d) with %s\n",
-            solventMoleculesForReplacement->back(), solventMoleculeAtomsToBeReplaced[0], ionname);
+    fprintf(stderr,
+            "Replacing solvent molecule %d (atom %d) with %s\n",
+            solventMoleculesForReplacement->back(),
+            solventMoleculeAtomsToBeReplaced[0],
+            ionname);
 
     /* Replace solvent molecule charges with ion charge */
     notSolventGroup->push_back(solventMoleculeAtomsToBeReplaced[0]);
@@ -166,7 +169,8 @@ static void insert_ion(int                      nsa,
     // charge while the rest of the solvent molecule atoms is set to 0 charge.
     atoms->atom[solventMoleculeAtomsToBeReplaced.front()].q = q;
     for (auto replacedMoleculeAtom = solventMoleculeAtomsToBeReplaced.begin() + 1;
-         replacedMoleculeAtom != solventMoleculeAtomsToBeReplaced.end(); ++replacedMoleculeAtom)
+         replacedMoleculeAtom != solventMoleculeAtomsToBeReplaced.end();
+         ++replacedMoleculeAtom)
     {
         atoms->atom[*replacedMoleculeAtom].q = 0;
     }
@@ -350,7 +354,8 @@ static void update_topol(const char* topinout, int p_num, int n_num, const char*
         gmx_ffclose(fpout);
         gmx_fatal(FARGS,
                   "No line with moleculetype '%s' found the [ molecules ] section of file '%s'",
-                  grpname, topinout);
+                  grpname,
+                  topinout);
     }
     if (nsol_last < p_num + n_num)
     {
@@ -358,7 +363,10 @@ static void update_topol(const char* topinout, int p_num, int n_num, const char*
         gmx_fatal(FARGS,
                   "The last entry for moleculetype '%s' in the [ molecules ] section of file '%s' "
                   "has less solvent molecules (%d) than were replaced (%d)",
-                  grpname, topinout, nsol_last, p_num + n_num);
+                  grpname,
+                  topinout,
+                  nsol_last,
+                  p_num + n_num);
     }
 
     /* Print all the molecule entries */
@@ -372,7 +380,12 @@ static void update_topol(const char* topinout, int p_num, int n_num, const char*
         {
             printf("Replacing %d solute molecules in topology file (%s) "
                    " by %d %s and %d %s ions.\n",
-                   p_num + n_num, topinout, p_num, p_name, n_num, n_name);
+                   p_num + n_num,
+                   topinout,
+                   p_num,
+                   p_name,
+                   n_num,
+                   n_name);
             nsol_last -= p_num + n_num;
             if (nsol_last > 0)
             {
@@ -417,8 +430,7 @@ static std::vector<int> invertIndexGroup(int nrAtoms, std::vector<int> indexGrou
         if (numIndicesToAdd > 0)
         {
             invertedGroup.resize(invertedGroup.size() + numIndicesToAdd);
-            std::iota(std::end(invertedGroup) - numIndicesToAdd, std::end(invertedGroup),
-                      firstToAddToInvertedGroup);
+            std::iota(std::end(invertedGroup) - numIndicesToAdd, std::end(invertedGroup), firstToAddToInvertedGroup);
         }
     }
 
@@ -490,8 +502,8 @@ int gmx_genion(int argc, char* argv[])
                        { efTOP, "-p", "topol", ffOPTRW } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         if (oenv != nullptr)
         {
@@ -544,7 +556,8 @@ int gmx_genion(int argc, char* argv[])
             gmx_fatal(FARGS,
                       "Can't neutralize this system using -nq %d and"
                       " -pq %d.\n",
-                      n_q, p_q);
+                      n_q,
+                      p_q);
         }
 
         while (qdelta != 0)
@@ -594,7 +607,11 @@ int gmx_genion(int argc, char* argv[])
                 gmx_fatal(FARGS,
                           "The solvent group %s is not continuous: "
                           "index[%d]=%d, index[%d]=%d",
-                          grpname, int(i), solventGroup[i - 1] + 1, int(i + 1), solventGroup[i] + 1);
+                          grpname,
+                          int(i),
+                          solventGroup[i - 1] + 1,
+                          int(i + 1),
+                          solventGroup[i] + 1);
             }
         }
         nsa = 1;
@@ -605,8 +622,10 @@ int gmx_genion(int argc, char* argv[])
         }
         if (solventGroup.size() % nsa != 0)
         {
-            gmx_fatal(FARGS, "Your solvent group size (%td) is not a multiple of %d",
-                      gmx::ssize(solventGroup), nsa);
+            gmx_fatal(FARGS,
+                      "Your solvent group size (%td) is not a multiple of %d",
+                      gmx::ssize(solventGroup),
+                      nsa);
         }
         nw = solventGroup.size() / nsa;
         fprintf(stderr, "Number of (%d-atomic) solvent molecules: %d\n", nsa, nw);
@@ -640,19 +659,19 @@ int gmx_genion(int argc, char* argv[])
         // Randomly shuffle the solvent molecules that shall be replaced by ions
         // then pick molecules from the back of the list as replacement candidates
         gmx::DefaultRandomEngine rng(seed);
-        std::shuffle(std::begin(solventMoleculesForReplacement),
-                     std::end(solventMoleculesForReplacement), rng);
+        std::shuffle(
+                std::begin(solventMoleculesForReplacement), std::end(solventMoleculesForReplacement), rng);
 
         /* Now loop over the ions that have to be placed */
         while (p_num-- > 0)
         {
-            insert_ion(nsa, &solventMoleculesForReplacement, repl, solventGroup, x, &pbc, 1, p_q,
-                       p_name, &atoms, rmin, &notSolventGroup);
+            insert_ion(
+                    nsa, &solventMoleculesForReplacement, repl, solventGroup, x, &pbc, 1, p_q, p_name, &atoms, rmin, &notSolventGroup);
         }
         while (n_num-- > 0)
         {
-            insert_ion(nsa, &solventMoleculesForReplacement, repl, solventGroup, x, &pbc, -1, n_q,
-                       n_name, &atoms, rmin, &notSolventGroup);
+            insert_ion(
+                    nsa, &solventMoleculesForReplacement, repl, solventGroup, x, &pbc, -1, n_q, n_name, &atoms, rmin, &notSolventGroup);
         }
         fprintf(stderr, "\n");
 

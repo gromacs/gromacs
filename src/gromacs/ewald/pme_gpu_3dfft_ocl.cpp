@@ -89,10 +89,12 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu, const int gridIndex)
 
     // clFFT expects row-major, so dimensions/strides are reversed (ZYX instead of XYZ)
     std::array<size_t, DIM> realGridDimensions = { realGridSize[ZZ], realGridSize[YY], realGridSize[XX] };
-    std::array<size_t, DIM> realGridStrides    = { 1, realGridSizePadded[ZZ],
+    std::array<size_t, DIM> realGridStrides    = { 1,
+                                                realGridSizePadded[ZZ],
                                                 realGridSizePadded[YY] * realGridSizePadded[ZZ] };
-    std::array<size_t, DIM> complexGridStrides = { 1, complexGridSizePadded[ZZ],
-                                                   complexGridSizePadded[YY] * complexGridSizePadded[ZZ] };
+    std::array<size_t, DIM> complexGridStrides = {
+        1, complexGridSizePadded[ZZ], complexGridSizePadded[YY] * complexGridSizePadded[ZZ]
+    };
 
     constexpr clfftDim dims = CLFFT_3D;
     handleClfftError(clfftCreateDefaultPlan(&planR2C_, context, dims, realGridDimensions.data()),
@@ -166,8 +168,15 @@ void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* timingE
             GMX_THROW(
                     gmx::NotImplementedError("The chosen 3D-FFT case is not implemented on GPUs"));
     }
-    handleClfftError(clfftEnqueueTransform(plan, direction, deviceStreams_.size(),
-                                           deviceStreams_.data(), waitEvents.size(), waitEvents.data(),
-                                           timingEvent, inputGrids, outputGrids, tempBuffer),
+    handleClfftError(clfftEnqueueTransform(plan,
+                                           direction,
+                                           deviceStreams_.size(),
+                                           deviceStreams_.data(),
+                                           waitEvents.size(),
+                                           waitEvents.data(),
+                                           timingEvent,
+                                           inputGrids,
+                                           outputGrids,
+                                           tempBuffer),
                      "clFFT execution failure");
 }

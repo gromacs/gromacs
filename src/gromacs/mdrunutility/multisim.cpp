@@ -84,7 +84,8 @@ std::unique_ptr<gmx_multisim_t> buildMultiSimulation(MPI_Comm                   
     {
         auto message = gmx::formatString(
                 "The number of ranks (%d) is not a multiple of the number of simulations (%td)",
-                numRanks, multidirs.ssize());
+                numRanks,
+                multidirs.ssize());
         GMX_THROW(gmx::InconsistentInputError(message));
     }
 
@@ -94,8 +95,11 @@ std::unique_ptr<gmx_multisim_t> buildMultiSimulation(MPI_Comm                   
 
     if (debug)
     {
-        fprintf(debug, "We have %td simulations, %d ranks per simulation, local simulation is %d\n",
-                multidirs.ssize(), numRanksPerSimulation, rankWithinWorldComm / numRanksPerSimulation);
+        fprintf(debug,
+                "We have %td simulations, %d ranks per simulation, local simulation is %d\n",
+                multidirs.ssize(),
+                numRanksPerSimulation,
+                rankWithinWorldComm / numRanksPerSimulation);
     }
 
     int numSimulations = multidirs.size();

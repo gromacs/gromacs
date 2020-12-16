@@ -103,8 +103,11 @@ const char* epcoupl_names[epcNR + 1] = { "No",        "Berendsen", "Parrinello-R
                                          "Isotropic", "MTTK",      "C-rescale",
                                          nullptr }; /* isotropic is alias for berendsen */
 
-const char* epcoupltype_names[epctNR + 1] = { "Isotropic", "Semiisotropic", "Anisotropic",
-                                              "Surface-Tension", nullptr };
+const char* epcoupltype_names[epctNR + 1] = { "Isotropic",
+                                              "Semiisotropic",
+                                              "Anisotropic",
+                                              "Surface-Tension",
+                                              nullptr };
 
 const char* edisre_names[edrNR + 1] = { "No", "Simple", "Ensemble", nullptr };
 
@@ -182,7 +185,8 @@ const char* gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR + 1] = {
 };
 
 const char* gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR + 1] = { "Standard",
-                                                                            "Free_Energy", nullptr };
+                                                                            "Free_Energy",
+                                                                            nullptr };
 
 const char* gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR + 1] = {
     "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Ewald", nullptr

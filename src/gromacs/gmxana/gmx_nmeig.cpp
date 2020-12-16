@@ -271,7 +271,10 @@ static real* allocateEigenvectors(int nrow, int first, int last, bool ignoreBegi
         gmx_fatal(FARGS,
                   "You asked to store %d eigenvectors of size %d, which requires more than the "
                   "supported %d elements; %sdecrease -last",
-                  numVector, nrow, INT_MAX, ignoreBegin ? "" : "increase -first and/or ");
+                  numVector,
+                  nrow,
+                  INT_MAX,
+                  ignoreBegin ? "" : "increase -first and/or ");
     }
 
     real* eigenvectors;
@@ -589,7 +592,9 @@ int gmx_nmeig(int argc, char* argv[])
             gmx_fatal(FARGS,
                       "Hessian size is %d x %d, which is larger than the maximum allowed %d "
                       "elements.",
-                      nrow, ncol, INT_MAX);
+                      nrow,
+                      ncol,
+                      INT_MAX);
         }
         snew(full_hessian, hessianSize);
         for (i = 0; i < nrow * ncol; i++)
@@ -648,8 +653,11 @@ int gmx_nmeig(int argc, char* argv[])
 
     /* now write the output */
     fprintf(stderr, "Writing eigenvalues...\n");
-    out = xvgropen(opt2fn("-ol", NFILE, fnm), "Eigenvalues", "Eigenvalue index",
-                   "Eigenvalue [Gromacs units]", oenv);
+    out = xvgropen(opt2fn("-ol", NFILE, fnm),
+                   "Eigenvalues",
+                   "Eigenvalue index",
+                   "Eigenvalue [Gromacs units]",
+                   oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
         if (bM)
@@ -681,8 +689,11 @@ int gmx_nmeig(int argc, char* argv[])
     }
     printf("Writing eigenfrequencies - negative eigenvalues will be set to zero.\n");
 
-    out = xvgropen(opt2fn("-of", NFILE, fnm), "Eigenfrequencies", "Eigenvector index",
-                   "Wavenumber [cm\\S-1\\N]", oenv);
+    out = xvgropen(opt2fn("-of", NFILE, fnm),
+                   "Eigenfrequencies",
+                   "Eigenvector index",
+                   "Wavenumber [cm\\S-1\\N]",
+                   oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
         if (bM)
@@ -701,7 +712,9 @@ int gmx_nmeig(int argc, char* argv[])
         snew(spectrum, maxspec);
         spec = xvgropen(opt2fn("-os", NFILE, fnm),
                         "Vibrational spectrum based on harmonic approximation",
-                        "\\f{12}w\\f{4} (cm\\S-1\\N)", "Intensity [Gromacs units]", oenv);
+                        "\\f{12}w\\f{4} (cm\\S-1\\N)",
+                        "Intensity [Gromacs units]",
+                        oenv);
         for (i = 0; (i < maxspec); i++)
         {
             spectrum[i] = 0;
@@ -793,13 +806,23 @@ int gmx_nmeig(int argc, char* argv[])
         /* The sparse matrix diagonalization store all eigenvectors up to end */
         eigenvectorPtr = eigenvectors + (begin - 1) * atom_index.size();
     }
-    write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectorPtr, FALSE, begin,
-                       end, eWXR_NO, nullptr, FALSE, top_x, bM, eigenvalues);
+    write_eigenvectors(opt2fn("-v", NFILE, fnm),
+                       atom_index.size(),
+                       eigenvectorPtr,
+                       FALSE,
+                       begin,
+                       end,
+                       eWXR_NO,
+                       nullptr,
+                       FALSE,
+                       top_x,
+                       bM,
+                       eigenvalues);
 
     if (begin == 1)
     {
-        analyzeThermochemistry(stdout, top, top_x, atom_index, eigenvalues, T, P, sigma_r,
-                               scale_factor, linear_toler);
+        analyzeThermochemistry(
+                stdout, top, top_x, atom_index, eigenvalues, T, P, sigma_r, scale_factor, linear_toler);
         please_cite(stdout, "Spoel2018a");
     }
     else

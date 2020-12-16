@@ -355,8 +355,8 @@ static RangePartitioning makeUpdateGroups(const gmx_moltype_t& moltype, gmx::Arr
     std::array<InteractionList, F_NRE> ilistsCombined;
     ilistsCombined[F_CONSTR] = jointConstraintList(moltype);
     /* We "include" flexible constraints, but none are present (checked above) */
-    const ListOfLists<int> at2con = make_at2con(moltype.atoms.nr, ilistsCombined, iparams,
-                                                FlexibleConstraintTreatment::Include);
+    const ListOfLists<int> at2con = make_at2con(
+            moltype.atoms.nr, ilistsCombined, iparams, FlexibleConstraintTreatment::Include);
 
     bool satisfiesCriteria = true;
 
@@ -679,8 +679,8 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
              */
             if (numConstraints == 2 && allTypesAreEqual && temperature > 0)
             {
-                radius = constraintGroupRadius<2>(moltype, iparams, maxAtom, at2con, angleIndices,
-                                                  maxConstraintLength, temperature);
+                radius = constraintGroupRadius<2>(
+                        moltype, iparams, maxAtom, at2con, angleIndices, maxConstraintLength, temperature);
             }
             /* With 3 constraints the maximum possible radius is 1.4 times
              * the constraint length, so it is worth computing a smaller
@@ -688,8 +688,8 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
              */
             if (numConstraints == 3 && allTypesAreEqual && temperature >= 0)
             {
-                radius = constraintGroupRadius<3>(moltype, iparams, maxAtom, at2con, angleIndices,
-                                                  maxConstraintLength, temperature);
+                radius = constraintGroupRadius<3>(
+                        moltype, iparams, maxAtom, at2con, angleIndices, maxConstraintLength, temperature);
                 if (temperature == 0 && radius >= 0)
                 {
                     /* Add a 10% margin for deviation at 0 K */
@@ -740,8 +740,9 @@ real computeMaxUpdateGroupRadius(const gmx_mtop_t&                      mtop,
     for (size_t moltype = 0; moltype < mtop.moltype.size(); moltype++)
     {
         maxRadius = std::max(
-                maxRadius, computeMaxUpdateGroupRadius(mtop.moltype[moltype], mtop.ffparams.iparams,
-                                                       updateGroups[moltype], temperature));
+                maxRadius,
+                computeMaxUpdateGroupRadius(
+                        mtop.moltype[moltype], mtop.ffparams.iparams, updateGroups[moltype], temperature));
     }
 
     return maxRadius;

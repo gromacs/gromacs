@@ -150,8 +150,13 @@ static void set_dvdl_output(gmx_enerdata_t* enerd, const t_lambda& fepvals)
             enerd->term[index] = enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
             if (debug)
             {
-                fprintf(debug, "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n", efpt_names[i], i,
-                        enerd->term[index], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
+                fprintf(debug,
+                        "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
+                        efpt_names[i],
+                        i,
+                        enerd->term[index],
+                        enerd->dvdl_nonlin[i],
+                        enerd->dvdl_lin[i]);
             }
         }
         else
@@ -159,8 +164,13 @@ static void set_dvdl_output(gmx_enerdata_t* enerd, const t_lambda& fepvals)
             enerd->term[F_DVDL] += enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
             if (debug)
             {
-                fprintf(debug, "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n", efpt_names[0], i,
-                        enerd->term[F_DVDL], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
+                fprintf(debug,
+                        "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
+                        efpt_names[0],
+                        i,
+                        enerd->term[F_DVDL],
+                        enerd->dvdl_nonlin[i],
+                        enerd->dvdl_lin[i]);
             }
         }
     }
@@ -286,8 +296,8 @@ void accumulateKineticLambdaComponents(gmx_enerdata_t*           enerd,
         enerd->term[F_DVDL] += enerd->term[F_DVDL_CONSTR];
     }
 
-    enerd->foreignLambdaTerms.finalizeKineticContributions(enerd->term, enerd->dvdl_lin[efptMASS],
-                                                           lambda, fepvals);
+    enerd->foreignLambdaTerms.finalizeKineticContributions(
+            enerd->term, enerd->dvdl_lin[efptMASS], lambda, fepvals);
 
     /* The constrain contribution is now included in other terms, so clear it */
     enerd->term[F_DVDL_CONSTR] = 0;

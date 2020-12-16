@@ -236,7 +236,9 @@ static void do_four(const char*             fn,
         fprintf(fp, "%10.5e  %10.5e  %10.5e\n", nu, kw.re, kw.im);
         fprintf(cp, "%10.5e  %10.5e\n", kw.re, kw.im);
     }
-    printf("MAXEPS = %10.5e at frequency %10.5e GHz (tauD = %8.1f ps)\n", maxeps, numax,
+    printf("MAXEPS = %10.5e at frequency %10.5e GHz (tauD = %8.1f ps)\n",
+           maxeps,
+           numax,
            1000 / (2 * M_PI * numax));
     xvgrclose(fp);
     xvgrclose(cp);
@@ -319,8 +321,8 @@ int gmx_dielectric(int argc, char* argv[])
         { "-nsmooth", FALSE, etINT, { &nsmooth }, "Number of points for smoothing" }
     };
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -414,9 +416,13 @@ int gmx_dielectric(int argc, char* argv[])
     }
     printf("DATA INTEGRAL: %5.1f, tauD(old) = %5.1f ps, "
            "tau_slope = %5.1f, tau_slope,D = %5.1f ps\n",
-           integral, integral * rffac, fitparms[0], fitparms[0] * rffac);
+           integral,
+           integral * rffac,
+           fitparms[0],
+           fitparms[0] * rffac);
 
-    printf("tau_D from tau1 = %8.3g , eps(Infty) = %8.3f\n", fitparms[0] * (1 + fitparms[1] * lambda),
+    printf("tau_D from tau1 = %8.3g , eps(Infty) = %8.3f\n",
+           fitparms[0] * (1 + fitparms[1] * lambda),
            1 + ((1 - fitparms[1]) * (eps0 - 1)) / (1 + fitparms[1] * lambda));
 
     fitintegral = numerical_deriv(nx, y[0], y[1], y[3], y[4], y[5], tendInt, nsmooth);

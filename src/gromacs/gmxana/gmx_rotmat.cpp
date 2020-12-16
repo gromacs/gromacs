@@ -92,7 +92,8 @@ static void get_refx(gmx_output_env_t* oenv,
         {
             gmx_fatal(FARGS,
                       "Atom index (%d) is larger than the number of atoms in the trajecory (%d)",
-                      index[a] + 1, natoms);
+                      index[a] + 1,
+                      natoms);
         }
         w_rls[a] = (bMW ? top->atoms.atom[index[a]].m : 1.0);
         tot_mass += w_rls[a];
@@ -246,8 +247,8 @@ int gmx_rotmat(int argc, char* argv[])
                        { efXVG, nullptr, "rotmat", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -263,8 +264,7 @@ int gmx_rotmat(int argc, char* argv[])
     GMX_RELEASE_ASSERT(reffit[0] != nullptr, "Options inconsistency; reffit[0] is NULL");
     if (reffit[0][0] != 'n')
     {
-        get_refx(oenv, ftp2fn(efTRX, NFILE, fnm), reffit[0][2] == 'z' ? 3 : 2, skip, gnx, index,
-                 bMW, &top, pbcType, x_ref);
+        get_refx(oenv, ftp2fn(efTRX, NFILE, fnm), reffit[0][2] == 'z' ? 3 : 2, skip, gnx, index, bMW, &top, pbcType, x_ref);
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
@@ -276,7 +276,8 @@ int gmx_rotmat(int argc, char* argv[])
         {
             gmx_fatal(FARGS,
                       "Atom index (%d) is larger than the number of atoms in the trajecory (%d)",
-                      index[i] + 1, natoms);
+                      index[i] + 1,
+                      natoms);
         }
         w_rls[index[i]] = (bMW ? top.atoms.atom[index[i]].m : 1.0);
     }
@@ -302,8 +303,18 @@ int gmx_rotmat(int argc, char* argv[])
 
         calc_fit_R(DIM, natoms, w_rls, x_ref, x, R);
 
-        fprintf(out, "%7g %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f\n", t, R[XX][XX],
-                R[XX][YY], R[XX][ZZ], R[YY][XX], R[YY][YY], R[YY][ZZ], R[ZZ][XX], R[ZZ][YY], R[ZZ][ZZ]);
+        fprintf(out,
+                "%7g %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f\n",
+                t,
+                R[XX][XX],
+                R[XX][YY],
+                R[XX][ZZ],
+                R[YY][XX],
+                R[YY][YY],
+                R[YY][ZZ],
+                R[ZZ][XX],
+                R[ZZ][YY],
+                R[ZZ][ZZ]);
     } while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);

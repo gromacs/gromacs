@@ -517,20 +517,28 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #    ifdef LJ_EWALD
 #        ifdef LJ_EWALD_COMB_GEOM
 #            ifdef CALC_ENERGIES
-                                calculate_lj_ewald_comb_geom_F_E(nbparam, typei, typej, r2, inv_r2,
-                                                                 lje_coeff2, lje_coeff6_6, int_bit,
-                                                                 &F_invr, &E_lj_p);
+                                calculate_lj_ewald_comb_geom_F_E(
+                                        nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, int_bit, &F_invr, &E_lj_p);
 #            else
-                                calculate_lj_ewald_comb_geom_F(nbparam, typei, typej, r2, inv_r2,
-                                                               lje_coeff2, lje_coeff6_6, &F_invr);
+                                calculate_lj_ewald_comb_geom_F(
+                                        nbparam, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, &F_invr);
 #            endif /* CALC_ENERGIES */
 #        elif defined LJ_EWALD_COMB_LB
-                                calculate_lj_ewald_comb_LB_F_E(nbparam, typei, typej, r2, inv_r2,
-                                                               lje_coeff2, lje_coeff6_6,
+                                calculate_lj_ewald_comb_LB_F_E(nbparam,
+                                                               typei,
+                                                               typej,
+                                                               r2,
+                                                               inv_r2,
+                                                               lje_coeff2,
+                                                               lje_coeff6_6,
 #            ifdef CALC_ENERGIES
-                                                               int_bit, &F_invr, &E_lj_p
+                                                               int_bit,
+                                                               &F_invr,
+                                                               &E_lj_p
 #            else
-                                                               0, &F_invr, nullptr
+                                                               0,
+                                                               &F_invr,
+                                                               nullptr
 #            endif /* CALC_ENERGIES */
                                 );
 #        endif     /* LJ_EWALD_COMB_GEOM */

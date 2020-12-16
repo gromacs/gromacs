@@ -323,8 +323,8 @@ void BiasState::calcConvolvedPmf(const std::vector<DimParams>& dimParams,
                 /* Add the convolved PMF weights for the neighbors of this point.
                 Note that this function only adds point within the target > 0 region.
                 Sum weights, take the logarithm last to get the free energy. */
-                double logWeight = biasedLogWeightFromPoint(dimParams, points_, grid, neighbor,
-                                                            biasNeighbor, point.coordValue, {}, m);
+                double logWeight = biasedLogWeightFromPoint(
+                        dimParams, points_, grid, neighbor, biasNeighbor, point.coordValue, {}, m);
                 freeEnergyWeights += std::exp(logWeight);
             }
         }
@@ -455,7 +455,10 @@ int BiasState::warnForHistogramAnomalies(const BiasGrid& grid, int biasIndex, do
                     "If you are not certain about your settings you might want to increase your "
                     "pull force constant or "
                     "modify your sampling region.\n",
-                    biasIndex + 1, t, pointValueString.c_str(), maxHistogramRatio);
+                    biasIndex + 1,
+                    t,
+                    pointValueString.c_str(),
+                    maxHistogramRatio);
             gmx::TextLineWrapper wrapper;
             wrapper.settings().setLineLength(c_linewidth);
             fprintf(fplog, "%s", wrapper.wrapToString(warningMessage).c_str());
@@ -546,8 +549,8 @@ double BiasState::moveUmbrella(const std::vector<DimParams>& dimParams,
                                bool                          onlySampleUmbrellaGridpoint)
 {
     /* Generate and set a new coordinate reference value */
-    coordState_.sampleUmbrellaGridpoint(grid, coordState_.gridpointIndex(), probWeightNeighbor,
-                                        step, seed, indexSeed);
+    coordState_.sampleUmbrellaGridpoint(
+            grid, coordState_.gridpointIndex(), probWeightNeighbor, step, seed, indexSeed);
 
     if (onlySampleUmbrellaGridpoint)
     {
@@ -632,8 +635,8 @@ void BiasState::getSkippedUpdateHistogramScaleFactors(const BiasParams& params,
         /* In between global updates the reference histogram size is kept constant so we trivially
            know what the histogram size was at the time of the skipped update. */
         double histogramSize = histogramSize_.histogramSize();
-        setHistogramUpdateScaleFactors(params, histogramSize, histogramSize, weightHistScaling,
-                                       logPmfSumScaling);
+        setHistogramUpdateScaleFactors(
+                params, histogramSize, histogramSize, weightHistScaling, logPmfSumScaling);
     }
     else
     {
@@ -1040,8 +1043,12 @@ bool BiasState::isSamplingRegionCovered(const BiasParams&             params,
     /* Label each point along each dimension as covered or not. */
     for (int d = 0; d < grid.numDimensions(); d++)
     {
-        labelCoveredPoints(checkDim[d].visited, checkDim[d].checkCovering, grid.axis(d).numPoints(),
-                           grid.axis(d).numPointsInPeriod(), params.coverRadius()[d], checkDim[d].covered);
+        labelCoveredPoints(checkDim[d].visited,
+                           checkDim[d].checkCovering,
+                           grid.axis(d).numPoints(),
+                           grid.axis(d).numPointsInPeriod(),
+                           params.coverRadius()[d],
+                           checkDim[d].covered);
     }
 
     /* Now check for global covering. Each dimension needs to be covered separately.
@@ -1065,7 +1072,8 @@ bool BiasState::isSamplingRegionCovered(const BiasParams&             params,
         {
             sumOverSimulations(
                     gmx::arrayRefFromArray(checkDim[d].covered.data(), grid.axis(d).numPoints()),
-                    commRecord, multiSimComm);
+                    commRecord,
+                    multiSimComm);
         }
     }
 
@@ -1161,8 +1169,8 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     }
 
     /* The weighthistogram size after this update. */
-    double newHistogramSize = histogramSize_.newHistogramSize(params, t, detectedCovering, points_,
-                                                              weightSumCovering_, fplog);
+    double newHistogramSize = histogramSize_.newHistogramSize(
+            params, t, detectedCovering, points_, weightSumCovering_, fplog);
 
     /* Make the update list. Usually we try to only update local points,
      * but if the update has non-trivial or non-deterministic effects
@@ -1198,8 +1206,8 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
     }
     double weightHistScalingNew;
     double logPmfsumScalingNew;
-    setHistogramUpdateScaleFactors(params, newHistogramSize, histogramSize_.histogramSize(),
-                                   &weightHistScalingNew, &logPmfsumScalingNew);
+    setHistogramUpdateScaleFactors(
+            params, newHistogramSize, histogramSize_.histogramSize(), &weightHistScalingNew, &logPmfsumScalingNew);
 
     /* Update free energy and reference weight histogram for points in the update list. */
     for (int pointIndex : *updateList)
@@ -1209,14 +1217,13 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(const std::vector<DimPa
         /* Do updates from previous update steps that were skipped because this point was at that time non-local. */
         if (params.skipUpdates())
         {
-            pointStateToUpdate->performPreviouslySkippedUpdates(params, histogramSize_.numUpdates(),
-                                                                weightHistScalingSkipped,
-                                                                logPmfsumScalingSkipped);
+            pointStateToUpdate->performPreviouslySkippedUpdates(
+                    params, histogramSize_.numUpdates(), weightHistScalingSkipped, logPmfsumScalingSkipped);
         }
 
         /* Now do an update with new sampling data. */
-        pointStateToUpdate->updateWithNewSampling(params, histogramSize_.numUpdates(),
-                                                  weightHistScalingNew, logPmfsumScalingNew);
+        pointStateToUpdate->updateWithNewSampling(
+                params, histogramSize_.numUpdates(), weightHistScalingNew, logPmfsumScalingNew);
     }
 
     /* Only update the histogram size after we are done with the local point updates */
@@ -1272,9 +1279,14 @@ double BiasState::updateProbabilityWeightsAndConvolvedBias(const std::vector<Dim
             if (n < neighbors.size())
             {
                 const int neighbor = neighbors[n];
-                (*weight)[n]       = biasedLogWeightFromPoint(
-                        dimParams, points_, grid, neighbor, points_[neighbor].bias(),
-                        coordState_.coordValue(), neighborLambdaEnergies, coordState_.gridpointIndex());
+                (*weight)[n]       = biasedLogWeightFromPoint(dimParams,
+                                                        points_,
+                                                        grid,
+                                                        neighbor,
+                                                        points_[neighbor].bias(),
+                                                        coordState_.coordValue(),
+                                                        neighborLambdaEnergies,
+                                                        coordState_.gridpointIndex());
             }
             else
             {
@@ -1343,8 +1355,8 @@ double BiasState::calcConvolvedBias(const std::vector<DimParams>& dimParams,
         {
             continue;
         }
-        double logWeight = biasedLogWeightFromPoint(dimParams, points_, grid, neighbor,
-                                                    points_[neighbor].bias(), coordValue, {}, point);
+        double logWeight = biasedLogWeightFromPoint(
+                dimParams, points_, grid, neighbor, points_[neighbor].bias(), coordValue, {}, point);
         weightSum += std::exp(logWeight);
     }
 
@@ -1435,8 +1447,10 @@ void BiasState::sampleCoordAndPmf(const std::vector<DimParams>& dimParams,
         std::vector<double> lambdaMarginalDistribution =
                 calculateFELambdaMarginalDistribution(grid, neighbors, probWeightNeighbor);
 
-        awh_dvec coordValueAlongLambda = { coordState_.coordValue()[0], coordState_.coordValue()[1],
-                                           coordState_.coordValue()[2], coordState_.coordValue()[3] };
+        awh_dvec coordValueAlongLambda = { coordState_.coordValue()[0],
+                                           coordState_.coordValue()[1],
+                                           coordState_.coordValue()[2],
+                                           coordState_.coordValue()[3] };
         for (size_t i = 0; i < neighbors.size(); i++)
         {
             const int neighbor = neighbors[i];
@@ -1546,8 +1560,7 @@ void BiasState::broadcast(const t_commrec* commRecord)
 
     gmx_bcast(points_.size() * sizeof(PointState), points_.data(), commRecord->mpi_comm_mygroup);
 
-    gmx_bcast(weightSumCovering_.size() * sizeof(double), weightSumCovering_.data(),
-              commRecord->mpi_comm_mygroup);
+    gmx_bcast(weightSumCovering_.size() * sizeof(double), weightSumCovering_.data(), commRecord->mpi_comm_mygroup);
 
     gmx_bcast(sizeof(histogramSize_), &histogramSize_, commRecord->mpi_comm_mygroup);
 }
@@ -1656,8 +1669,8 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams>& dimPa
 
     if (numRows <= 0)
     {
-        std::string mesg = gmx::formatString("%s is empty!.\n\n%s", filename.c_str(),
-                                             correctFormatMessage.c_str());
+        std::string mesg = gmx::formatString(
+                "%s is empty!.\n\n%s", filename.c_str(), correctFormatMessage.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
 
@@ -1667,7 +1680,8 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams>& dimPa
         std::string mesg = gmx::formatString(
                 "%s contains too few data points (%d)."
                 "The minimum number of points is 2.",
-                filename.c_str(), numRows);
+                filename.c_str(),
+                numRows);
         GMX_THROW(InvalidInputError(mesg));
     }
 
@@ -1695,7 +1709,9 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams>& dimPa
         std::string mesg = gmx::formatString(
                 "The number of columns in %s should be at least %d."
                 "\n\n%s",
-                filename.c_str(), numColumnsMin, correctFormatMessage.c_str());
+                filename.c_str(),
+                numColumnsMin,
+                correctFormatMessage.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
 
@@ -1707,7 +1723,8 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams>& dimPa
         std::string mesg = gmx::formatString(
                 "Found %d trailing zero data rows in %s. Please remove trailing empty lines and "
                 "try again.",
-                numZeroRows, filename.c_str());
+                numZeroRows,
+                filename.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
 
@@ -1742,7 +1759,9 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams>& dimPa
         if (target < 0)
         {
             std::string mesg = gmx::formatString(
-                    "Target distribution weight at point %zu (%g) in %s is negative.", m, target,
+                    "Target distribution weight at point %zu (%g) in %s is negative.",
+                    m,
+                    target,
                     filename.c_str());
             GMX_THROW(InvalidInputError(mesg));
         }
@@ -1757,7 +1776,8 @@ static void readUserPmfAndTargetDistribution(const std::vector<DimParams>& dimPa
     {
         std::string mesg =
                 gmx::formatString("The target weights given in column %d in %s are all 0",
-                                  columnIndexTarget, filename.c_str());
+                                  columnIndexTarget,
+                                  filename.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
 

@@ -78,8 +78,7 @@ class DensityFittingTest : public ::testing::Test
 public:
     void addMdpOptionDensityFittingActive()
     {
-        mdpValueBuilder_.rootObject().addValue("density-guided-simulation-active",
-                                               std::string("yes"));
+        mdpValueBuilder_.rootObject().addValue("density-guided-simulation-active", std::string("yes"));
     }
 
     void addMdpOptionReferenceDensity()

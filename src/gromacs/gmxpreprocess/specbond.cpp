@@ -88,8 +88,7 @@ std::vector<SpecialBond> generateSpecialBonds()
     int nlines = get_lines(sbfile, &lines);
     for (int i = 0; (i < nlines); i++)
     {
-        if (sscanf(lines[i], "%s%s%d%s%s%d%lf%s%s", r1buf, a1buf, &nb1, r2buf, a2buf, &nb2, &length,
-                   nr1buf, nr2buf)
+        if (sscanf(lines[i], "%s%s%d%s%s%d%lf%s%s", r1buf, a1buf, &nb1, r2buf, a2buf, &nb2, &length, nr1buf, nr2buf)
             != 9)
         {
             fprintf(stderr, "Invalid line '%s' in %s\n", lines[i], sbfile);
@@ -115,8 +114,7 @@ std::vector<SpecialBond> generateSpecialBonds()
     {
         sfree(lines);
     }
-    fprintf(stderr, "%zu out of %d lines of %s converted successfully\n", specialBonds.size(),
-            nlines, sbfile);
+    fprintf(stderr, "%zu out of %d lines of %s converted successfully\n", specialBonds.size(), nlines, sbfile);
 
     return specialBonds;
 }
@@ -178,7 +176,9 @@ static void rename_1res(t_atoms* pdba, int resind, const char* newres, bool bVer
 {
     if (bVerbose)
     {
-        printf("Using rtp entry %s for %s %d\n", newres, *pdba->resinfo[resind].name,
+        printf("Using rtp entry %s for %s %d\n",
+               newres,
+               *pdba->resinfo[resind].name,
                pdba->resinfo[resind].nr);
     }
     /* this used to free *resname, which messes up the symtab! */
@@ -242,7 +242,9 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInt
                 int e = std::min(b + MAXCOL, nspec - 1);
                 for (int i = b; (i < e); i++)
                 {
-                    sprintf(buf, "%s%d", *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
+                    sprintf(buf,
+                            "%s%d",
+                            *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
                             pdba->resinfo[specialBondResIdxs[i]].nr);
                     fprintf(stderr, "%8s", buf);
                 }
@@ -252,8 +254,8 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInt
                 e = std::min(b + MAXCOL, nspec - 1);
                 for (int i = b; (i < e); i++)
                 {
-                    std::string buf = gmx::formatString("%s%d", *pdba->atomname[specialBondAtomIdxs[i]],
-                                                        specialBondAtomIdxs[i] + 1);
+                    std::string buf = gmx::formatString(
+                            "%s%d", *pdba->atomname[specialBondAtomIdxs[i]], specialBondAtomIdxs[i] + 1);
                     fprintf(stderr, "%8s", buf.c_str());
                 }
                 fprintf(stderr, "\n");
@@ -262,11 +264,12 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInt
                 for (int i = b + 1; (i < nspec); i++)
                 {
                     std::string buf = gmx::formatString(
-                            "%s%d", *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
+                            "%s%d",
+                            *pdba->resinfo[pdba->atom[specialBondAtomIdxs[i]].resind].name,
                             pdba->resinfo[specialBondResIdxs[i]].nr);
                     fprintf(stderr, "%8s", buf.c_str());
-                    buf = gmx::formatString("%s%d", *pdba->atomname[specialBondAtomIdxs[i]],
-                                            specialBondAtomIdxs[i] + 1);
+                    buf = gmx::formatString(
+                            "%s%d", *pdba->atomname[specialBondAtomIdxs[i]], specialBondAtomIdxs[i] + 1);
                     fprintf(stderr, "%8s", buf.c_str());
                     int e2 = std::min(i, e);
                     for (int j = b; (j < e2); j++)
@@ -288,11 +291,17 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInt
                 if (bonds.size() < specialBondAtomIdxs.size()
                     && is_bond(specialBonds, pdba, ai, aj, d[i][j], &index_sb, &bSwap))
                 {
-                    fprintf(stderr, "%s %s-%d %s-%d and %s-%d %s-%d%s", bInteractive ? "Link" : "Linking",
+                    fprintf(stderr,
+                            "%s %s-%d %s-%d and %s-%d %s-%d%s",
+                            bInteractive ? "Link" : "Linking",
                             *pdba->resinfo[pdba->atom[ai].resind].name,
-                            pdba->resinfo[specialBondResIdxs[i]].nr, *pdba->atomname[ai], ai + 1,
+                            pdba->resinfo[specialBondResIdxs[i]].nr,
+                            *pdba->atomname[ai],
+                            ai + 1,
                             *pdba->resinfo[pdba->atom[aj].resind].name,
-                            pdba->resinfo[specialBondResIdxs[j]].nr, *pdba->atomname[aj], aj + 1,
+                            pdba->resinfo[specialBondResIdxs[j]].nr,
+                            *pdba->atomname[aj],
+                            aj + 1,
                             bInteractive ? " (y/n) ?" : "...\n");
                     bool bDoit = bInteractive ? yesno() : true;
 
@@ -308,17 +317,25 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInt
                         /* rename residues */
                         if (bSwap)
                         {
-                            rename_1res(pdba, specialBondResIdxs[i],
-                                        specialBonds[index_sb].newSecondResidue.c_str(), bVerbose);
-                            rename_1res(pdba, specialBondResIdxs[j],
-                                        specialBonds[index_sb].newFirstResidue.c_str(), bVerbose);
+                            rename_1res(pdba,
+                                        specialBondResIdxs[i],
+                                        specialBonds[index_sb].newSecondResidue.c_str(),
+                                        bVerbose);
+                            rename_1res(pdba,
+                                        specialBondResIdxs[j],
+                                        specialBonds[index_sb].newFirstResidue.c_str(),
+                                        bVerbose);
                         }
                         else
                         {
-                            rename_1res(pdba, specialBondResIdxs[i],
-                                        specialBonds[index_sb].newFirstResidue.c_str(), bVerbose);
-                            rename_1res(pdba, specialBondResIdxs[j],
-                                        specialBonds[index_sb].newSecondResidue.c_str(), bVerbose);
+                            rename_1res(pdba,
+                                        specialBondResIdxs[i],
+                                        specialBonds[index_sb].newFirstResidue.c_str(),
+                                        bVerbose);
+                            rename_1res(pdba,
+                                        specialBondResIdxs[j],
+                                        specialBonds[index_sb].newSecondResidue.c_str(),
+                                        bVerbose);
                         }
                     }
                 }

@@ -204,8 +204,8 @@ TEST_F(InMemorySerializerTest, RoundtripWithEndianessSwap)
 
     auto buffer = serializerWithSwap.finishAndGetBuffer();
 
-    InMemoryDeserializer deserializerWithSwap(buffer, std::is_same_v<real, double>,
-                                              EndianSwapBehavior::Swap);
+    InMemoryDeserializer deserializerWithSwap(
+            buffer, std::is_same_v<real, double>, EndianSwapBehavior::Swap);
 
     SerializerValues deserialisedValues = deserialize(&deserializerWithSwap);
 
@@ -234,8 +234,8 @@ TEST_F(InMemorySerializerTest, DeserializerExplicitEndianessSwap)
 
     auto buffer = serializer.finishAndGetBuffer();
 
-    InMemoryDeserializer deserializerWithSwap(buffer, std::is_same_v<real, double>,
-                                              EndianSwapBehavior::Swap);
+    InMemoryDeserializer deserializerWithSwap(
+            buffer, std::is_same_v<real, double>, EndianSwapBehavior::Swap);
 
     SerializerValues deserialisedValues = deserialize(&deserializerWithSwap);
     checkSerializerValuesforEquality(endianessSwappedValues_, deserialisedValues);

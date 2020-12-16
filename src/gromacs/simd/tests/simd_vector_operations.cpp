@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,8 +68,8 @@ TEST_F(SimdVectorOperationsTest, iprod)
     SimdReal bX       = rSimd_c3c0c4;
     SimdReal bY       = rSimd_c4c6c8;
     SimdReal bZ       = rSimd_c7c2c3;
-    SimdReal iprodRef = setSimdRealFrom3R(c0 * c3 + c3 * c4 + c6 * c7, c1 * c0 + c4 * c6 + c7 * c2,
-                                          c2 * c4 + c5 * c8 + c8 * c3);
+    SimdReal iprodRef = setSimdRealFrom3R(
+            c0 * c3 + c3 * c4 + c6 * c7, c1 * c0 + c4 * c6 + c7 * c2, c2 * c4 + c5 * c8 + c8 * c3);
 
     setUlpTol(2);
     GMX_EXPECT_SIMD_REAL_NEAR(iprodRef, iprod(aX, aY, aZ, bX, bY, bZ));
@@ -80,8 +80,8 @@ TEST_F(SimdVectorOperationsTest, norm2)
     SimdReal simdX    = rSimd_c0c1c2;
     SimdReal simdY    = rSimd_c3c4c5;
     SimdReal simdZ    = rSimd_c6c7c8;
-    SimdReal norm2Ref = setSimdRealFrom3R(c0 * c0 + c3 * c3 + c6 * c6, c1 * c1 + c4 * c4 + c7 * c7,
-                                          c2 * c2 + c5 * c5 + c8 * c8);
+    SimdReal norm2Ref = setSimdRealFrom3R(
+            c0 * c0 + c3 * c3 + c6 * c6, c1 * c1 + c4 * c4 + c7 * c7, c2 * c2 + c5 * c5 + c8 * c8);
 
     setUlpTol(2);
     GMX_EXPECT_SIMD_REAL_NEAR(norm2Ref, norm2(simdX, simdY, simdZ));
@@ -98,12 +98,12 @@ TEST_F(SimdVectorOperationsTest, cprod)
     // The SIMD version might use FMA. If we don't force FMA for the reference value, the compiler is free to use FMA
     // for either product. If the compiler uses FMA for one product and the SIMD version uses FMA for the other, the
     // rounding error of each product adds up and the total possible ulp-error is 12.
-    SimdReal refcX = setSimdRealFrom3R(std::fma(-c6, c4, c3 * c7), std::fma(-c7, c6, c4 * c2),
-                                       std::fma(-c8, c8, c5 * c3));
-    SimdReal refcY = setSimdRealFrom3R(std::fma(-c0, c7, c6 * c3), std::fma(-c1, c2, c7 * c0),
-                                       std::fma(-c2, c3, c8 * c4));
-    SimdReal refcZ = setSimdRealFrom3R(std::fma(-c3, c3, c0 * c4), std::fma(-c4, c0, c1 * c6),
-                                       std::fma(-c5, c4, c2 * c8));
+    SimdReal refcX = setSimdRealFrom3R(
+            std::fma(-c6, c4, c3 * c7), std::fma(-c7, c6, c4 * c2), std::fma(-c8, c8, c5 * c3));
+    SimdReal refcY = setSimdRealFrom3R(
+            std::fma(-c0, c7, c6 * c3), std::fma(-c1, c2, c7 * c0), std::fma(-c2, c3, c8 * c4));
+    SimdReal refcZ = setSimdRealFrom3R(
+            std::fma(-c3, c3, c0 * c4), std::fma(-c4, c0, c1 * c6), std::fma(-c5, c4, c2 * c8));
     SimdReal cX, cY, cZ;
 
     // The test assumes that cprod uses FMA on architectures which have FMA so that the compiler

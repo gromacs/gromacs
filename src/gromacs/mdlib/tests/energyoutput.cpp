@@ -374,8 +374,8 @@ public:
         // TODO EnergyOutput should not take Constraints object
         // TODO This object will always return zero as RMSD value.
         //      It is more relevant to have non-zero value for testing.
-        constraints_ = makeConstraints(mtop_, inputrec_, nullptr, false, nullptr, &cr_, nullptr,
-                                       nullptr, nullptr, false);
+        constraints_ = makeConstraints(
+                mtop_, inputrec_, nullptr, false, nullptr, &cr_, nullptr, nullptr, nullptr, false);
     }
 
     /*! \brief Helper function to generate synthetic data to output
@@ -625,25 +625,47 @@ TEST_P(EnergyOutputTest, CheckOutput)
     }
 
     MdModulesNotifier             mdModulesNotifier;
-    std::unique_ptr<EnergyOutput> energyOutput = std::make_unique<EnergyOutput>(
-            energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun,
-            StartingBehavior::NewSimulation, false, mdModulesNotifier);
+    std::unique_ptr<EnergyOutput> energyOutput =
+            std::make_unique<EnergyOutput>(energyFile_,
+                                           &mtop_,
+                                           &inputrec_,
+                                           nullptr,
+                                           nullptr,
+                                           parameters.isRerun,
+                                           StartingBehavior::NewSimulation,
+                                           false,
+                                           mdModulesNotifier);
 
     // Add synthetic data for a single step
     double testValue = 10.0;
     for (int frame = 0; frame < parameters.numFrames; frame++)
     {
         setStepData(&testValue);
-        energyOutput->addDataAtEnergyStep(
-                false, true, time_, tmass_, enerdata_.get(), nullptr, nullptr, box_,
-                PTCouplingArrays({ state_.boxv, state_.nosehoover_xi, state_.nosehoover_vxi,
-                                   state_.nhpres_xi, state_.nhpres_vxi }),
-                state_.fep_state, constraintsVirial_, forceVirial_, totalVirial_, pressure_,
-                &ekindata_, muTotal_, constraints_.get());
+        energyOutput->addDataAtEnergyStep(false,
+                                          true,
+                                          time_,
+                                          tmass_,
+                                          enerdata_.get(),
+                                          nullptr,
+                                          nullptr,
+                                          box_,
+                                          PTCouplingArrays({ state_.boxv,
+                                                             state_.nosehoover_xi,
+                                                             state_.nosehoover_vxi,
+                                                             state_.nhpres_xi,
+                                                             state_.nhpres_vxi }),
+                                          state_.fep_state,
+                                          constraintsVirial_,
+                                          forceVirial_,
+                                          totalVirial_,
+                                          pressure_,
+                                          &ekindata_,
+                                          muTotal_,
+                                          constraints_.get());
 
         energyOutput->printAnnealingTemperatures(log_, &mtop_.groups, &inputrec_.opts);
-        energyOutput->printStepToEnergyFile(energyFile_, true, false, false, log_, 100 * frame,
-                                            time_, nullptr, nullptr);
+        energyOutput->printStepToEnergyFile(
+                energyFile_, true, false, false, log_, 100 * frame, time_, nullptr, nullptr);
         time_ += 1.0;
     }
 

@@ -146,8 +146,7 @@ settleParameters(const real mO, const real mH, const real invmO, const real invm
     if (debug)
     {
         fprintf(debug, "wh =%g, rc = %g, ra = %g\n", params.wh, params.rc, params.ra);
-        fprintf(debug, "rb = %g, irc2 = %g, dHH = %g, dOH = %g\n", params.rb, params.irc2,
-                params.dHH, params.dOH);
+        fprintf(debug, "rb = %g, irc2 = %g, dHH = %g, dOH = %g\n", params.rb, params.irc2, params.dHH, params.dOH);
     }
 
     return params;
@@ -221,9 +220,12 @@ void SettleData::setConstraints(const InteractionList& il_settle,
         {
             int firstO              = iatoms[1];
             int firstH              = iatoms[2];
-            parametersMassWeighted_ = settleParameters(
-                    masses[firstO], masses[firstH], inverseMasses[firstO], inverseMasses[firstH],
-                    parametersAllMasses1_.dOH, parametersAllMasses1_.dHH);
+            parametersMassWeighted_ = settleParameters(masses[firstO],
+                                                       masses[firstH],
+                                                       inverseMasses[firstO],
+                                                       inverseMasses[firstH],
+                                                       parametersAllMasses1_.dOH,
+                                                       parametersAllMasses1_.dHH);
         }
 
         const int paddedSize = ((nsettle + pack_size - 1) / pack_size) * pack_size;
@@ -770,8 +772,7 @@ void csettle(const SettleData&               settled,
         set_pbc_simd(pbc, pbcSimd);
 
         settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH, const real*>(
-                settled, nthread, thread, pbcSimd, xPtr, xprimePtr, invdt, vPtr, bCalcVirial,
-                vir_r_m_dr, bErrorHasOccurred);
+                settled, nthread, thread, pbcSimd, xPtr, xprimePtr, invdt, vPtr, bCalcVirial, vir_r_m_dr, bErrorHasOccurred);
     }
     else
 #endif
@@ -790,9 +791,8 @@ void csettle(const SettleData&               settled,
             pbcNonNull = &pbcNo;
         }
 
-        settleTemplateWrapper<real, bool, 1, const t_pbc*>(settled, nthread, thread, pbcNonNull,
-                                                           &xPtr[0], &xprimePtr[0], invdt, &vPtr[0],
-                                                           bCalcVirial, vir_r_m_dr, bErrorHasOccurred);
+        settleTemplateWrapper<real, bool, 1, const t_pbc*>(
+                settled, nthread, thread, pbcNonNull, &xPtr[0], &xprimePtr[0], invdt, &vPtr[0], bCalcVirial, vir_r_m_dr, bErrorHasOccurred);
     }
 }
 

@@ -81,8 +81,8 @@ int gmx_rama(int argc, char* argv[])
                        { efXVG, nullptr, "rama", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, 0, nullptr,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, 0, nullptr, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }

@@ -295,8 +295,16 @@ void gmx_trr_write_single_frame(const char* fn,
                                 const rvec* f)
 {
     t_fileio* fio = gmx_trr_open(fn, "w");
-    do_trr_frame(fio, false, &step, &t, &lambda, const_cast<rvec*>(box), &natoms,
-                 const_cast<rvec*>(x), const_cast<rvec*>(v), const_cast<rvec*>(f));
+    do_trr_frame(fio,
+                 false,
+                 &step,
+                 &t,
+                 &lambda,
+                 const_cast<rvec*>(box),
+                 &natoms,
+                 const_cast<rvec*>(x),
+                 const_cast<rvec*>(v),
+                 const_cast<rvec*>(f));
     gmx_trr_close(fio);
 }
 
@@ -325,8 +333,16 @@ void gmx_trr_write_frame(t_fileio*   fio,
                          const rvec* v,
                          const rvec* f)
 {
-    if (!do_trr_frame(fio, false, &step, &t, &lambda, const_cast<rvec*>(box), &natoms,
-                      const_cast<rvec*>(x), const_cast<rvec*>(v), const_cast<rvec*>(f)))
+    if (!do_trr_frame(fio,
+                      false,
+                      &step,
+                      &t,
+                      &lambda,
+                      const_cast<rvec*>(box),
+                      &natoms,
+                      const_cast<rvec*>(x),
+                      const_cast<rvec*>(v),
+                      const_cast<rvec*>(f)))
     {
         gmx_file("Cannot write trajectory frame; maybe you are out of disk space?");
     }

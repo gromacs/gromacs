@@ -156,10 +156,10 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDevice)
 
         std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 
-        copyToDeviceBuffer(&buffer, valuesIn.data(), 0, numValues, deviceStream,
-                           GpuApiCallBehavior::Sync, nullptr);
-        copyFromDeviceBuffer(valuesOut.data(), &buffer, 0, numValues, deviceStream,
-                             GpuApiCallBehavior::Sync, nullptr);
+        copyToDeviceBuffer(
+                &buffer, valuesIn.data(), 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+        copyFromDeviceBuffer(
+                valuesOut.data(), &buffer, 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
         EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn)) << "Changed after H2D and D2H copy.";
         freeDeviceBuffer(&buffer);
     }
@@ -182,16 +182,16 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
         std::iota(valuesIn.begin(), valuesIn.end(), c_initialValue<TypeParam>);
 
         // Fill the buffer with two copies of valuesIn, one after the other.
-        copyToDeviceBuffer(&buffer, valuesIn.data(), 0, numValues, deviceStream,
-                           GpuApiCallBehavior::Sync, nullptr);
-        copyToDeviceBuffer(&buffer, valuesIn.data(), numValues, numValues, deviceStream,
-                           GpuApiCallBehavior::Sync, nullptr);
+        copyToDeviceBuffer(
+                &buffer, valuesIn.data(), 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
+        copyToDeviceBuffer(
+                &buffer, valuesIn.data(), numValues, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
         // Do the same copying on the CPU, so we can test it works
         // correctly.
         valuesIn.insert(valuesIn.end(), valuesIn.begin(), valuesIn.end());
 
-        copyFromDeviceBuffer(valuesOut.data(), &buffer, 0, 2 * numValues, deviceStream,
-                             GpuApiCallBehavior::Sync, nullptr);
+        copyFromDeviceBuffer(
+                valuesOut.data(), &buffer, 0, 2 * numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
         EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn)) << "Changed after H2D and D2H copy.";
 
         SCOPED_TRACE("Checking the copy respects the output range");
@@ -202,8 +202,8 @@ TYPED_TEST(DeviceBufferTest, CanCopyToAndFromDeviceWithOffset)
         // all but one of the old values.
         valuesIn.erase(valuesIn.begin());
         valuesIn.push_back(valuesIn.back());
-        copyFromDeviceBuffer(valuesOut.data(), &buffer, 1, 2 * numValues - 1, deviceStream,
-                             GpuApiCallBehavior::Sync, nullptr);
+        copyFromDeviceBuffer(
+                valuesOut.data(), &buffer, 1, 2 * numValues - 1, deviceStream, GpuApiCallBehavior::Sync, nullptr);
         EXPECT_THAT(valuesOut, Pointwise(Eq(), valuesIn)) << "Changed after H2D and D2H copy.";
     }
 }

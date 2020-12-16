@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -159,13 +159,18 @@ t_dlg* select_filter(t_x11* x11, t_gmx* gmx)
         {
             if (!gmx->filter->bDisable[k])
             {
-                std::fprintf(tmp, "checkbox \"%s\" \"%d\" %s %s %s\n", gmx->filter->grpnames[k], k,
-                             dummy, dummy, dummy);
+                std::fprintf(
+                        tmp, "checkbox \"%s\" \"%d\" %s %s %s\n", gmx->filter->grpnames[k], k, dummy, dummy, dummy);
             }
             else
             {
-                std::fprintf(tmp, "statictext { \"  %s\" } \"%d\" %s %s %s\n",
-                             gmx->filter->grpnames[k], k, dummy, dummy, dummy);
+                std::fprintf(tmp,
+                             "statictext { \"  %s\" } \"%d\" %s %s %s\n",
+                             gmx->filter->grpnames[k],
+                             k,
+                             dummy,
+                             dummy,
+                             dummy);
             }
         }
         std::fprintf(tmp, "}\n\n");

@@ -56,8 +56,16 @@
 #include "gromacs/utility/txtdump.h"
 
 static gmx::EnumerationArray<SimulationAtomGroupType, const char*> c_simulationAtomGroupTypeShortNames = {
-    { "T-Coupling", "Energy Mon.", "Acceleration", "Freeze", "User1", "User2", "VCM",
-      "Compressed X", "Or. Res. Fit", "QMMM" }
+    { "T-Coupling",
+      "Energy Mon.",
+      "Acceleration",
+      "Freeze",
+      "User1",
+      "User2",
+      "VCM",
+      "Compressed X",
+      "Or. Res. Fit",
+      "QMMM" }
 };
 
 const char* shortName(SimulationAtomGroupType type)
@@ -279,8 +287,7 @@ static void pr_grps(FILE* fp, const char* title, gmx::ArrayRef<const AtomGroupIn
     int index = 0;
     for (const auto& group : grps)
     {
-        fprintf(fp, "%s[%-12s] nr=%zu, name=[", title, c_simulationAtomGroupTypeShortNames[index],
-                group.size());
+        fprintf(fp, "%s[%-12s] nr=%zu, name=[", title, c_simulationAtomGroupTypeShortNames[index], group.size());
         for (const auto& entry : group)
         {
             fprintf(fp, " %s", *(grpname[entry]));
@@ -293,8 +300,12 @@ static void pr_grps(FILE* fp, const char* title, gmx::ArrayRef<const AtomGroupIn
 static void pr_groups(FILE* fp, int indent, const SimulationGroups& groups, gmx_bool bShowNumbers)
 {
     pr_grps(fp, "grp", groups.groups, const_cast<char***>(groups.groupNames.data()));
-    pr_strings(fp, indent, "grpname", const_cast<char***>(groups.groupNames.data()),
-               groups.groupNames.size(), bShowNumbers);
+    pr_strings(fp,
+               indent,
+               "grpname",
+               const_cast<char***>(groups.groupNames.data()),
+               groups.groupNames.size(),
+               bShowNumbers);
 
     pr_indent(fp, indent);
     fprintf(fp, "groups          ");
@@ -332,7 +343,8 @@ static void pr_groups(FILE* fp, int indent, const SimulationGroups& groups, gmx_
             fprintf(fp, "groupnr[%5d] =", i);
             for (auto group : keysOf(groups.groups))
             {
-                fprintf(fp, "  %3d ",
+                fprintf(fp,
+                        "  %3d ",
                         !groups.groupNumbers[group].empty() ? groups.groupNumbers[group][i] : 0);
             }
             fprintf(fp, "\n");
@@ -358,8 +370,14 @@ static void pr_moltype(FILE*                 fp,
     pr_listoflists(fp, indent, "excls", &molt->excls, bShowNumbers);
     for (j = 0; (j < F_NRE); j++)
     {
-        pr_ilist(fp, indent, interaction_function[j].longname, ffparams->functype.data(),
-                 molt->ilist[j], bShowNumbers, bShowParameters, ffparams->iparams.data());
+        pr_ilist(fp,
+                 indent,
+                 interaction_function[j].longname,
+                 ffparams->functype.data(),
+                 molt->ilist[j],
+                 bShowNumbers,
+                 bShowParameters,
+                 ffparams->iparams.data());
     }
 }
 
@@ -399,23 +417,26 @@ void pr_mtop(FILE* fp, int indent, const char* title, const gmx_mtop_t* mtop, gm
         {
             pr_molblock(fp, indent, "molblock", &mtop->molblock[mb], mb, mtop->moltype);
         }
-        pr_str(fp, indent, "bIntermolecularInteractions",
-               gmx::boolToString(mtop->bIntermolecularInteractions));
+        pr_str(fp, indent, "bIntermolecularInteractions", gmx::boolToString(mtop->bIntermolecularInteractions));
         if (mtop->bIntermolecularInteractions)
         {
             for (int j = 0; j < F_NRE; j++)
             {
-                pr_ilist(fp, indent, interaction_function[j].longname,
-                         mtop->ffparams.functype.data(), (*mtop->intermolecular_ilist)[j],
-                         bShowNumbers, bShowParameters, mtop->ffparams.iparams.data());
+                pr_ilist(fp,
+                         indent,
+                         interaction_function[j].longname,
+                         mtop->ffparams.functype.data(),
+                         (*mtop->intermolecular_ilist)[j],
+                         bShowNumbers,
+                         bShowParameters,
+                         mtop->ffparams.iparams.data());
             }
         }
         pr_ffparams(fp, indent, "ffparams", &(mtop->ffparams), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(mtop->atomtypes), bShowNumbers);
         for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
         {
-            pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt, &mtop->ffparams, bShowNumbers,
-                       bShowParameters);
+            pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt, &mtop->ffparams, bShowNumbers, bShowParameters);
         }
         pr_groups(fp, indent, mtop->groups, bShowNumbers);
     }
@@ -431,8 +452,7 @@ void pr_top(FILE* fp, int indent, const char* title, const t_topology* top, gmx_
         pr_atoms(fp, indent, "atoms", &(top->atoms), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(top->atomtypes), bShowNumbers);
         pr_block(fp, indent, "mols", &top->mols, bShowNumbers);
-        pr_str(fp, indent, "bIntermolecularInteractions",
-               gmx::boolToString(top->bIntermolecularInteractions));
+        pr_str(fp, indent, "bIntermolecularInteractions", gmx::boolToString(top->bIntermolecularInteractions));
         pr_idef(fp, indent, "idef", &top->idef, bShowNumbers, bShowParameters);
     }
 }
@@ -484,8 +504,8 @@ static void cmp_iparm_AB(FILE* fp, const char* s, t_functype ft, const t_iparams
     bDiff = FALSE;
     for (i = 0; i < nrfpB && !bDiff; i++)
     {
-        bDiff = !equal_real(ip1.generic.buf[p0 + i], ip1.generic.buf[nrfpA + i], relativeTolerance,
-                            absoluteTolerance);
+        bDiff = !equal_real(
+                ip1.generic.buf[p0 + i], ip1.generic.buf[nrfpA + i], relativeTolerance, absoluteTolerance);
     }
     if (bDiff)
     {
@@ -517,8 +537,7 @@ static void cmp_cmap(FILE* fp, const gmx_cmap_t* cmap1, const gmx_cmap_t* cmap2,
 
             for (i = 0; i < 4 * cmap1->grid_spacing * cmap1->grid_spacing; i++)
             {
-                cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i],
-                         relativeTolerance, absoluteTolerance);
+                cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], relativeTolerance, absoluteTolerance);
             }
         }
     }
@@ -555,8 +574,7 @@ static void compareFfparams(FILE*                 fp,
         std::string buf = gmx::formatString("ffparams->functype[%d]", i);
         cmp_int(fp, buf.c_str(), i, ff1.functype[i], ff2.functype[i]);
         buf = gmx::formatString("ffparams->iparams[%d]", i);
-        cmp_iparm(fp, buf.c_str(), ff1.functype[i], ff1.iparams[i], ff2.iparams[i],
-                  relativeTolerance, absoluteTolerance);
+        cmp_iparm(fp, buf.c_str(), ff1.functype[i], ff1.iparams[i], ff2.iparams[i], relativeTolerance, absoluteTolerance);
     }
 }
 
@@ -679,11 +697,13 @@ void compareMtop(FILE* fp, const gmx_mtop_t& mtop1, const gmx_mtop_t& mtop2, rea
     fprintf(fp, "comparing mtop topology\n");
     cmp_str(fp, "Name", -1, *mtop1.name, *mtop2.name);
     cmp_int(fp, "natoms", -1, mtop1.natoms, mtop2.natoms);
-    cmp_int(fp, "maxres_renum", -1, mtop1.maxResiduesPerMoleculeToTriggerRenumber(),
+    cmp_int(fp,
+            "maxres_renum",
+            -1,
+            mtop1.maxResiduesPerMoleculeToTriggerRenumber(),
             mtop2.maxResiduesPerMoleculeToTriggerRenumber());
     cmp_int(fp, "maxresnr", -1, mtop1.maxResNumberNotRenumbered(), mtop2.maxResNumberNotRenumbered());
-    cmp_bool(fp, "bIntermolecularInteractions", -1, mtop1.bIntermolecularInteractions,
-             mtop2.bIntermolecularInteractions);
+    cmp_bool(fp, "bIntermolecularInteractions", -1, mtop1.bIntermolecularInteractions, mtop2.bIntermolecularInteractions);
     cmp_bool(fp, "haveMoleculeIndices", -1, mtop1.haveMoleculeIndices, mtop2.haveMoleculeIndices);
 
     compareFfparams(fp, mtop1.ffparams, mtop2.ffparams, relativeTolerance, absoluteTolerance);
@@ -692,8 +712,8 @@ void compareMtop(FILE* fp, const gmx_mtop_t& mtop1, const gmx_mtop_t& mtop2, rea
     compareInteractionLists(fp, mtop1.intermolecular_ilist.get(), mtop2.intermolecular_ilist.get());
     compareAtomtypes(fp, mtop1.atomtypes, mtop2.atomtypes);
     compareAtomGroups(fp, mtop1.groups, mtop2.groups, mtop1.natoms, mtop2.natoms);
-    compareIntermolecularExclusions(fp, mtop1.intermolecularExclusionGroup,
-                                    mtop2.intermolecularExclusionGroup);
+    compareIntermolecularExclusions(
+            fp, mtop1.intermolecularExclusionGroup, mtop2.intermolecularExclusionGroup);
     compareBlockIndices(fp, mtop1.moleculeBlockIndices, mtop2.moleculeBlockIndices);
 }
 
@@ -717,19 +737,28 @@ void compareAtomGroups(FILE* fp, const SimulationGroups& g0, const SimulationGro
             for (gmx::index j = 0; j < gmx::ssize(g0.groups[group]); j++)
             {
                 buf = gmx::formatString("grps[%d].name[%zd]", static_cast<int>(group), j);
-                cmp_str(fp, buf.c_str(), -1, *g0.groupNames[g0.groups[group][j]],
+                cmp_str(fp,
+                        buf.c_str(),
+                        -1,
+                        *g0.groupNames[g0.groups[group][j]],
                         *g1.groupNames[g1.groups[group][j]]);
             }
         }
-        cmp_int(fp, "ngrpnr", static_cast<int>(group), g0.numberOfGroupNumbers(group),
+        cmp_int(fp,
+                "ngrpnr",
+                static_cast<int>(group),
+                g0.numberOfGroupNumbers(group),
                 g1.numberOfGroupNumbers(group));
         if (g0.numberOfGroupNumbers(group) == g1.numberOfGroupNumbers(group) && natoms0 == natoms1
             && (!g0.groupNumbers[group].empty() || !g1.groupNumbers[group].empty()))
         {
             for (int j = 0; j < natoms0; j++)
             {
-                cmp_int(fp, c_simulationAtomGroupTypeShortNames[group], j,
-                        getGroupType(g0, group, j), getGroupType(g1, group, j));
+                cmp_int(fp,
+                        c_simulationAtomGroupTypeShortNames[group],
+                        j,
+                        getGroupType(g0, group, j),
+                        getGroupType(g1, group, j));
             }
         }
     }

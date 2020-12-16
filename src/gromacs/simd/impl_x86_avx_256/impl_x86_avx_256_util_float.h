@@ -179,25 +179,33 @@ static inline void gmx_simdcall gatherLoadUTranspose(const float*       base,
         // we can use aligned loads since base should also be aligned in this case
         assert(std::size_t(base) % 16 == 0);
         t1 = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_load_ps(base + align * offset[0])),
-                                  _mm_load_ps(base + align * offset[4]), 0x1);
+                                  _mm_load_ps(base + align * offset[4]),
+                                  0x1);
         t2 = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_load_ps(base + align * offset[1])),
-                                  _mm_load_ps(base + align * offset[5]), 0x1);
+                                  _mm_load_ps(base + align * offset[5]),
+                                  0x1);
         t3 = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_load_ps(base + align * offset[2])),
-                                  _mm_load_ps(base + align * offset[6]), 0x1);
+                                  _mm_load_ps(base + align * offset[6]),
+                                  0x1);
         t4 = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_load_ps(base + align * offset[3])),
-                                  _mm_load_ps(base + align * offset[7]), 0x1);
+                                  _mm_load_ps(base + align * offset[7]),
+                                  0x1);
     }
     else
     {
         // Use unaligned loads
         t1 = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_loadu_ps(base + align * offset[0])),
-                                  _mm_loadu_ps(base + align * offset[4]), 0x1);
+                                  _mm_loadu_ps(base + align * offset[4]),
+                                  0x1);
         t2 = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_loadu_ps(base + align * offset[1])),
-                                  _mm_loadu_ps(base + align * offset[5]), 0x1);
+                                  _mm_loadu_ps(base + align * offset[5]),
+                                  0x1);
         t3 = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_loadu_ps(base + align * offset[2])),
-                                  _mm_loadu_ps(base + align * offset[6]), 0x1);
+                                  _mm_loadu_ps(base + align * offset[6]),
+                                  0x1);
         t4 = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_loadu_ps(base + align * offset[3])),
-                                  _mm_loadu_ps(base + align * offset[7]), 0x1);
+                                  _mm_loadu_ps(base + align * offset[7]),
+                                  0x1);
     }
 
     t5                = _mm256_unpacklo_ps(t1, t2);
@@ -325,34 +333,38 @@ static inline void gmx_simdcall
                          _mm_add_ps(_mm_load_ps(base + align * offset[2]), _mm256_castps256_ps128(t7)));
             _mm_store_ps(base + align * offset[3],
                          _mm_add_ps(_mm_load_ps(base + align * offset[3]), _mm256_castps256_ps128(t8)));
-            _mm_store_ps(base + align * offset[4], _mm_add_ps(_mm_load_ps(base + align * offset[4]),
-                                                              _mm256_extractf128_ps(t5, 0x1)));
-            _mm_store_ps(base + align * offset[5], _mm_add_ps(_mm_load_ps(base + align * offset[5]),
-                                                              _mm256_extractf128_ps(t6, 0x1)));
-            _mm_store_ps(base + align * offset[6], _mm_add_ps(_mm_load_ps(base + align * offset[6]),
-                                                              _mm256_extractf128_ps(t7, 0x1)));
-            _mm_store_ps(base + align * offset[7], _mm_add_ps(_mm_load_ps(base + align * offset[7]),
-                                                              _mm256_extractf128_ps(t8, 0x1)));
+            _mm_store_ps(base + align * offset[4],
+                         _mm_add_ps(_mm_load_ps(base + align * offset[4]), _mm256_extractf128_ps(t5, 0x1)));
+            _mm_store_ps(base + align * offset[5],
+                         _mm_add_ps(_mm_load_ps(base + align * offset[5]), _mm256_extractf128_ps(t6, 0x1)));
+            _mm_store_ps(base + align * offset[6],
+                         _mm_add_ps(_mm_load_ps(base + align * offset[6]), _mm256_extractf128_ps(t7, 0x1)));
+            _mm_store_ps(base + align * offset[7],
+                         _mm_add_ps(_mm_load_ps(base + align * offset[7]), _mm256_extractf128_ps(t8, 0x1)));
         }
         else
         {
             // alignment >=5, but not a multiple of 4
-            _mm_storeu_ps(base + align * offset[0], _mm_add_ps(_mm_loadu_ps(base + align * offset[0]),
-                                                               _mm256_castps256_ps128(t5)));
-            _mm_storeu_ps(base + align * offset[1], _mm_add_ps(_mm_loadu_ps(base + align * offset[1]),
-                                                               _mm256_castps256_ps128(t6)));
-            _mm_storeu_ps(base + align * offset[2], _mm_add_ps(_mm_loadu_ps(base + align * offset[2]),
-                                                               _mm256_castps256_ps128(t7)));
-            _mm_storeu_ps(base + align * offset[3], _mm_add_ps(_mm_loadu_ps(base + align * offset[3]),
-                                                               _mm256_castps256_ps128(t8)));
-            _mm_storeu_ps(base + align * offset[4], _mm_add_ps(_mm_loadu_ps(base + align * offset[4]),
-                                                               _mm256_extractf128_ps(t5, 0x1)));
-            _mm_storeu_ps(base + align * offset[5], _mm_add_ps(_mm_loadu_ps(base + align * offset[5]),
-                                                               _mm256_extractf128_ps(t6, 0x1)));
-            _mm_storeu_ps(base + align * offset[6], _mm_add_ps(_mm_loadu_ps(base + align * offset[6]),
-                                                               _mm256_extractf128_ps(t7, 0x1)));
-            _mm_storeu_ps(base + align * offset[7], _mm_add_ps(_mm_loadu_ps(base + align * offset[7]),
-                                                               _mm256_extractf128_ps(t8, 0x1)));
+            _mm_storeu_ps(base + align * offset[0],
+                          _mm_add_ps(_mm_loadu_ps(base + align * offset[0]), _mm256_castps256_ps128(t5)));
+            _mm_storeu_ps(base + align * offset[1],
+                          _mm_add_ps(_mm_loadu_ps(base + align * offset[1]), _mm256_castps256_ps128(t6)));
+            _mm_storeu_ps(base + align * offset[2],
+                          _mm_add_ps(_mm_loadu_ps(base + align * offset[2]), _mm256_castps256_ps128(t7)));
+            _mm_storeu_ps(base + align * offset[3],
+                          _mm_add_ps(_mm_loadu_ps(base + align * offset[3]), _mm256_castps256_ps128(t8)));
+            _mm_storeu_ps(
+                    base + align * offset[4],
+                    _mm_add_ps(_mm_loadu_ps(base + align * offset[4]), _mm256_extractf128_ps(t5, 0x1)));
+            _mm_storeu_ps(
+                    base + align * offset[5],
+                    _mm_add_ps(_mm_loadu_ps(base + align * offset[5]), _mm256_extractf128_ps(t6, 0x1)));
+            _mm_storeu_ps(
+                    base + align * offset[6],
+                    _mm_add_ps(_mm_loadu_ps(base + align * offset[6]), _mm256_extractf128_ps(t7, 0x1)));
+            _mm_storeu_ps(
+                    base + align * offset[7],
+                    _mm_add_ps(_mm_loadu_ps(base + align * offset[7]), _mm256_extractf128_ps(t8, 0x1)));
         }
     }
 }
@@ -453,34 +465,38 @@ static inline void gmx_simdcall
                          _mm_sub_ps(_mm_load_ps(base + align * offset[2]), _mm256_castps256_ps128(t7)));
             _mm_store_ps(base + align * offset[3],
                          _mm_sub_ps(_mm_load_ps(base + align * offset[3]), _mm256_castps256_ps128(t8)));
-            _mm_store_ps(base + align * offset[4], _mm_sub_ps(_mm_load_ps(base + align * offset[4]),
-                                                              _mm256_extractf128_ps(t5, 0x1)));
-            _mm_store_ps(base + align * offset[5], _mm_sub_ps(_mm_load_ps(base + align * offset[5]),
-                                                              _mm256_extractf128_ps(t6, 0x1)));
-            _mm_store_ps(base + align * offset[6], _mm_sub_ps(_mm_load_ps(base + align * offset[6]),
-                                                              _mm256_extractf128_ps(t7, 0x1)));
-            _mm_store_ps(base + align * offset[7], _mm_sub_ps(_mm_load_ps(base + align * offset[7]),
-                                                              _mm256_extractf128_ps(t8, 0x1)));
+            _mm_store_ps(base + align * offset[4],
+                         _mm_sub_ps(_mm_load_ps(base + align * offset[4]), _mm256_extractf128_ps(t5, 0x1)));
+            _mm_store_ps(base + align * offset[5],
+                         _mm_sub_ps(_mm_load_ps(base + align * offset[5]), _mm256_extractf128_ps(t6, 0x1)));
+            _mm_store_ps(base + align * offset[6],
+                         _mm_sub_ps(_mm_load_ps(base + align * offset[6]), _mm256_extractf128_ps(t7, 0x1)));
+            _mm_store_ps(base + align * offset[7],
+                         _mm_sub_ps(_mm_load_ps(base + align * offset[7]), _mm256_extractf128_ps(t8, 0x1)));
         }
         else
         {
             // alignment >=5, but not a multiple of 4
-            _mm_storeu_ps(base + align * offset[0], _mm_sub_ps(_mm_loadu_ps(base + align * offset[0]),
-                                                               _mm256_castps256_ps128(t5)));
-            _mm_storeu_ps(base + align * offset[1], _mm_sub_ps(_mm_loadu_ps(base + align * offset[1]),
-                                                               _mm256_castps256_ps128(t6)));
-            _mm_storeu_ps(base + align * offset[2], _mm_sub_ps(_mm_loadu_ps(base + align * offset[2]),
-                                                               _mm256_castps256_ps128(t7)));
-            _mm_storeu_ps(base + align * offset[3], _mm_sub_ps(_mm_loadu_ps(base + align * offset[3]),
-                                                               _mm256_castps256_ps128(t8)));
-            _mm_storeu_ps(base + align * offset[4], _mm_sub_ps(_mm_loadu_ps(base + align * offset[4]),
-                                                               _mm256_extractf128_ps(t5, 0x1)));
-            _mm_storeu_ps(base + align * offset[5], _mm_sub_ps(_mm_loadu_ps(base + align * offset[5]),
-                                                               _mm256_extractf128_ps(t6, 0x1)));
-            _mm_storeu_ps(base + align * offset[6], _mm_sub_ps(_mm_loadu_ps(base + align * offset[6]),
-                                                               _mm256_extractf128_ps(t7, 0x1)));
-            _mm_storeu_ps(base + align * offset[7], _mm_sub_ps(_mm_loadu_ps(base + align * offset[7]),
-                                                               _mm256_extractf128_ps(t8, 0x1)));
+            _mm_storeu_ps(base + align * offset[0],
+                          _mm_sub_ps(_mm_loadu_ps(base + align * offset[0]), _mm256_castps256_ps128(t5)));
+            _mm_storeu_ps(base + align * offset[1],
+                          _mm_sub_ps(_mm_loadu_ps(base + align * offset[1]), _mm256_castps256_ps128(t6)));
+            _mm_storeu_ps(base + align * offset[2],
+                          _mm_sub_ps(_mm_loadu_ps(base + align * offset[2]), _mm256_castps256_ps128(t7)));
+            _mm_storeu_ps(base + align * offset[3],
+                          _mm_sub_ps(_mm_loadu_ps(base + align * offset[3]), _mm256_castps256_ps128(t8)));
+            _mm_storeu_ps(
+                    base + align * offset[4],
+                    _mm_sub_ps(_mm_loadu_ps(base + align * offset[4]), _mm256_extractf128_ps(t5, 0x1)));
+            _mm_storeu_ps(
+                    base + align * offset[5],
+                    _mm_sub_ps(_mm_loadu_ps(base + align * offset[5]), _mm256_extractf128_ps(t6, 0x1)));
+            _mm_storeu_ps(
+                    base + align * offset[6],
+                    _mm_sub_ps(_mm_loadu_ps(base + align * offset[6]), _mm256_extractf128_ps(t7, 0x1)));
+            _mm_storeu_ps(
+                    base + align * offset[7],
+                    _mm_sub_ps(_mm_loadu_ps(base + align * offset[7]), _mm256_extractf128_ps(t8, 0x1)));
         }
     }
 }

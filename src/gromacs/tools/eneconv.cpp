@@ -187,7 +187,10 @@ static int scan_ene_files(const std::vector<std::string>& files, real* readtime,
                 fprintf(stderr,
                         "Energy files don't match, different number of energies:\n"
                         " %s: %d\n %s: %d\n",
-                        files[f - 1].c_str(), nresav, files[f].c_str(), fr->nre);
+                        files[f - 1].c_str(),
+                        nresav,
+                        files[f].c_str(),
+                        fr->nre);
                 fprintf(stderr,
                         "\nContinue conversion using only the first %d terms (n/y)?\n"
                         "(you should be sure that the energy terms match)\n",
@@ -500,8 +503,8 @@ int gmx_eneconv(int argc, char* argv[])
         { "-error", FALSE, etBOOL, { &bError }, "Stop on errors in the file" }
     };
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -598,8 +601,12 @@ int gmx_eneconv(int argc, char* argv[])
 
             if (debug)
             {
-                fprintf(debug, "fr->step %s, fr->t %.4f, fro->step %s fro->t %.4f, w %s\n",
-                        gmx_step_str(fr->step, buf), fr->t, gmx_step_str(fro->step, buf2), fro->t,
+                fprintf(debug,
+                        "fr->step %s, fr->t %.4f, fro->step %s fro->t %.4f, w %s\n",
+                        gmx_step_str(fr->step, buf),
+                        fr->t,
+                        gmx_step_str(fro->step, buf2),
+                        fro->t,
                         gmx::boolToString(bWrite));
             }
 
@@ -632,7 +639,9 @@ int gmx_eneconv(int argc, char* argv[])
                 if (bNewOutput)
                 {
                     bNewOutput = FALSE;
-                    fprintf(stderr, "\nContinue writing frames from t=%g, step=%s\n", fro->t,
+                    fprintf(stderr,
+                            "\nContinue writing frames from t=%g, step=%s\n",
+                            fro->t,
                             gmx_step_str(fro->step, buf));
                 }
 
@@ -742,7 +751,8 @@ int gmx_eneconv(int argc, char* argv[])
                                                "samples away.\n"
                                                "         Use g_energy -odh option to extract these "
                                                "samples.\n",
-                                               files[f].c_str(), size);
+                                               files[f].c_str(),
+                                               size);
                                         warned_about_dh = TRUE;
                                         break;
                                     }
@@ -764,7 +774,9 @@ int gmx_eneconv(int argc, char* argv[])
         {
             f--;
         }
-        printf("\nLast step written from %s: t %g, step %s\n", files[f].c_str(), last_t,
+        printf("\nLast step written from %s: t %g, step %s\n",
+               files[f].c_str(),
+               last_t,
                gmx_step_str(laststep, buf));
         lastfilestep = laststep;
 
@@ -797,8 +809,7 @@ int gmx_eneconv(int argc, char* argv[])
     }
     else
     {
-        fprintf(stderr, "Last frame written was at step %s, time %f\n",
-                gmx_step_str(fro->step, buf), fro->t);
+        fprintf(stderr, "Last frame written was at step %s, time %f\n", gmx_step_str(fro->step, buf), fro->t);
         fprintf(stderr, "Wrote %d frames\n", noutfr);
     }
 

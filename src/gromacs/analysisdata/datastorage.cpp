@@ -674,8 +674,7 @@ void AnalysisDataStorageFrame::selectDataSet(int index)
 {
     GMX_RELEASE_ASSERT(data_ != nullptr, "Invalid frame accessed");
     const AbstractAnalysisData& baseData = data_->baseData();
-    GMX_RELEASE_ASSERT(index >= 0 && index < baseData.dataSetCount(),
-                       "Out of range data set index");
+    GMX_RELEASE_ASSERT(index >= 0 && index < baseData.dataSetCount(), "Out of range data set index");
     GMX_RELEASE_ASSERT(!baseData.isMultipoint() || !bPointSetInProgress_,
                        "Point sets in multipoint data cannot span data sets");
     currentDataSet_ = index;
@@ -712,8 +711,8 @@ void AnalysisDataStorageFrame::finishPointSet()
         {
             firstColumn = 0;
         }
-        data_->addPointSet(currentDataSet_, firstColumn,
-                           makeConstArrayRef(values_).subArray(begin, end - begin));
+        data_->addPointSet(
+                currentDataSet_, firstColumn, makeConstArrayRef(values_).subArray(begin, end - begin));
     }
     clearValues();
 }

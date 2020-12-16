@@ -117,10 +117,14 @@ void PeriodicActionsTest::doMdrun(const PeriodicOutputParameters& output)
     auto propagation = std::get<0>(GetParam());
     SCOPED_TRACE(
             formatString("Doing %s simulation with %s integrator, %s tcoupling and %s pcoupling\n",
-                         propagation["simulationName"].c_str(), propagation["integrator"].c_str(),
-                         propagation["tcoupl"].c_str(), propagation["pcoupl"].c_str()));
-    auto mdpFieldValues = prepareMdpFieldValues(propagation["simulationName"], propagation["integrator"],
-                                                propagation["tcoupl"], propagation["pcoupl"]);
+                         propagation["simulationName"].c_str(),
+                         propagation["integrator"].c_str(),
+                         propagation["tcoupl"].c_str(),
+                         propagation["pcoupl"].c_str()));
+    auto mdpFieldValues = prepareMdpFieldValues(propagation["simulationName"],
+                                                propagation["integrator"],
+                                                propagation["tcoupl"],
+                                                propagation["pcoupl"]);
     mdpFieldValues.insert(propagation.begin(), propagation.end());
     mdpFieldValues.insert(output.begin(), output.end());
 
@@ -205,7 +209,8 @@ TEST_P(PeriodicActionsTest, PeriodicActionsAgreeWithReference)
 {
     auto propagation = std::get<0>(GetParam());
     SCOPED_TRACE(formatString("Comparing two simulations of '%s' with integrator '%s'",
-                              propagation["simulationName"].c_str(), propagation["integrator"].c_str()));
+                              propagation["simulationName"].c_str(),
+                              propagation["integrator"].c_str()));
 
     prepareReferenceData();
 
@@ -233,7 +238,8 @@ TEST_P(PeriodicActionsTest, PeriodicActionsAgreeWithReference)
                              + "' and test '" + runner_.edrFileName_ + "'");
                 shouldContinueComparing = shouldContinueComparing
                                           && compareFrames(referenceEnergyFrameReader.get(),
-                                                           testEnergyFrameReader.get(), energyComparison_);
+                                                           testEnergyFrameReader.get(),
+                                                           energyComparison_);
             }
         }
     }

@@ -516,8 +516,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                 /* Compare 6*C6 and 12*C12 for geometric cobination rule */
                 bCombGeom =
                         bCombGeom
-                        && gmx_within_tol(c6 * c6,
-                                          nbfp[(i * ntype + i) * 2] * nbfp[(j * ntype + j) * 2], tol)
+                        && gmx_within_tol(c6 * c6, nbfp[(i * ntype + i) * 2] * nbfp[(j * ntype + j) * 2], tol)
                         && gmx_within_tol(c12 * c12,
                                           nbfp[(i * ntype + i) * 2 + 1] * nbfp[(j * ntype + j) * 2 + 1],
                                           tol);
@@ -530,9 +529,9 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                         && ((c6 == 0 && c12 == 0
                              && (params->nbfp_comb[i * 2 + 1] == 0 || params->nbfp_comb[j * 2 + 1] == 0))
                             || (c6 > 0 && c12 > 0
-                                && gmx_within_tol(
-                                           gmx::sixthroot(c12 / c6),
-                                           0.5 * (params->nbfp_comb[i * 2] + params->nbfp_comb[j * 2]), tol)
+                                && gmx_within_tol(gmx::sixthroot(c12 / c6),
+                                                  0.5 * (params->nbfp_comb[i * 2] + params->nbfp_comb[j * 2]),
+                                                  tol)
                                 && gmx_within_tol(0.25 * c6 * c6 / c12,
                                                   std::sqrt(params->nbfp_comb[i * 2 + 1]
                                                             * params->nbfp_comb[j * 2 + 1]),
@@ -548,8 +547,10 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
     }
     if (debug)
     {
-        fprintf(debug, "Combination rules: geometric %s Lorentz-Berthelot %s\n",
-                gmx::boolToString(bCombGeom), gmx::boolToString(bCombLB));
+        fprintf(debug,
+                "Combination rules: geometric %s Lorentz-Berthelot %s\n",
+                gmx::boolToString(bCombGeom),
+                gmx::boolToString(bCombLB));
     }
 
     simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
@@ -631,8 +632,8 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
                          int                     n_energygroups,
                          int                     nout)
 {
-    nbnxn_atomdata_params_init(mdlog, &nbat->paramsDeprecated(), kernelType, enbnxninitcombrule,
-                               ntype, nbfp, n_energygroups);
+    nbnxn_atomdata_params_init(
+            mdlog, &nbat->paramsDeprecated(), kernelType, enbnxninitcombrule, ntype, nbfp, n_energygroups);
 
     const bool simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
     const bool bSIMD  = Nbnxm::kernelTypeIsSimd(kernelType);
@@ -673,8 +674,8 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
     for (int i = 0; i < nout; i++)
     {
         const auto& pinningPolicy = nbat->params().type.get_allocator().pinningPolicy();
-        nbat->out.emplace_back(kernelType, nbat->params().nenergrp, 1 << nbat->params().neg_2log,
-                               pinningPolicy);
+        nbat->out.emplace_back(
+                kernelType, nbat->params().nenergrp, 1 << nbat->params().neg_2log, pinningPolicy);
     }
 
     nbat->buffer_flags.clear();
@@ -737,8 +738,11 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
             const int atomOffset = grid.firstAtomInColumn(i);
 
             copy_int_to_nbat_int(gridSet.atomIndices().data() + atomOffset,
-                                 grid.numAtomsInColumn(i), numAtoms, atomTypes.data(),
-                                 params->numTypes - 1, params->type.data() + atomOffset);
+                                 grid.numAtomsInColumn(i),
+                                 numAtoms,
+                                 atomTypes.data(),
+                                 params->numTypes - 1,
+                                 params->type.data() + atomOffset);
         }
     }
 }
@@ -763,19 +767,23 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
                 if (XFormat == nbatX4)
                 {
                     copy_lj_to_nbat_lj_comb<c_packX4>(params->nbfp_comb,
-                                                      params->type.data() + atomOffset, numAtoms,
+                                                      params->type.data() + atomOffset,
+                                                      numAtoms,
                                                       params->lj_comb.data() + atomOffset * 2);
                 }
                 else if (XFormat == nbatX8)
                 {
                     copy_lj_to_nbat_lj_comb<c_packX8>(params->nbfp_comb,
-                                                      params->type.data() + atomOffset, numAtoms,
+                                                      params->type.data() + atomOffset,
+                                                      numAtoms,
                                                       params->lj_comb.data() + atomOffset * 2);
                 }
                 else if (XFormat == nbatXYZQ)
                 {
-                    copy_lj_to_nbat_lj_comb<1>(params->nbfp_comb, params->type.data() + atomOffset,
-                                               numAtoms, params->lj_comb.data() + atomOffset * 2);
+                    copy_lj_to_nbat_lj_comb<1>(params->nbfp_comb,
+                                               params->type.data() + atomOffset,
+                                               numAtoms,
+                                               params->lj_comb.data() + atomOffset * 2);
                 }
             }
         }
@@ -946,8 +954,12 @@ static void nbnxn_atomdata_set_energygroups(nbnxn_atomdata_t::Params* params,
             const int numAtoms   = grid.paddedNumAtomsInColumn(i);
             const int atomOffset = grid.firstAtomInColumn(i);
 
-            copy_egp_to_nbat_egps(gridSet.atomIndices().data() + atomOffset, grid.numAtomsInColumn(i),
-                                  numAtoms, c_nbnxnCpuIClusterSize, params->neg_2log, atomInfo.data(),
+            copy_egp_to_nbat_egps(gridSet.atomIndices().data() + atomOffset,
+                                  grid.numAtomsInColumn(i),
+                                  numAtoms,
+                                  c_nbnxnCpuIClusterSize,
+                                  params->neg_2log,
+                                  atomInfo.data(),
                                   params->energrp.data() + grid.atomToCluster(atomOffset));
         }
     }
@@ -1065,8 +1077,13 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet&   gridSet,
                          */
                         na_fill = na;
                     }
-                    copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash, na, na_fill,
-                                           coordinates, nbat->XFormat, nbat->x().data(), ash);
+                    copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash,
+                                           na,
+                                           na_fill,
+                                           coordinates,
+                                           nbat->XFormat,
+                                           nbat->x().data(),
+                                           ash);
                 }
             }
         }
@@ -1089,8 +1106,14 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
 
     for (int g = gridBegin; g < gridEnd; g++)
     {
-        nbnxn_gpu_x_to_nbat_x(gridSet.grids()[g], fillLocal && g == 0, gpu_nbv, d_x, xReadyOnDevice,
-                              locality, g, gridSet.numColumnsMax());
+        nbnxn_gpu_x_to_nbat_x(gridSet.grids()[g],
+                              fillLocal && g == 0,
+                              gpu_nbv,
+                              d_x,
+                              xReadyOnDevice,
+                              locality,
+                              g,
+                              gridSet.numColumnsMax());
     }
 }
 
@@ -1280,7 +1303,8 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbnxn_atomdata_t* nbat, in
 
                     /* find thread to sync with. Equal to partner_th unless nth is not a power of two. */
                     for (sync_th = partner_th, sync_group_size = group_size;
-                         sync_th >= nth && sync_group_size > 2; sync_group_size /= 2)
+                         sync_th >= nth && sync_group_size > 2;
+                         sync_group_size /= 2)
                     {
                         sync_th &= ~(sync_group_size / 4);
                     }
@@ -1358,8 +1382,11 @@ static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbnxn_atomdata_t* nbat, in
                             nbnxn_atomdata_reduce_reals
 #endif
                                     (nbat->out[index[0]].f.data(),
-                                     bitmask_is_set(flags[b], index[0]) || group_size > 2, &fIndex1,
-                                     1, i0, i1);
+                                     bitmask_is_set(flags[b], index[0]) || group_size > 2,
+                                     &fIndex1,
+                                     1,
+                                     i0,
+                                     i1);
                         }
                         else if (!bitmask_is_set(flags[b], index[0]))
                         {
@@ -1463,8 +1490,8 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
     {
         try
         {
-            nbnxn_atomdata_add_nbat_f_to_f_part(gridSet, *nbat, nbat->out[0], a0 + ((th + 0) * na) / nth,
-                                                a0 + ((th + 1) * na) / nth, f);
+            nbnxn_atomdata_add_nbat_f_to_f_part(
+                    gridSet, *nbat, nbat->out[0], a0 + ((th + 0) * na) / nth, a0 + ((th + 1) * na) / nth, f);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }

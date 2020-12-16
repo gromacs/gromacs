@@ -230,7 +230,8 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
             {
                 const std::string message =
                         formatString("Trajectory (%d atoms) does not match topology (%d atoms)",
-                                     fr->natoms, topologyAtomCount);
+                                     fr->natoms,
+                                     topologyAtomCount);
                 GMX_THROW(InconsistentInputError(message));
             }
         }
@@ -280,7 +281,8 @@ void TrajectoryAnalysisRunnerCommon::Impl::initFrameIndexGroup()
         const std::string message = formatString(
                 "Selection specified with -fgroup has %d atoms, but "
                 "the trajectory (-f) has %d atoms.",
-                trajectoryGroup_.atomCount(), fr->natoms);
+                trajectoryGroup_.atomCount(),
+                fr->natoms);
         GMX_THROW(InconsistentInputError(message));
     }
     fr->bIndex = TRUE;

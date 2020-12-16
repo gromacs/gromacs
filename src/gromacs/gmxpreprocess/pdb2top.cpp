@@ -104,7 +104,9 @@ static int missing_atoms(const PreprocessResidue* rp, int resind, t_atoms* at, i
             GMX_LOG(logger.warning)
                     .asParagraph()
                     .appendTextFormatted("atom %s is missing in residue %s %d in the pdb file",
-                                         name, *(at->resinfo[resind].name), at->resinfo[resind].nr);
+                                         name,
+                                         *(at->resinfo[resind].name),
+                                         at->resinfo[resind].nr);
             if (name[0] == 'H' || name[0] == 'h')
             {
                 GMX_LOG(logger.warning)
@@ -113,7 +115,9 @@ static int missing_atoms(const PreprocessResidue* rp, int resind, t_atoms* at, i
                                 "You might need to add atom %s to the hydrogen database of "
                                 "building block %s "
                                 "in the file %s.hdb (see the manual)",
-                                name, *(at->resinfo[resind].rtp), rp->filebase.c_str());
+                                name,
+                                *(at->resinfo[resind].rtp),
+                                rp->filebase.c_str());
             }
         }
     }
@@ -197,7 +201,8 @@ static void choose_ff_impl(const char*          ffsel,
                                 "Force field '%s' occurs in %d places. pdb2gmx is using the one in "
                                 "the current directory. Use interactive selection "
                                 "(not the -ff option) if you would prefer a different one.",
-                                ffsel, nfound);
+                                ffsel,
+                                nfound);
             }
             else
             {
@@ -206,7 +211,8 @@ static void choose_ff_impl(const char*          ffsel,
                         "the current directory.\n"
                         "Run without the -ff switch and select the force "
                         "field interactively.",
-                        ffsel, nfound);
+                        ffsel,
+                        nfound);
                 GMX_THROW(gmx::InconsistentInputError(message));
             }
         }
@@ -315,7 +321,8 @@ static void choose_ff_impl(const char*          ffsel,
                         "to point to the desired force field first, and/or "
                         "rename or move the force field directory present "
                         "in the current working directory.",
-                        ffs[sel].c_str(), fflib_forcefield_dir_ext());
+                        ffs[sel].c_str(),
+                        fflib_forcefield_dir_ext());
                 GMX_THROW(gmx::NotImplementedError(message));
             }
         }
@@ -328,7 +335,8 @@ static void choose_ff_impl(const char*          ffsel,
     if (ffs[sel].length() >= static_cast<size_t>(ff_maxlen))
     {
         std::string message = gmx::formatString("Length of force field name (%d) >= maxlen (%d)",
-                                                static_cast<int>(ffs[sel].length()), ff_maxlen);
+                                                static_cast<int>(ffs[sel].length()),
+                                                ff_maxlen);
         GMX_THROW(gmx::InvalidInputError(message));
     }
     strcpy(forcefield, ffs[sel].c_str());
@@ -345,7 +353,8 @@ static void choose_ff_impl(const char*          ffsel,
     if (ffpath.length() >= static_cast<size_t>(ffdir_maxlen))
     {
         std::string message = gmx::formatString("Length of force field dir (%d) >= maxlen (%d)",
-                                                static_cast<int>(ffpath.length()), ffdir_maxlen);
+                                                static_cast<int>(ffpath.length()),
+                                                ffdir_maxlen);
         GMX_THROW(gmx::InvalidInputError(message));
     }
     strcpy(ffdir, ffpath.c_str());
@@ -743,8 +752,10 @@ static void do_ssbonds(InteractionsOfType*                ps,
         int aj = search_res_atom(bond.secondAtom.c_str(), rj, atoms, "special bond", bAllowMissing);
         if ((ai == -1) || (aj == -1))
         {
-            gmx_fatal(FARGS, "Trying to make impossible special bond (%s-%s)!",
-                      bond.firstAtom.c_str(), bond.secondAtom.c_str());
+            gmx_fatal(FARGS,
+                      "Trying to make impossible special bond (%s-%s)!",
+                      bond.firstAtom.c_str(),
+                      bond.secondAtom.c_str());
         }
         add_param(ps, ai, aj, {}, nullptr);
     }
@@ -795,15 +806,15 @@ static void at2bonds(InteractionsOfType*                  psb,
                 {
                     GMX_LOG(logger.warning)
                             .asParagraph()
-                            .appendTextFormatted("Long Bond (%d-%d = %g nm)", ai + 1, aj + 1,
-                                                 std::sqrt(dist2));
+                            .appendTextFormatted(
+                                    "Long Bond (%d-%d = %g nm)", ai + 1, aj + 1, std::sqrt(dist2));
                 }
                 else if (dist2 < short_bond_dist2)
                 {
                     GMX_LOG(logger.warning)
                             .asParagraph()
-                            .appendTextFormatted("Short Bond (%d-%d = %g nm)", ai + 1, aj + 1,
-                                                 std::sqrt(dist2));
+                            .appendTextFormatted(
+                                    "Short Bond (%d-%d = %g nm)", ai + 1, aj + 1, std::sqrt(dist2));
                 }
                 add_param(psb, ai, aj, {}, patch.s.c_str());
             }
@@ -923,12 +934,15 @@ static void check_restp_type(const char* name, int t1, int t2)
 
 static void check_restp_types(const PreprocessResidue& r0, const PreprocessResidue& r1)
 {
-    check_restp_type("all dihedrals", static_cast<int>(r0.bKeepAllGeneratedDihedrals),
+    check_restp_type("all dihedrals",
+                     static_cast<int>(r0.bKeepAllGeneratedDihedrals),
                      static_cast<int>(r1.bKeepAllGeneratedDihedrals));
     check_restp_type("nrexcl", r0.nrexcl, r1.nrexcl);
-    check_restp_type("HH14", static_cast<int>(r0.bGenerateHH14Interactions),
+    check_restp_type("HH14",
+                     static_cast<int>(r0.bGenerateHH14Interactions),
                      static_cast<int>(r1.bGenerateHH14Interactions));
-    check_restp_type("remove dihedrals", static_cast<int>(r0.bRemoveDihedralIfWithImproper),
+    check_restp_type("remove dihedrals",
+                     static_cast<int>(r0.bRemoveDihedralIfWithImproper),
                      static_cast<int>(r1.bRemoveDihedralIfWithImproper));
 
     for (int i = 0; i < ebtsNR; i++)
@@ -1084,11 +1098,11 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
             if (patch->nr != 0)
             {
                 /* find atom in restp */
-                auto found = std::find_if(posres->atomname.begin(), posres->atomname.end(),
-                                          [&patch](char** name) {
-                                              return (patch->oname.empty() && patch->a[0] == *name)
-                                                     || (patch->oname == *name);
-                                          });
+                auto found = std::find_if(
+                        posres->atomname.begin(), posres->atomname.end(), [&patch](char** name) {
+                            return (patch->oname.empty() && patch->a[0] == *name)
+                                   || (patch->oname == *name);
+                        });
 
                 if (found == posres->atomname.end())
                 {
@@ -1105,7 +1119,8 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
                                   "atom %s not found in buiding block %d%s "
                                   "while combining tdb and rtp",
                                   patch->oname.empty() ? patch->a[0].c_str() : patch->oname.c_str(),
-                                  pos + 1, *resinfo[pos].rtp);
+                                  pos + 1,
+                                  *resinfo[pos].rtp);
                     }
                 }
                 else
@@ -1221,7 +1236,8 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
             /* This atom still has the old name, rename it */
             std::string newnm = patch->nname;
             auto        found = std::find_if(
-                    localPpResidue->atomname.begin(), localPpResidue->atomname.end(),
+                    localPpResidue->atomname.begin(),
+                    localPpResidue->atomname.end(),
                     [&newnm](char** name) { return gmx::equalCaseInsensitive(newnm, *name); });
             if (found == localPpResidue->atomname.end())
             {
@@ -1234,7 +1250,8 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
                  */
                 bool bFoundInAdd = false;
                 for (auto rtpModification = singlePatch.hack.begin();
-                     rtpModification != singlePatch.hack.end(); rtpModification++)
+                     rtpModification != singlePatch.hack.end();
+                     rtpModification++)
                 {
                     int         k = std::distance(localPpResidue->atomname.begin(), found);
                     std::string start_at;
@@ -1247,23 +1264,26 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
                         }
                         else
                         {
-                            start_at = gmx::formatString("%s%d", singlePatch.hack[k].nname.c_str(),
-                                                         anmnr - 1);
+                            start_at = gmx::formatString(
+                                    "%s%d", singlePatch.hack[k].nname.c_str(), anmnr - 1);
                         }
-                        auto found2 =
-                                std::find_if(localPpResidue->atomname.begin(),
-                                             localPpResidue->atomname.end(), [&start_at](char** name) {
-                                                 return gmx::equalCaseInsensitive(start_at, *name);
-                                             });
+                        auto found2 = std::find_if(localPpResidue->atomname.begin(),
+                                                   localPpResidue->atomname.end(),
+                                                   [&start_at](char** name) {
+                                                       return gmx::equalCaseInsensitive(start_at, *name);
+                                                   });
                         if (found2 == localPpResidue->atomname.end())
                         {
                             gmx_fatal(FARGS,
                                       "Could not find atom '%s' in residue building block '%s' to "
                                       "add atom '%s' to",
-                                      start_at.c_str(), localPpResidue->resname.c_str(), newnm.c_str());
+                                      start_at.c_str(),
+                                      localPpResidue->resname.c_str(),
+                                      newnm.c_str());
                         }
                         /* We can add the atom after atom start_nr */
-                        add_atom_to_restp(localPpResidue, symtab,
+                        add_atom_to_restp(localPpResidue,
+                                          symtab,
                                           std::distance(localPpResidue->atomname.begin(), found2),
                                           &(*patch));
 
@@ -1277,7 +1297,9 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
                               "Could not find an 'add' entry for atom named '%s' corresponding to "
                               "the 'replace' entry from atom name '%s' to '%s' for tdb or hdb "
                               "database of residue type '%s'",
-                              newnm.c_str(), patch->oname.c_str(), patch->nname.c_str(),
+                              newnm.c_str(),
+                              patch->oname.c_str(),
+                              patch->nname.c_str(),
                               localPpResidue->resname.c_str());
                 }
             }
@@ -1286,8 +1308,11 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
             {
                 GMX_LOG(logger.info)
                         .asParagraph()
-                        .appendTextFormatted("Renaming atom '%s' in residue '%s' %d to '%s'", oldnm,
-                                             localPpResidue->resname.c_str(), resnr, newnm.c_str());
+                        .appendTextFormatted("Renaming atom '%s' in residue '%s' %d to '%s'",
+                                             oldnm,
+                                             localPpResidue->resname.c_str(),
+                                             resnr,
+                                             newnm.c_str());
             }
             /* Rename the atom in pdba */
             pdba->atomname[atind] = put_symtab(symtab, newnm.c_str());
@@ -1299,7 +1324,8 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
              * in the rtp entry of this residue.
              */
             auto found3 = std::find_if(
-                    localPpResidue->atomname.begin(), localPpResidue->atomname.end(),
+                    localPpResidue->atomname.begin(),
+                    localPpResidue->atomname.end(),
                     [&oldnm](char** name) { return gmx::equalCaseInsensitive(oldnm, *name); });
             if (found3 == localPpResidue->atomname.end())
             {
@@ -1310,8 +1336,10 @@ static bool match_atomnames_with_rtp_atom(t_atoms*                     pdba,
                 {
                     GMX_LOG(logger.info)
                             .asParagraph()
-                            .appendTextFormatted("Deleting atom '%s' in residue '%s' %d", oldnm,
-                                                 localPpResidue->resname.c_str(), resnr);
+                            .appendTextFormatted("Deleting atom '%s' in residue '%s' %d",
+                                                 oldnm,
+                                                 localPpResidue->resname.c_str(),
+                                                 resnr);
                 }
                 /* We should free the atom name,
                  * but it might be used multiple times in the symtab.
@@ -1345,13 +1373,14 @@ void match_atomnames_with_rtp(gmx::ArrayRef<PreprocessResidue>     usedPpResidue
         const char*        oldnm          = *pdba->atomname[i];
         PreprocessResidue* localPpResidue = &usedPpResidues[pdba->atom[i].resind];
         auto               found          = std::find_if(
-                localPpResidue->atomname.begin(), localPpResidue->atomname.end(),
-                [&oldnm](char** name) { return gmx::equalCaseInsensitive(oldnm, *name); });
+                localPpResidue->atomname.begin(), localPpResidue->atomname.end(), [&oldnm](char** name) {
+                    return gmx::equalCaseInsensitive(oldnm, *name);
+                });
         if (found == localPpResidue->atomname.end())
         {
             /* Not found yet, check if we have to rename this atom */
-            if (match_atomnames_with_rtp_atom(pdba, x, symtab, i, localPpResidue,
-                                              globalPatches[pdba->atom[i].resind], bVerbose, logger))
+            if (match_atomnames_with_rtp_atom(
+                        pdba, x, symtab, i, localPpResidue, globalPatches[pdba->atom[i].resind], bVerbose, logger))
             {
                 /* We deleted this atom, decrease the atom counter by 1. */
                 i--;
@@ -1451,8 +1480,13 @@ static void gen_cmap(InteractionsOfType*                    psb,
 
             if (bAddCMAP)
             {
-                add_cmap_param(psb, cmap_atomid[0], cmap_atomid[1], cmap_atomid[2], cmap_atomid[3],
-                               cmap_atomid[4], b.s.c_str());
+                add_cmap_param(psb,
+                               cmap_atomid[0],
+                               cmap_atomid[1],
+                               cmap_atomid[2],
+                               cmap_atomid[3],
+                               cmap_atomid[4],
+                               b.s.c_str());
             }
         }
 
@@ -1514,8 +1548,7 @@ void pdb2top(FILE*                                  top_file,
     ResidueType rt;
 
     /* Make bonds */
-    at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist,
-             cyclicBondsIndex, logger);
+    at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist, cyclicBondsIndex, logger);
 
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]), atoms, ssbonds, bAllowMissing);
@@ -1534,7 +1567,8 @@ void pdb2top(FILE*                                  top_file,
             gmx_fatal(FARGS,
                       "There were %d missing atoms in molecule %s, if you want to use this "
                       "incomplete topology anyhow, use the option -missing",
-                      nmissat, molname);
+                      nmissat,
+                      molname);
         }
     }
 
@@ -1595,8 +1629,11 @@ void pdb2top(FILE*                                  top_file,
             .appendTextFormatted(
                     "There are %4zu dihedrals, %4zu impropers, %4zu angles\n"
                     "          %4zu pairs,     %4zu bonds and  %4zu virtual sites",
-                    plist[F_PDIHS].size(), plist[F_IDIHS].size(), plist[F_ANGLES].size(),
-                    plist[F_LJ14].size(), plist[F_BONDS].size(),
+                    plist[F_PDIHS].size(),
+                    plist[F_IDIHS].size(),
+                    plist[F_ANGLES].size(),
+                    plist[F_LJ14].size(),
+                    plist[F_BONDS].size(),
                     plist[F_VSITE2].size() + plist[F_VSITE3].size() + plist[F_VSITE3FD].size()
                             + plist[F_VSITE3FAD].size() + plist[F_VSITE3OUT].size()
                             + plist[F_VSITE4FD].size() + plist[F_VSITE4FDN].size());
@@ -1627,7 +1664,16 @@ void pdb2top(FILE*                                  top_file,
         {
             bts[i] = usedPpResidues[0].rb[i].type;
         }
-        write_top(top_file, posre_fn, molname, atoms, bRTPresname, bts, plist, excls, atype, cgnr,
+        write_top(top_file,
+                  posre_fn,
+                  molname,
+                  atoms,
+                  bRTPresname,
+                  bts,
+                  plist,
+                  excls,
+                  atype,
+                  cgnr,
                   usedPpResidues[0].nrexcl);
     }
 

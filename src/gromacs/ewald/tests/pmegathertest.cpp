@@ -298,13 +298,19 @@ public:
             SCOPED_TRACE(
                     formatString("Testing force gathering on %s for PME grid size %d %d %d"
                                  ", order %d, %zu atoms",
-                                 pmeTestHardwareContext->description().c_str(), gridSize[XX],
-                                 gridSize[YY], gridSize[ZZ], pmeOrder, atomCount));
+                                 pmeTestHardwareContext->description().c_str(),
+                                 gridSize[XX],
+                                 gridSize[YY],
+                                 gridSize[ZZ],
+                                 pmeOrder,
+                                 atomCount));
 
-            PmeSafePointer pmeSafe =
-                    pmeInitWrapper(&inputRec, codePath, pmeTestHardwareContext->deviceContext(),
-                                   pmeTestHardwareContext->deviceStream(),
-                                   pmeTestHardwareContext->pmeGpuProgram(), box);
+            PmeSafePointer                          pmeSafe = pmeInitWrapper(&inputRec,
+                                                    codePath,
+                                                    pmeTestHardwareContext->deviceContext(),
+                                                    pmeTestHardwareContext->deviceStream(),
+                                                    pmeTestHardwareContext->pmeGpuProgram(),
+                                                    box);
             std::unique_ptr<StatePropagatorDataGpu> stateGpu =
                     (codePath == CodePath::GPU)
                             ? makeStatePropagatorDataGpu(*pmeSafe.get(),
@@ -312,7 +318,10 @@ public:
                                                          pmeTestHardwareContext->deviceStream())
                             : nullptr;
 
-            pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, inputAtomData.coordinates,
+            pmeInitAtoms(pmeSafe.get(),
+                         stateGpu.get(),
+                         codePath,
+                         inputAtomData.coordinates,
                          inputAtomData.charges);
 
             /* Setting some more inputs */
@@ -320,10 +329,16 @@ public:
             pmeSetGridLineIndices(pmeSafe.get(), codePath, inputAtomData.gridLineIndices);
             for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
             {
-                pmeSetSplineData(pmeSafe.get(), codePath, inputAtomSplineData.splineValues[dimIndex],
-                                 PmeSplineDataType::Values, dimIndex);
-                pmeSetSplineData(pmeSafe.get(), codePath, inputAtomSplineData.splineDerivatives[dimIndex],
-                                 PmeSplineDataType::Derivatives, dimIndex);
+                pmeSetSplineData(pmeSafe.get(),
+                                 codePath,
+                                 inputAtomSplineData.splineValues[dimIndex],
+                                 PmeSplineDataType::Values,
+                                 dimIndex);
+                pmeSetSplineData(pmeSafe.get(),
+                                 codePath,
+                                 inputAtomSplineData.splineDerivatives[dimIndex],
+                                 PmeSplineDataType::Derivatives,
+                                 dimIndex);
             }
 
             /* Explicitly copying the sample forces to be able to modify them */

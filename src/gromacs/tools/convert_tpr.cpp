@@ -73,7 +73,8 @@ static void rangeCheck(int numberInIndexFile, int maxAtomNumber)
         gmx_fatal(FARGS,
                   "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number "
                   "of atoms in the tpr file (%d)",
-                  (numberInIndexFile), (maxAtomNumber));
+                  (numberInIndexFile),
+                  (maxAtomNumber));
     }
 }
 
@@ -127,8 +128,13 @@ static gmx::ListOfLists<int> reduce_listoflists(gmx::ArrayRef<const int>     inv
         }
     }
 
-    fprintf(stderr, "Reduced block %8s from %6zu to %6zu index-, %6d to %6d a-entries\n", name,
-            src.size(), lists.size(), src.numElements(), lists.numElements());
+    fprintf(stderr,
+            "Reduced block %8s from %6zu to %6zu index-, %6d to %6d a-entries\n",
+            name,
+            src.size(),
+            lists.size(),
+            src.numElements(),
+            lists.numElements());
 
     return lists;
 }
@@ -215,8 +221,11 @@ static void reduce_ilist(gmx::ArrayRef<const int> invindex,
                 ilReduced.push_back(il->iatoms[i], nratoms, newAtoms.data());
             }
         }
-        fprintf(stderr, "Reduced ilist %8s from %6d to %6d entries\n", name,
-                il->size() / (nratoms + 1), ilReduced.size() / (nratoms + 1));
+        fprintf(stderr,
+                "Reduced ilist %8s from %6d to %6d entries\n",
+                name,
+                il->size() / (nratoms + 1),
+                ilReduced.size() / (nratoms + 1));
 
         *il = std::move(ilReduced);
     }
@@ -237,7 +246,10 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], 
 
     for (int i = 0; (i < F_NRE); i++)
     {
-        reduce_ilist(invindex, bKeep, &(top.idef.il[i]), interaction_function[i].nratoms,
+        reduce_ilist(invindex,
+                     bKeep,
+                     &(top.idef.il[i]),
+                     interaction_function[i].nratoms,
                      interaction_function[i].name);
     }
 
@@ -400,23 +412,28 @@ int ConvertTpr::run()
         {
             ir->nsteps = ir->nsteps - (currentMaxStep - ir->init_step)
                          + gmx::roundToInt64(extendTime_ / ir->delta_t);
-            printf("Extending remaining runtime of by %g ps (now %s steps)\n", extendTime_,
+            printf("Extending remaining runtime of by %g ps (now %s steps)\n",
+                   extendTime_,
                    gmx_step_str(ir->nsteps, buf));
         }
         else if (runToMaxTimeIsSet_)
         {
             printf("nsteps = %s, run_step = %s, current_t = %g, until = %g\n",
-                   gmx_step_str(ir->nsteps, buf), gmx_step_str(currentMaxStep, buf2),
-                   currentRunTime, runToMaxTime_);
+                   gmx_step_str(ir->nsteps, buf),
+                   gmx_step_str(currentMaxStep, buf2),
+                   currentRunTime,
+                   runToMaxTime_);
             ir->nsteps = gmx::roundToInt64((currentMaxRunTime - currentRunTime) / ir->delta_t);
-            printf("Extending remaining runtime until %g ps (now %s steps)\n", currentMaxRunTime,
+            printf("Extending remaining runtime until %g ps (now %s steps)\n",
+                   currentMaxRunTime,
                    gmx_step_str(ir->nsteps, buf));
         }
         else
         {
             ir->nsteps -= currentMaxStep - ir->init_step;
             /* Print message */
-            printf("%s steps (%g ps) remaining from first run.\n", gmx_step_str(ir->nsteps, buf),
+            printf("%s steps (%g ps) remaining from first run.\n",
+                   gmx_step_str(ir->nsteps, buf),
                    ir->nsteps * ir->delta_t);
         }
     }
@@ -450,7 +467,8 @@ int ConvertTpr::run()
                 fprintf(stderr,
                         "Will write subset %s of original tpx containing %d "
                         "atoms\n",
-                        grpname, gnx);
+                        grpname,
+                        gnx);
                 reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
                 state.natoms = gnx;
             }
@@ -466,11 +484,17 @@ int ConvertTpr::run()
         }
 
         double stateTime = ir->init_t + ir->init_step * ir->delta_t;
-        sprintf(buf, "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10",
-                PRId64, "%10", PRId64);
+        sprintf(buf,
+                "Writing statusfile with starting step %s%s and length %s%s steps...\n",
+                "%10",
+                PRId64,
+                "%10",
+                PRId64);
         fprintf(stderr, buf, ir->init_step, ir->nsteps);
-        fprintf(stderr, "                                 time %10.3f and length %10.3f ps\n",
-                stateTime, ir->nsteps * ir->delta_t);
+        fprintf(stderr,
+                "                                 time %10.3f and length %10.3f ps\n",
+                stateTime,
+                ir->nsteps * ir->delta_t);
         write_tpx_state(outputTprFileName_.c_str(), ir, &state, &mtop);
     }
     else

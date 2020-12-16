@@ -59,9 +59,9 @@ public:
 int PreprocessingBondAtomType::bondAtomTypeFromName(const std::string& str) const
 {
     /* Atom types are always case sensitive */
-    auto found =
-            std::find_if(impl_->typeNames.begin(), impl_->typeNames.end(),
-                         [&str](const auto& type) { return str == const_cast<const char*>(*type); });
+    auto found = std::find_if(impl_->typeNames.begin(), impl_->typeNames.end(), [&str](const auto& type) {
+        return str == const_cast<const char*>(*type);
+    });
     if (found == impl_->typeNames.end())
     {
         return NOTSET;

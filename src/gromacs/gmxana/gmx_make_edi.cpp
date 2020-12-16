@@ -304,19 +304,26 @@ static int sscan_list(int* list[], const char* str, const char* listname)
 
             /* format error occured */
             case sError:
-                gmx_fatal(FARGS, "Error in the list of eigenvectors for %s at pos %td with char %c",
-                          listname, pos - startpos, *(pos - 1));
+                gmx_fatal(FARGS,
+                          "Error in the list of eigenvectors for %s at pos %td with char %c",
+                          listname,
+                          pos - startpos,
+                          *(pos - 1));
             /* logical error occured */
             case sZero:
                 gmx_fatal(FARGS,
                           "Error in the list of eigenvectors for %s at pos %td: eigenvector 0 is "
                           "not valid",
-                          listname, pos - startpos);
+                          listname,
+                          pos - startpos);
             case sSmaller:
                 gmx_fatal(FARGS,
                           "Error in the list of eigenvectors for %s at pos %td: second index %d is "
                           "not bigger than %d",
-                          listname, pos - startpos, end_number, number);
+                          listname,
+                          pos - startpos,
+                          end_number,
+                          number);
         }
         ++pos; /* read next character */
     }          /*scanner has finished */
@@ -369,7 +376,8 @@ write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs, int nvec, con
                 gmx_fatal(FARGS,
                           "Selected eigenvector %d is higher than maximum number %d of available "
                           "eigenvectors",
-                          eig_list[n], nvec);
+                          eig_list[n],
+                          nvec);
             }
             copy_rvec(eigvecs[eig_list[n] - 1][i], x);
             fprintf(fp, "%8.5f %8.5f %8.5f\n", x[XX], x[YY], x[ZZ]);
@@ -405,16 +413,25 @@ static void write_the_whole_thing(FILE*     fp,
     /* write edi-file */
 
     /*Header*/
-    fprintf(fp, "#MAGIC\n %d \n#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n", MAGIC, edpars->nini,
-            int(edpars->fitmas), int(edpars->pcamas));
-    fprintf(fp, "#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n", edpars->outfrq, edpars->maxedsteps,
-            edpars->slope);
+    fprintf(fp,
+            "#MAGIC\n %d \n#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
+            MAGIC,
+            edpars->nini,
+            int(edpars->fitmas),
+            int(edpars->pcamas));
+    fprintf(fp, "#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n", edpars->outfrq, edpars->maxedsteps, edpars->slope);
     fprintf(fp,
             "#PRESTEPS\n %d\n#DELTA_F0\n %f\n#INIT_DELTA_F\n %f\n#TAU\n %f\n#EFL_NULL\n "
             "%f\n#ALPHA2\n %f\n#KT\n %f\n#HARMONIC\n %d\n#CONST_FORCE_FLOODING\n %d\n",
-            edpars->presteps, edpars->flood.deltaF0, edpars->flood.deltaF, edpars->flood.tau,
-            edpars->flood.constEfl, edpars->flood.alpha2, edpars->flood.kT,
-            int(edpars->flood.bHarmonic), int(edpars->flood.bConstForce));
+            edpars->presteps,
+            edpars->flood.deltaF0,
+            edpars->flood.deltaF,
+            edpars->flood.tau,
+            edpars->flood.constEfl,
+            edpars->flood.alpha2,
+            edpars->flood.kT,
+            int(edpars->flood.bHarmonic),
+            int(edpars->flood.bConstForce));
 
     /* Average and reference positions */
     write_t_edx(fp, edpars->sref, "NREF, XREF");
@@ -423,16 +440,12 @@ static void write_the_whole_thing(FILE*     fp,
     /*Eigenvectors */
 
     write_eigvec(fp, edpars->ned, eig_listen[evMON], eigvecs, nvec, "COMPONENTS GROUP 1", nullptr);
-    write_eigvec(fp, edpars->ned, eig_listen[evLINFIX], eigvecs, nvec, "COMPONENTS GROUP 2",
-                 evStepList[evLINFIX]);
-    write_eigvec(fp, edpars->ned, eig_listen[evLINACC], eigvecs, nvec, "COMPONENTS GROUP 3",
-                 evStepList[evLINACC]);
-    write_eigvec(fp, edpars->ned, eig_listen[evRADFIX], eigvecs, nvec, "COMPONENTS GROUP 4",
-                 evStepList[evRADFIX]);
+    write_eigvec(fp, edpars->ned, eig_listen[evLINFIX], eigvecs, nvec, "COMPONENTS GROUP 2", evStepList[evLINFIX]);
+    write_eigvec(fp, edpars->ned, eig_listen[evLINACC], eigvecs, nvec, "COMPONENTS GROUP 3", evStepList[evLINACC]);
+    write_eigvec(fp, edpars->ned, eig_listen[evRADFIX], eigvecs, nvec, "COMPONENTS GROUP 4", evStepList[evRADFIX]);
     write_eigvec(fp, edpars->ned, eig_listen[evRADACC], eigvecs, nvec, "COMPONENTS GROUP 5", nullptr);
     write_eigvec(fp, edpars->ned, eig_listen[evRADCON], eigvecs, nvec, "COMPONENTS GROUP 6", nullptr);
-    write_eigvec(fp, edpars->ned, eig_listen[evFLOOD], eigvecs, nvec, "COMPONENTS GROUP 7",
-                 evStepList[evFLOOD]);
+    write_eigvec(fp, edpars->ned, eig_listen[evFLOOD], eigvecs, nvec, "COMPONENTS GROUP 7", evStepList[evFLOOD]);
 
 
     /*Target and Origin positions */
@@ -600,7 +613,8 @@ static void get_structure(const t_atoms* atoms,
     ntar = read_conffile(StructureFile, &xtar);
     printf("Select an index group of %d elements that corresponds to the atoms in the structure "
            "file %s\n",
-           ntar, StructureFile);
+           ntar,
+           StructureFile);
     get_index(atoms, IndexFile, 1, &ngro, &igro, &grpname);
     if (ngro != ntar)
     {
@@ -930,15 +944,15 @@ int gmx_make_edi(int argc, char* argv[])
         if (opt2parg_bSet(evOptions[ev_class], NPA, pa))
         {
             /*get list of eigenvectors*/
-            nvecs = sscan_list(&(listen[ev_class]), opt2parg_str(evOptions[ev_class], NPA, pa),
-                               evOptions[ev_class]);
+            nvecs = sscan_list(
+                    &(listen[ev_class]), opt2parg_str(evOptions[ev_class], NPA, pa), evOptions[ev_class]);
             if (ev_class < evStepNr - 2)
             {
                 /*if apropriate get list of stepsizes for these eigenvectors*/
                 if (opt2parg_bSet(evStepOptions[ev_class], NPA, pa))
                 {
-                    evStepList[ev_class] = scan_vecparams(opt2parg_str(evStepOptions[ev_class], NPA, pa),
-                                                          evStepOptions[ev_class], nvecs);
+                    evStepList[ev_class] = scan_vecparams(
+                            opt2parg_str(evStepOptions[ev_class], NPA, pa), evStepOptions[ev_class], nvecs);
                 }
                 else /*if list is not given fill with zeros */
                 {
@@ -996,8 +1010,8 @@ int gmx_make_edi(int argc, char* argv[])
     EigvecFile = opt2fn("-f", NFILE, fnm);
 
     /*read eigenvectors from eigvec.trr*/
-    read_eigenvectors(EigvecFile, &nav, &bFit1, &xref1, &edi_params.fitmas, &xav1,
-                      &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
+    read_eigenvectors(
+            EigvecFile, &nav, &bFit1, &xref1, &edi_params.fitmas, &xav1, &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, topbox, false);
     atoms = &top.atoms;
@@ -1052,8 +1066,8 @@ int gmx_make_edi(int argc, char* argv[])
 
         if (listen[evFLOOD][0] != 0)
         {
-            read_eigenvalues(listen[evFLOOD], opt2fn("-eig", NFILE, fnm), evStepList[evFLOOD],
-                             bHesse, kB * T, nav);
+            read_eigenvalues(
+                    listen[evFLOOD], opt2fn("-eig", NFILE, fnm), evStepList[evFLOOD], bHesse, kB * T, nav);
         }
 
         edi_params.flood.tau       = tau;

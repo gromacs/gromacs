@@ -229,8 +229,8 @@ int gmx_mdmat(int argc, char* argv[])
     gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -268,9 +268,13 @@ int gmx_mdmat(int argc, char* argv[])
             useatoms.resinfo[i] = top.atoms.resinfo[prevres];
             if (debug)
             {
-                fprintf(debug, "New residue: atom %5s %5s %6d, index entry %5d, newres %5d\n",
+                fprintf(debug,
+                        "New residue: atom %5s %5s %6d, index entry %5d, newres %5d\n",
                         *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
-                        *(top.atoms.atomname[ii]), ii, i, newres);
+                        *(top.atoms.atomname[ii]),
+                        ii,
+                        i,
+                        newres);
             }
         }
         useatoms.atom[i].resind = newres;
@@ -344,8 +348,22 @@ int gmx_mdmat(int argc, char* argv[])
         if (bFrames)
         {
             sprintf(label, "t=%.0f ps", t);
-            write_xpm(out, 0, label, "Distance (nm)", "Residue Index", "Residue Index", nres, nres,
-                      resnr, resnr, mdmat, 0, truncate, rlo, rhi, &nlevels);
+            write_xpm(out,
+                      0,
+                      label,
+                      "Distance (nm)",
+                      "Residue Index",
+                      "Residue Index",
+                      nres,
+                      nres,
+                      resnr,
+                      resnr,
+                      mdmat,
+                      0,
+                      truncate,
+                      rlo,
+                      rhi,
+                      &nlevels);
         }
     } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
@@ -365,9 +383,22 @@ int gmx_mdmat(int argc, char* argv[])
             totmdmat[i][j] /= nframes;
         }
     }
-    write_xpm(opt2FILE("-mean", NFILE, fnm, "w"), 0, "Mean smallest distance", "Distance (nm)",
-              "Residue Index", "Residue Index", nres, nres, resnr, resnr, totmdmat, 0, truncate,
-              rlo, rhi, &nlevels);
+    write_xpm(opt2FILE("-mean", NFILE, fnm, "w"),
+              0,
+              "Mean smallest distance",
+              "Distance (nm)",
+              "Residue Index",
+              "Residue Index",
+              nres,
+              nres,
+              resnr,
+              resnr,
+              totmdmat,
+              0,
+              truncate,
+              rlo,
+              rhi,
+              &nlevels);
 
     if (bCalcN)
     {
@@ -379,8 +410,8 @@ int gmx_mdmat(int argc, char* argv[])
             snew(legend[i], STRLEN);
         }
         tot_nmat(nres, natoms, nframes, totnmat, tot_n, mean_n);
-        fp = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Increase in number of contacts", "Residue",
-                      "Ratio", oenv);
+        fp = xvgropen(
+                ftp2fn(efXVG, NFILE, fnm), "Increase in number of contacts", "Residue", "Ratio", oenv);
         sprintf(legend[0], "Total/mean");
         sprintf(legend[1], "Total");
         sprintf(legend[2], "Mean");
@@ -397,8 +428,14 @@ int gmx_mdmat(int argc, char* argv[])
             {
                 ratio = tot_n[i] / mean_n[i];
             }
-            fprintf(fp, "%3d  %8.3f  %3d  %8.3f  %3d  %8.3f\n", i + 1, ratio, tot_n[i], mean_n[i],
-                    natm[i], mean_n[i] / natm[i]);
+            fprintf(fp,
+                    "%3d  %8.3f  %3d  %8.3f  %3d  %8.3f\n",
+                    i + 1,
+                    ratio,
+                    tot_n[i],
+                    mean_n[i],
+                    natm[i],
+                    mean_n[i] / natm[i]);
         }
         xvgrclose(fp);
     }

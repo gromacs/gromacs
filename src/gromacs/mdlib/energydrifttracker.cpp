@@ -87,14 +87,18 @@ std::string EnergyDriftTracker::energyDriftString(const std::string& partName) c
     if (timeInterval() > 0)
     {
         mesg = formatString("Energy conservation over %s of length %g ns, time %g to %g ns\n",
-                            partName.c_str(), timeInterval(), firstTime_, lastTime_);
+                            partName.c_str(),
+                            timeInterval(),
+                            firstTime_,
+                            lastTime_);
         mesg += formatString("  Conserved energy drift: %.2e kJ/mol/ps per atom\n", energyDrift());
     }
     else
     {
         mesg = formatString(
                 "Time interval for measuring conserved energy has length 0, time %g to %g\n",
-                firstTime_, lastTime_);
+                firstTime_,
+                lastTime_);
     }
 
     return mesg;

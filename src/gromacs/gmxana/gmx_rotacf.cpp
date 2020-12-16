@@ -113,8 +113,8 @@ int gmx_rotacf(int argc, char* argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -228,8 +228,8 @@ int gmx_rotacf(int argc, char* argv[])
 
         mode = eacVector;
 
-        do_autocorr(ftp2fn(efXVG, NFILE, fnm), oenv, "Rotational Correlation Function", teller,
-                    nvec, c1, dt, mode, bAver);
+        do_autocorr(
+                ftp2fn(efXVG, NFILE, fnm), oenv, "Rotational Correlation Function", teller, nvec, c1, dt, mode, bAver);
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), nullptr);

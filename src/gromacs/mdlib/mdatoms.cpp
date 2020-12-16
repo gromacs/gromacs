@@ -184,8 +184,10 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
 
     if (ir.efep != efepNO && fp)
     {
-        fprintf(fp, "There are %d atoms and %d charges for free energy perturbation\n",
-                md->nPerturbed, md->nChargePerturbed);
+        fprintf(fp,
+                "There are %d atoms and %d charges for free energy perturbation\n",
+                md->nPerturbed,
+                md->nChargePerturbed);
     }
 
     md->havePartiallyFrozenAtoms = FALSE;
@@ -404,8 +406,7 @@ void atoms2md(const gmx_mtop_t*  mtop,
             else if (md->cFREEZE)
             {
                 g = md->cFREEZE[i];
-                GMX_ASSERT(opts->nFreeze != nullptr,
-                           "Must have freeze groups to initialize masses");
+                GMX_ASSERT(opts->nFreeze != nullptr, "Must have freeze groups to initialize masses");
                 if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
                 {
                     /* Set the mass of completely frozen particles to ALMOST_ZERO

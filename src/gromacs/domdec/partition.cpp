@@ -120,7 +120,15 @@ static void print_ddzone(FILE* fp, int d, int i, int j, gmx_ddzone_t* zone)
     fprintf(fp,
             "zone d0 %d d1 %d d2 %d  min0 %6.3f max1 %6.3f mch0 %6.3f mch1 %6.3f p1_0 %6.3f p1_1 "
             "%6.3f\n",
-            d, i, j, zone->min0, zone->max1, zone->mch0, zone->mch0, zone->p1_0, zone->p1_1);
+            d,
+            i,
+            j,
+            zone->min0,
+            zone->max1,
+            zone->mch0,
+            zone->mch0,
+            zone->p1_0,
+            zone->p1_1);
 }
 
 /*! \brief Using the home grid size as input in cell_ns_x0 and cell_ns_x1
@@ -251,7 +259,10 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
                     "Here we expect gmx_ddzone_t to consist of c_ddzoneNumReals reals (only)");
 
             int numReals = numElementsInBuffer * c_ddzoneNumReals;
-            ddSendrecv(dd, d, dddirBackward, gmx::arrayRefFromArray(&buf_s[0].min0, numReals),
+            ddSendrecv(dd,
+                       d,
+                       dddirBackward,
+                       gmx::arrayRefFromArray(&buf_s[0].min0, numReals),
                        gmx::arrayRefFromArray(&buf_r[0].min0, numReals));
 
             rvec dh = { 0 };
@@ -412,7 +423,10 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
         cellsizes[d].fracUpperMin = extr_s[d - 1][1];
         if (debug)
         {
-            fprintf(debug, "Cell fraction d %d, max0 %f, min1 %f\n", d, cellsizes[d].fracLowerMax,
+            fprintf(debug,
+                    "Cell fraction d %d, max0 %f, min1 %f\n",
+                    d,
+                    cellsizes[d].fracLowerMax,
                     cellsizes[d].fracUpperMin);
         }
     }
@@ -537,8 +551,12 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
             int globalAtomIndex = dd->globalAtomIndices[a];
             if (have[globalAtomIndex] > 0)
             {
-                fprintf(stderr, "DD rank %d: global atom %d occurs twice: index %d and %d\n",
-                        dd->rank, globalAtomIndex + 1, have[globalAtomIndex], a + 1);
+                fprintf(stderr,
+                        "DD rank %d: global atom %d occurs twice: index %d and %d\n",
+                        dd->rank,
+                        globalAtomIndex + 1,
+                        have[globalAtomIndex],
+                        a + 1);
             }
             else
             {
@@ -560,7 +578,10 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
                 fprintf(stderr,
                         "DD rank %d: global atom %d marked as local atom %d, which is larger than "
                         "nat_tot (%d)\n",
-                        dd->rank, i + 1, a + 1, numAtomsInZones);
+                        dd->rank,
+                        i + 1,
+                        a + 1,
+                        numAtomsInZones);
                 nerr++;
             }
             else
@@ -571,7 +592,10 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
                     fprintf(stderr,
                             "DD rank %d: global atom %d marked as local atom %d, which has global "
                             "atom index %d\n",
-                            dd->rank, i + 1, a + 1, dd->globalAtomIndices[a] + 1);
+                            dd->rank,
+                            i + 1,
+                            a + 1,
+                            dd->globalAtomIndices[a] + 1);
                     nerr++;
                 }
             }
@@ -580,15 +604,18 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
     }
     if (ngl != numAtomsInZones)
     {
-        fprintf(stderr, "DD rank %d, %s: %d global atom indices, %d local atoms\n", dd->rank, where,
-                ngl, numAtomsInZones);
+        fprintf(stderr, "DD rank %d, %s: %d global atom indices, %d local atoms\n", dd->rank, where, ngl, numAtomsInZones);
     }
     for (int a = 0; a < numAtomsInZones; a++)
     {
         if (have[a] == 0)
         {
-            fprintf(stderr, "DD rank %d, %s: local atom %d, global %d has no global index\n",
-                    dd->rank, where, a + 1, dd->globalAtomIndices[a] + 1);
+            fprintf(stderr,
+                    "DD rank %d, %s: local atom %d, global %d has no global index\n",
+                    dd->rank,
+                    where,
+                    a + 1,
+                    dd->globalAtomIndices[a] + 1);
         }
     }
 
@@ -656,7 +683,11 @@ bool check_grid_jump(int64_t step, const gmx_domdec_t* dd, real cutoff, const gm
                           "step %s: The domain decomposition grid has shifted too much in the "
                           "%c-direction around cell %d %d %d. This should not have happened. "
                           "Running with fewer ranks might avoid this issue.",
-                          gmx_step_str(step, buf), dim2char(dim), dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
+                          gmx_step_str(step, buf),
+                          dim2char(dim),
+                          dd->ci[XX],
+                          dd->ci[YY],
+                          dd->ci[ZZ]);
             }
         }
     }
@@ -742,9 +773,14 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t* dd, gmx_ddbox_t* ddbox, rvec cel
                       "step %s: The %c-size (%f) times the triclinic skew factor (%f) is smaller "
                       "than the smallest allowed cell size (%f) for domain decomposition grid cell "
                       "%d %d %d",
-                      gmx_step_str(step, buf), dim2char(dim),
-                      comm->cell_x1[dim] - comm->cell_x0[dim], ddbox->skew_fac[dim],
-                      dd->comm->cellsize_min[dim], dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
+                      gmx_step_str(step, buf),
+                      dim2char(dim),
+                      comm->cell_x1[dim] - comm->cell_x0[dim],
+                      ddbox->skew_fac[dim],
+                      dd->comm->cellsize_min[dim],
+                      dd->ci[XX],
+                      dd->ci[YY],
+                      dd->ci[ZZ]);
         }
     }
 
@@ -844,8 +880,14 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle_t wcycle)
              * The communicators are setup such that the root always has rank 0.
              */
 #if GMX_MPI
-            MPI_Gather(sbuf, load->nload * sizeof(float), MPI_BYTE, load->load,
-                       load->nload * sizeof(float), MPI_BYTE, 0, comm->mpi_comm_load[d]);
+            MPI_Gather(sbuf,
+                       load->nload * sizeof(float),
+                       MPI_BYTE,
+                       load->load,
+                       load->nload * sizeof(float),
+                       MPI_BYTE,
+                       0,
+                       comm->mpi_comm_load[d]);
 #endif
             if (dd->ci[dim] == dd->master_ci[dim])
             {
@@ -1074,7 +1116,8 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
         sprintf(buf, " Average PME mesh/force load: %5.3f\n", pmeForceRatio);
         fprintf(fplog, "%s", buf);
         fprintf(stderr, "%s", buf);
-        sprintf(buf, " Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n",
+        sprintf(buf,
+                " Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n",
                 std::fabs(lossFractionPme) * 100);
         fprintf(fplog, "%s", buf);
         fprintf(stderr, "%s", buf);
@@ -1119,7 +1162,8 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
                 "      had %s work to do than the PP ranks.\n"
                 "      You might want to %s the number of PME ranks\n"
                 "      or %s the cut-off and the grid spacing.\n",
-                std::fabs(lossFractionPme * 100), (lossFractionPme < 0) ? "less" : "more",
+                std::fabs(lossFractionPme * 100),
+                (lossFractionPme < 0) ? "less" : "more",
                 (lossFractionPme < 0) ? "decrease" : "increase",
                 (lossFractionPme < 0) ? "decrease" : "increase");
         fprintf(fplog, "%s\n", buf);
@@ -1225,7 +1269,8 @@ static void turn_on_dlb(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, int64_t st
                         "step %s Measured %.1f %% performance loss due to load imbalance, "
                         "but the minimum cell size is smaller than 1.05 times the cell size limit. "
                         "Will no longer try dynamic load balancing.",
-                        gmx::toString(step).c_str(), dd_force_imb_perf_loss(dd) * 100);
+                        gmx::toString(step).c_str(),
+                        dd_force_imb_perf_loss(dd) * 100);
 
         comm->dlbState = DlbState::offForever;
         return;
@@ -1235,7 +1280,8 @@ static void turn_on_dlb(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, int64_t st
             .appendTextFormatted(
                     "step %s Turning on dynamic load balancing, because the performance loss due "
                     "to load imbalance is %.1f %%.",
-                    gmx::toString(step).c_str(), dd_force_imb_perf_loss(dd) * 100);
+                    gmx::toString(step).c_str(),
+                    dd_force_imb_perf_loss(dd) * 100);
     comm->dlbState = DlbState::onCanTurnOff;
 
     /* Store the non-DLB performance, so we can check if DLB actually
@@ -2006,12 +2052,37 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
                         int cg1_th = cg0 + ((cg1 - cg0) * (th + 1)) / numThreads;
 
                         /* Get the cg's for this pulse in this zone */
-                        get_zone_pulse_cgs(dd, zonei, zone, cg0_th, cg1_th, dd->globalAtomGroupIndices,
-                                           dim, dim_ind, dim0, dim1, dim2, r_comm2, r_bcomm2, box,
-                                           distanceIsTriclinic, normal, skew_fac2_d, skew_fac_01,
-                                           v_d, v_0, v_1, &corners, sf2_round, bDistBonded, bBondComm,
-                                           bDist2B, bDistMB, state->x.rvec_array(), fr->cginfo,
-                                           th == 0 ? &ind->index : &work.localAtomGroupBuffer, &work);
+                        get_zone_pulse_cgs(dd,
+                                           zonei,
+                                           zone,
+                                           cg0_th,
+                                           cg1_th,
+                                           dd->globalAtomGroupIndices,
+                                           dim,
+                                           dim_ind,
+                                           dim0,
+                                           dim1,
+                                           dim2,
+                                           r_comm2,
+                                           r_bcomm2,
+                                           box,
+                                           distanceIsTriclinic,
+                                           normal,
+                                           skew_fac2_d,
+                                           skew_fac_01,
+                                           v_d,
+                                           v_0,
+                                           v_1,
+                                           &corners,
+                                           sf2_round,
+                                           bDistBonded,
+                                           bBondComm,
+                                           bDist2B,
+                                           bDistMB,
+                                           state->x.rvec_array(),
+                                           fr->cginfo,
+                                           th == 0 ? &ind->index : &work.localAtomGroupBuffer,
+                                           &work);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                 } // END
@@ -2024,12 +2095,13 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
                 {
                     const dd_comm_setup_work_t& dth = comm->dth[th];
 
-                    ind->index.insert(ind->index.end(), dth.localAtomGroupBuffer.begin(),
+                    ind->index.insert(ind->index.end(),
+                                      dth.localAtomGroupBuffer.begin(),
                                       dth.localAtomGroupBuffer.end());
-                    atomGroups.insert(atomGroups.end(), dth.atomGroupBuffer.begin(),
-                                      dth.atomGroupBuffer.end());
-                    positions.insert(positions.end(), dth.positionBuffer.begin(),
-                                     dth.positionBuffer.end());
+                    atomGroups.insert(
+                            atomGroups.end(), dth.atomGroupBuffer.begin(), dth.atomGroupBuffer.end());
+                    positions.insert(
+                            positions.end(), dth.positionBuffer.begin(), dth.positionBuffer.end());
                     comm->dth[0].nat += dth.nat;
                     ind->nsend[zone] += dth.nsend_zone;
                 }
@@ -2121,8 +2193,15 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
             else
             {
                 /* This part of the code is never executed with bBondComm. */
-                merge_cg_buffers(nzone, cd, p, zone_cg_range, dd->globalAtomGroupIndices,
-                                 integerBufferRef.data(), state->x, rvecBufferRef, fr->cginfo_mb,
+                merge_cg_buffers(nzone,
+                                 cd,
+                                 p,
+                                 zone_cg_range,
+                                 dd->globalAtomGroupIndices,
+                                 integerBufferRef.data(),
+                                 state->x,
+                                 rvecBufferRef,
+                                 fr->cginfo_mb,
                                  fr->cginfo);
                 pos_cg += ind->nrecv[nzone];
             }
@@ -2427,12 +2506,24 @@ static void set_zones_size(gmx_domdec_t*      dd,
     {
         for (z = zone_start; z < zone_end; z++)
         {
-            fprintf(debug, "zone %d    %6.3f - %6.3f  %6.3f - %6.3f  %6.3f - %6.3f\n", z,
-                    zones->size[z].x0[XX], zones->size[z].x1[XX], zones->size[z].x0[YY],
-                    zones->size[z].x1[YY], zones->size[z].x0[ZZ], zones->size[z].x1[ZZ]);
-            fprintf(debug, "zone %d bb %6.3f - %6.3f  %6.3f - %6.3f  %6.3f - %6.3f\n", z,
-                    zones->size[z].bb_x0[XX], zones->size[z].bb_x1[XX], zones->size[z].bb_x0[YY],
-                    zones->size[z].bb_x1[YY], zones->size[z].bb_x0[ZZ], zones->size[z].bb_x1[ZZ]);
+            fprintf(debug,
+                    "zone %d    %6.3f - %6.3f  %6.3f - %6.3f  %6.3f - %6.3f\n",
+                    z,
+                    zones->size[z].x0[XX],
+                    zones->size[z].x1[XX],
+                    zones->size[z].x0[YY],
+                    zones->size[z].x1[YY],
+                    zones->size[z].x0[ZZ],
+                    zones->size[z].x1[ZZ]);
+            fprintf(debug,
+                    "zone %d bb %6.3f - %6.3f  %6.3f - %6.3f  %6.3f - %6.3f\n",
+                    z,
+                    zones->size[z].bb_x0[XX],
+                    zones->size[z].bb_x1[XX],
+                    zones->size[z].bb_x0[YY],
+                    zones->size[z].bb_x1[YY],
+                    zones->size[z].bb_x0[ZZ],
+                    zones->size[z].bb_x1[ZZ]);
         }
     }
 }
@@ -2601,15 +2692,19 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec* ir, FILE* fplog)
             case DDAtomRanges::Type::Vsites:
                 if (cr->dd->vsite_comm)
                 {
-                    fprintf(fplog, " av. #atoms communicated per step for vsites: %d x %.1f\n",
-                            (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD) ? 3 : 2, av);
+                    fprintf(fplog,
+                            " av. #atoms communicated per step for vsites: %d x %.1f\n",
+                            (EEL_PME(ir->coulombtype) || ir->coulombtype == eelEWALD) ? 3 : 2,
+                            av);
                 }
                 break;
             case DDAtomRanges::Type::Constraints:
                 if (cr->dd->constraint_comm)
                 {
-                    fprintf(fplog, " av. #atoms communicated per step for LINCS:  %d x %.1f\n",
-                            1 + ir->nLincsIter, av);
+                    fprintf(fplog,
+                            " av. #atoms communicated per step for LINCS:  %d x %.1f\n",
+                            1 + ir->nLincsIter,
+                            av);
                 }
                 break;
             default: gmx_incons(" Unknown type for DD statistics");
@@ -2876,7 +2971,8 @@ void dd_partition_system(FILE*                     fplog,
             gmx_fatal(FARGS,
                       "Internal inconsistency state_local->ddp_count (%d) > dd->ddp_count (%" PRId64
                       ")",
-                      state_local->ddp_count, dd->ddp_count);
+                      state_local->ddp_count,
+                      dd->ddp_count);
         }
 
         if (state_local->ddp_count_cg_gl != state_local->ddp_count)
@@ -2884,7 +2980,8 @@ void dd_partition_system(FILE*                     fplog,
             gmx_fatal(FARGS,
                       "Internal inconsistency state_local->ddp_count_cg_gl (%d) != "
                       "state_local->ddp_count (%d)",
-                      state_local->ddp_count_cg_gl, state_local->ddp_count);
+                      state_local->ddp_count_cg_gl,
+                      state_local->ddp_count);
         }
 
         /* Clear the old state */
@@ -2971,9 +3068,17 @@ void dd_partition_system(FILE*                     fplog,
     }
 
     // TODO: Integrate this code in the nbnxm module
-    get_nsgrid_boundaries(ddbox.nboundeddim, state_local->box, dd, &ddbox, &comm->cell_x0,
-                          &comm->cell_x1, dd->ncg_home, as_rvec_array(state_local->x.data()),
-                          cell_ns_x0, cell_ns_x1, &grid_density);
+    get_nsgrid_boundaries(ddbox.nboundeddim,
+                          state_local->box,
+                          dd,
+                          &ddbox,
+                          &comm->cell_x0,
+                          &comm->cell_x1,
+                          dd->ncg_home,
+                          as_rvec_array(state_local->x.data()),
+                          cell_ns_x0,
+                          cell_ns_x1,
+                          &grid_density);
 
     if (bBoxChanged)
     {
@@ -2997,15 +3102,22 @@ void dd_partition_system(FILE*                     fplog,
 
         set_zones_size(dd, state_local->box, &ddbox, 0, 1, ncg_moved);
 
-        nbnxn_put_on_grid(fr->nbv.get(), state_local->box, 0, comm->zones.size[0].bb_x0,
-                          comm->zones.size[0].bb_x1, comm->updateGroupsCog.get(),
-                          { 0, dd->ncg_home }, comm->zones.dens_zone0, fr->cginfo, state_local->x,
-                          ncg_moved, bRedist ? comm->movedBuffer.data() : nullptr);
+        nbnxn_put_on_grid(fr->nbv.get(),
+                          state_local->box,
+                          0,
+                          comm->zones.size[0].bb_x0,
+                          comm->zones.size[0].bb_x1,
+                          comm->updateGroupsCog.get(),
+                          { 0, dd->ncg_home },
+                          comm->zones.dens_zone0,
+                          fr->cginfo,
+                          state_local->x,
+                          ncg_moved,
+                          bRedist ? comm->movedBuffer.data() : nullptr);
 
         if (debug)
         {
-            fprintf(debug, "Step %s, sorting the %d home charge groups\n", gmx_step_str(step, sbuf),
-                    dd->ncg_home);
+            fprintf(debug, "Step %s, sorting the %d home charge groups\n", gmx_step_str(step, sbuf), dd->ncg_home);
         }
         dd_sort_state(dd, fr, state_local);
 
@@ -3069,8 +3181,16 @@ void dd_partition_system(FILE*                     fplog,
     {
         np[dd->dim[i]] = comm->cd[i].numPulses();
     }
-    dd_make_local_top(dd, &comm->zones, dd->unitCellInfo.npbcdim, state_local->box,
-                      comm->cellsize_min, np, fr, state_local->x.rvec_array(), top_global, top_local);
+    dd_make_local_top(dd,
+                      &comm->zones,
+                      dd->unitCellInfo.npbcdim,
+                      state_local->box,
+                      comm->cellsize_min,
+                      np,
+                      fr,
+                      state_local->x.rvec_array(),
+                      top_global,
+                      top_local);
 
     wallcycle_sub_stop(wcycle, ewcsDD_MAKETOP);
 
@@ -3079,7 +3199,8 @@ void dd_partition_system(FILE*                     fplog,
     /* Set up the special atom communication */
     int n = comm->atomRanges.end(DDAtomRanges::Type::Zones);
     for (int i = static_cast<int>(DDAtomRanges::Type::Zones) + 1;
-         i < static_cast<int>(DDAtomRanges::Type::Number); i++)
+         i < static_cast<int>(DDAtomRanges::Type::Number);
+         i++)
     {
         auto range = static_cast<DDAtomRanges::Type>(i);
         switch (range)
@@ -3094,8 +3215,13 @@ void dd_partition_system(FILE*                     fplog,
                 if (dd->comm->systemInfo.haveSplitConstraints || dd->comm->systemInfo.haveSplitSettles)
                 {
                     /* Only for inter-cg constraints we need special code */
-                    n = dd_make_local_constraints(dd, n, &top_global, fr->cginfo.data(), constr,
-                                                  ir->nProjOrder, top_local->idef.il);
+                    n = dd_make_local_constraints(dd,
+                                                  n,
+                                                  &top_global,
+                                                  fr->cginfo.data(),
+                                                  constr,
+                                                  ir->nProjOrder,
+                                                  top_local->idef.il);
                 }
                 break;
             default: gmx_incons("Unknown special atom type setup");
@@ -3136,8 +3262,10 @@ void dd_partition_system(FILE*                     fplog,
      * allocation, zeroing and copying, but this is probably not worth
      * the complications and checking.
      */
-    forcerec_set_ranges(fr, comm->atomRanges.end(DDAtomRanges::Type::Zones),
-                        comm->atomRanges.end(DDAtomRanges::Type::Constraints), nat_f_novirsum);
+    forcerec_set_ranges(fr,
+                        comm->atomRanges.end(DDAtomRanges::Type::Zones),
+                        comm->atomRanges.end(DDAtomRanges::Type::Constraints),
+                        nat_f_novirsum);
 
     /* Update atom data for mdatoms and several algorithms */
     mdAlgorithmsSetupAtomData(cr, ir, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
@@ -3146,10 +3274,18 @@ void dd_partition_system(FILE*                     fplog,
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
-        gmx_pme_send_parameters(cr, fr->ic, mdatoms->nChargePerturbed != 0,
-                                mdatoms->nTypePerturbed != 0, mdatoms->chargeA, mdatoms->chargeB,
-                                mdatoms->sqrt_c6A, mdatoms->sqrt_c6B, mdatoms->sigmaA,
-                                mdatoms->sigmaB, dd_pme_maxshift_x(dd), dd_pme_maxshift_y(dd));
+        gmx_pme_send_parameters(cr,
+                                fr->ic,
+                                mdatoms->nChargePerturbed != 0,
+                                mdatoms->nTypePerturbed != 0,
+                                mdatoms->chargeA,
+                                mdatoms->chargeB,
+                                mdatoms->sqrt_c6A,
+                                mdatoms->sqrt_c6B,
+                                mdatoms->sigmaA,
+                                mdatoms->sigmaB,
+                                dd_pme_maxshift_x(dd),
+                                dd_pme_maxshift_y(dd));
     }
 
     if (dd->atomSets != nullptr)
@@ -3184,7 +3320,13 @@ void dd_partition_system(FILE*                     fplog,
     if (comm->ddSettings.nstDDDump > 0 && step % comm->ddSettings.nstDDDump == 0)
     {
         dd_move_x(dd, state_local->box, state_local->x, nullWallcycle);
-        write_dd_pdb("dd_dump", step, "dump", &top_global, cr, -1, state_local->x.rvec_array(),
+        write_dd_pdb("dd_dump",
+                     step,
+                     "dump",
+                     &top_global,
+                     cr,
+                     -1,
+                     state_local->x.rvec_array(),
                      state_local->box);
     }
 
@@ -3226,8 +3368,8 @@ void checkNumberOfBondedInteractions(const gmx::MDLogger&           mdlog,
     {
         if (totalNumberOfBondedInteractions != cr->dd->nbonded_global)
         {
-            dd_print_missing_interactions(mdlog, cr, totalNumberOfBondedInteractions, top_global,
-                                          top_local, x, box); // Does not return
+            dd_print_missing_interactions(
+                    mdlog, cr, totalNumberOfBondedInteractions, top_global, top_local, x, box); // Does not return
         }
         *shouldCheckNumberOfBondedInteractions = false;
     }

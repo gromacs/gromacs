@@ -72,8 +72,10 @@ std::vector<real> linearCombination(real alpha, ArrayRef<const real> a, real bet
     GMX_ASSERT(a.size() == b.size(),
                "Input vectors have to have the same size to evaluate their linear combination.");
     std::vector<real> result(a.size());
-    std::transform(std::begin(a), std::end(a), std::begin(b), std::begin(result),
-                   [alpha, beta](auto a, auto b) { return alpha * a + beta * b; });
+    std::transform(
+            std::begin(a), std::end(a), std::begin(b), std::begin(result), [alpha, beta](auto a, auto b) {
+                return alpha * a + beta * b;
+            });
     return result;
 };
 
@@ -151,17 +153,20 @@ RealFunctionvalueAtCoordinate
 NelderMeadSimplex::evaluateExpansionPoint(const std::function<real(ArrayRef<const real>)>& f) const
 {
     const std::vector<real> expansionPointCoordinate =
-            linearCombination(1 - defaultNelderMeadParameters.gamma_, centroidWithoutWorstPoint_,
-                              defaultNelderMeadParameters.gamma_, reflectionPointCoordinates_);
+            linearCombination(1 - defaultNelderMeadParameters.gamma_,
+                              centroidWithoutWorstPoint_,
+                              defaultNelderMeadParameters.gamma_,
+                              reflectionPointCoordinates_);
     return { expansionPointCoordinate, f(expansionPointCoordinate) };
 }
 
 RealFunctionvalueAtCoordinate
 NelderMeadSimplex::evaluateContractionPoint(const std::function<real(ArrayRef<const real>)>& f) const
 {
-    std::vector<real> contractionPoint =
-            linearCombination(1 - defaultNelderMeadParameters.rho_, centroidWithoutWorstPoint_,
-                              defaultNelderMeadParameters.rho_, worstVertex().coordinate_);
+    std::vector<real> contractionPoint = linearCombination(1 - defaultNelderMeadParameters.rho_,
+                                                           centroidWithoutWorstPoint_,
+                                                           defaultNelderMeadParameters.rho_,
+                                                           worstVertex().coordinate_);
     return { contractionPoint, f(contractionPoint) };
 }
 
@@ -173,7 +178,9 @@ void NelderMeadSimplex::swapOutWorst(const RealFunctionvalueAtCoordinate& newVer
     // find the point to insert the new vertex, so that the simplex vertices
     // keep being sorted according to function value
     const auto insertionPoint = std::lower_bound(
-            std::begin(simplex_), std::end(simplex_), newVertex.value_,
+            std::begin(simplex_),
+            std::end(simplex_),
+            newVertex.value_,
             [](const RealFunctionvalueAtCoordinate& lhs, real value) { return lhs.value_ < value; });
     simplex_.insert(insertionPoint, newVertex);
     // now that the simplex has changed, it has a new centroid and reflection point
@@ -185,11 +192,15 @@ void NelderMeadSimplex::shrinkSimplexPointsExceptBest(const std::function<real(A
     std::vector<real> bestPointCoordinate = simplex_.front().coordinate_;
     // skipping over the first simplex vertex, pull points closer to the best
     // vertex
-    std::transform(std::next(std::begin(simplex_)), std::end(simplex_), std::next(std::begin(simplex_)),
+    std::transform(std::next(std::begin(simplex_)),
+                   std::end(simplex_),
+                   std::next(std::begin(simplex_)),
                    [bestPointCoordinate, f](const RealFunctionvalueAtCoordinate& d) -> RealFunctionvalueAtCoordinate {
-                       const std::vector<real> shrinkPoint = linearCombination(
-                               defaultNelderMeadParameters.sigma_, d.coordinate_,
-                               1 - defaultNelderMeadParameters.sigma_, bestPointCoordinate);
+                       const std::vector<real> shrinkPoint =
+                               linearCombination(defaultNelderMeadParameters.sigma_,
+                                                 d.coordinate_,
+                                                 1 - defaultNelderMeadParameters.sigma_,
+                                                 bestPointCoordinate);
                        return { shrinkPoint, f(shrinkPoint) };
                    });
 
@@ -209,9 +220,10 @@ real NelderMeadSimplex::orientedLength() const
     {
         const std::vector<real> differenceVector =
                 linearCombination(1, firstSimplexVertexCoordinate, -1, simplexVertex.coordinate_);
-        const real thisLength =
-                std::accumulate(std::begin(differenceVector), std::end(differenceVector), 0.,
-                                [](real sum, real value) { return sum + value * value; });
+        const real thisLength = std::accumulate(
+                std::begin(differenceVector), std::end(differenceVector), 0., [](real sum, real value) {
+                    return sum + value * value;
+                });
         result = std::max(result, thisLength);
     }
     return sqrt(result);
@@ -221,23 +233,28 @@ void NelderMeadSimplex::updateCentroidAndReflectionPoint()
 {
     // intialize with first vertex, then add up all other vertex coordinates
     // expect last one
-    centroidWithoutWorstPoint_ = std::accumulate(
-            std::next(std::begin(simplex_)), std::prev(std::end(simplex_)), simplex_.front().coordinate_,
-            [](std::vector<real> sum, const RealFunctionvalueAtCoordinate& x) {
-                std::transform(std::begin(sum), std::end(sum), std::begin(x.coordinate_),
-                               std::begin(sum), std::plus<>());
-                return sum;
-            });
+    centroidWithoutWorstPoint_ =
+            std::accumulate(std::next(std::begin(simplex_)),
+                            std::prev(std::end(simplex_)),
+                            simplex_.front().coordinate_,
+                            [](std::vector<real> sum, const RealFunctionvalueAtCoordinate& x) {
+                                std::transform(std::begin(sum),
+                                               std::end(sum),
+                                               std::begin(x.coordinate_),
+                                               std::begin(sum),
+                                               std::plus<>());
+                                return sum;
+                            });
 
     // divide the summed up coordinates by N (the simplex has N+1 vertices)
-    std::transform(std::begin(centroidWithoutWorstPoint_), std::end(centroidWithoutWorstPoint_),
+    std::transform(std::begin(centroidWithoutWorstPoint_),
+                   std::end(centroidWithoutWorstPoint_),
                    std::begin(centroidWithoutWorstPoint_),
                    [n = simplex_.size() - 1](const auto& x) { return x / n; });
 
     // now, that we have evaluated the centroid, update the reflection points
-    reflectionPointCoordinates_ =
-            linearCombination(defaultNelderMeadParameters.alpha_ + 1, centroidWithoutWorstPoint_,
-                              -1, worstVertex().coordinate_);
+    reflectionPointCoordinates_ = linearCombination(
+            defaultNelderMeadParameters.alpha_ + 1, centroidWithoutWorstPoint_, -1, worstVertex().coordinate_);
 }
 
 } // namespace gmx

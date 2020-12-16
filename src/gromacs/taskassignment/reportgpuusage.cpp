@@ -131,8 +131,12 @@ void reportGpuUsage(const MDLogger&                   mdlog,
         output += gmx::formatString(
                 "%zu GPU%s selected for this run.\n"
                 "Mapping of GPU IDs to the %zu GPU task%s in the %zu rank%s on this node:\n  %s\n",
-                numGpusInUse, bPluralGpus ? "s" : "", numGpuTasksOnThisNode,
-                (numGpuTasksOnThisNode > 1) ? "s" : "", numRanks, (numRanks > 1) ? "s" : "",
+                numGpusInUse,
+                bPluralGpus ? "s" : "",
+                numGpuTasksOnThisNode,
+                (numGpuTasksOnThisNode > 1) ? "s" : "",
+                numRanks,
+                (numRanks > 1) ? "s" : "",
                 gpuIdsString.c_str());
         // Because there is a GPU in use, there must be a PP task on a GPU.
         output += gmx::formatString(

@@ -218,7 +218,8 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAto
                 {
                     int  ni   = harmonic->ai();
                     int  nj   = harmonic->aj();
-                    real edis = search_e_diss(n2m, t2m,
+                    real edis = search_e_diss(n2m,
+                                              t2m,
                                               atype->atomNameFromAtomType(mol.atoms.atom[ni].type),
                                               atype->atomNameFromAtomType(mol.atoms.atom[nj].type));
                     if (edis != 0)
@@ -239,8 +240,12 @@ void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAto
                 }
 
                 int newHarmonics = mol.interactions[bb].size();
-                fprintf(stderr, "Converted %d out of %d %s to morse bonds for mol %d\n",
-                        nrharm - newHarmonics, nrharm, interaction_function[bb].name, i);
+                fprintf(stderr,
+                        "Converted %d out of %d %s to morse bonds for mol %d\n",
+                        nrharm - newHarmonics,
+                        nrharm,
+                        interaction_function[bb].name,
+                        i);
             }
         }
         i++;

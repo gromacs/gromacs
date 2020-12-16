@@ -107,8 +107,11 @@ real calcFftGrid(FILE* fp, const matrix box, real gridSpacing, int minGridPoints
     {
         if (nullptr != fp)
         {
-            fprintf(fp, "Calculating fourier grid dimensions for%s%s%s\n", *nx > 0 ? "" : " X",
-                    *ny > 0 ? "" : " Y", *nz > 0 ? "" : " Z");
+            fprintf(fp,
+                    "Calculating fourier grid dimensions for%s%s%s\n",
+                    *nx > 0 ? "" : " X",
+                    *ny > 0 ? "" : " Y",
+                    *nz > 0 ? "" : " Z");
         }
     }
 
@@ -161,8 +164,14 @@ real calcFftGrid(FILE* fp, const matrix box, real gridSpacing, int minGridPoints
     *nz = n[ZZ];
     if (nullptr != fp)
     {
-        fprintf(fp, "Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n", *nx, *ny, *nz,
-                spacing[XX], spacing[YY], spacing[ZZ]);
+        fprintf(fp,
+                "Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
+                *nx,
+                *ny,
+                *nz,
+                spacing[XX],
+                spacing[YY],
+                spacing[ZZ]);
     }
 
     return max_spacing;

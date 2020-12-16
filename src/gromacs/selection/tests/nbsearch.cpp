@@ -626,8 +626,8 @@ void NeighborhoodSearchTest::testPairSearchFull(gmx::AnalysisNeighborhoodSearch*
             if (selfPairs)
             {
                 searchPair              = NeighborhoodSearchTestData::RefPair(testIndex, 0.0);
-                const auto otherRefPair = std::lower_bound(refPairs[refIndex].begin(),
-                                                           refPairs[refIndex].end(), searchPair);
+                const auto otherRefPair = std::lower_bound(
+                        refPairs[refIndex].begin(), refPairs[refIndex].end(), searchPair);
                 GMX_RELEASE_ASSERT(otherRefPair != refPairs[refIndex].end(),
                                    "Precomputed reference data is not symmetric");
                 otherRefPair->bFound = true;
@@ -1111,8 +1111,13 @@ TEST_F(NeighborhoodSearchTest, SimpleSearchExclusions)
             nb_.initSearch(&data.pbc_, data.refPositions().exclusionIds(helper.refPosIds()));
     ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
 
-    testPairSearchFull(&search, data, data.testPositions().exclusionIds(helper.testPosIds()),
-                       helper.exclusions(), {}, {}, false);
+    testPairSearchFull(&search,
+                       data,
+                       data.testPositions().exclusionIds(helper.testPosIds()),
+                       helper.exclusions(),
+                       {},
+                       {},
+                       false);
 }
 
 TEST_F(NeighborhoodSearchTest, GridSearchExclusions)
@@ -1129,8 +1134,13 @@ TEST_F(NeighborhoodSearchTest, GridSearchExclusions)
             nb_.initSearch(&data.pbc_, data.refPositions().exclusionIds(helper.refPosIds()));
     ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
 
-    testPairSearchFull(&search, data, data.testPositions().exclusionIds(helper.testPosIds()),
-                       helper.exclusions(), {}, {}, false);
+    testPairSearchFull(&search,
+                       data,
+                       data.testPositions().exclusionIds(helper.testPosIds()),
+                       helper.exclusions(),
+                       {},
+                       {},
+                       false);
 }
 
 } // namespace

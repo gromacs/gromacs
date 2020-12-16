@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,8 +134,13 @@ static bool LogoCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
             XSetLineAttributes(x11->disp, x11->gc, 3, LineSolid, CapNotLast, JoinRound);
             for (i = 0; (i < asize(lines)); i += 2)
             {
-                XDrawLine(x11->disp, wd->self, x11->gc, c[lines[i]].x, c[lines[i]].y,
-                          c[lines[i + 1]].x, c[lines[i + 1]].y);
+                XDrawLine(x11->disp,
+                          wd->self,
+                          x11->gc,
+                          c[lines[i]].x,
+                          c[lines[i]].y,
+                          c[lines[i + 1]].x,
+                          c[lines[i + 1]].y);
             }
             XSetLineAttributes(x11->disp, x11->gc, 1, LineSolid, CapNotLast, JoinRound);
             for (i = 0; (i < asize(c)); i++)
@@ -147,8 +152,8 @@ static bool LogoCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
             XDrawRectangle(x11->disp, wd->self, x11->gc, 2, 2, wd->width - 5, wd->height - 5);
             for (i = 0; (i < NMESS); i++)
             {
-                SpecialTextInRect(x11, Mess[i].fnt, wd->self, Mess[i].text, 0, Mess[i].y, wd->width,
-                                  Mess[i].h, eXCenter, eYCenter);
+                SpecialTextInRect(
+                        x11, Mess[i].fnt, wd->self, Mess[i].text, 0, Mess[i].y, wd->width, Mess[i].h, eXCenter, eYCenter);
             }
             XSetForeground(x11->disp, x11->gc, x11->fg);
             break;
@@ -186,8 +191,8 @@ t_logo* init_logo(t_x11* x11, Window parent, bool bQuitOnClick)
     {
         GetNamedColor(x11, newcol, &bg);
     }
-    logo->wd.self = XCreateSimpleWindow(x11->disp, parent, logo->wd.x, logo->wd.y, logo->wd.width,
-                                        logo->wd.height, logo->wd.bwidth, WHITE, bg);
+    logo->wd.self = XCreateSimpleWindow(
+            x11->disp, parent, logo->wd.x, logo->wd.y, logo->wd.width, logo->wd.height, logo->wd.bwidth, WHITE, bg);
     for (i = 0, logo->bigfont = nullptr; (i < NBF); i++)
     {
         if ((logo->bigfont = XLoadQueryFont(x11->disp, bfname[i])) != nullptr)

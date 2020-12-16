@@ -98,8 +98,9 @@ enum class GroupType : int
 //! Strings corresponding to DistanceType.
 const EnumerationArray<DistanceType, const char*> c_distanceTypeNames = { { "min", "max" } };
 //! Strings corresponding to GroupType.
-const EnumerationArray<GroupType, const char*> c_groupTypeNames = { { "all", "res", "mol",
-                                                                      "none" } };
+const EnumerationArray<GroupType, const char*> c_groupTypeNames = {
+    { "all", "res", "mol", "none" }
+};
 
 /*! \brief
  * Implements `gmx pairdist` trajectory analysis module.

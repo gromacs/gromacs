@@ -119,8 +119,7 @@ static void low_warning(warninp_t wi, const char* wtype, int n, const char* s)
     {
         if (wi->lineno != -1)
         {
-            fprintf(stderr, "\n%s %d [file %s, line %d]:\n%s\n\n", wtype, n, wi->filenm.c_str(),
-                    wi->lineno, temp2);
+            fprintf(stderr, "\n%s %d [file %s, line %d]:\n%s\n\n", wtype, n, wi->filenm.c_str(), wi->lineno, temp2);
         }
         else
         {
@@ -189,8 +188,13 @@ static void print_warn_count(const char* type, int n)
     print_warn_count("note", wi->nwarn_note);
     print_warn_count("warning", wi->nwarn_warn);
 
-    gmx_fatal(f_errno, file, line, "There %s %d error%s in input file(s)",
-              (wi->nwarn_error == 1) ? "was" : "were", wi->nwarn_error, (wi->nwarn_error == 1) ? "" : "s");
+    gmx_fatal(f_errno,
+              file,
+              line,
+              "There %s %d error%s in input file(s)",
+              (wi->nwarn_error == 1) ? "was" : "were",
+              wi->nwarn_error,
+              (wi->nwarn_error == 1) ? "" : "s");
 }
 
 void check_warning_error(warninp_t wi, int f_errno, const char* file, int line)
@@ -229,7 +233,9 @@ void done_warning(warninp_t wi, int f_errno, const char* file, int line)
 
     if (wi->maxwarn >= 0 && wi->nwarn_warn > wi->maxwarn)
     {
-        gmx_fatal(f_errno, file, line,
+        gmx_fatal(f_errno,
+                  file,
+                  line,
                   "Too many warnings (%d).\n"
                   "If you are sure all warnings are harmless, use the -maxwarn option.",
                   wi->nwarn_warn);

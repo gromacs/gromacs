@@ -156,7 +156,8 @@ output files exactly the same as the previous simulation part (e.g. with -deffnm
 make sure all the output files are present (e.g. run from the same directory as the
 previous simulation part), or instruct mdrun to write new output files with mdrun -noappend.
 In the last case, you will not be able to use appending in future for this simulation.)",
-            numFilesMissing, outputfiles.size());
+            numFilesMissing,
+            outputfiles.size());
     GMX_THROW(InconsistentInputError(stream.toString()));
 }
 
@@ -263,7 +264,8 @@ StartingBehaviorHandler chooseStartingBehavior(const AppendingBehavior appending
     GMX_RELEASE_ASSERT(Path::extensionMatches(logFilename, ftp2ext(efLOG)),
                        formatString("The checkpoint file or its reading is broken, the first "
                                     "output file '%s' must be a log file with extension '%s'",
-                                    logFilename, ftp2ext(efLOG))
+                                    logFilename,
+                                    ftp2ext(efLOG))
                                .c_str());
 
     if (appendingBehavior != AppendingBehavior::NoAppending)
@@ -321,7 +323,8 @@ StartingBehaviorHandler chooseStartingBehavior(const AppendingBehavior appending
                         "Cannot restart with appending because the previous simulation part used "
                         "%s precision which does not match the %s precision used by this build "
                         "of GROMACS. Either use matching precision or use mdrun -noappend.",
-                        precisionToString(headerContents.double_prec), precisionToString(GMX_DOUBLE))));
+                        precisionToString(headerContents.double_prec),
+                        precisionToString(GMX_DOUBLE))));
             }
         }
         // If the previous log filename had a part number, then we
@@ -369,7 +372,8 @@ void checkOutputFile(t_fileio* fileToCheck, const gmx_file_position_t& outputfil
                     "Can't read %d bytes of '%s' to compute checksum. The file "
                     "has been replaced or its contents have been modified. Cannot "
                     "do appending because of this condition.",
-                    outputfile.checksumSize, outputfile.filename);
+                    outputfile.checksumSize,
+                    outputfile.filename);
             GMX_THROW(InconsistentInputError(message));
         }
     }
@@ -511,8 +515,8 @@ void StartingBehaviorHandler::ensureMultiSimBehaviorsMatch(const gmx_multisim_t*
 
     auto startingBehaviors = gatherIntFromMultiSimulation(ms, static_cast<int>(startingBehavior));
     bool identicalStartingBehaviors =
-            (std::adjacent_find(std::begin(startingBehaviors), std::end(startingBehaviors),
-                                std::not_equal_to<>())
+            (std::adjacent_find(
+                     std::begin(startingBehaviors), std::end(startingBehaviors), std::not_equal_to<>())
              == std::end(startingBehaviors));
 
     const EnumerationArray<StartingBehavior, std::string> behaviorStrings = {
@@ -537,8 +541,8 @@ simulations wanted the following respective behaviors:
         for (index simIndex = 0; simIndex != ssize(startingBehaviors); ++simIndex)
         {
             auto behavior = static_cast<StartingBehavior>(startingBehaviors[simIndex]);
-            message += formatString("  Simulation %6zd: %s\n", simIndex,
-                                    behaviorStrings[behavior].c_str());
+            message += formatString(
+                    "  Simulation %6zd: %s\n", simIndex, behaviorStrings[behavior].c_str());
         }
         GMX_THROW(InconsistentInputError(message));
     }
@@ -553,9 +557,10 @@ simulations wanted the following respective behaviors:
     // describes the same simulation part. If those don't match, then
     // the simulation cannot proceed.
     auto simulationParts = gatherIntFromMultiSimulation(ms, headerContents->simulation_part);
-    bool identicalSimulationParts = (std::adjacent_find(std::begin(simulationParts),
-                                                        std::end(simulationParts), std::not_equal_to<>())
-                                     == std::end(simulationParts));
+    bool identicalSimulationParts =
+            (std::adjacent_find(
+                     std::begin(simulationParts), std::end(simulationParts), std::not_equal_to<>())
+             == std::end(simulationParts));
 
     if (!identicalSimulationParts)
     {

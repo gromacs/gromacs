@@ -362,10 +362,18 @@ make_cyl_refgrps(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc* p
 
             if (debug)
             {
-                fprintf(debug, "Pull cylinder group %zu:%8.3f%8.3f%8.3f m:%8.3f\n", c, pdyna->x[0],
-                        pdyna->x[1], pdyna->x[2], 1.0 / pdyna->invtm);
-                fprintf(debug, "ffrad %8.3f %8.3f %8.3f\n", spatialData.ffrad[XX],
-                        spatialData.ffrad[YY], spatialData.ffrad[ZZ]);
+                fprintf(debug,
+                        "Pull cylinder group %zu:%8.3f%8.3f%8.3f m:%8.3f\n",
+                        c,
+                        pdyna->x[0],
+                        pdyna->x[1],
+                        pdyna->x[2],
+                        1.0 / pdyna->invtm);
+                fprintf(debug,
+                        "ffrad %8.3f %8.3f %8.3f\n",
+                        spatialData.ffrad[XX],
+                        spatialData.ffrad[YY],
+                        spatialData.ffrad[ZZ]);
             }
         }
     }
@@ -629,8 +637,7 @@ void pull_calc_coms(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc
                 }
                 else if (pgrp->atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
                 {
-                    sum_com_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(), x, xp, masses, pbc, x_pbc,
-                                 &comSumsTotal);
+                    sum_com_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(), x, xp, masses, pbc, x_pbc, &comSumsTotal);
                 }
                 else
                 {
@@ -639,8 +646,8 @@ void pull_calc_coms(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc
                     {
                         int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / pull->nthreads;
                         int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / pull->nthreads;
-                        sum_com_part(pgrp, ind_start, ind_end, x, xp, masses, pbc, x_pbc,
-                                     &pull->comSums[t]);
+                        sum_com_part(
+                                pgrp, ind_start, ind_end, x, xp, masses, pbc, x_pbc, &pull->comSums[t]);
                     }
 
                     /* Reduce the thread contributions to sum_com[0] */
@@ -678,8 +685,8 @@ void pull_calc_coms(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc
                 {
                     int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / pull->nthreads;
                     int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / pull->nthreads;
-                    sum_com_part_cosweight(pgrp, ind_start, ind_end, pull->cosdim, twopi_box, x, xp,
-                                           masses, &pull->comSums[t]);
+                    sum_com_part_cosweight(
+                            pgrp, ind_start, ind_end, pull->cosdim, twopi_box, x, xp, masses, &pull->comSums[t]);
                 }
 
                 /* Reduce the thread contributions to comSums[0] */
@@ -715,7 +722,9 @@ void pull_calc_coms(const t_commrec* cr, pull_t* pull, const real* masses, t_pbc
         }
     }
 
-    pullAllReduce(cr, comm, pull->group.size() * c_comBufferStride * DIM,
+    pullAllReduce(cr,
+                  comm,
+                  pull->group.size() * c_comBufferStride * DIM,
                   static_cast<double*>(comm->comBuffer[0]));
 
     for (size_t g = 0; g < pull->group.size(); g++)
@@ -981,8 +990,8 @@ bool pullCheckPbcWithinGroup(const pull_t&                  pull,
         }
     }
 
-    return (pullGroupObeysPbcRestrictions(group, dimUsed, as_rvec_array(x.data()), pbc,
-                                          pull.comm.pbcAtomBuffer[groupNr], pbcMargin));
+    return (pullGroupObeysPbcRestrictions(
+            group, dimUsed, as_rvec_array(x.data()), pbc, pull.comm.pbcAtomBuffer[groupNr], pbcMargin));
 }
 
 void setPrevStepPullComFromState(struct pull_t* pull, const t_state* state)
@@ -1074,8 +1083,7 @@ void initPullComFromPrevStep(const t_commrec* cr, pull_t* pull, const real* mass
 
             if (pgrp->atomSet.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded)
             {
-                sum_com_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(), x, nullptr, masses, pbc, x_pbc,
-                             &comSumsTotal);
+                sum_com_part(pgrp, 0, pgrp->atomSet.numAtomsLocal(), x, nullptr, masses, pbc, x_pbc, &comSumsTotal);
             }
             else
             {
@@ -1084,8 +1092,8 @@ void initPullComFromPrevStep(const t_commrec* cr, pull_t* pull, const real* mass
                 {
                     int ind_start = (pgrp->atomSet.numAtomsLocal() * (t + 0)) / pull->nthreads;
                     int ind_end   = (pgrp->atomSet.numAtomsLocal() * (t + 1)) / pull->nthreads;
-                    sum_com_part(pgrp, ind_start, ind_end, x, nullptr, masses, pbc, x_pbc,
-                                 &pull->comSums[t]);
+                    sum_com_part(
+                            pgrp, ind_start, ind_end, x, nullptr, masses, pbc, x_pbc, &pull->comSums[t]);
                 }
 
                 /* Reduce the thread contributions to sum_com[0] */
@@ -1148,8 +1156,7 @@ void initPullComFromPrevStep(const t_commrec* cr, pull_t* pull, const real* mass
                 }
                 if (debug)
                 {
-                    fprintf(debug, "Pull group %zu wmass %f invtm %f\n", g, 1.0 / pgrp->mwscale,
-                            pgrp->invtm);
+                    fprintf(debug, "Pull group %zu wmass %f invtm %f\n", g, 1.0 / pgrp->mwscale, pgrp->invtm);
                     fprintf(debug, "Initialising prev step COM of pull group %zu to", g);
                     for (int m = 0; m < DIM; m++)
                     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -240,14 +240,14 @@ struct MdSpanTest : public ::testing::Test
                           bool contiguous,
                           bool strided)
     {
-        check_properties_internal(my_mdspan_mapping, always_unique, always_contiguous,
-                                  always_strided, unique, contiguous, strided);
-        check_properties_internal(my_mdspan_map_acc, always_unique, always_contiguous,
-                                  always_strided, unique, contiguous, strided);
-        check_properties_internal(my_mdspan_extents, always_unique, always_contiguous,
-                                  always_strided, unique, contiguous, strided);
-        check_properties_internal(my_mdspan_copy, always_unique, always_contiguous, always_strided,
-                                  unique, contiguous, strided);
+        check_properties_internal(
+                my_mdspan_mapping, always_unique, always_contiguous, always_strided, unique, contiguous, strided);
+        check_properties_internal(
+                my_mdspan_map_acc, always_unique, always_contiguous, always_strided, unique, contiguous, strided);
+        check_properties_internal(
+                my_mdspan_extents, always_unique, always_contiguous, always_strided, unique, contiguous, strided);
+        check_properties_internal(
+                my_mdspan_copy, always_unique, always_contiguous, always_strided, unique, contiguous, strided);
     }
 
     void check_operator()

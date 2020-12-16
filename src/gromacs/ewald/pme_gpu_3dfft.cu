@@ -95,13 +95,30 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu, const int gridIndex)
      */
 
     const int rank = 3, batch = 1;
-    result = cufftPlanMany(&planR2C_, rank, realGridSize, realGridSizePadded, 1, realGridSizePaddedTotal,
-                           complexGridSizePadded, 1, complexGridSizePaddedTotal, CUFFT_R2C, batch);
+    result = cufftPlanMany(&planR2C_,
+                           rank,
+                           realGridSize,
+                           realGridSizePadded,
+                           1,
+                           realGridSizePaddedTotal,
+                           complexGridSizePadded,
+                           1,
+                           complexGridSizePaddedTotal,
+                           CUFFT_R2C,
+                           batch);
     handleCufftError(result, "cufftPlanMany R2C plan failure");
 
-    result = cufftPlanMany(&planC2R_, rank, realGridSize, complexGridSizePadded, 1,
-                           complexGridSizePaddedTotal, realGridSizePadded, 1,
-                           realGridSizePaddedTotal, CUFFT_C2R, batch);
+    result = cufftPlanMany(&planC2R_,
+                           rank,
+                           realGridSize,
+                           complexGridSizePadded,
+                           1,
+                           complexGridSizePaddedTotal,
+                           realGridSizePadded,
+                           1,
+                           realGridSizePaddedTotal,
+                           CUFFT_C2R,
+                           batch);
     handleCufftError(result, "cufftPlanMany C2R plan failure");
 
     cudaStream_t stream = pmeGpu->archSpecific->pmeStream_.stream();

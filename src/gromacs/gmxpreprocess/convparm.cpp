@@ -66,14 +66,21 @@ static int round_check(real r, int limit, int ftype, const char* name)
 
     if (r - i > 0.01 || r - i < -0.01)
     {
-        gmx_fatal(FARGS, "A non-integer value (%f) was supplied for '%s' in %s", r, name,
+        gmx_fatal(FARGS,
+                  "A non-integer value (%f) was supplied for '%s' in %s",
+                  r,
+                  name,
                   interaction_function[ftype].longname);
     }
 
     if (i < limit)
     {
-        gmx_fatal(FARGS, "Value of '%s' in %s is %d, which is smaller than the minimum of %d", name,
-                  interaction_function[ftype].longname, i, limit);
+        gmx_fatal(FARGS,
+                  "Value of '%s' in %s is %d, which is smaller than the minimum of %d",
+                  name,
+                  interaction_function[ftype].longname,
+                  i,
+                  limit);
     }
 
     return i;
@@ -327,7 +334,8 @@ static int assign_param(t_functype ftype, t_iparams* newparam, gmx::ArrayRef<con
                 gmx_fatal(FARGS,
                           "Invalid geometry for flat-bottomed position restraint.\n"
                           "Expected number between 1 and %d. Found %d\n",
-                          efbposresNR - 1, newparam->fbposres.geom);
+                          efbposresNR - 1,
+                          newparam->fbposres.geom);
             }
             newparam->fbposres.r        = old[1];
             newparam->fbposres.k        = old[2];
@@ -552,8 +560,8 @@ void convertInteractionsOfType(int                                      atnr,
     ffp->reppow = reppow;
 
     enter_function(&(nbtypes[F_LJ]), static_cast<t_functype>(F_LJ), comb, reppow, ffp, nullptr, TRUE, TRUE);
-    enter_function(&(nbtypes[F_BHAM]), static_cast<t_functype>(F_BHAM), comb, reppow, ffp, nullptr,
-                   TRUE, TRUE);
+    enter_function(
+            &(nbtypes[F_BHAM]), static_cast<t_functype>(F_BHAM), comb, reppow, ffp, nullptr, TRUE, TRUE);
 
     for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
     {
@@ -568,8 +576,14 @@ void convertInteractionsOfType(int                                      atnr,
             if ((i != F_LJ) && (i != F_BHAM)
                 && ((flags & IF_BOND) || (flags & IF_VSITE) || (flags & IF_CONSTRAINT)))
             {
-                enter_function(&(interactions[i]), static_cast<t_functype>(i), comb, reppow, ffp,
-                               &molt->ilist[i], FALSE, (i == F_POSRES || i == F_FBPOSRES));
+                enter_function(&(interactions[i]),
+                               static_cast<t_functype>(i),
+                               comb,
+                               reppow,
+                               ffp,
+                               &molt->ilist[i],
+                               FALSE,
+                               (i == F_POSRES || i == F_FBPOSRES));
             }
         }
     }
@@ -615,8 +629,14 @@ void convertInteractionsOfType(int                                      atnr,
                 }
                 else
                 {
-                    enter_function(&(interactions[i]), static_cast<t_functype>(i), comb, reppow,
-                                   ffp, &(*mtop->intermolecular_ilist)[i], FALSE, FALSE);
+                    enter_function(&(interactions[i]),
+                                   static_cast<t_functype>(i),
+                                   comb,
+                                   reppow,
+                                   ffp,
+                                   &(*mtop->intermolecular_ilist)[i],
+                                   FALSE,
+                                   FALSE);
 
                     mtop->bIntermolecularInteractions = TRUE;
                 }

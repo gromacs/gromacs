@@ -249,9 +249,15 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
                                                     bool       rankHasPmeTask)
 {
     size_t               numRanksOnThisNode = physicalNodeComm.size_;
-    std::vector<GpuTask> gpuTasksOnThisRank = findGpuTasksOnThisRank(
-            !gpuIdsToUse.empty(), nonbondedTarget, pmeTarget, bondedTarget, updateTarget,
-            useGpuForNonbonded, useGpuForPme, rankHasPpTask, rankHasPmeTask);
+    std::vector<GpuTask> gpuTasksOnThisRank = findGpuTasksOnThisRank(!gpuIdsToUse.empty(),
+                                                                     nonbondedTarget,
+                                                                     pmeTarget,
+                                                                     bondedTarget,
+                                                                     updateTarget,
+                                                                     useGpuForNonbonded,
+                                                                     useGpuForPme,
+                                                                     rankHasPpTask,
+                                                                     rankHasPmeTask);
     /* Communicate among ranks on this node to find each task that can
      * be executed on a GPU, on each rank. */
     auto gpuTasksOnRanksOfThisNode = findAllGpuTasksOnThisNode(gpuTasksOnThisRank, physicalNodeComm);
@@ -310,7 +316,9 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
                         "You should reconsider your GPU task assignment, "
                         "number of ranks, or your use of the -nb, -pme, and -npme options, "
                         "perhaps after measuring the performance you can get.",
-                        numGpuTasksOnThisNode, host, gpuIdsToUse.size())));
+                        numGpuTasksOnThisNode,
+                        host,
+                        gpuIdsToUse.size())));
             }
             gpuIdsForTaskAssignment = generatedGpuIds;
         }
@@ -327,7 +335,9 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
                         "There were %zu GPU tasks assigned on node %s, but %zu GPU tasks were "
                         "identified, and these must match. Reconsider your GPU task assignment, "
                         "number of ranks, or your use of the -nb, -pme, and -npme options.",
-                        userGpuTaskAssignment.size(), host, numGpuTasksOnThisNode)));
+                        userGpuTaskAssignment.size(),
+                        host,
+                        numGpuTasksOnThisNode)));
             }
             // Did the user choose compatible GPUs?
             checkUserGpuIds(hardwareInfo.deviceInfoList, gpuIdsToUse, userGpuTaskAssignment);
@@ -396,8 +406,14 @@ void GpuTaskAssignments::reportGpuUsage(const MDLogger& mdlog,
                                         PmeRunMode      pmeRunMode,
                                         bool            useGpuForUpdate)
 {
-    gmx::reportGpuUsage(mdlog, assignmentForAllRanksOnThisNode_, numGpuTasksOnThisNode_,
-                        numRanksOnThisNode_, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
+    gmx::reportGpuUsage(mdlog,
+                        assignmentForAllRanksOnThisNode_,
+                        numGpuTasksOnThisNode_,
+                        numRanksOnThisNode_,
+                        printHostName,
+                        useGpuForBonded,
+                        pmeRunMode,
+                        useGpuForUpdate);
 }
 
 /*! \brief Function for whether the task of \c mapping has value \c TaskType.
@@ -443,8 +459,8 @@ bool GpuTaskAssignments::thisRankHasPmeGpuTask() const
 {
     const GpuTaskAssignment& gpuTaskAssignment = assignmentForAllRanksOnThisNode_[indexOfThisRank_];
 
-    auto       pmeGpuTaskMapping = std::find_if(gpuTaskAssignment.begin(), gpuTaskAssignment.end(),
-                                          hasTaskType<GpuTask::Pme>);
+    auto pmeGpuTaskMapping = std::find_if(
+            gpuTaskAssignment.begin(), gpuTaskAssignment.end(), hasTaskType<GpuTask::Pme>);
     const bool thisRankHasPmeGpuTask = (pmeGpuTaskMapping != gpuTaskAssignment.end());
 
     return thisRankHasPmeGpuTask;

@@ -160,7 +160,8 @@ void SelectionCollectionInteractiveTest::runTest(int  count,
 {
     helper_.setInputLines(inputLines);
     // TODO: Check something about the returned selections as well.
-    ASSERT_NO_THROW_GMX(sc_.parseInteractive(count, &helper_.inputStream(),
+    ASSERT_NO_THROW_GMX(sc_.parseInteractive(count,
+                                             &helper_.inputStream(),
                                              bInteractive ? &helper_.outputStream() : nullptr,
                                              "for test context"));
     helper_.checkSession();
@@ -742,7 +743,8 @@ TEST_F(SelectionCollectionDataTest, HandlesAllNone)
 
 TEST_F(SelectionCollectionDataTest, HandlesAtomnr)
 {
-    static const char* const selections[] = { "atomnr 1 to 3 6 to 8", "atomnr 4 2 5 to 7",
+    static const char* const selections[] = { "atomnr 1 to 3 6 to 8",
+                                              "atomnr 4 2 5 to 7",
                                               "atomnr <= 5" };
     runTest(10, selections);
 }
@@ -777,8 +779,9 @@ TEST_F(SelectionCollectionDataTest, HandlesAtomname)
 
 TEST_F(SelectionCollectionDataTest, HandlesPdbAtomname)
 {
-    static const char* const selections[] = { "name HG21", "name 1HG2", "pdbname HG21 CB",
-                                              "pdbatomname 1HG2" };
+    static const char* const selections[] = {
+        "name HG21", "name 1HG2", "pdbname HG21 CB", "pdbatomname 1HG2"
+    };
     runTest("simple.pdb", selections);
 }
 
@@ -888,9 +891,11 @@ TEST_F(SelectionCollectionDataTest, HandlesSameResidueName)
 
 TEST_F(SelectionCollectionDataTest, HandlesPositionKeywords)
 {
-    static const char* const selections[] = { "cog of resnr 1 3", "res_cog of name CB and resnr 1 3",
+    static const char* const selections[] = { "cog of resnr 1 3",
+                                              "res_cog of name CB and resnr 1 3",
                                               "whole_res_cog of name CB and resnr 1 3",
-                                              "part_res_cog of x < 3", "dyn_res_cog of x < 3" };
+                                              "part_res_cog of x < 3",
+                                              "dyn_res_cog of x < 3" };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates | efTestPositionAtoms);
     runTest("simple.gro", selections);
 }
@@ -946,7 +951,8 @@ TEST_F(SelectionCollectionDataTest, HandlesPermuteModifier)
 TEST_F(SelectionCollectionDataTest, HandlesPlusModifier)
 {
     static const char* const selections[] = {
-        "name S2 plus name S1", "res_cog of resnr 2 plus res_cog of resnr 1 plus res_cog of resnr 3",
+        "name S2 plus name S1",
+        "res_cog of resnr 2 plus res_cog of resnr 1 plus res_cog of resnr 3",
         "name S1 and y < 3 plus res_cog of x < 2.5"
     };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates | efTestPositionAtoms
@@ -1003,7 +1009,8 @@ TEST_F(SelectionCollectionDataTest, ComputesMassesAndChargesWithoutTopology)
 TEST_F(SelectionCollectionDataTest, HandlesFramesWithAtomSubsets)
 {
     const int         index[]      = { 0, 1, 2, 3, 4, 5, 9, 10, 11 };
-    const char* const selections[] = { "resnr 1 4", "atomnr 1 2 5 11 and y > 2",
+    const char* const selections[] = { "resnr 1 4",
+                                       "atomnr 1 2 5 11 and y > 2",
                                        "res_cog of atomnr 2 5 11" };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionAtoms);
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
@@ -1022,7 +1029,8 @@ TEST_F(SelectionCollectionDataTest, HandlesFramesWithAtomSubsets)
 TEST_F(SelectionCollectionDataTest, HandlesSelectionNames)
 {
     static const char* const selections[] = { "\"GroupSelection\" group \"GrpA\"",
-                                              "\"DynamicSelection\" x < 5", "y < 3" };
+                                              "\"DynamicSelection\" x < 5",
+                                              "y < 3" };
     setFlags(TestFlags() | efTestSelectionNames);
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
     runTest(10, selections);
@@ -1030,7 +1038,9 @@ TEST_F(SelectionCollectionDataTest, HandlesSelectionNames)
 
 TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelections)
 {
-    static const char* const selections[] = { "group \"GrpA\"", "GrpB", "1",
+    static const char* const selections[] = { "group \"GrpA\"",
+                                              "GrpB",
+                                              "1",
                                               // These test that the name of the group is not too
                                               // eagerly promoted to the name of the selection.
                                               "group \"GrpB\" and resname RB",
@@ -1044,8 +1054,9 @@ TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelections)
 
 TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelectionsDelayed)
 {
-    static const char* const selections[] = { "group \"GrpA\"", "GrpB", "1",
-                                              "group \"GrpB\" and resname RB" };
+    static const char* const selections[] = {
+        "group \"GrpA\"", "GrpB", "1", "group \"GrpB\" and resname RB"
+    };
     setFlags(TestFlags() | efTestSelectionNames);
     ASSERT_NO_FATAL_FAILURE(runParser(selections));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
@@ -1155,7 +1166,8 @@ TEST_F(SelectionCollectionDataTest, HandlesRegexMatching)
 TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
 {
     static const char* const selections[] = {
-        "atomnr 1 to 5 and atomnr 2 to 7", "atomnr 1 to 5 or not atomnr 3 to 8",
+        "atomnr 1 to 5 and atomnr 2 to 7",
+        "atomnr 1 to 5 or not atomnr 3 to 8",
         "not not atomnr 1 to 5 and atomnr 2 to 6 and not not atomnr 3 to 7",
         "atomnr 1 to 5 and (atomnr 2 to 7 and atomnr 3 to 6)",
         "x < 5 and atomnr 1 to 5 and y < 3 and atomnr 2 to 4"
@@ -1177,8 +1189,7 @@ TEST_F(SelectionCollectionDataTest, HandlesDynamicAtomValuedParameters)
 
 TEST_F(SelectionCollectionDataTest, HandlesEmptySelectionWithUnevaluatedExpressions)
 {
-    static const char* const selections[] = { "none and x > 2",
-                                              "none and same resname as resnr 2" };
+    static const char* const selections[] = { "none and x > 2", "none and same resname as resnr 2" };
     runTest("simple.gro", selections);
 }
 
@@ -1224,8 +1235,9 @@ TEST_F(SelectionCollectionDataTest, HandlesKeywordOfPositionsInArithmetic)
 
 TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
 {
-    static const char* const selections[] = { "x > 2", "2 < x", "y > resnr", "resnr < 2.5",
-                                              "2.5 > resnr" };
+    static const char* const selections[] = {
+        "x > 2", "2 < x", "y > resnr", "resnr < 2.5", "2.5 > resnr"
+    };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
 }
@@ -1241,8 +1253,9 @@ TEST_F(SelectionCollectionDataTest, HandlesArithmeticExpressions)
 
 TEST_F(SelectionCollectionDataTest, HandlesNumericVariables)
 {
-    static const char* const selections[] = { "value = x + y", "value <= 4", "index = resnr",
-                                              "index < 3" };
+    static const char* const selections[] = {
+        "value = x + y", "value <= 4", "index = resnr", "index < 3"
+    };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
 }
@@ -1272,7 +1285,8 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionVariables)
 
 TEST_F(SelectionCollectionDataTest, HandlesPositionVariableInModifier)
 {
-    static const char* const selections[] = { "foo = cog of resnr 1", "cog of resnr 2 plus foo",
+    static const char* const selections[] = { "foo = cog of resnr 1",
+                                              "cog of resnr 2 plus foo",
                                               "cog of resnr 3 plus foo" };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
@@ -1281,7 +1295,8 @@ TEST_F(SelectionCollectionDataTest, HandlesPositionVariableInModifier)
 
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositionInVariable)
 {
-    static const char* const selections[] = { "constpos = [1.0, 2.5, 0.5]", "constpos",
+    static const char* const selections[] = { "constpos = [1.0, 2.5, 0.5]",
+                                              "constpos",
                                               "within 2 of constpos" };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates | efTestPositionAtoms);
     runTest("simple.gro", selections);
@@ -1290,8 +1305,11 @@ TEST_F(SelectionCollectionDataTest, HandlesConstantPositionInVariable)
 
 TEST_F(SelectionCollectionDataTest, HandlesNumericConstantsInVariables)
 {
-    static const char* const selections[] = { "constint = 4", "constreal1 = 0.5", "constreal2 = 2.7",
-                                              "resnr < constint", "x + constreal1 < constreal2" };
+    static const char* const selections[] = { "constint = 4",
+                                              "constreal1 = 0.5",
+                                              "constreal2 = 2.7",
+                                              "resnr < constint",
+                                              "x + constreal1 < constreal2" };
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates);
     runTest("simple.gro", selections);
 }
@@ -1304,7 +1322,8 @@ TEST_F(SelectionCollectionDataTest, HandlesNumericConstantsInVariables)
 TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysis)
 {
     static const char* const selections[] = {
-        "atomnr 1 to 5 and atomnr 2 to 7 and x < 2", "atomnr 1 to 5 and (atomnr 4 to 7 or x < 2)",
+        "atomnr 1 to 5 and atomnr 2 to 7 and x < 2",
+        "atomnr 1 to 5 and (atomnr 4 to 7 or x < 2)",
         "atomnr 1 to 5 and y < 3 and (atomnr 4 to 7 or x < 2)",
         "atomnr 1 to 5 and not (atomnr 4 to 7 or x < 2)",
         "atomnr 1 to 5 or (atomnr 4 to 6 and (atomnr 5 to 7 or x < 2))"
@@ -1344,8 +1363,10 @@ TEST_F(SelectionCollectionDataTest, HandlesBooleanStaticAnalysisWithMoreVariable
 
 TEST_F(SelectionCollectionDataTest, HandlesUnusedVariables)
 {
-    static const char* const selections[] = { "unused1 = atomnr 1 to 3", "foo = atomnr 4 to 7",
-                                              "atomnr 1 to 6 and foo", "unused2 = atomnr 3 to 5" };
+    static const char* const selections[] = { "unused1 = atomnr 1 to 3",
+                                              "foo = atomnr 4 to 7",
+                                              "atomnr 1 to 6 and foo",
+                                              "unused2 = atomnr 3 to 5" };
     runTest(10, selections);
 }
 
@@ -1353,15 +1374,17 @@ TEST_F(SelectionCollectionDataTest, HandlesUnusedVariables)
 TEST_F(SelectionCollectionDataTest, HandlesVariablesWithStaticEvaluationGroups)
 {
     static const char* const selections[] = { "foo = atomnr 4 to 7 and x < 2",
-                                              "atomnr 1 to 5 and foo", "atomnr 3 to 7 and foo" };
+                                              "atomnr 1 to 5 and foo",
+                                              "atomnr 3 to 7 and foo" };
     runTest(10, selections);
 }
 
 
 TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups)
 {
-    static const char* const selections[] = { "foo = atomnr 4 to 7 and x < 2",
-                                              "atomnr 1 to 6 and foo", "within 1 of foo", "foo" };
+    static const char* const selections[] = {
+        "foo = atomnr 4 to 7 and x < 2", "atomnr 1 to 6 and foo", "within 1 of foo", "foo"
+    };
     runTest(10, selections);
 }
 
@@ -1369,7 +1392,8 @@ TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups)
 TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups2)
 {
     static const char* const selections[] = { "foo = atomnr 1 to 8 and x < 10",
-                                              "atomnr 1 to 5 and y < 10 and foo", "foo" };
+                                              "atomnr 1 to 5 and y < 10 and foo",
+                                              "foo" };
     setFlags(TestFlags() | efTestEvaluation);
     runTest("simple.gro", selections);
 }

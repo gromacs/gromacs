@@ -434,8 +434,12 @@ static void DumpFItem(t_fitem* fitem)
 {
     int i;
 
-    std::printf("  type: %s, set: '%s', get: '%s', def: '%s', help: '%s'\n  {", type[fitem->edlg],
-                fitem->set, fitem->get, fitem->def, fitem->help);
+    std::printf("  type: %s, set: '%s', get: '%s', def: '%s', help: '%s'\n  {",
+                type[fitem->edlg],
+                fitem->set,
+                fitem->get,
+                fitem->def,
+                fitem->help);
     for (i = 0; (i < fitem->nname); i++)
     {
         std::printf("  '%s'", fitem->name[i]);

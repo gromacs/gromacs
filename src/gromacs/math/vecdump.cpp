@@ -89,8 +89,13 @@ void pr_ivec_block(FILE* fp, int indent, const char* title, const int vec[], int
             else
             {
                 pr_indent(fp, indent);
-                fprintf(fp, "%s[%d,...,%d] = {%d,...,%d}\n", title, bShowNumbers ? i : -1,
-                        bShowNumbers ? j - 1 : -1, vec[i], vec[j - 1]);
+                fprintf(fp,
+                        "%s[%d,...,%d] = {%d,...,%d}\n",
+                        title,
+                        bShowNumbers ? i : -1,
+                        bShowNumbers ? j - 1 : -1,
+                        vec[i],
+                        vec[j - 1]);
                 i = j;
             }
         }

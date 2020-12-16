@@ -87,8 +87,16 @@ void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rv
             n -= n1 + n0;
             vbuf = as_rvec_array(spac->vbuf.data());
             /* Send and receive the coordinates */
-            dd_sendrecv2_rvec(dd, d, f + n + n1, n0, vbuf, spas[0].a.size(), f + n, n1,
-                              vbuf + spas[0].a.size(), spas[1].a.size());
+            dd_sendrecv2_rvec(dd,
+                              d,
+                              f + n + n1,
+                              n0,
+                              vbuf,
+                              spas[0].a.size(),
+                              f + n,
+                              n1,
+                              vbuf + spas[0].a.size(),
+                              spas[1].a.size());
             for (dir = 0; dir < 2; dir++)
             {
                 bPBC   = ((dir == 0 && dd->ci[dim] == 0)
@@ -144,8 +152,7 @@ void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rv
             spas = &spac->spas[d][0];
             n -= spas->nrecv;
             /* Send and receive the coordinates */
-            ddSendrecv(dd, d, dddirForward, f + n, spas->nrecv, as_rvec_array(spac->vbuf.data()),
-                       spas->a.size());
+            ddSendrecv(dd, d, dddirForward, f + n, spas->nrecv, as_rvec_array(spac->vbuf.data()), spas->a.size());
             /* Sum the buffer into the required forces */
             if (dd->unitCellInfo.haveScrewPBC && dim == XX
                 && (dd->ci[dim] == 0 || dd->ci[dim] == dd->numCells[dim] - 1))
@@ -273,8 +280,8 @@ void dd_move_x_specat(const gmx_domdec_t*       dd,
                 rvec* vbuf = as_rvec_array(spac->vbuf.data());
                 /* Communicate both vectors in one buffer */
                 rvec* rbuf = as_rvec_array(spac->vbuf2.data());
-                dd_sendrecv2_rvec(dd, d, vbuf + 2 * ns0, 2 * ns1, rbuf, 2 * nr1, vbuf, 2 * ns0,
-                                  rbuf + 2 * nr1, 2 * nr0);
+                dd_sendrecv2_rvec(
+                        dd, d, vbuf + 2 * ns0, 2 * ns1, rbuf, 2 * nr1, vbuf, 2 * ns0, rbuf + 2 * nr1, 2 * nr0);
                 /* Split the buffer into the two vectors */
                 nn = n;
                 for (dir = 1; dir >= 0; dir--)
@@ -409,13 +416,17 @@ int setup_specat_communication(gmx_domdec_t*             dd,
                 nsend_ptr = nsend;
             }
             /* Communicate the number of indices */
-            ddSendrecv(dd, d, dir == 0 ? dddirForward : dddirBackward, nsend_ptr, 2,
-                       spac->nreq[d][dir], 2);
+            ddSendrecv(dd, d, dir == 0 ? dddirForward : dddirBackward, nsend_ptr, 2, spac->nreq[d][dir], 2);
             nr = spac->nreq[d][dir][1];
             ireq->resize(nlast + nr);
             /* Communicate the indices */
-            ddSendrecv(dd, d, dir == 0 ? dddirForward : dddirBackward, ireq->data(), nsend_ptr[1],
-                       ireq->data() + nlast, nr);
+            ddSendrecv(dd,
+                       d,
+                       dir == 0 ? dddirForward : dddirBackward,
+                       ireq->data(),
+                       nsend_ptr[1],
+                       ireq->data() + nlast,
+                       nr);
             nlast += nr;
         }
         nsend[1] = nlast;
@@ -512,7 +523,11 @@ int setup_specat_communication(gmx_domdec_t*             dd,
                 fprintf(debug,
                         "Send to rank %d, %d (%d) indices, "
                         "receive from rank %d, %d (%d) indices\n",
-                        dd->neighbor[d][1 - dir], nsend[1], nsend[0], dd->neighbor[d][dir], buf[1],
+                        dd->neighbor[d][1 - dir],
+                        nsend[1],
+                        nsend[0],
+                        dd->neighbor[d][dir],
+                        buf[1],
                         buf[0]);
                 if (gmx_debug_at)
                 {
@@ -527,8 +542,13 @@ int setup_specat_communication(gmx_domdec_t*             dd,
             spas->nrecv = buf[1];
             dd->globalAtomIndices.resize(nat_tot_specat + spas->nrecv);
             /* Send and receive the indices */
-            ddSendrecv(dd, d, dir == 0 ? dddirBackward : dddirForward, spac->ibuf.data(),
-                       spac->ibuf.size(), dd->globalAtomIndices.data() + nat_tot_specat, spas->nrecv);
+            ddSendrecv(dd,
+                       d,
+                       dir == 0 ? dddirBackward : dddirForward,
+                       spac->ibuf.data(),
+                       spac->ibuf.size(),
+                       dd->globalAtomIndices.data() + nat_tot_specat,
+                       spas->nrecv);
             nat_tot_specat += spas->nrecv;
         }
 
@@ -561,7 +581,10 @@ int setup_specat_communication(gmx_domdec_t*             dd,
     {
         if (debug)
         {
-            fprintf(debug, "Requested %d, received %d (tot recv %d)\n", numRequested, nrecv_local,
+            fprintf(debug,
+                    "Requested %d, received %d (tot recv %d)\n",
+                    numRequested,
+                    nrecv_local,
                     nat_tot_specat - at_start);
             if (gmx_debug_at)
             {
@@ -573,8 +596,11 @@ int setup_specat_communication(gmx_domdec_t*             dd,
                 fprintf(debug, "\n");
             }
         }
-        fprintf(stderr, "\nDD cell %d %d %d: Neighboring cells do not have atoms:", dd->ci[XX],
-                dd->ci[YY], dd->ci[ZZ]);
+        fprintf(stderr,
+                "\nDD cell %d %d %d: Neighboring cells do not have atoms:",
+                dd->ci[XX],
+                dd->ci[YY],
+                dd->ci[ZZ]);
         for (int i = 0; i < numRequested; i++)
         {
             if (!ga2la_specat->find((*ireq)[i]))
@@ -588,8 +614,15 @@ int setup_specat_communication(gmx_domdec_t*             dd,
                   "%ss from the neighboring cells. This probably means your %s lengths are too "
                   "long compared to the domain decomposition cell size. Decrease the number of "
                   "domain decomposition grid cells%s%s.",
-                  dd->ci[XX], dd->ci[YY], dd->ci[ZZ], nrecv_local, numRequested, specat_type,
-                  specat_type, add_err, dd_dlb_is_on(dd) ? " or use the -rcon option of mdrun" : "");
+                  dd->ci[XX],
+                  dd->ci[YY],
+                  dd->ci[ZZ],
+                  nrecv_local,
+                  numRequested,
+                  specat_type,
+                  specat_type,
+                  add_err,
+                  dd_dlb_is_on(dd) ? " or use the -rcon option of mdrun" : "");
     }
 
     spac->at_start = at_start;

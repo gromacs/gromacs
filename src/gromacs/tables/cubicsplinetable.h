@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -291,8 +291,8 @@ public:
 
         // Load Derivative, Delta, Function, and Zero values for each table point.
         // The 4 refers to these four values - not any SIMD width.
-        gatherLoadBySimdIntTranspose<4 * numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex,
-                                                         tabIndex, &Y, &F, &G, &H);
+        gatherLoadBySimdIntTranspose<4 * numFuncInTable>(
+                yfghMultiTableData_.data() + 4 * funcIndex, tabIndex, &Y, &F, &G, &H);
         *functionValue   = fma(fma(fma(H, eps, G), eps, F), eps, Y);
         *derivativeValue = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
     }
@@ -347,8 +347,8 @@ public:
 
         // Load Derivative, Delta, Function, and Zero values for each table point.
         // The 4 refers to these four values - not any SIMD width.
-        gatherLoadBySimdIntTranspose<4 * numFuncInTable>(yfghMultiTableData_.data() + 4 * funcIndex,
-                                                         tabIndex, &Y, &F, &G, &H);
+        gatherLoadBySimdIntTranspose<4 * numFuncInTable>(
+                yfghMultiTableData_.data() + 4 * funcIndex, tabIndex, &Y, &F, &G, &H);
         *derivativeValue = tableScale_ * fma(fma(T(3.0) * H, eps, T(2.0) * G), eps, F);
     }
 

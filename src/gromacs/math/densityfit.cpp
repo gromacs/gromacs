@@ -104,8 +104,9 @@ DensitySimilarityInnerProduct::DensitySimilarityInnerProduct(density referenceDe
     const auto numVoxels = gradient_.asConstView().mapping().required_span_size();
     /* the gradient for the inner product measure of fit is constant and does not
      * depend on the compared density, so it is pre-computed here */
-    std::transform(begin(referenceDensity_), end(referenceDensity), begin(gradient_),
-                   [numVoxels](float x) { return x / numVoxels; });
+    std::transform(begin(referenceDensity_), end(referenceDensity), begin(gradient_), [numVoxels](float x) {
+        return x / numVoxels;
+    });
 }
 
 real DensitySimilarityInnerProduct::similarity(density comparedDensity)
@@ -194,8 +195,12 @@ real DensitySimilarityRelativeEntropy::similarity(density comparedDensity)
     {
         GMX_THROW(RangeError("Reference density and compared density need to have same extents."));
     }
-    return std::inner_product(begin(referenceDensity_), end(referenceDensity_),
-                              begin(comparedDensity), 0., std::plus<>(), relativeEntropyAtVoxel);
+    return std::inner_product(begin(referenceDensity_),
+                              end(referenceDensity_),
+                              begin(comparedDensity),
+                              0.,
+                              std::plus<>(),
+                              relativeEntropyAtVoxel);
 }
 
 DensitySimilarityMeasure::density DensitySimilarityRelativeEntropy::gradient(density comparedDensity)
@@ -204,8 +209,11 @@ DensitySimilarityMeasure::density DensitySimilarityRelativeEntropy::gradient(den
     {
         GMX_THROW(RangeError("Reference density and compared density need to have same extents."));
     }
-    std::transform(begin(referenceDensity_), end(referenceDensity_), begin(comparedDensity),
-                   begin(gradient_), relativeEntropyGradientAtVoxel);
+    std::transform(begin(referenceDensity_),
+                   end(referenceDensity_),
+                   begin(comparedDensity),
+                   begin(gradient_),
+                   relativeEntropyGradientAtVoxel);
     return gradient_.asConstView();
 }
 
@@ -361,8 +369,11 @@ DensitySimilarityMeasure::density DensitySimilarityCrossCorrelation::gradient(de
     CrossCorrelationEvaluationHelperValues helperValues =
             evaluateHelperValues(referenceDensity_, comparedDensity);
 
-    std::transform(begin(referenceDensity_), end(referenceDensity_), begin(comparedDensity),
-                   begin(gradient_), CrossCorrelationGradientAtVoxel(helperValues));
+    std::transform(begin(referenceDensity_),
+                   end(referenceDensity_),
+                   begin(comparedDensity),
+                   begin(gradient_),
+                   CrossCorrelationGradientAtVoxel(helperValues));
 
     return gradient_.asConstView();
 }

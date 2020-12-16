@@ -102,7 +102,9 @@ static int xtc_check(const char* str, gmx_bool bResult, const char* file, int li
             fprintf(debug,
                     "\nXTC error: read/write of %s failed, "
                     "source file %s, line %d\n",
-                    str, file, line);
+                    str,
+                    file,
+                    line);
         }
         return 0;
     }
@@ -221,8 +223,7 @@ int write_xtc(t_fileio* fio, int natoms, int64_t step, real time, const rvec* bo
     }
 
     /* write data */
-    bOK = xtc_coord(xd, &natoms, const_cast<rvec*>(box), const_cast<rvec*>(x), &prec,
-                    FALSE); /* bOK will be 1 if writing went well */
+    bOK = xtc_coord(xd, &natoms, const_cast<rvec*>(box), const_cast<rvec*>(x), &prec, FALSE); /* bOK will be 1 if writing went well */
 
     if (bOK)
     {

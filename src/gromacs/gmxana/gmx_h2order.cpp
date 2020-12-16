@@ -252,8 +252,13 @@ static void h2order_plot(rvec dipole[], real order[], const char* afile, int nsl
 
     for (slice = 0; slice < nslices; slice++)
     {
-        fprintf(ord, "%8.3f %8.3f %8.3f %8.3f %e\n", slWidth * slice, factor * dipole[slice][XX],
-                factor * dipole[slice][YY], factor * dipole[slice][ZZ], order[slice]);
+        fprintf(ord,
+                "%8.3f %8.3f %8.3f %8.3f %e\n",
+                slWidth * slice,
+                factor * dipole[slice][XX],
+                factor * dipole[slice][YY],
+                factor * dipole[slice][ZZ],
+                order[slice]);
     }
 
     xvgrclose(ord);
@@ -326,8 +331,8 @@ int gmx_h2order(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     // Parse the user input in argv into pa
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -355,8 +360,20 @@ int gmx_h2order(int argc, char* argv[])
         rd_index(opt2fn("-nm", NFILE, fnm), 1, &nmic, &micelle, &micname);
     }
 
-    calc_h2order(ftp2fn(efTRX, NFILE, fnm), index, ngx, &slDipole, &slOrder, &slWidth, &nslices,
-                 top, pbcType, axis, bMicel, micelle, nmic, oenv);
+    calc_h2order(ftp2fn(efTRX, NFILE, fnm),
+                 index,
+                 ngx,
+                 &slDipole,
+                 &slOrder,
+                 &slWidth,
+                 &nslices,
+                 top,
+                 pbcType,
+                 axis,
+                 bMicel,
+                 micelle,
+                 nmic,
+                 oenv);
 
     h2order_plot(slDipole, slOrder, opt2fn("-o", NFILE, fnm), nslices, slWidth, oenv);
 

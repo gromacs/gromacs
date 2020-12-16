@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,9 +98,16 @@ static bool MenuCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
             /* Nothing to be done */
             if (m->bGrabbed)
             {
-                m->bGrabbed = GrabOK(stderr, XGrabPointer(x11->disp, m->wd.self, True, ButtonReleaseMask,
-                                                          GrabModeAsync, GrabModeAsync, m->wd.self,
-                                                          None, CurrentTime));
+                m->bGrabbed = GrabOK(stderr,
+                                     XGrabPointer(x11->disp,
+                                                  m->wd.self,
+                                                  True,
+                                                  ButtonReleaseMask,
+                                                  GrabModeAsync,
+                                                  GrabModeAsync,
+                                                  m->wd.self,
+                                                  None,
+                                                  CurrentTime));
             }
             break;
         case ButtonRelease: hide_menu(x11, m); break;
@@ -163,8 +170,8 @@ t_menu* init_menu(t_x11* x11, Window Parent, unsigned long fg, unsigned long bg,
     }
     InitWin(&(m->wd), 10, 10, fcol * mlen, frows * mht, 1, "Menu");
     snew(m->item, nent);
-    m->wd.self = XCreateSimpleWindow(x11->disp, Parent, m->wd.x, m->wd.y, m->wd.width, m->wd.height,
-                                     m->wd.bwidth, fg, bg);
+    m->wd.self = XCreateSimpleWindow(
+            x11->disp, Parent, m->wd.x, m->wd.y, m->wd.width, m->wd.height, m->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, m->wd.self, Parent, MenuCallBack, m);
     x11->SetInputMask(x11, m->wd.self, ExposureMask | OwnerGrabButtonMask | ButtonReleaseMask);
 
@@ -177,10 +184,11 @@ t_menu* init_menu(t_x11* x11, Window Parent, unsigned long fg, unsigned long bg,
             kid->Parent = Parent;
             w           = &(kid->wd);
             InitWin(w, j * mlen, k * mht, mlen - 2, mht - 2, 1, nullptr);
-            w->self = XCreateSimpleWindow(x11->disp, m->wd.self, w->x, w->y, w->width, w->height,
-                                          w->bwidth, bg, bg);
+            w->self = XCreateSimpleWindow(
+                    x11->disp, m->wd.self, w->x, w->y, w->width, w->height, w->bwidth, bg, bg);
             x11->RegisterCallback(x11, w->self, m->wd.self, ChildCallBack, kid);
-            x11->SetInputMask(x11, w->self,
+            x11->SetInputMask(x11,
+                              w->self,
                               ButtonPressMask | ButtonReleaseMask | OwnerGrabButtonMask
                                       | ExposureMask | EnterWindowMask | LeaveWindowMask);
         }

@@ -46,8 +46,10 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-const char* gmx_stop_cond_name[] = { "None", "Stop at the next neighbor search step",
-                                     "Stop at the next step", "Abort" };
+const char* gmx_stop_cond_name[] = { "None",
+                                     "Stop at the next neighbor search step",
+                                     "Stop at the next step",
+                                     "Abort" };
 
 /* these do not neccesarily match the stop condition, but are
    referred to in the signal handler. */

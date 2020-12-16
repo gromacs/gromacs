@@ -252,8 +252,8 @@ int gmx_gyrate(int argc, char* argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -299,18 +299,27 @@ int gmx_gyrate(int argc, char* argv[])
     t0 = t;
     if (bQ)
     {
-        out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Radius of Charge (total and around axes)",
-                       "Time (ps)", "Rg (nm)", oenv);
+        out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
+                       "Radius of Charge (total and around axes)",
+                       "Time (ps)",
+                       "Rg (nm)",
+                       oenv);
     }
     else if (bMOI)
     {
-        out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Moments of inertia (total and around axes)",
-                       "Time (ps)", "I (a.m.u. nm\\S2\\N)", oenv);
+        out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
+                       "Moments of inertia (total and around axes)",
+                       "Time (ps)",
+                       "I (a.m.u. nm\\S2\\N)",
+                       oenv);
     }
     else
     {
-        out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Radius of gyration (total and around axes)",
-                       "Time (ps)", "Rg (nm)", oenv);
+        out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
+                       "Radius of gyration (total and around axes)",
+                       "Time (ps)",
+                       "Rg (nm)",
+                       oenv);
     }
     if (bMOI)
     {
@@ -347,8 +356,8 @@ int gmx_gyrate(int argc, char* argv[])
             tm = sub_xcm(nz == 0 ? x_s : x, nam, index + mol * nam, top.atoms.atom, xcm, bQ);
             if (nz == 0)
             {
-                gyro += calc_gyro(x_s, nam, index + mol * nam, top.atoms.atom, tm, gvec1, d1, bQ,
-                                  bRot, bMOI, trans);
+                gyro += calc_gyro(
+                        x_s, nam, index + mol * nam, top.atoms.atom, tm, gvec1, d1, bQ, bRot, bMOI, trans);
             }
             else
             {
@@ -401,8 +410,15 @@ int gmx_gyrate(int argc, char* argv[])
     {
         int mode = eacVector;
 
-        do_autocorr(opt2fn("-acf", NFILE, fnm), oenv, "Moment of inertia vector ACF", j, 3,
-                    moi_trans, (t - t0) / j, mode, FALSE);
+        do_autocorr(opt2fn("-acf", NFILE, fnm),
+                    oenv,
+                    "Moment of inertia vector ACF",
+                    j,
+                    3,
+                    moi_trans,
+                    (t - t0) / j,
+                    mode,
+                    FALSE);
         do_view(oenv, opt2fn("-acf", NFILE, fnm), "-nxy");
     }
 

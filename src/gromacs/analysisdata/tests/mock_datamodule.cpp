@@ -523,8 +523,8 @@ void MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput& data,
             for (int ps = 0; ps < frame.pointSetCount(); ++ps)
             {
                 const AnalysisDataTestInputPointSet& points = frame.pointSet(ps);
-                StaticDataPointsChecker              checker(&frame, &points, 0,
-                                                data.columnCount(points.dataSetIndex()));
+                StaticDataPointsChecker              checker(
+                        &frame, &points, 0, data.columnCount(points.dataSetIndex()));
                 EXPECT_CALL(*this, pointsAdded(Property(&AnalysisDataPointSetRef::frameIndex, row)))
                         .WillOnce(Invoke(checker));
             }
@@ -557,8 +557,8 @@ void MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput& data,
             for (int ps = 0; ps < frame.pointSetCount(); ++ps)
             {
                 const AnalysisDataTestInputPointSet& points = frame.pointSet(ps);
-                StaticDataPointsChecker              checker(&frame, &points, 0,
-                                                data.columnCount(points.dataSetIndex()));
+                StaticDataPointsChecker              checker(
+                        &frame, &points, 0, data.columnCount(points.dataSetIndex()));
                 EXPECT_CALL(*this, pointsAdded(_)).WillOnce(Invoke(checker));
             }
             EXPECT_CALL(*this, frameFinished(_)).WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));

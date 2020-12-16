@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,9 +141,16 @@ t_dlg* MessageBox(t_x11*             x11,
     if (nicon > 0)
     {
         AddDlgItem(dlg,
-                   CreatePixmap(XCreatePixmapFromBitmapData(x11->disp, dlg->win.self, icon_bits, icon_width,
-                                                            icon_height, icon_fg, icon_bg, x11->depth),
-                                ID_ICON, ID_BOX, 2 * OFFS_X, 2 * OFFS_Y, icon_width, icon_height, 0));
+                   CreatePixmap(
+                           XCreatePixmapFromBitmapData(
+                                   x11->disp, dlg->win.self, icon_bits, icon_width, icon_height, icon_fg, icon_bg, x11->depth),
+                           ID_ICON,
+                           ID_BOX,
+                           2 * OFFS_X,
+                           2 * OFFS_Y,
+                           icon_width,
+                           icon_height,
+                           0));
         x += QueryDlgItemW(dlg, ID_ICON) + 2 * OFFS_X;
     }
 

@@ -161,8 +161,11 @@ static void periodic_mindist_plot(const char*             trxfn,
 
     check_index(nullptr, n, index, nullptr, natoms);
 
-    out = xvgropen(outfn, "Minimum distance to periodic image", output_env_get_time_label(oenv),
-                   "Distance (nm)", oenv);
+    out = xvgropen(outfn,
+                   "Minimum distance to periodic image",
+                   output_env_get_time_label(oenv),
+                   "Distance (nm)",
+                   oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
         fprintf(out, "@ subtitle \"and maximum internal distance\"\n");
@@ -197,8 +200,14 @@ static void periodic_mindist_plot(const char*             trxfn,
         {
             fprintf(out, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
-        fprintf(out, "\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n", output_env_conv_time(oenv, t), rmin,
-                rmax, norm(box[0]), norm(box[1]), norm(box[2]));
+        fprintf(out,
+                "\t%g\t%6.3f %6.3f %6.3f %6.3f %6.3f\n",
+                output_env_conv_time(oenv, t),
+                rmin,
+                rmax,
+                norm(box[0]),
+                norm(box[1]),
+                norm(box[2]));
         bFirst = FALSE;
     } while (read_next_x(oenv, status, &t, x, box));
 
@@ -212,8 +221,11 @@ static void periodic_mindist_plot(const char*             trxfn,
     fprintf(stdout,
             "\nThe shortest periodic distance is %g (nm) at time %g (%s),\n"
             "between atoms %d and %d\n",
-            rmint, output_env_conv_time(oenv, tmint), output_env_get_time_unit(oenv).c_str(),
-            index[ind_mini] + 1, index[ind_minj] + 1);
+            rmint,
+            output_env_conv_time(oenv, tmint),
+            output_env_get_time_unit(oenv).c_str(),
+            index[ind_mini] + 1,
+            index[ind_minj] + 1);
 }
 
 static void calc_dist(real     rcut,
@@ -450,7 +462,8 @@ static void dist_plot(const char*             fn,
 
             for (j = 0; j < nres; j++)
             {
-                fprintf(respertime, "%s%d ",
+                fprintf(respertime,
+                        "%s%d ",
                         *(atoms->resinfo[atoms->atom[index[0][residue[j]]].resind].name),
                         atoms->atom[index[0][residue[j]]].resind);
             }
@@ -498,8 +511,24 @@ static void dist_plot(const char*             fn,
         {
             if (ng == 1)
             {
-                calc_dist(rcut, bPBC, pbcType, box, x0, gnx[0], gnx[0], index[0], index[0], bGroup,
-                          &dmin, &dmax, &nmin, &nmax, &min1, &min2, &max1, &max2);
+                calc_dist(rcut,
+                          bPBC,
+                          pbcType,
+                          box,
+                          x0,
+                          gnx[0],
+                          gnx[0],
+                          index[0],
+                          index[0],
+                          bGroup,
+                          &dmin,
+                          &dmax,
+                          &nmin,
+                          &nmax,
+                          &min1,
+                          &min2,
+                          &max1,
+                          &max2);
                 fprintf(dist, "  %12e", bMin ? dmin : dmax);
                 if (num)
                 {
@@ -512,8 +541,24 @@ static void dist_plot(const char*             fn,
                 {
                     for (k = i + 1; (k < ng); k++)
                     {
-                        calc_dist(rcut, bPBC, pbcType, box, x0, gnx[i], gnx[k], index[i], index[k],
-                                  bGroup, &dmin, &dmax, &nmin, &nmax, &min1, &min2, &max1, &max2);
+                        calc_dist(rcut,
+                                  bPBC,
+                                  pbcType,
+                                  box,
+                                  x0,
+                                  gnx[i],
+                                  gnx[k],
+                                  index[i],
+                                  index[k],
+                                  bGroup,
+                                  &dmin,
+                                  &dmax,
+                                  &nmin,
+                                  &nmax,
+                                  &min1,
+                                  &min2,
+                                  &max1,
+                                  &max2);
                         fprintf(dist, "  %12e", bMin ? dmin : dmax);
                         if (num)
                         {
@@ -528,8 +573,24 @@ static void dist_plot(const char*             fn,
             GMX_RELEASE_ASSERT(ng > 1, "Must have more than one group when not using -matrix");
             for (i = 1; (i < ng); i++)
             {
-                calc_dist(rcut, bPBC, pbcType, box, x0, gnx[0], gnx[i], index[0], index[i], bGroup,
-                          &dmin, &dmax, &nmin, &nmax, &min1, &min2, &max1, &max2);
+                calc_dist(rcut,
+                          bPBC,
+                          pbcType,
+                          box,
+                          x0,
+                          gnx[0],
+                          gnx[i],
+                          index[0],
+                          index[i],
+                          bGroup,
+                          &dmin,
+                          &dmax,
+                          &nmin,
+                          &nmax,
+                          &min1,
+                          &min2,
+                          &max1,
+                          &max2);
                 fprintf(dist, "  %12e", bMin ? dmin : dmax);
                 if (num)
                 {
@@ -539,9 +600,24 @@ static void dist_plot(const char*             fn,
                 {
                     for (j = 0; j < nres; j++)
                     {
-                        calc_dist(rcut, bPBC, pbcType, box, x0, residue[j + 1] - residue[j], gnx[i],
-                                  &(index[0][residue[j]]), index[i], bGroup, &dmin, &dmax, &nmin,
-                                  &nmax, &min1r, &min2r, &max1r, &max2r);
+                        calc_dist(rcut,
+                                  bPBC,
+                                  pbcType,
+                                  box,
+                                  x0,
+                                  residue[j + 1] - residue[j],
+                                  gnx[i],
+                                  &(index[0][residue[j]]),
+                                  index[i],
+                                  bGroup,
+                                  &dmin,
+                                  &dmax,
+                                  &nmin,
+                                  &nmax,
+                                  &min1r,
+                                  &min2r,
+                                  &max1r,
+                                  &max2r);
                         mindres[i - 1][j] = std::min(mindres[i - 1][j], dmin);
                         maxdres[i - 1][j] = std::max(maxdres[i - 1][j], dmax);
                     }
@@ -557,8 +633,11 @@ static void dist_plot(const char*             fn,
         {
             if (atm)
             {
-                fprintf(atm, "%12e  %12d  %12d\n", output_env_conv_time(oenv, t),
-                        1 + (bMin ? min1 : max1), 1 + (bMin ? min2 : max2));
+                fprintf(atm,
+                        "%12e  %12d  %12d\n",
+                        output_env_conv_time(oenv, t),
+                        1 + (bMin ? min1 : max1),
+                        1 + (bMin ? min2 : max2));
             }
         }
 
@@ -755,8 +834,18 @@ int gmx_mindist(int argc, char* argv[])
                        { efTRO, "-ox", "mindist", ffOPTWR }, { efXVG, "-or", "mindistres", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm,
-                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
+                           NFILE,
+                           fnm,
+                           asize(pa),
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv))
     {
         return 0;
     }
@@ -848,9 +937,29 @@ int gmx_mindist(int argc, char* argv[])
     }
     else
     {
-        dist_plot(trxfnm, atmfnm, distfnm, numfnm, resfnm, oxfnm, rcutoff, bMat,
-                  top ? &(top->atoms) : nullptr, ng, index, gnx, grpname, bSplit, !bMax, nres,
-                  residues, bPBC, pbcType, bGroup, bEachResEachTime, bPrintResName, oenv);
+        dist_plot(trxfnm,
+                  atmfnm,
+                  distfnm,
+                  numfnm,
+                  resfnm,
+                  oxfnm,
+                  rcutoff,
+                  bMat,
+                  top ? &(top->atoms) : nullptr,
+                  ng,
+                  index,
+                  gnx,
+                  grpname,
+                  bSplit,
+                  !bMax,
+                  nres,
+                  residues,
+                  bPBC,
+                  pbcType,
+                  bGroup,
+                  bEachResEachTime,
+                  bPrintResName,
+                  oenv);
     }
 
     do_view(oenv, distfnm, "-nxy");

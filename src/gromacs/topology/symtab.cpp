@@ -108,8 +108,7 @@ void StringTable::printStringTableStorageToFile(FILE* fp, int indent, const char
 
 StringTable::StringTable(gmx::ISerializer* serializer)
 {
-    GMX_RELEASE_ASSERT(serializer->reading(),
-                       "Can not use writing serializer to read string table");
+    GMX_RELEASE_ASSERT(serializer->reading(), "Can not use writing serializer to read string table");
     int nr = 0;
     serializer->doInt(&nr);
     table_.resize(nr);
@@ -156,8 +155,7 @@ void StringTableEntry::serialize(gmx::ISerializer* serializer) const
 
 StringTableEntry readStringTableEntry(gmx::ISerializer* serializer, const StringTable& table)
 {
-    GMX_RELEASE_ASSERT(serializer->reading(),
-                       "Can not use writing serializer to read string index");
+    GMX_RELEASE_ASSERT(serializer->reading(), "Can not use writing serializer to read string index");
     int entry = 0;
     serializer->doInt(&entry);
     return table.at(entry);

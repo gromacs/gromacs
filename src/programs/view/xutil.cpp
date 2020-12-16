@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -225,8 +225,8 @@ void RoundRectWin(Display* disp, GC gc, t_windata* win, int offsx, int offsy, un
 {
     XSetLineAttributes(disp, gc, 1, LineOnOffDash, CapButt, JoinRound);
     XSetForeground(disp, gc, color);
-    XDrawRoundRect(disp, win->self, gc, offsx, offsy, win->width - 2 * offsx - 1,
-                   win->height - 2 * offsy - 1);
+    XDrawRoundRect(
+            disp, win->self, gc, offsx, offsy, win->width - 2 * offsx - 1, win->height - 2 * offsy - 1);
     XSetLineAttributes(disp, gc, 1, LineSolid, CapButt, JoinRound);
 }
 

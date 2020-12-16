@@ -199,7 +199,8 @@ private:
             else if (!areSimpleValuesOfSameTypeEqual(value1, value2))
             {
                 writer_->writeString(currentPath_.toString());
-                writer_->writeLine(formatString(" (%s - %s)", simpleValueToString(value1).c_str(),
+                writer_->writeLine(formatString(" (%s - %s)",
+                                                simpleValueToString(value1).c_str(),
                                                 simpleValueToString(value2).c_str()));
             }
         }
@@ -264,13 +265,15 @@ private:
 
     void handleMissingKeyInFirstObject(const KeyValueTreeValue& value)
     {
-        const std::string message = formatString("%s (missing - %s)", currentPath_.toString().c_str(),
+        const std::string message = formatString("%s (missing - %s)",
+                                                 currentPath_.toString().c_str(),
                                                  formatValueForMissingMessage(value).c_str());
         writer_->writeLine(message);
     }
     void handleMissingKeyInSecondObject(const KeyValueTreeValue& value)
     {
-        const std::string message = formatString("%s (%s - missing)", currentPath_.toString().c_str(),
+        const std::string message = formatString("%s (%s - missing)",
+                                                 currentPath_.toString().c_str(),
                                                  formatValueForMissingMessage(value).c_str());
         writer_->writeLine(message);
     }

@@ -143,7 +143,8 @@ static inline SimdDInt32 gmx_simdcall simdLoadU(const std::int32_t* m, SimdDInt3
 {
     return { _mm512_mask_loadunpackhi_epi32(
             _mm512_mask_loadunpacklo_epi32(_mm512_undefined_epi32(), _mm512_int2mask(0x00FF), m),
-            _mm512_int2mask(0x00FF), m + 16) };
+            _mm512_int2mask(0x00FF),
+            m + 16) };
 }
 
 static inline void gmx_simdcall storeU(std::int32_t* m, SimdDInt32 a)
@@ -251,20 +252,21 @@ static inline SimdDouble gmx_simdcall maskzMul(SimdDouble a, SimdDouble b, SimdD
 
 static inline SimdDouble gmx_simdcall maskzFma(SimdDouble a, SimdDouble b, SimdDouble c, SimdDBool m)
 {
-    return { _mm512_mask_mov_pd(_mm512_setzero_pd(), m.simdInternal_,
+    return { _mm512_mask_mov_pd(_mm512_setzero_pd(),
+                                m.simdInternal_,
                                 _mm512_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)) };
 }
 
 static inline SimdDouble gmx_simdcall maskzRsqrt(SimdDouble x, SimdDBool m)
 {
-    return { _mm512_cvtpslo_pd(_mm512_mask_rsqrt23_ps(_mm512_setzero_ps(), m.simdInternal_,
-                                                      _mm512_cvtpd_pslo(x.simdInternal_))) };
+    return { _mm512_cvtpslo_pd(_mm512_mask_rsqrt23_ps(
+            _mm512_setzero_ps(), m.simdInternal_, _mm512_cvtpd_pslo(x.simdInternal_))) };
 }
 
 static inline SimdDouble gmx_simdcall maskzRcp(SimdDouble x, SimdDBool m)
 {
-    return { _mm512_cvtpslo_pd(_mm512_mask_rcp23_ps(_mm512_setzero_ps(), m.simdInternal_,
-                                                    _mm512_cvtpd_pslo(x.simdInternal_))) };
+    return { _mm512_cvtpslo_pd(_mm512_mask_rcp23_ps(
+            _mm512_setzero_ps(), m.simdInternal_, _mm512_cvtpd_pslo(x.simdInternal_))) };
 }
 
 static inline SimdDouble gmx_simdcall abs(SimdDouble x)
@@ -311,13 +313,13 @@ static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
         // Create an integer -1 value, and use masking in the conversion as the result for
         // zero-value input. When we later add 1 to all fields, the fields that were formerly -1
         // (corresponding to zero exponent) will be assigned -1 + 1 = 0.
-        iExponent = _mm512_mask_cvtfxpnt_roundpd_epi32lo(_mm512_set_epi32(-1), valueIsNonZero,
-                                                         rExponent, _MM_FROUND_TO_NEAREST_INT);
+        iExponent = _mm512_mask_cvtfxpnt_roundpd_epi32lo(
+                _mm512_set_epi32(-1), valueIsNonZero, rExponent, _MM_FROUND_TO_NEAREST_INT);
         iExponent = _mm512__add_epi32(iExponent, _mm512_set1_epi32(1));
 
         // Set result to value (+-0) when it is zero.
-        result = _mm512_mask_getmant_pd(value.simdInternal_, valueIsNonZero, value.simdInternal_,
-                                        _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
+        result = _mm512_mask_getmant_pd(
+                value.simdInternal_, valueIsNonZero, value.simdInternal_, _MM_MANT_NORM_p5_1, _MM_MANT_SIGN_src);
     }
     else
     {

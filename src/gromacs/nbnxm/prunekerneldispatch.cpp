@@ -105,7 +105,8 @@ void nonbonded_verlet_t::dispatchPruneKernelGpu(int64_t step)
             (pairlistSets().numStepsWithPairlist(step) % (2 * pairlistSets().params().mtsFactor) == 0);
 
     Nbnxm::gpu_launch_kernel_pruneonly(
-            gpu_nbv, stepIsEven ? gmx::InteractionLocality::Local : gmx::InteractionLocality::NonLocal,
+            gpu_nbv,
+            stepIsEven ? gmx::InteractionLocality::Local : gmx::InteractionLocality::NonLocal,
             pairlistSets().params().numRollingPruningParts);
 
     wallcycle_sub_stop(wcycle_, ewcsLAUNCH_GPU_NONBONDED);

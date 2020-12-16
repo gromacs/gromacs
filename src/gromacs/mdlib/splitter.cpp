@@ -94,8 +94,14 @@ static int mk_grey(gmx::ArrayRef<egCol> edgeColor, const t_graph* g, int* AtomI,
             range_check(ai + g0, 0, maxsid);
             if (sid[aj + g0].sid != -1)
             {
-                gmx_fatal(FARGS, "sid[%d]=%d, sid[%d]=%d, file %s, line %d", ai, sid[ai + g0].sid,
-                          aj, sid[aj + g0].sid, __FILE__, __LINE__);
+                gmx_fatal(FARGS,
+                          "sid[%d]=%d, sid[%d]=%d, file %s, line %d",
+                          ai,
+                          sid[ai + g0].sid,
+                          aj,
+                          sid[aj + g0].sid,
+                          __FILE__,
+                          __LINE__);
             }
             else
             {

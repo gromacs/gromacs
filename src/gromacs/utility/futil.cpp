@@ -381,7 +381,8 @@ static std::string backup_fn(const std::string& file)
         gmx_fatal(FARGS,
                   "Won't make more than %d backups of %s for you.\n"
                   "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
-                  s_maxBackupCount, fn.c_str());
+                  s_maxBackupCount,
+                  fn.c_str());
     }
 
     return buf;
@@ -729,8 +730,8 @@ void gmx_chdir(const char* directory)
 #endif
     if (rc != 0)
     {
-        auto message = gmx::formatString("Cannot change directory to '%s'. Reason: %s", directory,
-                                         strerror(errno));
+        auto message = gmx::formatString(
+                "Cannot change directory to '%s'. Reason: %s", directory, strerror(errno));
         GMX_THROW(gmx::FileIOError(message));
     }
 }

@@ -130,8 +130,8 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
 #ifdef DEBUG
                                 GMX_LOG(logger.info)
                                         .asParagraph()
-                                        .appendTextFormatted("Angle: %d-%d-%d", ang->ai(),
-                                                             ang->aj(), ang->ak());
+                                        .appendTextFormatted(
+                                                "Angle: %d-%d-%d", ang->ai(), ang->aj(), ang->ak());
 #endif
                                 int numhydrogens = count_hydrogens(info, 3, ang->atoms());
                                 if ((nshake == eshALLANGLES) || (numhydrogens > 1)
@@ -178,7 +178,8 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
                                         GMX_LOG(logger.info)
                                                 .asParagraph()
                                                 .appendTextFormatted("p: %d, q: %d, dist: %12.5e",
-                                                                     atomNumbers[0], atomNumbers[1],
+                                                                     atomNumbers[0],
+                                                                     atomNumbers[1],
                                                                      forceParm[0]);
 #endif
                                         add_param_to_list(&(plist[F_CONSTR]),

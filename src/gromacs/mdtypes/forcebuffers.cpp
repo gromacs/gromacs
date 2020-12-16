@@ -88,8 +88,8 @@ void ForceBuffers::resize(int numAtoms)
     {
         forceMtsCombined_.resizeWithPadding(numAtoms);
     }
-    view_ = ForceBuffersView(force_.arrayRefWithPadding(), forceMtsCombined_.arrayRefWithPadding(),
-                             useForceMtsCombined_);
+    view_ = ForceBuffersView(
+            force_.arrayRefWithPadding(), forceMtsCombined_.arrayRefWithPadding(), useForceMtsCombined_);
 }
 
 } // namespace gmx

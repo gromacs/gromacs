@@ -69,8 +69,9 @@ namespace
  *
  * These must correspond to the TimeUnit enum in the header!
  */
-const EnumerationArray<TimeUnit, const char*> c_timeUnitNames = { { "fs", "ps", "ns", "us", "ms",
-                                                                    "s" } };
+const EnumerationArray<TimeUnit, const char*> c_timeUnitNames = {
+    { "fs", "ps", "ns", "us", "ms", "s" }
+};
 /*! \brief
  * Scaling factors from each time unit to internal units (=picoseconds).
  *
@@ -145,7 +146,8 @@ void TimeUnitBehavior::setTimeUnitFromEnvironment()
                     "Time unit provided with environment variable GMXTIMEUNIT=%s "
                     "is not recognized as a valid time unit.\n"
                     "Possible values are: %s",
-                    value, joinStrings(c_timeUnitNames, ", ").c_str());
+                    value,
+                    joinStrings(c_timeUnitNames, ", ").c_str());
             GMX_THROW(InvalidInputError(message));
         }
         setTimeUnit(result);

@@ -417,8 +417,8 @@ static void copy_local_grid(const gmx_pme_t* pme, const pmegrids_t* pmegrids, in
     int   d;
     real* grid_th;
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index], local_fft_ndata, local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_limits(
+            pme->pfft_setup[grid_index], local_fft_ndata, local_fft_offset, local_fft_size);
     fft_my = local_fft_size[YY];
     fft_mz = local_fft_size[ZZ];
 
@@ -478,8 +478,8 @@ static void reduce_threadgrid_overlap(const gmx_pme_t*  pme,
     const real*      grid_th;
     real*            commbuf = nullptr;
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index], local_fft_ndata, local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_limits(
+            pme->pfft_setup[grid_index], local_fft_ndata, local_fft_offset, local_fft_size);
     fft_nx = local_fft_ndata[XX];
     fft_ny = local_fft_ndata[YY];
     fft_nz = local_fft_ndata[ZZ];
@@ -608,9 +608,27 @@ static void reduce_threadgrid_overlap(const gmx_pme_t*  pme,
 #ifdef DEBUG_PME_REDUCE
                 printf("n%d t%d add %d  %2d %2d %2d  %2d %2d %2d  %2d-%2d %2d-%2d, %2d-%2d "
                        "%2d-%2d, %2d-%2d %2d-%2d\n",
-                       pme->nodeid, thread, thread_f, pme->pmegrid_start_ix, pme->pmegrid_start_iy,
-                       pme->pmegrid_start_iz, sx, sy, sz, offx - ox, tx1 - ox, offx, tx1, offy - oy,
-                       ty1 - oy, offy, ty1, offz - oz, tz1 - oz, offz, tz1);
+                       pme->nodeid,
+                       thread,
+                       thread_f,
+                       pme->pmegrid_start_ix,
+                       pme->pmegrid_start_iy,
+                       pme->pmegrid_start_iz,
+                       sx,
+                       sy,
+                       sz,
+                       offx - ox,
+                       tx1 - ox,
+                       offx,
+                       tx1,
+                       offy - oy,
+                       ty1 - oy,
+                       offy,
+                       ty1,
+                       offz - oz,
+                       tz1 - oz,
+                       offz,
+                       tz1);
 #endif
 
                 if (!(bCommX || bCommY))
@@ -716,8 +734,8 @@ static void sum_fftgrid_dd(const gmx_pme_t* pme, real* fftgrid, int grid_index)
      * communication setup.
      */
 
-    gmx_parallel_3dfft_real_limits(pme->pfft_setup[grid_index], local_fft_ndata, local_fft_offset,
-                                   local_fft_size);
+    gmx_parallel_3dfft_real_limits(
+            pme->pfft_setup[grid_index], local_fft_ndata, local_fft_offset, local_fft_size);
 
     if (pme->nnodes_minor > 1)
     {
@@ -752,15 +770,28 @@ static void sum_fftgrid_dd(const gmx_pme_t* pme, real* fftgrid, int grid_index)
 
             if (debug != nullptr)
             {
-                fprintf(debug, "PME fftgrid comm y %2d x %2d x %2d\n", local_fft_ndata[XX],
-                        send_nindex, local_fft_ndata[ZZ]);
+                fprintf(debug,
+                        "PME fftgrid comm y %2d x %2d x %2d\n",
+                        local_fft_ndata[XX],
+                        send_nindex,
+                        local_fft_ndata[ZZ]);
             }
 
 #if GMX_MPI
             int send_id = overlap->comm_data[ipulse].send_id;
             int recv_id = overlap->comm_data[ipulse].recv_id;
-            MPI_Sendrecv(sendptr, send_size_y * datasize, GMX_MPI_REAL, send_id, ipulse, recvptr,
-                         recv_size_y * datasize, GMX_MPI_REAL, recv_id, ipulse, overlap->mpi_comm, &stat);
+            MPI_Sendrecv(sendptr,
+                         send_size_y * datasize,
+                         GMX_MPI_REAL,
+                         send_id,
+                         ipulse,
+                         recvptr,
+                         recv_size_y * datasize,
+                         GMX_MPI_REAL,
+                         recv_id,
+                         ipulse,
+                         overlap->mpi_comm,
+                         &stat);
 #endif
 
             for (x = 0; x < local_fft_ndata[XX]; x++)
@@ -813,7 +844,10 @@ static void sum_fftgrid_dd(const gmx_pme_t* pme, real* fftgrid, int grid_index)
 
         if (debug != nullptr)
         {
-            fprintf(debug, "PME fftgrid comm x %2d x %2d x %2d\n", send_nindex, local_fft_ndata[YY],
+            fprintf(debug,
+                    "PME fftgrid comm x %2d x %2d x %2d\n",
+                    send_nindex,
+                    local_fft_ndata[YY],
                     local_fft_ndata[ZZ]);
         }
 
@@ -823,8 +857,18 @@ static void sum_fftgrid_dd(const gmx_pme_t* pme, real* fftgrid, int grid_index)
         int   recv_id  = overlap->comm_data[ipulse].recv_id;
         auto* sendptr  = const_cast<real*>(overlap->sendbuf.data());
         auto* recvptr  = const_cast<real*>(overlap->recvbuf.data());
-        MPI_Sendrecv(sendptr, send_nindex * datasize, GMX_MPI_REAL, send_id, ipulse, recvptr,
-                     recv_nindex * datasize, GMX_MPI_REAL, recv_id, ipulse, overlap->mpi_comm, &stat);
+        MPI_Sendrecv(sendptr,
+                     send_nindex * datasize,
+                     GMX_MPI_REAL,
+                     send_id,
+                     ipulse,
+                     recvptr,
+                     recv_nindex * datasize,
+                     GMX_MPI_REAL,
+                     recv_id,
+                     ipulse,
+                     overlap->mpi_comm,
+                     &stat);
 #endif
 
         for (x = 0; x < recv_nindex; x++)
@@ -925,9 +969,14 @@ void spread_on_grid(const gmx_pme_t*  pme,
 
             if (bCalcSplines)
             {
-                make_bsplines(spline->theta.coefficients, spline->dtheta.coefficients,
-                              pme->pme_order, as_rvec_array(atc->fractx.data()), spline->n,
-                              spline->ind.data(), atc->coefficient.data(), bDoSplines);
+                make_bsplines(spline->theta.coefficients,
+                              spline->dtheta.coefficients,
+                              pme->pme_order,
+                              as_rvec_array(atc->fractx.data()),
+                              spline->n,
+                              spline->ind.data(),
+                              atc->coefficient.data(),
+                              bDoSplines);
             }
 
             if (bSpread)
@@ -967,9 +1016,13 @@ void spread_on_grid(const gmx_pme_t*  pme,
         {
             try
             {
-                reduce_threadgrid_overlap(pme, grids, thread, fftgrid,
+                reduce_threadgrid_overlap(pme,
+                                          grids,
+                                          thread,
+                                          fftgrid,
                                           const_cast<real*>(pme->overlap[0].sendbuf.data()),
-                                          const_cast<real*>(pme->overlap[1].sendbuf.data()), grid_index);
+                                          const_cast<real*>(pme->overlap[1].sendbuf.data()),
+                                          grid_index);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }

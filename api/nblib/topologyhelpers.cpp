@@ -102,8 +102,10 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
     // shift particle numbers by offset
     for (auto& localBlock : inBlock)
     {
-        std::transform(std::begin(localBlock.atomNumber), std::end(localBlock.atomNumber),
-                       std::begin(localBlock.atomNumber), [offset](auto i) { return i + offset; });
+        std::transform(std::begin(localBlock.atomNumber),
+                       std::end(localBlock.atomNumber),
+                       std::begin(localBlock.atomNumber),
+                       [offset](auto i) { return i + offset; });
     }
 
     return inBlock;
@@ -123,12 +125,15 @@ int ParticleSequencer::operator()(const MoleculeName& moleculeName,
         // TODO: use string format function once we have it
         if (moleculeName.value() == residueName.value())
         {
-            printf("No particle %s in residue %s in molecule %s found\n", particleName.value().c_str(),
-                   residueName.value().c_str(), moleculeName.value().c_str());
+            printf("No particle %s in residue %s in molecule %s found\n",
+                   particleName.value().c_str(),
+                   residueName.value().c_str(),
+                   moleculeName.value().c_str());
         }
         else
         {
-            printf("No particle %s in molecule %s found\n", particleName.value().c_str(),
+            printf("No particle %s in molecule %s found\n",
+                   particleName.value().c_str(),
                    moleculeName.value().c_str());
         }
 
@@ -201,8 +206,8 @@ auto stringsToIndices_impl(const Tuple& tuple, std::index_sequence<Is...> is, F&
 {
     // return std::make_tuple(f(args..., std::get<2 * Is + 1>(tuple), std::get<2 * Is>(tuple))...);
     ignore_unused(is);
-    return std::array<int, sizeof...(Is)>{ f(args..., std::get<2 * Is + 1>(tuple),
-                                             std::get<2 * Is>(tuple))... };
+    return std::array<int, sizeof...(Is)>{ f(
+            args..., std::get<2 * Is + 1>(tuple), std::get<2 * Is>(tuple))... };
 }
 
 /*! \brief
@@ -266,7 +271,8 @@ std::vector<CoordinateIndex<B>> sequenceIDs(const std::vector<std::tuple<Molecul
 {
     std::vector<CoordinateIndex<B>> coordinateIndices;
 
-    auto callSequencer = [&particleSequencer](const MoleculeName& moleculeName, int i,
+    auto callSequencer = [&particleSequencer](const MoleculeName& moleculeName,
+                                              int                 i,
                                               const ResidueName&  residueName,
                                               const ParticleName& particleName) {
         return particleSequencer(moleculeName, i, residueName, particleName);
@@ -316,8 +322,11 @@ std::tuple<std::vector<size_t>, std::vector<I>> eliminateDuplicateInteractions(c
 
     std::vector<std::tuple<I, size_t>> enumeratedBonds(aggregatedInteractions.size());
     // append each interaction with its index
-    std::transform(begin(aggregatedInteractions), end(aggregatedInteractions), begin(uniqueIndices),
-                   begin(enumeratedBonds), [](I b, size_t i) { return std::make_tuple(b, i); });
+    std::transform(begin(aggregatedInteractions),
+                   end(aggregatedInteractions),
+                   begin(uniqueIndices),
+                   begin(enumeratedBonds),
+                   [](I b, size_t i) { return std::make_tuple(b, i); });
 
     auto sortKey = [](const auto& t1, const auto& t2) { return std::get<0>(t1) < std::get<0>(t2); };
     // sort w.r.t bonds. the result will contain contiguous segments of identical bond instances

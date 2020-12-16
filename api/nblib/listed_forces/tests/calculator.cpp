@@ -83,7 +83,9 @@ void compareVectors(const TestSeq&                    forces,
         for (int m = 0; m < dimSize; ++m)
         {
             EXPECT_FLOAT_DOUBLE_EQ_TOL(
-                    forces[i][m], refForcesFloat[i][m], refForcesDouble[i][m],
+                    forces[i][m],
+                    refForcesFloat[i][m],
+                    refForcesDouble[i][m],
                     // Todo: why does the tolerance need to be so low?
                     gmx::test::relativeToleranceAsFloatingPoint(refForcesDouble[i][m], 5e-5));
         }
@@ -168,7 +170,9 @@ TEST_F(ListedExampleData, DISABLED_ComputeHarmonicBondForces)
     auto bonds   = pickType<HarmonicBondType>(interactions).parameters;
     real energy  = computeForces(indices, bonds, x, &forces, *pbc);
 
-    EXPECT_FLOAT_DOUBLE_EQ_TOL(energy, refBondEnergyFloat, refBondEnergyDouble,
+    EXPECT_FLOAT_DOUBLE_EQ_TOL(energy,
+                               refBondEnergyFloat,
+                               refBondEnergyDouble,
                                gmx::test::relativeToleranceAsFloatingPoint(refBondEnergyDouble, 1e-5));
 
     compareVectors(forces, refBondForcesFloat, refBondForcesDouble);
@@ -180,7 +184,9 @@ TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
     auto angles  = pickType<DefaultAngle>(interactions).parameters;
     real energy  = computeForces(indices, angles, x, &forces, *pbc);
 
-    EXPECT_FLOAT_DOUBLE_EQ_TOL(energy, refAngleEnergyFloat, refAngleEnergyDouble,
+    EXPECT_FLOAT_DOUBLE_EQ_TOL(energy,
+                               refAngleEnergyFloat,
+                               refAngleEnergyDouble,
                                gmx::test::relativeToleranceAsFloatingPoint(refAngleEnergyDouble, 1e-5));
 
     compareVectors(forces, refAngleForcesFloat, refAngleForcesDouble);
@@ -191,12 +197,12 @@ TEST_F(ListedExampleData, DISABLED_CanReduceForces)
     auto energies    = reduceListedForces(interactions, x, &forces, *pbc);
     real totalEnergy = std::accumulate(begin(energies), end(energies), 0.0);
 
-    EXPECT_FLOAT_DOUBLE_EQ_TOL(totalEnergy, refBondEnergyFloat + refAngleEnergyFloat,
+    EXPECT_FLOAT_DOUBLE_EQ_TOL(totalEnergy,
+                               refBondEnergyFloat + refAngleEnergyFloat,
                                refBondEnergyDouble + refAngleEnergyDouble,
                                gmx::test::relativeToleranceAsFloatingPoint(refBondEnergyDouble, 1e-5));
 
-    compareVectors(forces, refBondForcesFloat + refAngleForcesFloat,
-                   refBondForcesDouble + refAngleForcesDouble);
+    compareVectors(forces, refBondForcesFloat + refAngleForcesFloat, refBondForcesDouble + refAngleForcesDouble);
 }
 
 
@@ -205,7 +211,8 @@ void compareArray(const ListedForceCalculator::EnergyType& energies,
 {
     for (size_t i = 0; i < energies.size(); ++i)
     {
-        EXPECT_REAL_EQ_TOL(energies[i], refEnergies[i],
+        EXPECT_REAL_EQ_TOL(energies[i],
+                           refEnergies[i],
                            gmx::test::relativeToleranceAsFloatingPoint(refEnergies[i], 1e-5));
     }
 }

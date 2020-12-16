@@ -104,8 +104,8 @@ int gmx_sigeps(int argc, char* argv[])
     int         cur = 0;
 #define next (1 - cur)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -169,8 +169,7 @@ int gmx_sigeps(int argc, char* argv[])
             {
                 minimum = oldx + dp[cur] * (x - oldx) / (dp[cur] - dp[next]);
                 mval    = pot(minimum, qq, c6, cn, npow);
-                printf("Van der Waals + Coulomb minimum at r = %g (nm). Value = %g (kJ/mol)\n",
-                       minimum, mval);
+                printf("Van der Waals + Coulomb minimum at r = %g (nm). Value = %g (kJ/mol)\n", minimum, mval);
             }
         }
         cur  = next;

@@ -258,8 +258,9 @@ enum class Group2Type : int
     Count
 };
 //! String values corresponding to Group1Type.
-const EnumerationArray<Group1Type, const char*> c_group1TypeEnumNames = { { "angle", "dihedral",
-                                                                            "vector", "plane" } };
+const EnumerationArray<Group1Type, const char*> c_group1TypeEnumNames = {
+    { "angle", "dihedral", "vector", "plane" }
+};
 //! String values corresponding to Group2Type.
 const EnumerationArray<Group2Type, const char*> c_group2TypeEnumNames = {
     { "none", "vector", "plane", "t0", "z", "sphnorm" }
@@ -489,7 +490,8 @@ void Angle::initFromSelections(const SelectionList& sel1, const SelectionList& s
         {
             GMX_THROW(InconsistentInputError(formatString(
                     "Number of positions in selection %d in the first group not divisible by %d",
-                    static_cast<int>(g + 1), natoms1_)));
+                    static_cast<int>(g + 1),
+                    natoms1_)));
         }
         const int angleCount1 = posCount1 / natoms1_;
         int       angleCount  = angleCount1;
@@ -502,7 +504,8 @@ void Angle::initFromSelections(const SelectionList& sel1, const SelectionList& s
                 GMX_THROW(InconsistentInputError(
                         formatString("Number of positions in selection %d in the second group not "
                                      "divisible by %d",
-                                     static_cast<int>(g + 1), natoms2_)));
+                                     static_cast<int>(g + 1),
+                                     natoms2_)));
             }
             if (g2type_ == Group2Type::SphereNormal && posCount2 != 1)
             {

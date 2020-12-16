@@ -151,8 +151,8 @@ int gmx_trjorder(int argc, char* argv[])
                        { efXVG, "-nshell", "nshell", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -201,8 +201,10 @@ int gmx_trjorder(int argc, char* argv[])
 
     if ((isize_sol % na) != 0)
     {
-        gmx_fatal(FARGS, "Number of atoms in the molecule group (%d) is not a multiple of na (%d)",
-                  isize[1], na);
+        gmx_fatal(FARGS,
+                  "Number of atoms in the molecule group (%d) is not a multiple of na (%d)",
+                  isize[1],
+                  na);
     }
 
     nwat = isize_sol / na;

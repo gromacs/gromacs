@@ -142,8 +142,8 @@ int dd_make_local_vsites(gmx_domdec_t* dd, int at_start, gmx::ArrayRef<Interacti
         }
     }
 
-    int at_end = setup_specat_communication(dd, &ireq, dd->vsite_comm, ga2la_specat, at_start, 1,
-                                            "vsite", "");
+    int at_end = setup_specat_communication(
+            dd, &ireq, dd->vsite_comm, ga2la_specat, at_start, 1, "vsite", "");
 
     /* Fill in the missing indices */
     for (int ftype = 0; ftype < F_NRE; ftype++)

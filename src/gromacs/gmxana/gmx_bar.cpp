@@ -745,18 +745,24 @@ static void sample_coll_insert_sample(sample_coll_t* sc, samples_t* s, sample_ra
     GMX_ASSERT(sc->next->s, "Next not properly initialized!");
     if (sc->temp != s->temp)
     {
-        gmx_fatal(FARGS, "Temperatures in files %s and %s are not the same!", s->filename,
+        gmx_fatal(FARGS,
+                  "Temperatures in files %s and %s are not the same!",
+                  s->filename,
                   sc->next->s[0]->filename);
     }
     if (!lambda_vec_same(sc->native_lambda, s->native_lambda))
     {
-        gmx_fatal(FARGS, "Native lambda in files %s and %s are not the same (and they should be)!",
-                  s->filename, sc->next->s[0]->filename);
+        gmx_fatal(FARGS,
+                  "Native lambda in files %s and %s are not the same (and they should be)!",
+                  s->filename,
+                  sc->next->s[0]->filename);
     }
     if (!lambda_vec_same(sc->foreign_lambda, s->foreign_lambda))
     {
-        gmx_fatal(FARGS, "Foreign lambda in files %s and %s are not the same (and they should be)!",
-                  s->filename, sc->next->s[0]->filename);
+        gmx_fatal(FARGS,
+                  "Foreign lambda in files %s and %s are not the same (and they should be)!",
+                  s->filename,
+                  sc->next->s[0]->filename);
     }
 
     /* check if there's room */
@@ -1153,7 +1159,8 @@ static barres_t* barres_list_create(sim_data_t* sd, int* nres, gmx_bool use_dhdl
                       "them.\nAlternatively, use the -extp option if (and only if) the "
                       "Hamiltonian\ndepends linearly on lambda, which is NOT normally the "
                       "case.\n\n%s\n%s\n",
-                      descX, descY);
+                      descX,
+                      descY);
         }
 
         /* normal delta H */
@@ -1165,7 +1172,8 @@ static barres_t* barres_list_create(sim_data_t* sd, int* nres, gmx_bool use_dhdl
             gmx_fatal(FARGS,
                       "Could not find a set for foreign lambda (state X below)\nin the files for "
                       "main lambda (state Y below)\n\n%s\n%s\n",
-                      descX, descY);
+                      descX,
+                      descY);
         }
         if (!sc)
         {
@@ -1175,7 +1183,8 @@ static barres_t* barres_list_create(sim_data_t* sd, int* nres, gmx_bool use_dhdl
             gmx_fatal(FARGS,
                       "Could not find a set for foreign lambda (state X below)\nin the files for "
                       "main lambda (state Y below)\n\n%s\n%s\n",
-                      descX, descY);
+                      descX,
+                      descY);
         }
         br->a = scprev;
         br->b = sc;
@@ -2592,7 +2601,8 @@ static gmx_bool subtitle2lambda(const char* subtitle, xvg_t* ba, const char* fn,
                 if (!lambda_components_check(lc, 0, "", 0))
                 {
                     gmx_fatal(FARGS,
-                              "lambda vector components in %s don't match those previously read", fn);
+                              "lambda vector components in %s don't match those previously read",
+                              fn);
                 }
             }
             else
@@ -2758,8 +2768,12 @@ static void read_bar_xvg(const char* fn, real* temp, sim_data_t* sd)
     snew(s, barsim->nset);
     for (i = 0; i < barsim->nset; i++)
     {
-        samples_init(s + i, &(barsim->native_lambda), &(barsim->lambda[i]), barsim->temp,
-                     lambda_vec_same(&(barsim->native_lambda), &(barsim->lambda[i])), fn);
+        samples_init(s + i,
+                     &(barsim->native_lambda),
+                     &(barsim->lambda[i]),
+                     barsim->temp,
+                     lambda_vec_same(&(barsim->native_lambda), &(barsim->lambda[i])),
+                     fn);
         s[i].du  = barsim->y[i];
         s[i].ndu = barsim->np[i];
         s[i].t   = barsim->t;
@@ -2770,8 +2784,11 @@ static void read_bar_xvg(const char* fn, real* temp, sim_data_t* sd)
         char buf[STRLEN];
 
         lambda_vec_print(s[0].native_lambda, buf, FALSE);
-        printf("%s: %.1f - %.1f; lambda = %s\n    dH/dl & foreign lambdas:\n", fn, s[0].t[0],
-               s[0].t[s[0].ndu - 1], buf);
+        printf("%s: %.1f - %.1f; lambda = %s\n    dH/dl & foreign lambdas:\n",
+               fn,
+               s[0].t[0],
+               s[0].t[s[0].ndu - 1],
+               buf);
         for (i = 0; i < barsim->nset; i++)
         {
             lambda_vec_print(s[i].foreign_lambda, buf, TRUE);
@@ -3086,7 +3103,8 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                 if ((*temp != rtemp) && (*temp > 0))
                 {
                     gmx_fatal(FARGS,
-                              "Temperature in file %s different from earlier files or setting\n", fn);
+                              "Temperature in file %s different from earlier files or setting\n",
+                              fn);
                 }
                 *temp = rtemp;
 
@@ -3189,12 +3207,18 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                 gmx_fatal(FARGS,
                           "Native lambda not constant in file %s: started at %f, and becomes %f at "
                           "time %f",
-                          fn, native_lambda->val[0], start_lambda.val[0], start_time);
+                          fn,
+                          native_lambda->val[0],
+                          start_lambda.val[0],
+                          start_time);
             }
             /* check the number of samples against the previous number */
             if (((nblocks_raw + nblocks_hist) != nsamples) || (nlam != 1))
             {
-                gmx_fatal(FARGS, "Unexpected block count in %s: was %d, now %d\n", fn, nsamples + 1,
+                gmx_fatal(FARGS,
+                          "Unexpected block count in %s: was %d, now %d\n",
+                          fn,
+                          nsamples + 1,
                           nblocks_raw + nblocks_hist + nlam);
             }
             /* check whether last iterations's end time matches with
@@ -3226,8 +3250,15 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                 if (type == dhbtDH || type == dhbtDHDL)
                 {
                     int ndu;
-                    read_edr_rawdh_block(&(samples_rawdh[k]), &ndu, &(fr->block[i]), start_time,
-                                         delta_time, native_lambda, rtemp, &last_t, fn);
+                    read_edr_rawdh_block(&(samples_rawdh[k]),
+                                         &ndu,
+                                         &(fr->block[i]),
+                                         start_time,
+                                         delta_time,
+                                         native_lambda,
+                                         rtemp,
+                                         &last_t,
+                                         fn);
                     npts[k] += ndu;
                     if (samples_rawdh[k])
                     {
@@ -3244,8 +3275,8 @@ static void read_barsim_edr(const char* fn, real* temp, sim_data_t* sd)
                     int        j;
                     int        nb = 0;
                     samples_t* s; /* this is where the data will go */
-                    s = read_edr_hist_block(&nb, &(fr->block[i]), start_time, delta_time,
-                                            native_lambda, rtemp, &last_t, fn);
+                    s = read_edr_hist_block(
+                            &nb, &(fr->block[i]), start_time, delta_time, native_lambda, rtemp, &last_t, fn);
                     nhists[k] += nb;
                     if (nb > 0)
                     {
@@ -3457,8 +3488,8 @@ int gmx_bar(int argc, char* argv[])
     double   sum_histrange_err = 0.; /* histogram range error */
     double   stat_err          = 0.; /* statistical error */
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                           0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -3551,8 +3582,8 @@ int gmx_bar(int argc, char* argv[])
     if (opt2bSet("-o", NFILE, fnm))
     {
         sprintf(buf, "%s (%s)", "\\DeltaG", "kT");
-        fpb = xvgropen_type(opt2fn("-o", NFILE, fnm), "Free energy differences", "\\lambda", buf,
-                            exvggtXYDY, oenv);
+        fpb = xvgropen_type(
+                opt2fn("-o", NFILE, fnm), "Free energy differences", "\\lambda", buf, exvggtXYDY, oenv);
     }
 
     fpi = nullptr;

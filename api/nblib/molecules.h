@@ -249,10 +249,12 @@ private:
 };
 
 //! \cond DO_NOT_DOCUMENT
-#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                      \
-    extern template void Molecule::addInteraction(                              \
-            const ParticleName& particleNameI, const ResidueName& residueNameI, \
-            const ParticleName& particleNameJ, const ResidueName& residueNameJ, const x& interaction);
+#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                           \
+    extern template void Molecule::addInteraction(const ParticleName& particleNameI, \
+                                                  const ResidueName&  residueNameI,  \
+                                                  const ParticleName& particleNameJ, \
+                                                  const ResidueName&  residueNameJ,  \
+                                                  const x&            interaction);
 MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
 #undef ADD_INTERACTION_EXTERN_TEMPLATE
 
@@ -262,18 +264,22 @@ MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
 MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
 #undef ADD_INTERACTION_EXTERN_TEMPLATE
 
-#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                      \
-    extern template void Molecule::addInteraction(                              \
-            const ParticleName& particleNameI, const ResidueName& residueNameI, \
-            const ParticleName& particleNameJ, const ResidueName& residueNameJ, \
-            const ParticleName& particleNameK, const ResidueName& residueNameK, const x& interaction);
+#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                           \
+    extern template void Molecule::addInteraction(const ParticleName& particleNameI, \
+                                                  const ResidueName&  residueNameI,  \
+                                                  const ParticleName& particleNameJ, \
+                                                  const ResidueName&  residueNameJ,  \
+                                                  const ParticleName& particleNameK, \
+                                                  const ResidueName&  residueNameK,  \
+                                                  const x&            interaction);
 MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_THREE_CENTER_TYPES)
 #undef ADD_INTERACTION_EXTERN_TEMPLATE
 
-#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                        \
-    extern template void Molecule::addInteraction(                                \
-            const ParticleName& particleNameI, const ParticleName& particleNameJ, \
-            const ParticleName& particleNameK, const x& interaction);
+#define ADD_INTERACTION_EXTERN_TEMPLATE(x)                                           \
+    extern template void Molecule::addInteraction(const ParticleName& particleNameI, \
+                                                  const ParticleName& particleNameJ, \
+                                                  const ParticleName& particleNameK, \
+                                                  const x&            interaction);
 MAP(ADD_INTERACTION_EXTERN_TEMPLATE, SUPPORTED_THREE_CENTER_TYPES)
 #undef ADD_INTERACTION_EXTERN_TEMPLATE
 //! \endcond

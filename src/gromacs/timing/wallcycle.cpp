@@ -324,13 +324,14 @@ static void debug_stop_check(gmx_wallcycle_t wc, int ewc)
 
     if (wc->count_depth < 0)
     {
-        gmx_fatal(FARGS, "wallcycle counter depth out of range when stopping %s: %d", wcn[ewc],
-                  wc->count_depth);
+        gmx_fatal(FARGS, "wallcycle counter depth out of range when stopping %s: %d", wcn[ewc], wc->count_depth);
     }
     if (wc->counterlist[wc->count_depth] != ewc)
     {
-        gmx_fatal(FARGS, "wallcycle mismatch at stop, start %s, stop %s",
-                  wcn[wc->counterlist[wc->count_depth]], wcn[ewc]);
+        gmx_fatal(FARGS,
+                  "wallcycle mismatch at stop, start %s, stop %s",
+                  wcn[wc->counterlist[wc->count_depth]],
+                  wcn[ewc]);
     }
 }
 #endif
@@ -733,8 +734,15 @@ print_cycles(FILE* fplog, double c2t, const char* name, int nnodes, int nthreads
         /* Convert the cycle count to wallclock time for this task */
         wallt = c_sum * c2t;
 
-        fprintf(fplog, " %-19.19s %4s %4s %10s  %10.3f %14.3f %5.1f\n", name, nnodes_str,
-                nthreads_str, ncalls_str, wallt, c_sum * 1e-9, percentage);
+        fprintf(fplog,
+                " %-19.19s %4s %4s %10s  %10.3f %14.3f %5.1f\n",
+                name,
+                nnodes_str,
+                nthreads_str,
+                ncalls_str,
+                wallt,
+                c_sum * 1e-9,
+                percentage);
     }
 }
 
@@ -914,8 +922,14 @@ void wallcycle_print(FILE*                            fplog,
             for (j = 0; j < ewcNR; j++)
             {
                 snprintf(buf, 20, "%-9.9s %-9.9s", wcn[i], wcn[j]);
-                print_cycles(fplog, c2t_pp, buf, npp, nth_pp, wc->wcc_all[i * ewcNR + j].n,
-                             wc->wcc_all[i * ewcNR + j].c, tot);
+                print_cycles(fplog,
+                             c2t_pp,
+                             buf,
+                             npp,
+                             nth_pp,
+                             wc->wcc_all[i * ewcNR + j].n,
+                             wc->wcc_all[i * ewcNR + j].c,
+                             tot);
             }
         }
     }
@@ -953,8 +967,14 @@ void wallcycle_print(FILE*                            fplog,
             fprintf(fplog, "%s\n", hline);
             for (auto i : validPmeSubcounterIndices)
             {
-                print_cycles(fplog, npme > 0 ? c2t_pme : c2t_pp, wcn[i], npme > 0 ? npme : npp,
-                             nth_pme, wc->wcc[i].n, cyc_sum[i], tot);
+                print_cycles(fplog,
+                             npme > 0 ? c2t_pme : c2t_pp,
+                             wcn[i],
+                             npme > 0 ? npme : npp,
+                             nth_pme,
+                             wc->wcc[i].n,
+                             cyc_sum[i],
+                             tot);
             }
             fprintf(fplog, "%s\n", hline);
         }
@@ -1005,7 +1025,8 @@ void wallcycle_print(FILE*                            fplog,
 
         fprintf(fplog, "\n GPU timings\n%s\n", hline);
         fprintf(fplog,
-                " Computing:                         Count  Wall t (s)      ms/step       %c\n", '%');
+                " Computing:                         Count  Wall t (s)      ms/step       %c\n",
+                '%');
         fprintf(fplog, "%s\n", hline);
         print_gputimes(fplog, "Pair list H2D", gpu_nbnxn_t->pl_h2d_c, gpu_nbnxn_t->pl_h2d_t, tot_gpu);
         print_gputimes(fplog, "X / q H2D", gpu_nbnxn_t->nb_c, gpu_nbnxn_t->nb_h2d_t, tot_gpu);
@@ -1016,8 +1037,11 @@ void wallcycle_print(FILE*                            fplog,
             {
                 if (gpu_nbnxn_t->ktime[i][j].c)
                 {
-                    print_gputimes(fplog, k_log_str[i][j], gpu_nbnxn_t->ktime[i][j].c,
-                                   gpu_nbnxn_t->ktime[i][j].t, tot_gpu);
+                    print_gputimes(fplog,
+                                   k_log_str[i][j],
+                                   gpu_nbnxn_t->ktime[i][j].c,
+                                   gpu_nbnxn_t->ktime[i][j].t,
+                                   tot_gpu);
                 }
             }
         }
@@ -1027,15 +1051,14 @@ void wallcycle_print(FILE*                            fplog,
             {
                 if (gpu_pme_t->timing[k].c)
                 {
-                    print_gputimes(fplog, PMEStageNames[k], gpu_pme_t->timing[k].c,
-                                   gpu_pme_t->timing[k].t, tot_gpu);
+                    print_gputimes(
+                            fplog, PMEStageNames[k], gpu_pme_t->timing[k].c, gpu_pme_t->timing[k].t, tot_gpu);
                 }
             }
         }
         if (gpu_nbnxn_t->pruneTime.c)
         {
-            print_gputimes(fplog, "Pruning kernel", gpu_nbnxn_t->pruneTime.c,
-                           gpu_nbnxn_t->pruneTime.t, tot_gpu);
+            print_gputimes(fplog, "Pruning kernel", gpu_nbnxn_t->pruneTime.c, gpu_nbnxn_t->pruneTime.t, tot_gpu);
         }
         print_gputimes(fplog, "F D2H", gpu_nbnxn_t->nb_c, gpu_nbnxn_t->nb_d2h_t, tot_gpu);
         fprintf(fplog, "%s\n", hline);
@@ -1047,8 +1070,11 @@ void wallcycle_print(FILE*                            fplog,
              * and avoid adding it to tot_gpu as this is not in the force
              * overlap. We print the fraction as relative to the rest.
              */
-            print_gputimes(fplog, "*Dynamic pruning", gpu_nbnxn_t->dynamicPruneTime.c,
-                           gpu_nbnxn_t->dynamicPruneTime.t, tot_gpu);
+            print_gputimes(fplog,
+                           "*Dynamic pruning",
+                           gpu_nbnxn_t->dynamicPruneTime.c,
+                           gpu_nbnxn_t->dynamicPruneTime.t,
+                           tot_gpu);
             fprintf(fplog, "%s\n", hline);
         }
         gpu_cpu_ratio = tot_gpu / tot_cpu_overlap;
@@ -1057,7 +1083,9 @@ void wallcycle_print(FILE*                            fplog,
             fprintf(fplog,
                     "\nAverage per-step force GPU/CPU evaluation time ratio: %.3f ms/%.3f ms = "
                     "%.3f\n",
-                    tot_gpu / gpu_nbnxn_t->nb_c, tot_cpu_overlap / wc->wcc[ewcFORCE].n, gpu_cpu_ratio);
+                    tot_gpu / gpu_nbnxn_t->nb_c,
+                    tot_cpu_overlap / wc->wcc[ewcFORCE].n,
+                    gpu_cpu_ratio);
         }
 
         /* only print notes related to CPU-GPU load balance with PME */

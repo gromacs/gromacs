@@ -77,11 +77,16 @@ void* save_malloc(const char* name, const char* file, int line, size_t size)
     {
         if ((p = malloc(size)) == nullptr)
         {
-            gmx_fatal(errno, __FILE__, __LINE__,
+            gmx_fatal(errno,
+                      __FILE__,
+                      __LINE__,
                       "Not enough memory. Failed to malloc %" PRId64
                       " bytes for %s\n"
                       "(called from file %s, line %d)",
-                      static_cast<int64_t>(size), name, file, line);
+                      static_cast<int64_t>(size),
+                      name,
+                      file,
+                      line);
         }
         (void)memset(p, 0, size);
     }
@@ -104,7 +109,11 @@ void* save_calloc(const char* name, const char* file, int line, size_t nelem, si
         {
             int rank = gmx_node_rank();
             printf("Allocating %.1f MB for %s (called from file %s, line %d on %d)\n",
-                   nelem * elsize / 1048576.0, name, file, line, rank);
+                   nelem * elsize / 1048576.0,
+                   name,
+                   file,
+                   line,
+                   rank);
         }
 #endif
 #if GMX_BROKEN_CALLOC
@@ -112,19 +121,31 @@ void* save_calloc(const char* name, const char* file, int line, size_t nelem, si
            a broken calloc, e.g. in -lgmalloc on cray xt3. */
         if ((p = malloc((size_t)nelem * (size_t)elsize)) == NULL)
         {
-            gmx_fatal(errno, __FILE__, __LINE__,
+            gmx_fatal(errno,
+                      __FILE__,
+                      __LINE__,
                       "Not enough memory. Failed to calloc %" PRId64 " elements of size %" PRId64
                       " for %s\n(called from file %s, line %d)",
-                      (int64_t)nelem, (int64_t)elsize, name, file, line);
+                      (int64_t)nelem,
+                      (int64_t)elsize,
+                      name,
+                      file,
+                      line);
         }
         memset(p, 0, (size_t)(nelem * elsize));
 #else
         if ((p = calloc(nelem, elsize)) == nullptr)
         {
-            gmx_fatal(errno, __FILE__, __LINE__,
+            gmx_fatal(errno,
+                      __FILE__,
+                      __LINE__,
                       "Not enough memory. Failed to calloc %" PRId64 " elements of size %" PRId64
                       " for %s\n(called from file %s, line %d)",
-                      static_cast<int64_t>(nelem), static_cast<int64_t>(elsize), name, file, line);
+                      static_cast<int64_t>(nelem),
+                      static_cast<int64_t>(elsize),
+                      name,
+                      file,
+                      line);
         }
 #endif
     }
@@ -148,7 +169,11 @@ void* save_realloc(const char* name, const char* file, int line, void* ptr, size
         {
             int rank = gmx_node_rank();
             printf("Reallocating %.1f MB for %s (called from file %s, line %d on %d)\n",
-                   size / 1048576.0, name, file, line, rank);
+                   size / 1048576.0,
+                   name,
+                   file,
+                   line,
+                   rank);
         }
 #endif
         if (ptr == nullptr)
@@ -161,10 +186,17 @@ void* save_realloc(const char* name, const char* file, int line, void* ptr, size
         }
         if (p == nullptr)
         {
-            gmx_fatal(errno, __FILE__, __LINE__,
+            gmx_fatal(errno,
+                      __FILE__,
+                      __LINE__,
                       "Not enough memory. Failed to realloc %zu bytes for %s, %s=%p\n"
                       "(called from file %s, line %d)",
-                      size, name, name, ptr, file, line);
+                      size,
+                      name,
+                      name,
+                      ptr,
+                      file,
+                      line);
         }
     }
     return p;
@@ -189,19 +221,26 @@ void* save_malloc_aligned(const char* name, const char* file, int line, size_t n
 
     if (alignment == 0)
     {
-        gmx_fatal(errno, __FILE__, __LINE__,
+        gmx_fatal(errno,
+                  __FILE__,
+                  __LINE__,
                   "Cannot allocate aligned memory with alignment of zero!\n(called from file %s, "
                   "line %d)",
-                  file, line);
+                  file,
+                  line);
     }
 
     size_t alignmentSize = gmx::AlignedAllocationPolicy::alignment();
     if (alignment > alignmentSize)
     {
-        gmx_fatal(errno, __FILE__, __LINE__,
+        gmx_fatal(errno,
+                  __FILE__,
+                  __LINE__,
                   "Cannot allocate aligned memory with alignment > %zu bytes\n(called from file "
                   "%s, line %d)",
-                  alignmentSize, file, line);
+                  alignmentSize,
+                  file,
+                  line);
     }
 
 
@@ -216,7 +255,11 @@ void* save_malloc_aligned(const char* name, const char* file, int line, size_t n
         {
             int rank = gmx_node_rank();
             printf("Allocating %.1f MB for %s (called from file %s, line %d on %d)\n",
-                   nelem * elsize / 1048576.0, name, file, line, rank);
+                   nelem * elsize / 1048576.0,
+                   name,
+                   file,
+                   line,
+                   rank);
         }
 #endif
 
@@ -224,10 +267,16 @@ void* save_malloc_aligned(const char* name, const char* file, int line, size_t n
 
         if (p == nullptr)
         {
-            gmx_fatal(errno, __FILE__, __LINE__,
+            gmx_fatal(errno,
+                      __FILE__,
+                      __LINE__,
                       "Not enough memory. Failed to allocate %zu aligned elements of size %zu for "
                       "%s\n(called from file %s, line %d)",
-                      nelem, elsize, name, file, line);
+                      nelem,
+                      elsize,
+                      name,
+                      file,
+                      line);
         }
     }
     return p;

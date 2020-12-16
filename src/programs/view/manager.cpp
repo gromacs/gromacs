@@ -186,8 +186,8 @@ static void do_label(t_x11* x11, t_manager* man, int x, int y, bool bSet)
             return;
         }
         XSetForeground(x11->disp, x11->gc, col);
-        XDrawString(x11->disp, man->molw->wd.self, x11->gc, x + 2, y - 2, man->szLab[ai],
-                    std::strlen(man->szLab[ai]));
+        XDrawString(
+                x11->disp, man->molw->wd.self, x11->gc, x + 2, y - 2, man->szLab[ai], std::strlen(man->szLab[ai]));
         XSetForeground(x11->disp, x11->gc, x11->fg);
     }
 }
@@ -236,7 +236,10 @@ void set_file(t_x11* x11, t_manager* man, const char* trajectory, const char* st
         gmx_fatal(FARGS,
                   "Topology %s (%d atoms) and trajectory %s (%d atoms) "
                   "do not match",
-                  status, man->top.atoms.nr, trajectory, man->natom);
+                  status,
+                  man->top.atoms.nr,
+                  trajectory,
+                  man->natom);
     }
 
     man->title.text =
@@ -634,8 +637,8 @@ t_manager* init_man(t_x11*            x11,
     man->bSort  = true;
     man->oenv   = oenv;
     InitWin(&(man->wd), x, y, width, height, 0, "Manager");
-    man->wd.self = XCreateSimpleWindow(x11->disp, Parent, man->wd.x, man->wd.y, man->wd.width,
-                                       man->wd.height, man->wd.bwidth, fg, bg);
+    man->wd.self = XCreateSimpleWindow(
+            x11->disp, Parent, man->wd.x, man->wd.y, man->wd.width, man->wd.height, man->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, man->wd.self, Parent, ManCallBack, man);
     x11->SetInputMask(x11, man->wd.self, StructureNotifyMask | ExposureMask | ButtonPressMask);
 
@@ -645,9 +648,15 @@ t_manager* init_man(t_x11*            x11,
 
     /* Title Window */
     InitWin(&(man->title), 0, 0, 1, 1, 0, nullptr);
-    man->title.self =
-            XCreateSimpleWindow(x11->disp, man->molw->wd.self, man->title.x, man->title.y,
-                                man->title.width, man->title.height, man->title.bwidth, WHITE, BLUE);
+    man->title.self = XCreateSimpleWindow(x11->disp,
+                                          man->molw->wd.self,
+                                          man->title.x,
+                                          man->title.y,
+                                          man->title.width,
+                                          man->title.height,
+                                          man->title.bwidth,
+                                          WHITE,
+                                          BLUE);
     x11->RegisterCallback(x11, man->title.self, man->molw->wd.self, TitleCallBack, &(man->title));
     x11->SetInputMask(x11, man->title.self, ExposureMask | StructureNotifyMask);
 

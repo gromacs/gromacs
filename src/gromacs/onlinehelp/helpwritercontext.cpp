@@ -445,8 +445,7 @@ std::string HelpWriterContext::Impl::replaceLinks(const std::string& input) cons
     if (state_->links_ != nullptr)
     {
         HelpLinks::Impl::LinkList::const_iterator link;
-        for (link = state_->links_->impl_->links_.begin();
-             link != state_->links_->impl_->links_.end(); ++link)
+        for (link = state_->links_->impl_->links_.begin(); link != state_->links_->impl_->links_.end(); ++link)
         {
             result = replaceAllWords(result, link->linkName, link->replacement);
         }

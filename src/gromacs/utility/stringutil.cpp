@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -328,8 +328,9 @@ bool equalCaseInsensitive(const std::string& source, const std::string& target, 
         }
         comparisonEnd = source.begin() + maxLengthOfComparison;
     }
-    return std::equal(source.begin(), comparisonEnd, target.begin(),
-                      [](const char& s, const char& t) { return std::tolower(s) == std::tolower(t); });
+    return std::equal(source.begin(), comparisonEnd, target.begin(), [](const char& s, const char& t) {
+        return std::tolower(s) == std::tolower(t);
+    });
 }
 
 /********************************************************************

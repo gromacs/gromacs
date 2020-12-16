@@ -178,8 +178,8 @@ int gmx_stats_add_points(gmx_stats_t gstats, int n, real* x, real* y, real* dx, 
     for (int i = 0; (i < n); i++)
     {
         int ok;
-        if ((ok = gmx_stats_add_point(gstats, x[i], y[i], (nullptr != dx) ? dx[i] : 0,
-                                      (nullptr != dy) ? dy[i] : 0))
+        if ((ok = gmx_stats_add_point(
+                     gstats, x[i], y[i], (nullptr != dx) ? dx[i] : 0, (nullptr != dy) ? dy[i] : 0))
             != estatsOK)
         {
             return ok;
@@ -514,8 +514,12 @@ int gmx_stats_remove_outliers(gmx_stats_t gstats, double level)
             r = std::abs(stats->x[i] - stats->y[i]);
             if (r > level * rmsd)
             {
-                fprintf(stderr, "Removing outlier, iter = %d, rmsd = %g, x = %g, y = %g\n", iter,
-                        rmsd, stats->x[i], stats->y[i]);
+                fprintf(stderr,
+                        "Removing outlier, iter = %d, rmsd = %g, x = %g, y = %g\n",
+                        iter,
+                        rmsd,
+                        stats->x[i],
+                        stats->y[i]);
                 if (i < stats->np - 1)
                 {
                     stats->x[i]  = stats->x[stats->np - 1];

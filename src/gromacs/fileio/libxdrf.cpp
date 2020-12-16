@@ -244,7 +244,8 @@ static void sendints(int          buf[],
             fprintf(stderr,
                     "major breakdown in sendints num %u doesn't "
                     "match size %u\n",
-                    nums[i], sizes[i]);
+                    nums[i],
+                    sizes[i]);
             exit(1);
         }
         /* use one step multiply */
@@ -450,7 +451,9 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
          */
         if (*size <= 9)
         {
-            return (xdr_vector(xdrs, reinterpret_cast<char*>(fp), static_cast<unsigned int>(size3),
+            return (xdr_vector(xdrs,
+                               reinterpret_cast<char*>(fp),
+                               static_cast<unsigned int>(size3),
                                static_cast<unsigned int>(sizeof(*fp)),
                                reinterpret_cast<xdrproc_t>(xdr_float)));
         }
@@ -790,14 +793,17 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
             fprintf(stderr,
                     "wrong number of coordinates in xdr3dfcoord; "
                     "%d arg vs %d in file",
-                    *size, lsize);
+                    *size,
+                    lsize);
         }
         *size = lsize;
         size3 = *size * 3;
         if (*size <= 9)
         {
             *precision = -1;
-            return (xdr_vector(xdrs, reinterpret_cast<char*>(fp), static_cast<unsigned int>(size3),
+            return (xdr_vector(xdrs,
+                               reinterpret_cast<char*>(fp),
+                               static_cast<unsigned int>(size3),
                                static_cast<unsigned int>(sizeof(*fp)),
                                reinterpret_cast<xdrproc_t>(xdr_float)));
         }

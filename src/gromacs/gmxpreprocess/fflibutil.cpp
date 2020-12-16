@@ -108,7 +108,8 @@ std::vector<std::string> fflib_search_file_end(const char* ffdir, const char* fi
             std::string message = gmx::formatString(
                     "Could not find any files ending on '%s' "
                     "in the force field directory '%s'",
-                    file_end, ffdir);
+                    file_end,
+                    ffdir);
             GMX_THROW(gmx::InvalidInputError(message));
         }
         for (std::string& filename : result)
@@ -145,7 +146,8 @@ std::vector<gmx::DataFileInfo> fflib_enumerate_forcefields()
         std::string message = gmx::formatString(
                 "No force fields found (files with name '%s' "
                 "in subdirectories ending on '%s')",
-                filename, dirend);
+                filename,
+                dirend);
         GMX_THROW(gmx::InvalidInputError(message));
     }
 

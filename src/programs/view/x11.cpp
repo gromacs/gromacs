@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -419,8 +419,10 @@ t_x11* GetX11(int* argc, char* argv[])
         else
         {
             /* We have real color! */
-            std::fprintf(x11->console, "%s screen with depth %d.\n",
-                         (i == NCLASS) ? "Unknown" : v_name[i], x11->depth);
+            std::fprintf(x11->console,
+                         "%s screen with depth %d.\n",
+                         (i == NCLASS) ? "Unknown" : v_name[i],
+                         x11->depth);
             GetNamedColor(x11, "midnight blue", &BLUE);
             GetNamedColor(x11, "DarkGreen", &GREEN);
             GetNamedColor(x11, "SeaGreen", &CYAN);

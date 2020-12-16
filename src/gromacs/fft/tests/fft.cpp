@@ -311,8 +311,8 @@ TEST_F(FFFTest3D, Real5_6_9)
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_COMPLEX_TO_REAL, 0, nullptr);
     for (int i = 0; i < ndata[0] * ndata[1]; i++) // check sequence but skip unused data
     {
-        checker_.checkSequenceArray(ndata[2], rdata + i * rsize[2],
-                                    gmx::formatString("backward %d", i).c_str());
+        checker_.checkSequenceArray(
+                ndata[2], rdata + i * rsize[2], gmx::formatString("backward %d", i).c_str());
     }
 }
 

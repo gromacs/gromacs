@@ -121,8 +121,8 @@ TEST(NBlibTest, CanIntegrateSystem)
     {
         gmx::ArrayRef<Vec3> forces(simState.forces());
         forceCalculator.compute(simState.coordinates(), simState.forces());
-        EXPECT_NO_THROW(integrator.integrate(1.0, simState.coordinates(), simState.velocities(),
-                                             simState.forces()));
+        EXPECT_NO_THROW(integrator.integrate(
+                1.0, simState.coordinates(), simState.velocities(), simState.forces()));
     }
 }
 

@@ -272,8 +272,7 @@ void increaseNstlist(FILE*               fp,
     rlist_max = (rlistWithReferenceNstlist + rlist_inc) * std::cbrt(listfac_max) - rlist_inc;
     if (debug)
     {
-        fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n", rlist_inc,
-                rlist_ok, rlist_max);
+        fprintf(debug, "nstlist tuning: rlist_inc %.3f rlist_ok %.3f rlist_max %.3f\n", rlist_inc, rlist_ok, rlist_max);
     }
 
     nstlist_prev = nstlist_orig;
@@ -286,8 +285,8 @@ void increaseNstlist(FILE*               fp,
         }
 
         /* Set the pair-list buffer size in ir */
-        rlist_new = calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist, ir->nstlist - mtsFactor,
-                                         -1, listSetup);
+        rlist_new = calcVerletBufferSize(
+                *mtop, det(box), *ir, ir->nstlist, ir->nstlist - mtsFactor, -1, listSetup);
 
         /* Does rlist fit in the box? */
         bBox = (gmx::square(rlist_new) < max_cutoff2(ir->pbcType, box));
@@ -311,8 +310,12 @@ void increaseNstlist(FILE*               fp,
 
         if (debug)
         {
-            fprintf(debug, "nstlist %d rlist %.3f bBox %s bDD %s\n", ir->nstlist, rlist_new,
-                    gmx::boolToString(bBox), gmx::boolToString(bDD));
+            fprintf(debug,
+                    "nstlist %d rlist %.3f bBox %s bDD %s\n",
+                    ir->nstlist,
+                    rlist_new,
+                    gmx::boolToString(bBox),
+                    gmx::boolToString(bDD));
         }
 
         bCont = FALSE;
@@ -350,8 +353,12 @@ void increaseNstlist(FILE*               fp,
     }
     else if (ir->nstlist != nstlist_orig || rlist_new != ir->rlist)
     {
-        sprintf(buf, "Changing nstlist from %d to %d, rlist from %g to %g", nstlist_orig,
-                ir->nstlist, ir->rlist, rlist_new);
+        sprintf(buf,
+                "Changing nstlist from %d to %d, rlist from %g to %g",
+                nstlist_orig,
+                ir->nstlist,
+                ir->rlist,
+                rlist_new);
         if (MASTER(cr))
         {
             fprintf(stderr, "%s\n\n", buf);
@@ -431,8 +438,8 @@ static void setDynamicPairlistPruningParameters(const t_inputrec*          ir,
          */
         int listLifetime         = tunedNstlistPrune - (useGpuList ? 0 : mtsFactor);
         listParams->nstlistPrune = tunedNstlistPrune;
-        listParams->rlistInner   = calcVerletBufferSize(*mtop, det(box), *ir, tunedNstlistPrune,
-                                                      listLifetime, -1, listSetup);
+        listParams->rlistInner   = calcVerletBufferSize(
+                *mtop, det(box), *ir, tunedNstlistPrune, listLifetime, -1, listSetup);
 
         /* On the GPU we apply the dynamic pruning in a rolling fashion
          * every c_nbnxnGpuRollingListPruningInterval steps,
@@ -497,8 +504,8 @@ static std::string formatListSetup(const std::string& listName,
     std::string nstListFormat =
             "%" + gmx::formatString("%zu", gmx::formatString("%d", nstListForSpacing).size()) + "d";
     listSetup += gmx::formatString(nstListFormat.c_str(), nstList);
-    listSetup += gmx::formatString(" steps, buffer %.3f nm, rlist %.3f nm\n",
-                                   rList - interactionCutoff, rList);
+    listSetup += gmx::formatString(
+            " steps, buffer %.3f nm, rlist %.3f nm\n", rList - interactionCutoff, rList);
 
     return listSetup;
 }
@@ -554,8 +561,8 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
             listParams->nstlistPrune = c_nbnxnDynamicListPruningMinLifetime;
         }
 
-        setDynamicPairlistPruningParameters(ir, mtop, box, useGpuList, ls, userSetNstlistPrune, ic,
-                                            listParams);
+        setDynamicPairlistPruningParameters(
+                ir, mtop, box, useGpuList, ls, userSetNstlistPrune, ic, listParams);
 
         if (listParams->useDynamicPruning && useGpuList)
         {
@@ -563,10 +570,11 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
              * rolling pruning interval slightly shorter than nstlistTune,
              * thus giving correct results, but a slightly lower efficiency.
              */
-            GMX_RELEASE_ASSERT(listParams->nstlistPrune >= c_nbnxnGpuRollingListPruningInterval, ("With dynamic list pruning on GPUs pruning frequency must be at least as large as the rolling pruning interval ("
-                                                                                                  + std::to_string(c_nbnxnGpuRollingListPruningInterval)
-                                                                                                  + ").")
-                                                                                                         .c_str());
+            GMX_RELEASE_ASSERT(listParams->nstlistPrune >= c_nbnxnGpuRollingListPruningInterval,
+                               ("With dynamic list pruning on GPUs pruning frequency must be at "
+                                "least as large as the rolling pruning interval ("
+                                + std::to_string(c_nbnxnGpuRollingListPruningInterval) + ").")
+                                       .c_str());
             listParams->numRollingPruningParts =
                     listParams->nstlistPrune / c_nbnxnGpuRollingListPruningInterval;
         }
@@ -582,11 +590,13 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     if (listParams->useDynamicPruning)
     {
         mesg += gmx::formatString(
-                "Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n", ls.cluster_size_i,
-                ls.cluster_size_j, listParams->numRollingPruningParts > 1 ? ", rolling" : "");
+                "Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n",
+                ls.cluster_size_i,
+                ls.cluster_size_j,
+                listParams->numRollingPruningParts > 1 ? ", rolling" : "");
         mesg += formatListSetup("outer", ir->nstlist, ir->nstlist, listParams->rlistOuter, interactionCutoff);
-        mesg += formatListSetup("inner", listParams->nstlistPrune, ir->nstlist,
-                                listParams->rlistInner, interactionCutoff);
+        mesg += formatListSetup(
+                "inner", listParams->nstlistPrune, ir->nstlist, listParams->rlistInner, interactionCutoff);
     }
     else
     {
@@ -596,14 +606,14 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     if (supportsDynamicPairlistGenerationInterval(*ir))
     {
         const VerletbufListSetup listSetup1x1 = { 1, 1 };
-        const real rlistOuter = calcVerletBufferSize(*mtop, det(box), *ir, ir->nstlist,
-                                                     ir->nstlist - 1, -1, listSetup1x1);
-        real       rlistInner = rlistOuter;
+        const real               rlistOuter   = calcVerletBufferSize(
+                *mtop, det(box), *ir, ir->nstlist, ir->nstlist - 1, -1, listSetup1x1);
+        real rlistInner = rlistOuter;
         if (listParams->useDynamicPruning)
         {
             int listLifeTime = listParams->nstlistPrune - (useGpuList ? 0 : 1);
-            rlistInner       = calcVerletBufferSize(*mtop, det(box), *ir, listParams->nstlistPrune,
-                                              listLifeTime, -1, listSetup1x1);
+            rlistInner       = calcVerletBufferSize(
+                    *mtop, det(box), *ir, listParams->nstlistPrune, listLifeTime, -1, listSetup1x1);
         }
 
         mesg += gmx::formatString(
@@ -612,8 +622,8 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
         if (listParams->useDynamicPruning)
         {
             mesg += formatListSetup("outer", ir->nstlist, ir->nstlist, rlistOuter, interactionCutoff);
-            mesg += formatListSetup("inner", listParams->nstlistPrune, ir->nstlist, rlistInner,
-                                    interactionCutoff);
+            mesg += formatListSetup(
+                    "inner", listParams->nstlistPrune, ir->nstlist, rlistInner, interactionCutoff);
         }
         else
         {

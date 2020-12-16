@@ -287,7 +287,8 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_f
                 int&          atomInfo = cginfo[molculeOffsetInBlock + a];
 
                 /* Store the energy group in cginfo */
-                int gid = getGroupType(mtop->groups, SimulationAtomGroupType::EnergyOutput,
+                int gid = getGroupType(mtop->groups,
+                                       SimulationAtomGroupType::EnergyOutput,
                                        a_offset + molculeOffsetInBlock + a);
                 SET_CGINFO_GID(atomInfo, gid);
 
@@ -597,8 +598,10 @@ static std::vector<bondedtable_t> make_bonded_tables(FILE*                      
                               "Tabulated interaction of type '%s%s%s' with index %d cannot be used "
                               "because no table file whose name matched '%s' was passed via the "
                               "gmx mdrun -tableb command-line option.",
-                              interaction_function[ftype1].longname, isPlural ? "' or '" : "",
-                              isPlural ? interaction_function[ftype2].longname : "", i,
+                              interaction_function[ftype1].longname,
+                              isPlural ? "' or '" : "",
+                              isPlural ? interaction_function[ftype2].longname : "",
+                              i,
                               patternToFind.c_str());
                 }
             }
@@ -659,7 +662,8 @@ static void initCoulombEwaldParameters(FILE*                fp,
         {
             if (fp)
             {
-                fprintf(fp, "Using the Ewald3DC correction for systems with a slab geometry%s.\n",
+                fprintf(fp,
+                        "Using the Ewald3DC correction for systems with a slab geometry%s.\n",
                         systemHasNetCharge ? " and net charge" : "");
             }
             please_cite(fp, "In-Chul99a");
@@ -767,12 +771,14 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real
 {
     if (EEL_PME_EWALD(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
-        init_ewald_f_table(*ic, tableExtensionLength, ic->coulombEwaldTables.get(),
-                           ic->vdwEwaldTables.get());
+        init_ewald_f_table(
+                *ic, tableExtensionLength, ic->coulombEwaldTables.get(), ic->vdwEwaldTables.get());
         if (fp != nullptr)
         {
-            fprintf(fp, "Initialized non-bonded Ewald tables, spacing: %.2e size: %zu\n\n",
-                    1 / ic->coulombEwaldTables->scale, ic->coulombEwaldTables->tableF.size());
+            fprintf(fp,
+                    "Initialized non-bonded Ewald tables, spacing: %.2e size: %zu\n\n",
+                    1 / ic->coulombEwaldTables->scale,
+                    ic->coulombEwaldTables->tableF.size());
         }
     }
 }
@@ -1207,8 +1213,11 @@ void init_forcerec(FILE*                            fp,
         }
         if (fp)
         {
-            fprintf(fp, "Using %s Lennard-Jones, switch between %g and %g nm\n",
-                    (ic->eeltype == eelSWITCH) ? "switched" : "shifted", ic->rvdw_switch, ic->rvdw);
+            fprintf(fp,
+                    "Using %s Lennard-Jones, switch between %g and %g nm\n",
+                    (ic->eeltype == eelSWITCH) ? "switched" : "shifted",
+                    ic->rvdw_switch,
+                    ic->rvdw);
         }
     }
 
@@ -1307,17 +1316,21 @@ void init_forcerec(FILE*                            fp,
                 interactionSelection.set(static_cast<int>(ListedForces::InteractionGroup::Rest));
                 isFirstLevel = false;
             }
-            fr->listedForces.emplace_back(
-                    mtop->ffparams, mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
-                    gmx_omp_nthreads_get(emntBonded), interactionSelection, fp);
+            fr->listedForces.emplace_back(mtop->ffparams,
+                                          mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
+                                          gmx_omp_nthreads_get(emntBonded),
+                                          interactionSelection,
+                                          fp);
         }
     }
     else
     {
         // Add one ListedForces object with all listed interactions
-        fr->listedForces.emplace_back(
-                mtop->ffparams, mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
-                gmx_omp_nthreads_get(emntBonded), ListedForces::interactionSelectionAll(), fp);
+        fr->listedForces.emplace_back(mtop->ffparams,
+                                      mtop->groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
+                                      gmx_omp_nthreads_get(emntBonded),
+                                      ListedForces::interactionSelectionAll(),
+                                      fp);
     }
 
     // QM/MM initialization if requested

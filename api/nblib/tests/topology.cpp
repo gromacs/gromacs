@@ -182,12 +182,10 @@ TEST(NBlibTest, TopologyHasSequencing)
     WaterTopologyBuilder waters;
     Topology             watersTopology = waters.buildTopology(2);
 
-    EXPECT_EQ(0, watersTopology.sequenceID(MoleculeName("SOL"), 0, ResidueName("SOL"),
-                                           ParticleName("Oxygen")));
+    EXPECT_EQ(0, watersTopology.sequenceID(MoleculeName("SOL"), 0, ResidueName("SOL"), ParticleName("Oxygen")));
     EXPECT_EQ(1, watersTopology.sequenceID(MoleculeName("SOL"), 0, ResidueName("SOL"), ParticleName("H1")));
     EXPECT_EQ(2, watersTopology.sequenceID(MoleculeName("SOL"), 0, ResidueName("SOL"), ParticleName("H2")));
-    EXPECT_EQ(3, watersTopology.sequenceID(MoleculeName("SOL"), 1, ResidueName("SOL"),
-                                           ParticleName("Oxygen")));
+    EXPECT_EQ(3, watersTopology.sequenceID(MoleculeName("SOL"), 1, ResidueName("SOL"), ParticleName("Oxygen")));
     EXPECT_EQ(4, watersTopology.sequenceID(MoleculeName("SOL"), 1, ResidueName("SOL"), ParticleName("H1")));
     EXPECT_EQ(5, watersTopology.sequenceID(MoleculeName("SOL"), 1, ResidueName("SOL"), ParticleName("H2")));
 }
@@ -205,7 +203,9 @@ TEST(NBlibTest, TopologyCanAggregateBonds)
 
     std::vector<HarmonicBondType> bondsTest;
     // use the expansionArray (bondsExpansion) to expand to the full list if bonds
-    std::transform(begin(bondsExpansion), end(bondsExpansion), std::back_inserter(bondsTest),
+    std::transform(begin(bondsExpansion),
+                   end(bondsExpansion),
+                   std::back_inserter(bondsTest),
                    [&bonds](size_t i) { return bonds[i]; });
 
     std::vector<HarmonicBondType> waterBonds =
@@ -349,8 +349,8 @@ TEST(NBlibTest, TopologyListedInteractions)
 #undef SORT
     /// \endcond
 
-    EXPECT_TRUE(std::equal(begin(interactions_reference), end(interactions_reference),
-                           begin(interactions_test)));
+    EXPECT_TRUE(std::equal(
+            begin(interactions_reference), end(interactions_reference), begin(interactions_test)));
 }
 
 TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
@@ -401,8 +401,9 @@ TEST(NBlibTest, TopologyListedInteractionsMultipleTypes)
     int MeH1 = topology.sequenceID(MoleculeName("MeOH"), 0, ResidueName("MeOH"), ParticleName("H3"));
 
     std::vector<CubicBondType>                   cubicBondsReference{ testBond };
-    std::vector<InteractionIndex<CubicBondType>> cubicIndicesReference{ { std::min(H1, H2),
-                                                                          std::max(H1, H2), 0 } };
+    std::vector<InteractionIndex<CubicBondType>> cubicIndicesReference{
+        { std::min(H1, H2), std::max(H1, H2), 0 }
+    };
     EXPECT_EQ(cubicBondsReference, cubicBonds.parameters);
     EXPECT_EQ(cubicIndicesReference, cubicBonds.indices);
 

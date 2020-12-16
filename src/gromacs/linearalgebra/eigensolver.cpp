@@ -91,12 +91,50 @@ void eigensolver(real* a, int n, int index_lower, int index_upper, real* eigenva
      */
 #if GMX_DOUBLE
     F77_FUNC(dsyevr, DSYEVR)
-    (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper, &abstol, &m, eigenvalues,
-     eigenvectors, &n, isuppz, &w0, &lwork, &iw0, &liwork, &info);
+    (jobz,
+     "I",
+     "L",
+     &n,
+     a,
+     &n,
+     &vl,
+     &vu,
+     &index_lower,
+     &index_upper,
+     &abstol,
+     &m,
+     eigenvalues,
+     eigenvectors,
+     &n,
+     isuppz,
+     &w0,
+     &lwork,
+     &iw0,
+     &liwork,
+     &info);
 #else
     F77_FUNC(ssyevr, SSYEVR)
-    (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper, &abstol, &m, eigenvalues,
-     eigenvectors, &n, isuppz, &w0, &lwork, &iw0, &liwork, &info);
+    (jobz,
+     "I",
+     "L",
+     &n,
+     a,
+     &n,
+     &vl,
+     &vu,
+     &index_lower,
+     &index_upper,
+     &abstol,
+     &m,
+     eigenvalues,
+     eigenvectors,
+     &n,
+     isuppz,
+     &w0,
+     &lwork,
+     &iw0,
+     &liwork,
+     &info);
 #endif
 
     if (info != 0)
@@ -115,12 +153,50 @@ void eigensolver(real* a, int n, int index_lower, int index_upper, real* eigenva
 
 #if GMX_DOUBLE
     F77_FUNC(dsyevr, DSYEVR)
-    (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper, &abstol, &m, eigenvalues,
-     eigenvectors, &n, isuppz, work, &lwork, iwork, &liwork, &info);
+    (jobz,
+     "I",
+     "L",
+     &n,
+     a,
+     &n,
+     &vl,
+     &vu,
+     &index_lower,
+     &index_upper,
+     &abstol,
+     &m,
+     eigenvalues,
+     eigenvectors,
+     &n,
+     isuppz,
+     work,
+     &lwork,
+     iwork,
+     &liwork,
+     &info);
 #else
     F77_FUNC(ssyevr, SSYEVR)
-    (jobz, "I", "L", &n, a, &n, &vl, &vu, &index_lower, &index_upper, &abstol, &m, eigenvalues,
-     eigenvectors, &n, isuppz, work, &lwork, iwork, &liwork, &info);
+    (jobz,
+     "I",
+     "L",
+     &n,
+     a,
+     &n,
+     &vl,
+     &vu,
+     &index_lower,
+     &index_upper,
+     &abstol,
+     &m,
+     eigenvalues,
+     eigenvectors,
+     &n,
+     isuppz,
+     work,
+     &lwork,
+     iwork,
+     &liwork,
+     &info);
 #endif
 
     sfree(isuppz);
@@ -198,12 +274,10 @@ void sparse_parallel_eigensolver(gmx_sparsematrix_t* A, int neig, real* eigenval
     {
 #    if GMX_DOUBLE
         F77_FUNC(pdsaupd, PDSAUPD)
-        (&ido, "I", &n, "SA", &neig, &abstol, resid, &ncv, v, &n, iparam, ipntr, workd, iwork,
-         workl, &lworkl, &info);
+        (&ido, "I", &n, "SA", &neig, &abstol, resid, &ncv, v, &n, iparam, ipntr, workd, iwork, workl, &lworkl, &info);
 #    else
         F77_FUNC(pssaupd, PSSAUPD)
-        (&ido, "I", &n, "SA", &neig, &abstol, resid, &ncv, v, &n, iparam, ipntr, workd, iwork,
-         workl, &lworkl, &info);
+        (&ido, "I", &n, "SA", &neig, &abstol, resid, &ncv, v, &n, iparam, ipntr, workd, iwork, workl, &lworkl, &info);
 #    endif
         if (ido == -1 || ido == 1)
         {
@@ -220,7 +294,9 @@ void sparse_parallel_eigensolver(gmx_sparsematrix_t* A, int neig, real* eigenval
         gmx_fatal(FARGS,
                   "Maximum number of iterations (%d) reached in Arnoldi\n"
                   "diagonalization, but only %d of %d eigenvectors converged.\n",
-                  maxiter, iparam[4], neig);
+                  maxiter,
+                  iparam[4],
+                  neig);
     }
     else if (info != 0)
     {
@@ -233,12 +309,52 @@ void sparse_parallel_eigensolver(gmx_sparsematrix_t* A, int neig, real* eigenval
 
 #    if GMX_DOUBLE
     F77_FUNC(pdseupd, PDSEUPD)
-    (&dovec, "A", select, eigenvalues, eigenvectors, &n, NULL, "I", &n, "SA", &neig, &abstol, resid,
-     &ncv, v, &n, iparam, ipntr, workd, workl, &lworkl, &info);
+    (&dovec,
+     "A",
+     select,
+     eigenvalues,
+     eigenvectors,
+     &n,
+     NULL,
+     "I",
+     &n,
+     "SA",
+     &neig,
+     &abstol,
+     resid,
+     &ncv,
+     v,
+     &n,
+     iparam,
+     ipntr,
+     workd,
+     workl,
+     &lworkl,
+     &info);
 #    else
     F77_FUNC(psseupd, PSSEUPD)
-    (&dovec, "A", select, eigenvalues, eigenvectors, &n, NULL, "I", &n, "SA", &neig, &abstol, resid,
-     &ncv, v, &n, iparam, ipntr, workd, workl, &lworkl, &info);
+    (&dovec,
+     "A",
+     select,
+     eigenvalues,
+     eigenvectors,
+     &n,
+     NULL,
+     "I",
+     &n,
+     "SA",
+     &neig,
+     &abstol,
+     resid,
+     &ncv,
+     v,
+     &n,
+     iparam,
+     ipntr,
+     workd,
+     workl,
+     &lworkl,
+     &info);
 #    endif
 
     sfree(v);
@@ -318,12 +434,10 @@ void sparse_eigensolver(gmx_sparsematrix_t* A, int neig, real* eigenvalues, real
     {
 #if GMX_DOUBLE
         F77_FUNC(dsaupd, DSAUPD)
-        (&ido, "I", &n, "SA", &neig, &abstol, resid, &ncv, v, &n, iparam, ipntr, workd, iwork,
-         workl, &lworkl, &info);
+        (&ido, "I", &n, "SA", &neig, &abstol, resid, &ncv, v, &n, iparam, ipntr, workd, iwork, workl, &lworkl, &info);
 #else
         F77_FUNC(ssaupd, SSAUPD)
-        (&ido, "I", &n, "SA", &neig, &abstol, resid, &ncv, v, &n, iparam, ipntr, workd, iwork,
-         workl, &lworkl, &info);
+        (&ido, "I", &n, "SA", &neig, &abstol, resid, &ncv, v, &n, iparam, ipntr, workd, iwork, workl, &lworkl, &info);
 #endif
         if (ido == -1 || ido == 1)
         {
@@ -340,7 +454,9 @@ void sparse_eigensolver(gmx_sparsematrix_t* A, int neig, real* eigenvalues, real
         gmx_fatal(FARGS,
                   "Maximum number of iterations (%d) reached in Arnoldi\n"
                   "diagonalization, but only %d of %d eigenvectors converged.\n",
-                  maxiter, iparam[4], neig);
+                  maxiter,
+                  iparam[4],
+                  neig);
     }
     else if (info != 0)
     {
@@ -353,12 +469,52 @@ void sparse_eigensolver(gmx_sparsematrix_t* A, int neig, real* eigenvalues, real
 
 #if GMX_DOUBLE
     F77_FUNC(dseupd, DSEUPD)
-    (&dovec, "A", select, eigenvalues, eigenvectors, &n, nullptr, "I", &n, "SA", &neig, &abstol,
-     resid, &ncv, v, &n, iparam, ipntr, workd, workl, &lworkl, &info);
+    (&dovec,
+     "A",
+     select,
+     eigenvalues,
+     eigenvectors,
+     &n,
+     nullptr,
+     "I",
+     &n,
+     "SA",
+     &neig,
+     &abstol,
+     resid,
+     &ncv,
+     v,
+     &n,
+     iparam,
+     ipntr,
+     workd,
+     workl,
+     &lworkl,
+     &info);
 #else
     F77_FUNC(sseupd, SSEUPD)
-    (&dovec, "A", select, eigenvalues, eigenvectors, &n, nullptr, "I", &n, "SA", &neig, &abstol,
-     resid, &ncv, v, &n, iparam, ipntr, workd, workl, &lworkl, &info);
+    (&dovec,
+     "A",
+     select,
+     eigenvalues,
+     eigenvectors,
+     &n,
+     nullptr,
+     "I",
+     &n,
+     "SA",
+     &neig,
+     &abstol,
+     resid,
+     &ncv,
+     v,
+     &n,
+     iparam,
+     ipntr,
+     workd,
+     workl,
+     &lworkl,
+     &info);
 #endif
 
     sfree(v);

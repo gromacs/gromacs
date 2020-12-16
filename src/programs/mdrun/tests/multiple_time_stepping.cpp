@@ -87,8 +87,8 @@ TEST_P(MtsComparisonTest, WithinTolerances)
     auto mtsScheme      = std::get<1>(params);
 
     // Note that there should be no relevant limitation on MPI ranks and OpenMP threads
-    SCOPED_TRACE(formatString("Comparing for '%s' no MTS with MTS scheme '%s'",
-                              simulationName.c_str(), mtsScheme.c_str()));
+    SCOPED_TRACE(formatString(
+            "Comparing for '%s' no MTS with MTS scheme '%s'", simulationName.c_str(), mtsScheme.c_str()));
 
     const bool isPullTest = (mtsScheme.find("pull") != std::string::npos);
 
@@ -104,7 +104,8 @@ TEST_P(MtsComparisonTest, WithinTolerances)
             "rcoulomb     = 0.9\n"
             "rvdw         = 0.9\n"
             "constraints  = h-bonds\n",
-            numSteps, isPullTest ? "reaction-field" : "PME");
+            numSteps,
+            isPullTest ? "reaction-field" : "PME");
 
     if (isPullTest)
     {
@@ -131,7 +132,9 @@ TEST_P(MtsComparisonTest, WithinTolerances)
                                    "nstxout   = 0\n"
                                    "nstvout   = 0\n"
                                    "nstfout   = %d\n",
-                                   numSteps, numSteps, nstfout);
+                                   numSteps,
+                                   numSteps,
+                                   nstfout);
 
     auto mtsMdpOptions = sharedMdpOptions
                          + gmx::formatString(
@@ -144,7 +147,10 @@ TEST_P(MtsComparisonTest, WithinTolerances)
                                    "nstxout    = 0\n"
                                    "nstvout    = 0\n"
                                    "nstfout    = %d\n",
-                                   mtsScheme.c_str(), numSteps, numSteps, nstfout);
+                                   mtsScheme.c_str(),
+                                   numSteps,
+                                   numSteps,
+                                   nstfout);
 
     // At step 0 the energy and virial should only differ due to rounding errors
     EnergyTermsToCompare energyTermsToCompareStep0 = energyTermsToCompare(0.001, 0.01);
@@ -190,12 +196,14 @@ TEST_P(MtsComparisonTest, WithinTolerances)
     runMdrun(&runner_);
 
     // Compare simulation results at step 0, which should be indentical
-    compareEnergies(simulator1EdrFileName, simulator2EdrFileName, energyTermsToCompareStep0,
-                    MaxNumFrames(1));
+    compareEnergies(
+            simulator1EdrFileName, simulator2EdrFileName, energyTermsToCompareStep0, MaxNumFrames(1));
     compareTrajectories(simulator1TrajectoryFileName, simulator2TrajectoryFileName, trajectoryComparison);
 
     // Compare energies at the last step (and step 0 again) with lower tolerance
-    compareEnergies(simulator1EdrFileName, simulator2EdrFileName, energyTermsToCompareAllSteps,
+    compareEnergies(simulator1EdrFileName,
+                    simulator2EdrFileName,
+                    energyTermsToCompareAllSteps,
                     MaxNumFrames::compareAllFrames());
 }
 

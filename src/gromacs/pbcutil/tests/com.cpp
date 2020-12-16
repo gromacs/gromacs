@@ -165,8 +165,8 @@ void COMInPlaceTest::runTestMolecule(const matrix box)
     auto unitcell = std::get<0>(params);
     auto center   = std::get<1>(params);
     auto pbcType  = std::get<2>(params);
-    placeCoordinatesWithCOMInBox(pbcType, unitcell, center, box, testCoordinates_, testTopology_,
-                                 COMShiftType::Molecule);
+    placeCoordinatesWithCOMInBox(
+            pbcType, unitcell, center, box, testCoordinates_, testTopology_, COMShiftType::Molecule);
     std::string testString = "Molecule " + std::string(unitCellTypeNames(unitcell))
                              + std::string(centerTypeNames(center)) + c_pbcTypeNames[pbcType]
                              + c_pbcTypeNames[guessPbcType(box)];
@@ -179,8 +179,8 @@ void COMInPlaceTest::runTestResidue(const matrix box)
     auto unitcell = std::get<0>(params);
     auto center   = std::get<1>(params);
     auto pbcType  = std::get<2>(params);
-    placeCoordinatesWithCOMInBox(pbcType, unitcell, center, box, testCoordinates_, testTopology_,
-                                 COMShiftType::Residue);
+    placeCoordinatesWithCOMInBox(
+            pbcType, unitcell, center, box, testCoordinates_, testTopology_, COMShiftType::Residue);
     std::string testString = "Residue " + std::string(unitCellTypeNames(unitcell))
                              + std::string(centerTypeNames(center)) + c_pbcTypeNames[pbcType]
                              + c_pbcTypeNames[guessPbcType(box)];

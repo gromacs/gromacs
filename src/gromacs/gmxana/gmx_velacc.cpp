@@ -143,8 +143,11 @@ static void calc_spectrum(int n, const real c[], real dt, const char* fn, gmx_ou
     {
         gmx_fatal(FARGS, "Invalid fft return status %d", status);
     }
-    fp = xvgropen(fn, "Vibrational Power Spectrum",
-                  bRecip ? "\\f{12}w\\f{4} (cm\\S-1\\N)" : "\\f{12}n\\f{4} (ps\\S-1\\N)", "a.u.", oenv);
+    fp = xvgropen(fn,
+                  "Vibrational Power Spectrum",
+                  bRecip ? "\\f{12}w\\f{4} (cm\\S-1\\N)" : "\\f{12}n\\f{4} (ps\\S-1\\N)",
+                  "a.u.",
+                  oenv);
     /* This is difficult.
      * The length of the ACF is dt (as passed to this routine).
      * We pass the vacf with N time steps from 0 to dt.
@@ -229,8 +232,8 @@ int gmx_velacc(int argc, char* argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -340,9 +343,15 @@ int gmx_velacc(int argc, char* argv[])
     {
         /* Compute time step between frames */
         dt = (t1 - t0) / (counter - 1);
-        do_autocorr(opt2fn("-o", NFILE, fnm), oenv,
+        do_autocorr(opt2fn("-o", NFILE, fnm),
+                    oenv,
                     bMass ? "Momentum Autocorrelation Function" : "Velocity Autocorrelation Function",
-                    counter, gnx, c1, dt, eacVector, TRUE);
+                    counter,
+                    gnx,
+                    c1,
+                    dt,
+                    eacVector,
+                    TRUE);
 
         do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
 

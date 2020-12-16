@@ -791,8 +791,8 @@ static void construct_vsites(const ThreadingInfo*            threadingInfo,
          */
         ivec null_ivec;
         clear_ivec(null_ivec);
-        pbc_null = set_pbc_dd(&pbc, domainInfo.pbcType_,
-                              useDomdec ? domainInfo.domdec_->numCells : null_ivec, FALSE, box);
+        pbc_null = set_pbc_dd(
+                &pbc, domainInfo.pbcType_, useDomdec ? domainInfo.domdec_->numCells : null_ivec, FALSE, box);
     }
     else
     {
@@ -929,8 +929,8 @@ void constructVirtualSitesGlobal(const gmx_mtop_t& mtop, gmx::ArrayRef<gmx::RVec
             int atomOffset = mtop.moleculeBlockIndices[mb].globalAtomStart;
             for (int mol = 0; mol < molb.nmol; mol++)
             {
-                constructVirtualSites(x.subArray(atomOffset, molt.atoms.nr), mtop.ffparams.iparams,
-                                      molt.ilist);
+                constructVirtualSites(
+                        x.subArray(atomOffset, molt.atoms.nr), mtop.ffparams.iparams, molt.ilist);
                 atomOffset += molt.atoms.nr;
             }
         }
@@ -1885,8 +1885,8 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
          */
-        pbc_null = set_pbc_dd(&pbc, domainInfo_.pbcType_,
-                              useDomdec ? domainInfo_.domdec_->numCells : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(
+                &pbc, domainInfo_.pbcType_, useDomdec ? domainInfo_.domdec_->numCells : nullptr, FALSE, box);
     }
     else
     {
@@ -1920,8 +1920,15 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
     {
         /* First spread the vsites that might depend on non-local vsites */
         auto& nlDependentVSites = threadingInfo_.threadDataNonLocalDependent();
-        spreadForceWrapper(x, f, virialHandling, fshift, nlDependentVSites.dxdf, true, iparams_,
-                           nlDependentVSites.ilist, pbc_null);
+        spreadForceWrapper(x,
+                           f,
+                           virialHandling,
+                           fshift,
+                           nlDependentVSites.dxdf,
+                           true,
+                           iparams_,
+                           nlDependentVSites.ilist,
+                           pbc_null);
 
 #pragma omp parallel num_threads(numThreads)
         {
@@ -1966,8 +1973,15 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
                     {
                         copy_rvec(f[idTask->vsite[i]], idTask->force[idTask->vsite[i]]);
                     }
-                    spreadForceWrapper(x, idTask->force, virialHandling, fshift_t, tData.dxdf, true,
-                                       iparams_, tData.idTask.ilist, pbc_null);
+                    spreadForceWrapper(x,
+                                       idTask->force,
+                                       virialHandling,
+                                       fshift_t,
+                                       tData.dxdf,
+                                       true,
+                                       iparams_,
+                                       tData.idTask.ilist,
+                                       pbc_null);
 
                     /* We need a barrier before reducing forces below
                      * that have been produced by a different thread above.
@@ -2003,8 +2017,8 @@ void VirtualSitesHandler::Impl::spreadForces(ArrayRef<const RVec> x,
                 }
 
                 /* Spread the vsites that spread locally only */
-                spreadForceWrapper(x, f, virialHandling, fshift_t, tData.dxdf, false, iparams_,
-                                   tData.ilist, pbc_null);
+                spreadForceWrapper(
+                        x, f, virialHandling, fshift_t, tData.dxdf, false, iparams_, tData.ilist, pbc_null);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -2503,8 +2517,11 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
 
     if (debug)
     {
-        fprintf(debug, "virtual site thread dist: natoms %d, range %d, natperthread %d\n",
-                mdatoms.nr, vsite_atom_range, natperthread);
+        fprintf(debug,
+                "virtual site thread dist: natoms %d, range %d, natperthread %d\n",
+                mdatoms.nr,
+                vsite_atom_range,
+                natperthread);
     }
 
     /* To simplify the vsite assignment, we make an index which tells us
@@ -2601,8 +2618,8 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
                 /* The last thread should cover up to the end of the range */
                 tData.rangeEnd = mdatoms.nr;
             }
-            assignVsitesToThread(&tData, thread, numThreads_, natperthread, taskIndex_, ilists,
-                                 iparams, mdatoms.ptype);
+            assignVsitesToThread(
+                    &tData, thread, numThreads_, natperthread, taskIndex_, ilists, iparams, mdatoms.ptype);
 
             if (tData.useInterdependentTask)
             {
@@ -2644,7 +2661,8 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
 
     if (debug && numThreads_ > 1)
     {
-        fprintf(debug, "virtual site useInterdependentTask %d, nuse:\n",
+        fprintf(debug,
+                "virtual site useInterdependentTask %d, nuse:\n",
                 static_cast<int>(tData_[0]->useInterdependentTask));
         for (int th = 0; th < numThreads_ + 1; th++)
         {
@@ -2659,7 +2677,9 @@ void ThreadingInfo::setVirtualSites(ArrayRef<const InteractionList> ilists,
                 fprintf(debug, "%-20s thread dist:", interaction_function[ftype].longname);
                 for (int th = 0; th < numThreads_ + 1; th++)
                 {
-                    fprintf(debug, " %4d %4d ", tData_[th]->ilist[ftype].size(),
+                    fprintf(debug,
+                            " %4d %4d ",
+                            tData_[th]->ilist[ftype].size(),
                             tData_[th]->idTask.ilist[ftype].size());
                 }
                 fprintf(debug, "\n");

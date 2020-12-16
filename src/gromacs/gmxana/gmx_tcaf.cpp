@@ -151,8 +151,22 @@ static void process_tcaf(int                     nframes,
         sig[i] = std::exp(0.5 * i * dt / wt);
     }
 
-    low_do_autocorr(fn_tca, oenv, "Transverse Current Autocorrelation Functions", nframes, ntc,
-                    ncorr, tc, dt, eacNormal, 1, FALSE, FALSE, FALSE, 0, 0, 0);
+    low_do_autocorr(fn_tca,
+                    oenv,
+                    "Transverse Current Autocorrelation Functions",
+                    nframes,
+                    ntc,
+                    ncorr,
+                    tc,
+                    dt,
+                    eacNormal,
+                    1,
+                    FALSE,
+                    FALSE,
+                    FALSE,
+                    0,
+                    0,
+                    0);
     do_view(oenv, fn_tca, "-nxy");
 
     fp = xvgropen(fn_tc, "Transverse Current Autocorrelation Functions", "Time (ps)", "TCAF", oenv);
@@ -226,8 +240,7 @@ static void process_tcaf(int                     nframes,
         tcaf[k][0]  = 1.0;
         fitparms[0] = 1;
         fitparms[1] = 1;
-        do_lmfit(ncorr, tcaf[k], sig, dt, nullptr, 0, ncorr * dt, oenv, bDebugMode(), effnVAC,
-                 fitparms, 0, nullptr);
+        do_lmfit(ncorr, tcaf[k], sig, dt, nullptr, 0, ncorr * dt, oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
         eta = 1000 * fitparms[1] * rho / (4 * fitparms[0] * PICO * norm2(kfac[k]) / (NANO * NANO));
         fprintf(stdout, "k %6.3f  tau %6.3f  eta %8.5f 10^-3 kg/(m s)\n", norm(kfac[k]), fitparms[0], eta);
         fprintf(fp_vk, "%6.3f %g\n", norm(kfac[k]), eta);
@@ -249,12 +262,15 @@ static void process_tcaf(int                     nframes,
             tcafc[k][0] = 1.0;
             fitparms[0] = 1;
             fitparms[1] = 1;
-            do_lmfit(ncorr, tcafc[k], sig, dt, nullptr, 0, ncorr * dt, oenv, bDebugMode(), effnVAC,
-                     fitparms, 0, nullptr);
+            do_lmfit(ncorr, tcafc[k], sig, dt, nullptr, 0, ncorr * dt, oenv, bDebugMode(), effnVAC, fitparms, 0, nullptr);
             eta = 1000 * fitparms[1] * rho
                   / (4 * fitparms[0] * PICO * norm2(kfac[kset_c[k]]) / (NANO * NANO));
-            fprintf(stdout, "k %6.3f  tau %6.3f  Omega %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
-                    norm(kfac[kset_c[k]]), fitparms[0], fitparms[1], eta);
+            fprintf(stdout,
+                    "k %6.3f  tau %6.3f  Omega %6.3f  eta %8.5f 10^-3 kg/(m s)\n",
+                    norm(kfac[kset_c[k]]),
+                    fitparms[0],
+                    fitparms[1],
+                    eta);
             fprintf(fp_vk, "%6.3f %g\n", norm(kfac[kset_c[k]]), eta);
             for (i = 0; i < ncorr; i++)
             {
@@ -350,8 +366,8 @@ int gmx_tcaf(int argc, char* argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -494,9 +510,20 @@ int gmx_tcaf(int argc, char* argv[])
 
     rho *= sysmass / nframes * AMU / (NANO * NANO * NANO);
     fprintf(stdout, "Density = %g (kg/m^3)\n", rho);
-    process_tcaf(nframes, dt, nkc, tc, kfac, rho, wt, opt2fn_null("-ot", NFILE, fnm),
-                 opt2fn("-oa", NFILE, fnm), opt2fn("-o", NFILE, fnm), opt2fn("-of", NFILE, fnm),
-                 opt2fn_null("-oc", NFILE, fnm), opt2fn("-ov", NFILE, fnm), oenv);
+    process_tcaf(nframes,
+                 dt,
+                 nkc,
+                 tc,
+                 kfac,
+                 rho,
+                 wt,
+                 opt2fn_null("-ot", NFILE, fnm),
+                 opt2fn("-oa", NFILE, fnm),
+                 opt2fn("-o", NFILE, fnm),
+                 opt2fn("-of", NFILE, fnm),
+                 opt2fn_null("-oc", NFILE, fnm),
+                 opt2fn("-ov", NFILE, fnm),
+                 oenv);
 
     return 0;
 }

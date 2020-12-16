@@ -275,8 +275,9 @@ enum class PdbAtomsSelection : int
 const EnumerationArray<ResidueNumbering, const char*> c_residueNumberingTypeNames = { { "number",
                                                                                         "index" } };
 //! String values corresponding to PdbAtomsSelection.
-const EnumerationArray<PdbAtomsSelection, const char*> c_pdbAtomsTypeNames = { { "all", "maxsel",
-                                                                                 "selected" } };
+const EnumerationArray<PdbAtomsSelection, const char*> c_pdbAtomsTypeNames = {
+    { "all", "maxsel", "selected" }
+};
 
 class Select : public TrajectoryAnalysisModule
 {

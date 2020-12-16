@@ -212,7 +212,8 @@ static inline cl::sycl::event launchLeapFrogKernel(NumTempScaleValues  tempScali
             [&](auto tempScalingType_, auto prScalingType_) {
                 return launchLeapFrogKernel<tempScalingType_, prScalingType_>(std::forward<Args>(args)...);
             },
-            tempScalingType, prVelocityScalingType);
+            tempScalingType,
+            prVelocityScalingType);
 }
 
 void LeapFrogGpu::integrate(DeviceBuffer<float3>              d_x,
@@ -251,14 +252,24 @@ void LeapFrogGpu::integrate(DeviceBuffer<float3>              d_x,
                            && prVelocityScalingMatrix[XX][ZZ] == 0 && prVelocityScalingMatrix[YY][ZZ] == 0,
                    "Fully anisotropic Parrinello-Rahman pressure coupling is not yet supported "
                    "in GPU version of Leap-Frog integrator.");
-        prVelocityScalingMatrixDiagonal_ =
-                dtPressureCouple
-                * float3{ prVelocityScalingMatrix[XX][XX], prVelocityScalingMatrix[YY][YY],
-                          prVelocityScalingMatrix[ZZ][ZZ] };
+        prVelocityScalingMatrixDiagonal_ = dtPressureCouple
+                                           * float3{ prVelocityScalingMatrix[XX][XX],
+                                                     prVelocityScalingMatrix[YY][YY],
+                                                     prVelocityScalingMatrix[ZZ][ZZ] };
     }
 
-    launchLeapFrogKernel(tempVelocityScalingType, prVelocityScalingType, deviceStream_, numAtoms_,
-                         d_x, d_xp, d_v, d_f, d_inverseMasses_, dt, d_lambdas_, d_tempScaleGroups_,
+    launchLeapFrogKernel(tempVelocityScalingType,
+                         prVelocityScalingType,
+                         deviceStream_,
+                         numAtoms_,
+                         d_x,
+                         d_xp,
+                         d_v,
+                         d_f,
+                         d_inverseMasses_,
+                         dt,
+                         d_lambdas_,
+                         d_tempScaleGroups_,
                          prVelocityScalingMatrixDiagonal_);
 }
 
@@ -282,25 +293,25 @@ void LeapFrogGpu::set(const int             numAtoms,
     numAtoms_           = numAtoms;
     numTempScaleValues_ = numTempScaleValues;
 
-    reallocateDeviceBuffer(&d_inverseMasses_, numAtoms_, &numInverseMasses_,
-                           &numInverseMassesAlloc_, deviceContext_);
-    copyToDeviceBuffer(&d_inverseMasses_, inverseMasses, 0, numAtoms_, deviceStream_,
-                       GpuApiCallBehavior::Sync, nullptr);
+    reallocateDeviceBuffer(
+            &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
+    copyToDeviceBuffer(
+            &d_inverseMasses_, inverseMasses, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
 
     // Temperature scale group map only used if there are more then one group
     if (numTempScaleValues_ > 1)
     {
-        reallocateDeviceBuffer(&d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_,
-                               &numTempScaleGroupsAlloc_, deviceContext_);
-        copyToDeviceBuffer(&d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, deviceStream_,
-                           GpuApiCallBehavior::Sync, nullptr);
+        reallocateDeviceBuffer(
+                &d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_, &numTempScaleGroupsAlloc_, deviceContext_);
+        copyToDeviceBuffer(
+                &d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
     }
 
     // If the temperature coupling is enabled, we need to make space for scaling factors
     if (numTempScaleValues_ > 0)
     {
-        reallocateDeviceBuffer(&d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_,
-                               deviceContext_);
+        reallocateDeviceBuffer(
+                &d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_, deviceContext_);
     }
 }
 

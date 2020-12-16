@@ -248,8 +248,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
             countsLocal[3] = numCompatibleDevices;
         }
 
-        MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(), MPI_INT,
-                      MPI_SUM, MPI_COMM_WORLD);
+        MPI_Allreduce(countsLocal.data(), countsReduced.data(), countsLocal.size(), MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     }
 
     constexpr int                   numElementsMax = 11;
@@ -271,8 +270,7 @@ static void gmx_collect_hardware_mpi(const gmx::CpuInfo&             cpuInfo,
         maxMinLocal[9]  = -maxMinLocal[4];
         maxMinLocal[10] = (cpuIsAmdZen1 ? 1 : 0);
 
-        MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(), MPI_INT,
-                      MPI_MAX, MPI_COMM_WORLD);
+        MPI_Allreduce(maxMinLocal.data(), maxMinReduced.data(), maxMinLocal.size(), MPI_INT, MPI_MAX, MPI_COMM_WORLD);
     }
 
     hardwareInfo->nphysicalnode       = countsReduced[0];
@@ -330,7 +328,8 @@ void hardwareTopologyDoubleCheckDetection(const gmx::MDLogger gmx_unused& mdlog,
         GMX_LOG(mdlog.info)
                 .appendTextFormatted(
                         "Note: %d CPUs configured, but only %d were detected to be online.\n",
-                        countConfigured, countFromDetection);
+                        countConfigured,
+                        countFromDetection);
 
         if (c_architecture == Architecture::X86 && countConfigured == 2 * countFromDetection)
         {

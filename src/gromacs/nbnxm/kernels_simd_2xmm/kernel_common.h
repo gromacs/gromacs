@@ -79,7 +79,8 @@ static inline void add_ener_grp_halves(gmx::SimdReal e_S, real* v0, real* v1, co
     for (int jj = 0; jj < (UNROLLJ / 2); jj++)
     {
         incrDualHsimd(v0 + offset_jj[jj] + jj * GMX_SIMD_REAL_WIDTH / 2,
-                      v1 + offset_jj[jj] + jj * GMX_SIMD_REAL_WIDTH / 2, e_S);
+                      v1 + offset_jj[jj] + jj * GMX_SIMD_REAL_WIDTH / 2,
+                      e_S);
     }
 }
 #endif

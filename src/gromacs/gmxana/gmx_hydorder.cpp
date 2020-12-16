@@ -366,8 +366,8 @@ static void calc_tetra_order_interface(const char*       fnNDX,
             }
         }
 
-        find_tetra_order_grid(top, pbcType, natoms, box, x, isize[0], index[0], &sg, &sk, *nslicex,
-                              *nslicey, nslicez, sg_grid, sk_grid);
+        find_tetra_order_grid(
+                top, pbcType, natoms, box, x, isize[0], index[0], &sg, &sk, *nslicex, *nslicey, nslicez, sg_grid, sk_grid);
         GMX_RELEASE_ASSERT(sk_fravg != nullptr, "Trying to dereference NULL sk_fravg pointer");
         for (i = 0; i < *nslicex; i++)
         {
@@ -401,10 +401,10 @@ static void calc_tetra_order_interface(const char*       fnNDX,
     /*Debugging for printing out the entire order parameter meshes.*/
     if (debug)
     {
-        fpsg = xvgropen("sg_ang_mesh", "S\\sg\\N Angle Order Parameter / Meshpoint", "(nm)",
-                        "S\\sg\\N", oenv);
-        fpsk = xvgropen("sk_dist_mesh", "S\\sk\\N Distance Order Parameter / Meshpoint", "(nm)",
-                        "S\\sk\\N", oenv);
+        fpsg = xvgropen(
+                "sg_ang_mesh", "S\\sg\\N Angle Order Parameter / Meshpoint", "(nm)", "S\\sg\\N", oenv);
+        fpsk = xvgropen(
+                "sk_dist_mesh", "S\\sk\\N Distance Order Parameter / Meshpoint", "(nm)", "S\\sk\\N", oenv);
         for (n = 0; n < (*nframes); n++)
         {
             fprintf(fpsg, "%i\n", n);
@@ -415,12 +415,18 @@ static void calc_tetra_order_interface(const char*       fnNDX,
                 {
                     for (k = 0; k < nslicez; k++)
                     {
-                        fprintf(fpsg, "%4f  %4f  %4f  %8f\n", (i + 0.5) * box[XX][XX] / (*nslicex),
+                        fprintf(fpsg,
+                                "%4f  %4f  %4f  %8f\n",
+                                (i + 0.5) * box[XX][XX] / (*nslicex),
                                 (j + 0.5) * box[YY][YY] / (*nslicey),
-                                (k + 0.5) * box[ZZ][ZZ] / nslicez, sg_4d[n][i][j][k]);
-                        fprintf(fpsk, "%4f  %4f  %4f  %8f\n", (i + 0.5) * box[XX][XX] / (*nslicex),
+                                (k + 0.5) * box[ZZ][ZZ] / nslicez,
+                                sg_4d[n][i][j][k]);
+                        fprintf(fpsk,
+                                "%4f  %4f  %4f  %8f\n",
+                                (i + 0.5) * box[XX][XX] / (*nslicex),
                                 (j + 0.5) * box[YY][YY] / (*nslicey),
-                                (k + 0.5) * box[ZZ][ZZ] / nslicez, sk_4d[n][i][j][k]);
+                                (k + 0.5) * box[ZZ][ZZ] / nslicez,
+                                sk_4d[n][i][j][k]);
                     }
                 }
             }
@@ -549,10 +555,8 @@ static void writesurftoxpms(real***                          surf,
             }
         }
 
-        write_xpm(xpmfile1, 3, numbuf, "Height", "x[nm]", "y[nm]", xbins, ybins, xticks, yticks,
-                  profile1, min1, max1, lo, hi, &maplevels);
-        write_xpm(xpmfile2, 3, numbuf, "Height", "x[nm]", "y[nm]", xbins, ybins, xticks, yticks,
-                  profile2, min2, max2, lo, hi, &maplevels);
+        write_xpm(xpmfile1, 3, numbuf, "Height", "x[nm]", "y[nm]", xbins, ybins, xticks, yticks, profile1, min1, max1, lo, hi, &maplevels);
+        write_xpm(xpmfile2, 3, numbuf, "Height", "x[nm]", "y[nm]", xbins, ybins, xticks, yticks, profile2, min2, max2, lo, hi, &maplevels);
     }
 
     gmx_ffclose(xpmfile1);
@@ -643,8 +647,8 @@ int gmx_hydorder(int argc, char* argv[])
     const char *      ndxfnm, *tpsfnm, *trxfnm;
     gmx_output_env_t* oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -694,8 +698,8 @@ int gmx_hydorder(int argc, char* argv[])
     {
         gmx_fatal(FARGS, "No or not correct number (2) of output-files: %td", intfn.ssize());
     }
-    calc_tetra_order_interface(ndxfnm, tpsfnm, trxfnm, binwidth, nsttblock, &frames, &xslices,
-                               &yslices, sg1, sg2, &intfpos, oenv);
+    calc_tetra_order_interface(
+            ndxfnm, tpsfnm, trxfnm, binwidth, nsttblock, &frames, &xslices, &yslices, sg1, sg2, &intfpos, oenv);
     writesurftoxpms(intfpos, frames, xslices, yslices, binwidth, intfn, nlevels);
 
     if (bFourier)

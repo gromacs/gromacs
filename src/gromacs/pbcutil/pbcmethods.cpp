@@ -124,14 +124,16 @@ void calc_pbc_cluster(int ecenter, int nrefat, t_topology* top, PbcType pbcType,
                 gmx_fatal(FARGS,
                           "Molecule %d marked for clustering but not atom %d in it - check your "
                           "index!",
-                          i + 1, j + 1);
+                          i + 1,
+                          j + 1);
             }
             else if (!bMol[i] && bTmp[j])
             {
                 gmx_fatal(FARGS,
                           "Atom %d marked for clustering but not molecule %d - this is an internal "
                           "error...",
-                          j + 1, i + 1);
+                          j + 1,
+                          i + 1);
             }
             else if (bMol[i])
             {
@@ -297,7 +299,10 @@ void put_molecule_com_in_box(int      unitcell_enum,
                 fprintf(debug,
                         "\nShifting position of molecule %d "
                         "by %8.3f  %8.3f  %8.3f\n",
-                        i + 1, shift[XX], shift[YY], shift[ZZ]);
+                        i + 1,
+                        shift[XX],
+                        shift[YY],
+                        shift[ZZ]);
             }
             for (j = mols->index[i]; (j < mols->index[i + 1] && j < natoms); j++)
             {
@@ -355,8 +360,12 @@ void put_residue_com_in_box(int     unitcell_enum,
                     fprintf(debug,
                             "\nShifting position of residue %d (atoms %d-%d) "
                             "by %g,%g,%g\n",
-                            atom[res_start].resind + 1, res_start + 1, res_end + 1, shift[XX],
-                            shift[YY], shift[ZZ]);
+                            atom[res_start].resind + 1,
+                            res_start + 1,
+                            res_end + 1,
+                            shift[XX],
+                            shift[YY],
+                            shift[ZZ]);
                 }
                 for (j = res_start; j < res_end; j++)
                 {

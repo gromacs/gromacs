@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,7 +134,8 @@ TEST_P(TpiTest, ReproducesOutput)
         ref_t                    = 298
         nsteps                   = %d
     )",
-                                                     randomSeed, nsteps);
+                                                     randomSeed,
+                                                     nsteps);
 
     runner_.useStringAsMdpFile(mdpFileContents);
     runTest();

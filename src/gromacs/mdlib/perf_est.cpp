@@ -336,8 +336,14 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
 
     if (debug)
     {
-        fprintf(debug, "nqlj %d nq %d nlj %d rlist %.3f r_eff %.3f pairs per atom %.1f\n", nqlj, nq,
-                nlj, ir.rlist, r_eff, nppa);
+        fprintf(debug,
+                "nqlj %d nq %d nlj %d rlist %.3f r_eff %.3f pairs per atom %.1f\n",
+                nqlj,
+                nq,
+                nlj,
+                ir.rlist,
+                r_eff,
+                nppa);
     }
 
     /* Determine the cost per pair interaction */
@@ -436,7 +442,12 @@ float pme_load_estimate(const gmx_mtop_t& mtop, const t_inputrec& ir, const matr
                 "cost_spread %f\n"
                 "cost_fft    %f\n"
                 "cost_solve  %f\n",
-                cost_bond, cost_pp, cost_redist, cost_spread, cost_fft, cost_solve);
+                cost_bond,
+                cost_pp,
+                cost_redist,
+                cost_spread,
+                cost_fft,
+                cost_solve);
 
         fprintf(debug, "Estimate for relative PME load: %.3f\n", ratio);
     }

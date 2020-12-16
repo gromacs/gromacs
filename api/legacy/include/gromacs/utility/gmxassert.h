@@ -66,10 +66,10 @@
 #    define GMX_RELEASE_ASSERT(condition, msg)
 #else
 #    ifdef _MSC_VER
-#        define GMX_RELEASE_ASSERT(condition, msg)                                                      \
-            ((void)((condition) ? (void)0                                                               \
-                                : ::gmx::internal::assertHandler(#condition, msg, GMX_CURRENT_FUNCTION, \
-                                                                 __FILE__, __LINE__)))
+#        define GMX_RELEASE_ASSERT(condition, msg)                \
+            ((void)((condition) ? (void)0                         \
+                                : ::gmx::internal::assertHandler( \
+                                          #condition, msg, GMX_CURRENT_FUNCTION, __FILE__, __LINE__)))
 #    else
 // Use an "immediately invoked function expression" to allow being
 // used in constexpr context with older GCC versions

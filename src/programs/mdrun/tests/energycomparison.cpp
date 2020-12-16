@@ -114,8 +114,8 @@ void EnergyComparison::operator()(const EnergyFrame& reference, const EnergyFram
         {
             auto& energyValueInReference = referenceIt->second;
             auto& energyValueInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyValueInReference, energyValueInTest,
-                               energyTermsToCompare_.at(energyName));
+            EXPECT_REAL_EQ_TOL(
+                    energyValueInReference, energyValueInTest, energyTermsToCompare_.at(energyName));
         }
         else
         {
@@ -185,8 +185,8 @@ void checkEnergiesAgainstReferenceData(const std::string&          energyFilenam
                                        const EnergyTermsToCompare& energyTermsToCompare,
                                        TestReferenceChecker*       checker)
 {
-    checkEnergiesAgainstReferenceData(energyFilename, energyTermsToCompare, checker,
-                                      MaxNumFrames::compareAllFrames());
+    checkEnergiesAgainstReferenceData(
+            energyFilename, energyTermsToCompare, checker, MaxNumFrames::compareAllFrames());
 }
 
 } // namespace test

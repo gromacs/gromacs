@@ -415,10 +415,11 @@ static inline double gmx_simdcall reduce(SimdDouble x)
     const __vector unsigned char perm = { 8, 9, 10, 11, 12, 13, 14, 15, 0, 1, 2, 3, 4, 5, 6, 7 };
 #ifdef __xlC__
     /* old xlc version 12 does not understand vec_perm() with double arguments */
-    x.simdInternal_ = vec_add(
-            x.simdInternal_, reinterpret_cast<__vector double>(vec_perm(
-                                     reinterpret_cast<__vector signed int>(x.simdInternal_),
-                                     reinterpret_cast<__vector signed int>(x.simdInternal_), perm)));
+    x.simdInternal_ = vec_add(x.simdInternal_,
+                              reinterpret_cast<__vector double>(vec_perm(
+                                      reinterpret_cast<__vector signed int>(x.simdInternal_),
+                                      reinterpret_cast<__vector signed int>(x.simdInternal_),
+                                      perm)));
 #else
     x.simdInternal_ = vec_add(x.simdInternal_, vec_perm(x.simdInternal_, x.simdInternal_, perm));
 #endif

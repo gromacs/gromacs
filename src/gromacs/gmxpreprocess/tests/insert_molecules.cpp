@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,8 +66,9 @@ public:
         gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
         rootChecker.checkString(args.toString(), "CommandLine");
 
-        ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                             &gmx::InsertMoleculesInfo::create, &cmdline));
+        ASSERT_EQ(0,
+                  gmx::test::CommandLineTestHelper::runModuleFactory(
+                          &gmx::InsertMoleculesInfo::create, &cmdline));
 
         checkOutputFiles();
     }
@@ -109,8 +110,9 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesWithReplacement)
 TEST_F(InsertMoleculesTest, InsertsMoleculesIntoFixedPositions)
 {
     const char* const cmdline[]   = { "insert-molecules", "-box", "4", "-seed", "1997" };
-    const char* const positions[] = { "0.0  0.0  0.0", "1.0  2.0  3.0", "0.99 2.01 3.0",
-                                      "2.0  1.0  2.0" };
+    const char* const positions[] = {
+        "0.0  0.0  0.0", "1.0  2.0  3.0", "0.99 2.01 3.0", "2.0  1.0  2.0"
+    };
     setInputFile("-ci", "x0.gro");
     setInputFileContents("-ip", "dat", positions);
     runTest(CommandLine(cmdline));

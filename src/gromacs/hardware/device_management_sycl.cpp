@@ -146,9 +146,10 @@ static bool isDeviceFunctional(const cl::sycl::device& syclDevice, std::string* 
     {
         if (errorMessage != nullptr)
         {
-            errorMessage->assign(gmx::formatString(
-                    "Unable to run dummy kernel on device %s: %s",
-                    syclDevice.get_info<cl::sycl::info::device::name>().c_str(), e.what()));
+            errorMessage->assign(
+                    gmx::formatString("Unable to run dummy kernel on device %s: %s",
+                                      syclDevice.get_info<cl::sycl::info::device::name>().c_str(),
+                                      e.what()));
         }
         return false;
     }
@@ -217,13 +218,14 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
 
     if (!deviceExists)
     {
-        return gmx::formatString("#%d: %s, status: %s", deviceInfo.id, "N/A",
-                                 c_deviceStateString[deviceInfo.status]);
+        return gmx::formatString(
+                "#%d: %s, status: %s", deviceInfo.id, "N/A", c_deviceStateString[deviceInfo.status]);
     }
     else
     {
         return gmx::formatString(
-                "#%d: name: %s, vendor: %s, device version: %s, status: %s", deviceInfo.id,
+                "#%d: name: %s, vendor: %s, device version: %s, status: %s",
+                deviceInfo.id,
                 deviceInfo.syclDevice.get_info<cl::sycl::info::device::name>().c_str(),
                 deviceInfo.syclDevice.get_info<cl::sycl::info::device::vendor>().c_str(),
                 deviceInfo.syclDevice.get_info<cl::sycl::info::device::version>().c_str(),

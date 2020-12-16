@@ -284,7 +284,8 @@ static const char* eenh_names[eenhNR] = { "energy_n",
                                           "energy_delta_h_start_time",
                                           "energy_delta_h_start_lambda" };
 
-static const char* ePullhNames[epullhNR] = { "pullhistory_numcoordinates", "pullhistory_numgroups",
+static const char* ePullhNames[epullhNR] = { "pullhistory_numcoordinates",
+                                             "pullhistory_numgroups",
                                              "pullhistory_numvaluesinxsum",
                                              "pullhistory_numvaluesinfsum" };
 
@@ -607,30 +608,26 @@ static bool_t listXdrVector(XDR* xd, StatePart part, int ecpt, int nf, int xdrTy
 #if !GMX_DOUBLE
                 if (cptElementType == CptElementType::real3)
                 {
-                    pr_rvecs(list, 0, entryName(part, ecpt),
-                             reinterpret_cast<const rvec*>(data.data()), nf / 3);
+                    pr_rvecs(list, 0, entryName(part, ecpt), reinterpret_cast<const rvec*>(data.data()), nf / 3);
                 }
                 else
 #endif
                 {
                     /* Note: With double precision code dumping a single precision rvec will produce float iso rvec print, but that's a minor annoyance */
-                    pr_fvec(list, 0, entryName(part, ecpt),
-                            reinterpret_cast<const float*>(data.data()), nf, TRUE);
+                    pr_fvec(list, 0, entryName(part, ecpt), reinterpret_cast<const float*>(data.data()), nf, TRUE);
                 }
                 break;
             case xdr_datatype_double:
 #if GMX_DOUBLE
                 if (cptElementType == CptElementType::real3)
                 {
-                    pr_rvecs(list, 0, entryName(part, ecpt),
-                             reinterpret_cast<const rvec*>(data.data()), nf / 3);
+                    pr_rvecs(list, 0, entryName(part, ecpt), reinterpret_cast<const rvec*>(data.data()), nf / 3);
                 }
                 else
 #endif
                 {
                     /* Note: With single precision code dumping a double precision rvec will produce float iso rvec print, but that's a minor annoyance */
-                    pr_dvec(list, 0, entryName(part, ecpt),
-                            reinterpret_cast<const double*>(data.data()), nf, TRUE);
+                    pr_dvec(list, 0, entryName(part, ecpt), reinterpret_cast<const double*>(data.data()), nf, TRUE);
                 }
                 break;
             default: GMX_RELEASE_ASSERT(false, "Data type not implemented for listing");
@@ -748,7 +745,9 @@ static int doVectorLow(XDR*                           xd,
             {
                 gmx_fatal(FARGS,
                           "Count mismatch for state entry %s, code count is %d, file count is %d\n",
-                          entryName(part, ecpt), nval, numElemInTheFile);
+                          entryName(part, ecpt),
+                          nval,
+                          numElemInTheFile);
             }
         }
         else if (nptr != nullptr)
@@ -760,15 +759,18 @@ static int doVectorLow(XDR*                           xd,
         if (!typesMatch)
         {
             char buf[STRLEN];
-            sprintf(buf, "mismatch for state entry %s, code precision is %s, file precision is %s",
-                    entryName(part, ecpt), xdr_datatype_names[xdrTypeInTheCode],
+            sprintf(buf,
+                    "mismatch for state entry %s, code precision is %s, file precision is %s",
+                    entryName(part, ecpt),
+                    xdr_datatype_names[xdrTypeInTheCode],
                     xdr_datatype_names[xdrTypeInTheFile]);
 
             /* Matching int and real should never occur, but check anyhow */
             if (xdrTypeInTheFile == xdr_datatype_int || xdrTypeInTheCode == xdr_datatype_int)
             {
                 gmx_fatal(FARGS,
-                          "Type %s: incompatible checkpoint formats or corrupted checkpoint file.", buf);
+                          "Type %s: incompatible checkpoint formats or corrupted checkpoint file.",
+                          buf);
             }
         }
 
@@ -804,8 +806,8 @@ static int doVectorLow(XDR*                           xd,
         {
             snew(vChar, numElemInTheFile * sizeOfXdrType(xdrTypeInTheFile));
         }
-        res = xdr_vector(xd, vChar, numElemInTheFile, sizeOfXdrType(xdrTypeInTheFile),
-                         xdrProc(xdrTypeInTheFile));
+        res = xdr_vector(
+                xd, vChar, numElemInTheFile, sizeOfXdrType(xdrTypeInTheFile), xdrProc(xdrTypeInTheFile));
         if (res == 0)
         {
             return -1;
@@ -835,16 +837,16 @@ template<typename T>
 static int
 doVector(XDR* xd, StatePart part, int ecpt, int sflags, std::vector<T>* vector, FILE* list, int numElements = -1)
 {
-    return doVectorLow<T>(xd, part, ecpt, sflags, numElements, nullptr, nullptr, vector, list,
-                          CptElementType::real);
+    return doVectorLow<T>(
+            xd, part, ecpt, sflags, numElements, nullptr, nullptr, vector, list, CptElementType::real);
 }
 
 //! \brief Read/Write an ArrayRef<real>.
 static int doRealArrayRef(XDR* xd, StatePart part, int ecpt, int sflags, gmx::ArrayRef<real> vector, FILE* list)
 {
     real* v_real = vector.data();
-    return doVectorLow<real, std::allocator<real>>(xd, part, ecpt, sflags, vector.size(), nullptr,
-                                                   &v_real, nullptr, list, CptElementType::real);
+    return doVectorLow<real, std::allocator<real>>(
+            xd, part, ecpt, sflags, vector.size(), nullptr, &v_real, nullptr, list, CptElementType::real);
 }
 
 //! Convert from view of RVec to view of real.
@@ -875,8 +877,8 @@ doRvecVector(XDR* xd, StatePart part, int ecpt, int sflags, PaddedVectorOfRVecTy
         // allocator from RVec to real.
         using realAllocator =
                 typename std::allocator_traits<typename PaddedVectorOfRVecType::allocator_type>::template rebind_alloc<real>;
-        return doVectorLow<real, realAllocator>(xd, part, ecpt, sflags, numReals, nullptr, nullptr,
-                                                nullptr, list, CptElementType::real);
+        return doVectorLow<real, realAllocator>(
+                xd, part, ecpt, sflags, numReals, nullptr, nullptr, nullptr, list, CptElementType::real);
     }
 }
 
@@ -886,8 +888,8 @@ doRvecVector(XDR* xd, StatePart part, int ecpt, int sflags, PaddedVectorOfRVecTy
  */
 static int do_cpte_reals(XDR* xd, StatePart part, int ecpt, int sflags, int n, real** v, FILE* list)
 {
-    return doVectorLow<real, std::allocator<real>>(xd, part, ecpt, sflags, n, nullptr, v, nullptr,
-                                                   list, CptElementType::real);
+    return doVectorLow<real, std::allocator<real>>(
+            xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
 }
 
 /* This function does the same as do_cpte_reals,
@@ -896,20 +898,20 @@ static int do_cpte_reals(XDR* xd, StatePart part, int ecpt, int sflags, int n, r
  */
 static int do_cpte_n_reals(XDR* xd, StatePart part, int ecpt, int sflags, int* n, real** v, FILE* list)
 {
-    return doVectorLow<real, std::allocator<real>>(xd, part, ecpt, sflags, -1, n, v, nullptr, list,
-                                                   CptElementType::real);
+    return doVectorLow<real, std::allocator<real>>(
+            xd, part, ecpt, sflags, -1, n, v, nullptr, list, CptElementType::real);
 }
 
 static int do_cpte_real(XDR* xd, StatePart part, int ecpt, int sflags, real* r, FILE* list)
 {
-    return doVectorLow<real, std::allocator<real>>(xd, part, ecpt, sflags, 1, nullptr, &r, nullptr,
-                                                   list, CptElementType::real);
+    return doVectorLow<real, std::allocator<real>>(
+            xd, part, ecpt, sflags, 1, nullptr, &r, nullptr, list, CptElementType::real);
 }
 
 static int do_cpte_ints(XDR* xd, StatePart part, int ecpt, int sflags, int n, int** v, FILE* list)
 {
-    return doVectorLow<int, std::allocator<int>>(xd, part, ecpt, sflags, n, nullptr, v, nullptr,
-                                                 list, CptElementType::integer);
+    return doVectorLow<int, std::allocator<int>>(
+            xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::integer);
 }
 
 static int do_cpte_int(XDR* xd, StatePart part, int ecpt, int sflags, int* i, FILE* list)
@@ -927,8 +929,8 @@ static int do_cpte_bool(XDR* xd, StatePart part, int ecpt, int sflags, bool* b, 
 
 static int do_cpte_doubles(XDR* xd, StatePart part, int ecpt, int sflags, int n, double** v, FILE* list)
 {
-    return doVectorLow<double, std::allocator<double>>(xd, part, ecpt, sflags, n, nullptr, v,
-                                                       nullptr, list, CptElementType::real);
+    return doVectorLow<double, std::allocator<double>>(
+            xd, part, ecpt, sflags, n, nullptr, v, nullptr, list, CptElementType::real);
 }
 
 static int do_cpte_double(XDR* xd, StatePart part, int ecpt, int sflags, double* r, FILE* list)
@@ -942,8 +944,8 @@ static int do_cpte_matrix(XDR* xd, StatePart part, int ecpt, int sflags, matrix 
     int   ret;
 
     vr  = &(v[0][0]);
-    ret = doVectorLow<real, std::allocator<real>>(xd, part, ecpt, sflags, DIM * DIM, nullptr, &vr,
-                                                  nullptr, nullptr, CptElementType::matrix3x3);
+    ret = doVectorLow<real, std::allocator<real>>(
+            xd, part, ecpt, sflags, DIM * DIM, nullptr, &vr, nullptr, nullptr, CptElementType::matrix3x3);
 
     if (list && ret == 0)
     {
@@ -967,8 +969,8 @@ static int do_cpte_nmatrix(XDR* xd, StatePart part, int ecpt, int sflags, int n,
     }
     for (i = 0; i < n; i++)
     {
-        reti = doVectorLow<real, std::allocator<real>>(xd, part, ecpt, sflags, n, nullptr, &(v[i]),
-                                                       nullptr, nullptr, CptElementType::matrix3x3);
+        reti = doVectorLow<real, std::allocator<real>>(
+                xd, part, ecpt, sflags, n, nullptr, &(v[i]), nullptr, nullptr, CptElementType::matrix3x3);
         if (list && reti == 0)
         {
             sprintf(name, "%s[%d]", entryName(part, ecpt), i);
@@ -998,8 +1000,11 @@ static int do_cpte_matrices(XDR* xd, StatePart part, int ecpt, int sflags, int n
     }
     if (list == nullptr && nf != n)
     {
-        gmx_fatal(FARGS, "Count mismatch for state entry %s, code count is %d, file count is %d\n",
-                  entryName(part, ecpt), n, nf);
+        gmx_fatal(FARGS,
+                  "Count mismatch for state entry %s, code count is %d, file count is %d\n",
+                  entryName(part, ecpt),
+                  n,
+                  nf);
     }
     if (list || !(sflags & (1 << ecpt)))
     {
@@ -1025,8 +1030,8 @@ static int do_cpte_matrices(XDR* xd, StatePart part, int ecpt, int sflags, int n
             }
         }
     }
-    ret = doVectorLow<real, std::allocator<real>>(xd, part, ecpt, sflags, nf * DIM * DIM, nullptr,
-                                                  &vr, nullptr, nullptr, CptElementType::matrix3x3);
+    ret = doVectorLow<real, std::allocator<real>>(
+            xd, part, ecpt, sflags, nf * DIM * DIM, nullptr, &vr, nullptr, nullptr, CptElementType::matrix3x3);
     for (i = 0; i < nf; i++)
     {
         for (j = 0; j < DIM; j++)
@@ -1078,7 +1083,8 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
         gmx_fatal(FARGS,
                   "Start of file magic number mismatch, checkpoint file has %d, should be %d\n"
                   "The checkpoint file is corrupted or not a checkpoint file",
-                  magic, CPT_MAGIC1);
+                  magic,
+                  CPT_MAGIC1);
     }
     char fhost[255];
     if (!bRead)
@@ -1103,7 +1109,8 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     {
         gmx_fatal(FARGS,
                   "Attempting to read a checkpoint file of version %d with code of version %d\n",
-                  contents->file_version, cpt_version);
+                  contents->file_version,
+                  cpt_version);
     }
     if (contents->file_version >= 13)
     {
@@ -1229,8 +1236,8 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
 
     if (contents->file_version >= cptv_ModularSimulator)
     {
-        do_cpt_bool_err(xd, "Is modular simulator checkpoint",
-                        &contents->isModularSimulatorCheckpoint, list);
+        do_cpt_bool_err(
+                xd, "Is modular simulator checkpoint", &contents->isModularSimulatorCheckpoint, list);
     }
     else
     {
@@ -1277,7 +1284,10 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
             {
                 case estLAMBDA:
                     ret = doRealArrayRef(
-                            xd, part, i, sflags,
+                            xd,
+                            part,
+                            i,
+                            sflags,
                             gmx::arrayRefFromArray<real>(state->lambda.data(), state->lambda.size()),
                             list);
                     break;
@@ -1338,15 +1348,15 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
                     ret = do_cpte_real(xd, part, i, sflags, &state->hist.disre_initf, list);
                     break;
                 case estDISRE_RM3TAV:
-                    ret = do_cpte_n_reals(xd, part, i, sflags, &state->hist.ndisrepairs,
-                                          &state->hist.disre_rm3tav, list);
+                    ret = do_cpte_n_reals(
+                            xd, part, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list);
                     break;
                 case estORIRE_INITF:
                     ret = do_cpte_real(xd, part, i, sflags, &state->hist.orire_initf, list);
                     break;
                 case estORIRE_DTAV:
-                    ret = do_cpte_n_reals(xd, part, i, sflags, &state->hist.norire_Dtav,
-                                          &state->hist.orire_Dtav, list);
+                    ret = do_cpte_n_reals(
+                            xd, part, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list);
                     break;
                 case estPULLCOMPREVSTEP:
                     ret = doVector<double>(xd, part, i, sflags, &state->pull_com_prev_step, list);
@@ -1547,10 +1557,10 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, int eSwapCoords, swaphistor
     }
     else
     {
-        do_cpt_n_rvecs_err(xd, "Ch0 whole x", swapstate->nat[eChan0],
-                           *swapstate->xc_old_whole_p[eChan0], list);
-        do_cpt_n_rvecs_err(xd, "Ch1 whole x", swapstate->nat[eChan1],
-                           *swapstate->xc_old_whole_p[eChan1], list);
+        do_cpt_n_rvecs_err(
+                xd, "Ch0 whole x", swapstate->nat[eChan0], *swapstate->xc_old_whole_p[eChan0], list);
+        do_cpt_n_rvecs_err(
+                xd, "Ch1 whole x", swapstate->nat[eChan1], *swapstate->xc_old_whole_p[eChan1], list);
     }
 
     return 0;
@@ -1566,8 +1576,7 @@ static int do_cpt_enerhist(XDR* xd, gmx_bool bRead, int fflags, energyhistory_t*
         return ret;
     }
 
-    GMX_RELEASE_ASSERT(enerhist != nullptr,
-                       "With energy history, we need a valid enerhist pointer");
+    GMX_RELEASE_ASSERT(enerhist != nullptr, "With energy history, we need a valid enerhist pointer");
 
     /* This is stored/read for backward compatibility */
     int energyHistoryNumEnergies = 0;
@@ -1977,8 +1986,8 @@ static int do_cpt_correlation_grid(XDR*                         xd,
 
     if (bRead)
     {
-        initCorrelationGridHistory(corrGrid, corrGrid->numCorrelationTensors, corrGrid->tensorSize,
-                                   corrGrid->blockDataListSize);
+        initCorrelationGridHistory(
+                corrGrid, corrGrid->numCorrelationTensors, corrGrid->tensorSize, corrGrid->blockDataListSize);
     }
 
     for (gmx::CorrelationBlockDataHistory& blockData : corrGrid->blockDataBuffer)
@@ -2064,8 +2073,8 @@ static int do_cpt_awh_bias(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhBiasHist
                     do_cpt_step_err(xd, eawhh_names[i], &(state->numUpdates), list);
                     break;
                 case eawhhFORCECORRELATIONGRID:
-                    ret = do_cpt_correlation_grid(xd, bRead, fflags,
-                                                  &biasHistory->forceCorrelationGrid, list, i);
+                    ret = do_cpt_correlation_grid(
+                            xd, bRead, fflags, &biasHistory->forceCorrelationGrid, list, i);
                     break;
                 default: gmx_fatal(FARGS, "Unknown awh history entry %d\n", i);
             }
@@ -2211,8 +2220,7 @@ static int do_cpt_files(XDR* xd, gmx_bool bRead, std::vector<gmx_file_position_t
             {
                 return -1;
             }
-            if (do_cpt_u_chars(xd, "file_checksum", outputfile.checksum.size(),
-                               outputfile.checksum.data(), list)
+            if (do_cpt_u_chars(xd, "file_checksum", outputfile.checksum.size(), outputfile.checksum.data(), list)
                 != 0)
             {
                 return -1;
@@ -2309,18 +2317,19 @@ void write_checkpoint_data(t_fileio*                         fp,
     if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, nullptr) < 0)
         || (do_cpt_ekinstate(gmx_fio_getxdr(fp), headerContents.flags_eks, &state->ekinstate, nullptr) < 0)
         || (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, headerContents.flags_enh, enerhist, nullptr) < 0)
-        || (doCptPullHist(gmx_fio_getxdr(fp), FALSE, headerContents.flagsPullHistory, pullHist,
-                          StatePart::pullHistory, nullptr)
+        || (doCptPullHist(gmx_fio_getxdr(fp), FALSE, headerContents.flagsPullHistory, pullHist, StatePart::pullHistory, nullptr)
             < 0)
-        || (do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda,
-                           &state->dfhist, nullptr)
+        || (do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr)
             < 0)
-        || (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, headerContents.nED,
-                           observablesHistory->edsamHistory.get(), nullptr)
+        || (do_cpt_EDstate(
+                    gmx_fio_getxdr(fp), FALSE, headerContents.nED, observablesHistory->edsamHistory.get(), nullptr)
             < 0)
         || (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, headerContents.flags_awhh, state->awhHistory.get(), nullptr) < 0)
-        || (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, headerContents.eSwapCoords,
-                             observablesHistory->swapHistory.get(), nullptr)
+        || (do_cpt_swapstate(gmx_fio_getxdr(fp),
+                             FALSE,
+                             headerContents.eSwapCoords,
+                             observablesHistory->swapHistory.get(),
+                             nullptr)
             < 0)
         || (do_cpt_files(gmx_fio_getxdr(fp), FALSE, outputfiles, nullptr, headerContents.file_version) < 0))
     {
@@ -2427,8 +2436,8 @@ static void check_match(FILE*                           fplog,
 
     if (reproducibilityRequested)
     {
-        check_string(fplog, "Program name", gmx::getProgramContext().fullBinaryPath(),
-                     headerContents.fprog, &mm);
+        check_string(
+                fplog, "Program name", gmx::getProgramContext().fullBinaryPath(), headerContents.fprog, &mm);
 
         check_int(fplog, "#ranks", cr->nnodes, headerContents.nnodes, &mm);
     }
@@ -2544,21 +2553,24 @@ static void read_checkpoint(const char*                    fn,
         gmx_fatal(FARGS,
                   "Checkpoint file is for a system of %d atoms, while the current system consists "
                   "of %d atoms",
-                  headerContents->natoms, state->natoms);
+                  headerContents->natoms,
+                  state->natoms);
     }
     if (headerContents->ngtc != state->ngtc)
     {
         gmx_fatal(FARGS,
                   "Checkpoint file is for a system of %d T-coupling groups, while the current "
                   "system consists of %d T-coupling groups",
-                  headerContents->ngtc, state->ngtc);
+                  headerContents->ngtc,
+                  state->ngtc);
     }
     if (headerContents->nnhpres != state->nnhpres)
     {
         gmx_fatal(FARGS,
                   "Checkpoint file is for a system of %d NH-pressure-coupling variables, while the "
                   "current system consists of %d NH-pressure-coupling variables",
-                  headerContents->nnhpres, state->nnhpres);
+                  headerContents->nnhpres,
+                  state->nnhpres);
     }
 
     int nlambdaHistory = (state->dfhist ? state->dfhist->nlambda : 0);
@@ -2567,10 +2579,13 @@ static void read_checkpoint(const char*                    fn,
         gmx_fatal(FARGS,
                   "Checkpoint file is for a system with %d lambda states, while the current system "
                   "consists of %d lambda states",
-                  headerContents->nlambda, nlambdaHistory);
+                  headerContents->nlambda,
+                  nlambdaHistory);
     }
 
-    init_gtc_state(state, state->ngtc, state->nnhpres,
+    init_gtc_state(state,
+                   state->ngtc,
+                   state->nnhpres,
                    headerContents->nhchainlength); /* need to keep this here to keep the tpr format working */
     /* write over whatever was read; we use the number of Nose-Hoover chains from the checkpoint */
 
@@ -2627,8 +2642,8 @@ static void read_checkpoint(const char*                    fn,
     {
         observablesHistory->energyHistory = std::make_unique<energyhistory_t>();
     }
-    ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE, headerContents->flags_enh,
-                          observablesHistory->energyHistory.get(), nullptr);
+    ret = do_cpt_enerhist(
+            gmx_fio_getxdr(fp), TRUE, headerContents->flags_enh, observablesHistory->energyHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
@@ -2640,8 +2655,12 @@ static void read_checkpoint(const char*                    fn,
         {
             observablesHistory->pullHistory = std::make_unique<PullHistory>();
         }
-        ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE, headerContents->flagsPullHistory,
-                            observablesHistory->pullHistory.get(), StatePart::pullHistory, nullptr);
+        ret = doCptPullHist(gmx_fio_getxdr(fp),
+                            TRUE,
+                            headerContents->flagsPullHistory,
+                            observablesHistory->pullHistory.get(),
+                            StatePart::pullHistory,
+                            nullptr);
         if (ret)
         {
             cp_error();
@@ -2654,8 +2673,8 @@ static void read_checkpoint(const char*                    fn,
                   "Continuing from checkpoint files written before GROMACS 4.5 is not supported");
     }
 
-    ret = do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents->flags_dfh, headerContents->nlambda,
-                         &state->dfhist, nullptr);
+    ret = do_cpt_df_hist(
+            gmx_fio_getxdr(fp), headerContents->flags_dfh, headerContents->nlambda, &state->dfhist, nullptr);
     if (ret)
     {
         cp_error();
@@ -2665,8 +2684,8 @@ static void read_checkpoint(const char*                    fn,
     {
         observablesHistory->edsamHistory = std::make_unique<edsamhistory_t>(edsamhistory_t{});
     }
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents->nED,
-                         observablesHistory->edsamHistory.get(), nullptr);
+    ret = do_cpt_EDstate(
+            gmx_fio_getxdr(fp), TRUE, headerContents->nED, observablesHistory->edsamHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
@@ -2686,8 +2705,8 @@ static void read_checkpoint(const char*                    fn,
     {
         observablesHistory->swapHistory = std::make_unique<swaphistory_t>(swaphistory_t{});
     }
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents->eSwapCoords,
-                           observablesHistory->swapHistory.get(), nullptr);
+    ret = do_cpt_swapstate(
+            gmx_fio_getxdr(fp), TRUE, headerContents->eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
@@ -2733,9 +2752,19 @@ void load_checkpoint(const char*                    fn,
     if (SIMMASTER(cr))
     {
         /* Read the state from the checkpoint file */
-        read_checkpoint(fn, logfio, cr, dd_nc, ir->eI, &(ir->fepvals->init_fep_state),
-                        &headerContents, state, observablesHistory, reproducibilityRequested,
-                        mdModulesNotifier, modularSimulatorCheckpointData, useModularSimulator);
+        read_checkpoint(fn,
+                        logfio,
+                        cr,
+                        dd_nc,
+                        ir->eI,
+                        &(ir->fepvals->init_fep_state),
+                        &headerContents,
+                        state,
+                        observablesHistory,
+                        reproducibilityRequested,
+                        mdModulesNotifier,
+                        modularSimulatorCheckpointData,
+                        useModularSimulator);
     }
     if (PAR(cr))
     {
@@ -2824,15 +2853,15 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
         cp_error();
     }
     PullHistory pullHist = {};
-    ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE, headerContents.flagsPullHistory, &pullHist,
-                        StatePart::pullHistory, nullptr);
+    ret                  = doCptPullHist(
+            gmx_fio_getxdr(fp), TRUE, headerContents.flagsPullHistory, &pullHist, StatePart::pullHistory, nullptr);
     if (ret)
     {
         cp_error();
     }
 
-    ret = do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda,
-                         &state->dfhist, nullptr);
+    ret = do_cpt_df_hist(
+            gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr);
     if (ret)
     {
         cp_error();
@@ -2947,14 +2976,14 @@ void list_checkpoint(const char* fn, FILE* out)
     if (ret == 0)
     {
         PullHistory pullHist = {};
-        ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE, headerContents.flagsPullHistory, &pullHist,
-                            StatePart::pullHistory, out);
+        ret                  = doCptPullHist(
+                gmx_fio_getxdr(fp), TRUE, headerContents.flagsPullHistory, &pullHist, StatePart::pullHistory, out);
     }
 
     if (ret == 0)
     {
-        ret = do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda,
-                             &state.dfhist, out);
+        ret = do_cpt_df_hist(
+                gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda, &state.dfhist, out);
     }
 
     if (ret == 0)

@@ -355,8 +355,9 @@ public:
      */
     bool hasFepLambdaDimension() const
     {
-        return std::any_of(std::begin(dimParams_), std::end(dimParams_),
-                           [](const auto& dimParam) { return dimParam.isFepLambdaDimension(); });
+        return std::any_of(std::begin(dimParams_), std::end(dimParams_), [](const auto& dimParam) {
+            return dimParam.isFepLambdaDimension();
+        });
     }
 
     /*! \brief

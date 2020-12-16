@@ -194,8 +194,18 @@ public:
     {
         cycleCounting_.start(enbsCCgrid);
 
-        gridSet_.putOnGrid(box, ddZone, lowerCorner, upperCorner, updateGroupsCog, atomRange,
-                           atomDensity, atomInfo, x, numAtomsMoved, move, nbat);
+        gridSet_.putOnGrid(box,
+                           ddZone,
+                           lowerCorner,
+                           upperCorner,
+                           updateGroupsCog,
+                           atomRange,
+                           atomDensity,
+                           atomInfo,
+                           x,
+                           numAtomsMoved,
+                           move,
+                           nbat);
 
         cycleCounting_.stop(enbsCCgrid);
     }

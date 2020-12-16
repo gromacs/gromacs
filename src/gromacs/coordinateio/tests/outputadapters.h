@@ -289,7 +289,8 @@ const char* const anySupported[] = { "spc2-traj.trr",
 #if GMX_USE_TNG
                                      "spc2-traj.tng",
 #endif
-                                     "spc2-traj.xtc", "spc2-traj.g96" };
+                                     "spc2-traj.xtc",
+                                     "spc2-traj.g96" };
 
 //! Names here work for setVelocity module
 const char* const setVelocitySupported[] = {
@@ -312,7 +313,9 @@ const char* const setForceSupported[] = {
 };
 
 //! Names here don't work for setForce module
-const char* const setForceUnSupported[] = { "spc2-traj.xtc", "spc2-traj.pdb", "spc2-traj.gro",
+const char* const setForceUnSupported[] = { "spc2-traj.xtc",
+                                            "spc2-traj.pdb",
+                                            "spc2-traj.gro",
                                             "spc2-traj.g96" };
 
 //! Names here work for setPrecision module
@@ -324,7 +327,9 @@ const char* const setPrecisionSupported[] = {
 };
 
 //! Names here don't work for setPrecision module
-const char* const setPrecisionUnSupported[] = { "spc2-traj.trr", "spc2-traj.pdb", "spc2-traj.gro",
+const char* const setPrecisionUnSupported[] = { "spc2-traj.trr",
+                                                "spc2-traj.pdb",
+                                                "spc2-traj.gro",
                                                 "spc2-traj.g96" };
 
 

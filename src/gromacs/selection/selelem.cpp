@@ -469,7 +469,8 @@ void SelectionTreeElement::checkIndexGroup(int natoms)
                 "Group '%s' cannot be used in selections, because it "
                 "contains negative atom indices and/or references atoms "
                 "not present (largest allowed atom index is %d).",
-                name().c_str(), natoms);
+                name().c_str(),
+                natoms);
         GMX_THROW(InconsistentInputError(message));
     }
 }
@@ -564,8 +565,7 @@ void _gmx_selelem_print_tree(FILE* fp, const gmx::SelectionTreeElement& sel, boo
 {
     int i;
 
-    fprintf(fp, "%*c %s %s", level * 2 + 1, '*', _gmx_selelem_type_str(sel),
-            _gmx_sel_value_type_str(&sel.v));
+    fprintf(fp, "%*c %s %s", level * 2 + 1, '*', _gmx_selelem_type_str(sel), _gmx_sel_value_type_str(&sel.v));
     if (!sel.name().empty())
     {
         fprintf(fp, " \"%s\"", sel.name().c_str());
@@ -716,8 +716,7 @@ void _gmx_selelem_print_tree(FILE* fp, const gmx::SelectionTreeElement& sel, boo
                  * segfaults when printing the selection tree. */
                 if (sel.v.u.p->x)
                 {
-                    fprintf(fp, "(%f, %f, %f)", sel.v.u.p->x[0][XX], sel.v.u.p->x[0][YY],
-                            sel.v.u.p->x[0][ZZ]);
+                    fprintf(fp, "(%f, %f, %f)", sel.v.u.p->x[0][XX], sel.v.u.p->x[0][YY], sel.v.u.p->x[0][ZZ]);
                 }
                 else
                 {

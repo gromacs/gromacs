@@ -195,8 +195,8 @@ int gmx_sorient(int argc, char* argv[])
                        { efXVG, "-co", "scum", ffWRITE },    { efXVG, "-rc", "scount", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -415,7 +415,10 @@ int gmx_sorient(int argc, char* argv[])
     xvgr_legend(fp, 2, legr, oenv);
     for (i = 0; i < nrbin; i++)
     {
-        fprintf(fp, "%g %g %g\n", (i + 0.5) * rbinw, histn[i] ? histi1[i] / histn[i] : 0,
+        fprintf(fp,
+                "%g %g %g\n",
+                (i + 0.5) * rbinw,
+                histn[i] ? histi1[i] / histn[i] : 0,
                 histn[i] ? histi2[i] / histn[i] : 0);
     }
     xvgrclose(fp);

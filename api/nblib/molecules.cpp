@@ -135,10 +135,12 @@ void Molecule::addInteraction(const ParticleName& particleNameI,
 }
 
 //! \cond DO_NOT_DOCUMENT
-#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                                 \
-    template void Molecule::addInteraction(                                     \
-            const ParticleName& particleNameI, const ResidueName& residueNameI, \
-            const ParticleName& particleNameJ, const ResidueName& residueNameJ, const x& interaction);
+#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                               \
+    template void Molecule::addInteraction(const ParticleName& particleNameI, \
+                                           const ResidueName&  residueNameI,  \
+                                           const ParticleName& particleNameJ, \
+                                           const ResidueName&  residueNameJ,  \
+                                           const x&            interaction);
 MAP(ADD_INTERACTION_INSTANTIATE_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
 #undef ADD_INTERACTION_INSTANTIATE_TEMPLATE
 //! \endcond
@@ -153,9 +155,9 @@ void Molecule::addInteraction(const ParticleName& particleNameI,
 }
 
 //! \cond DO_NOT_DOCUMENT
-#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                               \
-    template void Molecule::addInteraction(const ParticleName& particleNameI, \
-                                           const ParticleName& particleNameJ, const x& interaction);
+#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x) \
+    template void Molecule::addInteraction(     \
+            const ParticleName& particleNameI, const ParticleName& particleNameJ, const x& interaction);
 MAP(ADD_INTERACTION_INSTANTIATE_TEMPLATE, SUPPORTED_TWO_CENTER_TYPES)
 #undef ADD_INTERACTION_INSTANTIATE_TEMPLATE
 
@@ -176,16 +178,19 @@ void Molecule::addInteraction(const ParticleName& particleNameI,
     }
 
     auto& interactionContainer = pickType<Interaction>(interactionData_);
-    interactionContainer.interactions_.emplace_back(particleNameI, residueNameI, particleNameJ,
-                                                    residueNameJ, particleNameK, residueNameK);
+    interactionContainer.interactions_.emplace_back(
+            particleNameI, residueNameI, particleNameJ, residueNameJ, particleNameK, residueNameK);
     interactionContainer.interactionTypes_.push_back(interaction);
 }
 
-#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                                 \
-    template void Molecule::addInteraction(                                     \
-            const ParticleName& particleNameI, const ResidueName& residueNameI, \
-            const ParticleName& particleNameJ, const ResidueName& residueNameJ, \
-            const ParticleName& particleNameK, const ResidueName& residueNameK, const x& interaction);
+#define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                               \
+    template void Molecule::addInteraction(const ParticleName& particleNameI, \
+                                           const ResidueName&  residueNameI,  \
+                                           const ParticleName& particleNameJ, \
+                                           const ResidueName&  residueNameJ,  \
+                                           const ParticleName& particleNameK, \
+                                           const ResidueName&  residueNameK,  \
+                                           const x&            interaction);
 MAP(ADD_INTERACTION_INSTANTIATE_TEMPLATE, SUPPORTED_THREE_CENTER_TYPES)
 #undef ADD_INTERACTION_INSTANTIATE_TEMPLATE
 
@@ -195,14 +200,20 @@ void Molecule::addInteraction(const ParticleName& particleNameI,
                               const ParticleName& particleNameK,
                               const Interaction&  interaction)
 {
-    addInteraction(particleNameI, ResidueName(name_), particleNameJ, ResidueName(name_),
-                   particleNameK, ResidueName(name_), interaction);
+    addInteraction(particleNameI,
+                   ResidueName(name_),
+                   particleNameJ,
+                   ResidueName(name_),
+                   particleNameK,
+                   ResidueName(name_),
+                   interaction);
 }
 
 #define ADD_INTERACTION_INSTANTIATE_TEMPLATE(x)                               \
     template void Molecule::addInteraction(const ParticleName& particleNameI, \
                                            const ParticleName& particleNameJ, \
-                                           const ParticleName& particleNameK, const x& interaction);
+                                           const ParticleName& particleNameK, \
+                                           const x&            interaction);
 MAP(ADD_INTERACTION_INSTANTIATE_TEMPLATE, SUPPORTED_THREE_CENTER_TYPES)
 #undef ADD_INTERACTION_INSTANTIATE_TEMPLATE
 //! \endcond
@@ -227,7 +238,8 @@ void Molecule::addExclusion(std::tuple<ParticleName, ResidueName> particle,
                             std::tuple<ParticleName, ResidueName> particleToExclude)
 {
     // duplication for the swapped pair happens in getExclusions()
-    exclusionsByName_.emplace_back(std::make_tuple(std::get<0>(particle), std::get<1>(particle),
+    exclusionsByName_.emplace_back(std::make_tuple(std::get<0>(particle),
+                                                   std::get<1>(particle),
                                                    std::get<0>(particleToExclude),
                                                    std::get<1>(particleToExclude)));
 }
@@ -295,8 +307,10 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
         const std::string& residueName2  = std::get<3>(tup);
 
         // look up first index (binary search)
-        auto it1 = std::lower_bound(std::begin(indexKey), std::end(indexKey),
-                                    std::make_tuple(particleName1, residueName2, 0), sortKey);
+        auto it1 = std::lower_bound(std::begin(indexKey),
+                                    std::end(indexKey),
+                                    std::make_tuple(particleName1, residueName2, 0),
+                                    sortKey);
 
         // make sure we have the (particleName,residueName) combo
         if (it1 == std::end(indexKey) or std::get<0>(*it1) != particleName1 or std::get<1>(*it1) != residueName1)
@@ -309,8 +323,10 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
         int firstIndex = std::get<2>(*it1);
 
         // look up second index (binary search)
-        auto it2 = std::lower_bound(std::begin(indexKey), std::end(indexKey),
-                                    std::make_tuple(particleName2, residueName2, 0), sortKey);
+        auto it2 = std::lower_bound(std::begin(indexKey),
+                                    std::end(indexKey),
+                                    std::make_tuple(particleName2, residueName2, 0),
+                                    sortKey);
 
         // make sure we have the (particleName,residueName) combo
         if (it2 == std::end(indexKey) or std::get<0>(*it2) != particleName2 or std::get<1>(*it2) != residueName2)

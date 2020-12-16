@@ -112,19 +112,22 @@ void detail::export_tprfile(pybind11::module& module)
                  [](GmxMdParams* self, const std::string& key, int64_t value) {
                      gmxapicompat::setParam(self, key, value);
                  },
-                 py::arg("key").none(false), py::arg("value").none(false),
+                 py::arg("key").none(false),
+                 py::arg("value").none(false),
                  "Use a dictionary to update simulation parameters.");
     mdparams.def("set",
                  [](GmxMdParams* self, const std::string& key, double value) {
                      gmxapicompat::setParam(self, key, value);
                  },
-                 py::arg("key").none(false), py::arg("value").none(false),
+                 py::arg("key").none(false),
+                 py::arg("value").none(false),
                  "Use a dictionary to update simulation parameters.");
     mdparams.def("set",
                  [](GmxMdParams* self, const std::string& key, py::none) {
                      // unsetParam(self, key);
                  },
-                 py::arg("key").none(false), py::arg("value"),
+                 py::arg("key").none(false),
+                 py::arg("value"),
                  "Use a dictionary to update simulation parameters.");
 
 
@@ -134,7 +137,9 @@ void detail::export_tprfile(pybind11::module& module)
         return params;
     });
 
-    module.def("read_tprfile", &readTprFile, py::arg("filename"),
+    module.def("read_tprfile",
+               &readTprFile,
+               py::arg("filename"),
                "Get a handle to a TPR file resource for a given file name.");
 
     module.def("write_tprfile",
@@ -146,21 +151,25 @@ void detail::export_tprfile(pybind11::module& module)
                    auto topology      = gmxapicompat::getTopologySource(tprReadHandle);
                    gmxapicompat::writeTprFile(filename, *params, *structure, *state, *topology);
                },
-               py::arg("filename").none(false), py::arg("parameters"),
+               py::arg("filename").none(false),
+               py::arg("parameters"),
                "Write a new TPR file with the provided data.");
 
     module.def("copy_tprfile",
                [](const gmxapicompat::TprReadHandle& input, std::string outFile) {
                    return gmxapicompat::copy_tprfile(input, outFile);
                },
-               py::arg("source"), py::arg("destination"),
+               py::arg("source"),
+               py::arg("destination"),
                "Copy a TPR file from ``source`` to ``destination``.");
 
     module.def("rewrite_tprfile",
                [](std::string input, std::string output, double end_time) {
                    return gmxapicompat::rewrite_tprfile(input, output, end_time);
                },
-               py::arg("source"), py::arg("destination"), py::arg("end_time"),
+               py::arg("source"),
+               py::arg("destination"),
+               py::arg("end_time"),
                "Copy a TPR file from ``source`` to ``destination``, replacing `nsteps` with "
                "``end_time``.");
 }

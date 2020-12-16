@@ -466,8 +466,7 @@ inline void ReadCheckpointData::arrayRef(const std::string& key, ArrayRef<RVec> 
     for (; outputIt != outputEnd && inputIt != inputEnd; outputIt++, inputIt++)
     {
         auto storedRVec = inputIt->asObject()["RVec"].asArray().values();
-        *outputIt       = { storedRVec[XX].cast<real>(), storedRVec[YY].cast<real>(),
-                      storedRVec[ZZ].cast<real>() };
+        *outputIt = { storedRVec[XX].cast<real>(), storedRVec[YY].cast<real>(), storedRVec[ZZ].cast<real>() };
     }
 }
 

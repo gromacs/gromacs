@@ -53,8 +53,10 @@ std::vector<real> makeExclusionDistances(const t_atoms* a, AtomProperties* aps, 
         for (int i = 0; i < a->nr; ++i)
         {
             real value;
-            if (!aps->setAtomProperty(epropVDW, std::string(*(a->resinfo[a->atom[i].resind].name)),
-                                      std::string(*(a->atomname[i])), &value))
+            if (!aps->setAtomProperty(epropVDW,
+                                      std::string(*(a->resinfo[a->atom[i].resind].name)),
+                                      std::string(*(a->atomname[i])),
+                                      &value))
             {
                 value = defaultDistance;
             }

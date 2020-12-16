@@ -129,8 +129,8 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
 
     // The integrate should save a copy of the current coordinates in d_xp_ and write updated
     // once into d_x_. The d_xp_ is only needed by constraints.
-    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, doTemperatureScaling, tcstat,
-                           doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
+    integrator_->integrate(
+            d_x_, d_xp_, d_v_, d_f_, dt, doTemperatureScaling, tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
     // Constraints need both coordinates before (d_x_) and after (d_xp_) update. However, after constraints
     // are applied, the d_x_ can be discarded. So we intentionally swap the d_x_ and d_xp_ here to avoid the
     // d_xp_ -> d_x_ copy after constraints. Note that the integrate saves them in the wrong order as well.
@@ -170,8 +170,12 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
 
     const auto kernelArgs = prepareGpuKernelArguments(
             scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, &numAtoms_, &d_x_, &mu);
-    launchGpuKernel(scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, deviceStream_,
-                    nullptr, "scaleCoordinates_kernel", kernelArgs);
+    launchGpuKernel(scaleCoordinates_kernel,
+                    coordinateScalingKernelLaunchConfig_,
+                    deviceStream_,
+                    nullptr,
+                    "scaleCoordinates_kernel",
+                    kernelArgs);
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
     //       can affect the performance if nstpcouple is small.
     deviceStream_.synchronize();
@@ -195,8 +199,12 @@ void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
 
     const auto kernelArgs = prepareGpuKernelArguments(
             scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, &numAtoms_, &d_v_, &mu);
-    launchGpuKernel(scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, deviceStream_,
-                    nullptr, "scaleCoordinates_kernel", kernelArgs);
+    launchGpuKernel(scaleCoordinates_kernel,
+                    coordinateScalingKernelLaunchConfig_,
+                    deviceStream_,
+                    nullptr,
+                    "scaleCoordinates_kernel",
+                    kernelArgs);
     // TODO: Although this only happens on the pressure coupling steps, this synchronization
     //       can affect the performance if nstpcouple is small.
     deviceStream_.synchronize();
@@ -254,8 +262,8 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
 
     reallocateDeviceBuffer(&d_xp_, numAtoms_, &numXp_, &numXpAlloc_, deviceContext_);
 
-    reallocateDeviceBuffer(&d_inverseMasses_, numAtoms_, &numInverseMasses_,
-                           &numInverseMassesAlloc_, deviceContext_);
+    reallocateDeviceBuffer(
+            &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
 
     // Integrator should also update something, but it does not even have a method yet
     integrator_->set(numAtoms_, md.invmass, numTempScaleValues, md.cTC);
@@ -303,8 +311,16 @@ void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDev
                                    const float                       dtPressureCouple,
                                    const matrix                      prVelocityScalingMatrix)
 {
-    impl_->integrate(fReadyOnDevice, dt, updateVelocities, computeVirial, virialScaled, doTemperatureScaling,
-                     tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
+    impl_->integrate(fReadyOnDevice,
+                     dt,
+                     updateVelocities,
+                     computeVirial,
+                     virialScaled,
+                     doTemperatureScaling,
+                     tcstat,
+                     doParrinelloRahman,
+                     dtPressureCouple,
+                     prVelocityScalingMatrix);
 }
 
 void UpdateConstrainGpu::scaleCoordinates(const matrix scalingMatrix)

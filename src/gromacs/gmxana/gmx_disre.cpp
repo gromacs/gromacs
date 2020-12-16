@@ -198,7 +198,10 @@ static void check_viol(FILE*                          log,
             gmx_fatal(FARGS,
                       "Label mismatch in distance restrains. Label for restraint %d is %d, "
                       "expected it to be either %d or %d",
-                      i / nat, label, label_old, label_old + 1);
+                      i / nat,
+                      label,
+                      label_old,
+                      label_old + 1);
         }
     }
 
@@ -238,8 +241,7 @@ static void check_viol(FILE*                          log,
         dr[clust_id].aver_6[ndr] += disresdata->Rt_6[label];
 
         snew(fshift, SHIFTS);
-        ta_disres(n, &forceatoms[i], forceparams.data(), x, f, fshift, pbc, lam, &dvdl, nullptr,
-                  &fcd, nullptr);
+        ta_disres(n, &forceatoms[i], forceparams.data(), x, f, fshift, pbc, lam, &dvdl, nullptr, &fcd, nullptr);
         sfree(fshift);
         viol = disresdata->sumviol;
 
@@ -356,9 +358,17 @@ static void dump_viol(FILE* log, int ndr, t_dr_stats* drs, gmx_bool bLinear)
         {
             break;
         }
-        fprintf(log, "%6d%5s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f\n", drs[i].label,
-                yesno_names[drs[i].bCore], drs[i].up1, drs[i].r, drs[i].rT3, drs[i].rT6,
-                drs[i].viol, drs[i].violT3, drs[i].violT6);
+        fprintf(log,
+                "%6d%5s%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f%8.3f\n",
+                drs[i].label,
+                yesno_names[drs[i].bCore],
+                drs[i].up1,
+                drs[i].r,
+                drs[i].rT3,
+                drs[i].rT6,
+                drs[i].viol,
+                drs[i].violT3,
+                drs[i].violT6);
     }
 }
 
@@ -417,8 +427,9 @@ static void dump_stats(FILE*                          log,
     dump_viol(log, dd.nres, drs, FALSE);
 
     fprintf(log, "+++ Sorted by linear averaged violations: +++\n");
-    std::sort(drs, drs + dd.nres,
-              [](const t_dr_stats& a, const t_dr_stats& b) { return a.viol > b.viol; }); // Reverse sort
+    std::sort(drs, drs + dd.nres, [](const t_dr_stats& a, const t_dr_stats& b) {
+        return a.viol > b.viol;
+    }); // Reverse sort
     dump_viol(log, dd.nres, drs, TRUE);
 
     dump_dump(log, dd.nres, drs);
@@ -457,7 +468,9 @@ static void dump_clust_stats(FILE*                          fp,
             gmx_fatal(FARGS,
                       "Inconsistency in cluster %s.\n"
                       "Found %d frames in trajectory rather than the expected %d\n",
-                      clust_name[k], dr[k].nframes, clust->index[k + 1] - clust->index[k]);
+                      clust_name[k],
+                      dr[k].nframes,
+                      clust->index[k + 1] - clust->index[k]);
         }
         if (!clust_name[k])
         {
@@ -505,8 +518,16 @@ static void dump_clust_stats(FILE*                          fp,
         {
             mmm++;
         }
-        fprintf(fp, "%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n", clust_name[k],
-                dr[k].nframes, sumV, maxV, sumVT3, maxVT3, sumVT6, maxVT6);
+        fprintf(fp,
+                "%-10s%6d%8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n",
+                clust_name[k],
+                dr[k].nframes,
+                sumV,
+                maxV,
+                sumVT3,
+                maxVT3,
+                sumVT6,
+                maxVT6);
     }
     fflush(fp);
     sfree(drs);
@@ -649,14 +670,29 @@ static void dump_disre_matrix(const char*                   fn,
         {
             printf("Warning: the maxdr that you have specified (%g) is smaller than\nthe largest "
                    "value in your simulation (%g)\n",
-                   max_dr, hi);
+                   max_dr,
+                   hi);
         }
         hi = max_dr;
     }
     printf("Highest level in the matrix will be %g\n", hi);
     fp = gmx_ffopen(fn, "w");
-    write_xpm(fp, 0, "Distance Violations", "<V> (nm)", "Residue", "Residue", n_res, n_res, t_res,
-              t_res, matrix, 0, hi, rlo, rhi, &nlevels);
+    write_xpm(fp,
+              0,
+              "Distance Violations",
+              "<V> (nm)",
+              "Residue",
+              "Residue",
+              n_res,
+              n_res,
+              t_res,
+              t_res,
+              matrix,
+              0,
+              hi,
+              rlo,
+              rhi,
+              &nlevels);
     gmx_ffclose(fp);
 }
 
@@ -732,8 +768,8 @@ int gmx_disre(int argc, char* argv[])
                        { efNDX, "-c", "clust", ffOPTRD },   { efXPM, "-x", "matrix", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -806,8 +842,17 @@ int gmx_disre(int argc, char* argv[])
 
     ir->dr_tau = 0.0;
     t_disresdata disresdata;
-    init_disres(fplog, topInfo.mtop(), ir, DisResRunMode::AnalysisTool, DDRole::Master,
-                NumRanks::Single, MPI_COMM_NULL, nullptr, &disresdata, nullptr, FALSE);
+    init_disres(fplog,
+                topInfo.mtop(),
+                ir,
+                DisResRunMode::AnalysisTool,
+                DDRole::Master,
+                NumRanks::Single,
+                MPI_COMM_NULL,
+                nullptr,
+                &disresdata,
+                nullptr,
+                FALSE);
 
     int natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(f, 5 * natoms);
@@ -864,13 +909,12 @@ int gmx_disre(int argc, char* argv[])
             }
             my_clust = clust->inv_clust[j];
             range_check(my_clust, 0, clust->clust->nr);
-            check_viol(fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, dr_clust, my_clust,
-                       isize, index, vvindex, &disresdata);
+            check_viol(
+                    fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, dr_clust, my_clust, isize, index, vvindex, &disresdata);
         }
         else
         {
-            check_viol(fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, &dr, 0, isize, index,
-                       vvindex, &disresdata);
+            check_viol(fplog, idef.il[F_DISRES], idef.iparams, x, f, pbc_null, &dr, 0, isize, index, vvindex, &disresdata);
         }
         if (bPDB)
         {
@@ -913,20 +957,24 @@ int gmx_disre(int argc, char* argv[])
 
     if (clust)
     {
-        dump_clust_stats(fplog, disresdata, idef.il[F_DISRES], idef.iparams, clust->clust, dr_clust,
-                         clust->grpname, isize, index);
+        dump_clust_stats(
+                fplog, disresdata, idef.il[F_DISRES], idef.iparams, clust->clust, dr_clust, clust->grpname, isize, index);
     }
     else
     {
-        dump_stats(fplog, j, disresdata, idef.il[F_DISRES], idef.iparams, &dr, isize, index,
-                   bPDB ? atoms.get() : nullptr);
+        dump_stats(fplog, j, disresdata, idef.il[F_DISRES], idef.iparams, &dr, isize, index, bPDB ? atoms.get() : nullptr);
         if (bPDB)
         {
-            write_sto_conf(opt2fn("-q", NFILE, fnm), "Coloured by average violation in Angstrom",
-                           atoms.get(), xav, nullptr, ir->pbcType, box);
+            write_sto_conf(opt2fn("-q", NFILE, fnm),
+                           "Coloured by average violation in Angstrom",
+                           atoms.get(),
+                           xav,
+                           nullptr,
+                           ir->pbcType,
+                           box);
         }
-        dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, disresdata.nres, j, idef,
-                          topInfo.mtop(), max_dr, nlevels, bThird);
+        dump_disre_matrix(
+                opt2fn_null("-x", NFILE, fnm), &dr, disresdata.nres, j, idef, topInfo.mtop(), max_dr, nlevels, bThird);
         xvgrclose(out);
         xvgrclose(aver);
         xvgrclose(numv);

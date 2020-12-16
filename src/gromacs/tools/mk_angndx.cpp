@@ -89,31 +89,47 @@ static void fill_ft_ind(int nft, const int* ft, const t_idef* idef, int ft_ind[]
                 switch (ftype)
                 {
                     case F_ANGLES:
-                        sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
+                        sprintf(buf,
+                                "Theta=%.1f_%.2f",
+                                idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
                     case F_G96ANGLES:
-                        sprintf(buf, "Cos_th=%.1f_%.2f", idef->iparams[i].harmonic.rA,
+                        sprintf(buf,
+                                "Cos_th=%.1f_%.2f",
+                                idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
                     case F_UREY_BRADLEY:
-                        sprintf(buf, "UB_th=%.1f_%.2f2f", idef->iparams[i].u_b.thetaA,
+                        sprintf(buf,
+                                "UB_th=%.1f_%.2f2f",
+                                idef->iparams[i].u_b.thetaA,
                                 idef->iparams[i].u_b.kthetaA);
                         break;
                     case F_QUARTIC_ANGLES:
-                        sprintf(buf, "Q_th=%.1f_%.2f_%.2f", idef->iparams[i].qangle.theta,
-                                idef->iparams[i].qangle.c[0], idef->iparams[i].qangle.c[1]);
+                        sprintf(buf,
+                                "Q_th=%.1f_%.2f_%.2f",
+                                idef->iparams[i].qangle.theta,
+                                idef->iparams[i].qangle.c[0],
+                                idef->iparams[i].qangle.c[1]);
                         break;
                     case F_TABANGLES:
-                        sprintf(buf, "Table=%d_%.2f", idef->iparams[i].tab.table,
+                        sprintf(buf,
+                                "Table=%d_%.2f",
+                                idef->iparams[i].tab.table,
                                 idef->iparams[i].tab.kA);
                         break;
                     case F_PDIHS:
-                        sprintf(buf, "Phi=%.1f_%d_%.2f", idef->iparams[i].pdihs.phiA,
-                                idef->iparams[i].pdihs.mult, idef->iparams[i].pdihs.cpA);
+                        sprintf(buf,
+                                "Phi=%.1f_%d_%.2f",
+                                idef->iparams[i].pdihs.phiA,
+                                idef->iparams[i].pdihs.mult,
+                                idef->iparams[i].pdihs.cpA);
                         break;
                     case F_IDIHS:
-                        sprintf(buf, "Xi=%.1f_%.2f", idef->iparams[i].harmonic.rA,
+                        sprintf(buf,
+                                "Xi=%.1f_%.2f",
+                                idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
                     case F_RBDIHS:
@@ -122,7 +138,9 @@ static void fill_ft_ind(int nft, const int* ft, const t_idef* idef, int ft_ind[]
                     case F_RESTRANGLES:
                         // Fall through intended
                     case F_RESTRDIHS:
-                        sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
+                        sprintf(buf,
+                                "Theta=%.1f_%.2f",
+                                idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
                     case F_CBTDIHS:
@@ -130,7 +148,8 @@ static void fill_ft_ind(int nft, const int* ft, const t_idef* idef, int ft_ind[]
                         break;
 
                     default:
-                        gmx_fatal(FARGS, "Unsupported function type '%s' selected",
+                        gmx_fatal(FARGS,
+                                  "Unsupported function type '%s' selected",
                                   interaction_function[ftype].longname);
                 }
                 grpnames[ind] = gmx_strdup(buf);

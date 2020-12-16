@@ -2004,8 +2004,12 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             serializer->doInt(&iparams->cmap.cmapB);
             break;
         default:
-            gmx_fatal(FARGS, "unknown function type %d (%s) in %s line %d", ftype,
-                      interaction_function[ftype].name, __FILE__, __LINE__);
+            gmx_fatal(FARGS,
+                      "unknown function type %d (%s) in %s line %d",
+                      ftype,
+                      interaction_function[ftype].name,
+                      __FILE__,
+                      __LINE__);
     }
 }
 
@@ -2667,10 +2671,16 @@ static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
             gmx_fatal(FARGS,
                       "Unknown precision in file %s: real is %d bytes "
                       "instead of %zu or %zu",
-                      filename, precision, sizeof(float), sizeof(double));
+                      filename,
+                      precision,
+                      sizeof(float),
+                      sizeof(double));
         }
         gmx_fio_setprecision(fio, tpx->isDouble);
-        fprintf(stderr, "Reading file %s, %s (%s precision)\n", filename, buf.c_str(),
+        fprintf(stderr,
+                "Reading file %s, %s (%s precision)\n",
+                filename,
+                buf.c_str(),
                 tpx->isDouble ? "double" : "single");
     }
     else
@@ -2721,7 +2731,11 @@ static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
                 gmx_fatal(FARGS,
                           "tpx tag/version mismatch: reading tpx file (%s) version %d, tag '%s' "
                           "with program for tpx version %d, tag '%s'",
-                          filename, tpx->fileVersion, fileTag.c_str(), tpx_version, tpx_tag);
+                          filename,
+                          tpx->fileVersion,
+                          fileTag.c_str(),
+                          tpx_version,
+                          tpx_tag);
             }
         }
     }
@@ -2730,8 +2744,11 @@ static void do_tpxheader(gmx::FileIOXdrSerializer* serializer,
         || ((tpx->fileVersion > tpx_version) && !TopOnlyOK) || (tpx->fileGeneration > tpx_generation)
         || tpx_version == 80) /*80 was used by both 5.0-dev and 4.6-dev*/
     {
-        gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program", filename,
-                  tpx->fileVersion, tpx_version);
+        gmx_fatal(FARGS,
+                  "reading tpx file (%s) version %d with version %d program",
+                  filename,
+                  tpx->fileVersion,
+                  tpx_version);
     }
 
     serializer->doInt(&tpx->natoms);
@@ -3267,8 +3284,13 @@ void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state,
     // TPR file for now - and thus we ask the serializer to swap if this host is little endian.
     gmx::InMemorySerializer tprBodySerializer(gmx::EndianSwapBehavior::SwapIfHostIsLittleEndian);
 
-    do_tpx_body(&tprBodySerializer, &tpx, const_cast<t_inputrec*>(ir), const_cast<t_state*>(state),
-                nullptr, nullptr, const_cast<gmx_mtop_t*>(mtop));
+    do_tpx_body(&tprBodySerializer,
+                &tpx,
+                const_cast<t_inputrec*>(ir),
+                const_cast<t_state*>(state),
+                nullptr,
+                nullptr,
+                const_cast<gmx_mtop_t*>(mtop));
 
     std::vector<char> tprBody = tprBodySerializer.finishAndGetBuffer();
     tpx.sizeOfTprBody         = tprBody.size();

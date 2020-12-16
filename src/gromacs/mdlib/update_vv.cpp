@@ -130,8 +130,7 @@ void integrateVVFirstStep(int64_t                   step,
              * so that the input is actually the initial step.
              */
             snew(vbuf, state->natoms);
-            copy_rvecn(state->v.rvec_array(), vbuf, 0,
-                       state->natoms); /* should make this better for parallelizing? */
+            copy_rvecn(state->v.rvec_array(), vbuf, 0, state->natoms); /* should make this better for parallelizing? */
         }
         else
         {
@@ -139,8 +138,8 @@ void integrateVVFirstStep(int64_t                   step,
             trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, MassQ, trotter_seq, ettTSEQ1);
         }
 
-        upd->update_coords(*ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind,
-                           M, etrtVELOCITY1, cr, constr != nullptr);
+        upd->update_coords(
+                *ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M, etrtVELOCITY1, cr, constr != nullptr);
 
         wallcycle_stop(wcycle, ewcUPDATE);
         constrain_velocities(constr, do_log, do_ene, step, state, nullptr, bCalcVir, shake_vir);
@@ -166,10 +165,28 @@ void integrateVVFirstStep(int64_t                   step,
         {
             wallcycle_stop(wcycle, ewcUPDATE);
             int totalNumberOfBondedInteractions = -1;
-            compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                            makeConstArrayRef(state->v), state->box, mdatoms, nrnb, vcm, wcycle,
-                            enerd, force_vir, shake_vir, total_vir, pres, constr, nullSignaller,
-                            state->box, &totalNumberOfBondedInteractions, bSumEkinhOld,
+            compute_globals(gstat,
+                            cr,
+                            ir,
+                            fr,
+                            ekind,
+                            makeConstArrayRef(state->x),
+                            makeConstArrayRef(state->v),
+                            state->box,
+                            mdatoms,
+                            nrnb,
+                            vcm,
+                            wcycle,
+                            enerd,
+                            force_vir,
+                            shake_vir,
+                            total_vir,
+                            pres,
+                            constr,
+                            nullSignaller,
+                            state->box,
+                            &totalNumberOfBondedInteractions,
+                            bSumEkinhOld,
                             (bGStat ? CGLO_GSTAT : 0) | (bCalcEner ? CGLO_ENERGY : 0)
                                     | (bTemp ? CGLO_TEMPERATURE : 0) | (bPres ? CGLO_PRESSURE : 0)
                                     | (bPres ? CGLO_CONSTRAINT : 0) | (bStopCM ? CGLO_STOPCM : 0)
@@ -183,13 +200,18 @@ void integrateVVFirstStep(int64_t                   step,
                 time step kinetic energy for the pressure (always true now, since we want accurate statistics).
                 b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
                 EkinAveVel because it's needed for the pressure */
-            checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions, top_global,
-                                            &top, makeConstArrayRef(state->x), state->box,
+            checkNumberOfBondedInteractions(mdlog,
+                                            cr,
+                                            totalNumberOfBondedInteractions,
+                                            top_global,
+                                            &top,
+                                            makeConstArrayRef(state->x),
+                                            state->box,
                                             shouldCheckNumberOfBondedInteractions);
             if (bStopCM)
             {
-                process_and_stopcm_grp(fplog, vcm, *mdatoms, makeArrayRef(state->x),
-                                       makeArrayRef(state->v));
+                process_and_stopcm_grp(
+                        fplog, vcm, *mdatoms, makeArrayRef(state->x), makeArrayRef(state->v));
                 inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
             }
             wallcycle_start(wcycle, ewcUPDATE);
@@ -200,8 +222,7 @@ void integrateVVFirstStep(int64_t                   step,
             if (bTrotter)
             {
                 m_add(force_vir, shake_vir, total_vir); /* we need the un-dispersion corrected total vir here */
-                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, MassQ,
-                               trotter_seq, ettTSEQ2);
+                trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, MassQ, trotter_seq, ettTSEQ2);
 
                 /* TODO This is only needed when we're about to write
                  * a checkpoint, because we use it after the restart
@@ -225,10 +246,29 @@ void integrateVVFirstStep(int64_t                   step,
                 /* We need the kinetic energy at minus the half step for determining
                  * the full step kinetic energy and possibly for T-coupling.*/
                 /* This may not be quite working correctly yet . . . . */
-                compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                                makeConstArrayRef(state->v), state->box, mdatoms, nrnb, vcm, wcycle,
-                                enerd, nullptr, nullptr, nullptr, nullptr, constr, nullSignaller,
-                                state->box, nullptr, bSumEkinhOld, CGLO_GSTAT | CGLO_TEMPERATURE);
+                compute_globals(gstat,
+                                cr,
+                                ir,
+                                fr,
+                                ekind,
+                                makeConstArrayRef(state->x),
+                                makeConstArrayRef(state->v),
+                                state->box,
+                                mdatoms,
+                                nrnb,
+                                vcm,
+                                wcycle,
+                                enerd,
+                                nullptr,
+                                nullptr,
+                                nullptr,
+                                nullptr,
+                                constr,
+                                nullSignaller,
+                                state->box,
+                                nullptr,
+                                bSumEkinhOld,
+                                CGLO_GSTAT | CGLO_TEMPERATURE);
                 wallcycle_start(wcycle, ewcUPDATE);
             }
         }
@@ -293,8 +333,8 @@ void integrateVVSecondStep(int64_t                                  step,
                            gmx_wallcycle*                           wcycle)
 {
     /* velocity half-step update */
-    upd->update_coords(*ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M,
-                       etrtVELOCITY2, cr, constr != nullptr);
+    upd->update_coords(
+            *ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M, etrtVELOCITY2, cr, constr != nullptr);
 
 
     /* Above, initialize just copies ekinh into ekin,
@@ -313,33 +353,52 @@ void integrateVVSecondStep(int64_t                                  step,
         updatePrevStepPullCom(pull_work, state);
     }
 
-    upd->update_coords(*ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M,
-                       etrtPOSITION, cr, constr != nullptr);
+    upd->update_coords(
+            *ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M, etrtPOSITION, cr, constr != nullptr);
 
     wallcycle_stop(wcycle, ewcUPDATE);
 
-    constrain_coordinates(constr, do_log, do_ene, step, state, upd->xp()->arrayRefWithPadding(),
-                          dvdl_constr, bCalcVir, shake_vir);
+    constrain_coordinates(
+            constr, do_log, do_ene, step, state, upd->xp()->arrayRefWithPadding(), dvdl_constr, bCalcVir, shake_vir);
 
-    upd->update_sd_second_half(*ir, step, dvdl_constr, mdatoms, state, cr, nrnb, wcycle, constr,
-                               do_log, do_ene);
+    upd->update_sd_second_half(
+            *ir, step, dvdl_constr, mdatoms, state, cr, nrnb, wcycle, constr, do_log, do_ene);
     upd->finish_update(*ir, mdatoms, state, wcycle, constr != nullptr);
 
     if (ir->eI == eiVVAK)
     {
         /* erase F_EKIN and F_TEMP here? */
         /* just compute the kinetic energy at the half step to perform a trotter step */
-        compute_globals(gstat, cr, ir, fr, ekind, makeConstArrayRef(state->x),
-                        makeConstArrayRef(state->v), state->box, mdatoms, nrnb, vcm, wcycle, enerd,
-                        force_vir, shake_vir, total_vir, pres, constr, nullSignaller, lastbox,
-                        nullptr, bSumEkinhOld, (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE);
+        compute_globals(gstat,
+                        cr,
+                        ir,
+                        fr,
+                        ekind,
+                        makeConstArrayRef(state->x),
+                        makeConstArrayRef(state->v),
+                        state->box,
+                        mdatoms,
+                        nrnb,
+                        vcm,
+                        wcycle,
+                        enerd,
+                        force_vir,
+                        shake_vir,
+                        total_vir,
+                        pres,
+                        constr,
+                        nullSignaller,
+                        lastbox,
+                        nullptr,
+                        bSumEkinhOld,
+                        (bGStat ? CGLO_GSTAT : 0) | CGLO_TEMPERATURE);
         wallcycle_start(wcycle, ewcUPDATE);
         trotter_update(ir, step, ekind, enerd, state, total_vir, mdatoms, MassQ, trotter_seq, ettTSEQ4);
         /* now we know the scaling, we can compute the positions again */
         std::copy(cbuf->begin(), cbuf->end(), state->x.begin());
 
-        upd->update_coords(*ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind,
-                           M, etrtPOSITION, cr, constr != nullptr);
+        upd->update_coords(
+                *ir, step, mdatoms, state, f->view().forceWithPadding(), fcdata, ekind, M, etrtPOSITION, cr, constr != nullptr);
         wallcycle_stop(wcycle, ewcUPDATE);
 
         /* do we need an extra constraint here? just need to copy out of as_rvec_array(state->v.data()) to upd->xp? */

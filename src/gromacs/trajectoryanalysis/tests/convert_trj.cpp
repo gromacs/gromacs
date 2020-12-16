@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,8 +95,9 @@ TEST_F(ConvertTrjModuleTest, WorksWithAtomAdding)
 
 TEST_F(ConvertTrjModuleTest, WorksWithAtomsAndSelection)
 {
-    const char* const cmdline[] = { "convert-trj", "-atoms", "always-from-structure", "-select",
-                                    "not resname = CO2" };
+    const char* const cmdline[] = {
+        "convert-trj", "-atoms", "always-from-structure", "-select", "not resname = CO2"
+    };
     // TODO check output structures once this is supported.
     setTopology("clustsize.tpr");
     setInputFile("-f", "clustsize.pdb");

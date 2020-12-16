@@ -131,8 +131,8 @@ TEST(NBlibTest, ListedForceBuffer)
     {
         for (size_t m = 0; m < dimSize; ++m)
         {
-            EXPECT_REAL_EQ_TOL(refMasterBuffer[i][m], masterBuffer[i][m],
-                               gmx::test::defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(
+                    refMasterBuffer[i][m], masterBuffer[i][m], gmx::test::defaultRealTolerance());
         }
     }
 

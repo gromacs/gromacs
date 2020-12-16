@@ -171,8 +171,7 @@ void AbstractAnalysisArrayData::valuesReady()
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         modules.notifyFrameStart(header);
         modules.notifyPointsAdd(AnalysisDataPointSetRef(
-                header, pointSetInfo_,
-                makeConstArrayRef(value_).subArray(i * columnCount(), columnCount())));
+                header, pointSetInfo_, makeConstArrayRef(value_).subArray(i * columnCount(), columnCount())));
         modules.notifyFrameFinish(header);
     }
     modules.notifyDataFinish();

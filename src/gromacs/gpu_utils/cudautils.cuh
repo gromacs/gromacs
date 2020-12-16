@@ -63,7 +63,9 @@ namespace
  */
 static inline std::string getDeviceErrorString(const cudaError_t deviceError)
 {
-    return formatString("CUDA error #%d (%s): %s.", deviceError, cudaGetErrorName(deviceError),
+    return formatString("CUDA error #%d (%s): %s.",
+                        deviceError,
+                        cudaGetErrorName(deviceError),
                         cudaGetErrorString(deviceError));
 }
 
@@ -281,8 +283,12 @@ void launchGpuKernel(void (*kernel)(Args...),
 {
     dim3 blockSize(config.blockSize[0], config.blockSize[1], config.blockSize[2]);
     dim3 gridSize(config.gridSize[0], config.gridSize[1], config.gridSize[2]);
-    cudaLaunchKernel((void*)kernel, gridSize, blockSize, const_cast<void**>(kernelArgs.data()),
-                     config.sharedMemorySize, deviceStream.stream());
+    cudaLaunchKernel((void*)kernel,
+                     gridSize,
+                     blockSize,
+                     const_cast<void**>(kernelArgs.data()),
+                     config.sharedMemorySize,
+                     deviceStream.stream());
 
     gmx::ensureNoPendingDeviceError("GPU kernel (" + std::string(kernelName)
                                     + ") failed to launch.");

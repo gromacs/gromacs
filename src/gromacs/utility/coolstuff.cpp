@@ -395,8 +395,7 @@ std::string getCoolQuote()
         { "Disturb the Peace of a John Q Citizen", "Urban Dance Squad" },
         { "Wicky-wicky Wa-wild West", "Will Smith" },
         { "This is Tense !", "Star Wars Episode I The Phantom Menace" },
-        { "Fly to the Court of England and Unfold",
-          "Macbeth, Act 3, Scene 6, William Shakespeare" },
+        { "Fly to the Court of England and Unfold", "Macbeth, Act 3, Scene 6, William Shakespeare" },
         { "Why, how now, Claudio ! Whence Comes this Restraint ?",
           "Lucio in Measure for measure, Act 1, Scene 4, William Shakespeare" },
         { "In the End Science Comes Down to Praying", "P. v.d. Berg" },
@@ -454,8 +453,7 @@ std::string getCoolQuote()
         { "Nobody Never Learnt No-Nothing from No History", "Gogol Bordello" },
         { "I'd be Safe and Warm if I was in L.A.", "The Mamas and the Papas" },
         { "It's Unacceptable That Chocolate Makes You Fat", "MI 3" },
-        { "My Brothers are Protons (Protons!), My Sisters are Neurons (Neurons)",
-          "Gogol Bordello" },
+        { "My Brothers are Protons (Protons!), My Sisters are Neurons (Neurons)", "Gogol Bordello" },
         { "Put Me Inside SSC, Let's Test Superstring Theory, Oh Yoi Yoi Accelerate the Protons",
           "Gogol Bordello" },
         { "Do You Have Sex Maniacs or Schizophrenics or Astrophysicists in Your Family?",
@@ -536,8 +534,7 @@ std::string getCoolQuote()
         { "The scientific method is an integral part of human intelligence, and when it has once "
           "been set at work it can only be dismissed by dismissing the intelligence itself",
           "George H. Mead" },
-        { "Der Ball ist rund, das Spiel dauert 90 minuten, alles andere ist Theorie",
-          "Lola rennt" },
+        { "Der Ball ist rund, das Spiel dauert 90 minuten, alles andere ist Theorie", "Lola rennt" },
         { "Life in the streets is not easy", "Marky Mark" },
         { "How will I know it's working right?", "MGMT" },
         { "There was no preconception on what to do", "Daft Punk" },
@@ -1309,8 +1306,7 @@ std::string getCoolQuote()
         { "All sorts of things can happen when you're open to new ideas and playing around with "
           "things.",
           "Stephanie Kwolek, inventor of Kevlar" },
-        { "As always in life, people want a simple answer... and it's always wrong.",
-          "Marie Daly" },
+        { "As always in life, people want a simple answer... and it's always wrong.", "Marie Daly" },
         { "For a research worker the unforgotten moments of his life are those rare ones which "
           "come after years of plodding work, when the veil over natures secret seems suddenly to "
           "lift & when what was dark & chaotic appears in a clear & beautiful light & pattern.",
@@ -1380,8 +1376,7 @@ std::string getCoolQuote()
           "3-phosphoshikimate-carboxyvinyl transferase?' Shopkeeper: 'You mean Roundup?' "
           "Scientist: 'Yeah, that's it. I can never remember that dang name!'",
           "John Pickett" },
-        { "It is not clear that intelligence has any long-term survival value.",
-          "Stephen Hawking" },
+        { "It is not clear that intelligence has any long-term survival value.", "Stephen Hawking" },
         { "The greatest shortcoming of the human race is our inability to understand the "
           "exponential function.",
           "Albert Bartlett" },

@@ -439,8 +439,15 @@ static void pr_matrix(FILE* fp, int indent, const char* title, const rvec* m, gm
 {
     if (bMDPformat)
     {
-        fprintf(fp, "%-10s    = %g %g %g %g %g %g\n", title, m[XX][XX], m[YY][YY], m[ZZ][ZZ],
-                m[XX][YY], m[XX][ZZ], m[YY][ZZ]);
+        fprintf(fp,
+                "%-10s    = %g %g %g %g %g %g\n",
+                title,
+                m[XX][XX],
+                m[YY][YY],
+                m[ZZ][ZZ],
+                m[XX][YY],
+                m[XX][ZZ],
+                m[YY][ZZ]);
     }
     else
     {
@@ -926,10 +933,8 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
 
         if (bMDPformat)
         {
-            fprintf(fp, "posres-com  = %g %g %g\n", ir->posres_com[XX], ir->posres_com[YY],
-                    ir->posres_com[ZZ]);
-            fprintf(fp, "posres-comB = %g %g %g\n", ir->posres_comB[XX], ir->posres_comB[YY],
-                    ir->posres_comB[ZZ]);
+            fprintf(fp, "posres-com  = %g %g %g\n", ir->posres_com[XX], ir->posres_com[YY], ir->posres_com[ZZ]);
+            fprintf(fp, "posres-comB = %g %g %g\n", ir->posres_comB[XX], ir->posres_comB[YY], ir->posres_comB[ZZ]);
         }
         else
         {
@@ -1072,8 +1077,7 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
         cmp_real(fp, "inputrec->grpopts.ref_t", i, opt1->ref_t[i], opt2->ref_t[i], ftol, abstol);
         cmp_real(fp, "inputrec->grpopts.tau_t", i, opt1->tau_t[i], opt2->tau_t[i], ftol, abstol);
         cmp_int(fp, "inputrec->grpopts.annealing", i, opt1->annealing[i], opt2->annealing[i]);
-        cmp_int(fp, "inputrec->grpopts.anneal_npoints", i, opt1->anneal_npoints[i],
-                opt2->anneal_npoints[i]);
+        cmp_int(fp, "inputrec->grpopts.anneal_npoints", i, opt1->anneal_npoints[i], opt2->anneal_npoints[i]);
         if (opt1->anneal_npoints[i] == opt2->anneal_npoints[i])
         {
             sprintf(buf1, "inputrec->grpopts.anneal_time[%d]", i);
@@ -1092,8 +1096,7 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
             for (j = i; j < opt1->ngener; j++)
             {
                 sprintf(buf1, "inputrec->grpopts.egp_flags[%d]", i);
-                cmp_int(fp, buf1, j, opt1->egp_flags[opt1->ngener * i + j],
-                        opt2->egp_flags[opt1->ngener * i + j]);
+                cmp_int(fp, buf1, j, opt1->egp_flags[opt1->ngener * i + j], opt2->egp_flags[opt1->ngener * i + j]);
             }
         }
     }
@@ -1124,19 +1127,25 @@ static void cmp_awhDimParams(FILE*                    fp,
     /* Note that we have double index here, but the compare functions only
      * support one index, so here we only print the dim index and not the bias.
      */
-    cmp_int(fp, "inputrec.awhParams->bias?->dim->coord_index", dimIndex, dimp1->coordIndex,
-            dimp2->coordIndex);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->period", dimIndex, dimp1->period,
-               dimp2->period, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->diffusion", dimIndex, dimp1->diffusion,
-               dimp2->diffusion, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->origin", dimIndex, dimp1->origin,
-               dimp2->origin, ftol, abstol);
+    cmp_int(fp, "inputrec.awhParams->bias?->dim->coord_index", dimIndex, dimp1->coordIndex, dimp2->coordIndex);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->period", dimIndex, dimp1->period, dimp2->period, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->diffusion", dimIndex, dimp1->diffusion, dimp2->diffusion, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->origin", dimIndex, dimp1->origin, dimp2->origin, ftol, abstol);
     cmp_double(fp, "inputrec->awhParams->bias?->dim->end", dimIndex, dimp1->end, dimp2->end, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->coord_value_init", dimIndex,
-               dimp1->coordValueInit, dimp2->coordValueInit, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->coverDiameter", dimIndex, dimp1->coverDiameter,
-               dimp2->coverDiameter, ftol, abstol);
+    cmp_double(fp,
+               "inputrec->awhParams->bias?->dim->coord_value_init",
+               dimIndex,
+               dimp1->coordValueInit,
+               dimp2->coordValueInit,
+               ftol,
+               abstol);
+    cmp_double(fp,
+               "inputrec->awhParams->bias?->dim->coverDiameter",
+               dimIndex,
+               dimp1->coverDiameter,
+               dimp2->coverDiameter,
+               ftol,
+               abstol);
 }
 
 static void cmp_awhBiasParams(FILE*                     fp,
@@ -1148,15 +1157,29 @@ static void cmp_awhBiasParams(FILE*                     fp,
 {
     cmp_int(fp, "inputrec->awhParams->ndim", biasIndex, bias1->ndim, bias2->ndim);
     cmp_int(fp, "inputrec->awhParams->biaseTarget", biasIndex, bias1->eTarget, bias2->eTarget);
-    cmp_double(fp, "inputrec->awhParams->biastargetBetaScaling", biasIndex,
-               bias1->targetBetaScaling, bias2->targetBetaScaling, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->biastargetCutoff", biasIndex, bias1->targetCutoff,
-               bias2->targetCutoff, ftol, abstol);
+    cmp_double(fp,
+               "inputrec->awhParams->biastargetBetaScaling",
+               biasIndex,
+               bias1->targetBetaScaling,
+               bias2->targetBetaScaling,
+               ftol,
+               abstol);
+    cmp_double(fp,
+               "inputrec->awhParams->biastargetCutoff",
+               biasIndex,
+               bias1->targetCutoff,
+               bias2->targetCutoff,
+               ftol,
+               abstol);
     cmp_int(fp, "inputrec->awhParams->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
-    cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData != 0,
-             bias2->bUserData != 0);
-    cmp_double(fp, "inputrec->awhParams->biaserror_initial", biasIndex, bias1->errorInitial,
-               bias2->errorInitial, ftol, abstol);
+    cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData != 0, bias2->bUserData != 0);
+    cmp_double(fp,
+               "inputrec->awhParams->biaserror_initial",
+               biasIndex,
+               bias1->errorInitial,
+               bias2->errorInitial,
+               ftol,
+               abstol);
     cmp_int(fp, "inputrec->awhParams->biasShareGroup", biasIndex, bias1->shareGroup, bias2->shareGroup);
 
     for (int dim = 0; dim < std::min(bias1->ndim, bias2->ndim); dim++)
@@ -1171,11 +1194,13 @@ static void cmp_awhParams(FILE* fp, const gmx::AwhParams* awh1, const gmx::AwhPa
     cmp_int64(fp, "inputrec->awhParams->seed", awh1->seed, awh2->seed);
     cmp_int(fp, "inputrec->awhParams->nstout", -1, awh1->nstOut, awh2->nstOut);
     cmp_int(fp, "inputrec->awhParams->nstsample_coord", -1, awh1->nstSampleCoord, awh2->nstSampleCoord);
-    cmp_int(fp, "inputrec->awhParams->nsamples_update_free_energy", -1,
-            awh1->numSamplesUpdateFreeEnergy, awh2->numSamplesUpdateFreeEnergy);
+    cmp_int(fp,
+            "inputrec->awhParams->nsamples_update_free_energy",
+            -1,
+            awh1->numSamplesUpdateFreeEnergy,
+            awh2->numSamplesUpdateFreeEnergy);
     cmp_int(fp, "inputrec->awhParams->ePotential", -1, awh1->ePotential, awh2->ePotential);
-    cmp_bool(fp, "inputrec->awhParams->shareBiasMultisim", -1, awh1->shareBiasMultisim,
-             awh2->shareBiasMultisim);
+    cmp_bool(fp, "inputrec->awhParams->shareBiasMultisim", -1, awh1->shareBiasMultisim, awh2->shareBiasMultisim);
 
     if (awh1->numBias == awh2->numBias)
     {
@@ -1195,14 +1220,17 @@ static void cmp_simtempvals(FILE*            fp,
 {
     int i;
     cmp_int(fp, "inputrec->simtempvals->eSimTempScale", -1, simtemp1->eSimTempScale, simtemp2->eSimTempScale);
-    cmp_real(fp, "inputrec->simtempvals->simtemp_high", -1, simtemp1->simtemp_high,
-             simtemp2->simtemp_high, ftol, abstol);
-    cmp_real(fp, "inputrec->simtempvals->simtemp_low", -1, simtemp1->simtemp_low,
-             simtemp2->simtemp_low, ftol, abstol);
+    cmp_real(fp, "inputrec->simtempvals->simtemp_high", -1, simtemp1->simtemp_high, simtemp2->simtemp_high, ftol, abstol);
+    cmp_real(fp, "inputrec->simtempvals->simtemp_low", -1, simtemp1->simtemp_low, simtemp2->simtemp_low, ftol, abstol);
     for (i = 0; i < n_lambda; i++)
     {
-        cmp_real(fp, "inputrec->simtempvals->temperatures", -1, simtemp1->temperatures[i],
-                 simtemp2->temperatures[i], ftol, abstol);
+        cmp_real(fp,
+                 "inputrec->simtempvals->temperatures",
+                 -1,
+                 simtemp1->temperatures[i],
+                 simtemp2->temperatures[i],
+                 ftol,
+                 abstol);
     }
 }
 
@@ -1220,58 +1248,76 @@ static void cmp_expandedvals(FILE*             fp,
 
     for (i = 0; i < n_lambda; i++)
     {
-        cmp_real(fp, "inputrec->expandedvals->init_lambda_weights", -1,
-                 expand1->init_lambda_weights[i], expand2->init_lambda_weights[i], ftol, abstol);
+        cmp_real(fp,
+                 "inputrec->expandedvals->init_lambda_weights",
+                 -1,
+                 expand1->init_lambda_weights[i],
+                 expand2->init_lambda_weights[i],
+                 ftol,
+                 abstol);
     }
 
     cmp_int(fp, "inputrec->expandedvals->lambda-stats", -1, expand1->elamstats, expand2->elamstats);
     cmp_int(fp, "inputrec->expandedvals->lambda-mc-move", -1, expand1->elmcmove, expand2->elmcmove);
     cmp_int(fp, "inputrec->expandedvals->lmc-repeats", -1, expand1->lmc_repeats, expand2->lmc_repeats);
     cmp_int(fp, "inputrec->expandedvals->lmc-gibbsdelta", -1, expand1->gibbsdeltalam, expand2->gibbsdeltalam);
-    cmp_int(fp, "inputrec->expandedvals->lmc-forced-nstart", -1, expand1->lmc_forced_nstart,
-            expand2->lmc_forced_nstart);
+    cmp_int(fp, "inputrec->expandedvals->lmc-forced-nstart", -1, expand1->lmc_forced_nstart, expand2->lmc_forced_nstart);
     cmp_int(fp, "inputrec->expandedvals->lambda-weights-equil", -1, expand1->elmceq, expand2->elmceq);
-    cmp_int(fp, "inputrec->expandedvals->,weight-equil-number-all-lambda", -1,
-            expand1->equil_n_at_lam, expand2->equil_n_at_lam);
-    cmp_int(fp, "inputrec->expandedvals->weight-equil-number-samples", -1, expand1->equil_samples,
-            expand2->equil_samples);
-    cmp_int(fp, "inputrec->expandedvals->weight-equil-number-steps", -1, expand1->equil_steps,
-            expand2->equil_steps);
-    cmp_real(fp, "inputrec->expandedvals->weight-equil-wl-delta", -1, expand1->equil_wl_delta,
-             expand2->equil_wl_delta, ftol, abstol);
-    cmp_real(fp, "inputrec->expandedvals->weight-equil-count-ratio", -1, expand1->equil_ratio,
-             expand2->equil_ratio, ftol, abstol);
-    cmp_bool(fp, "inputrec->expandedvals->symmetrized-transition-matrix", -1,
-             expand1->bSymmetrizedTMatrix, expand2->bSymmetrizedTMatrix);
+    cmp_int(fp,
+            "inputrec->expandedvals->,weight-equil-number-all-lambda",
+            -1,
+            expand1->equil_n_at_lam,
+            expand2->equil_n_at_lam);
+    cmp_int(fp, "inputrec->expandedvals->weight-equil-number-samples", -1, expand1->equil_samples, expand2->equil_samples);
+    cmp_int(fp, "inputrec->expandedvals->weight-equil-number-steps", -1, expand1->equil_steps, expand2->equil_steps);
+    cmp_real(fp,
+             "inputrec->expandedvals->weight-equil-wl-delta",
+             -1,
+             expand1->equil_wl_delta,
+             expand2->equil_wl_delta,
+             ftol,
+             abstol);
+    cmp_real(fp,
+             "inputrec->expandedvals->weight-equil-count-ratio",
+             -1,
+             expand1->equil_ratio,
+             expand2->equil_ratio,
+             ftol,
+             abstol);
+    cmp_bool(fp,
+             "inputrec->expandedvals->symmetrized-transition-matrix",
+             -1,
+             expand1->bSymmetrizedTMatrix,
+             expand2->bSymmetrizedTMatrix);
     cmp_int(fp, "inputrec->expandedvals->nstTij", -1, expand1->nstTij, expand2->nstTij);
-    cmp_int(fp, "inputrec->expandedvals->mininum-var-min", -1, expand1->minvarmin,
-            expand2->minvarmin); /*default is reasonable */
+    cmp_int(fp, "inputrec->expandedvals->mininum-var-min", -1, expand1->minvarmin, expand2->minvarmin); /*default is reasonable */
     cmp_int(fp, "inputrec->expandedvals->weight-c-range", -1, expand1->c_range, expand2->c_range); /* default is just C=0 */
     cmp_real(fp, "inputrec->expandedvals->wl-scale", -1, expand1->wl_scale, expand2->wl_scale, ftol, abstol);
-    cmp_real(fp, "inputrec->expandedvals->init-wl-delta", -1, expand1->init_wl_delta,
-             expand2->init_wl_delta, ftol, abstol);
+    cmp_real(fp, "inputrec->expandedvals->init-wl-delta", -1, expand1->init_wl_delta, expand2->init_wl_delta, ftol, abstol);
     cmp_real(fp, "inputrec->expandedvals->wl-ratio", -1, expand1->wl_ratio, expand2->wl_ratio, ftol, abstol);
     cmp_int(fp, "inputrec->expandedvals->nstexpanded", -1, expand1->nstexpanded, expand2->nstexpanded);
     cmp_int(fp, "inputrec->expandedvals->lmc-seed", -1, expand1->lmc_seed, expand2->lmc_seed);
-    cmp_real(fp, "inputrec->expandedvals->mc-temperature", -1, expand1->mc_temp, expand2->mc_temp,
-             ftol, abstol);
+    cmp_real(fp, "inputrec->expandedvals->mc-temperature", -1, expand1->mc_temp, expand2->mc_temp, ftol, abstol);
 }
 
 static void cmp_fepvals(FILE* fp, const t_lambda* fep1, const t_lambda* fep2, real ftol, real abstol)
 {
     int i, j;
     cmp_int(fp, "inputrec->nstdhdl", -1, fep1->nstdhdl, fep2->nstdhdl);
-    cmp_double(fp, "inputrec->fepvals->init_fep_state", -1, fep1->init_fep_state,
-               fep2->init_fep_state, ftol, abstol);
-    cmp_double(fp, "inputrec->fepvals->delta_lambda", -1, fep1->delta_lambda, fep2->delta_lambda,
-               ftol, abstol);
+    cmp_double(fp, "inputrec->fepvals->init_fep_state", -1, fep1->init_fep_state, fep2->init_fep_state, ftol, abstol);
+    cmp_double(fp, "inputrec->fepvals->delta_lambda", -1, fep1->delta_lambda, fep2->delta_lambda, ftol, abstol);
     cmp_int(fp, "inputrec->fepvals->n_lambda", -1, fep1->n_lambda, fep2->n_lambda);
     for (i = 0; i < efptNR; i++)
     {
         for (j = 0; j < std::min(fep1->n_lambda, fep2->n_lambda); j++)
         {
-            cmp_double(fp, "inputrec->fepvals->all_lambda", -1, fep1->all_lambda[i][j],
-                       fep2->all_lambda[i][j], ftol, abstol);
+            cmp_double(fp,
+                       "inputrec->fepvals->all_lambda",
+                       -1,
+                       fep1->all_lambda[i][j],
+                       fep2->all_lambda[i][j],
+                       ftol,
+                       abstol);
         }
     }
     cmp_int(fp, "inputrec->fepvals->lambda_neighbors", 1, fep1->lambda_neighbors, fep2->lambda_neighbors);
@@ -1284,8 +1330,7 @@ static void cmp_fepvals(FILE* fp, const t_lambda* fep1, const t_lambda* fep2, re
     cmp_int(fp, "inputrec->separate_dhdl_file", -1, fep1->separate_dhdl_file, fep2->separate_dhdl_file);
     cmp_int(fp, "inputrec->dhdl_derivatives", -1, fep1->dhdl_derivatives, fep2->dhdl_derivatives);
     cmp_int(fp, "inputrec->dh_hist_size", -1, fep1->dh_hist_size, fep2->dh_hist_size);
-    cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing,
-               ftol, abstol);
+    cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing, ftol, abstol);
 }
 
 void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real ftol, real abstol)
@@ -1307,9 +1352,15 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
     if (ir1->useMts && ir2->useMts)
     {
         cmp_int(fp, "inputrec->mts-levels", -1, ir1->mtsLevels.size(), ir2->mtsLevels.size());
-        cmp_int(fp, "inputrec->mts-level2-forces", -1, ir1->mtsLevels[1].forceGroups.to_ulong(),
+        cmp_int(fp,
+                "inputrec->mts-level2-forces",
+                -1,
+                ir1->mtsLevels[1].forceGroups.to_ulong(),
                 ir2->mtsLevels[1].forceGroups.to_ulong());
-        cmp_int(fp, "inputrec->mts-level2-factor", -1, ir1->mtsLevels[1].stepFactor,
+        cmp_int(fp,
+                "inputrec->mts-level2-factor",
+                -1,
+                ir1->mtsLevels[1].stepFactor,
                 ir2->mtsLevels[1].stepFactor);
     }
     cmp_int(fp, "inputrec->pbcType", -1, static_cast<int>(ir1->pbcType), static_cast<int>(ir2->pbcType));
@@ -1327,8 +1378,13 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
     cmp_int(fp, "inputrec->nstxout_compressed", -1, ir1->nstxout_compressed, ir2->nstxout_compressed);
     cmp_double(fp, "inputrec->init_t", -1, ir1->init_t, ir2->init_t, ftol, abstol);
     cmp_double(fp, "inputrec->delta_t", -1, ir1->delta_t, ir2->delta_t, ftol, abstol);
-    cmp_real(fp, "inputrec->x_compression_precision", -1, ir1->x_compression_precision,
-             ir2->x_compression_precision, ftol, abstol);
+    cmp_real(fp,
+             "inputrec->x_compression_precision",
+             -1,
+             ir1->x_compression_precision,
+             ir2->x_compression_precision,
+             ftol,
+             abstol);
     cmp_real(fp, "inputrec->fourierspacing", -1, ir1->fourier_spacing, ir2->fourier_spacing, ftol, abstol);
     cmp_int(fp, "inputrec->nkx", -1, ir1->nkx, ir2->nkx);
     cmp_int(fp, "inputrec->nky", -1, ir1->nky, ir2->nky);
@@ -1337,12 +1393,17 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
     cmp_real(fp, "inputrec->ewald_rtol", -1, ir1->ewald_rtol, ir2->ewald_rtol, ftol, abstol);
     cmp_int(fp, "inputrec->ewald_geometry", -1, ir1->ewald_geometry, ir2->ewald_geometry);
     cmp_real(fp, "inputrec->epsilon_surface", -1, ir1->epsilon_surface, ir2->epsilon_surface, ftol, abstol);
-    cmp_int(fp, "inputrec->bContinuation", -1, static_cast<int>(ir1->bContinuation),
+    cmp_int(fp,
+            "inputrec->bContinuation",
+            -1,
+            static_cast<int>(ir1->bContinuation),
             static_cast<int>(ir2->bContinuation));
-    cmp_int(fp, "inputrec->bShakeSOR", -1, static_cast<int>(ir1->bShakeSOR),
-            static_cast<int>(ir2->bShakeSOR));
+    cmp_int(fp, "inputrec->bShakeSOR", -1, static_cast<int>(ir1->bShakeSOR), static_cast<int>(ir2->bShakeSOR));
     cmp_int(fp, "inputrec->etc", -1, ir1->etc, ir2->etc);
-    cmp_int(fp, "inputrec->bPrintNHChains", -1, static_cast<int>(ir1->bPrintNHChains),
+    cmp_int(fp,
+            "inputrec->bPrintNHChains",
+            -1,
+            static_cast<int>(ir1->bPrintNHChains),
             static_cast<int>(ir2->bPrintNHChains));
     cmp_int(fp, "inputrec->epc", -1, ir1->epc, ir2->epc);
     cmp_int(fp, "inputrec->epct", -1, ir1->epct, ir2->epct);
@@ -1378,15 +1439,22 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
     cmp_int(fp, "inputrec->bSimTemp", -1, static_cast<int>(ir1->bSimTemp), static_cast<int>(ir2->bSimTemp));
     if ((ir1->bSimTemp == ir2->bSimTemp) && (ir1->bSimTemp))
     {
-        cmp_simtempvals(fp, ir1->simtempvals, ir2->simtempvals,
-                        std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
+        cmp_simtempvals(fp,
+                        ir1->simtempvals,
+                        ir2->simtempvals,
+                        std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda),
+                        ftol,
+                        abstol);
     }
-    cmp_int(fp, "inputrec->bExpanded", -1, static_cast<int>(ir1->bExpanded),
-            static_cast<int>(ir2->bExpanded));
+    cmp_int(fp, "inputrec->bExpanded", -1, static_cast<int>(ir1->bExpanded), static_cast<int>(ir2->bExpanded));
     if ((ir1->bExpanded == ir2->bExpanded) && (ir1->bExpanded))
     {
-        cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals,
-                         std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
+        cmp_expandedvals(fp,
+                         ir1->expandedvals,
+                         ir2->expandedvals,
+                         std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda),
+                         ftol,
+                         abstol);
     }
     cmp_int(fp, "inputrec->nwall", -1, ir1->nwall, ir2->nwall);
     cmp_int(fp, "inputrec->wall_type", -1, ir1->wall_type, ir2->wall_type);
@@ -1411,8 +1479,7 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
     cmp_real(fp, "inputrec->dr_fc", -1, ir1->dr_fc, ir2->dr_fc, ftol, abstol);
     cmp_int(fp, "inputrec->eDisreWeighting", -1, ir1->eDisreWeighting, ir2->eDisreWeighting);
-    cmp_int(fp, "inputrec->bDisreMixed", -1, static_cast<int>(ir1->bDisreMixed),
-            static_cast<int>(ir2->bDisreMixed));
+    cmp_int(fp, "inputrec->bDisreMixed", -1, static_cast<int>(ir1->bDisreMixed), static_cast<int>(ir2->bDisreMixed));
     cmp_int(fp, "inputrec->nstdisreout", -1, ir1->nstdisreout, ir2->nstdisreout);
     cmp_real(fp, "inputrec->dr_tau", -1, ir1->dr_tau, ir2->dr_tau, ftol, abstol);
     cmp_real(fp, "inputrec->orires_fc", -1, ir1->orires_fc, ir2->orires_fc, ftol, abstol);

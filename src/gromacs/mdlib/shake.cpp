@@ -111,8 +111,13 @@ static void pr_sortblock(FILE* fp, const char* title, int nsb, t_sortblock sb[])
     fprintf(fp, "%s\n", title);
     for (i = 0; (i < nsb); i++)
     {
-        fprintf(fp, "i: %5d, iatom: (%5d %5d %5d), blocknr: %5d\n", i, sb[i].iatom[0],
-                sb[i].iatom[1], sb[i].iatom[2], sb[i].blocknr);
+        fprintf(fp,
+                "i: %5d, iatom: (%5d %5d %5d), blocknr: %5d\n",
+                i,
+                sb[i].iatom[0],
+                sb[i].iatom[1],
+                sb[i].iatom[2],
+                sb[i].blocknr);
     }
 }
 
@@ -502,14 +507,36 @@ static int vec_shakef(FILE*                     fplog,
     switch (econq)
     {
         case ConstraintVariable::Positions:
-            cshake(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime, pbc, rij,
-                   half_of_reduced_mass, omega, invmass, distance_squared_tolerance,
-                   scaled_lagrange_multiplier, &error);
+            cshake(iatom,
+                   ncon,
+                   &nit,
+                   maxnit,
+                   constraint_distance_squared,
+                   prime,
+                   pbc,
+                   rij,
+                   half_of_reduced_mass,
+                   omega,
+                   invmass,
+                   distance_squared_tolerance,
+                   scaled_lagrange_multiplier,
+                   &error);
             break;
         case ConstraintVariable::Velocities:
-            crattle(iatom, ncon, &nit, maxnit, constraint_distance_squared, prime, rij,
-                    half_of_reduced_mass, omega, invmass, distance_squared_tolerance,
-                    scaled_lagrange_multiplier, &error, invdt);
+            crattle(iatom,
+                    ncon,
+                    &nit,
+                    maxnit,
+                    constraint_distance_squared,
+                    prime,
+                    rij,
+                    half_of_reduced_mass,
+                    omega,
+                    invmass,
+                    distance_squared_tolerance,
+                    scaled_lagrange_multiplier,
+                    &error,
+                    invdt);
             break;
         default: gmx_incons("Unknown constraint quantity for SHAKE");
     }
@@ -530,12 +557,16 @@ static int vec_shakef(FILE*                     fplog,
             fprintf(fplog,
                     "Inner product between old and new vector <= 0.0!\n"
                     "constraint #%d atoms %d and %d\n",
-                    error - 1, iatom[3 * (error - 1) + 1] + 1, iatom[3 * (error - 1) + 2] + 1);
+                    error - 1,
+                    iatom[3 * (error - 1) + 1] + 1,
+                    iatom[3 * (error - 1) + 2] + 1);
         }
         fprintf(stderr,
                 "Inner product between old and new vector <= 0.0!\n"
                 "constraint #%d atoms %d and %d\n",
-                error - 1, iatom[3 * (error - 1) + 1] + 1, iatom[3 * (error - 1) + 2] + 1);
+                error - 1,
+                iatom[3 * (error - 1) + 1] + 1,
+                iatom[3 * (error - 1) + 2] + 1);
         nit = 0;
     }
 
@@ -635,16 +666,30 @@ static void check_cons(FILE*                     log,
                     rvec_sub(prime[ai], prime[aj], dx);
                 }
                 dp = norm(dx);
-                fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n", ai + 1,
-                        1.0 / invmass[ai], aj + 1, 1.0 / invmass[aj], d, dp, ip[ia[0]].constr.dA);
+                fprintf(log,
+                        "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
+                        ai + 1,
+                        1.0 / invmass[ai],
+                        aj + 1,
+                        1.0 / invmass[aj],
+                        d,
+                        dp,
+                        ip[ia[0]].constr.dA);
                 break;
             case ConstraintVariable::Velocities:
                 rvec_sub(v[ai], v[aj], dv);
                 d = iprod(dx, dv);
                 rvec_sub(prime[ai], prime[aj], dv);
                 dp = iprod(dx, dv);
-                fprintf(log, "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n", ai + 1,
-                        1.0 / invmass[ai], aj + 1, 1.0 / invmass[aj], d, dp, 0.);
+                fprintf(log,
+                        "%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
+                        ai + 1,
+                        1.0 / invmass[ai],
+                        aj + 1,
+                        1.0 / invmass[aj],
+                        d,
+                        dp,
+                        0.);
                 break;
             default: gmx_incons("Unknown constraint quantity for SHAKE");
         }
@@ -690,9 +735,25 @@ static bool bshakef(FILE*                         log,
     {
         blen = (shaked->sblock[i + 1] - shaked->sblock[i]);
         blen /= 3;
-        n0 = vec_shakef(log, shaked, invmass, blen, idef.iparams, iatoms, ir.shake_tol, x_s, prime,
-                        pbc, shaked->omega, ir.efep != efepNO, lambda, lam, invdt, v, bCalcVir,
-                        vir_r_m_dr, econq);
+        n0 = vec_shakef(log,
+                        shaked,
+                        invmass,
+                        blen,
+                        idef.iparams,
+                        iatoms,
+                        ir.shake_tol,
+                        x_s,
+                        prime,
+                        pbc,
+                        shaked->omega,
+                        ir.efep != efepNO,
+                        lambda,
+                        lam,
+                        invdt,
+                        v,
+                        bCalcVir,
+                        vir_r_m_dr,
+                        econq);
 
         if (n0 == 0)
         {
@@ -785,12 +846,27 @@ bool constrain_shake(FILE*                         log,
     switch (econq)
     {
         case (ConstraintVariable::Positions):
-            bOK = bshakef(log, shaked, invmass, idef, ir, x_s, xprime, pbc, nrnb, lambda, dvdlambda,
-                          invdt, v, bCalcVir, vir_r_m_dr, bDumpOnError, econq);
+            bOK = bshakef(
+                    log, shaked, invmass, idef, ir, x_s, xprime, pbc, nrnb, lambda, dvdlambda, invdt, v, bCalcVir, vir_r_m_dr, bDumpOnError, econq);
             break;
         case (ConstraintVariable::Velocities):
-            bOK = bshakef(log, shaked, invmass, idef, ir, x_s, vprime, pbc, nrnb, lambda, dvdlambda,
-                          invdt, {}, bCalcVir, vir_r_m_dr, bDumpOnError, econq);
+            bOK = bshakef(log,
+                          shaked,
+                          invmass,
+                          idef,
+                          ir,
+                          x_s,
+                          vprime,
+                          pbc,
+                          nrnb,
+                          lambda,
+                          dvdlambda,
+                          invdt,
+                          {},
+                          bCalcVir,
+                          vir_r_m_dr,
+                          bDumpOnError,
+                          econq);
             break;
         default:
             gmx_fatal(FARGS,

@@ -159,8 +159,8 @@ int gmx_helix(int argc, char* argv[])
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -176,11 +176,19 @@ int gmx_helix(int argc, char* argv[])
         gmx_fatal(FARGS,
                   "Sorry can only run when the number of atoms in the run input file (%d) is equal "
                   "to the number in the trajectory (%d)",
-                  top->atoms.nr, natoms);
+                  top->atoms.nr,
+                  natoms);
     }
 
-    bb = mkbbind(ftp2fn(efNDX, NFILE, fnm), &nres, &nbb, r0, &nall, &allindex, top->atoms.atomname,
-                 top->atoms.atom, top->atoms.resinfo);
+    bb = mkbbind(ftp2fn(efNDX, NFILE, fnm),
+                 &nres,
+                 &nbb,
+                 r0,
+                 &nall,
+                 &allindex,
+                 top->atoms.atomname,
+                 top->atoms.atom,
+                 top->atoms.resinfo);
     snew(bbindex, natoms);
     snew(caindex, nres);
 
@@ -237,8 +245,8 @@ int gmx_helix(int argc, char* argv[])
 
             if (teller == 1)
             {
-                write_sto_conf(opt2fn("-cz", NFILE, fnm), "Helix fitted to Z-Axis", &(top->atoms),
-                               x, nullptr, pbcType, box);
+                write_sto_conf(
+                        opt2fn("-cz", NFILE, fnm), "Helix fitted to Z-Axis", &(top->atoms), x, nullptr, pbcType, box);
             }
 
             xf[efhRAD].val   = radius(xf[efhRAD].fp2, nca, caindex, x);
@@ -257,8 +265,15 @@ int gmx_helix(int argc, char* argv[])
             }
 
             av_phipsi(xf[efhPHI].fp, xf[efhPSI].fp, xf[efhPHI].fp2, xf[efhPSI].fp2, t, nres, bb);
-            av_hblen(xf[efhHB3].fp, xf[efhHB3].fp2, xf[efhHB4].fp, xf[efhHB4].fp2, xf[efhHB5].fp,
-                     xf[efhHB5].fp2, t, nres, bb);
+            av_hblen(xf[efhHB3].fp,
+                     xf[efhHB3].fp2,
+                     xf[efhHB4].fp,
+                     xf[efhHB4].fp2,
+                     xf[efhHB5].fp,
+                     xf[efhHB5].fp2,
+                     t,
+                     nres,
+                     bb);
         }
     } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
@@ -274,8 +289,7 @@ int gmx_helix(int argc, char* argv[])
             fprintf(xf[efhRMSA].fp, "%10d  %10g\n", r0 + i, bb[i].rmsa / bb[i].nrms);
         }
         fprintf(xf[efhAHX].fp, "%10d  %10g\n", r0 + i, (bb[i].nhx * 100.0) / static_cast<real>(teller));
-        fprintf(xf[efhJCA].fp, "%10d  %10g\n", r0 + i,
-                140.3 + (bb[i].jcaha / static_cast<double>(teller)));
+        fprintf(xf[efhJCA].fp, "%10d  %10g\n", r0 + i, 140.3 + (bb[i].jcaha / static_cast<double>(teller)));
     }
 
     for (i = 0; (i < efhNR); i++)

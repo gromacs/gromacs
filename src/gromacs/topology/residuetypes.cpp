@@ -135,7 +135,9 @@ void ResidueType::addResidue(const std::string& residueName, const std::string& 
             fprintf(stderr,
                     "Warning: Residue '%s' already present with type '%s' in database, ignoring "
                     "new type '%s'.\n",
-                    residueName.c_str(), (*foundIt)->residueType.c_str(), residueType.c_str());
+                    residueName.c_str(),
+                    (*foundIt)->residueType.c_str(),
+                    residueType.c_str());
         }
     }
     else

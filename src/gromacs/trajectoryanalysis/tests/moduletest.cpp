@@ -207,8 +207,8 @@ void AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine& arg
             {
                 const char* const     name = dataset->first.c_str();
                 AbstractAnalysisData& data = module.datasetFromName(name);
-                AnalysisDataTestFixture::addReferenceCheckerModule(dataChecker, name, &data,
-                                                                   dataset->second.tolerance);
+                AnalysisDataTestFixture::addReferenceCheckerModule(
+                        dataChecker, name, &data, dataset->second.tolerance);
             }
         }
     }

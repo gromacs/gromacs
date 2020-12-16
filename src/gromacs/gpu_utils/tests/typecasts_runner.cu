@@ -118,8 +118,8 @@ void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>&       h_rVecOutput,
 
     DeviceBuffer<RVec> d_rVecInput;
     allocateDeviceBuffer(&d_rVecInput, numElements, deviceContext);
-    copyToDeviceBuffer(&d_rVecInput, h_rVecInput.data(), 0, numElements, deviceStream,
-                       GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(
+            &d_rVecInput, h_rVecInput.data(), 0, numElements, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
     DeviceBuffer<float3> d_float3Output;
     allocateDeviceBuffer(&d_float3Output, numElements * DIM, deviceContext);
@@ -134,13 +134,17 @@ void convertRVecToFloat3OnDevice(std::vector<gmx::RVec>&       h_rVecOutput,
     kernelLaunchConfig.sharedMemorySize = 0;
 
     auto       kernelPtr  = convertRVecToFloat3OnDevice_kernel;
-    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, kernelLaunchConfig,
-                                                      &d_float3Output, &d_rVecInput, &numElements);
-    launchGpuKernel(kernelPtr, kernelLaunchConfig, deviceStream, nullptr,
-                    "convertRVecToFloat3OnDevice_kernel", kernelArgs);
+    const auto kernelArgs = prepareGpuKernelArguments(
+            kernelPtr, kernelLaunchConfig, &d_float3Output, &d_rVecInput, &numElements);
+    launchGpuKernel(kernelPtr,
+                    kernelLaunchConfig,
+                    deviceStream,
+                    nullptr,
+                    "convertRVecToFloat3OnDevice_kernel",
+                    kernelArgs);
 
-    copyFromDeviceBuffer(h_float3Output.data(), &d_float3Output, 0, numElements, deviceStream,
-                         GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(
+            h_float3Output.data(), &d_float3Output, 0, numElements, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
     saveFloat3InRVecFormat(h_rVecOutput, h_float3Output.data(), numElements);
 

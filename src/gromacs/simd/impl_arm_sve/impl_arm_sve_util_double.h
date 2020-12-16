@@ -90,7 +90,8 @@ static inline void gmx_simdcall gatherLoadTranspose(const double*      base,
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
     offsets      = svmul_n_s64_x(
-            pg, svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
+            pg,
+            svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
             align * sizeof(double));
     v0->simdInternal_ = svld1_gather_s64offset_f64(pg, base, offsets);
     offsets           = svadd_n_s64_x(pg, offsets, sizeof(double));
@@ -146,7 +147,8 @@ static inline void gmx_simdcall gatherLoadUTranspose(const double*      base,
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
     offsets      = svmul_n_s64_x(
-            pg, svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
+            pg,
+            svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
             align * sizeof(double));
     v0->simdInternal_ = svld1_gather_s64offset_f64(pg, base, offsets);
     offsets           = svadd_n_s64_x(pg, offsets, sizeof(double));
@@ -168,7 +170,8 @@ static inline void gmx_simdcall transposeScatterStoreU(double*            base,
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
     offsets      = svmul_n_s64_x(
-            pg, svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
+            pg,
+            svunpklo_s64(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH), offset)),
             align * sizeof(double));
     svst1_scatter_s64offset_f64(pg, base, offsets, v0.simdInternal_);
     offsets = svadd_n_s64_x(pg, offsets, sizeof(double));
@@ -375,7 +378,8 @@ static inline void gmx_simdcall gatherLoadTransposeHsimd(const double*      base
     svbool_t    pg = svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2);
     svfloat64_t _v0, _v1;
     offsets = svmul_n_s64_x(
-            pg, svunpklo(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH / 2), offset)),
+            pg,
+            svunpklo(svld1_s32(svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH / 2), offset)),
             align * sizeof(double));
     _v0               = svld1_gather_s64offset_f64(pg, base0, offsets);
     _v1               = svld1_gather_s64offset_f64(pg, base1, offsets);

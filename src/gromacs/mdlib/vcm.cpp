@@ -64,8 +64,7 @@ t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
 
     if (mode == ecmANGULAR && ndim < 3)
     {
-        gmx_fatal(FARGS, "Can not have angular comm removal with pbc=%s",
-                  c_pbcTypeNames[ir.pbcType].c_str());
+        gmx_fatal(FARGS, "Can not have angular comm removal with pbc=%s", c_pbcTypeNames[ir.pbcType].c_str());
     }
 
     if (mode != ecmNO)
@@ -544,9 +543,13 @@ static void process_and_check_cm_grp(FILE* fp, t_vcm* vcm, real Temp_Max)
 
             if ((Temp_cm > Temp_Max) && fp)
             {
-                fprintf(fp, "Large VCM(group %s): %12.5f, %12.5f, %12.5f, Temp-cm: %12.5e\n",
-                        vcm->group_name[g], vcm->group_v[g][XX], vcm->group_v[g][YY],
-                        vcm->group_v[g][ZZ], Temp_cm);
+                fprintf(fp,
+                        "Large VCM(group %s): %12.5f, %12.5f, %12.5f, Temp-cm: %12.5e\n",
+                        vcm->group_name[g],
+                        vcm->group_v[g][XX],
+                        vcm->group_v[g][YY],
+                        vcm->group_v[g][ZZ],
+                        Temp_cm);
             }
 
             if (vcm->mode == ecmANGULAR)
@@ -557,18 +560,37 @@ static void process_and_check_cm_grp(FILE* fp, t_vcm* vcm, real Temp_Max)
                 {
                     /* if we have an integrator that may not conserve momenta, skip */
                     tm = vcm->group_mass[g];
-                    fprintf(fp, "Group %s with mass %12.5e, Ekrot %12.5e Det(I) = %12.5e\n",
-                            vcm->group_name[g], tm, ekrot, det(vcm->group_i[g]));
-                    fprintf(fp, "  COM: %12.5f  %12.5f  %12.5f\n", vcm->group_x[g][XX],
-                            vcm->group_x[g][YY], vcm->group_x[g][ZZ]);
-                    fprintf(fp, "  P:   %12.5f  %12.5f  %12.5f\n", vcm->group_p[g][XX],
-                            vcm->group_p[g][YY], vcm->group_p[g][ZZ]);
-                    fprintf(fp, "  V:   %12.5f  %12.5f  %12.5f\n", vcm->group_v[g][XX],
-                            vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
-                    fprintf(fp, "  J:   %12.5f  %12.5f  %12.5f\n", vcm->group_j[g][XX],
-                            vcm->group_j[g][YY], vcm->group_j[g][ZZ]);
-                    fprintf(fp, "  w:   %12.5f  %12.5f  %12.5f\n", vcm->group_w[g][XX],
-                            vcm->group_w[g][YY], vcm->group_w[g][ZZ]);
+                    fprintf(fp,
+                            "Group %s with mass %12.5e, Ekrot %12.5e Det(I) = %12.5e\n",
+                            vcm->group_name[g],
+                            tm,
+                            ekrot,
+                            det(vcm->group_i[g]));
+                    fprintf(fp,
+                            "  COM: %12.5f  %12.5f  %12.5f\n",
+                            vcm->group_x[g][XX],
+                            vcm->group_x[g][YY],
+                            vcm->group_x[g][ZZ]);
+                    fprintf(fp,
+                            "  P:   %12.5f  %12.5f  %12.5f\n",
+                            vcm->group_p[g][XX],
+                            vcm->group_p[g][YY],
+                            vcm->group_p[g][ZZ]);
+                    fprintf(fp,
+                            "  V:   %12.5f  %12.5f  %12.5f\n",
+                            vcm->group_v[g][XX],
+                            vcm->group_v[g][YY],
+                            vcm->group_v[g][ZZ]);
+                    fprintf(fp,
+                            "  J:   %12.5f  %12.5f  %12.5f\n",
+                            vcm->group_j[g][XX],
+                            vcm->group_j[g][YY],
+                            vcm->group_j[g][ZZ]);
+                    fprintf(fp,
+                            "  w:   %12.5f  %12.5f  %12.5f\n",
+                            vcm->group_w[g][XX],
+                            vcm->group_w[g][YY],
+                            vcm->group_w[g][ZZ]);
                     pr_rvecs(fp, 0, "Inertia tensor", vcm->group_i[g], DIM);
                 }
             }

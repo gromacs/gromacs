@@ -114,13 +114,16 @@ void MultiSimTest::organizeMdpFile(SimulationRunner* runner, const char* control
             "gen-temp = %f\n"
             // control variable specification
             "%s\n",
-            numSteps, baseTemperature + 0.0001 * rank_, basePressure * std::pow(1.01, rank_),
+            numSteps,
+            baseTemperature + 0.0001 * rank_,
+            basePressure * std::pow(1.01, rank_),
             /* Set things up so that the initial KE decreases with
                increasing replica number, so that the (identical)
                starting PE decreases on the first step more for the
                replicas with higher number, which will tend to force
                replica exchange to occur. */
-            std::max(baseTemperature - 10 * rank_, real(0)), controlVariable);
+            std::max(baseTemperature - 10 * rank_, real(0)),
+            controlVariable);
     runner->useStringAsMdpFile(mdpFileContents);
 }
 

@@ -185,7 +185,9 @@ void ExtractCluster::initAnalysis(const TrajectoryAnalysisSettings& /*settings*/
     {
         std::string outputName = Path::concatenateBeforeExtension(
                 outputNamePrefix_, formatString("_%s", clusterIndex_->grpname[i]));
-        writers_.emplace_back(createTrajectoryFrameWriter(top.mtop(), sel_, outputName,
+        writers_.emplace_back(createTrajectoryFrameWriter(top.mtop(),
+                                                          sel_,
+                                                          outputName,
                                                           top.hasTopology() ? top.copyAtoms() : nullptr,
                                                           requirementsBuilder_.process()));
     }

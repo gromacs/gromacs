@@ -143,8 +143,8 @@ void IndexBlockTest::checkBlocka(const char* id)
     for (int i = 0; i < blocka_.nr; ++i)
     {
         gmx::test::TestReferenceChecker blockCompound(compound.checkCompound("Block", nullptr));
-        blockCompound.checkSequence(&blocka_.a[blocka_.index[i]], &blocka_.a[blocka_.index[i + 1]],
-                                    "Atoms");
+        blockCompound.checkSequence(
+                &blocka_.a[blocka_.index[i]], &blocka_.a[blocka_.index[i + 1]], "Atoms");
     }
 }
 
@@ -545,8 +545,8 @@ void IndexMapTest::checkMapping(int atomCount, const int atoms[], const char* na
     for (int i = 0; i < map_.mapb.nr; ++i)
     {
         gmx::test::TestReferenceChecker blockCompound(compound.checkCompound("Block", nullptr));
-        blockCompound.checkSequence(&atoms[map_.mapb.index[i]], &atoms[map_.mapb.index[i + 1]],
-                                    "Atoms");
+        blockCompound.checkSequence(
+                &atoms[map_.mapb.index[i]], &atoms[map_.mapb.index[i + 1]], "Atoms");
         blockCompound.checkInteger(map_.refid[i], "RefId");
         blockCompound.checkInteger(map_.mapid[i], "MapId");
         int originalIdIndex = (map_.refid[i] != -1 ? map_.refid[i] : i);
@@ -673,8 +673,9 @@ public:
         addGroupToBlocka_(indicesGroupSecondA_);
         addGroupToBlocka_(indicesGroupC_);
 
-        const char* const namesAsConstCharArray[4] = { groupNames[0].c_str(), groupNames[1].c_str(),
-                                                       groupNames[2].c_str(), groupNames[3].c_str() };
+        const char* const namesAsConstCharArray[4] = {
+            groupNames[0].c_str(), groupNames[1].c_str(), groupNames[2].c_str(), groupNames[3].c_str()
+        };
         indexGroupAndNames_ = std::make_unique<gmx::IndexGroupsAndNames>(blockA_, namesAsConstCharArray);
     }
     ~IndexGroupsAndNamesTest() override { done_blocka(&blockA_); }

@@ -127,7 +127,12 @@ void ps_init_rgb_nbox(t_psdata* ps, real xbox, real ybox)
     fprintf(ps->fp,
             "/by {def currentpoint "
             "%g y r %g %g r %g y neg r %g %g r f y add moveto} bind def\n",
-            0.0, xbox, 0.0, 0.0, -xbox, 0.0);
+            0.0,
+            xbox,
+            0.0,
+            0.0,
+            -xbox,
+            0.0);
     /* macro bn is used in ps_rgb_nbox to draw rectangular boxes */
 }
 
@@ -155,7 +160,15 @@ void ps_init_rgb_box(t_psdata* ps, real xbox, real ybox)
     fprintf(ps->fp,
             "/b {currentpoint "
             "%g %g r %g %g r %g %g r %g %g r f %g add moveto} bind def\n",
-            0.0, ybox, xbox, 0.0, 0.0, -ybox, -xbox, 0.0, ybox);
+            0.0,
+            ybox,
+            xbox,
+            0.0,
+            0.0,
+            -ybox,
+            -xbox,
+            0.0,
+            ybox);
     /* macro b is used in search_col to define macro B */
 }
 
@@ -225,14 +238,12 @@ void ps_fillarc(t_psdata* ps, real x1, real y1, real rad, real a0, real a1)
 
 void ps_arcslice(t_psdata* ps, real xc, real yc, real rad1, real rad2, real a0, real a1)
 {
-    fprintf(ps->fp, "newpath %g %g %g %g %g arc %g %g %g %g %g arcn closepath s\n", xc, yc, rad1,
-            a0, a1, xc, yc, rad2, a1, a0);
+    fprintf(ps->fp, "newpath %g %g %g %g %g arc %g %g %g %g %g arcn closepath s\n", xc, yc, rad1, a0, a1, xc, yc, rad2, a1, a0);
 }
 
 void ps_fillarcslice(t_psdata* ps, real xc, real yc, real rad1, real rad2, real a0, real a1)
 {
-    fprintf(ps->fp, "newpath %g %g %g %g %g arc %g %g %g %g %g arcn closepath f\n", xc, yc, rad1,
-            a0, a1, xc, yc, rad2, a1, a0);
+    fprintf(ps->fp, "newpath %g %g %g %g %g arc %g %g %g %g %g arcn closepath f\n", xc, yc, rad1, a0, a1, xc, yc, rad2, a1, a0);
 }
 
 void ps_circle(t_psdata* ps, real x1, real y1, real rad)

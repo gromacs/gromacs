@@ -506,15 +506,21 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
         if (bExpanded)
         {
             dhc->dh_expanded = dhc->dh + n;
-            mde_delta_h_init(dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing,
-                             ndhmax, dhbtEXPANDED, 0, 0, nullptr);
+            mde_delta_h_init(dhc->dh + n,
+                             ir->fepvals->dh_hist_size,
+                             ir->fepvals->dh_hist_spacing,
+                             ndhmax,
+                             dhbtEXPANDED,
+                             0,
+                             0,
+                             nullptr);
             n++;
         }
         if (bEnergy)
         {
             dhc->dh_energy = dhc->dh + n;
-            mde_delta_h_init(dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing,
-                             ndhmax, dhbtEN, 0, 0, nullptr);
+            mde_delta_h_init(
+                    dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing, ndhmax, dhbtEN, 0, 0, nullptr);
             n++;
         }
         /* add the dhdl's */
@@ -527,8 +533,14 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
                 if (ir->fepvals->separate_dvdl[i])
                 {
                     /* we give it init_lambda for compatibility */
-                    mde_delta_h_init(dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing,
-                                     ndhmax, dhbtDHDL, n_lambda_components, 1, &(fep->init_lambda));
+                    mde_delta_h_init(dhc->dh + n,
+                                     ir->fepvals->dh_hist_size,
+                                     ir->fepvals->dh_hist_spacing,
+                                     ndhmax,
+                                     dhbtDHDL,
+                                     n_lambda_components,
+                                     1,
+                                     &(fep->init_lambda));
                     n++;
                     n_lambda_components++;
                 }
@@ -559,16 +571,22 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll* dhc, const t_inputrec* ir)
                 }
             }
 
-            mde_delta_h_init(dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing,
-                             ndhmax, dhbtDH, 0, n_lambda_components, lambda_vec);
+            mde_delta_h_init(dhc->dh + n,
+                             ir->fepvals->dh_hist_size,
+                             ir->fepvals->dh_hist_spacing,
+                             ndhmax,
+                             dhbtDH,
+                             0,
+                             n_lambda_components,
+                             lambda_vec);
             n++;
         }
         sfree(lambda_vec);
         if (bPV)
         {
             dhc->dh_pv = dhc->dh + n;
-            mde_delta_h_init(dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing,
-                             ndhmax, dhbtPV, 0, 0, nullptr);
+            mde_delta_h_init(
+                    dhc->dh + n, ir->fepvals->dh_hist_size, ir->fepvals->dh_hist_spacing, ndhmax, dhbtPV, 0, 0, nullptr);
             n++;
         }
     }

@@ -242,8 +242,8 @@ Awh::Awh(FILE*                 fplog,
                 }
                 double conversionFactor = pull_coordinate_is_angletype(&pullCoord) ? DEG2RAD : 1;
                 pullCoordIndex.push_back(awhDimParams.coordIndex);
-                dimParams.push_back(DimParams::pullDimParams(conversionFactor,
-                                                             awhDimParams.forceConstant, beta));
+                dimParams.push_back(DimParams::pullDimParams(
+                        conversionFactor, awhDimParams.forceConstant, beta));
             }
             else
             {
@@ -254,10 +254,16 @@ Awh::Awh(FILE*                 fplog,
         /* Construct the bias and couple it to the system. */
         Bias::ThisRankWillDoIO thisRankWillDoIO =
                 (MASTER(commRecord_) ? Bias::ThisRankWillDoIO::Yes : Bias::ThisRankWillDoIO::No);
-        biasCoupledToSystem_.emplace_back(
-                Bias(k, awhParams, awhParams.awhBiasParams[k], dimParams, beta, inputRecord.delta_t,
-                     numSharingSimulations, biasInitFilename, thisRankWillDoIO),
-                pullCoordIndex);
+        biasCoupledToSystem_.emplace_back(Bias(k,
+                                               awhParams,
+                                               awhParams.awhBiasParams[k],
+                                               dimParams,
+                                               beta,
+                                               inputRecord.delta_t,
+                                               numSharingSimulations,
+                                               biasInitFilename,
+                                               thisRankWillDoIO),
+                                          pullCoordIndex);
 
         biasCoupledToSystem_.back().bias_.printInitializationToLog(fplog);
     }
@@ -340,9 +346,18 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
         /* Note: In the near future this call will be split in calls
          *       to supports bias sharing within a single simulation.
          */
-        gmx::ArrayRef<const double> biasForce = biasCts.bias_.calcForceAndUpdateBias(
-                coordValue, neighborLambdaEnergies, neighborLambdaDhdl, &biasPotential,
-                &biasPotentialJump, commRecord_, multiSimRecord_, t, step, seed_, fplog);
+        gmx::ArrayRef<const double> biasForce =
+                biasCts.bias_.calcForceAndUpdateBias(coordValue,
+                                                     neighborLambdaEnergies,
+                                                     neighborLambdaDhdl,
+                                                     &biasPotential,
+                                                     &biasPotentialJump,
+                                                     commRecord_,
+                                                     multiSimRecord_,
+                                                     t,
+                                                     step,
+                                                     seed_,
+                                                     fplog);
 
         awhPotential += biasPotential;
 
@@ -358,8 +373,11 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
         {
             if (biasCts.bias_.dimParams()[d].isPullDimension())
             {
-                apply_external_pull_coord_force(pull_, biasCts.pullCoordIndex_[d - numLambdaDimsCounted],
-                                                biasForce[d], masses, forceWithVirial);
+                apply_external_pull_coord_force(pull_,
+                                                biasCts.pullCoordIndex_[d - numLambdaDimsCounted],
+                                                biasForce[d],
+                                                masses,
+                                                forceWithVirial);
             }
             else
             {
@@ -471,8 +489,8 @@ void Awh::registerAwhWithPull(const AwhParams& awhParams, pull_t* pull_work)
         {
             if (biasParams.dimParams[d].eCoordProvider == eawhcoordproviderPULL)
             {
-                register_external_pull_potential(pull_work, biasParams.dimParams[d].coordIndex,
-                                                 Awh::externalPotentialString());
+                register_external_pull_potential(
+                        pull_work, biasParams.dimParams[d].coordIndex, Awh::externalPotentialString());
             }
         }
     }
@@ -520,7 +538,8 @@ void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame) const
 bool Awh::hasFepLambdaDimension() const
 {
     return std::any_of(
-            std::begin(biasCoupledToSystem_), std::end(biasCoupledToSystem_),
+            std::begin(biasCoupledToSystem_),
+            std::end(biasCoupledToSystem_),
             [](const auto& coupledBias) { return coupledBias.bias_.hasFepLambdaDimension(); });
 }
 
@@ -568,9 +587,15 @@ std::unique_ptr<Awh> prepareAwhModule(FILE*                 fplog,
         GMX_THROW(InvalidInputError("AWH biasing does not support shell particles."));
     }
 
-    auto awh = std::make_unique<Awh>(
-            fplog, inputRecord, commRecord, multiSimRecord, *inputRecord.awhParams, biasInitFilename,
-            pull_work, inputRecord.fepvals->n_lambda, inputRecord.fepvals->init_fep_state);
+    auto awh = std::make_unique<Awh>(fplog,
+                                     inputRecord,
+                                     commRecord,
+                                     multiSimRecord,
+                                     *inputRecord.awhParams,
+                                     biasInitFilename,
+                                     pull_work,
+                                     inputRecord.fepvals->n_lambda,
+                                     inputRecord.fepvals->init_fep_state);
 
     if (startingFromCheckpoint)
     {

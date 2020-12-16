@@ -236,9 +236,12 @@ int gmx_mdrun(MPI_Comm communicator, const gmx_hw_info_t& hwinfo, int argc, char
     StartingBehavior startingBehavior        = StartingBehavior::NewSimulation;
     LogFilePtr       logFileGuard            = nullptr;
     gmx_multisim_t*  ms                      = simulationContext.multiSimulation_.get();
-    std::tie(startingBehavior, logFileGuard) = handleRestart(
-            findIsSimulationMasterRank(ms, communicator), communicator, ms,
-            options.mdrunOptions.appendingBehavior, ssize(options.filenames), options.filenames.data());
+    std::tie(startingBehavior, logFileGuard) = handleRestart(findIsSimulationMasterRank(ms, communicator),
+                                                             communicator,
+                                                             ms,
+                                                             options.mdrunOptions.appendingBehavior,
+                                                             ssize(options.filenames),
+                                                             options.filenames.data());
 
     /* The named components for the builder exposed here are descriptive of the
      * state of mdrun at implementation and are not intended to be prescriptive

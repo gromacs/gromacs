@@ -232,8 +232,10 @@ double HistogramSize::newHistogramSize(const BiasParams&              params,
                 }
                 else if (!havePrintedAboutCovering_)
                 {
-                    fprintf(fplog, "%s covered but histogram not equilibrated at t = %g ps.\n",
-                            prefix.c_str(), t);
+                    fprintf(fplog,
+                            "%s covered but histogram not equilibrated at t = %g ps.\n",
+                            prefix.c_str(),
+                            t);
                     havePrintedAboutCovering_ = true; /* Just print once. */
                 }
             }

@@ -97,7 +97,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         fprintf(stdout,
                 "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
-                simulationName.c_str(), numRanksAvailable,
+                simulationName.c_str(),
+                numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
         return;
     }
@@ -115,11 +116,14 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             "Comparing two simulations of '%s' "
             "with integrator '%s', '%s' temperature coupling, and '%s' pressure coupling "
             "switching environment variable '%s'",
-            simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), pcoupling.c_str(),
+            simulationName.c_str(),
+            integrator.c_str(),
+            tcoupling.c_str(),
+            pcoupling.c_str(),
             environmentVariable.c_str()));
 
-    const auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(),
-                                                      tcoupling.c_str(), pcoupling.c_str());
+    const auto mdpFieldValues = prepareMdpFieldValues(
+            simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), pcoupling.c_str());
 
     EnergyTermsToCompare energyTermsToCompare{ {
             { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 100, 80) },

@@ -173,7 +173,10 @@ void CoordState::setCoordValue(const BiasGrid& grid, const awh_dvec coordValue)
                         "Coordinate %d of an AWH bias has a value %f which is more than %d sigma "
                         "out of the AWH range of [%f, %f]. You seem to have an unstable reaction "
                         "coordinate setup or an unequilibrated system.",
-                        dim + 1, coordValue[dim], c_marginInSigma, axis.origin(),
+                        dim + 1,
+                        coordValue[dim],
+                        c_marginInSigma,
+                        axis.origin(),
                         axis.origin() + axis.length());
                 GMX_THROW(SimulationInstabilityError(mesg));
             }

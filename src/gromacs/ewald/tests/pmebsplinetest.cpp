@@ -90,8 +90,11 @@ public:
         /* Describing the test in case it fails */
         SCOPED_TRACE(formatString(
                 "Testing B-spline moduli creation (%s) for PME order %d, grid size %d %d %d",
-                (moduliType == ModuliType::P3M) ? "P3M" : "plain", pmeOrder, gridSize[XX],
-                gridSize[YY], gridSize[ZZ]));
+                (moduliType == ModuliType::P3M) ? "P3M" : "plain",
+                pmeOrder,
+                gridSize[XX],
+                gridSize[YY],
+                gridSize[ZZ]));
 
         /* Storing the input where it's needed */
         t_inputrec inputRec;
@@ -147,7 +150,9 @@ std::vector<BSplineModuliInputParameters> const invalidInputs{
     BSplineModuliInputParameters{ IVec{ 64, 2, 64 }, sanePmeOrder, ModuliType::PME },
     /* Invalid interpolation orders */
     BSplineModuliInputParameters{
-            saneGridSize, 8 + 1, ModuliType::P3M // P3M only supports orders up to 8
+            saneGridSize,
+            8 + 1,
+            ModuliType::P3M // P3M only supports orders up to 8
     },
     BSplineModuliInputParameters{ saneGridSize, PME_ORDER_MAX + 1, ModuliType::PME },
 };

@@ -131,8 +131,14 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
             sprintf(warn_buf, "rot-vec%d = 0", g);
             warning_error(wi, warn_buf);
         }
-        fprintf(stderr, "%s Group %d (%s) normalized rot. vector: %f %f %f\n", RotStr, g,
-                erotg_names[rotg->eType], vec[0], vec[1], vec[2]);
+        fprintf(stderr,
+                "%s Group %d (%s) normalized rot. vector: %f %f %f\n",
+                RotStr,
+                g,
+                erotg_names[rotg->eType],
+                vec[0],
+                vec[1],
+                vec[2]);
         for (m = 0; m < DIM; m++)
         {
             rotg->inputVec[m] = vec[m];
@@ -210,8 +216,7 @@ extern std::vector<std::string> read_rotparams(std::vector<t_inpfile>* inp, t_ro
             warning_error(wi, warn_buf);
         }
         printStringNoNewline(
-                inp,
-                "For fit type 'potential', distance in degrees between two consecutive angles");
+                inp, "For fit type 'potential', distance in degrees between two consecutive angles");
         sprintf(buf, "rot-potfit-step%d", g);
         rotg->PotAngle_step = get_ereal(inp, buf, 0.25, wi);
     }
@@ -274,7 +279,9 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
             gmx_fatal(FARGS,
                       "%s The file containing the reference positions was not found.\n"
                       "Expected the file '%s' for group %d.\n",
-                      RotStr, reffile, g);
+                      RotStr,
+                      reffile,
+                      g);
         }
 
         if (gmx_fexist(reffile))
@@ -286,10 +293,12 @@ extern void set_reference_positions(t_rot* rot, rvec* x, matrix box, const char*
                 gmx_fatal(FARGS,
                           "Number of atoms in file %s (%d) does not match the number of atoms in "
                           "rotation group (%d)!\n",
-                          reffile, header.natoms, rotg->nat);
+                          reffile,
+                          header.natoms,
+                          rotg->nat);
             }
-            gmx_trr_read_single_frame(reffile, &header.step, &header.t, &header.lambda, f_box,
-                                      &header.natoms, rotg->x_ref, nullptr, nullptr);
+            gmx_trr_read_single_frame(
+                    reffile, &header.step, &header.t, &header.lambda, f_box, &header.natoms, rotg->x_ref, nullptr, nullptr);
 
             /* Check whether the box is unchanged and output a warning if not: */
             check_box_unchanged(f_box, box, reffile, wi);
@@ -325,8 +334,7 @@ extern void make_rotation_groups(t_rot*                           rot,
 
         if (rotg->nat > 0)
         {
-            fprintf(stderr, "Rotation group %d '%s' has %d atoms\n", g, rotateGroupNames[g].c_str(),
-                    rotg->nat);
+            fprintf(stderr, "Rotation group %d '%s' has %d atoms\n", g, rotateGroupNames[g].c_str(), rotg->nat);
             snew(rotg->ind, rotg->nat);
             for (i = 0; i < rotg->nat; i++)
             {

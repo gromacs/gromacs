@@ -124,8 +124,8 @@ void CheckpointHelper::writeCheckpoint(Step step, Time time)
 
     if (MASTER(cr_))
     {
-        mdoutf_write_checkpoint(trajectoryElement_->outf_, fplog_, cr_, step, time, state_global_,
-                                observablesHistory_, &checkpointDataHolder);
+        mdoutf_write_checkpoint(
+                trajectoryElement_->outf_, fplog_, cr_, step, time, state_global_, observablesHistory_, &checkpointDataHolder);
     }
 }
 
@@ -170,7 +170,8 @@ void CheckpointHelperBuilder::registerClient(ICheckpointHelperClient* client)
                     formatString(
                             "CheckpointHelper client with key %s registered for checkpointing, "
                             "but %s does not exist in the input checkpoint file.",
-                            key.c_str(), key.c_str())
+                            key.c_str(),
+                            key.c_str())
                             .c_str());
         }
         client->restoreCheckpointState(

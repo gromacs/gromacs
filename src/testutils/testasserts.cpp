@@ -228,8 +228,11 @@ std::string FloatingPointDifference::toString() const
         relDiffStr = formatString("Inf");
     }
 
-    return formatString("%g (%" PRIu64 " %s-prec. ULPs, rel. %s)%s", absoluteDifference_,
-                        ulpDifference_, isDouble() ? "double" : "single", relDiffStr.c_str(),
+    return formatString("%g (%" PRIu64 " %s-prec. ULPs, rel. %s)%s",
+                        absoluteDifference_,
+                        ulpDifference_,
+                        isDouble() ? "double" : "single",
+                        relDiffStr.c_str(),
                         bSignDifference_ ? ", signs differ" : "");
 }
 

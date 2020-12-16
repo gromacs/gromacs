@@ -334,8 +334,8 @@ int gmx_dos(int argc, char* argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -410,8 +410,7 @@ int gmx_dos(int argc, char* argv[])
 
     if (nframes < min_frames)
     {
-        gmx_fatal(FARGS, "You need at least %d frames in the trajectory and you only have %d.",
-                  min_frames, nframes);
+        gmx_fatal(FARGS, "You need at least %d frames in the trajectory and you only have %d.", min_frames, nframes);
     }
     dt = (t1 - t0) / (nframes - 1);
     if (nV > 0)
@@ -437,8 +436,8 @@ int gmx_dos(int argc, char* argv[])
     normalizeAutocorrelation = opt2parg_bool("-normalize", npargs, ppa);
 
     /* Note that we always disable normalization here, regardless of user settings */
-    low_do_autocorr(nullptr, oenv, nullptr, nframes, gnx, nframes, c1, dt, eacNormal, 0, FALSE,
-                    FALSE, FALSE, -1, -1, 0);
+    low_do_autocorr(
+            nullptr, oenv, nullptr, nframes, gnx, nframes, c1, dt, eacNormal, 0, FALSE, FALSE, FALSE, -1, -1, 0);
     snew(dos, DOS_NR);
     for (j = 0; (j < DOS_NR); j++)
     {
@@ -460,8 +459,8 @@ int gmx_dos(int argc, char* argv[])
         }
     }
 
-    fp = xvgropen(opt2fn("-vacf", NFILE, fnm), "Velocity autocorrelation function", "Time (ps)",
-                  "C(t)", oenv);
+    fp = xvgropen(
+            opt2fn("-vacf", NFILE, fnm), "Velocity autocorrelation function", "Time (ps)", "C(t)", oenv);
     snew(tt, nframes / 2);
 
     invNormalize = normalizeAutocorrelation ? 1.0 / dos[VACF][0] : 1.0;
@@ -473,8 +472,11 @@ int gmx_dos(int argc, char* argv[])
     }
     xvgrclose(fp);
 
-    fp = xvgropen(opt2fn("-mvacf", NFILE, fnm), "Mass-weighted velocity autocorrelation function",
-                  "Time (ps)", "C(t)", oenv);
+    fp = xvgropen(opt2fn("-mvacf", NFILE, fnm),
+                  "Mass-weighted velocity autocorrelation function",
+                  "Time (ps)",
+                  "C(t)",
+                  oenv);
 
     invNormalize = normalizeAutocorrelation ? 1.0 / dos[VACF][0] : 1.0;
 
@@ -559,16 +561,23 @@ int gmx_dos(int argc, char* argv[])
     fprintf(fplog, "DoSTot = %g\n", dostot);
 
     /* Now compute solid (2) and diffusive (3) components */
-    fp = xvgropen(opt2fn("-dos", NFILE, fnm), "Density of states",
-                  bRecip ? "E (cm\\S-1\\N)" : "\\f{12}n\\f{4} (1/ps)", "\\f{4}S(\\f{12}n\\f{4})", oenv);
+    fp = xvgropen(opt2fn("-dos", NFILE, fnm),
+                  "Density of states",
+                  bRecip ? "E (cm\\S-1\\N)" : "\\f{12}n\\f{4} (1/ps)",
+                  "\\f{4}S(\\f{12}n\\f{4})",
+                  oenv);
     xvgr_legend(fp, asize(DoSlegend), DoSlegend, oenv);
     recip_fac = bRecip ? (1e7 / SPEED_OF_LIGHT) : 1.0;
     for (j = 0; (j < nframes / 4); j++)
     {
         dos[DOS_DIFF][j]  = DoS0 / (1 + gmx::square(DoS0 * M_PI * nu[j] / (6 * f * Natom)));
         dos[DOS_SOLID][j] = dos[DOS][j] - dos[DOS_DIFF][j];
-        fprintf(fp, "%10g  %10g  %10g  %10g\n", recip_fac * nu[j], dos[DOS][j] / recip_fac,
-                dos[DOS_SOLID][j] / recip_fac, dos[DOS_DIFF][j] / recip_fac);
+        fprintf(fp,
+                "%10g  %10g  %10g  %10g\n",
+                recip_fac * nu[j],
+                dos[DOS][j] / recip_fac,
+                dos[DOS_SOLID][j] / recip_fac,
+                dos[DOS_DIFF][j] / recip_fac);
     }
     xvgrclose(fp);
 

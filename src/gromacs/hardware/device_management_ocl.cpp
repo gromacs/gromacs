@@ -107,8 +107,8 @@ static bool runningOnCompatibleHWForNvidia(const DeviceInformation& deviceInfo)
     static const unsigned int ccMajorBad = 7; // Volta and Turing
     unsigned int              ccMajor;
     cl_device_id              devId = deviceInfo.oclDeviceId;
-    const cl_int              err   = clGetDeviceInfo(devId, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV,
-                                       sizeof(ccMajor), &ccMajor, nullptr);
+    const cl_int              err   = clGetDeviceInfo(
+            devId, CL_DEVICE_COMPUTE_CAPABILITY_MAJOR_NV, sizeof(ccMajor), &ccMajor, nullptr);
     if (err != CL_SUCCESS)
     {
         return true; // Err on a side of trusting the user to know what they are doing.
@@ -150,9 +150,9 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
     // the device which has the following format:
     //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
     unsigned int deviceVersionMinor, deviceVersionMajor;
-    const int    valuesScanned = std::sscanf(deviceInfo.device_version, "OpenCL %u.%u",
-                                          &deviceVersionMajor, &deviceVersionMinor);
-    const bool   versionLargeEnough =
+    const int    valuesScanned = std::sscanf(
+            deviceInfo.device_version, "OpenCL %u.%u", &deviceVersionMajor, &deviceVersionMinor);
+    const bool versionLargeEnough =
             ((valuesScanned == 2)
              && ((deviceVersionMajor > minVersionMajor)
                  || (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
@@ -191,14 +191,17 @@ inline std::string makeOpenClInternalErrorString(const char* message, cl_int sta
 {
     if (message != nullptr)
     {
-        return gmx::formatString("%s did %ssucceed %d: %s", message,
-                                 ((status != CL_SUCCESS) ? "not " : ""), status,
+        return gmx::formatString("%s did %ssucceed %d: %s",
+                                 message,
+                                 ((status != CL_SUCCESS) ? "not " : ""),
+                                 status,
                                  ocl_get_error_string(status).c_str());
     }
     else
     {
         return gmx::formatString("%sOpenCL error encountered %d: %s",
-                                 ((status != CL_SUCCESS) ? "" : "No "), status,
+                                 ((status != CL_SUCCESS) ? "" : "No "),
+                                 status,
                                  ocl_get_error_string(status).c_str());
     }
 }
@@ -262,8 +265,8 @@ static bool isDeviceFunctional(const DeviceInformation& deviceInfo, std::string*
     clSetKernelArg(kernel, 0, sizeof(void*), nullptr);
 
     const size_t localWorkSize = 1, globalWorkSize = 1;
-    if ((status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, nullptr, &globalWorkSize,
-                                         &localWorkSize, 0, nullptr, nullptr))
+    if ((status = clEnqueueNDRangeKernel(
+                 commandQueue, kernel, 1, nullptr, &globalWorkSize, &localWorkSize, 0, nullptr, nullptr))
         != CL_SUCCESS)
     {
         errorMessage->assign(makeOpenClInternalErrorString("clEnqueueNDRangeKernel", status));
@@ -324,7 +327,8 @@ bool isDeviceDetectionFunctional(std::string* errorMessage)
     GMX_RELEASE_ASSERT(
             status == CL_SUCCESS,
             gmx::formatString("An unexpected value was returned from clGetPlatformIDs %d: %s",
-                              status, ocl_get_error_string(status).c_str())
+                              status,
+                              ocl_get_error_string(status).c_str())
                     .c_str());
     bool foundPlatform = (numPlatforms > 0);
     if (!foundPlatform && errorMessage != nullptr)
@@ -412,8 +416,7 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
                 /* If requesting req_dev_type devices fails, just go to the next platform */
                 if (CL_SUCCESS
-                    != clGetDeviceIDs(ocl_platform_ids[i], req_dev_type, numDevices, ocl_device_ids,
-                                      &ocl_device_count))
+                    != clGetDeviceIDs(ocl_platform_ids[i], req_dev_type, numDevices, ocl_device_ids, &ocl_device_count))
                 {
                     continue;
                 }
@@ -433,38 +436,54 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
                     deviceInfoList[device_index]->oclDeviceId   = ocl_device_ids[j];
 
                     deviceInfoList[device_index]->device_name[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_NAME,
+                    clGetDeviceInfo(ocl_device_ids[j],
+                                    CL_DEVICE_NAME,
                                     sizeof(deviceInfoList[device_index]->device_name),
-                                    deviceInfoList[device_index]->device_name, nullptr);
+                                    deviceInfoList[device_index]->device_name,
+                                    nullptr);
 
                     deviceInfoList[device_index]->device_version[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VERSION,
+                    clGetDeviceInfo(ocl_device_ids[j],
+                                    CL_DEVICE_VERSION,
                                     sizeof(deviceInfoList[device_index]->device_version),
-                                    deviceInfoList[device_index]->device_version, nullptr);
+                                    deviceInfoList[device_index]->device_version,
+                                    nullptr);
 
                     deviceInfoList[device_index]->vendorName[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VENDOR,
+                    clGetDeviceInfo(ocl_device_ids[j],
+                                    CL_DEVICE_VENDOR,
                                     sizeof(deviceInfoList[device_index]->vendorName),
-                                    deviceInfoList[device_index]->vendorName, nullptr);
+                                    deviceInfoList[device_index]->vendorName,
+                                    nullptr);
 
                     deviceInfoList[device_index]->compute_units = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_COMPUTE_UNITS,
+                    clGetDeviceInfo(ocl_device_ids[j],
+                                    CL_DEVICE_MAX_COMPUTE_UNITS,
                                     sizeof(deviceInfoList[device_index]->compute_units),
-                                    &(deviceInfoList[device_index]->compute_units), nullptr);
+                                    &(deviceInfoList[device_index]->compute_units),
+                                    nullptr);
 
                     deviceInfoList[device_index]->adress_bits = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_ADDRESS_BITS,
+                    clGetDeviceInfo(ocl_device_ids[j],
+                                    CL_DEVICE_ADDRESS_BITS,
                                     sizeof(deviceInfoList[device_index]->adress_bits),
-                                    &(deviceInfoList[device_index]->adress_bits), nullptr);
+                                    &(deviceInfoList[device_index]->adress_bits),
+                                    nullptr);
 
                     deviceInfoList[device_index]->deviceVendor =
                             getDeviceVendor(deviceInfoList[device_index]->vendorName);
 
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t),
-                                    &deviceInfoList[device_index]->maxWorkItemSizes, nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j],
+                                    CL_DEVICE_MAX_WORK_ITEM_SIZES,
+                                    3 * sizeof(size_t),
+                                    &deviceInfoList[device_index]->maxWorkItemSizes,
+                                    nullptr);
 
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t),
-                                    &deviceInfoList[device_index]->maxWorkGroupSize, nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j],
+                                    CL_DEVICE_MAX_WORK_GROUP_SIZE,
+                                    sizeof(size_t),
+                                    &deviceInfoList[device_index]->maxWorkGroupSize,
+                                    nullptr);
 
                     deviceInfoList[device_index]->status =
                             gmx::checkGpu(device_index, *deviceInfoList[device_index]);
@@ -550,13 +569,16 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
 
     if (!gpuExists)
     {
-        return gmx::formatString("#%d: %s, status: %s", deviceInfo.id, "N/A",
-                                 c_deviceStateString[deviceInfo.status]);
+        return gmx::formatString(
+                "#%d: %s, status: %s", deviceInfo.id, "N/A", c_deviceStateString[deviceInfo.status]);
     }
     else
     {
         return gmx::formatString("#%d: name: %s, vendor: %s, device version: %s, status: %s",
-                                 deviceInfo.id, deviceInfo.device_name, deviceInfo.vendorName,
-                                 deviceInfo.device_version, c_deviceStateString[deviceInfo.status]);
+                                 deviceInfo.id,
+                                 deviceInfo.device_name,
+                                 deviceInfo.vendorName,
+                                 deviceInfo.device_version,
+                                 c_deviceStateString[deviceInfo.status]);
     }
 }

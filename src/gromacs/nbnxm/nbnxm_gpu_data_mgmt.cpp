@@ -79,8 +79,8 @@ void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
     }
 
     nbp->coulomb_tab_scale = tables.scale;
-    initParamLookupTable(&nbp->coulomb_tab, &nbp->coulomb_tab_texobj, tables.tableF.data(),
-                         tables.tableF.size(), deviceContext);
+    initParamLookupTable(
+            &nbp->coulomb_tab, &nbp->coulomb_tab_texobj, tables.tableF.data(), tables.tableF.size(), deviceContext);
 }
 
 void inline printEnvironmentVariableDeprecationMessage(bool               isEnvironmentVariableSet,
@@ -91,7 +91,8 @@ void inline printEnvironmentVariableDeprecationMessage(bool               isEnvi
         fprintf(stderr,
                 "Environment variables GMX_CUDA_%s and GMX_OCL_%s are deprecated and will be\n"
                 "removed in release 2022, please use GMX_GPU_%s instead.",
-                environmentVariableSuffix.c_str(), environmentVariableSuffix.c_str(),
+                environmentVariableSuffix.c_str(),
+                environmentVariableSuffix.c_str(),
                 environmentVariableSuffix.c_str());
     }
 }
@@ -266,8 +267,10 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
     {
         if (d_plist->na_c != h_plist->na_ci)
         {
-            sprintf(sbuf, "In init_plist: the #atoms per cell has changed (from %d to %d)",
-                    d_plist->na_c, h_plist->na_ci);
+            sprintf(sbuf,
+                    "In init_plist: the #atoms per cell has changed (from %d to %d)",
+                    d_plist->na_c,
+                    h_plist->na_ci);
             gmx_incons(sbuf);
         }
     }
@@ -283,23 +286,41 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
     // TODO most of this function is same in CUDA and OpenCL, move into the header
     const DeviceContext& deviceContext = *nb->deviceContext_;
 
-    reallocateDeviceBuffer(&d_plist->sci, h_plist->sci.size(), &d_plist->nsci, &d_plist->sci_nalloc,
+    reallocateDeviceBuffer(
+            &d_plist->sci, h_plist->sci.size(), &d_plist->nsci, &d_plist->sci_nalloc, deviceContext);
+    copyToDeviceBuffer(&d_plist->sci,
+                       h_plist->sci.data(),
+                       0,
+                       h_plist->sci.size(),
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    reallocateDeviceBuffer(
+            &d_plist->cj4, h_plist->cj4.size(), &d_plist->ncj4, &d_plist->cj4_nalloc, deviceContext);
+    copyToDeviceBuffer(&d_plist->cj4,
+                       h_plist->cj4.data(),
+                       0,
+                       h_plist->cj4.size(),
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+
+    reallocateDeviceBuffer(&d_plist->imask,
+                           h_plist->cj4.size() * c_nbnxnGpuClusterpairSplit,
+                           &d_plist->nimask,
+                           &d_plist->imask_nalloc,
                            deviceContext);
-    copyToDeviceBuffer(&d_plist->sci, h_plist->sci.data(), 0, h_plist->sci.size(), deviceStream,
-                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
-    reallocateDeviceBuffer(&d_plist->cj4, h_plist->cj4.size(), &d_plist->ncj4, &d_plist->cj4_nalloc,
-                           deviceContext);
-    copyToDeviceBuffer(&d_plist->cj4, h_plist->cj4.data(), 0, h_plist->cj4.size(), deviceStream,
-                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
-
-    reallocateDeviceBuffer(&d_plist->imask, h_plist->cj4.size() * c_nbnxnGpuClusterpairSplit,
-                           &d_plist->nimask, &d_plist->imask_nalloc, deviceContext);
-
-    reallocateDeviceBuffer(&d_plist->excl, h_plist->excl.size(), &d_plist->nexcl,
-                           &d_plist->excl_nalloc, deviceContext);
-    copyToDeviceBuffer(&d_plist->excl, h_plist->excl.data(), 0, h_plist->excl.size(), deviceStream,
-                       GpuApiCallBehavior::Async, bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+    reallocateDeviceBuffer(
+            &d_plist->excl, h_plist->excl.size(), &d_plist->nexcl, &d_plist->excl_nalloc, deviceContext);
+    copyToDeviceBuffer(&d_plist->excl,
+                       h_plist->excl.data(),
+                       0,
+                       h_plist->excl.size(),
+                       deviceStream,
+                       GpuApiCallBehavior::Async,
+                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     if (bDoTime)
     {
@@ -351,7 +372,8 @@ enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t* ic
         GMX_THROW(gmx::InconsistentInputError(
                 gmx::formatString("The requested electrostatics type %s (%d) is not implemented in "
                                   "the GPU accelerated kernels!",
-                                  EELTYPE(ic->eeltype), ic->eeltype)));
+                                  EELTYPE(ic->eeltype),
+                                  ic->eeltype)));
     }
 }
 
@@ -373,7 +395,8 @@ enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, int combRu
                         GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
                                 "The requested LJ combination rule %s (%d) is not implemented in "
                                 "the GPU accelerated kernels!",
-                                enum_name(combRule, ljcrNR, c_ljcrNames), combRule)));
+                                enum_name(combRule, ljcrNR, c_ljcrNames),
+                                combRule)));
                 }
             case eintmodFORCESWITCH: return VdwType::FSwitch;
             case eintmodPOTSWITCH: return VdwType::PSwitch;
@@ -381,7 +404,8 @@ enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, int combRu
                 GMX_THROW(gmx::InconsistentInputError(
                         gmx::formatString("The requested VdW interaction modifier %s (%d) is not "
                                           "implemented in the GPU accelerated kernels!",
-                                          INTMODIFIER(ic->vdw_modifier), ic->vdw_modifier)));
+                                          INTMODIFIER(ic->vdw_modifier),
+                                          ic->vdw_modifier)));
         }
     }
     else if (ic->vdwtype == evdwPME)
@@ -401,7 +425,8 @@ enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, int combRu
     {
         GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
                 "The requested VdW type %s (%d) is not implemented in the GPU accelerated kernels!",
-                EVDWTYPE(ic->vdwtype), ic->vdwtype)));
+                EVDWTYPE(ic->vdwtype),
+                ic->vdwtype)));
     }
 }
 

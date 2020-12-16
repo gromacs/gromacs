@@ -226,11 +226,14 @@ TEST_F(AffineTransformationTest, applyTransformationToVectors)
         RVec vectorTransformed = vector;
         affineTransformation(&vectorTransformed);
         // need relaxed tolerance here, due to the number of operations involved
-        EXPECT_REAL_EQ_TOL((*expected)[XX], vectorTransformed[XX],
+        EXPECT_REAL_EQ_TOL((*expected)[XX],
+                           vectorTransformed[XX],
                            relativeToleranceAsFloatingPoint((*expected)[XX], 1e-5));
-        EXPECT_REAL_EQ_TOL((*expected)[YY], vectorTransformed[YY],
+        EXPECT_REAL_EQ_TOL((*expected)[YY],
+                           vectorTransformed[YY],
                            relativeToleranceAsFloatingPoint((*expected)[YY], 1e-5));
-        EXPECT_REAL_EQ_TOL((*expected)[ZZ], vectorTransformed[ZZ],
+        EXPECT_REAL_EQ_TOL((*expected)[ZZ],
+                           vectorTransformed[ZZ],
                            relativeToleranceAsFloatingPoint((*expected)[ZZ], 1e-5));
         ++expected;
     }

@@ -54,8 +54,11 @@
 void SearchCycleCounting::printCycles(FILE* fp, gmx::ArrayRef<const PairsearchWork> work) const
 {
     fprintf(fp, "\n");
-    fprintf(fp, "ns %4d grid %4.1f search %4.1f", cc_[enbsCCgrid].count(),
-            cc_[enbsCCgrid].averageMCycles(), cc_[enbsCCsearch].averageMCycles());
+    fprintf(fp,
+            "ns %4d grid %4.1f search %4.1f",
+            cc_[enbsCCgrid].count(),
+            cc_[enbsCCgrid].averageMCycles(),
+            cc_[enbsCCsearch].averageMCycles());
 
     if (work.size() > 1)
     {

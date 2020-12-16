@@ -81,8 +81,8 @@ void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter* writer)
 {
     gmx::StringOutputStream     stream;
     gmx::TextWriter             streamWriter(&stream);
-    gmx::CommandLineHelpContext context(&streamWriter, gmx::eHelpOutputFormat_Console, nullptr,
-                                        "test");
+    gmx::CommandLineHelpContext context(
+            &streamWriter, gmx::eHelpOutputFormat_Console, nullptr, "test");
     context.setShowHidden(bHidden_);
     writer->writeHelp(context);
     stream.close();

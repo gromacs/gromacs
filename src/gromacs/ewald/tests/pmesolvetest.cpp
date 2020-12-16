@@ -119,9 +119,9 @@ public:
             if (!supportedInput)
             {
                 /* Testing the failure for the unsupported input */
-                EXPECT_THROW_GMX(pmeInitWrapper(&inputRec, codePath, nullptr, nullptr, nullptr, box,
-                                                ewaldCoeff_q, ewaldCoeff_lj),
-                                 NotImplementedError);
+                EXPECT_THROW_GMX(
+                        pmeInitWrapper(&inputRec, codePath, nullptr, nullptr, nullptr, box, ewaldCoeff_q, ewaldCoeff_lj),
+                        NotImplementedError);
                 continue;
             }
 
@@ -140,20 +140,28 @@ public:
                             "Testing solving (%s, %s, %s energy/virial) on %s for PME grid "
                             "size %d %d %d, Ewald coefficients %g %g",
                             (method == PmeSolveAlgorithm::LennardJones) ? "Lennard-Jones" : "Coulomb",
-                            gridOrdering.second.c_str(), computeEnergyAndVirial ? "with" : "without",
-                            pmeTestHardwareContext->description().c_str(), gridSize[XX],
-                            gridSize[YY], gridSize[ZZ], ewaldCoeff_q, ewaldCoeff_lj));
+                            gridOrdering.second.c_str(),
+                            computeEnergyAndVirial ? "with" : "without",
+                            pmeTestHardwareContext->description().c_str(),
+                            gridSize[XX],
+                            gridSize[YY],
+                            gridSize[ZZ],
+                            ewaldCoeff_q,
+                            ewaldCoeff_lj));
 
                     /* Running the test */
-                    PmeSafePointer pmeSafe = pmeInitWrapper(
-                            &inputRec, codePath, pmeTestHardwareContext->deviceContext(),
-                            pmeTestHardwareContext->deviceStream(),
-                            pmeTestHardwareContext->pmeGpuProgram(), box, ewaldCoeff_q, ewaldCoeff_lj);
+                    PmeSafePointer pmeSafe = pmeInitWrapper(&inputRec,
+                                                            codePath,
+                                                            pmeTestHardwareContext->deviceContext(),
+                                                            pmeTestHardwareContext->deviceStream(),
+                                                            pmeTestHardwareContext->pmeGpuProgram(),
+                                                            box,
+                                                            ewaldCoeff_q,
+                                                            ewaldCoeff_lj);
                     pmeSetComplexGrid(pmeSafe.get(), codePath, gridOrdering.first, nonZeroGridValues);
                     const real cellVolume = box[0] * box[4] * box[8];
                     // FIXME - this is box[XX][XX] * box[YY][YY] * box[ZZ][ZZ], should be stored in the PME structure
-                    pmePerformSolve(pmeSafe.get(), codePath, method, cellVolume, gridOrdering.first,
-                                    computeEnergyAndVirial);
+                    pmePerformSolve(pmeSafe.get(), codePath, method, cellVolume, gridOrdering.first, computeEnergyAndVirial);
                     pmeFinalizeTest(pmeSafe.get(), codePath);
 
                     /* Check the outputs */
@@ -181,7 +189,8 @@ public:
                     const uint64_t splineModuliDoublePrecisionUlps =
                             getSplineModuliDoublePrecisionUlps(inputRec.pme_order + 1);
                     auto gridTolerance = relativeToleranceAsPrecisionDependentUlp(
-                            gridValuesMagnitude, gridUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
+                            gridValuesMagnitude,
+                            gridUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
                             gridUlpToleranceFactor * splineModuliDoublePrecisionUlps);
                     gridValuesChecker.setDefaultTolerance(gridTolerance);
 
@@ -220,7 +229,8 @@ public:
                         // TODO This factor is arbitrary, do a proper error-propagation analysis
                         uint64_t energyUlpToleranceFactor = gridUlpToleranceFactor * 2;
                         auto     energyTolerance = relativeToleranceAsPrecisionDependentUlp(
-                                energyMagnitude, energyUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
+                                energyMagnitude,
+                                energyUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
                                 energyUlpToleranceFactor * splineModuliDoublePrecisionUlps);
                         TestReferenceChecker energyChecker(checker);
                         energyChecker.setDefaultTolerance(energyTolerance);
@@ -231,7 +241,8 @@ public:
                         // TODO This factor is arbitrary, do a proper error-propagation analysis
                         uint64_t virialUlpToleranceFactor = energyUlpToleranceFactor * 2;
                         auto     virialTolerance = relativeToleranceAsPrecisionDependentUlp(
-                                virialMagnitude, virialUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
+                                virialMagnitude,
+                                virialUlpToleranceFactor * c_splineModuliSinglePrecisionUlps,
                                 virialUlpToleranceFactor * splineModuliDoublePrecisionUlps);
                         TestReferenceChecker virialChecker(
                                 checker.checkCompound("Matrix", "Virial"));

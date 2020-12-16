@@ -149,8 +149,8 @@ static void convert_value(SelectionParserValue* value, e_selvalue_t type, Except
         /* Integers to floating point are easy */
         if (value->type == INT_VALUE && type == REAL_VALUE)
         {
-            *value = SelectionParserValue::createRealRange(value->u.i.i1, value->u.i.i2,
-                                                           value->location());
+            *value = SelectionParserValue::createRealRange(
+                    value->u.i.i1, value->u.i.i2, value->location());
             return;
         }
         /* Reals that are integer-valued can also be converted */
@@ -532,8 +532,7 @@ static void parse_values_varnum(const SelectionParserValueList&    values,
                 GMX_RELEASE_ASSERT(false, "Variable-count value type not implemented");
         }
     }
-    GMX_RELEASE_ASSERT(i == valueCount,
-                       "Inconsistent value count wrt. the actual value population");
+    GMX_RELEASE_ASSERT(i == valueCount, "Inconsistent value count wrt. the actual value population");
     if (param->nvalptr)
     {
         *param->nvalptr = param->val.nr;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,9 @@ inline TrajectoryFrameWriterPointer createMinimalTrajectoryFrameWriter(const std
                                                                        const Selection& selection,
                                                                        OutputRequirements requirements)
 {
-    return createTrajectoryFrameWriter(topology.mtop(), selection, filename,
+    return createTrajectoryFrameWriter(topology.mtop(),
+                                       selection,
+                                       filename,
                                        topology.hasTopology() ? topology.copyAtoms() : nullptr,
                                        requirements);
 }

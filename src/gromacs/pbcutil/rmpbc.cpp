@@ -100,7 +100,8 @@ static t_graph* gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, PbcType pbcType, int natom
         {
             gmx_fatal(FARGS,
                       "Structure or trajectory file has more atoms (%d) than the topology (%d)",
-                      natoms, gpbc->natoms_init);
+                      natoms,
+                      gpbc->natoms_init);
         }
         gpbc->ngraph++;
         srenew(gpbc->graph, gpbc->ngraph);

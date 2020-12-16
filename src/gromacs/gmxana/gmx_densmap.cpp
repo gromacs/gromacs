@@ -147,8 +147,8 @@ int gmx_densmap(int argc, char* argv[])
 
     npargs = asize(pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(
+                &argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -518,9 +518,22 @@ int gmx_densmap(int argc, char* argv[])
     else
     {
         fp = gmx_ffopen(ftp2fn(efXPM, NFILE, fnm), "w");
-        write_xpm(fp, MAT_SPATIAL_X | MAT_SPATIAL_Y, buf, unit, bRadial ? "axial (nm)" : label[c1],
-                  bRadial ? "r (nm)" : label[c2], n1, n2, tickx, tickz, grid, dmin, maxgrid, rlo,
-                  rhi, &nlev);
+        write_xpm(fp,
+                  MAT_SPATIAL_X | MAT_SPATIAL_Y,
+                  buf,
+                  unit,
+                  bRadial ? "axial (nm)" : label[c1],
+                  bRadial ? "r (nm)" : label[c2],
+                  n1,
+                  n2,
+                  tickx,
+                  tickz,
+                  grid,
+                  dmin,
+                  maxgrid,
+                  rlo,
+                  rhi,
+                  &nlev);
         gmx_ffclose(fp);
     }
 

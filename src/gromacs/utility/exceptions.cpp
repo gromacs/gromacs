@@ -340,8 +340,7 @@ public:
         std::fprintf(fp_, "%*sReason: %s\n", indent, "", std::strerror(errorNumber));
         if (funcName != nullptr)
         {
-            std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n", indent, "", funcName,
-                         errorNumber);
+            std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n", indent, "", funcName, errorNumber);
         }
     }
 
@@ -467,8 +466,8 @@ void formatExceptionMessageInternal(IMessageWriter* writer, const std::exception
         if (errorNumber != nullptr && *errorNumber != 0)
         {
             const char* const* funcName = gmxEx->getInfo<ExceptionInfoApiFunction>();
-            writer->writeErrNoInfo(*errorNumber, funcName != nullptr ? *funcName : nullptr,
-                                   (indent + 1) * 2);
+            writer->writeErrNoInfo(
+                    *errorNumber, funcName != nullptr ? *funcName : nullptr, (indent + 1) * 2);
             bAnythingWritten = true;
         }
 

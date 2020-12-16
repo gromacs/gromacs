@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,8 +135,8 @@ static inline Simd4Float gmx_simdcall operator-(Simd4Float x)
 
 static inline Simd4Float gmx_simdcall operator*(Simd4Float a, Simd4Float b)
 {
-    return { vec_madd(a.simdInternal_, b.simdInternal_,
-                      reinterpret_cast<__vector float>(vec_splat_u32(0))) };
+    return { vec_madd(
+            a.simdInternal_, b.simdInternal_, reinterpret_cast<__vector float>(vec_splat_u32(0))) };
 }
 
 static inline Simd4Float gmx_simdcall fma(Simd4Float a, Simd4Float b, Simd4Float c)
@@ -193,8 +193,8 @@ static inline float gmx_simdcall dotProduct(Simd4Float a, Simd4Float b)
 {
     float res;
 
-    __vector float c = vec_madd(a.simdInternal_, b.simdInternal_,
-                                reinterpret_cast<__vector float>(vec_splat_u32(0)));
+    __vector float c = vec_madd(
+            a.simdInternal_, b.simdInternal_, reinterpret_cast<__vector float>(vec_splat_u32(0)));
     // Keep only elements 0,1,2 by shifting in zero from right (xor of a vector with itself is 0)
     c = vec_sld(c, vec_xor(a.simdInternal_, a.simdInternal_), 4);
     // calculate sum

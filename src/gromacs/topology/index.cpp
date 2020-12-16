@@ -448,7 +448,8 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                     else
                     {
                         if (0
-                            == gmx_strncasecmp(constructing_data[i].defining_atomnames[j], atnm,
+                            == gmx_strncasecmp(constructing_data[i].defining_atomnames[j],
+                                               atnm,
                                                strlen(constructing_data[i].defining_atomnames[j])))
                         {
                             match = TRUE;
@@ -504,8 +505,12 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                     {
                         t_resinfo* ri;
                         ri = &atoms->resinfo[resind];
-                        sprintf(ndx_name, "%s_%s%d%c", constructing_data[i].group_name, *ri->name,
-                                ri->nr, ri->ic == ' ' ? '\0' : ri->ic);
+                        sprintf(ndx_name,
+                                "%s_%s%d%c",
+                                constructing_data[i].group_name,
+                                *ri->name,
+                                ri->nr,
+                                ri->ic == ' ' ? '\0' : ri->ic);
                         add_grp(gb, gn, aid, ndx_name);
                         aid.clear();
                     }
@@ -723,13 +728,19 @@ void check_index(const char* gname, int n, int index[], const char* traj, int na
         {
             gmx_fatal(FARGS,
                       "%s atom number (index[%d]=%d) is larger than the number of atoms in %s (%d)",
-                      gname ? gname : "Index", i + 1, index[i] + 1, traj ? traj : "the trajectory",
+                      gname ? gname : "Index",
+                      i + 1,
+                      index[i] + 1,
+                      traj ? traj : "the trajectory",
                       natoms);
         }
         else if (index[i] < 0)
         {
-            gmx_fatal(FARGS, "%s atom number (index[%d]=%d) is less than zero",
-                      gname ? gname : "Index", i + 1, index[i] + 1);
+            gmx_fatal(FARGS,
+                      "%s atom number (index[%d]=%d) is less than zero",
+                      gname ? gname : "Index",
+                      i + 1,
+                      index[i] + 1);
         }
     }
 }
@@ -930,8 +941,7 @@ rd_groups(t_blocka* grps, char** grpname, char* gnames[], int ngrps, int isize[]
     }
     for (i = 0; (i < grps->nr); i++)
     {
-        fprintf(stderr, "Group %5d (%15s) has %5d elements\n", i, grpname[i],
-                grps->index[i + 1] - grps->index[i]);
+        fprintf(stderr, "Group %5d (%15s) has %5d elements\n", i, grpname[i], grps->index[i + 1] - grps->index[i]);
     }
     for (i = 0; (i < ngrps); i++)
     {
@@ -1032,8 +1042,10 @@ t_cluster_ndx* cluster_index(FILE* fplog, const char* ndx)
         c->maxframe = std::max(c->maxframe, c->clust->a[i]);
     }
     fprintf(fplog ? fplog : stdout,
-            "There are %d clusters containing %d structures, highest framenr is %d\n", c->clust->nr,
-            c->clust->nra, c->maxframe);
+            "There are %d clusters containing %d structures, highest framenr is %d\n",
+            c->clust->nr,
+            c->clust->nra,
+            c->maxframe);
     if (debug)
     {
         pr_blocka(debug, 0, "clust", c->clust, TRUE);
@@ -1044,7 +1056,9 @@ t_cluster_ndx* cluster_index(FILE* fplog, const char* ndx)
                 gmx_fatal(FARGS,
                           "Range check error for c->clust->a[%d] = %d\n"
                           "should be within 0 and %d",
-                          i, c->clust->a[i], c->maxframe + 1);
+                          i,
+                          c->clust->a[i],
+                          c->maxframe + 1);
             }
         }
     }

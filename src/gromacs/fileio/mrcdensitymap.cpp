@@ -84,8 +84,8 @@ std::vector<char> readCharBufferFromFile(const std::string& filename)
     gmx_fseek(gmx_fio_getfp(mrcFile), 0, SEEK_SET);
     // Read whole file into buffer the size of the file
     std::vector<char> fileContentBuffer(fileSize);
-    size_t readSize = fread(fileContentBuffer.data(), sizeof(char), fileContentBuffer.size(),
-                            gmx_fio_getfp(mrcFile));
+    size_t            readSize = fread(
+            fileContentBuffer.data(), sizeof(char), fileContentBuffer.size(), gmx_fio_getfp(mrcFile));
     gmx_fio_close(mrcFile);
 
     if (fileContentBuffer.size() != readSize)
@@ -223,7 +223,8 @@ MultiDimArray<std::vector<float>, dynamicExtents3D> MrcDensityMapOfFloatFromFile
 {
     MultiDimArray<std::vector<float>, dynamicExtents3D> result(
             getDynamicExtents3D(impl_->reader().header()));
-    std::copy(std::begin(impl_->reader().constView()), std::end(impl_->reader().constView()),
+    std::copy(std::begin(impl_->reader().constView()),
+              std::end(impl_->reader().constView()),
               begin(result.asView()));
     return result;
 }

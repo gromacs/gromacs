@@ -565,9 +565,13 @@ protected:
         // have an implementation for uint64_t(!) but this is likely to
         // work because that type is likely to be a typedef for one of
         // the other numerical types that happens to be 64-bits wide.
-        shiftForcesTolerance_ = FloatingPointTolerance(singleShiftForcesAbsoluteTolerance, 1e-8, 1e-6,
-                                                       1e-12, std::numeric_limits<uint64_t>::max(),
-                                                       std::numeric_limits<uint64_t>::max(), false);
+        shiftForcesTolerance_ = FloatingPointTolerance(singleShiftForcesAbsoluteTolerance,
+                                                       1e-8,
+                                                       1e-6,
+                                                       1e-12,
+                                                       std::numeric_limits<uint64_t>::max(),
+                                                       std::numeric_limits<uint64_t>::max(),
+                                                       false);
     }
     void testOneIfunc(TestReferenceChecker* checker, const std::vector<t_iatom>& iatoms, const real lambda)
     {
@@ -590,11 +594,20 @@ protected:
         {
             SCOPED_TRACE("Testing bonded kernel flavor: " + c_bondedKernelFlavorStrings[flavor]);
             OutputQuantities output;
-            output.energy =
-                    calculateSimpleBond(input_.ftype, iatoms.size(), iatoms.data(), &input_.iparams,
-                                        as_rvec_array(x_.data()), output.f, output.fshift, &pbc_,
-                                        lambda, &output.dvdlambda, &mdatoms,
-                                        /* struct t_fcdata * */ nullptr, ddgatindex.data(), flavor);
+            output.energy = calculateSimpleBond(input_.ftype,
+                                                iatoms.size(),
+                                                iatoms.data(),
+                                                &input_.iparams,
+                                                as_rvec_array(x_.data()),
+                                                output.f,
+                                                output.fshift,
+                                                &pbc_,
+                                                lambda,
+                                                &output.dvdlambda,
+                                                &mdatoms,
+                                                /* struct t_fcdata * */ nullptr,
+                                                ddgatindex.data(),
+                                                flavor);
             // Internal consistency test of both test input
             // and bonded functions.
             EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0))) << "dvdlambda was " << output.dvdlambda;

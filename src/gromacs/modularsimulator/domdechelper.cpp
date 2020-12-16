@@ -108,8 +108,12 @@ void DomDecHelper::setup()
     gmx_wallcycle* wcycle        = nullptr;
 
     // Distribute the charge groups over the nodes from the master node
-    partitionSystem(verbose, isMasterState, nstglobalcomm, wcycle,
-                    statePropagatorData_->localState(), statePropagatorData_->globalState());
+    partitionSystem(verbose,
+                    isMasterState,
+                    nstglobalcomm,
+                    wcycle,
+                    statePropagatorData_->localState(),
+                    statePropagatorData_->globalState());
 }
 
 void DomDecHelper::run(Step step, Time gmx_unused time)
@@ -154,10 +158,26 @@ void DomDecHelper::partitionSystem(bool                     verbose,
     ForceBuffers* forcePointer = statePropagatorData_->forcePointer();
 
     // Distribute the charge groups over the nodes from the master node
-    dd_partition_system(fplog_, mdlog_, inputrec_->init_step, cr_, isMasterState, nstglobalcomm,
-                        globalState, topologyHolder_->globalTopology(), inputrec_, imdSession_,
-                        pull_work_, localState.get(), forcePointer, mdAtoms_,
-                        topologyHolder_->localTopology_.get(), fr_, vsite_, constr_, nrnb_, wcycle,
+    dd_partition_system(fplog_,
+                        mdlog_,
+                        inputrec_->init_step,
+                        cr_,
+                        isMasterState,
+                        nstglobalcomm,
+                        globalState,
+                        topologyHolder_->globalTopology(),
+                        inputrec_,
+                        imdSession_,
+                        pull_work_,
+                        localState.get(),
+                        forcePointer,
+                        mdAtoms_,
+                        topologyHolder_->localTopology_.get(),
+                        fr_,
+                        vsite_,
+                        constr_,
+                        nrnb_,
+                        wcycle,
                         verbose);
     topologyHolder_->updateLocalTopology();
     checkBondedInteractionsCallback_();

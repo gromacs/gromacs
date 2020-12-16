@@ -137,8 +137,8 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         // to avoid (incorrect) correction of the initial coordinates.
         auto x = vcm_.mode == ecmLINEAR_ACCELERATION_CORRECTION ? ArrayRefWithPadding<RVec>()
                                                                 : statePropagatorData_->positionsView();
-        process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x.unpaddedArrayRef(),
-                               v.unpaddedArrayRef());
+        process_and_stopcm_grp(
+                fplog_, &vcm_, *mdAtoms_->mdatoms(), x.unpaddedArrayRef(), v.unpaddedArrayRef());
         inc_nrnb(nrnb_, eNR_STOPCM, mdAtoms_->mdatoms()->homenr);
     }
 
@@ -202,8 +202,8 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step step,
         const bool doInterSimSignal = false;
 
         // Make signaller to signal stop / reset / checkpointing signals
-        auto signaller = std::make_shared<SimulationSignaller>(signals_, cr_, nullptr,
-                                                               doInterSimSignal, doIntraSimSignal);
+        auto signaller = std::make_shared<SimulationSignaller>(
+                signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
         registerRunFunction([this, step, flags, signaller = std::move(signaller)]() {
             compute(step, flags, signaller.get(), true);
@@ -282,14 +282,31 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                               : statePropagatorData_->constBox();
 
     compute_globals(
-            gstat_, cr_, inputrec_, fr_, energyData_->ekindata(), x, v, box, mdAtoms_->mdatoms(),
-            nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr, energyData_->enerdata(),
-            energyData_->forceVirial(step), energyData_->constraintVirial(step),
-            energyData_->totalVirial(step), energyData_->pressure(step), constr_, signaller,
-            lastbox, &totalNumberOfBondedInteractions_, energyData_->needToSumEkinhOld(),
+            gstat_,
+            cr_,
+            inputrec_,
+            fr_,
+            energyData_->ekindata(),
+            x,
+            v,
+            box,
+            mdAtoms_->mdatoms(),
+            nrnb_,
+            &vcm_,
+            step != -1 ? wcycle_ : nullptr,
+            energyData_->enerdata(),
+            energyData_->forceVirial(step),
+            energyData_->constraintVirial(step),
+            energyData_->totalVirial(step),
+            energyData_->pressure(step),
+            constr_,
+            signaller,
+            lastbox,
+            &totalNumberOfBondedInteractions_,
+            energyData_->needToSumEkinhOld(),
             flags | (shouldCheckNumberOfBondedInteractions_ ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS : 0));
-    checkNumberOfBondedInteractions(mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_,
-                                    localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
+    checkNumberOfBondedInteractions(
+            mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_, localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);
     if (flags & CGLO_STOPCM && !isInit)
     {
         process_and_stopcm_grp(fplog_, &vcm_, *mdAtoms_->mdatoms(), x, v);
@@ -357,13 +374,21 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>::get
 {
     auto* element = builderHelper->storeElement(
             std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
-                    statePropagatorData, energyData, freeEnergyPerturbationData,
+                    statePropagatorData,
+                    energyData,
+                    freeEnergyPerturbationData,
                     globalCommunicationHelper->simulationSignals(),
-                    globalCommunicationHelper->nstglobalcomm(), legacySimulatorData->fplog,
-                    legacySimulatorData->mdlog, legacySimulatorData->cr,
-                    legacySimulatorData->inputrec, legacySimulatorData->mdAtoms,
-                    legacySimulatorData->nrnb, legacySimulatorData->wcycle, legacySimulatorData->fr,
-                    legacySimulatorData->top_global, legacySimulatorData->constr));
+                    globalCommunicationHelper->nstglobalcomm(),
+                    legacySimulatorData->fplog,
+                    legacySimulatorData->mdlog,
+                    legacySimulatorData->cr,
+                    legacySimulatorData->inputrec,
+                    legacySimulatorData->mdAtoms,
+                    legacySimulatorData->nrnb,
+                    legacySimulatorData->wcycle,
+                    legacySimulatorData->fr,
+                    legacySimulatorData->top_global,
+                    legacySimulatorData->constr));
 
     // TODO: Remove this when DD can reduce bonded interactions independently (#3421)
     auto* castedElement = static_cast<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>*>(element);
@@ -396,11 +421,21 @@ ISimulatorElement* ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet
     {
         ISimulatorElement* vvComputeGlobalsElement = builderHelper->storeElement(
                 std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>(
-                        statePropagatorData, energyData, freeEnergyPerturbationData,
+                        statePropagatorData,
+                        energyData,
+                        freeEnergyPerturbationData,
                         globalCommunicationHelper->simulationSignals(),
-                        globalCommunicationHelper->nstglobalcomm(), simulator->fplog, simulator->mdlog,
-                        simulator->cr, simulator->inputrec, simulator->mdAtoms, simulator->nrnb,
-                        simulator->wcycle, simulator->fr, simulator->top_global, simulator->constr));
+                        globalCommunicationHelper->nstglobalcomm(),
+                        simulator->fplog,
+                        simulator->mdlog,
+                        simulator->cr,
+                        simulator->inputrec,
+                        simulator->mdAtoms,
+                        simulator->nrnb,
+                        simulator->wcycle,
+                        simulator->fr,
+                        simulator->top_global,
+                        simulator->constr));
 
         // TODO: Remove this when DD can reduce bonded interactions independently (#3421)
         auto* castedElement =

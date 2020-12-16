@@ -548,7 +548,9 @@ void renumberIndex(std::vector<unsigned int>* v)
     for (std::size_t i = 0; i < uniqueSortedV.size(); i++)
     {
         unsigned int val = uniqueSortedV[i];
-        std::replace_if(v->begin(), v->end(), [val](unsigned int& c) -> bool { return c == val; },
+        std::replace_if(v->begin(),
+                        v->end(),
+                        [val](unsigned int& c) -> bool { return c == val; },
                         static_cast<unsigned int>(i));
     }
 }
@@ -1027,8 +1029,8 @@ CpuInfo CpuInfo::detect()
         {
             result.features_.insert(CpuInfo::Feature::X86_Hygon);
         }
-        detectX86Features(&result.brandString_, &result.family_, &result.model_, &result.stepping_,
-                          &result.features_);
+        detectX86Features(
+                &result.brandString_, &result.family_, &result.model_, &result.stepping_, &result.features_);
         result.logicalProcessors_ = detectX86LogicalProcessors();
     }
     else
@@ -1057,8 +1059,12 @@ CpuInfo CpuInfo::detect()
 
         // On Linux we might be able to find information in /proc/cpuinfo. If vendor or brand
         // is set to a known value this routine will not overwrite it.
-        detectProcCpuInfo(&result.vendor_, &result.brandString_, &result.family_, &result.model_,
-                          &result.stepping_, &result.features_);
+        detectProcCpuInfo(&result.vendor_,
+                          &result.brandString_,
+                          &result.family_,
+                          &result.model_,
+                          &result.stepping_,
+                          &result.features_);
     }
 
     if (!result.logicalProcessors_.empty())

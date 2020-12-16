@@ -125,7 +125,8 @@ gmx_bool gmx_omp_check_thread_affinity(char** message)
                     "      setting as the two can conflict and cause performance degradation.\n"
                     "      To keep using the %s internal affinity setting, unset the\n"
                     "      GOMP_CPU_AFFINITY environment variable.",
-                    programName, programName);
+                    programName,
+                    programName);
             *message = gmx_strdup(buf.c_str());
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -148,7 +149,8 @@ gmx_bool gmx_omp_check_thread_affinity(char** message)
                     "      setting as the two can conflict and cause performance degradation.\n"
                     "      To keep using the %s internal affinity setting, unset the\n"
                     "      KMP_AFFINITY environment variable or set it to 'none' or 'disabled'.",
-                    programName, programName);
+                    programName,
+                    programName);
             *message = gmx_strdup(buf.c_str());
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

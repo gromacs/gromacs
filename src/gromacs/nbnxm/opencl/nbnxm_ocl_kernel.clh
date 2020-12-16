@@ -232,8 +232,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
         const int ai = ci * CL_SIZE + tidxi;
 
         float4 xqbuf = xq[ai]
-                       + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1],
-                                  shift_vec[3 * nb_sci.shift + 2], 0.0F);
+                       + (float4)(shift_vec[3 * nb_sci.shift],
+                                  shift_vec[3 * nb_sci.shift + 1],
+                                  shift_vec[3 * nb_sci.shift + 2],
+                                  0.0F);
         xqbuf.w *= nbparam->epsfac;
         xqib[(tidxj + i) * CL_SIZE + tidxi] = xqbuf;
 #ifdef IATYPE_SHMEM
@@ -472,20 +474,40 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #ifdef LJ_EWALD
 #    ifdef LJ_EWALD_COMB_GEOM
 #        ifdef CALC_ENERGIES
-                                calculate_lj_ewald_comb_geom_F_E(
-                                        nbfp_comb_climg2d, nbparam, typei, typej, r2, inv_r2,
-                                        lje_coeff2, lje_coeff6_6, int_bit, &F_invr, &E_lj_p);
+                                calculate_lj_ewald_comb_geom_F_E(nbfp_comb_climg2d,
+                                                                 nbparam,
+                                                                 typei,
+                                                                 typej,
+                                                                 r2,
+                                                                 inv_r2,
+                                                                 lje_coeff2,
+                                                                 lje_coeff6_6,
+                                                                 int_bit,
+                                                                 &F_invr,
+                                                                 &E_lj_p);
 #        else
-                                calculate_lj_ewald_comb_geom_F(nbfp_comb_climg2d, typei, typej, r2, inv_r2,
-                                                               lje_coeff2, lje_coeff6_6, &F_invr);
+                                calculate_lj_ewald_comb_geom_F(
+                                        nbfp_comb_climg2d, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, &F_invr);
 #        endif /* CALC_ENERGIES */
 #    elif defined LJ_EWALD_COMB_LB
-                                calculate_lj_ewald_comb_LB_F_E(nbfp_comb_climg2d, nbparam, typei, typej,
-                                                               r2, inv_r2, lje_coeff2, lje_coeff6_6,
+                                calculate_lj_ewald_comb_LB_F_E(nbfp_comb_climg2d,
+                                                               nbparam,
+                                                               typei,
+                                                               typej,
+                                                               r2,
+                                                               inv_r2,
+                                                               lje_coeff2,
+                                                               lje_coeff6_6,
 #        ifdef CALC_ENERGIES
-                                                               int_bit, true, &F_invr, &E_lj_p
+                                                               int_bit,
+                                                               true,
+                                                               &F_invr,
+                                                               &E_lj_p
 #        else
-                                                               0, false, &F_invr, 0
+                                                               0,
+                                                               false,
+                                                               &F_invr,
+                                                               0
 #        endif /* CALC_ENERGIES */
                                 );
 #    endif     /* LJ_EWALD_COMB_GEOM */
@@ -532,8 +554,8 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #elif defined EL_EWALD_TAB
                                 F_invr += qi * qj_f
                                           * (int_bit * inv_r2
-                                             - interpolate_coulomb_force_r(coulomb_tab_climg2d, r2 * inv_r,
-                                                                           coulomb_tab_scale))
+                                             - interpolate_coulomb_force_r(
+                                                       coulomb_tab_climg2d, r2 * inv_r, coulomb_tab_scale))
                                           * inv_r;
 #endif /* EL_EWALD_ANA/TAB */
 

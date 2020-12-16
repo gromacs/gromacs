@@ -60,7 +60,8 @@ OptimisationResult nelderMead(const std::function<real(ArrayRef<const real>)>& f
     // the oriented simplex length is smaller or equal a given number.
     const real minimumSimplexLength = minimumRelativeSimplexLength * nelderMeadSimplex.orientedLength();
     for (int currentStep = 0;
-         nelderMeadSimplex.orientedLength() > minimumSimplexLength && currentStep < maxSteps; ++currentStep)
+         nelderMeadSimplex.orientedLength() > minimumSimplexLength && currentStep < maxSteps;
+         ++currentStep)
     {
 
         // see if simplex can by improved by reflecing the worst vertex at the centroid

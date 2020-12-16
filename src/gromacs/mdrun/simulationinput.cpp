@@ -52,8 +52,8 @@ void applyGlobalSimulationState(const SimulationInput&      simulationInput,
                                 t_inputrec*                 inputRecord,
                                 gmx_mtop_t*                 molecularTopology)
 {
-    *partialDeserializedTpr = read_tpx_state(simulationInput.tprFilename_.c_str(), inputRecord,
-                                             globalState, molecularTopology);
+    *partialDeserializedTpr = read_tpx_state(
+            simulationInput.tprFilename_.c_str(), inputRecord, globalState, molecularTopology);
 }
 
 void applyLocalState(const SimulationInput&         simulationInput,
@@ -68,9 +68,17 @@ void applyLocalState(const SimulationInput&         simulationInput,
                      gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
                      const bool                     useModularSimulator)
 {
-    load_checkpoint(simulationInput.cpiFilename_.c_str(), logfio, cr, dd_nc, inputRecord, state,
-                    observablesHistory, reproducibilityRequested, mdModulesNotifier,
-                    modularSimulatorCheckpointData, useModularSimulator);
+    load_checkpoint(simulationInput.cpiFilename_.c_str(),
+                    logfio,
+                    cr,
+                    dd_nc,
+                    inputRecord,
+                    state,
+                    observablesHistory,
+                    reproducibilityRequested,
+                    mdModulesNotifier,
+                    modularSimulatorCheckpointData,
+                    useModularSimulator);
 }
 
 } // end namespace gmx

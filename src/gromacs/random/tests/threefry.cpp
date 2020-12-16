@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,8 +123,9 @@ const std::vector<uint64_t> bitsZero{ { 0, 0, 0, 0 } };
  *  The 2x64 flavors of ThreeFry64 will use the first four values, while
  *  the 4x64 version uses all eight.
  */
-const std::vector<uint64_t> bitsOne{ { 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL,
-                                       0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL } };
+const std::vector<uint64_t> bitsOne{
+    { 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL }
+};
 
 /*! \brief Constant array of integers with bitpattern from Pi.
  *
@@ -132,8 +133,9 @@ const std::vector<uint64_t> bitsOne{ { 0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFF
  *  The 2x64 flavors of ThreeFry64 will use the first four values, while
  *  the 4x64 version uses all eight.
  */
-const std::vector<uint64_t> bitsPi{ { 0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL,
-                                      0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL } };
+const std::vector<uint64_t> bitsPi{
+    { 0x243f6a8885a308d3ULL, 0x13198a2e03707344ULL, 0xa4093822299f31d0ULL, 0x082efa98ec4e6c89ULL }
+};
 
 // Test the known ansers for the ThreeFry random function when the argument
 // is (1) all zero, (2) all ones, (3) the bits of pi, for a bunch of different flavors of ThreeFry.

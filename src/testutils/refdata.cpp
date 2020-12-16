@@ -704,9 +704,12 @@ TestReferenceChecker TestReferenceData::rootChecker()
         return TestReferenceChecker(new TestReferenceChecker::Impl(true));
     }
     impl_->compareRootEntry_->setChecked();
-    return TestReferenceChecker(new TestReferenceChecker::Impl(
-            "", impl_->compareRootEntry_.get(), impl_->outputRootEntry_.get(),
-            impl_->updateMismatchingEntries_, impl_->bSelfTestMode_, defaultRealTolerance()));
+    return TestReferenceChecker(new TestReferenceChecker::Impl("",
+                                                               impl_->compareRootEntry_.get(),
+                                                               impl_->outputRootEntry_.get(),
+                                                               impl_->updateMismatchingEntries_,
+                                                               impl_->bSelfTestMode_,
+                                                               defaultRealTolerance()));
 }
 
 
@@ -823,8 +826,11 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char* type, const
     {
         impl_->outputRootEntry_->addChild(entry->cloneToOutputEntry());
     }
-    return TestReferenceChecker(new Impl(fullId, entry, entry->correspondingOutputEntry(),
-                                         impl_->updateMismatchingEntries_, impl_->bSelfTestMode_,
+    return TestReferenceChecker(new Impl(fullId,
+                                         entry,
+                                         entry->correspondingOutputEntry(),
+                                         impl_->updateMismatchingEntries_,
+                                         impl_->bSelfTestMode_,
                                          impl_->defaultTolerance_));
 }
 
@@ -861,8 +867,8 @@ static void throwIfNonEmptyAndOnlyWhitespace(const std::string& s, const char* i
 
 void TestReferenceChecker::checkBoolean(bool value, const char* id)
 {
-    EXPECT_PLAIN(impl_->processItem(Impl::cBooleanNodeName, id,
-                                    ExactStringChecker(value ? "true" : "false")));
+    EXPECT_PLAIN(impl_->processItem(
+            Impl::cBooleanNodeName, id, ExactStringChecker(value ? "true" : "false")));
 }
 
 
@@ -888,38 +894,38 @@ void TestReferenceChecker::checkTextBlock(const std::string& value, const char* 
 
 void TestReferenceChecker::checkUChar(unsigned char value, const char* id)
 {
-    EXPECT_PLAIN(impl_->processItem(Impl::cUCharNodeName, id,
-                                    ExactStringChecker(formatString("%d", value))));
+    EXPECT_PLAIN(impl_->processItem(
+            Impl::cUCharNodeName, id, ExactStringChecker(formatString("%d", value))));
 }
 
 void TestReferenceChecker::checkInteger(int value, const char* id)
 {
-    EXPECT_PLAIN(impl_->processItem(Impl::cIntegerNodeName, id,
-                                    ExactStringChecker(formatString("%d", value))));
+    EXPECT_PLAIN(impl_->processItem(
+            Impl::cIntegerNodeName, id, ExactStringChecker(formatString("%d", value))));
 }
 
 void TestReferenceChecker::checkInt32(int32_t value, const char* id)
 {
-    EXPECT_PLAIN(impl_->processItem(Impl::cInt32NodeName, id,
-                                    ExactStringChecker(formatString("%" PRId32, value))));
+    EXPECT_PLAIN(impl_->processItem(
+            Impl::cInt32NodeName, id, ExactStringChecker(formatString("%" PRId32, value))));
 }
 
 void TestReferenceChecker::checkUInt32(uint32_t value, const char* id)
 {
-    EXPECT_PLAIN(impl_->processItem(Impl::cUInt32NodeName, id,
-                                    ExactStringChecker(formatString("%" PRIu32, value))));
+    EXPECT_PLAIN(impl_->processItem(
+            Impl::cUInt32NodeName, id, ExactStringChecker(formatString("%" PRIu32, value))));
 }
 
 void TestReferenceChecker::checkInt64(int64_t value, const char* id)
 {
-    EXPECT_PLAIN(impl_->processItem(Impl::cInt64NodeName, id,
-                                    ExactStringChecker(formatString("%" PRId64, value))));
+    EXPECT_PLAIN(impl_->processItem(
+            Impl::cInt64NodeName, id, ExactStringChecker(formatString("%" PRId64, value))));
 }
 
 void TestReferenceChecker::checkUInt64(uint64_t value, const char* id)
 {
-    EXPECT_PLAIN(impl_->processItem(Impl::cUInt64NodeName, id,
-                                    ExactStringChecker(formatString("%" PRIu64, value))));
+    EXPECT_PLAIN(impl_->processItem(
+            Impl::cUInt64NodeName, id, ExactStringChecker(formatString("%" PRIu64, value))));
 }
 
 void TestReferenceChecker::checkDouble(double value, const char* id)

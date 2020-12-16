@@ -464,9 +464,10 @@ std::unique_ptr<EnergySignaller> SignallerBuilder<EnergySignaller>::build(Args&&
     auto calculateFreeEnergyCallbacks =
             buildCallbackVector(EnergySignallerEvent::FreeEnergyCalculationStep);
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
-    return std::unique_ptr<EnergySignaller>(new EnergySignaller(
-            std::move(calculateEnergyCallbacks), std::move(calculateVirialCallbacks),
-            std::move(calculateFreeEnergyCallbacks), std::forward<Args>(args)...));
+    return std::unique_ptr<EnergySignaller>(new EnergySignaller(std::move(calculateEnergyCallbacks),
+                                                                std::move(calculateVirialCallbacks),
+                                                                std::move(calculateFreeEnergyCallbacks),
+                                                                std::forward<Args>(args)...));
 }
 
 //! Helper function to get the callbacks from the clients

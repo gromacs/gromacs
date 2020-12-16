@@ -91,8 +91,8 @@ void PmeLoadBalanceHelper::setup()
     auto box = statePropagatorData_->constBox();
     GMX_RELEASE_ASSERT(box[0][0] != 0 && box[1][1] != 0 && box[2][2] != 0,
                        "PmeLoadBalanceHelper cannot be initialized with zero box.");
-    pme_loadbal_init(&pme_loadbal_, cr_, mdlog_, *inputrec_, box, *fr_->ic, *fr_->nbv, fr_->pmedata,
-                     fr_->nbv->useGpu());
+    pme_loadbal_init(
+            &pme_loadbal_, cr_, mdlog_, *inputrec_, box, *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu());
 }
 
 void PmeLoadBalanceHelper::run(gmx::Step step, gmx::Time gmx_unused time)
@@ -105,10 +105,20 @@ void PmeLoadBalanceHelper::run(gmx::Step step, gmx::Time gmx_unused time)
     // PME grid + cut-off optimization with GPUs or PME nodes
     // TODO pass SimulationWork object into this function, such that last argument can be set as
     // simulationWork.useGpuPmePpCommunication as is done in main MD loop.
-    pme_loadbal_do(pme_loadbal_, cr_, (isVerbose_ && MASTER(cr_)) ? stderr : nullptr, fplog_,
-                   mdlog_, *inputrec_, fr_, statePropagatorData_->constBox(),
-                   statePropagatorData_->constPositionsView().paddedArrayRef(), wcycle_, step,
-                   step - inputrec_->init_step, &bPMETunePrinting_, false);
+    pme_loadbal_do(pme_loadbal_,
+                   cr_,
+                   (isVerbose_ && MASTER(cr_)) ? stderr : nullptr,
+                   fplog_,
+                   mdlog_,
+                   *inputrec_,
+                   fr_,
+                   statePropagatorData_->constBox(),
+                   statePropagatorData_->constPositionsView().paddedArrayRef(),
+                   wcycle_,
+                   step,
+                   step - inputrec_->init_step,
+                   &bPMETunePrinting_,
+                   false);
 }
 
 void PmeLoadBalanceHelper::teardown()

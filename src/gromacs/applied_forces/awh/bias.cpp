@@ -140,8 +140,7 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
             state_.doSkippedUpdatesInNeighborhood(params_, grid_);
         }
         convolvedBias = state_.updateProbabilityWeightsAndConvolvedBias(
-                dimParams_, grid_, moveUmbrella ? neighborLambdaEnergies : ArrayRef<const double>{},
-                &probWeightNeighbor);
+                dimParams_, grid_, moveUmbrella ? neighborLambdaEnergies : ArrayRef<const double>{}, &probWeightNeighbor);
 
         if (isSampleCoordStep)
         {
@@ -167,9 +166,12 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
     double potential;
     if (params_.convolveForce)
     {
-        state_.calcConvolvedForce(dimParams_, grid_, probWeightNeighbor,
+        state_.calcConvolvedForce(dimParams_,
+                                  grid_,
+                                  probWeightNeighbor,
                                   moveUmbrella ? neighborLambdaDhdl : ArrayRef<const double>{},
-                                  tempForce_, biasForce_);
+                                  tempForce_,
+                                  biasForce_);
 
         potential = -convolvedBias * params_.invBeta;
     }
@@ -180,8 +182,11 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
                            "AWH bias grid point for the umbrella reference value is outside of the "
                            "target region.");
         potential = state_.calcUmbrellaForceAndPotential(
-                dimParams_, grid_, coordState.umbrellaGridpoint(),
-                moveUmbrella ? neighborLambdaDhdl : ArrayRef<const double>{}, biasForce_);
+                dimParams_,
+                grid_,
+                coordState.umbrellaGridpoint(),
+                moveUmbrella ? neighborLambdaDhdl : ArrayRef<const double>{},
+                biasForce_);
 
         /* Moving the umbrella results in a force correction and
          * a new potential. The umbrella center is sampled as often as
@@ -191,18 +196,24 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
         if (moveUmbrella)
         {
             const bool onlySampleUmbrellaGridpoint = false;
-            double     newPotential = state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor,
-                                                      neighborLambdaDhdl, biasForce_, step, seed,
-                                                      params_.biasIndex, onlySampleUmbrellaGridpoint);
-            *potentialJump          = newPotential - potential;
+            double     newPotential                = state_.moveUmbrella(dimParams_,
+                                                      grid_,
+                                                      probWeightNeighbor,
+                                                      neighborLambdaDhdl,
+                                                      biasForce_,
+                                                      step,
+                                                      seed,
+                                                      params_.biasIndex,
+                                                      onlySampleUmbrellaGridpoint);
+            *potentialJump                         = newPotential - potential;
         }
     }
 
     /* Update the free energy estimates and bias and other history dependent method parameters */
     if (params_.isUpdateFreeEnergyStep(step))
     {
-        state_.updateFreeEnergyAndAddSamplesToHistogram(dimParams_, grid_, params_, commRecord, ms,
-                                                        t, step, fplog, &updateList_);
+        state_.updateFreeEnergyAndAddSamplesToHistogram(
+                dimParams_, grid_, params_, commRecord, ms, t, step, fplog, &updateList_);
 
         if (params_.convolveForce)
         {
@@ -216,8 +227,15 @@ gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         
     if (moveUmbrella && params_.convolveForce && grid_.hasLambdaAxis())
     {
         const bool onlySampleUmbrellaGridpoint = true;
-        state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor, neighborLambdaDhdl, biasForce_,
-                            step, seed, params_.biasIndex, onlySampleUmbrellaGridpoint);
+        state_.moveUmbrella(dimParams_,
+                            grid_,
+                            probWeightNeighbor,
+                            neighborLambdaDhdl,
+                            biasForce_,
+                            step,
+                            seed,
+                            params_.biasIndex,
+                            onlySampleUmbrellaGridpoint);
     }
 
     /* Return the potential. */
@@ -266,8 +284,11 @@ static void ensureStateAndRunConsistency(const BiasParams& params, const BiasSta
                 "The number of AWH updates in the checkpoint file (%" PRId64
                 ") does not match the total number of AWH samples divided by the number of samples "
                 "per update for %d sharing AWH bias(es) (%" PRId64 "/%d=%" PRId64 ")",
-                numUpdatesExpected, params.numSharedUpdate, numSamples,
-                params.numSamplesUpdateFreeEnergy_ * params.numSharedUpdate, numUpdatesFromSamples);
+                numUpdatesExpected,
+                params.numSharedUpdate,
+                numSamples,
+                params.numSamplesUpdateFreeEnergy_ * params.numSharedUpdate,
+                numUpdatesFromSamples);
         mesg += " Maybe you changed AWH parameters.";
         /* Unfortunately we currently do not store the number of simulations
          * sharing the bias or the state to checkpoint. But we can hint at
@@ -278,7 +299,8 @@ static void ensureStateAndRunConsistency(const BiasParams& params, const BiasSta
             mesg += gmx::formatString(
                     " Or the run you continued from used %" PRId64
                     " sharing simulations, whereas you now specified %d sharing simulations.",
-                    numUpdatesFromSamples / state.histogramSize().numUpdates(), params.numSharedUpdate);
+                    numUpdatesFromSamples / state.histogramSize().numUpdates(),
+                    params.numSharedUpdate);
         }
         GMX_THROW(InvalidInputError(mesg));
     }
@@ -379,9 +401,12 @@ Bias::Bias(int                            biasIndexInCollection,
          */
         double blockLength = 0;
         /* Construct the force correlation object. */
-        forceCorrelationGrid_ = std::make_unique<CorrelationGrid>(
-                state_.points().size(), ndim(), blockLength,
-                CorrelationGrid::BlockLengthMeasure::Time, awhParams.nstSampleCoord * mdTimeStep);
+        forceCorrelationGrid_ =
+                std::make_unique<CorrelationGrid>(state_.points().size(),
+                                                  ndim(),
+                                                  blockLength,
+                                                  CorrelationGrid::BlockLengthMeasure::Time,
+                                                  awhParams.nstSampleCoord * mdTimeStep);
 
         writer_ = std::make_unique<BiasWriter>(*this);
     }
@@ -396,11 +421,13 @@ void Bias::printInitializationToLog(FILE* fplog) const
         fprintf(fplog,
                 "%s initial force correlation block length = %g %s"
                 "%s force correlation number of blocks = %d",
-                prefix.c_str(), forceCorrelationGrid().getBlockLength(),
+                prefix.c_str(),
+                forceCorrelationGrid().getBlockLength(),
                 forceCorrelationGrid().blockLengthMeasure == CorrelationGrid::BlockLengthMeasure::Weight
                         ? ""
                         : "ps",
-                prefix.c_str(), forceCorrelationGrid().getNumBlocks());
+                prefix.c_str(),
+                forceCorrelationGrid().getNumBlocks());
     }
 }
 
@@ -426,8 +453,8 @@ void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeig
            We actually add the force normalized by beta which has the units of 1/length. This means that the
            resulting correlation time integral is directly in units of friction time/length^2 which is really what
            we're interested in. */
-        state_.calcUmbrellaForceAndPotential(dimParams_, grid_, indexNeighbor, neighborLambdaDhdl,
-                                             forceFromNeighbor);
+        state_.calcUmbrellaForceAndPotential(
+                dimParams_, grid_, indexNeighbor, neighborLambdaDhdl, forceFromNeighbor);
 
         /* Note: we might want to give a whole list of data to add instead and have this loop in the data adding function */
         forceCorrelationGrid_->addData(indexNeighbor, weightNeighbor, forceFromNeighbor, t);

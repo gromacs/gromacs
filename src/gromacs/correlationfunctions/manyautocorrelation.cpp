@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,8 +67,11 @@ int many_auto_correl(std::vector<std::vector<real>>* c)
         if ((*c)[i].size() != ndata)
         {
             char buf[256];
-            snprintf(buf, sizeof(buf), "Vectors of different lengths supplied (%d %d)",
-                     static_cast<int>((*c)[i].size()), static_cast<int>(ndata));
+            snprintf(buf,
+                     sizeof(buf),
+                     "Vectors of different lengths supplied (%d %d)",
+                     static_cast<int>((*c)[i].size()),
+                     static_cast<int>(ndata));
             GMX_THROW(gmx::InconsistentInputError(buf));
         }
     }

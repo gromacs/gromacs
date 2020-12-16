@@ -953,8 +953,7 @@ void _gmx_sel_evaluate_method(gmx_sel_evaluate_t*                     data,
                     expandValueForPositions(sel->v.u.r, &sel->v.nr, sel->u.expr.pos);
                     break;
                 default:
-                    GMX_RELEASE_ASSERT(false,
-                                       "Unimplemented value type for position update method");
+                    GMX_RELEASE_ASSERT(false, "Unimplemented value type for position update method");
             }
         }
     }

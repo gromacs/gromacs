@@ -125,8 +125,18 @@ int gmx_dyecoupl(int argc, char* argv[])
                              rrange, krange, rincr, kincr, Rfrac;
     int rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc,
+                           argv,
+                           PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
+                           NFILE,
+                           fnm,
+                           NPA,
+                           pa,
+                           asize(desc),
+                           desc,
+                           0,
+                           nullptr,
+                           &oenv))
     {
         return 0;
     }
@@ -228,15 +238,21 @@ int gmx_dyecoupl(int argc, char* argv[])
 
             if (bRKout)
             {
-                rkfp = xvgropen(out_xvgrkfile, "Distance and \\f{Symbol}k\\f{}\\S2\\N trajectory",
-                                "Time (ps)", "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N", oenv);
+                rkfp = xvgropen(out_xvgrkfile,
+                                "Distance and \\f{Symbol}k\\f{}\\S2\\N trajectory",
+                                "Time (ps)",
+                                "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N",
+                                oenv);
                 xvgr_legend(rkfp, 2, rkleg, oenv);
             }
 
             if (bInstEffout)
             {
-                iefp = xvgropen(out_xvginstefffile, "Instantaneous RET Efficiency", "Time (ps)",
-                                "RET Efficiency", oenv);
+                iefp = xvgropen(out_xvginstefffile,
+                                "Instantaneous RET Efficiency",
+                                "Time (ps)",
+                                "RET Efficiency",
+                                oenv);
                 xvgr_legend(iefp, 1, ieleg, oenv);
             }
 
@@ -396,13 +412,16 @@ int gmx_dyecoupl(int argc, char* argv[])
                     {
                         rhist[i] /= rkcount * rrange / histbins;
                     }
-                    rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution", "R (nm)",
-                                    "Normalized Probability", oenv);
+                    rhfp = xvgropen(out_xvgrhistfile,
+                                    "Distance Distribution",
+                                    "R (nm)",
+                                    "Normalized Probability",
+                                    oenv);
                 }
                 else
                 {
-                    rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution", "R (nm)",
-                                    "Probability", oenv);
+                    rhfp = xvgropen(
+                            out_xvgrhistfile, "Distance Distribution", "R (nm)", "Probability", oenv);
                 }
                 xvgr_legend(rhfp, 1, rhleg, oenv);
                 for (i = 0; i < histbins; i++)
@@ -429,13 +448,19 @@ int gmx_dyecoupl(int argc, char* argv[])
                     {
                         khist[i] /= rkcount * krange / histbins;
                     }
-                    khfp = xvgropen(out_xvgkhistfile, "\\f{Symbol}k\\f{}\\S2\\N Distribution",
-                                    "\\f{Symbol}k\\f{}\\S2\\N", "Normalized Probability", oenv);
+                    khfp = xvgropen(out_xvgkhistfile,
+                                    "\\f{Symbol}k\\f{}\\S2\\N Distribution",
+                                    "\\f{Symbol}k\\f{}\\S2\\N",
+                                    "Normalized Probability",
+                                    oenv);
                 }
                 else
                 {
-                    khfp = xvgropen(out_xvgkhistfile, "\\f{Symbol}k\\f{}\\S2\\N Distribution",
-                                    "\\f{Symbol}k\\f{}\\S2\\N", "Probability", oenv);
+                    khfp = xvgropen(out_xvgkhistfile,
+                                    "\\f{Symbol}k\\f{}\\S2\\N Distribution",
+                                    "\\f{Symbol}k\\f{}\\S2\\N",
+                                    "Probability",
+                                    oenv);
                 }
                 xvgr_legend(khfp, 1, khleg, oenv);
                 for (i = 0; i < histbins; i++)

@@ -230,8 +230,7 @@ void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real fto
             nc = i * st1->nhchainlength;
             for (j = 0; j < nc; j++)
             {
-                cmp_real(stdout, "nosehoover_xi", i, st1->nosehoover_xi[nc + j],
-                         st2->nosehoover_xi[nc + j], ftol, abstol);
+                cmp_real(stdout, "nosehoover_xi", i, st1->nosehoover_xi[nc + j], st2->nosehoover_xi[nc + j], ftol, abstol);
             }
         }
     }
@@ -243,8 +242,7 @@ void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real fto
             nc = i * st1->nhchainlength;
             for (j = 0; j < nc; j++)
             {
-                cmp_real(stdout, "nosehoover_xi", i, st1->nhpres_xi[nc + j], st2->nhpres_xi[nc + j],
-                         ftol, abstol);
+                cmp_real(stdout, "nosehoover_xi", i, st1->nhpres_xi[nc + j], st2->nhpres_xi[nc + j], ftol, abstol);
             }
         }
     }
@@ -255,14 +253,12 @@ void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real fto
         if ((st1->flags & (1 << estX)) && (st2->flags & (1 << estX)))
         {
             fprintf(stdout, "comparing x\n");
-            cmp_rvecs(stdout, "x", st1->natoms, st1->x.rvec_array(), st2->x.rvec_array(), bRMSD,
-                      ftol, abstol);
+            cmp_rvecs(stdout, "x", st1->natoms, st1->x.rvec_array(), st2->x.rvec_array(), bRMSD, ftol, abstol);
         }
         if ((st1->flags & (1 << estV)) && (st2->flags & (1 << estV)))
         {
             fprintf(stdout, "comparing v\n");
-            cmp_rvecs(stdout, "v", st1->natoms, st1->v.rvec_array(), st2->v.rvec_array(), bRMSD,
-                      ftol, abstol);
+            cmp_rvecs(stdout, "v", st1->natoms, st1->v.rvec_array(), st2->v.rvec_array(), bRMSD, ftol, abstol);
         }
     }
 }

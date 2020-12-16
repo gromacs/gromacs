@@ -335,8 +335,7 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
 {
     GMX_RELEASE_ASSERT(!generateCoulombTables || EEL_PME_EWALD(ic.eeltype),
                        "Can only use tables with Ewald");
-    GMX_RELEASE_ASSERT(!generateVdwTables || EVDW_PME(ic.vdwtype),
-                       "Can only use tables with Ewald");
+    GMX_RELEASE_ASSERT(!generateVdwTables || EVDW_PME(ic.vdwtype), "Can only use tables with Ewald");
 
     real sc = 0;
 
@@ -574,8 +573,12 @@ static void set_forces(FILE* fp, int angle, int nx, double h, double v[], double
 
     if (fp)
     {
-        fprintf(fp, "Generating forces for table %d, boundary conditions: V''' at %g, %s at %g\n",
-                table + 1, start * h, end == nx ? "V'''" : "V'=0", (end - 1) * h);
+        fprintf(fp,
+                "Generating forces for table %d, boundary conditions: V''' at %g, %s at %g\n",
+                table + 1,
+                start * h,
+                end == nx ? "V'''" : "V'=0",
+                (end - 1) * h);
     }
     spline_forces(end - start, h, v + start, TRUE, end == nx, f + start);
 }
@@ -594,8 +597,7 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
     int                                                            numColumns = xvgData.extent(0);
     if (numColumns != nny)
     {
-        gmx_fatal(FARGS, "Trying to read file %s, but nr columns = %d, should be %d", libfn.c_str(),
-                  numColumns, nny);
+        gmx_fatal(FARGS, "Trying to read file %s, but nr columns = %d, should be %d", libfn.c_str(), numColumns, nny);
     }
     int numRows = xvgData.extent(1);
 
@@ -604,8 +606,11 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
     {
         if (yy[0][0] != 0.0)
         {
-            gmx_fatal(FARGS, "The first distance in file %s is %f nm instead of %f nm",
-                      libfn.c_str(), yy[0][0], 0.0);
+            gmx_fatal(FARGS,
+                      "The first distance in file %s is %f nm instead of %f nm",
+                      libfn.c_str(),
+                      yy[0][0],
+                      0.0);
         }
     }
     else
@@ -621,8 +626,13 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
         end = 180.0;
         if (yy[0][0] != start || yy[0][numRows - 1] != end)
         {
-            gmx_fatal(FARGS, "The angles in file %s should go from %f to %f instead of %f to %f\n",
-                      libfn.c_str(), start, end, yy[0][0], yy[0][numRows - 1]);
+            gmx_fatal(FARGS,
+                      "The angles in file %s should go from %f to %f instead of %f to %f\n",
+                      libfn.c_str(),
+                      start,
+                      end,
+                      yy[0][0],
+                      yy[0][numRows - 1]);
         }
     }
 
@@ -653,7 +663,10 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
                 {
                     gmx_fatal(FARGS,
                               "In table file '%s' the x values are not equally spaced: %f %f %f",
-                              filename, yy[0][i - 2], yy[0][i - 1], yy[0][i]);
+                              filename,
+                              yy[0][i - 2],
+                              yy[0][i - 1],
+                              yy[0][i]);
                 }
             }
             if (yy[1 + k * 2][i] != 0)
@@ -666,8 +679,7 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
                 }
                 if (yy[1 + k * 2][i] > 0.01 * GMX_REAL_MAX || yy[1 + k * 2][i] < -0.01 * GMX_REAL_MAX)
                 {
-                    gmx_fatal(FARGS, "Out of range potential value %g in file '%s'",
-                              yy[1 + k * 2][i], filename);
+                    gmx_fatal(FARGS, "Out of range potential value %g in file '%s'", yy[1 + k * 2][i], filename);
                 }
             }
             if (yy[1 + k * 2 + 1][i] != 0)
@@ -680,16 +692,14 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
                 }
                 if (yy[1 + k * 2 + 1][i] > 0.01 * GMX_REAL_MAX || yy[1 + k * 2 + 1][i] < -0.01 * GMX_REAL_MAX)
                 {
-                    gmx_fatal(FARGS, "Out of range force value %g in file '%s'",
-                              yy[1 + k * 2 + 1][i], filename);
+                    gmx_fatal(FARGS, "Out of range force value %g in file '%s'", yy[1 + k * 2 + 1][i], filename);
                 }
             }
         }
 
         if (!bZeroV && bZeroF)
         {
-            set_forces(fp, angle, numRows, 1 / tabscale, yy[1 + k * 2].data(),
-                       yy[1 + k * 2 + 1].data(), k);
+            set_forces(fp, angle, numRows, 1 / tabscale, yy[1 + k * 2].data(), yy[1 + k * 2 + 1].data(), k);
         }
         else
         {
@@ -721,7 +731,10 @@ static void read_tables(FILE* fp, const char* filename, int ntab, int angle, t_t
                         "For the %d non-zero entries for table %d in %s the forces deviate on "
                         "average %" PRId64
                         "%% from minus the numerical derivative of the potential\n",
-                        ns, k, libfn.c_str(), gmx::roundToInt64(100 * ssd));
+                        ns,
+                        k,
+                        libfn.c_str(),
+                        gmx::roundToInt64(100 * ssd));
                 if (debug)
                 {
                     fprintf(debug, "%s", buf);
@@ -910,7 +923,9 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
                 gmx_fatal(FARGS,
                           "Cannot apply new potential-shift modifier to interaction type '%s' yet. "
                           "(%s,%d)",
-                          tprops[tp].name, __FILE__, __LINE__);
+                          tprops[tp].name,
+                          __FILE__,
+                          __LINE__);
         }
     }
 
@@ -1298,7 +1313,8 @@ t_forcetable* make_tables(FILE* out, const interaction_const_t* ic, const char* 
                 gmx_fatal(FARGS,
                           "Tables in file %s not long enough for cut-off:\n"
                           "\tshould be at least %f nm\n",
-                          fn, rtab);
+                          fn,
+                          rtab);
             }
             table->n = gmx::roundToInt(rtab * td[0].tabscale);
         }
@@ -1343,7 +1359,10 @@ t_forcetable* make_tables(FILE* out, const interaction_const_t* ic, const char* 
                 fprintf(out,
                         "Generated table with %d data points for %s%s.\n"
                         "Tabscale = %g points/nm\n",
-                        td[k].nx, b14only ? "1-4 " : "", tprops[tabsel[k]].name, td[k].tabscale);
+                        td[k].nx,
+                        b14only ? "1-4 " : "",
+                        tprops[tabsel[k]].name,
+                        td[k].tabscale);
             }
         }
 
@@ -1366,8 +1385,14 @@ t_forcetable* make_tables(FILE* out, const interaction_const_t* ic, const char* 
             scalefactor = 1.0;
         }
 
-        copy2table(table->n, k * table->formatsize, table->stride, td[k].x, td[k].v, td[k].f,
-                   scalefactor, table->data.data());
+        copy2table(table->n,
+                   k * table->formatsize,
+                   table->stride,
+                   td[k].x,
+                   td[k].v,
+                   td[k].f,
+                   scalefactor,
+                   table->data.data());
 
         done_tabledata(&(td[k]));
     }

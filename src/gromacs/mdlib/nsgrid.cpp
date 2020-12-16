@@ -215,8 +215,11 @@ static void set_grid_sizes(matrix              box,
     {
         if (debug)
         {
-            fprintf(debug, "set_grid_sizes, i-zone bounds for dim %d: %6.3f %6.3f\n", i,
-                    izones_x0[i], izones_x1[i]);
+            fprintf(debug,
+                    "set_grid_sizes, i-zone bounds for dim %d: %6.3f %6.3f\n",
+                    i,
+                    izones_x0[i],
+                    izones_x1[i]);
         }
         izones_size[i] = izones_x1[i] - izones_x0[i];
     }
@@ -345,14 +348,21 @@ static void set_grid_sizes(matrix              box,
         }
         if (debug)
         {
-            fprintf(debug, "grid dim %d size %d x %f: %f - %f\n", i, grid->n[i], grid->cell_size[i],
-                    grid->cell_offset[i], grid->cell_offset[i] + grid->n[i] * grid->cell_size[i]);
+            fprintf(debug,
+                    "grid dim %d size %d x %f: %f - %f\n",
+                    i,
+                    grid->n[i],
+                    grid->cell_size[i],
+                    grid->cell_offset[i],
+                    grid->cell_offset[i] + grid->n[i] * grid->cell_size[i]);
         }
     }
 
     if (debug)
     {
-        fprintf(debug, "CG ncg ideal %d, actual density %.1f\n", grid->ncg_ideal,
+        fprintf(debug,
+                "CG ncg ideal %d, actual density %.1f\n",
+                grid->ncg_ideal,
                 grid_density * grid->cell_size[XX] * grid->cell_size[YY] * grid->cell_size[ZZ]);
     }
 }
@@ -797,8 +807,7 @@ void fill_grid(gmx_domdec_zones_t* dd_zones, t_grid* grid, int ncg_tot, int cg0,
                 }
                 if (cg > grid->nr_alloc)
                 {
-                    fprintf(stderr, "WARNING: nra_alloc %d cg0 %d cg1 %d cg %d\n", grid->nr_alloc,
-                            cg0, cg1, cg);
+                    fprintf(stderr, "WARNING: nra_alloc %d cg0 %d cg1 %d cg %d\n", grid->nr_alloc, cg0, cg1, cg);
                 }
                 if (bUse)
                 {

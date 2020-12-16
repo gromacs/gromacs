@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -316,8 +316,9 @@ void checkForUnknownOptionsInKeyValueTree(const KeyValueTreeObject& tree, const 
     helper.processOptionSection(options.rootSection());
     if (helper.hasUnknownPaths())
     {
-        std::string paths(formatAndJoin(helper.unknownPaths(), "\n  ",
-                                        [](const KeyValueTreePath& path) { return path.toString(); }));
+        std::string paths(formatAndJoin(helper.unknownPaths(), "\n  ", [](const KeyValueTreePath& path) {
+            return path.toString();
+        }));
         std::string message("Unknown input values:\n  " + paths);
         GMX_THROW(InvalidInputError(message));
     }

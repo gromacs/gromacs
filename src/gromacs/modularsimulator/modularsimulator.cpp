@@ -111,8 +111,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         if (legacySimulatorData_->inputrec->etc == etcVRESCALE
             || legacySimulatorData_->inputrec->etc == etcBERENDSEN)
         {
-            builder->add<VelocityScalingTemperatureCoupling>(-1, UseFullStepKE::No,
-                                                             ReportPreviousStepConservedEnergy::No);
+            builder->add<VelocityScalingTemperatureCoupling>(
+                    -1, UseFullStepKE::No, ReportPreviousStepConservedEnergy::No);
         }
         builder->add<Propagator<IntegrationStep::LeapFrog>>(legacySimulatorData_->inputrec->delta_t,
                                                             RegisterWithThermostat::True,
@@ -133,7 +133,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         // The velocity verlet integration algorithm
         builder->add<ForceElement>();
         builder->add<Propagator<IntegrationStep::VelocitiesOnly>>(
-                0.5 * legacySimulatorData_->inputrec->delta_t, RegisterWithThermostat::False,
+                0.5 * legacySimulatorData_->inputrec->delta_t,
+                RegisterWithThermostat::False,
                 RegisterWithBarostat::True);
         if (legacySimulatorData_->constr)
         {
@@ -148,7 +149,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
                     0, UseFullStepKE::Yes, ReportPreviousStepConservedEnergy::Yes);
         }
         builder->add<Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>>(
-                legacySimulatorData_->inputrec->delta_t, RegisterWithThermostat::True,
+                legacySimulatorData_->inputrec->delta_t,
+                RegisterWithThermostat::True,
                 RegisterWithBarostat::False);
         if (legacySimulatorData_->constr)
         {
@@ -361,9 +363,13 @@ ModularSimulator::ModularSimulator(std::unique_ptr<LegacySimulatorData>      leg
 
 void ModularSimulator::checkInputForDisabledFunctionality()
 {
-    isInputCompatible(true, legacySimulatorData_->inputrec, legacySimulatorData_->mdrunOptions.rerun,
-                      *legacySimulatorData_->top_global, legacySimulatorData_->ms,
-                      legacySimulatorData_->replExParams, legacySimulatorData_->fr->fcdata.get(),
+    isInputCompatible(true,
+                      legacySimulatorData_->inputrec,
+                      legacySimulatorData_->mdrunOptions.rerun,
+                      *legacySimulatorData_->top_global,
+                      legacySimulatorData_->ms,
+                      legacySimulatorData_->replExParams,
+                      legacySimulatorData_->fr->fcdata.get(),
                       opt2bSet("-ei", legacySimulatorData_->nfile, legacySimulatorData_->fnm),
                       legacySimulatorData_->membed != nullptr);
     if (legacySimulatorData_->observablesHistory->edsamHistory)

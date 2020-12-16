@@ -347,13 +347,16 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         SimulationContext simulationContext(communicator, multiSimDirectoryNames);
 
 
-        StartingBehavior startingBehavior        = StartingBehavior::NewSimulation;
-        LogFilePtr       logFileGuard            = nullptr;
-        gmx_multisim_t*  ms                      = simulationContext.multiSimulation_.get();
-        std::tie(startingBehavior, logFileGuard) = handleRestart(
-                findIsSimulationMasterRank(ms, simulationContext.simulationCommunicator_),
-                simulationContext.simulationCommunicator_, ms, options.mdrunOptions.appendingBehavior,
-                ssize(options.filenames), options.filenames.data());
+        StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
+        LogFilePtr       logFileGuard     = nullptr;
+        gmx_multisim_t*  ms               = simulationContext.multiSimulation_.get();
+        std::tie(startingBehavior, logFileGuard) =
+                handleRestart(findIsSimulationMasterRank(ms, simulationContext.simulationCommunicator_),
+                              simulationContext.simulationCommunicator_,
+                              ms,
+                              options.mdrunOptions.appendingBehavior,
+                              ssize(options.filenames),
+                              options.filenames.data());
 
         auto builder = MdrunnerBuilder(std::move(mdModules),
                                        compat::not_null<SimulationContext*>(&simulationContext));
@@ -384,8 +387,8 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         builder.addLogFile(logFileGuard.get());
 
         // Note, creation is not mature enough to be exposed in the external API yet.
-        launchedSession = createSession(shared_from_this(), std::move(builder),
-                                        std::move(simulationContext), std::move(logFileGuard));
+        launchedSession = createSession(
+                shared_from_this(), std::move(builder), std::move(simulationContext), std::move(logFileGuard));
 
         // Clean up argv once builder is no longer in use
         // TODO: Remove long-lived references to argv so this is no longer necessary.

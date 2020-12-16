@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,8 +134,8 @@ void HelpManager::enterTopic(const char* name)
         }
         else
         {
-            GMX_THROW(InvalidInputError(formatString("Help topic '%s' has no subtopic '%s'",
-                                                     impl_->currentTopicAsString().c_str(), name)));
+            GMX_THROW(InvalidInputError(formatString(
+                    "Help topic '%s' has no subtopic '%s'", impl_->currentTopicAsString().c_str(), name)));
         }
     }
     impl_->topicStack_.push_back(newTopic);
