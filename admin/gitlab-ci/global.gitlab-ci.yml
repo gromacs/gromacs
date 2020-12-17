@@ -91,3 +91,18 @@
     - mkdir -p ccache
     - export CCACHE_BASEDIR=${PWD}
     - export CCACHE_DIR=${PWD}/ccache
+
+# Base definition for using the classic Intel compiler
+.use-icc-oneapi:base:
+  variables:
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc #-DCMAKE_PREFIX_PATH=/opt/intel/oneapi/compiler/latest/linux
+    CMAKE_EXTRA_OPTIONS: -DGMX_FFT_LIBRARY=mkl
+  before_script:
+    # Necessary to override gitlab default 'set -e' which breaks Intel's
+    # setvar.sh script
+    - set +e
+    - source /opt/intel/oneapi/setvars.sh
+    - set -e
+    - mkdir -p ccache
+#    - export CCACHE_BASEDIR=${PWD}
+#    - export CCACHE_DIR=${PWD}/ccache
