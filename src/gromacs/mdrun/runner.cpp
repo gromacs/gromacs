@@ -1335,17 +1335,8 @@ int Mdrunner::mdrunner()
     gmx_omp_nthreads_init(mdlog, cr, hwinfo_->nthreads_hw_avail, physicalNodeComm.size_,
                           hw_opt.nthreads_omp, hw_opt.nthreads_omp_pme, !thisRankHasDuty(cr, DUTY_PP));
 
-    // Enable FP exception detection, but not in
-    // Release mode and not for compilers with known buggy FP
-    // exception support (clang with any optimization) or suspected
-    // buggy FP exception support (gcc 7.* with optimization).
-#if !defined NDEBUG                                                                         \
-        && !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
-             && defined __OPTIMIZE__)
-    const bool bEnableFPE = true;
-#else
-    const bool bEnableFPE = false;
-#endif
+
+    const bool bEnableFPE = gmxShouldEnableFPExceptions();
     // FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
     if (bEnableFPE)
     {

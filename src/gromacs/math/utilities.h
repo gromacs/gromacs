@@ -157,4 +157,18 @@ int gmx_feenableexcept();
  */
 int gmx_fedisableexcept();
 
+/*! \brief Return true if the current build should enable floating-point exceptions by default.
+ *
+ * Currently, it returns true unless any of the following conditions are met:
+ * - release build,
+ * - SYCL build (Intel IGC, at least 1.0.5699, raises FP exceptions in JIT compilation),
+ * - compilers with known buggy FP exception support (clang with any optimization)
+ *   or suspected buggy FP exception support (gcc 7.* with optimization).
+ *
+ * Note that this function does not check whether the build/OS supports FP exceptions.
+ *
+ * \returns true if we should enable FP exceptions by default.
+ */
+bool gmxShouldEnableFPExceptions();
+
 #endif
