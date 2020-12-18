@@ -153,10 +153,10 @@ void initTestUtils(const char* dataPath,
                    int*        argc,
                    char***     argv)
 {
-#if !defined NDEBUG \
-        && !((defined __clang__ || (defined(__GNUC__) && __GNUC__ == 7)) && defined __OPTIMIZE__)
-    gmx_feenableexcept();
-#endif
+    if (gmxShouldEnableFPExceptions())
+    {
+        gmx_feenableexcept();
+    }
     const CommandLineProgramContext& context = initForCommandLine(argc, argv);
     try
     {
