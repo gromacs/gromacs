@@ -2,11 +2,11 @@
 # Jobs to test gmxapi client (Python) packages
 #
 
-.gmxapi-0.3:gcc-7:gmx2022:
+.gmxapi-0.3:gcc-10:gmx2022:
   extends:
     - .variables:default
     - .use-clang:base
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2
@@ -33,20 +33,20 @@
     - k8s-scilifelab
   # The dependency means we need to use the same tag restriction as upstream.
   needs:
-    - job: gromacs:gcc-7:build
+    - job: gromacs:gcc-10:build
       artifacts: true
 
-gmxapi-0.3:gcc-7:gmx2022:py-3.7.7:
+gmxapi-0.3:gcc-10:gmx2022:py-3.7.7:
   extends:
-    - .gmxapi-0.3:gcc-7:gmx2022
+    - .gmxapi-0.3:gcc-10:gmx2022
     - .rules:merge-requests:master
   variables:
     VENVPATH: "/root/venv/py3.7"
     PY_VER: "3.7.7"
 
-gmxapi-0.3:gcc-7:gmx2022:py-3.8.2:
+gmxapi-0.3:gcc-10:gmx2022:py-3.8.2:
   extends:
-    - .gmxapi-0.3:gcc-7:gmx2022
+    - .gmxapi-0.3:gcc-10:gmx2022
     - .rules:merge-requests:master
   variables:
     VENVPATH: "/root/venv/py3.8"

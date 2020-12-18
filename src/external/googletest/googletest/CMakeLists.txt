@@ -46,7 +46,7 @@ else()
   cmake_policy(SET CMP0048 NEW)
   project(gtest VERSION 1.8.1 LANGUAGES CXX C)
 endif()
-cmake_minimum_required(VERSION 2.6.4)
+#cmake_minimum_required(VERSION 2.6.4)
 
 if (POLICY CMP0063) # Visibility
   cmake_policy(SET CMP0063 NEW)

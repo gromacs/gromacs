@@ -154,6 +154,7 @@ void EnergyData::teardown()
 {
     if (inputrec_->nstcalcenergy > 0 && isMasterRank_)
     {
+        energyOutput_->printEnergyConservation(fplog_, inputrec_->simulation_part, EI_MD(inputrec_->eI));
         energyOutput_->printAverages(fplog_, groups_);
     }
 }

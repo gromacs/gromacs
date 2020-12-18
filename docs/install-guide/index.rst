@@ -967,13 +967,13 @@ supported by ``cmake`` (e.g. ``ninja``) also work well.
 Building only mdrun
 ~~~~~~~~~~~~~~~~~~~
 
-This is now supported with the ``cmake`` option
+This is now deprecated, but still supported with the ``cmake`` option
 ``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a different version of
-``libgromacs`` and the ``mdrun`` program.
-Naturally, now ``make install`` installs only those
-products. By default, mdrun-only builds will default to static linking
-against |Gromacs| libraries, because this is generally a good idea for
-the targets for which an mdrun-only build is desirable.
+``libgromacs`` and the ``mdrun`` program.  Naturally, now ``make
+install`` installs only those products. By default, mdrun-only builds
+will default to static linking against |Gromacs| libraries, because
+this is generally a good idea for the targets for which an mdrun-only
+build is desirable.
 
 Installing |Gromacs|
 ^^^^^^^^^^^^^^^^^^^^
@@ -1318,7 +1318,7 @@ a beta version of oneAPI containing Intel's compiler.
 For this testing, we use Ubuntu 18.04 or 20.04 operating system.
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can have a look at the
-`continuous integration server used by GROMACS <gitlab>`_,
+`continuous integration server used by GROMACS <https://gitlab.com/gromacs/gromacs/>`_,
 which uses GitLab runner on a local k8s x86 cluster with NVIDIA and
 AMD GPU support.
 

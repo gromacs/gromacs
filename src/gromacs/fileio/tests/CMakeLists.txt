@@ -38,6 +38,7 @@ if (GMX_USE_TNG)
 endif()
 gmx_add_unit_test(FileIOTests fileio-test
     CPP_SOURCE_FILES
+        checkpoint.cpp
         confio.cpp
         filemd5.cpp
         mrcserializer.cpp

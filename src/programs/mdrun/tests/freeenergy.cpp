@@ -95,16 +95,30 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     const auto  maxNumWarnings   = std::get<1>(GetParam());
     const auto& interactionsList = std::get<2>(GetParam());
 
-    // TODO In similar tests, we are checking if the tests
-    //      can be run with the number of MPI ranks available
+    // As these tests check reproducibility, we restrict the maximum number
+    // of ranks to allow us to keep the tolerances tight. See also #3741.
+    const int     numRanksAvailable = getNumberOfTestMpiRanks();
+    constexpr int maxNumRanks       = 8;
+    if (numRanksAvailable > maxNumRanks)
+    {
+        fprintf(stdout,
+                "The FEP tests cannot run with %d ranks.\n"
+                "The maximum number of ranks supported is %d.",
+                numRanksAvailable,
+                maxNumRanks);
+        return;
+    }
 
     SCOPED_TRACE(formatString("Comparing FEP simulation '%s' to reference", simulationName.c_str()));
 
-    // Tolerance set to pass with identical code version and a range of different test setups
+    // Tolerance set to pass with identical code version and a range of different test setups for most tests
     const auto defaultEnergyTolerance = relativeToleranceAsFloatingPoint(50.0, GMX_DOUBLE ? 1e-5 : 1e-4);
+    // Some simulations are significantly longer, so they need a larger tolerance
+    const auto longEnergyTolerance = relativeToleranceAsFloatingPoint(50.0, GMX_DOUBLE ? 1e-4 : 1e-3);
+    const bool isLongSimulation    = (simulationName == "expanded");
+    const auto energyTolerance = isLongSimulation ? longEnergyTolerance : defaultEnergyTolerance;
 
-    EnergyTermsToCompare energyTermsToCompare{ { interaction_function[F_EPOT].longname,
-                                                 defaultEnergyTolerance } };
+    EnergyTermsToCompare energyTermsToCompare{ { interaction_function[F_EPOT].longname, energyTolerance } };
     for (const auto& interaction : interactionsList)
     {
         energyTermsToCompare.emplace(interaction_function[interaction].longname, defaultEnergyTolerance);
@@ -118,6 +132,7 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
                                                           ComparisonConditions::NoComparison,
                                                           ComparisonConditions::MustCompare };
     TrajectoryTolerances trajectoryTolerances = TrajectoryComparison::s_defaultTrajectoryTolerances;
+    trajectoryTolerances.forces = relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 5.0e-5 : 5.0e-4);
 
     // Build the functor that will compare reference and test
     // trajectory frames in the chosen way.
@@ -139,12 +154,17 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     runner_.dhdlFileName_                    = simulationDhdlFileName;
     runMdrun(&runner_);
 
-    // Currently used tests write trajectory (x/v/f) frames every 20 steps.
-    // Testing more than the first force frame is only feasible in double precision
-    // using a single rank.
-    // Note that this only concerns trajectory frames, energy frames are checked
-    // in all cases.
-    const bool testAllTrajectoryFrames = (GMX_DOUBLE && (getNumberOfTestMpiRanks() == 1));
+    /* Currently used tests write trajectory (x/v/f) frames every 20 steps.
+     * Except for the expanded ensemble test, all tests run for 20 steps total.
+     * As the tolerances are relatively strict, we need to restrict the number of
+     * force frames we can expect to match.
+     * Testing more than the first force frame is only feasible in double precision
+     * using a single rank.
+     * Testing one force frame is only feasible in double precision.
+     * Note that this only concerns trajectory frames, energy frames are checked
+     * in all cases. */
+    const bool testTwoTrajectoryFrames = (GMX_DOUBLE && (getNumberOfTestMpiRanks() == 1));
+    const bool testOneTrajectoryFrame  = GMX_DOUBLE;
 
     // Compare simulation results
     TestReferenceData    refData;
@@ -152,14 +172,20 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     // Check that the energies agree with the refdata within tolerance.
     checkEnergiesAgainstReferenceData(simulationEdrFileName, energyTermsToCompare, &rootChecker);
     // Check that the trajectories agree with the refdata within tolerance.
-    if (testAllTrajectoryFrames)
+    if (testTwoTrajectoryFrames)
     {
-        checkTrajectoryAgainstReferenceData(simulationTrajectoryFileName, trajectoryComparison, &rootChecker);
+        checkTrajectoryAgainstReferenceData(
+                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(2));
+    }
+    else if (testOneTrajectoryFrame)
+    {
+        checkTrajectoryAgainstReferenceData(
+                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(1));
     }
     else
     {
         checkTrajectoryAgainstReferenceData(
-                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(1));
+                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(0));
     }
     if (File::exists(simulationDhdlFileName, File::returnFalseOnError))
     {

@@ -50,6 +50,10 @@
 
 import os
 
+# Import setuptools early to avoid UserWarning from Distutils.
+# Ref: https://gitlab.com/gromacs/gromacs/-/issues/3715
+import setuptools
+
 # Allow setup.py to be run when scikit-build is not installed, such as to
 # produce source distribution archives with `python setup.py sdist`
 try:
@@ -101,11 +105,13 @@ if gmxapi_DIR is None:
     # Infer from GMXRC exports, if available.
     gmxapi_DIR = os.getenv('GROMACS_DIR')
 
+
 def _find_first_gromacs_suffix(directory):
     dir_contents = os.listdir(directory)
     for entry in dir_contents:
         if entry.startswith('gromacs'):
             return entry.strip('gromacs')
+
 
 if gmx_toolchain_dir is None:
     # Try to guess from standard GMXRC environment variables.

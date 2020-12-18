@@ -352,12 +352,22 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
     const float32x4_t half = vdupq_n_f32(0.5F);
     int32x4_t         iExponent;
 
-    iExponent               = vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), exponentMask);
-    iExponent               = vsubq_s32(vshrq_n_s32(iExponent, 23), exponentBias);
-    exponent->simdInternal_ = iExponent;
+    iExponent = vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), exponentMask);
+    iExponent = vsubq_s32(vshrq_n_s32(iExponent, 23), exponentBias);
 
-    return { vreinterpretq_f32_s32(vorrq_s32(vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), mantissaMask),
-                                             vreinterpretq_s32_f32(half))) };
+    float32x4_t result = vreinterpretq_f32_s32(
+            vorrq_s32(vandq_s32(vreinterpretq_s32_f32(value.simdInternal_), mantissaMask),
+                      vreinterpretq_s32_f32(half)));
+
+    if (opt == MathOptimization::Safe)
+    {
+        uint32x4_t valueIsZero = vceqq_f32(value.simdInternal_, vdupq_n_f32(0.0F));
+        iExponent              = vbicq_s32(iExponent, vreinterpretq_s32_u32(valueIsZero));
+        result                 = vbslq_f32(valueIsZero, value.simdInternal_, result);
+    }
+
+    exponent->simdInternal_ = iExponent;
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

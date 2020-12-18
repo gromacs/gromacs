@@ -362,8 +362,11 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     const bool isTCouplingCompatibleWithModularSimulator =
             (temperatureCoupling == "no" || temperatureCoupling == "v-rescale"
              || temperatureCoupling == "berendsen");
+    // GPU update is not compatible with modular simulator
+    const bool isGpuUpdateRequested = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr);
     if (integrator == "md-vv" && pressureCoupling == "parrinello-rahman"
-        && (isModularSimulatorExplicitlyDisabled || !isTCouplingCompatibleWithModularSimulator))
+        && (isModularSimulatorExplicitlyDisabled || !isTCouplingCompatibleWithModularSimulator
+            || isGpuUpdateRequested))
     {
         // Under md-vv, Parrinello-Rahman is only implemented for the modular simulator
         return;

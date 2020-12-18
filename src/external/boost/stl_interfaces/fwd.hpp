@@ -10,7 +10,10 @@
 
 #ifndef BOOST_STL_INTERFACES_DOXYGEN
 
-#if defined(_MSC_VER) || defined(__GNUC__) && __GNUC__ < 8
+// It is not known whether intel has fixed this issue, but it was
+// observed to be present in icc 19.1.2.20200623. Update the version
+// check when it is fixed.
+#if defined(_MSC_VER) || defined(__GNUC__) && __GNUC__ < 8 || defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1920
 #define BOOST_STL_INTERFACES_NO_HIDDEN_FRIEND_CONSTEXPR
 #define BOOST_STL_INTERFACES_HIDDEN_FRIEND_CONSTEXPR
 #else

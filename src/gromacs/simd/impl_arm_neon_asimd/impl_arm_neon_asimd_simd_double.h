@@ -317,12 +317,22 @@ static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
     const float64x2_t half = vdupq_n_f64(0.5);
     int64x2_t         iExponent;
 
-    iExponent               = vandq_s64(int64x2_t(value.simdInternal_), int64x2_t(exponentMask));
-    iExponent               = vsubq_s64(vshrq_n_s64(iExponent, 52), exponentBias);
+    iExponent = vandq_s64(int64x2_t(value.simdInternal_), int64x2_t(exponentMask));
+    iExponent = vsubq_s64(vshrq_n_s64(iExponent, 52), exponentBias);
+
+    float64x2_t result = float64x2_t(vorrq_s64(
+            vandq_s64(int64x2_t(value.simdInternal_), int64x2_t(mantissaMask)), int64x2_t(half)));
+
+    if (opt == MathOptimization::Safe)
+    {
+        uint64x2_t valueIsZero = vceqq_f64(value.simdInternal_, vdupq_n_f64(0.0));
+        iExponent              = vbicq_s64(iExponent, int64x2_t(valueIsZero));
+        result                 = vbslq_f64(valueIsZero, value.simdInternal_, result);
+    }
+
     exponent->simdInternal_ = vmovn_s64(iExponent);
 
-    return { float64x2_t(vorrq_s64(
-            vandq_s64(int64x2_t(value.simdInternal_), int64x2_t(mantissaMask)), int64x2_t(half))) };
+    return { result };
 }
 
 template<MathOptimization opt = MathOptimization::Safe>

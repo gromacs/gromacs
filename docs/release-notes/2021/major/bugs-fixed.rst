@@ -25,6 +25,18 @@ H atoms in particular.
 
 :issue:`3469`
 
+Correct excluded perturbed interactions beyond the non-bonded cut-off distance
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy calculations without coupling of intermolecular interactions,
+non-bonded pair interactions at distance longer than the cut-off distance can
+be excluded. These interactions would still have PME long-range contributions.
+The contributions are now removed. In addition, mdrun will stop with a fatal
+error when interactions beyond the pair-list cut-off are present.
+
+:issue:`3403`
+:issue:`3808`
+
 Corrected AWH initial histogram size
 """"""""""""""""""""""""""""""""""""
 
@@ -37,3 +49,11 @@ dimensions. The, now simplified, formula for the initial histogram size is
 given in the reference manual.
 
 :issue:`3751`
+
+Fixed LJ Ewald exclusions when used with cut-off electrostatics
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The exclusion forces in CUDA and OpenCL kernels were computed incorrectly
+if LJ Ewald was used together with cut-off electrostatics.
+
+:issue:`3840`

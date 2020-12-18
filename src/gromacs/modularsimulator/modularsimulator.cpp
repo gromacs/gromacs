@@ -48,6 +48,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/ewald/pme_pp.h"
+#include "gromacs/fileio/checkpoint.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/mdlib/checkpointhandler.h"
@@ -71,7 +72,9 @@
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/int64_to_int.h"
 
 #include "computeglobalselement.h"
 #include "constraintelement.h"
@@ -218,6 +221,11 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                              "simulator with integrator md.");
     isInputCompatible =
             isInputCompatible
+            && conditionalAssert(
+                       !inputrec->useMts,
+                       "Multiple time stepping is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
             && conditionalAssert(!doRerun, "Rerun is not supported by the modular simulator.");
     isInputCompatible = isInputCompatible
                         && conditionalAssert(inputrec->etc == etcNO || inputrec->etc == etcVRESCALE
@@ -349,6 +357,11 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     isInputCompatible = isInputCompatible
                         && conditionalAssert(!GMX_FAHCORE,
                                              "GMX_FAHCORE not supported by the modular simulator.");
+    GMX_RELEASE_ASSERT(
+            isInputCompatible || !(inputrec->eI == eiVV && inputrec->epc == epcPARRINELLORAHMAN),
+            "Requested Parrinello-Rahman barostat with md-vv, but other options are not compatible "
+            "with the modular simulator. The Parrinello-Rahman barostat is not implemented for "
+            "md-vv in the legacy simulator. Use a different pressure control algorithm.");
 
     return isInputCompatible;
 }
@@ -378,6 +391,33 @@ void ModularSimulator::checkInputForDisabledFunctionality()
                   "The checkpoint is from a run with essential dynamics sampling, "
                   "but the current run did not specify the -ei option. "
                   "Either specify the -ei option to mdrun, or do not use this checkpoint file.");
+    }
+}
+
+void ModularSimulator::readCheckpointToTrxFrame(t_trxframe*               fr,
+                                                ReadCheckpointDataHolder* readCheckpointDataHolder,
+                                                const CheckpointHeaderContents& checkpointHeaderContents)
+{
+    GMX_RELEASE_ASSERT(checkpointHeaderContents.isModularSimulatorCheckpoint,
+                       "ModularSimulator::readCheckpointToTrxFrame can only read checkpoints "
+                       "written by modular simulator.");
+    fr->bStep = true;
+    fr->step = int64_to_int(checkpointHeaderContents.step, "conversion of checkpoint to trajectory");
+    fr->bTime = true;
+    fr->time  = checkpointHeaderContents.t;
+
+    fr->bAtoms = false;
+
+    StatePropagatorData::readCheckpointToTrxFrame(
+            fr, readCheckpointDataHolder->checkpointData(StatePropagatorData::checkpointID()));
+    if (readCheckpointDataHolder->keyExists(FreeEnergyPerturbationData::checkpointID()))
+    {
+        FreeEnergyPerturbationData::readCheckpointToTrxFrame(
+                fr, readCheckpointDataHolder->checkpointData(FreeEnergyPerturbationData::checkpointID()));
+    }
+    else
+    {
+        FreeEnergyPerturbationData::readCheckpointToTrxFrame(fr, std::nullopt);
     }
 }
 

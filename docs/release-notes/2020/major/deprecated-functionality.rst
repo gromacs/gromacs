@@ -6,8 +6,48 @@
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+The core |Gromacs| team wants to let users and downstream developers
+know about impending changes so that disruption is minimized. Do get
+in touch if you feel something inappropriate is planned!
+
+Deprecated functionality often remains in |Gromacs| for a year or
+more, but this should not be relied upon.
+
 Changes anticipated to |Gromacs| 2020 functionality
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+``gmx mdrun -membed``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The feature for embedding a protein in a membrane will be retained,
+but probably in a different form, such as ``gmx membed``.
+
+``gmx mdrun -rerun``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The feature for computing potential energy quantities from a
+trajectory will be retained, but probably in a different form, such as
+``gmx rerun`` and ``gmx test-particle-insertion``.
+
+Integrator .mdp options will only contain dynamical integrators
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Energy minimization will be accessed in a differt form, perhaps with
+``gmx minimize`` and interpret an .mdp field for which minimizer to
+use. Normal-mode analysis may be accessed with e.g. ``gmx
+normal-modes``. The command-line help for these tools will then
+be better able to document which functionality is supported when.
+
+Much functionality in ``trjconv``, ``editconf``, ``eneconv`` and ``trjcat``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The functionality in such tools is being separated to make it
+available in composable modules, that we plan to make available as
+simpler tools, and eventually via the GROMACS API that is under
+development.
+
+``gmx do_dssp`` to be replaced
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+This tool is deprecated, because it is problematic for some users to
+obtain and install a separate DSSP binary, so we plan to replace the
+implementation at some point with a native implementation, likely
+based upon xssp, and make it available under a new gmx tool name.
 
 Functionality deprecated in |Gromacs| 2020
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

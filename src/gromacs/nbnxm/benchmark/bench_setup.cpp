@@ -165,7 +165,7 @@ static interaction_const_t setupInteractionConst(const KernelBenchOptions& optio
         GMX_RELEASE_ASSERT(options.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");
         ic.ewaldcoeff_q       = options.ewaldcoeff_q;
         ic.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
-        init_interaction_const_tables(nullptr, &ic, 0);
+        init_interaction_const_tables(nullptr, &ic, 0, 0);
     }
 
     return ic;

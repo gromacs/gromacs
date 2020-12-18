@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
 
 # Managing configuration for Fujitsu PrimeHPC Sparc64
 # For now this is mainly used for K computer.
-message(STATUS "Configuring for Fujitsu Sparc64")
+message(STATUS "Configuring for Fujitsu Sparc64 (deprecated)")
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Use static linking by default on Fujitsu Sparc64" FORCE)
 set(GMX_GPU OFF CACHE BOOL "Cannot do GPU acceleration on Fujitsu Sparc64" FORCE)

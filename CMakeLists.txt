@@ -510,6 +510,10 @@ if (GMX_HWLOC)
         message(FATAL_ERROR "HWLOC package support required, but not found.")
     endif()
 
+    if (HWLOC_VERSION VERSION_LESS "2")
+        message(STATUS "Support for hwloc versions 1.x is deprecated")
+    endif()
+
     set(HWLOC_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find HWLOC")
 endif()
 
@@ -573,6 +577,9 @@ if(GMX_GPU)
     if(${_gmx_gpu_uppercase} STREQUAL "CUDA")
         include(gmxManageCuda)
     elseif(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
+        message(STATUS "GPU support with OpenCL is deprecated. It is still fully supported (and " 
+            "recommended for AMD and Intel GPUs). It may be replaced by different approaches in "
+            "future releases of GROMACS.")
         include(gmxManageOpenCL)
     elseif(${_gmx_gpu_uppercase} STREQUAL "SYCL")
         include(gmxManageSYCL)

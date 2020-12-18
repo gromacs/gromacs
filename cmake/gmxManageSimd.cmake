@@ -178,10 +178,9 @@ elseif(GMX_SIMD_ACTIVE MATCHES "AVX2_")
     endif()
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "MIC")
-
     # No flags needed. Not testing.
     set(GMX_SIMD_X86_MIC 1)
-    set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions without special flags.")
+    set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions without special flags. This SIMD support is deprecated.")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512")
 
@@ -230,7 +229,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON")
     string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_ARM_NEON_C_FLAGS})
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_ARM_NEON_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions using CXX flags: ${SIMD_ARM_NEON_CXX_FLAGS}")
+    set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions using CXX flags: ${SIMD_ARM_NEON_CXX_FLAGS}. This SIMD support is deprecated.")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
 
@@ -299,7 +298,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VMX")
     string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_IBM_VMX_C_FLAGS})
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_IBM_VMX_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions using CXX flags: ${SIMD_IBM_VMX_CXX_FLAGS}")
+    set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions using CXX flags: ${SIMD_IBM_VMX_CXX_FLAGS}. This SIMD support is deprecated.")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
 
@@ -333,7 +332,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "SPARC64_HPC_ACE")
     # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
 
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions without special flags.")
+    set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions without special flags. This SIMD support is deprecated.")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
 

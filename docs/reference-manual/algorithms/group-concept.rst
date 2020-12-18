@@ -47,6 +47,7 @@ accelerate group
     an external force. This feature makes it possible to drive the
     system into a non-equilibrium state and enables the performance of
     non-equilibrium MD and hence to obtain transport properties.
+    (Deprecated)
 
 energy-monitor group
 
