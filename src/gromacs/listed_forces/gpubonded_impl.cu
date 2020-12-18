@@ -115,6 +115,8 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
     kernelLaunchConfig_.gridSize[0]  = (fTypeRangeEnd + c_threadsPerBlock) / c_threadsPerBlock;
     kernelLaunchConfig_.gridSize[1]  = 1;
     kernelLaunchConfig_.gridSize[2]  = 1;
+    kernelLaunchConfig_.sharedMemorySize =
+            SHIFTS * sizeof(float3) + (c_threadsPerBlock / warp_size) * 3 * sizeof(float);
 }
 
 GpuBonded::Impl::~Impl()

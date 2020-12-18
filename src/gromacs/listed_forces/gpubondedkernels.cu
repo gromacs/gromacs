@@ -723,11 +723,15 @@ template<bool calcVir, bool calcEner>
 __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
 {
     assert(blockDim.y == 1 && blockDim.z == 1);
-    const int  tid          = blockIdx.x * blockDim.x + threadIdx.x;
-    float      vtot_loc     = 0;
-    float      vtotVdw_loc  = 0;
-    float      vtotElec_loc = 0;
-    __shared__ float3 sm_fShiftLoc[SHIFTS];
+    const int tid          = blockIdx.x * blockDim.x + threadIdx.x;
+    float     vtot_loc     = 0;
+    float     vtotVdw_loc  = 0;
+    float     vtotElec_loc = 0;
+
+    extern __shared__ char sm_dynamicShmem[];
+    char*                  sm_nextSlotPtr = sm_dynamicShmem;
+    float3*                sm_fShiftLoc   = (float3*)sm_nextSlotPtr;
+    sm_nextSlotPtr += SHIFTS * sizeof(float3);
 
     if (calcVir)
     {
@@ -802,9 +806,42 @@ __global__ void exec_kernel_gpu(BondedCudaKernelParameters kernelParams)
     {
         float* vtotVdw  = kernelParams.d_vTot + F_LJ14;
         float* vtotElec = kernelParams.d_vTot + F_COUL14;
-        atomicAdd(kernelParams.d_vTot + fType, vtot_loc);
-        atomicAdd(vtotVdw, vtotVdw_loc);
-        atomicAdd(vtotElec, vtotElec_loc);
+
+        // Stage atomic accumulation through shared memory:
+        // each warp will accumulate its own partial sum
+        // and then a single thread per warp will accumulate this to the global sum
+
+        int numWarps = blockDim.x / warpSize;
+        int warpId   = threadIdx.x / warpSize;
+
+        // Shared memory variables to hold block-local partial sum
+        float* sm_vTot = (float*)sm_nextSlotPtr;
+        sm_nextSlotPtr += numWarps * sizeof(float);
+        float* sm_vTotVdw = (float*)sm_nextSlotPtr;
+        sm_nextSlotPtr += numWarps * sizeof(float);
+        float* sm_vTotElec = (float*)sm_nextSlotPtr;
+
+        if (threadIdx.x % warpSize == 0)
+        {
+            // One thread per warp initializes to zero
+            sm_vTot[warpId]     = 0.;
+            sm_vTotVdw[warpId]  = 0.;
+            sm_vTotElec[warpId] = 0.;
+        }
+        __syncwarp(); // All threads in warp must wait for initialization
+
+        // Perform warp-local accumulation in shared memory
+        atomicAdd(sm_vTot + warpId, vtot_loc);
+        atomicAdd(sm_vTotVdw + warpId, vtotVdw_loc);
+        atomicAdd(sm_vTotElec + warpId, vtotElec_loc);
+
+        __syncwarp(); // Ensure all threads in warp have completed
+        if (threadIdx.x % warpSize == 0)
+        { // One thread per warp accumulates partial sum into global sum
+            atomicAdd(kernelParams.d_vTot + fType, sm_vTot[warpId]);
+            atomicAdd(vtotVdw, sm_vTotVdw[warpId]);
+            atomicAdd(vtotElec, sm_vTotElec[warpId]);
+        }
     }
     /* Accumulate shift vectors from shared memory to global memory on the first SHIFTS threads of the block. */
     if (calcVir)
