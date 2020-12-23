@@ -124,6 +124,14 @@ Constant-acceleration MD
 :issue:`1354` This has been broken for many years, and will be removed
 as nobody has been found with interest to fix it.
 
+Reading .pdo files in ``gmx wham``
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+The pull code in |Gromacs| before version 4.0 wrote files in ``.pdo``
+format. Analyses of such files are likely no longer relevant, and if
+they are, using any older GROMACS version will work. ``gmx wham`` will be
+simpler to maintain and extend if we no longer support reading
+``.pdo`` files.
+
 Functionality deprecated in |Gromacs| 2020
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
