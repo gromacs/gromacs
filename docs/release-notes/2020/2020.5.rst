@@ -103,6 +103,18 @@ with an error about a too long pull distance in angle and dihedral geometries.
 
 :issue:`3613`
 
+Fix numerical issues in expanded ensemble
+"""""""""""""""""""""""""""""""""""""""""
+
+When performing simulated tempering or expanded ensemble simulations
+with changes in the Hamiltonian that were too large, then Monte Carlo
+proposals to states that were sufficiently unlikely would underflow,
+causing division by zero errors. This was fixed by numerically
+hardening the logical flow so that such proposals would be rejected
+instead.
+
+:issue:`3304`
+
 Fix incorrect electric field strength with applied electric field
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -117,7 +129,6 @@ cut-off distance, the electric field would be doubled (or more with 2D or
 To validate if a simulation has been affected by the issue, users should calculate
 the actual potential across the simulation box using the Poisson equation.
 If this potential agrees with the one provided as the input, a simulation was not affected.
-
 
 :issue:`3800`
 
