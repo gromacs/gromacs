@@ -43,7 +43,7 @@ if(REGRESSIONTEST_DOWNLOAD)
         set(REGRESSIONTEST_URL https://gitlab.com/gromacs/gromacs-regressiontests/-/archive/${REGRESSIONTEST_BRANCH}/gromacs-regressiontests-${REGRESSIONTEST_BRANCH}.tar.gz)
         # REGRESSIONTEST_PATH for dev trees is set later based on the dirname found in the tar
     else()
-        set(REGRESSIONTEST_URL http://ftp.gromacs.org/regressiontests/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
+        set(REGRESSIONTEST_URL https://ftp.gromacs.org/regressiontests/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
         set(REGRESSIONTEST_PATH
             "${CMAKE_CURRENT_BINARY_DIR}/regressiontests-${REGRESSIONTEST_VERSION}"
             CACHE PATH "Path to auto-downloaded regressiontests" FORCE)
