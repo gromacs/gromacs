@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -259,7 +259,7 @@ static void print_converged(FILE*             fp,
 
 //! Compute the norm and max of the force array in parallel
 static void get_f_norm_max(const t_commrec*               cr,
-                           t_grpopts*                     opts,
+                           const t_grpopts*               opts,
                            t_mdatoms*                     mdatoms,
                            gmx::ArrayRef<const gmx::RVec> f,
                            real*                          fnorm,
@@ -356,7 +356,7 @@ static void get_f_norm_max(const t_commrec*               cr,
 }
 
 //! Compute the norm of the force
-static void get_state_f_norm_max(const t_commrec* cr, t_grpopts* opts, t_mdatoms* mdatoms, em_state_t* ems)
+static void get_state_f_norm_max(const t_commrec* cr, const t_grpopts* opts, t_mdatoms* mdatoms, em_state_t* ems)
 {
     get_f_norm_max(cr, opts, mdatoms, ems->f.view().force(), &ems->fnorm, &ems->fmax, &ems->a_fmax);
 }
@@ -366,7 +366,7 @@ static void init_em(FILE*                fplog,
                     const gmx::MDLogger& mdlog,
                     const char*          title,
                     const t_commrec*     cr,
-                    t_inputrec*          ir,
+                    const t_inputrec*    ir,
                     gmx::ImdSession*     imdSession,
                     pull_t*              pull_work,
                     t_state*             state_global,
@@ -546,7 +546,7 @@ static void write_em_traj(FILE*               fplog,
                           gmx_bool            bF,
                           const char*         confout,
                           const gmx_mtop_t*   top_global,
-                          t_inputrec*         ir,
+                          const t_inputrec*   ir,
                           int64_t             step,
                           em_state_t*         state,
                           t_state*            state_global,
@@ -624,7 +624,7 @@ static void write_em_traj(FILE*               fplog,
 //
 // \returns true when the step succeeded, false when a constraint error occurred
 static bool do_em_step(const t_commrec*                          cr,
-                       t_inputrec*                               ir,
+                       const t_inputrec*                         ir,
                        t_mdatoms*                                md,
                        em_state_t*                               ems1,
                        real                                      a,
@@ -782,7 +782,7 @@ static void em_dd_partition_system(FILE*                fplog,
                                    int                  step,
                                    const t_commrec*     cr,
                                    const gmx_mtop_t*    top_global,
-                                   t_inputrec*          ir,
+                                   const t_inputrec*    ir,
                                    gmx::ImdSession*     imdSession,
                                    pull_t*              pull_work,
                                    em_state_t*          ems,
@@ -859,7 +859,7 @@ public:
     //! Holds the domain topology.
     gmx_localtop_t* top;
     //! User input options.
-    t_inputrec* inputrec;
+    const t_inputrec* inputrec;
     //! The Interactive Molecular Dynamics session.
     gmx::ImdSession* imdSession;
     //! The pull work object.
@@ -1049,7 +1049,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 
 //! Parallel utility summing energies and forces
 static double reorder_partsum(const t_commrec*  cr,
-                              t_grpopts*        opts,
+                              const t_grpopts*  opts,
                               const gmx_mtop_t* top_global,
                               const em_state_t* s_min,
                               const em_state_t* s_b)
@@ -1110,7 +1110,7 @@ static double reorder_partsum(const t_commrec*  cr,
 
 //! Print some stuff, like beta, whatever that means.
 static real pr_beta(const t_commrec*  cr,
-                    t_grpopts*        opts,
+                    const t_grpopts*  opts,
                     t_mdatoms*        mdatoms,
                     const gmx_mtop_t* top_global,
                     const em_state_t* s_min,

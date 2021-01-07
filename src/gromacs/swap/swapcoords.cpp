@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -546,20 +546,20 @@ static void get_compartment_boundaries(int c, t_swap* s, const matrix box, real*
  *
  * \endcode
  */
-static void detect_flux_per_channel(t_swapgrp*     g,
-                                    int            iAtom,
-                                    int            comp,
-                                    rvec           atomPosition,
-                                    unsigned char* comp_now,
-                                    unsigned char* comp_from,
-                                    unsigned char* channel_label,
-                                    t_swapcoords*  sc,
-                                    t_swap*        s,
-                                    real           cyl0_r2,
-                                    real           cyl1_r2,
-                                    int64_t        step,
-                                    gmx_bool       bRerun,
-                                    FILE*          fpout)
+static void detect_flux_per_channel(t_swapgrp*          g,
+                                    int                 iAtom,
+                                    int                 comp,
+                                    rvec                atomPosition,
+                                    unsigned char*      comp_now,
+                                    unsigned char*      comp_from,
+                                    unsigned char*      channel_label,
+                                    const t_swapcoords* sc,
+                                    t_swap*             s,
+                                    real                cyl0_r2,
+                                    real                cyl1_r2,
+                                    int64_t             step,
+                                    gmx_bool            bRerun,
+                                    FILE*               fpout)
 {
     int      sd, chan_nr;
     gmx_bool in_cyl0, in_cyl1;
@@ -687,15 +687,15 @@ static void detect_flux_per_channel(t_swapgrp*     g,
 
 
 /*! \brief Determines which ions or solvent molecules are in compartment A and B */
-static void sortMoleculesIntoCompartments(t_swapgrp*    g,
-                                          t_commrec*    cr,
-                                          t_swapcoords* sc,
-                                          t_swap*       s,
-                                          const matrix  box,
-                                          int64_t       step,
-                                          FILE*         fpout,
-                                          gmx_bool      bRerun,
-                                          gmx_bool      bIsSolvent)
+static void sortMoleculesIntoCompartments(t_swapgrp*          g,
+                                          t_commrec*          cr,
+                                          const t_swapcoords* sc,
+                                          t_swap*             s,
+                                          const matrix        box,
+                                          int64_t             step,
+                                          FILE*               fpout,
+                                          gmx_bool            bRerun,
+                                          gmx_bool            bIsSolvent)
 {
     int  nMolNotInComp[eCompNR]; /* consistency check */
     real cyl0_r2 = sc->cyl0r * sc->cyl0r;
@@ -1897,7 +1897,7 @@ void finish_swapcoords(t_swap* s)
  * From the requested and average molecule counts we determine whether a swap is needed
  * at this time step.
  */
-static gmx_bool need_swap(t_swapcoords* sc, t_swap* s)
+static gmx_bool need_swap(const t_swapcoords* sc, t_swap* s)
 {
     int        ic, ig;
     t_swapgrp* g;
@@ -2007,29 +2007,27 @@ static void apply_modified_positions(swap_group* g, rvec x[])
 }
 
 
-gmx_bool do_swapcoords(t_commrec*     cr,
-                       int64_t        step,
-                       double         t,
-                       t_inputrec*    ir,
-                       t_swap*        s,
-                       gmx_wallcycle* wcycle,
-                       rvec           x[],
-                       matrix         box,
-                       gmx_bool       bVerbose,
-                       gmx_bool       bRerun)
+gmx_bool do_swapcoords(t_commrec*        cr,
+                       int64_t           step,
+                       double            t,
+                       const t_inputrec* ir,
+                       t_swap*           s,
+                       gmx_wallcycle*    wcycle,
+                       rvec              x[],
+                       matrix            box,
+                       gmx_bool          bVerbose,
+                       gmx_bool          bRerun)
 {
-    t_swapcoords* sc;
-    int           j, ic, ig, nswaps;
-    int           thisC, otherC; /* Index into this compartment and the other one */
-    gmx_bool      bSwap = FALSE;
-    t_swapgrp *   g, *gsol;
-    int           isol, iion;
-    rvec          com_solvent, com_particle; /* solvent and swap molecule's center of mass */
+    const t_swapcoords* sc = ir->swap;
+    int                 j, ic, ig, nswaps;
+    int                 thisC, otherC; /* Index into this compartment and the other one */
+    gmx_bool            bSwap = FALSE;
+    t_swapgrp *         g, *gsol;
+    int                 isol, iion;
+    rvec                com_solvent, com_particle; /* solvent and swap molecule's center of mass */
 
 
     wallcycle_start(wcycle, ewcSWAP);
-
-    sc = ir->swap;
 
     set_pbc(s->pbc, ir->pbcType, box);
 
