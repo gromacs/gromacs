@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,6 +69,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
+
+#include "expanded_internal.h"
 
 static void init_df_history_weights(df_history_t* dfhist, const t_expanded* expand, int nlim)
 {
@@ -344,20 +346,25 @@ static gmx_bool UpdateWeights(int           nlim,
                               int64_t       step)
 {
     gmx_bool bSufficientSamples;
+    real     acceptanceWeight;
     int      i;
-    int      n0, np1, nm1, nval, min_nvalm, min_nvalp, maxc;
-    real     omega_m1_0, omega_p1_0, clam_osum;
-    real     de, de_function;
-    real     cnval, zero_sum_weights;
+    int      min_nvalm, min_nvalp, maxc;
+    real     omega_m1_0, omega_p1_0;
+    real     zero_sum_weights;
     real *omegam_array, *weightsm_array, *omegap_array, *weightsp_array, *varm_array, *varp_array,
             *dwp_array, *dwm_array;
-    real    clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
+    real    clam_varm, clam_varp, clam_osum, clam_weightsm, clam_weightsp, clam_minvar;
     real *  lam_variance, *lam_dg;
     double* p_k;
     double  pks = 0;
-    real    chi_m1_0, chi_p1_0, chi_m2_0, chi_p2_0, chi_p1_m1, chi_p2_m1, chi_m1_p1, chi_m2_p1;
 
-    /* if we have equilibrated the weights, exit now */
+    /* Future potential todos for this function (see #3848):
+     *  - Update the names in the dhist structure to be clearer. Not done for now since this
+     *    a bugfix update and we are mininizing other code changes.
+     *  - Modularize the code some more.
+     *  - potentially merge with accelerated weight histogram functionality, since it's very similar.
+     */
+    /*  if we have equilibrated the expanded ensemble weights, we are not updating them, so exit now */
     if (dfhist->bEquil)
     {
         return FALSE;
@@ -380,12 +387,15 @@ static gmx_bool UpdateWeights(int           nlim,
 
     if (EWL(expand->elamstats))
     {
-        if (expand->elamstats == elamstatsWL) /* Standard Wang-Landau */
+        if (expand->elamstats == elamstatsWL) /* Using standard Wang-Landau for weight updates */
         {
             dfhist->sum_weights[fep_state] -= dfhist->wl_delta;
             dfhist->wl_histo[fep_state] += 1.0;
         }
-        else if (expand->elamstats == elamstatsWWL) /* Weighted Wang-Landau */
+        else if (expand->elamstats == elamstatsWWL)
+        /* Using weighted Wang-Landau for weight updates.
+         * Very closly equivalent to accelerated weight histogram approach
+         * applied to expanded ensemble. */
         {
             snew(p_k, nlim);
 
@@ -427,8 +437,6 @@ static gmx_bool UpdateWeights(int           nlim,
     if (expand->elamstats == elamstatsBARKER || expand->elamstats == elamstatsMETROPOLIS
         || expand->elamstats == elamstatsMINVAR)
     {
-
-        de_function = 0; /* to get rid of warnings, but this value will not be used because of the logic */
         maxc = 2 * expand->c_range + 1;
 
         snew(lam_dg, nlim);
@@ -444,7 +452,11 @@ static gmx_bool UpdateWeights(int           nlim,
         snew(varm_array, maxc);
         snew(dwm_array, maxc);
 
-        /* unpack the current lambdas -- we will only update 2 of these */
+        /* unpack the values of the free energy differences and the
+         * variance in their estimates between nearby lambdas. We will
+         * only actually update 2 of these, the state we are currently
+         * at and the one we end up moving to
+         */
 
         for (i = 0; i < nlim - 1; i++)
         { /* only through the second to last */
@@ -453,166 +465,289 @@ static gmx_bool UpdateWeights(int           nlim,
                     gmx::square(dfhist->sum_variance[i + 1]) - gmx::square(dfhist->sum_variance[i]);
         }
 
-        /* accumulate running averages */
-        for (nval = 0; nval < maxc; nval++)
+        /* accumulate running averages of thermodynamic averages for Bennett Acceptance Ratio-based
+         * estimates of the free energy .
+         * Rather than peforming self-consistent estimation of the free energies at each step,
+         * we keep track of an array of possible different free energies (cnvals),
+         * and we self-consistently choose the best one. The one that leads to a free energy estimate
+         * that is closest to itself is the best estimate of the free energy.  It is essentially a
+         * parallellized version of self-consistent iteration.  maxc is the number of these constants. */
+
+        for (int nval = 0; nval < maxc; nval++)
         {
-            /* constants for later use */
-            cnval = static_cast<real>(nval - expand->c_range);
-            /* actually, should be able to rewrite it w/o exponential, for better numerical stability */
+            const real cnval = static_cast<real>(nval - expand->c_range);
+
+            /* Compute acceptance criterion weight to the state below this one for use in averages.
+             * Note we do not have to have just moved from that state to use this free energy
+             * estimate; these are essentially "virtual" moves. */
+
             if (fep_state > 0)
             {
-                de = std::exp(cnval - (scaled_lamee[fep_state] - scaled_lamee[fep_state - 1]));
-                if (expand->elamstats == elamstatsBARKER || expand->elamstats == elamstatsMINVAR)
+                const auto lambdaEnergyDifference =
+                        cnval - (scaled_lamee[fep_state] - scaled_lamee[fep_state - 1]);
+                acceptanceWeight =
+                        gmx::calculateAcceptanceWeight(expand->elamstats, lambdaEnergyDifference);
+                dfhist->accum_m[fep_state][nval] += acceptanceWeight;
+                dfhist->accum_m2[fep_state][nval] += acceptanceWeight * acceptanceWeight;
+            }
+
+            // Compute acceptance criterion weight to transition to the next state
+            if (fep_state < nlim - 1)
+            {
+                const auto lambdaEnergyDifference =
+                        -cnval + (scaled_lamee[fep_state + 1] - scaled_lamee[fep_state]);
+                acceptanceWeight =
+                        gmx::calculateAcceptanceWeight(expand->elamstats, lambdaEnergyDifference);
+                dfhist->accum_p[fep_state][nval] += acceptanceWeight;
+                dfhist->accum_p2[fep_state][nval] += acceptanceWeight * acceptanceWeight;
+            }
+
+            /* Determination of Metropolis transition and Barker transition weights */
+
+            int numObservationsCurrentState = dfhist->n_at_lam[fep_state];
+            /* determine the number of observations above and below the current state */
+            int numObservationsLowerState = 0;
+            if (fep_state > 0)
+            {
+                numObservationsLowerState = dfhist->n_at_lam[fep_state - 1];
+            }
+            int numObservationsHigherState = 0;
+            if (fep_state < nlim - 1)
+            {
+                numObservationsHigherState = dfhist->n_at_lam[fep_state + 1];
+            }
+
+            /* Calculate the biases for each expanded ensemble state that minimize the total
+             * variance, as implemented in Martinez-Veracoechea and Escobedo,
+             * J. Phys. Chem. B 2008, 112, 8120-8128
+             *
+             * The variance associated with the free energy estimate between two states i and j
+             * is calculated as
+             *     Var(i,j) = {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1} / numObservations(i->j)
+             *              + {avg[xi(j->i)^2] / avg[xi(j->i)]^2 - 1} / numObservations(j->i)
+             * where xi(i->j) is the acceptance factor / weight associated with moving from state i to j
+             * As we are calculating the acceptance factor to the neighbors every time we're visiting
+             * a state, numObservations(i->j) == numObservations(i) and numObservations(j->i) == numObservations(j)
+             */
+
+            /* Accumulation of acceptance weight averages between the current state and the
+             * states +1 (p1) and -1 (m1), averaged at current state (0)
+             */
+            real avgAcceptanceCurrentToLower  = 0;
+            real avgAcceptanceCurrentToHigher = 0;
+            /* Accumulation of acceptance weight averages quantities between states 0
+             *  and states +1 and -1, squared
+             */
+            real avgAcceptanceCurrentToLowerSquared  = 0;
+            real avgAcceptanceCurrentToHigherSquared = 0;
+            /* Accumulation of free energy quantities from lower state (m1) to current state (0) and squared */
+            real avgAcceptanceLowerToCurrent        = 0;
+            real avgAcceptanceLowerToCurrentSquared = 0;
+            /* Accumulation of free energy quantities from upper state (p1) to current state (0) and squared */
+            real avgAcceptanceHigherToCurrent        = 0;
+            real avgAcceptanceHigherToCurrentSquared = 0;
+
+            if (numObservationsCurrentState > 0)
+            {
+                avgAcceptanceCurrentToLower = dfhist->accum_m[fep_state][nval] / numObservationsCurrentState;
+                avgAcceptanceCurrentToHigher =
+                        dfhist->accum_p[fep_state][nval] / numObservationsCurrentState;
+                avgAcceptanceCurrentToLowerSquared =
+                        dfhist->accum_m2[fep_state][nval] / numObservationsCurrentState;
+                avgAcceptanceCurrentToHigherSquared =
+                        dfhist->accum_p2[fep_state][nval] / numObservationsCurrentState;
+            }
+
+            if ((fep_state > 0) && (numObservationsLowerState > 0))
+            {
+                avgAcceptanceLowerToCurrent =
+                        dfhist->accum_p[fep_state - 1][nval] / numObservationsLowerState;
+                avgAcceptanceLowerToCurrentSquared =
+                        dfhist->accum_p2[fep_state - 1][nval] / numObservationsLowerState;
+            }
+
+            if ((fep_state < nlim - 1) && (numObservationsHigherState > 0))
+            {
+                avgAcceptanceHigherToCurrent =
+                        dfhist->accum_m[fep_state + 1][nval] / numObservationsHigherState;
+                avgAcceptanceHigherToCurrentSquared =
+                        dfhist->accum_m2[fep_state + 1][nval] / numObservationsHigherState;
+            }
+            /* These are accumulation of positive values (see definition of acceptance functions
+             * above), or of squares of positive values.
+             * We're taking this for granted in the following calculation, so make sure
+             * here that nothing weird happened. Although technically all values should be positive,
+             * because of floating point precisions, they might be numerically zero. */
+            GMX_RELEASE_ASSERT(
+                    avgAcceptanceCurrentToLower >= 0 && avgAcceptanceCurrentToLowerSquared >= 0
+                            && avgAcceptanceCurrentToHigher >= 0
+                            && avgAcceptanceCurrentToHigherSquared >= 0 && avgAcceptanceLowerToCurrent >= 0
+                            && avgAcceptanceLowerToCurrentSquared >= 0 && avgAcceptanceHigherToCurrent >= 0
+                            && avgAcceptanceHigherToCurrentSquared >= 0,
+                    "By definition, the acceptance factors should all be nonnegative.");
+
+            real varianceCurrentToLower   = 0;
+            real varianceCurrentToHigher  = 0;
+            real weightDifferenceToLower  = 0;
+            real weightDifferenceToHigher = 0;
+            real varianceToLower          = 0;
+            real varianceToHigher         = 0;
+
+            if (fep_state > 0)
+            {
+                if (numObservationsCurrentState > 0)
                 {
-                    de_function = 1.0 / (1.0 + de);
-                }
-                else if (expand->elamstats == elamstatsMETROPOLIS)
-                {
-                    if (de < 1.0)
+                    /* Calculate {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1}
+                     *
+                     * Note that if avg[xi(i->j)] == 0, also avg[xi(i->j)^2] == 0 (since the
+                     * acceptances are all positive!), and hence
+                     *     {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1} -> 0  for  avg[xi(i->j)] -> 0
+                     * We're catching that case explicitly to avoid numerical
+                     * problems dividing by zero when the overlap between states is small (#3304)
+                     */
+                    if (avgAcceptanceCurrentToLower > 0)
                     {
-                        de_function = 1.0;
+                        varianceCurrentToLower =
+                                avgAcceptanceCurrentToLowerSquared
+                                        / (avgAcceptanceCurrentToLower * avgAcceptanceCurrentToLower)
+                                - 1.0;
                     }
-                    else
+                    if (numObservationsLowerState > 0)
                     {
-                        de_function = 1.0 / de;
+                        /* Calculate {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1}
+                         *
+                         * Note that if avg[xi(i->j)] == 0, also avg[xi(i->j)^2] == 0 (since the
+                         * acceptances are all positive!), and hence
+                         *     {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1} -> 0  for  avg[xi(i->j)] -> 0
+                         * We're catching that case explicitly to avoid numerical
+                         * problems dividing by zero when the overlap between states is small (#3304)
+                         */
+                        real varianceLowerToCurrent = 0;
+                        if (avgAcceptanceLowerToCurrent > 0)
+                        {
+                            varianceLowerToCurrent =
+                                    avgAcceptanceLowerToCurrentSquared
+                                            / (avgAcceptanceLowerToCurrent * avgAcceptanceLowerToCurrent)
+                                    - 1.0;
+                        }
+                        /* Free energy difference to the state one state lower */
+                        /* if these either of these quantities are zero, the energies are */
+                        /* way too large for the dynamic range.  We need an alternate guesstimate */
+                        if ((avgAcceptanceCurrentToLower == 0) || (avgAcceptanceLowerToCurrent == 0))
+                        {
+                            weightDifferenceToLower =
+                                    (scaled_lamee[fep_state] - scaled_lamee[fep_state - 1]);
+                        }
+                        else
+                        {
+                            weightDifferenceToLower = (std::log(avgAcceptanceCurrentToLower)
+                                                       - std::log(avgAcceptanceLowerToCurrent))
+                                                      + cnval;
+                        }
+                        /* Variance of the free energy difference to the one state lower */
+                        varianceToLower =
+                                (1.0 / numObservationsCurrentState) * (varianceCurrentToLower)
+                                + (1.0 / numObservationsLowerState) * (varianceLowerToCurrent);
                     }
                 }
-                dfhist->accum_m[fep_state][nval] += de_function;
-                dfhist->accum_m2[fep_state][nval] += de_function * de_function;
             }
 
             if (fep_state < nlim - 1)
             {
-                de = std::exp(-cnval + (scaled_lamee[fep_state + 1] - scaled_lamee[fep_state]));
-                if (expand->elamstats == elamstatsBARKER || expand->elamstats == elamstatsMINVAR)
+                if (numObservationsCurrentState > 0)
                 {
-                    de_function = 1.0 / (1.0 + de);
-                }
-                else if (expand->elamstats == elamstatsMETROPOLIS)
-                {
-                    if (de < 1.0)
+                    /* Calculate {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1}
+                     *
+                     * Note that if avg[xi(i->j)] == 0, also avg[xi(i->j)^2] == 0 (since the
+                     * acceptances are all positive!), and hence
+                     *     {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1} -> 0  for  avg[xi(i->j)] -> 0
+                     * We're catching that case explicitly to avoid numerical
+                     * problems dividing by zero when the overlap between states is small (#3304)
+                     */
+
+                    if (avgAcceptanceCurrentToHigher < 0)
                     {
-                        de_function = 1.0;
+                        varianceCurrentToHigher =
+                                avgAcceptanceCurrentToHigherSquared
+                                        / (avgAcceptanceCurrentToHigher * avgAcceptanceCurrentToHigher)
+                                - 1.0;
                     }
-                    else
+                    if (numObservationsHigherState > 0)
                     {
-                        de_function = 1.0 / de;
-                    }
-                }
-                dfhist->accum_p[fep_state][nval] += de_function;
-                dfhist->accum_p2[fep_state][nval] += de_function * de_function;
-            }
-
-            /* Metropolis transition and Barker transition (unoptimized Bennett) acceptance weight determination */
-
-            n0 = dfhist->n_at_lam[fep_state];
-            if (fep_state > 0)
-            {
-                nm1 = dfhist->n_at_lam[fep_state - 1];
-            }
-            else
-            {
-                nm1 = 0;
-            }
-            if (fep_state < nlim - 1)
-            {
-                np1 = dfhist->n_at_lam[fep_state + 1];
-            }
-            else
-            {
-                np1 = 0;
-            }
-
-            /* logic SHOULD keep these all set correctly whatever the logic, but apparently it can't figure it out. */
-            chi_m1_0 = chi_p1_0 = chi_m2_0 = chi_p2_0 = chi_p1_m1 = chi_p2_m1 = chi_m1_p1 = chi_m2_p1 = 0;
-
-            if (n0 > 0)
-            {
-                chi_m1_0 = dfhist->accum_m[fep_state][nval] / n0;
-                chi_p1_0 = dfhist->accum_p[fep_state][nval] / n0;
-                chi_m2_0 = dfhist->accum_m2[fep_state][nval] / n0;
-                chi_p2_0 = dfhist->accum_p2[fep_state][nval] / n0;
-            }
-
-            if ((fep_state > 0) && (nm1 > 0))
-            {
-                chi_p1_m1 = dfhist->accum_p[fep_state - 1][nval] / nm1;
-                chi_p2_m1 = dfhist->accum_p2[fep_state - 1][nval] / nm1;
-            }
-
-            if ((fep_state < nlim - 1) && (np1 > 0))
-            {
-                chi_m1_p1 = dfhist->accum_m[fep_state + 1][nval] / np1;
-                chi_m2_p1 = dfhist->accum_m2[fep_state + 1][nval] / np1;
-            }
-
-            omega_m1_0    = 0;
-            omega_p1_0    = 0;
-            clam_weightsm = 0;
-            clam_weightsp = 0;
-            clam_varm     = 0;
-            clam_varp     = 0;
-
-            if (fep_state > 0)
-            {
-                if (n0 > 0)
-                {
-                    omega_m1_0 = chi_m2_0 / (chi_m1_0 * chi_m1_0) - 1.0;
-                    if (nm1 > 0)
-                    {
-                        real omega_p1_m1 = chi_p2_m1 / (chi_p1_m1 * chi_p1_m1) - 1.0;
-                        clam_weightsm    = (std::log(chi_m1_0) - std::log(chi_p1_m1)) + cnval;
-                        clam_varm        = (1.0 / n0) * (omega_m1_0) + (1.0 / nm1) * (omega_p1_m1);
+                        /* Calculate {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1}
+                         *
+                         * Note that if avg[xi(i->j)] == 0, also avg[xi(i->j)^2] == 0 (since the
+                         * acceptances are all positive!), and hence
+                         *     {avg[xi(i->j)^2] / avg[xi(i->j)]^2 - 1} -> 0  for  avg[xi(i->j)] -> 0
+                         * We're catching that case explicitly to avoid numerical
+                         * problems dividing by zero when the overlap between states is small (#3304)
+                         */
+                        real varianceHigherToCurrent = 0;
+                        if (avgAcceptanceHigherToCurrent > 0)
+                        {
+                            varianceHigherToCurrent =
+                                    avgAcceptanceHigherToCurrentSquared
+                                            / (avgAcceptanceHigherToCurrent * avgAcceptanceHigherToCurrent)
+                                    - 1.0;
+                        }
+                        /* Free energy difference to the state one state higher */
+                        /* if these either of these quantities are zero, the energies are */
+                        /* way too large for the dynamic range.  We need an alternate guesstimate */
+                        if ((avgAcceptanceHigherToCurrent == 0) || (avgAcceptanceCurrentToHigher == 0))
+                        {
+                            weightDifferenceToHigher =
+                                    (scaled_lamee[fep_state + 1] - scaled_lamee[fep_state]);
+                        }
+                        else
+                        {
+                            weightDifferenceToHigher = (std::log(avgAcceptanceHigherToCurrent)
+                                                        - std::log(avgAcceptanceCurrentToHigher))
+                                                       + cnval;
+                        }
+                        /* Variance of the free energy difference to the one state higher */
+                        varianceToHigher =
+                                (1.0 / numObservationsHigherState) * (varianceHigherToCurrent)
+                                + (1.0 / numObservationsCurrentState) * (varianceCurrentToHigher);
                     }
                 }
             }
 
-            if (fep_state < nlim - 1)
+            if (numObservationsCurrentState > 0)
             {
-                if (n0 > 0)
-                {
-                    omega_p1_0 = chi_p2_0 / (chi_p1_0 * chi_p1_0) - 1.0;
-                    if (np1 > 0)
-                    {
-                        real omega_m1_p1 = chi_m2_p1 / (chi_m1_p1 * chi_m1_p1) - 1.0;
-                        clam_weightsp    = (std::log(chi_m1_p1) - std::log(chi_p1_0)) + cnval;
-                        clam_varp        = (1.0 / np1) * (omega_m1_p1) + (1.0 / n0) * (omega_p1_0);
-                    }
-                }
-            }
-
-            if (n0 > 0)
-            {
-                omegam_array[nval] = omega_m1_0;
+                omegam_array[nval] = varianceCurrentToLower;
             }
             else
             {
                 omegam_array[nval] = 0;
             }
-            weightsm_array[nval] = clam_weightsm;
-            varm_array[nval]     = clam_varm;
-            if (nm1 > 0)
+            weightsm_array[nval] = weightDifferenceToLower;
+            varm_array[nval]     = varianceToLower;
+            if (numObservationsLowerState > 0)
             {
-                dwm_array[nval] = fabs((cnval + std::log((1.0 * n0) / nm1)) - lam_dg[fep_state - 1]);
+                dwm_array[nval] =
+                        fabs((cnval + std::log((1.0 * numObservationsCurrentState) / numObservationsLowerState))
+                             - lam_dg[fep_state - 1]);
             }
             else
             {
                 dwm_array[nval] = std::fabs(cnval - lam_dg[fep_state - 1]);
             }
 
-            if (n0 > 0)
+            if (numObservationsCurrentState > 0)
             {
-                omegap_array[nval] = omega_p1_0;
+                omegap_array[nval] = varianceCurrentToHigher;
             }
             else
             {
                 omegap_array[nval] = 0;
             }
-            weightsp_array[nval] = clam_weightsp;
-            varp_array[nval]     = clam_varp;
-            if ((np1 > 0) && (n0 > 0))
+            weightsp_array[nval] = weightDifferenceToHigher;
+            varp_array[nval]     = varianceToHigher;
+            if ((numObservationsHigherState > 0) && (numObservationsCurrentState > 0))
             {
-                dwp_array[nval] = fabs((cnval + std::log((1.0 * np1) / n0)) - lam_dg[fep_state]);
+                dwp_array[nval] =
+                        fabs((cnval + std::log((1.0 * numObservationsHigherState) / numObservationsCurrentState))
+                             - lam_dg[fep_state]);
             }
             else
             {
@@ -620,7 +755,7 @@ static gmx_bool UpdateWeights(int           nlim,
             }
         }
 
-        /* find the C's closest to the old weights value */
+        /* find the free energy estimate closest to the guessed weight's value */
 
         min_nvalm     = FindMinimum(dwm_array, maxc);
         omega_m1_0    = omegam_array[min_nvalm];
@@ -654,7 +789,9 @@ static gmx_bool UpdateWeights(int           nlim,
         if (expand->elamstats == elamstatsMINVAR)
         {
             bSufficientSamples = TRUE;
-            /* make sure they are all past a threshold */
+            /* make sure the number of samples in each state are all
+             * past a user-specified threshold
+             */
             for (i = 0; i < nlim; i++)
             {
                 if (dfhist->n_at_lam[i] < expand->minvarmin)
@@ -962,11 +1099,10 @@ static int ChooseNewLambda(int               nlim,
             de = weighted_lamee[lamtrial] - weighted_lamee[fep_state];
             if (expand->elmcmove == elmcmoveMETROPOLIS)
             {
-                tprob     = 1.0;
-                trialprob = std::exp(de);
-                if (trialprob < tprob)
+                tprob = 1.0;
+                if (de < 0)
                 {
-                    tprob = trialprob;
+                    tprob = std::exp(de);
                 }
                 propose[fep_state] = 0;
                 propose[lamtrial]  = 1.0; /* note that this overwrites the above line if fep_state = ntrial, which only occurs at the ends */
@@ -976,8 +1112,14 @@ static int ChooseNewLambda(int               nlim,
             }
             else if (expand->elmcmove == elmcmoveBARKER)
             {
-                tprob = 1.0 / (1.0 + std::exp(-de));
-
+                if (de > 0) /* Numerically stable version */
+                {
+                    tprob = 1.0 / (1.0 + std::exp(-de));
+                }
+                else if (de < 0)
+                {
+                    tprob = std::exp(de) / (std::exp(de) + 1.0);
+                }
                 propose[fep_state] = (1 - tprob);
                 propose[lamtrial] +=
                         tprob; /* we add, to account for the fact that at the end, they might be the same point */

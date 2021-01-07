@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1764,7 +1764,7 @@ static real energyNoseHoover(const t_inputrec* ir, const t_state* state, const t
         const double* ivxi  = &state->nosehoover_vxi[i * nh];
         const double* iQinv = &(MassQ->Qinv[i * nh]);
 
-        int  nd   = static_cast<int>(ir->opts.nrdf[i]);
+        real nd   = ir->opts.nrdf[i];
         real reft = std::max<real>(ir->opts.ref_t[i], 0);
         real kT   = BOLTZ * reft;
 
@@ -1779,7 +1779,7 @@ static real energyNoseHoover(const t_inputrec* ir, const t_state* state, const t
                     {
                         energy += 0.5 * gmx::square(ivxi[j]) / iQinv[j];
                         /* contribution from the thermal variable of the NH chain */
-                        int ndj;
+                        real ndj = 0;
                         if (j == 0)
                         {
                             ndj = nd;
