@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -218,53 +218,54 @@ void update_pcouple_after_coordinates(FILE*                fplog,
             if (do_per_step(step, inputrec->nstpcouple))
             {
                 real dtpc = inputrec->nstpcouple * dt;
-                berendsen_pcoupl(fplog,
-                                 step,
-                                 inputrec,
-                                 dtpc,
-                                 pressure,
-                                 state->box,
-                                 forceVirial,
-                                 constraintVirial,
-                                 pressureCouplingMu,
-                                 &state->baros_integral);
-                berendsen_pscale(inputrec,
-                                 pressureCouplingMu,
-                                 state->box,
-                                 state->box_rel,
-                                 start,
-                                 homenr,
-                                 state->x.rvec_array(),
-                                 md->cFREEZE,
-                                 nrnb,
-                                 scaleCoordinates);
+                pressureCouplingCalculateScalingMatrix<epcBERENDSEN>(fplog,
+                                                                     step,
+                                                                     inputrec,
+                                                                     dtpc,
+                                                                     pressure,
+                                                                     state->box,
+                                                                     forceVirial,
+                                                                     constraintVirial,
+                                                                     pressureCouplingMu,
+                                                                     &state->baros_integral);
+                pressureCouplingScaleBoxAndCoordinates<epcBERENDSEN>(inputrec,
+                                                                     pressureCouplingMu,
+                                                                     state->box,
+                                                                     state->box_rel,
+                                                                     start,
+                                                                     homenr,
+                                                                     state->x.rvec_array(),
+                                                                     nullptr,
+                                                                     md->cFREEZE,
+                                                                     nrnb,
+                                                                     scaleCoordinates);
             }
             break;
         case (epcCRESCALE):
             if (do_per_step(step, inputrec->nstpcouple))
             {
                 real dtpc = inputrec->nstpcouple * dt;
-                crescale_pcoupl(fplog,
-                                step,
-                                inputrec,
-                                dtpc,
-                                pressure,
-                                state->box,
-                                forceVirial,
-                                constraintVirial,
-                                pressureCouplingMu,
-                                &state->baros_integral);
-                crescale_pscale(inputrec,
-                                pressureCouplingMu,
-                                state->box,
-                                state->box_rel,
-                                start,
-                                homenr,
-                                state->x.rvec_array(),
-                                state->v.rvec_array(),
-                                md->cFREEZE,
-                                nrnb,
-                                scaleCoordinates);
+                pressureCouplingCalculateScalingMatrix<epcCRESCALE>(fplog,
+                                                                    step,
+                                                                    inputrec,
+                                                                    dtpc,
+                                                                    pressure,
+                                                                    state->box,
+                                                                    forceVirial,
+                                                                    constraintVirial,
+                                                                    pressureCouplingMu,
+                                                                    &state->baros_integral);
+                pressureCouplingScaleBoxAndCoordinates<epcCRESCALE>(inputrec,
+                                                                    pressureCouplingMu,
+                                                                    state->box,
+                                                                    state->box_rel,
+                                                                    start,
+                                                                    homenr,
+                                                                    state->x.rvec_array(),
+                                                                    state->v.rvec_array(),
+                                                                    md->cFREEZE,
+                                                                    nrnb,
+                                                                    scaleCoordinates);
             }
             break;
         case (epcPARRINELLORAHMAN):
@@ -839,25 +840,34 @@ void parrinellorahman_pcoupl(FILE*             fplog,
     mmul_ur0(invbox, t1, mu);
 }
 
-void berendsen_pcoupl(FILE*             fplog,
-                      int64_t           step,
-                      const t_inputrec* ir,
-                      real              dt,
-                      const tensor      pres,
-                      const matrix      box,
-                      const matrix      force_vir,
-                      const matrix      constraint_vir,
-                      matrix            mu,
-                      double*           baros_integral)
+//! Return compressibility factor for entry (i,j) of Berendsen / C-rescale scaling matrix
+static inline real compressibilityFactor(int i, int j, const t_inputrec* ir, real dt)
 {
-    real scalar_pressure, xy_pressure, p_corr_z;
-    char buf[STRLEN];
+    return ir->compress[i][j] * dt / ir->tau_p;
+}
 
-    /*
-     *  Calculate the scaling matrix mu
-     */
-    scalar_pressure = 0;
-    xy_pressure     = 0;
+//! Details of Berendsen / C-rescale scaling matrix calculation
+template<int pressureCouplingType>
+static void calculateScalingMatrixImplDetail(const t_inputrec* ir,
+                                             matrix            mu,
+                                             real              dt,
+                                             const matrix      pres,
+                                             const matrix      box,
+                                             real              scalar_pressure,
+                                             real              xy_pressure,
+                                             int64_t           step);
+
+//! Calculate Berendsen / C-rescale scaling matrix
+template<int pressureCouplingType>
+static void calculateScalingMatrixImpl(const t_inputrec* ir,
+                                       matrix            mu,
+                                       real              dt,
+                                       const matrix      pres,
+                                       const matrix      box,
+                                       int64_t           step)
+{
+    real scalar_pressure = 0;
+    real xy_pressure     = 0;
     for (int d = 0; d < DIM; d++)
     {
         scalar_pressure += pres[d][d] / DIM;
@@ -866,34 +876,45 @@ void berendsen_pcoupl(FILE*             fplog,
             xy_pressure += pres[d][d] / (DIM - 1);
         }
     }
-    /* Pressure is now in bar, everywhere. */
-#define factor(d, m) (ir->compress[d][m] * dt / ir->tau_p)
-
-    /* mu has been changed from pow(1+...,1/3) to 1+.../3, since this is
-     * necessary for triclinic scaling
-     */
     clear_mat(mu);
+    calculateScalingMatrixImplDetail<pressureCouplingType>(
+            ir, mu, dt, pres, box, scalar_pressure, xy_pressure, step);
+}
+
+template<>
+void calculateScalingMatrixImplDetail<epcBERENDSEN>(const t_inputrec* ir,
+                                                    matrix            mu,
+                                                    real              dt,
+                                                    const matrix      pres,
+                                                    const matrix      box,
+                                                    real              scalar_pressure,
+                                                    real              xy_pressure,
+                                                    int64_t gmx_unused step)
+{
+    real p_corr_z = 0;
     switch (ir->epct)
     {
         case epctISOTROPIC:
             for (int d = 0; d < DIM; d++)
             {
-                mu[d][d] = 1.0 - factor(d, d) * (ir->ref_p[d][d] - scalar_pressure) / DIM;
+                mu[d][d] = 1.0 - compressibilityFactor(d, d, ir, dt) * (ir->ref_p[d][d] - scalar_pressure) / DIM;
             }
             break;
         case epctSEMIISOTROPIC:
             for (int d = 0; d < ZZ; d++)
             {
-                mu[d][d] = 1.0 - factor(d, d) * (ir->ref_p[d][d] - xy_pressure) / DIM;
+                mu[d][d] = 1.0 - compressibilityFactor(d, d, ir, dt) * (ir->ref_p[d][d] - xy_pressure) / DIM;
             }
-            mu[ZZ][ZZ] = 1.0 - factor(ZZ, ZZ) * (ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM;
+            mu[ZZ][ZZ] =
+                    1.0 - compressibilityFactor(ZZ, ZZ, ir, dt) * (ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM;
             break;
         case epctANISOTROPIC:
             for (int d = 0; d < DIM; d++)
             {
                 for (int n = 0; n < DIM; n++)
                 {
-                    mu[d][n] = (d == n ? 1.0 : 0.0) - factor(d, n) * (ir->ref_p[d][n] - pres[d][n]) / DIM;
+                    mu[d][n] = (d == n ? 1.0 : 0.0)
+                               - compressibilityFactor(d, n, ir, dt) * (ir->ref_p[d][n] - pres[d][n]) / DIM;
                 }
             }
             break;
@@ -914,7 +935,7 @@ void berendsen_pcoupl(FILE*             fplog,
             for (int d = 0; d < DIM - 1; d++)
             {
                 mu[d][d] = 1.0
-                           + factor(d, d)
+                           + compressibilityFactor(d, d, ir, dt)
                                      * (ir->ref_p[d][d] / (mu[ZZ][ZZ] * box[ZZ][ZZ])
                                         - (pres[ZZ][ZZ] + p_corr_z - xy_pressure))
                                      / (DIM - 1);
@@ -925,86 +946,18 @@ void berendsen_pcoupl(FILE*             fplog,
                       "Berendsen pressure coupling type %s not supported yet\n",
                       EPCOUPLTYPETYPE(ir->epct));
     }
-    /* To fullfill the orientation restrictions on triclinic boxes
-     * we will set mu_yx, mu_zx and mu_zy to 0 and correct
-     * the other elements of mu to first order.
-     */
-    mu[YY][XX] += mu[XX][YY];
-    mu[ZZ][XX] += mu[XX][ZZ];
-    mu[ZZ][YY] += mu[YY][ZZ];
-    mu[XX][YY] = 0;
-    mu[XX][ZZ] = 0;
-    mu[YY][ZZ] = 0;
-
-    /* Keep track of the work the barostat applies on the system.
-     * Without constraints force_vir tells us how Epot changes when scaling.
-     * With constraints constraint_vir gives us the constraint contribution
-     * to both Epot and Ekin. Although we are not scaling velocities, scaling
-     * the coordinates leads to scaling of distances involved in constraints.
-     * This in turn changes the angular momentum (even if the constrained
-     * distances are corrected at the next step). The kinetic component
-     * of the constraint virial captures the angular momentum change.
-     */
-    for (int d = 0; d < DIM; d++)
-    {
-        for (int n = 0; n <= d; n++)
-        {
-            *baros_integral -=
-                    2 * (mu[d][n] - (n == d ? 1 : 0)) * (force_vir[d][n] + constraint_vir[d][n]);
-        }
-    }
-
-    if (debug)
-    {
-        pr_rvecs(debug, 0, "PC: pres ", pres, 3);
-        pr_rvecs(debug, 0, "PC: mu   ", mu, 3);
-    }
-
-    if (mu[XX][XX] < 0.99 || mu[XX][XX] > 1.01 || mu[YY][YY] < 0.99 || mu[YY][YY] > 1.01
-        || mu[ZZ][ZZ] < 0.99 || mu[ZZ][ZZ] > 1.01)
-    {
-        char buf2[22];
-        sprintf(buf,
-                "\nStep %s  Warning: pressure scaling more than 1%%, "
-                "mu: %g %g %g\n",
-                gmx_step_str(step, buf2),
-                mu[XX][XX],
-                mu[YY][YY],
-                mu[ZZ][ZZ]);
-        if (fplog)
-        {
-            fprintf(fplog, "%s", buf);
-        }
-        fprintf(stderr, "%s", buf);
-    }
 }
 
-void crescale_pcoupl(FILE*             fplog,
-                     int64_t           step,
-                     const t_inputrec* ir,
-                     real              dt,
-                     const tensor      pres,
-                     const matrix      box,
-                     const matrix      force_vir,
-                     const matrix      constraint_vir,
-                     matrix            mu,
-                     double*           baros_integral)
+template<>
+void calculateScalingMatrixImplDetail<epcCRESCALE>(const t_inputrec* ir,
+                                                   matrix            mu,
+                                                   real              dt,
+                                                   const matrix      pres,
+                                                   const matrix      box,
+                                                   real              scalar_pressure,
+                                                   real              xy_pressure,
+                                                   int64_t           step)
 {
-    /*
-     *  Calculate the scaling matrix mu
-     */
-    real scalar_pressure = 0;
-    real xy_pressure     = 0;
-    for (int d = 0; d < DIM; d++)
-    {
-        scalar_pressure += pres[d][d] / DIM;
-        if (d != ZZ)
-        {
-            xy_pressure += pres[d][d] / (DIM - 1);
-        }
-    }
-    clear_mat(mu);
-
     gmx::ThreeFry2x64<64>         rng(ir->ld_seed, gmx::RandomDomain::Barostat);
     gmx::NormalDistribution<real> normalDist;
     rng.restart(step, 0);
@@ -1013,9 +966,9 @@ void crescale_pcoupl(FILE*             fplog,
     {
         vol *= box[d][d];
     }
-    real gauss;
-    real gauss2;
-    real kt = ir->opts.ref_t[0] * BOLTZ;
+    real gauss  = 0;
+    real gauss2 = 0;
+    real kt     = ir->opts.ref_t[0] * BOLTZ;
     if (kt < 0.0)
     {
         kt = 0.0;
@@ -1027,10 +980,9 @@ void crescale_pcoupl(FILE*             fplog,
             gauss = normalDist(rng);
             for (int d = 0; d < DIM; d++)
             {
-                const real compressibilityFactor = ir->compress[d][d] * dt / ir->tau_p;
-                mu[d][d] = std::exp(-compressibilityFactor * (ir->ref_p[d][d] - scalar_pressure) / DIM
-                                    + std::sqrt(2.0 * kt * compressibilityFactor * PRESFAC / vol)
-                                              * gauss / DIM);
+                const real factor = compressibilityFactor(d, d, ir, dt);
+                mu[d][d]          = std::exp(-factor * (ir->ref_p[d][d] - scalar_pressure) / DIM
+                                    + std::sqrt(2.0 * kt * factor * PRESFAC / vol) * gauss / DIM);
             }
             break;
         case epctSEMIISOTROPIC:
@@ -1038,17 +990,15 @@ void crescale_pcoupl(FILE*             fplog,
             gauss2 = normalDist(rng);
             for (int d = 0; d < ZZ; d++)
             {
-                const real compressibilityFactor = ir->compress[d][d] * dt / ir->tau_p;
-                mu[d][d]                         = std::exp(
-                        -compressibilityFactor * (ir->ref_p[d][d] - xy_pressure) / DIM
-                        + std::sqrt((DIM - 1) * 2.0 * kt * compressibilityFactor * PRESFAC / vol / DIM)
-                                  / (DIM - 1) * gauss);
+                const real factor = compressibilityFactor(d, d, ir, dt);
+                mu[d][d]          = std::exp(-factor * (ir->ref_p[d][d] - xy_pressure) / DIM
+                                    + std::sqrt((DIM - 1) * 2.0 * kt * factor * PRESFAC / vol / DIM)
+                                              / (DIM - 1) * gauss);
             }
             {
-                const real compressibilityFactor = ir->compress[ZZ][ZZ] * dt / ir->tau_p;
-                mu[ZZ][ZZ]                       = std::exp(
-                        -compressibilityFactor * (ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM
-                        + std::sqrt(2.0 * kt * compressibilityFactor * PRESFAC / vol / DIM) * gauss2);
+                const real factor = compressibilityFactor(ZZ, ZZ, ir, dt);
+                mu[ZZ][ZZ]        = std::exp(-factor * (ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM
+                                      + std::sqrt(2.0 * kt * factor * PRESFAC / vol / DIM) * gauss2);
             }
             break;
         case epctSURFACETENSION:
@@ -1056,19 +1006,16 @@ void crescale_pcoupl(FILE*             fplog,
             gauss2 = normalDist(rng);
             for (int d = 0; d < ZZ; d++)
             {
-                const real compressibilityFactor = ir->compress[d][d] * dt / ir->tau_p;
+                const real factor = compressibilityFactor(d, d, ir, dt);
                 /* Notice: we here use ref_p[ZZ][ZZ] as isotropic pressure and ir->ref_p[d][d] as surface tension */
                 mu[d][d] = std::exp(
-                        -compressibilityFactor
-                                * (ir->ref_p[ZZ][ZZ] - ir->ref_p[d][d] / box[ZZ][ZZ] - xy_pressure) / DIM
-                        + std::sqrt(4.0 / 3.0 * kt * compressibilityFactor * PRESFAC / vol)
-                                  / (DIM - 1) * gauss);
+                        -factor * (ir->ref_p[ZZ][ZZ] - ir->ref_p[d][d] / box[ZZ][ZZ] - xy_pressure) / DIM
+                        + std::sqrt(4.0 / 3.0 * kt * factor * PRESFAC / vol) / (DIM - 1) * gauss);
             }
             {
-                const real compressibilityFactor = ir->compress[ZZ][ZZ] * dt / ir->tau_p;
-                mu[ZZ][ZZ]                       = std::exp(
-                        -compressibilityFactor * (ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM
-                        + std::sqrt(2.0 / 3.0 * kt * compressibilityFactor * PRESFAC / vol) * gauss2);
+                const real factor = compressibilityFactor(ZZ, ZZ, ir, dt);
+                mu[ZZ][ZZ]        = std::exp(-factor * (ir->ref_p[ZZ][ZZ] - pres[ZZ][ZZ]) / DIM
+                                      + std::sqrt(2.0 / 3.0 * kt * factor * PRESFAC / vol) * gauss2);
             }
             break;
         default:
@@ -1076,7 +1023,27 @@ void crescale_pcoupl(FILE*             fplog,
                       "C-rescale pressure coupling type %s not supported yet\n",
                       EPCOUPLTYPETYPE(ir->epct));
     }
-    /* To fullfill the orientation restrictions on triclinic boxes
+}
+
+template<int pressureCouplingType>
+void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
+                                            int64_t           step,
+                                            const t_inputrec* ir,
+                                            real              dt,
+                                            const tensor      pres,
+                                            const matrix      box,
+                                            const matrix      force_vir,
+                                            const matrix      constraint_vir,
+                                            matrix            mu,
+                                            double*           baros_integral)
+{
+    static_assert(pressureCouplingType == epcBERENDSEN || pressureCouplingType == epcCRESCALE,
+                  "pressureCouplingCalculateScalingMatrix is only implemented for Berendsen and "
+                  "C-rescale pressure coupling");
+
+    calculateScalingMatrixImpl<pressureCouplingType>(ir, mu, dt, pres, box, step);
+
+    /* To fulfill the orientation restrictions on triclinic boxes
      * we will set mu_yx, mu_zx and mu_zy to 0 and correct
      * the other elements of mu to first order.
      */
@@ -1131,42 +1098,40 @@ void crescale_pcoupl(FILE*             fplog,
     }
 }
 
-void crescale_pscale(const t_inputrec*    ir,
-                     const matrix         mu,
-                     matrix               box,
-                     matrix               box_rel,
-                     int                  start,
-                     int                  nr_atoms,
-                     rvec                 x[],
-                     rvec                 v[],
-                     const unsigned short cFREEZE[],
-                     t_nrnb*              nrnb,
-                     const bool           scaleCoordinates)
+template<int pressureCouplingType>
+void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*    ir,
+                                            const matrix         mu,
+                                            matrix               box,
+                                            matrix               box_rel,
+                                            int                  start,
+                                            int                  nr_atoms,
+                                            rvec                 x[],
+                                            rvec                 v[],
+                                            const unsigned short cFREEZE[],
+                                            t_nrnb*              nrnb,
+                                            const bool           scaleCoordinates)
 {
-    ivec* nFreeze = ir->opts.nFreeze;
-    int nthreads gmx_unused;
-    matrix       inv_mu;
+    static_assert(pressureCouplingType == epcBERENDSEN || pressureCouplingType == epcCRESCALE,
+                  "pressureCouplingScaleBoxAndCoordinates is only implemented for Berendsen and "
+                  "C-rescale pressure coupling");
 
-#ifndef __clang_analyzer__
-    nthreads = gmx_omp_nthreads_get(emntUpdate);
-#endif
-
-    gmx::invertBoxMatrix(mu, inv_mu);
+    ivec*  nFreeze = ir->opts.nFreeze;
+    matrix inv_mu;
+    if (pressureCouplingType == epcCRESCALE)
+    {
+        gmx::invertBoxMatrix(mu, inv_mu);
+    }
 
     /* Scale the positions and the velocities */
     if (scaleCoordinates)
     {
-#pragma omp parallel for num_threads(nthreads) schedule(static)
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int n = start; n < start + nr_atoms; n++)
         {
             // Trivial OpenMP region that does not throw
-            int g;
-
-            if (cFREEZE == nullptr)
-            {
-                g = 0;
-            }
-            else
+            int g = 0;
+            if (cFREEZE != nullptr)
             {
                 g = cFREEZE[n];
             }
@@ -1174,90 +1139,32 @@ void crescale_pscale(const t_inputrec*    ir,
             if (!nFreeze[g][XX])
             {
                 x[n][XX] = mu[XX][XX] * x[n][XX] + mu[YY][XX] * x[n][YY] + mu[ZZ][XX] * x[n][ZZ];
-                v[n][XX] = inv_mu[XX][XX] * v[n][XX] + inv_mu[YY][XX] * v[n][YY]
-                           + inv_mu[ZZ][XX] * v[n][ZZ];
+                if (pressureCouplingType == epcCRESCALE)
+                {
+                    v[n][XX] = inv_mu[XX][XX] * v[n][XX] + inv_mu[YY][XX] * v[n][YY]
+                               + inv_mu[ZZ][XX] * v[n][ZZ];
+                }
             }
             if (!nFreeze[g][YY])
             {
                 x[n][YY] = mu[YY][YY] * x[n][YY] + mu[ZZ][YY] * x[n][ZZ];
-                v[n][YY] = inv_mu[YY][YY] * v[n][YY] + inv_mu[ZZ][YY] * v[n][ZZ];
+                if (pressureCouplingType == epcCRESCALE)
+                {
+                    v[n][YY] = inv_mu[YY][YY] * v[n][YY] + inv_mu[ZZ][YY] * v[n][ZZ];
+                }
             }
             if (!nFreeze[g][ZZ])
             {
                 x[n][ZZ] = mu[ZZ][ZZ] * x[n][ZZ];
-                v[n][ZZ] = inv_mu[ZZ][ZZ] * v[n][ZZ];
+                if (pressureCouplingType == epcCRESCALE)
+                {
+                    v[n][ZZ] = inv_mu[ZZ][ZZ] * v[n][ZZ];
+                }
             }
         }
     }
     /* compute final boxlengths */
     for (int d = 0; d < DIM; d++)
-    {
-        box[d][XX] = mu[XX][XX] * box[d][XX] + mu[YY][XX] * box[d][YY] + mu[ZZ][XX] * box[d][ZZ];
-        box[d][YY] = mu[YY][YY] * box[d][YY] + mu[ZZ][YY] * box[d][ZZ];
-        box[d][ZZ] = mu[ZZ][ZZ] * box[d][ZZ];
-    }
-
-    preserve_box_shape(ir, box_rel, box);
-
-    /* (un)shifting should NOT be done after this,
-     * since the box vectors might have changed
-     */
-    inc_nrnb(nrnb, eNR_PCOUPL, nr_atoms);
-}
-
-void berendsen_pscale(const t_inputrec*    ir,
-                      const matrix         mu,
-                      matrix               box,
-                      matrix               box_rel,
-                      int                  start,
-                      int                  nr_atoms,
-                      rvec                 x[],
-                      const unsigned short cFREEZE[],
-                      t_nrnb*              nrnb,
-                      const bool           scaleCoordinates)
-{
-    ivec* nFreeze = ir->opts.nFreeze;
-    int   d;
-    int nthreads gmx_unused;
-
-#ifndef __clang_analyzer__
-    nthreads = gmx_omp_nthreads_get(emntUpdate);
-#endif
-
-    /* Scale the positions */
-    if (scaleCoordinates)
-    {
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-        for (int n = start; n < start + nr_atoms; n++)
-        {
-            // Trivial OpenMP region that does not throw
-            int g;
-
-            if (cFREEZE == nullptr)
-            {
-                g = 0;
-            }
-            else
-            {
-                g = cFREEZE[n];
-            }
-
-            if (!nFreeze[g][XX])
-            {
-                x[n][XX] = mu[XX][XX] * x[n][XX] + mu[YY][XX] * x[n][YY] + mu[ZZ][XX] * x[n][ZZ];
-            }
-            if (!nFreeze[g][YY])
-            {
-                x[n][YY] = mu[YY][YY] * x[n][YY] + mu[ZZ][YY] * x[n][ZZ];
-            }
-            if (!nFreeze[g][ZZ])
-            {
-                x[n][ZZ] = mu[ZZ][ZZ] * x[n][ZZ];
-            }
-        }
-    }
-    /* compute final boxlengths */
-    for (d = 0; d < DIM; d++)
     {
         box[d][XX] = mu[XX][XX] * box[d][XX] + mu[YY][XX] * box[d][YY] + mu[ZZ][XX] * box[d][ZZ];
         box[d][YY] = mu[YY][YY] * box[d][YY] + mu[ZZ][YY] * box[d][ZZ];

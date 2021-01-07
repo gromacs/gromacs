@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -185,49 +185,43 @@ void parrinellorahman_pcoupl(FILE*             fplog,
                              matrix            mu,
                              gmx_bool          bFirstStep);
 
-void berendsen_pcoupl(FILE*             fplog,
-                      int64_t           step,
-                      const t_inputrec* ir,
-                      real              dt,
-                      const tensor      pres,
-                      const matrix      box,
-                      const matrix      force_vir,
-                      const matrix      constraint_vir,
-                      matrix            mu,
-                      double*           baros_integral);
+/*! \brief Calculate the pressure coupling scaling matrix
+ *
+ * Used by Berendsen and C-Rescale pressure coupling, this function
+ * computes the current value of the scaling matrix. The template
+ * parameter determines the pressure coupling algorithm.
+ */
+template<int pressureCouplingType>
+void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
+                                            int64_t           step,
+                                            const t_inputrec* ir,
+                                            real              dt,
+                                            const tensor      pres,
+                                            const matrix      box,
+                                            const matrix      force_vir,
+                                            const matrix      constraint_vir,
+                                            matrix            mu,
+                                            double*           baros_integral);
 
-void berendsen_pscale(const t_inputrec*    ir,
-                      const matrix         mu,
-                      matrix               box,
-                      matrix               box_rel,
-                      int                  start,
-                      int                  nr_atoms,
-                      rvec                 x[],
-                      const unsigned short cFREEZE[],
-                      t_nrnb*              nrnb,
-                      bool                 scaleCoordinates);
-void crescale_pcoupl(FILE*             fplog,
-                     int64_t           step,
-                     const t_inputrec* ir,
-                     real              dt,
-                     const tensor      pres,
-                     const matrix      box,
-                     const matrix      force_vir,
-                     const matrix      constraint_vir,
-                     matrix            mu,
-                     double*           baros_integral);
-
-void crescale_pscale(const t_inputrec*    ir,
-                     const matrix         mu,
-                     matrix               box,
-                     matrix               box_rel,
-                     int                  start,
-                     int                  nr_atoms,
-                     rvec                 x[],
-                     rvec                 v[],
-                     const unsigned short cFREEZE[],
-                     t_nrnb*              nrnb,
-                     bool                 scaleCoordinates);
+/*! \brief Scale the box and coordinates
+ *
+ * Used by Berendsen and C-Rescale pressure coupling, this function scales
+ * the box, the positions, and the velocities (C-Rescale only) according to
+ * the scaling matrix mu. The template parameter determines the pressure
+ * coupling algorithm.
+ */
+template<int pressureCouplingType>
+void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*    ir,
+                                            const matrix         mu,
+                                            matrix               box,
+                                            matrix               box_rel,
+                                            int                  start,
+                                            int                  nr_atoms,
+                                            rvec                 x[],
+                                            rvec                 v[],
+                                            const unsigned short cFREEZE[],
+                                            t_nrnb*              nrnb,
+                                            bool                 scaleCoordinates);
 
 void pleaseCiteCouplingAlgorithms(FILE* fplog, const t_inputrec& ir);
 
