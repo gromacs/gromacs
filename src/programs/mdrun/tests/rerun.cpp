@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #include "config.h"
 
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
@@ -236,7 +237,7 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
 
     auto mdpFieldValues =
             prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(), "no", "no");
-    mdpFieldValues["other"] += formatString("\ninit-lambda-state = %d", initLambdaState);
+    mdpFieldValues["init-lambda-state"] = toString(initLambdaState);
 
     EnergyTermsToCompare energyTermsToCompare{
         { { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 24, 32) },

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -390,8 +390,8 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
                                                 pressureCoupling.c_str());
     // The exact lambda state choice is unimportant, so long as there
     // is one when using an FEP input.
-    mdpFieldValues["other"] += formatString("\ninit-lambda-state = %d", 3);
-    mdpFieldValues["nsteps"] = "16";
+    mdpFieldValues["init-lambda-state"] = "3";
+    mdpFieldValues["nsteps"]            = "16";
 
     // Forces on GPUs are generally not reproducible enough for a tight
     // tolerance. Similarly, the propagation of sd and bd are not as

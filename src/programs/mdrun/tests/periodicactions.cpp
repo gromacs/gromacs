@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -127,6 +127,10 @@ void PeriodicActionsTest::doMdrun(const PeriodicOutputParameters& output)
                                                 propagation["pcoupl"]);
     mdpFieldValues.insert(propagation.begin(), propagation.end());
     mdpFieldValues.insert(output.begin(), output.end());
+    // Remove non-mdp entries stored in propagation and output
+    mdpFieldValues.erase("simulationName");
+    mdpFieldValues.erase("maxGromppWarningsTolerated");
+    mdpFieldValues.erase("description");
 
     // prepare the tpr file
     {
