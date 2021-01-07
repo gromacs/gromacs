@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -90,11 +90,16 @@ class SimulationSignaller;
  * will be computed, to check none are missing. */
 #define CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS (1u << 12u)
 
-
 /*! \brief Return the number of steps that will take place between
  * intra-simulation communications, given the constraints of the
  * inputrec. */
-int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, t_inputrec* ir, const t_commrec* cr);
+int computeGlobalCommunicationPeriod(const t_inputrec* ir);
+
+/*! \brief Return the number of steps that will take place between
+ * intra-simulation communications, given the constraints of the
+ * inputrec, and write information to log.
+ * Calls computeGlobalCommunicationPeriod(ir) internally. */
+int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, const t_inputrec* ir, const t_commrec* cr);
 
 void rerun_parallel_comm(t_commrec* cr, t_trxframe* fr, gmx_bool* bLastStep);
 

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -469,9 +469,9 @@ static int lcd4(int i1, int i2, int i3, int i4)
     return nst;
 }
 
-int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, t_inputrec* ir, const t_commrec* cr)
+int computeGlobalCommunicationPeriod(const t_inputrec* ir)
 {
-    int nstglobalcomm;
+    int nstglobalcomm = 10;
     {
         // Set up the default behaviour
         if (!(ir->nstcalcenergy > 0 || ir->nstlist > 0 || ir->etc != etcNO || ir->epc != epcNO))
@@ -479,7 +479,6 @@ int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, t_inputrec* ir,
             /* The user didn't choose the period for anything
                important, so we just make sure we can send signals and
                write output suitably. */
-            nstglobalcomm = 10;
             if (ir->nstenergy > 0 && ir->nstenergy < nstglobalcomm)
             {
                 nstglobalcomm = ir->nstenergy;
@@ -502,16 +501,12 @@ int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, t_inputrec* ir,
                                  ir->epc != epcNO ? ir->nstpcouple : 0);
         }
     }
+    return nstglobalcomm;
+}
 
-    // TODO change this behaviour. Instead grompp should print
-    // a (performance) note and mdrun should not change ir.
-    if (ir->comm_mode != ecmNO && ir->nstcomm < nstglobalcomm)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted("WARNING: Changing nstcomm from %d to %d", ir->nstcomm, nstglobalcomm);
-        ir->nstcomm = nstglobalcomm;
-    }
+int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, const t_inputrec* ir, const t_commrec* cr)
+{
+    const int nstglobalcomm = computeGlobalCommunicationPeriod(ir);
 
     if (cr->nnodes > 1)
     {

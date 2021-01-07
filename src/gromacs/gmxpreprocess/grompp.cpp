@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,6 +79,7 @@
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
+#include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrun/mdmodules.h"
@@ -2478,6 +2479,25 @@ int gmx_grompp(int argc, char* argv[])
         mdModules.notifier().preProcessingNotifications_.notify(internalParameterBuilder.rootObject());
         ir->internalParameters =
                 std::make_unique<gmx::KeyValueTreeObject>(internalParameterBuilder.build());
+    }
+
+    if (ir->comm_mode != ecmNO)
+    {
+        const int nstglobalcomm = computeGlobalCommunicationPeriod(ir);
+        if (ir->nstcomm % nstglobalcomm != 0)
+        {
+            warning_note(
+                    wi,
+                    gmx::formatString(
+                            "COM removal frequency is set to (%d).\n"
+                            "Other settings require a global communication frequency of %d.\n"
+                            "Note that this will require additional global communication steps,\n"
+                            "which will reduce performance when using multiple ranks.\n"
+                            "Consider setting nstcomm to a multiple of %d.",
+                            ir->nstcomm,
+                            nstglobalcomm,
+                            nstglobalcomm));
+        }
     }
 
     if (bVerbose)
