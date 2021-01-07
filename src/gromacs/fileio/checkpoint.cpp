@@ -72,6 +72,7 @@
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/mdtypes/swaphistory.h"
+#include "gromacs/modularsimulator/modularsimulator.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
@@ -2816,7 +2817,8 @@ void read_checkpoint_part_and_step(const char* filename, int* simulation_part, i
 
 static CheckpointHeaderContents read_checkpoint_data(t_fileio*                         fp,
                                                      t_state*                          state,
-                                                     std::vector<gmx_file_position_t>* outputfiles)
+                                                     std::vector<gmx_file_position_t>* outputfiles,
+                                                     gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData)
 {
     CheckpointHeaderContents headerContents;
     do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, &headerContents);
@@ -2887,11 +2889,9 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
     do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifier, nullptr);
     if (headerContents.file_version >= cptv_ModularSimulator)
     {
-        // In the scope of the current function, we can just throw away the content
-        // of the modular checkpoint, but we need to read it to move the file pointer
-        gmx::FileIOXdrSerializer      serializer(fp);
-        gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
-        modularSimulatorCheckpointData.deserialize(&serializer);
+        // Store modular checkpoint data into modularSimulatorCheckpointData
+        gmx::FileIOXdrSerializer serializer(fp);
+        modularSimulatorCheckpointData->deserialize(&serializer);
     }
     ret = do_cpt_footer(gmx_fio_getxdr(fp), headerContents.file_version);
     if (ret)
@@ -2905,7 +2905,14 @@ void read_checkpoint_trxframe(t_fileio* fp, t_trxframe* fr)
 {
     t_state                          state;
     std::vector<gmx_file_position_t> outputfiles;
-    CheckpointHeaderContents headerContents = read_checkpoint_data(fp, &state, &outputfiles);
+    gmx::ReadCheckpointDataHolder    modularSimulatorCheckpointData;
+    CheckpointHeaderContents         headerContents =
+            read_checkpoint_data(fp, &state, &outputfiles, &modularSimulatorCheckpointData);
+    if (headerContents.isModularSimulatorCheckpoint)
+    {
+        gmx::ModularSimulator::readCheckpointToTrxFrame(fr, &modularSimulatorCheckpointData, headerContents);
+        return;
+    }
 
     fr->natoms    = state.natoms;
     fr->bStep     = TRUE;
@@ -3027,8 +3034,10 @@ void list_checkpoint(const char* fn, FILE* out)
 CheckpointHeaderContents read_checkpoint_simulation_part_and_filenames(t_fileio* fp,
                                                                        std::vector<gmx_file_position_t>* outputfiles)
 {
-    t_state                  state;
-    CheckpointHeaderContents headerContents = read_checkpoint_data(fp, &state, outputfiles);
+    t_state                       state;
+    gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
+    CheckpointHeaderContents      headerContents =
+            read_checkpoint_data(fp, &state, outputfiles, &modularSimulatorCheckpointData);
     if (gmx_fio_close(fp) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");

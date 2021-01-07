@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -115,6 +115,8 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
     kernelLaunchConfig_.gridSize[0]  = (fTypeRangeEnd + c_threadsPerBlock) / c_threadsPerBlock;
     kernelLaunchConfig_.gridSize[1]  = 1;
     kernelLaunchConfig_.gridSize[2]  = 1;
+    kernelLaunchConfig_.sharedMemorySize =
+            SHIFTS * sizeof(float3) + (c_threadsPerBlock / warp_size) * 3 * sizeof(float);
 }
 
 GpuBonded::Impl::~Impl()

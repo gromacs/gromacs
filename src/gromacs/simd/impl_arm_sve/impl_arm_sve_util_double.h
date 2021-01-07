@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2020 Research Organization for Information Science and Technology (RIST).
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -189,6 +189,7 @@ static inline void gmx_simdcall
     alignas(GMX_SIMD_ALIGNMENT) double tvec[3 * GMX_SIMD_DOUBLE_WIDTH];
     v = svcreate3_f64(v0.simdInternal_, v1.simdInternal_, v2.simdInternal_);
     svst3_f64(pg, tvec, v);
+#if GMX_SIMD_DOUBLE_WIDTH >= 3
     pg = svwhilelt_b64(0, 3);
     for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
@@ -197,6 +198,15 @@ static inline void gmx_simdcall
         svfloat64_t t3 = svadd_f64_x(pg, t1, t2);
         svst1_f64(pg, base + align * offset[i], t3);
     }
+#else
+    for (std::size_t i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            base[align * offset[i] + j] += tvec[i * 3 + j];
+        }
+    }
+#endif
 }
 
 template<int align>
@@ -210,6 +220,7 @@ static inline void gmx_simdcall
     alignas(GMX_SIMD_ALIGNMENT) double tvec[3 * GMX_SIMD_DOUBLE_WIDTH];
     v = svcreate3_f64(v0.simdInternal_, v1.simdInternal_, v2.simdInternal_);
     svst3_f64(pg, tvec, v);
+#if GMX_SIMD_DOUBLE_WIDTH >= 3
     pg = svwhilelt_b64(0, 3);
     for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
@@ -218,6 +229,15 @@ static inline void gmx_simdcall
         svfloat64_t t3 = svsub_f64_x(pg, t1, t2);
         svst1_f64(pg, base + align * offset[i], t3);
     }
+#else
+    for (std::size_t i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            base[align * offset[i] + j] -= tvec[i * 3 + j];
+        }
+    }
+#endif
 }
 
 static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble  scalar,
@@ -281,11 +301,21 @@ static inline double gmx_simdcall
     sum[1] = svadda_f64(pg, 0.0, v1.simdInternal_);
     sum[2] = svadda_f64(pg, 0.0, v2.simdInternal_);
     sum[3] = svadda_f64(pg, 0.0, v3.simdInternal_);
-    pg     = svwhilelt_b64(0, 4);
-    _m     = svld1_f64(pg, m);
-    _s     = svld1_f64(pg, sum);
+#if GMX_SIMD_DOUBLE_WIDTH >= 4
+    pg = svwhilelt_b64(0, 4);
+    _m = svld1_f64(pg, m);
+    _s = svld1_f64(pg, sum);
     svst1_f64(pg, m, svadd_f64_x(pg, _m, _s));
     return svadda_f64(pg, 0.0, _s);
+#else
+    double res = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        m[i] += sum[i];
+        res += sum[i];
+    }
+    return res;
+#endif
 }
 
 static inline SimdDouble gmx_simdcall loadDualHsimd(const double* m0, const double* m1)
@@ -357,11 +387,21 @@ static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double* m, SimdDoubl
     sum[1] = svadda_f64(pg, 0.0, v0.simdInternal_);
     sum[3] = svadda_f64(pg, 0.0, v1.simdInternal_);
 
+#if GMX_SIMD_DOUBLE_WIDTH >= 4
     pg = svwhilelt_b64(0, 4);
     _m = svld1_f64(pg, m);
     _s = svld1_f64(pg, sum);
     svst1_f64(pg, m, svadd_f64_x(pg, _m, _s));
     return svadda_f64(pg, 0.0, _s);
+#else
+    double res = 0;
+    for (int i = 0; i < 4; i++)
+    {
+        m[i] += sum[i];
+        res += sum[i];
+    }
+    return res;
+#endif
 }
 
 template<int align>

@@ -85,6 +85,7 @@ set(exename "mdrun-io-test")
 
 gmx_add_gtest_executable(${exename}
     CPP_SOURCE_FILES
+        checkpoint.cpp
         exactcontinuation.cpp
         grompp.cpp
         initialconstraints.cpp

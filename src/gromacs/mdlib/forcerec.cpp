@@ -724,7 +724,8 @@ static void initVdwEwaldParameters(FILE* fp, const t_inputrec* ir, interaction_c
  * both accuracy requirements, when relevant.
  */
 static void init_ewald_f_table(const interaction_const_t& ic,
-                               const real                 tableExtensionLength,
+                               const real                 rlist,
+                               const real                 tabext,
                                EwaldCorrectionTables*     coulombTables,
                                EwaldCorrectionTables*     vdwTables)
 {
@@ -739,7 +740,7 @@ static void init_ewald_f_table(const interaction_const_t& ic,
     const bool havePerturbedNonbondeds = (ic.softCoreParameters != nullptr);
 
     real tableLen = ic.rcoulomb;
-    if (useCoulombTable && havePerturbedNonbondeds && tableExtensionLength > 0.0)
+    if ((useCoulombTable || useVdwTable) && havePerturbedNonbondeds && rlist + tabext > 0.0)
     {
         /* TODO: Ideally this should also check if couple-intramol == no, but that isn't
          * stored in ir. Grompp puts that info into an opts structure that doesn't make it into the tpr.
@@ -747,7 +748,7 @@ static void init_ewald_f_table(const interaction_const_t& ic,
          * couple-intramol == no. Meanwhile, always having larger tables should only affect
          * memory consumption, not speed (barring cache issues).
          */
-        tableLen = ic.rcoulomb + tableExtensionLength;
+        tableLen = rlist + tabext;
     }
     const int tableSize = static_cast<int>(tableLen * tableScale) + 2;
 
@@ -763,11 +764,11 @@ static void init_ewald_f_table(const interaction_const_t& ic,
     }
 }
 
-void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real tableExtensionLength)
+void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real rlist, const real tableExtensionLength)
 {
     if (EEL_PME_EWALD(ic->eeltype) || EVDW_PME(ic->vdwtype))
     {
-        init_ewald_f_table(*ic, tableExtensionLength, ic->coulombEwaldTables.get(),
+        init_ewald_f_table(*ic, rlist, tableExtensionLength, ic->coulombEwaldTables.get(),
                            ic->vdwEwaldTables.get());
         if (fp != nullptr)
         {
@@ -1081,7 +1082,7 @@ void init_forcerec(FILE*                            fp,
 
     /* fr->ic is used both by verlet and group kernels (to some extent) now */
     init_interaction_const(fp, &fr->ic, ir, mtop, systemHasNetCharge);
-    init_interaction_const_tables(fp, fr->ic, ir->tabext);
+    init_interaction_const_tables(fp, fr->ic, fr->rlist, ir->tabext);
 
     const interaction_const_t* ic = fr->ic;
 

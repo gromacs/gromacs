@@ -52,6 +52,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 
 #include "modularsimulator.h"
 #include "simulatoralgorithm.h"
@@ -128,13 +129,12 @@ constexpr auto c_currentVersion = CheckpointVersion(int(CheckpointVersion::Count
 } // namespace
 
 template<CheckpointDataOperation operation>
-void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operation>* checkpointData)
+void FreeEnergyPerturbationData::doCheckpointData(CheckpointData<operation>* checkpointData)
 {
     checkpointVersion(checkpointData, "FreeEnergyPerturbationData version", c_currentVersion);
 
-    checkpointData->scalar("current FEP state", &freeEnergyPerturbationData_->currentFEPState_);
-    checkpointData->arrayRef("lambda vector",
-                             makeCheckpointArrayRef<operation>(freeEnergyPerturbationData_->lambda_));
+    checkpointData->scalar("current FEP state", &currentFEPState_);
+    checkpointData->arrayRef("lambda vector", makeCheckpointArrayRef<operation>(lambda_));
 }
 
 void FreeEnergyPerturbationData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
@@ -142,7 +142,8 @@ void FreeEnergyPerturbationData::Element::saveCheckpointState(std::optional<Writ
 {
     if (MASTER(cr))
     {
-        doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
+        freeEnergyPerturbationData_->doCheckpointData<CheckpointDataOperation::Write>(
+                &checkpointData.value());
     }
 }
 
@@ -151,7 +152,8 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
 {
     if (MASTER(cr))
     {
-        doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
+        freeEnergyPerturbationData_->doCheckpointData<CheckpointDataOperation::Read>(
+                &checkpointData.value());
     }
     if (DOMAINDECOMP(cr))
     {
@@ -163,7 +165,7 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
 
 const std::string& FreeEnergyPerturbationData::Element::clientID()
 {
-    return identifier_;
+    return FreeEnergyPerturbationData::checkpointID();
 }
 
 FreeEnergyPerturbationData::Element::Element(FreeEnergyPerturbationData* freeEnergyPerturbationElement,
@@ -192,6 +194,30 @@ ISimulatorElement* FreeEnergyPerturbationData::Element::getElementPointerImpl(
         GlobalCommunicationHelper gmx_unused* globalCommunicationHelper)
 {
     return freeEnergyPerturbationData->element();
+}
+
+void FreeEnergyPerturbationData::readCheckpointToTrxFrame(t_trxframe* trxFrame,
+                                                          std::optional<ReadCheckpointData> readCheckpointData)
+{
+    if (readCheckpointData)
+    {
+        FreeEnergyPerturbationData freeEnergyPerturbationData;
+        freeEnergyPerturbationData.doCheckpointData(&readCheckpointData.value());
+        trxFrame->lambda    = freeEnergyPerturbationData.lambda_[efptFEP];
+        trxFrame->fep_state = freeEnergyPerturbationData.currentFEPState_;
+    }
+    else
+    {
+        trxFrame->lambda    = 0;
+        trxFrame->fep_state = 0;
+    }
+    trxFrame->bLambda = true;
+}
+
+const std::string& FreeEnergyPerturbationData::checkpointID()
+{
+    static const std::string identifier = "FreeEnergyPerturbationData";
+    return identifier;
 }
 
 } // namespace gmx

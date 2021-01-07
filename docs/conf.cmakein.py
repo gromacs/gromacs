@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -203,10 +203,10 @@ rst_epilog += """
 .. |Gromacs| replace:: GROMACS
 .. _gmx-manual: manual-{gmx_version_string}.pdf
 .. _gmx-manual-parent-dir: ../manual-{gmx_version_string}.pdf
-.. |gmx-source-package-ftp| replace:: As ftp ftp://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
-.. |gmx-source-package-http| replace:: As http http://ftp.gromacs.org/pub/gromacs/gromacs-{gmx_version_string}.tar.gz
-.. |gmx-regressiontests-package| replace:: http://ftp.gromacs.org/pub/regressiontests/regressiontests-{regressiontest_version}.tar.gz
-.. _up-to-date installation instructions: http://manual.gromacs.org/documentation/current/install-guide/index.html
+.. |gmx-source-package-ftp| replace:: As ftp ftp://ftp.gromacs.org/gromacs/gromacs-{gmx_version_string}.tar.gz
+.. |gmx-source-package-http| replace:: As https https://ftp.gromacs.org/gromacs/gromacs-{gmx_version_string}.tar.gz
+.. |gmx-regressiontests-package| replace:: https://ftp.gromacs.org/regressiontests/regressiontests-{regressiontest_version}.tar.gz
+.. _up-to-date installation instructions: https://manual.gromacs.org/documentation/current/install-guide/index.html
 .. _CUDA: http://www.nvidia.com/object/cuda_home_new.html
 .. _OpenCL: https://www.khronos.org/opencl/
 .. _OpenMPI: http://www.open-mpi.org
@@ -224,8 +224,8 @@ rst_epilog += """
 .. _VMD: http://www.ks.uiuc.edu/Research/vmd/
 .. _PyMOL: http://www.pymol.org
 .. _webpage: http://www.gromacs.org
-.. _ftp site: ftp://ftp.gromacs.org/pub/gromacs/
-.. _tutorials: http://www.gromacs.org/Documentation/Tutorials
+.. _ftp site: ftp://ftp.gromacs.org/gromacs/
+.. _tutorials: http://www.mdtutorials.com/gmx/
 .. _issue tracker: https://gitlab.com/gromacs/gromacs/-/issues/
 .. _gitlab: https://gitlab.com/gromacs/gromacs/
 .. _download: ../download.html
@@ -361,7 +361,7 @@ latex_documents = [
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-latex_logo = 'reference-manual/plots/peregrine.png'
+latex_logo = 'reference-manual/plots/GMX_logos/gmx_falcon_blue.png'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.

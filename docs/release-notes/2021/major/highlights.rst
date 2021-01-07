@@ -19,7 +19,7 @@ simulations and hardware. The new features are:
 * Support PME offloading to GPU for free energy simulations
 * Support for ARM SVE and Fujitsu A64FX (contribution by Research Organization for Information Science and Technology (RIST))
 * New nonbonded interaction API with NB-LIB (in collaboration with PRACE)
-
+* New |Gromacs| logo!
 
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,

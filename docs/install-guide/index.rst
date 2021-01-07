@@ -967,13 +967,13 @@ supported by ``cmake`` (e.g. ``ninja``) also work well.
 Building only mdrun
 ~~~~~~~~~~~~~~~~~~~
 
-This is now supported with the ``cmake`` option
+This is now deprecated, but still supported with the ``cmake`` option
 ``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a different version of
-``libgromacs`` and the ``mdrun`` program.
-Naturally, now ``make install`` installs only those
-products. By default, mdrun-only builds will default to static linking
-against |Gromacs| libraries, because this is generally a good idea for
-the targets for which an mdrun-only build is desirable.
+``libgromacs`` and the ``mdrun`` program.  Naturally, now ``make
+install`` installs only those products. By default, mdrun-only builds
+will default to static linking against |Gromacs| libraries, because
+this is generally a good idea for the targets for which an mdrun-only
+build is desirable.
 
 Installing |Gromacs|
 ^^^^^^^^^^^^^^^^^^^^
