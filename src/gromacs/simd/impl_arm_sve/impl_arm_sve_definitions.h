@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2020 Research Organization for Information Science and Technology (RIST).
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,11 +74,6 @@
 #define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE 1
 #define GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT 1
 #define GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE 1
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 0
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 0
-
-#define GMX_SIMD4_HAVE_FLOAT 1
-#define GMX_SIMD4_HAVE_DOUBLE 1
 
 #define GMX_SIMD_ALIGNMENT 16
 
@@ -91,4 +86,19 @@
 #define GMX_SIMD_RSQRT_BITS 8
 #define GMX_SIMD_RCP_BITS 8
 
+
+#if GMX_SIMD_FLOAT_WIDTH > 4
+#    define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 0
+#endif
+
+#if GMX_SIMD_DOUBLE_WIDTH > 4
+#    define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 0
+#endif
+
+#define GMX_SIMD4_HAVE_FLOAT 1
+#if GMX_SIMD_DOUBLE_WIDTH < 4
+#    define GMX_SIMD4_HAVE_DOUBLE 0
+#else
+#    define GMX_SIMD4_HAVE_DOUBLE 1
+#endif
 #endif // GMX_SIMD_IMPL_ARM_SVE_DEFINITIONS_H
