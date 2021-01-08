@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2020 Research Organization for Information Science and Technology (RIST).
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,6 @@ static inline void gmx_simdcall
     }
     else if (2 == align)
     {
-        assert(0);
         svbool_t    pg    = svptrue_b32();
         svfloat32_t t0    = svreinterpret_f32_u64(svld1_gather_s64index_u64(
                 svunpklo_b(pg), (uint64_t*)base, svunpklo_s64(offset.simdInternal_)));

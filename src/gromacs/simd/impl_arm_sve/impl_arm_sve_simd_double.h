@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2020 Research Organization for Information Science and Technology (RIST).
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -349,7 +349,7 @@ static inline SimdDouble gmx_simdcall maskzRcp(SimdDouble x, SimdDBool m)
     // The result will always be correct since we mask the result with m, but
     // for debug builds we also want to make sure not to generate FP exceptions
 #ifndef NDEBUG
-    x.simdInternal_ = svsel_f64(m, x.simdInternal_, svdup_n_f64(1.0));
+    x.simdInternal_ = svsel_f64(pg, x.simdInternal_, svdup_n_f64(1.0));
 #endif
     return { svreinterpret_f64_u64(svand_n_u64_z(
             pg, svreinterpret_u64_f64(svrecpe_f64(x.simdInternal_)), 0xFFFFFFFFFFFFFFFF)) };
