@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
-# Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -108,19 +108,15 @@ add_subdirectory(imd)
 add_subdirectory(compat)
 add_subdirectory(mimic)
 add_subdirectory(modularsimulator)
-# Note that this subset should match the subset of module
-# BUILD_INTERFACEs added to libgromacs below.
-if (NOT GMX_BUILD_MDRUN_ONLY)
-    add_subdirectory(gmxana)
-    add_subdirectory(gmxpreprocess)
-    add_subdirectory(correlationfunctions)
-    add_subdirectory(statistics)
-    add_subdirectory(analysisdata)
-    add_subdirectory(coordinateio)
-    add_subdirectory(trajectoryanalysis)
-    add_subdirectory(energyanalysis)
-    add_subdirectory(tools)
-endif()
+add_subdirectory(gmxana)
+add_subdirectory(gmxpreprocess)
+add_subdirectory(correlationfunctions)
+add_subdirectory(statistics)
+add_subdirectory(analysisdata)
+add_subdirectory(coordinateio)
+add_subdirectory(trajectoryanalysis)
+add_subdirectory(energyanalysis)
+add_subdirectory(tools)
 
 get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
@@ -335,16 +331,21 @@ target_link_libraries(libgromacs PUBLIC legacy_api)
 # responsibility for setting this up will move to the respective
 # modules.
 target_link_libraries(libgromacs PRIVATE
+                      $<BUILD_INTERFACE:analysisdata>
                       $<BUILD_INTERFACE:applied_forces>
                       $<BUILD_INTERFACE:commandline>
                       $<BUILD_INTERFACE:compat>
+                      $<BUILD_INTERFACE:coordinateio>
+                      $<BUILD_INTERFACE:correlationfunctions>
                       $<BUILD_INTERFACE:domdec>
 #                      $<BUILD_INTERFACE:energyanalysis>
                       $<BUILD_INTERFACE:essentialdynamics>
                       $<BUILD_INTERFACE:ewald>
                       $<BUILD_INTERFACE:fft>
                       $<BUILD_INTERFACE:fileio>
+                      $<BUILD_INTERFACE:gmxana>
                       $<BUILD_INTERFACE:gmxlib>
+                      $<BUILD_INTERFACE:gmxpreprocess>
                       $<BUILD_INTERFACE:gpu_utils>
                       $<BUILD_INTERFACE:hardware>
                       $<BUILD_INTERFACE:imd>
@@ -367,28 +368,17 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:restraint>
                       $<BUILD_INTERFACE:selection>
                       $<BUILD_INTERFACE:simd>
+                      $<BUILD_INTERFACE:statistics>
                       $<BUILD_INTERFACE:swap>
                       $<BUILD_INTERFACE:tables>
                       $<BUILD_INTERFACE:taskassignment>
                       $<BUILD_INTERFACE:timing>
+                      $<BUILD_INTERFACE:tools>
                       $<BUILD_INTERFACE:topology>
                       $<BUILD_INTERFACE:trajectory>
+                      $<BUILD_INTERFACE:trajectoryanalysis>
                       $<BUILD_INTERFACE:utility>
-                      )
-# Note that this subset should match the subset of module
-# subdirectories added above.
-if (NOT GMX_BUILD_MDRUN_ONLY)
-    target_link_libraries(libgromacs PRIVATE
-                          $<BUILD_INTERFACE:analysisdata>
-                          $<BUILD_INTERFACE:coordinateio>
-                          $<BUILD_INTERFACE:correlationfunctions>
-                          $<BUILD_INTERFACE:gmxana>
-                          $<BUILD_INTERFACE:gmxpreprocess>
-                          $<BUILD_INTERFACE:statistics>
-                          $<BUILD_INTERFACE:tools>
-                          $<BUILD_INTERFACE:trajectoryanalysis>
-                          )
-endif()
+    )
 if (GMX_OPENMP)
     target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
 endif()
@@ -446,10 +436,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES
     target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-w>)
 endif()
 
-# Only install the library in mdrun-only mode if it is actually necessary
-# for the binary
 # TODO: Stop installing libgromacs. Possibly allow installation during deprecation period with GMX_INSTALL_LEGACY_API.
-if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
+if (BUILD_SHARED_LIBS)
     install(TARGETS libgromacs
             EXPORT libgromacs
             LIBRARY
@@ -470,9 +458,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
 endif()
 add_library(Gromacs::libgromacs ALIAS libgromacs)
 
-if (NOT GMX_BUILD_MDRUN_ONLY)
-    include(InstallLibInfo.cmake)
-endif()
+include(InstallLibInfo.cmake)
 
 # Technically, the user could want to do this for an OpenCL build
 # using the CUDA runtime, but currently there's no reason to want to

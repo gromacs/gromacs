@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
 # Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -247,8 +247,6 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
 option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
-
-option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
 option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
 mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
@@ -788,15 +786,13 @@ endif()
 option(GMX_PYTHON_PACKAGE "Configure gmxapi Python package" OFF)
 mark_as_advanced(GMX_PYTHON_PACKAGE)
 
-if (NOT GMX_BUILD_MDRUN_ONLY)
-    find_package(ImageMagick QUIET COMPONENTS convert)
-    include(gmxTestImageMagick)
-    GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
-    # TODO: Resolve circular dependency between docs, gromacs, and python_packaging
-    add_subdirectory(docs)
-    add_subdirectory(share)
-    add_subdirectory(scripts)
-endif()
+find_package(ImageMagick QUIET COMPONENTS convert)
+include(gmxTestImageMagick)
+GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
+# TODO: Resolve circular dependency between docs, gromacs, and python_packaging
+add_subdirectory(docs)
+add_subdirectory(share)
+add_subdirectory(scripts)
 add_subdirectory(api)
 add_subdirectory(src)
 
@@ -804,7 +800,7 @@ if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
-if(GMX_PYTHON_PACKAGE AND NOT GMX_BUILD_MDRUN_ONLY)
+if(GMX_PYTHON_PACKAGE)
     add_subdirectory(python_packaging)
 endif()
 

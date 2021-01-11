@@ -147,8 +147,8 @@ Trajectory file (``.trr``, ``.tng``, or ``.xtc``)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once the run input file is available, we can start the simulation. The
-program which starts the simulation is called :ref:`gmx mdrun` (or
-sometimes just mdrun, or mdrun_mpi). The only input file of :ref:`gmx mdrun`
+program which starts the simulation is called :ref:`gmx mdrun`.
+The only input file of :ref:`gmx mdrun`
 that you usually need in order to start a run is the run input
 file (:ref:`tpr` file). The typical output files of :ref:`gmx mdrun` are the
 trajectory file (:ref:`trr` file), a logfile (:ref:`log` file), and perhaps a

@@ -759,7 +759,7 @@ Running :ref:`mdrun <gmx mdrun>` on more than one node
 
 This requires configuring |Gromacs| to build with an external MPI
 library. By default, this :ref:`mdrun <gmx mdrun>` executable is run with
-:ref:`mdrun_mpi`. All of the considerations for running single-node
+``gmx_mpi mdrun``. All of the considerations for running single-node
 :ref:`mdrun <gmx mdrun>` still apply, except that ``-ntmpi`` and ``-nt`` cause a fatal
 error, and instead the number of ranks is controlled by the
 MPI environment.
@@ -830,7 +830,7 @@ to choose the number of MPI ranks.
 
     mpirun -np 16 gmx_mpi mdrun
 
-Starts :ref:`mdrun_mpi` with 16 ranks, which are mapped to
+Starts :ref:`gmx mdrun` with 16 ranks, which are mapped to
 the hardware by the MPI library, e.g. as specified
 in an MPI hostfile. The available cores will be
 automatically split among ranks using OpenMP threads,
@@ -841,7 +841,7 @@ such as ``OMP_NUM_THREADS``.
 
     mpirun -np 16 gmx_mpi mdrun -npme 5
 
-Starts :ref:`mdrun_mpi` with 16 ranks, as above, and
+Starts :ref:`gmx mdrun` with 16 ranks, as above, and
 require that 5 of them are dedicated to the PME
 component.
 
@@ -849,7 +849,7 @@ component.
 
     mpirun -np 11 gmx_mpi mdrun -ntomp 2 -npme 6 -ntomp_pme 1
 
-Starts :ref:`mdrun_mpi` with 11 ranks, as above, and
+Starts :ref:`gmx mdrun` with 11 ranks, as above, and
 require that six of them are dedicated to the PME
 component with one OpenMP thread each. The remaining
 five do the PP component, with two OpenMP threads
@@ -859,7 +859,7 @@ each.
 
     mpirun -np 4 gmx_mpi mdrun -ntomp 6 -nb gpu -gputasks 00
 
-Starts :ref:`mdrun_mpi` on a machine with two nodes, using
+Starts :ref:`gmx mdrun` on a machine with two nodes, using
 four total ranks, each rank with six OpenMP threads,
 and both ranks on a node sharing GPU with ID 0.
 
@@ -868,7 +868,7 @@ and both ranks on a node sharing GPU with ID 0.
     mpirun -np 8 gmx_mpi mdrun -ntomp 3 -gputasks 0000
 
 Using a same/similar hardware as above,
-starts :ref:`mdrun_mpi` on a machine with two nodes, using
+starts :ref:`gmx mdrun` on a machine with two nodes, using
 eight total ranks, each rank with three OpenMP threads,
 and all four ranks on a node sharing GPU with ID 0.
 This may or may not be faster than the previous setup
@@ -878,7 +878,7 @@ on the same hardware.
 
     mpirun -np 20 gmx_mpi mdrun -ntomp 4 -gputasks 00
 
-Starts :ref:`mdrun_mpi` with 20 ranks, and assigns the CPU cores evenly
+Starts :ref:`gmx mdrun` with 20 ranks, and assigns the CPU cores evenly
 across ranks each to one OpenMP thread. This setup is likely to be
 suitable when there are ten nodes, each with one GPU, and each node
 has two sockets each of four cores.
@@ -887,7 +887,7 @@ has two sockets each of four cores.
 
     mpirun -np 10 gmx_mpi mdrun -gpu_id 1
 
-Starts :ref:`mdrun_mpi` with 20 ranks, and assigns the CPU cores evenly
+Starts :ref:`gmx mdrun` with 20 ranks, and assigns the CPU cores evenly
 across ranks each to one OpenMP thread. This setup is likely to be
 suitable when there are ten nodes, each with two GPUs, but another
 job on each node is using GPU 0. The job scheduler should set the
@@ -898,7 +898,7 @@ performance of :ref:`mdrun <gmx mdrun>` will suffer greatly.
 
     mpirun -np 20 gmx_mpi mdrun -gpu_id 01
 
-Starts :ref:`mdrun_mpi` with 20 ranks. This setup is likely
+Starts :ref:`gmx mdrun` with 20 ranks. This setup is likely
 to be suitable when there are ten nodes, each with two
 GPUs, but there is no need to specify ``-gpu_id`` for the
 normal case where all the GPUs on the node are available

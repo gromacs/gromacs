@@ -13,9 +13,7 @@ Command-line reference
 |Gromacs| includes many tools for preparing, running and analyzing
 molecular dynamics simulations. These are all structured as part of a single
 :command:`gmx` wrapper binary, and invoked with commands like :command:`gmx grompp`.
-:ref:`mdrun <gmx mdrun>` is the only other binary that
-:ref:`can be built <building just the mdrun binary>`; in the normal
-build it can be run with :command:`gmx mdrun`. Documentation for these can
+or :command:`gmx mdrun`. Documentation for these can
 be found at the respective sections below, as well as on man pages (e.g.,
 :manpage:`gmx-grompp(1)`) and with :samp:`gmx help {command}` or
 :samp:`gmx {command} -h`.

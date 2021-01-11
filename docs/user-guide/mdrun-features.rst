@@ -75,7 +75,7 @@ This feature requires
 :ref:`configuring |Gromacs| with an external MPI library <mpi-support>`
 so that the set of
 simulations can communicate. The ``n`` simulations within the set can
-use internal MPI parallelism also, so that ``mpirun -np x mdrun_mpi``
+use internal MPI parallelism also, so that ``mpirun -np x gmx_mpi mdrun``
 for ``x`` a multiple of ``n`` will use ``x/n`` ranks per simulation.
 
 There are two ways of organizing files when running such

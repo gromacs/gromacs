@@ -31,8 +31,7 @@ You need to enable at least some of the following CMake options:
   to build the ``man`` target manually before installing). See
   :cmake:`GMX_BUILD_HELP`.
 
-Some documentation cannot be built if the CMake option
-``GMX_BUILD_MDRUN_ONLY`` is enabled, or when cross-compiling, as it
+Some documentation cannot be built when cross-compiling, as it
 requires executing the ``gmx`` binary.
 
 The following make targets are the most useful:

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,9 +34,6 @@
 
 # Activate targets for new C++ API components and docs.
 if (GMXAPI)
-    if (GMX_BUILD_MDRUN_ONLY)
-        message(FATAL_ERROR "GMXAPI relies on libgromacs and is incompatible with GMX_BUILD_MDRUN_ONLY.")
-    endif()
     if(NOT ${BUILD_SHARED_LIBS})
         # Note: this conditional should check for the existence of a libgromacs target supporting PIC
         # using the POSITION_INDEPENDENT_CODE property, but for now the only facility we have is the global

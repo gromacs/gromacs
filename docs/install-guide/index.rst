@@ -55,10 +55,9 @@ Quick and dirty cluster installation
 
 On a cluster where users are expected to be running across multiple
 nodes using MPI, make one installation similar to the above, and
-another using ``-DGMX_MPI=on`` and which is `building only
-mdrun`_, because that is the only component of |Gromacs| that uses
-MPI. The latter will install a single simulation engine binary,
-i.e. ``mdrun_mpi`` when the default suffix is used. Hence it is safe
+another using ``-DGMX_MPI=on``.
+The latter will install binaries and libraries named using
+a default suffix of ``_mpi`` ie ``gmx_mpi``. Hence it is safe
 and common practice to install this into the same location where
 the non-MPI build is installed.
 
@@ -71,11 +70,10 @@ appropriate value instead of ``xxx`` :
 
 * ``-DCMAKE_C_COMPILER=xxx`` equal to the name of the C99 `Compiler`_ you wish to use (or the environment variable ``CC``)
 * ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
-* ``-DGMX_MPI=on`` to build using `MPI support`_ (generally good to combine with `building only mdrun`_)
+* ``-DGMX_MPI=on`` to build using `MPI support`_
 * ``-DGMX_GPU=CUDA`` to build with NVIDIA CUDA support enabled.
 * ``-DGMX_GPU=OpenCL`` to build with OpenCL_ support enabled.
 * ``-DGMX_SIMD=xxx`` to specify the level of `SIMD support`_ of the node on which |Gromacs| will run
-* ``-DGMX_BUILD_MDRUN_ONLY=on`` for `building only mdrun`_, e.g. for compute cluster back-end nodes
 * ``-DGMX_DOUBLE=on`` to build |Gromacs| in double precision (slower, and not normally useful)
 * ``-DCMAKE_PREFIX_PATH=xxx`` to add a non-standard location for CMake to `search for libraries, headers or programs`_
 * ``-DCMAKE_INSTALL_PREFIX=xxx`` to install |Gromacs| to a `non-standard location`_ (default ``/usr/local/gromacs``)
@@ -818,18 +816,16 @@ earlier hardware, because this will lead to programs (especially
 mdrun) that run slowly on the new hardware. Building two full
 installations and locally managing how to call the correct one
 (e.g. using a module system) is the recommended
-approach. Alternatively, as at the moment the |Gromacs| tools do not
-make strong use of SIMD acceleration, it can be convenient to create
-an installation with tools portable across different x86 machines, but
-with separate mdrun binaries for each architecture. To achieve this,
+approach. Alternatively, one can use different suffixes to install 
+several versions of |Gromacs| in the same location. To achieve this,
 one can first build a full installation with the
 least-common-denominator SIMD instruction set, e.g. ``-DGMX_SIMD=SSE2``,
-then build separate mdrun binaries for each architecture present in
+in order for simple commands like ``gmx grompp`` to work on all machines,
+then build specialized ``gmx`` binaries for each architecture present in
 the heterogeneous environment. By using custom binary and library
-suffixes for the mdrun-only builds, these can be installed to the
-same location as the "generic" tools installation.
-`Building just the mdrun binary`_ is possible by setting the
-``-DGMX_BUILD_MDRUN_ONLY=ON`` option.
+suffixes (with CMake variables ``-DGMX_BINARY_SUFFIX=xxx`` and
+``-DGMX_LIBS_SUFFIX=xxx``), these can be installed to the same
+location.
 
 Linear algebra libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -964,17 +960,6 @@ supported by ``cmake`` (e.g. ``ninja``) also work well.
 
 .. _building just the mdrun binary:
 
-Building only mdrun
-~~~~~~~~~~~~~~~~~~~
-
-This is now deprecated, but still supported with the ``cmake`` option
-``-DGMX_BUILD_MDRUN_ONLY=ON``, which will build a different version of
-``libgromacs`` and the ``mdrun`` program.  Naturally, now ``make
-install`` installs only those products. By default, mdrun-only builds
-will default to static linking against |Gromacs| libraries, because
-this is generally a good idea for the targets for which an mdrun-only
-build is desirable.
-
 Installing |Gromacs|
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -1060,42 +1045,11 @@ but then you should include a detailed description of
 your hardware, and the output of ``gmx mdrun -version`` (which contains
 valuable diagnostic information in the header).
 
-Testing for MDRUN_ONLY executables
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-A build with ``-DGMX_BUILD_MDRUN_ONLY`` cannot be tested with
-``make check`` from the build tree, because most of the tests
-require a full build to run things like ``grompp``. To test such an
-mdrun fully requires installing it to the same location as a normal
-build of |Gromacs|, downloading the regression tests tarball manually
-as described above, sourcing the correct ``GMXRC`` and running the
-perl script manually. For example, from your |Gromacs| source
-directory:
-
-::
-
-    mkdir build-normal
-    cd build-normal
-    # First, build and install normally to allow full testing of the standalone simulator.
-    cmake .. -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=/your/installation/prefix/here
-    make -j 4
-    make install
-    cd ..
-    mkdir build-mdrun-only
-    cd build-mdrun-only
-    # Next, build and install the GMX_BUILD_MDRUN_ONLY version (optional).
-    cmake .. -DGMX_MPI=ON -DGMX_BUILD_MDRUN_ONLY=ON -DCMAKE_INSTALL_PREFIX=/your/installation/prefix/here
-    make -j 4
-    make install
-    cd /to/your/unpacked/regressiontests
-    source /your/installation/prefix/here/bin/GMXRC
-    ./gmxtest.pl all -np 2
-
 Non-standard suffix
 ~~~~~~~~~~~~~~~~~~~
 
-If your mdrun program has been suffixed in a non-standard way, then
-the ``./gmxtest.pl -mdrun`` option will let you specify that name to the
+If your ``gmx`` program has been suffixed in a non-standard way, then
+the ``./gmxtest.pl -suffix`` option will let you specify that suffix to the
 test machinery. You can use ``./gmxtest.pl -double`` to test the
 double-precision version. You can use ``./gmxtest.pl -crosscompiling``
 to stop the test harness attempting to check that the programs can
@@ -1266,7 +1220,6 @@ The recommended configuration is to use
              -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
              -DCMAKE_INSTALL_PREFIX=/where/gromacs/should/be/installed \
              -DGMX_MPI=ON \
-             -DGMX_BUILD_MDRUN_ONLY=ON \
              -DGMX_RELAXED_DOUBLE_PRECISION=ON
     make
     make install

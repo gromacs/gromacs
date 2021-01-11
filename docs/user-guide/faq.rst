@@ -14,11 +14,14 @@ Questions regarding |Gromacs| installation
 
 #. Do I need to compile all utilities with MPI?
 
-   With one rarely-used exception (:ref:`pme_error <gmx pme_error>`), only the
-   :ref:`mdrun <gmx mdrun>` binary is able to use the :ref:`MPI <mpi-support>`
+   With one rarely-used exception (:ref:`pme_error <gmx pme_error>`), only
+   :ref:`mdrun <gmx mdrun>` is able to use the :ref:`MPI <mpi-support>`
    parallelism. So you only need to use the ``-DGMX_MPI=on`` flag
    when :ref:`configuring <configure-cmake>` for a build intended to run
-   the main simulation engine :ref:`mdrun <gmx mdrun>`.
+   the main simulation engine :ref:`mdrun <gmx mdrun>`. Generally that
+   is desirable when running on a multi-node cluster, and necessary
+   when using multi-simulation algorithms. Usually also installing a
+   build of GROMACS configured without MPI is convenient for users.
 
 
 #. Should my version be compiled using double precision?

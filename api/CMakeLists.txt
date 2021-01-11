@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,9 +37,8 @@
 add_subdirectory(legacy)
 
 # Activate targets for new C++ API components and docs.
-if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY)
+if(GMX_NATIVE_WINDOWS)
     # GMXAPI has not been tested in Microsoft environments.
-    # GMXAPI relies on libgromacs and is incompatible with an `mdrun`-only build.
     # GMXAPI requires position-independent code
     set(_GMXAPI_DEFAULT OFF)
 else()
@@ -51,9 +50,8 @@ if (GMXAPI)
 endif()
 
 # Activate targets NBLIB
-if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY OR NOT BUILD_SHARED_LIBS OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+if(GMX_NATIVE_WINDOWS OR NOT BUILD_SHARED_LIBS OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     # NBLIB has not been tested in Microsoft environments.
-    # NBLIB relies on libgromacs and is incompatible with an `mdrun`-only build.
     # NBLIB requires position-independent code
     # NBLIB causes an ICE in icc 19.1.2.20200623
     set(_NBLIB_DEFAULT OFF)

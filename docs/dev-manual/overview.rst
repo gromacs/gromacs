@@ -44,11 +44,10 @@ Source code organization
 
 The following figure shows a high-level view of components of what gets built
 from the source code under :file:`src/` and how the code is organized.
+Arrows indicate the direction of dependencies.
 The build system is described in detail in :doc:`build-system`.
 With default options, the green and white components are built as part of the
-default target.  If ``GMX_BUILD_MDRUN_ONLY`` is ``ON``, then the blue and white
-components are built instead; :file:`libgromacs_mdrun` is built from a subset
-of the code used for :file:`libgromacs`.
+default target.
 The gray parts are for testing, and are by default only built as part of the
 ``tests`` target, but if ``GMX_DEVELOPER_BUILD`` is ``ON``, then these are
 included in the default build target.
@@ -65,7 +64,7 @@ See :doc:`testutils` for details of the testing side.
        label="externals\nsrc/external/", group=common, style=rounded
      ]
      gtest [
-       label="Google Test & Mock\nsrc/external/gmock-1.7.0/", group=test
+       label="Google Test & Mock\nsrc/external/googletest/", group=test
        style="rounded,filled", fillcolor="0 0 0.9"
      ]
    }
@@ -74,24 +73,15 @@ See :doc:`testutils` for details of the testing side.
      libgromacs [
        label="libgromacs\nsrc/gromacs/", group=gmx, fillcolor="0.33 0.3 1"
      ]
-     libgromacs_mdrun [
-       label="libgromacs_mdrun\nsrc/gromacs/", group=mdrun, fillcolor="0.66 0.3 1"
-     ]
    }
    testutils [
      label="testutils\nsrc/testutils/", group=test
      style="rounded,filled", fillcolor="0 0 0.9"
    ]
-   mdrun_objlib [
-     label="mdrun object lib.\nsrc/programs/mdrun/", group=common, style=rouded
-   ]
    subgraph {
      rank = same
      gmx [
        label="gmx\nsrc/programs/", group=gmx, fillcolor="0.33 0.3 1"
-     ]
-     mdrun [
-       label="mdrun\nsrc/programs/", group=mdrun, fillcolor="0.66 0.3 1"
      ]
      tests [
        label="test binaries\nsrc/.../tests/", group=test
@@ -103,27 +93,17 @@ See :doc:`testutils` for details of the testing side.
      ]
 
      gmx -> template [ style=invis, constraint=no ]
-     template -> mdrun [ style=invis, constraint=no ]
    }
 
    libgromacs -> externals
-   libgromacs_mdrun -> externals
-   mdrun_objlib -> libgromacs
    gmx -> libgromacs
-   gmx -> mdrun_objlib
-   mdrun -> libgromacs_mdrun
-   mdrun -> mdrun_objlib
    testutils -> externals
    testutils -> gtest
    testutils -> libgromacs
    tests -> gtest
    tests -> libgromacs
-   tests -> mdrun_objlib
    tests -> testutils
    template -> libgromacs
-
-   template -> mdrun_objlib [ style=invis ]
-   mdrun_objlib -> externals [ style=invis ]
 
 All the source code (except for the analysis template) is under the
 :file:`src/` directory.  Only a few files related to the build system are
@@ -135,9 +115,10 @@ included at the root level.  All actual code is in subdirectories:
   This is the main part of the code, and is organized into further subdirectories
   as *modules*.  See below for details.
 :file:`src/programs/`
-  |Gromacs| executables are built from code under this directory.
-  Although some build options can change this, there is typically only a single
-  binary, :file:`gmx`, built.
+  The |Gromacs| executable ``gmx`` is built from code under this directory.
+  Also found here is some of the driver code for the ``mdrun`` module called
+  by ``gmx``, the whole of the ``gmx view`` visualization module, and numerous
+  end-to-end tests of ``gmx mdrun``.
 
 :file:`src/{...}/tests/`
   Various subdirectories under :file:`src/` contain a subdirectory named
@@ -200,8 +181,6 @@ declaration of a type is enough for the header. Within the library
 source files, include only headers from other modules that are
 necessary for that file. You can use the public API header if you
 really require everything declared in it.
-
-intra-module/intra-file.
 
 See :doc:`naming` for some common naming patterns for files that can help
 locating declarations.

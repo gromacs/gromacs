@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2157,7 +2157,7 @@ int gmx_tune_pme(int argc, char* argv[])
         "[THISMODULE] needs to call [gmx-mdrun] and so requires that you",
         "specify how to call mdrun with the argument to the [TT]-mdrun[tt]",
         "parameter. Depending how you have built GROMACS, values such as",
-        "'gmx mdrun', 'gmx_d mdrun', or 'mdrun_mpi' might be needed.[PAR]",
+        "'gmx mdrun', 'gmx_d mdrun', or 'gmx_mpi mdrun' might be needed.[PAR]",
         "The program that runs MPI programs can be set in the environment variable",
         "MPIRUN (defaults to 'mpirun'). Note that for certain MPI frameworks,",
         "you need to provide a machine- or hostfile. This can also be passed",
@@ -2333,7 +2333,7 @@ int gmx_tune_pme(int argc, char* argv[])
           FALSE,
           etSTR,
           { &cmd_mdrun },
-          "Command line to run a simulation, e.g. 'gmx mdrun' or 'mdrun_mpi'" },
+          "Command line to run a simulation, e.g. 'gmx mdrun' or 'gmx_mpi mdrun'" },
         { "-np",
           FALSE,
           etINT,

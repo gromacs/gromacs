@@ -176,20 +176,6 @@ Variables affecting compilation/linking
 
    .. todo:: This could likely be replaced by a (yet another) build type.
 
-.. cmake:: GMX_BUILD_MDRUN_ONLY
-
-   If set ``ON``, the build system is configured to only build and install a
-   single :file:`mdrun` executable.  To be fully functional, the installed
-   :file:`mdrun` requires a standard |Gromacs| installation (with
-   ``GMX_BUILD_MDRUN_ONLY=OFF``) in the same installation prefix, as the
-   mdrun-only build does not install any data files or scripts, only the
-   binary.  This is intended for cases where one wants to/needs to compile one
-   or more instances of :file:`mdrun` with different build options (e.g., MPI
-   or SIMD) than the full installation with the other utilities.
-   Defaults to ``OFF``, in which case a single :file:`gmx` executable is built
-   and installed, together with all the supporting files.  :command:`mdrun` can
-   be executed as :command:`gmx mdrun`.
-
 .. cmake:: GMX_BUILD_OWN_FFTW
 
 .. cmake:: GMX_BUILD_SHARED_EXE
