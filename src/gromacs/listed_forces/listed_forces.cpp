@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -724,8 +724,11 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
     // Todo: replace all rvec use here with ArrayRefWithPadding
     const rvec* x = as_rvec_array(coordinates.paddedArrayRef().data());
 
+    const bool calculateRestInteractions =
+            interactionSelection_.test(static_cast<int>(ListedForces::InteractionGroup::Rest));
+
     t_pbc pbc_full; /* Full PBC is needed for position restraints */
-    if (haveRestraints(*fcdata))
+    if (calculateRestInteractions && haveRestraints(*fcdata))
     {
         if (!idef.il[F_POSRES].empty() || !idef.il[F_FBPOSRES].empty())
         {
