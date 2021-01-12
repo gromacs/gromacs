@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,7 +141,7 @@ using gmx::SimulationSignaller;
 
 void gmx::LegacySimulator::do_mimic()
 {
-    t_inputrec*       ir = inputrec;
+    const t_inputrec* ir = inputrec;
     int64_t           step, step_rel;
     double            t;
     bool              isLastStep               = false;
@@ -205,8 +205,13 @@ void gmx::LegacySimulator::do_mimic()
     }
 
     /* Settings for rerun */
-    ir->nstlist              = 1;
-    ir->nstcalcenergy        = 1;
+    {
+        // TODO: Avoid changing inputrec (#3854)
+        auto* nonConstInputrec               = const_cast<t_inputrec*>(inputrec);
+        nonConstInputrec->nstlist            = 1;
+        nonConstInputrec->nstcalcenergy      = 1;
+        nonConstInputrec->nstxout_compressed = 0;
+    }
     int        nstglobalcomm = 1;
     const bool bNS           = true;
 
@@ -215,10 +220,17 @@ void gmx::LegacySimulator::do_mimic()
         MimicCommunicator::init();
         auto nonConstGlobalTopology = const_cast<gmx_mtop_t*>(top_global);
         MimicCommunicator::sendInitData(nonConstGlobalTopology, state_global->x);
-        ir->nsteps = MimicCommunicator::getStepNumber();
+        // TODO: Avoid changing inputrec (#3854)
+        auto* nonConstInputrec   = const_cast<t_inputrec*>(inputrec);
+        nonConstInputrec->nsteps = MimicCommunicator::getStepNumber();
+    }
+    if (DOMAINDECOMP(cr))
+    {
+        // TODO: Avoid changing inputrec (#3854)
+        auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
+        gmx_bcast(sizeof(ir->nsteps), &nonConstInputrec->nsteps, cr->mpi_comm_mygroup);
     }
 
-    ir->nstxout_compressed         = 0;
     const SimulationGroups* groups = &top_global->groups;
     {
         auto nonConstGlobalTopology                          = const_cast<gmx_mtop_t*>(top_global);
@@ -305,7 +317,6 @@ void gmx::LegacySimulator::do_mimic()
                             nullptr,
                             FALSE);
         shouldCheckNumberOfBondedInteractions = true;
-        gmx_bcast(sizeof(ir->nsteps), &ir->nsteps, cr->mpi_comm_mygroup);
     }
     else
     {

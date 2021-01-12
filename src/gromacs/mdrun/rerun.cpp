@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -173,7 +173,7 @@ void gmx::LegacySimulator::do_rerun()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec*       ir = inputrec;
+    const t_inputrec* ir = inputrec;
     int64_t           step, step_rel;
     double            t;
     bool              isLastStep               = false;
@@ -268,12 +268,16 @@ void gmx::LegacySimulator::do_rerun()
     }
 
     /* Settings for rerun */
-    ir->nstlist              = 1;
-    ir->nstcalcenergy        = 1;
+    {
+        // TODO: Avoid changing inputrec (#3854)
+        auto* nonConstInputrec               = const_cast<t_inputrec*>(inputrec);
+        nonConstInputrec->nstlist            = 1;
+        nonConstInputrec->nstcalcenergy      = 1;
+        nonConstInputrec->nstxout_compressed = 0;
+    }
     int        nstglobalcomm = 1;
     const bool bNS           = true;
 
-    ir->nstxout_compressed         = 0;
     const SimulationGroups* groups = &top_global->groups;
     if (ir->eI == eiMimic)
     {

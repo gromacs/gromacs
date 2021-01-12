@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -162,7 +162,8 @@ void gmx::LegacySimulator::do_md()
     // alias to avoid a large ripple of nearly useless changes.
     // t_inputrec is being replaced by IMdpOptionsProvider, so this
     // will go away eventually.
-    t_inputrec*  ir = inputrec;
+    const t_inputrec* ir = inputrec;
+
     int64_t      step, step_rel;
     double       t, t0 = ir->init_t;
     gmx_bool     bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
@@ -265,9 +266,15 @@ void gmx::LegacySimulator::do_md()
     int*                fep_state = MASTER(cr) ? &state_global->fep_state : nullptr;
     gmx::ArrayRef<real> lambda    = MASTER(cr) ? state_global->lambda : gmx::ArrayRef<real>();
     initialize_lambdas(fplog, *ir, MASTER(cr), fep_state, lambda);
-    Update     upd(*ir, deform);
-    const bool doSimulatedAnnealing = initSimulatedAnnealing(ir, &upd);
-    const bool useReplicaExchange   = (replExParams.exchangeInterval > 0);
+    Update upd(*ir, deform);
+    bool   doSimulatedAnnealing = false;
+    {
+        // TODO: Avoid changing inputrec (#3854)
+        // Simulated annealing updates the reference temperature.
+        auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
+        doSimulatedAnnealing   = initSimulatedAnnealing(nonConstInputrec, &upd);
+    }
+    const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
 
     const t_fcdata& fcdata = *fr->fcdata;
 
@@ -905,7 +912,10 @@ void gmx::LegacySimulator::do_md()
 
         if (doSimulatedAnnealing)
         {
-            update_annealing_target_temp(ir, t, &upd);
+            // TODO: Avoid changing inputrec (#3854)
+            // Simulated annealing updates the reference temperature.
+            auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
+            update_annealing_target_temp(nonConstInputrec, t, &upd);
         }
 
         /* Stop Center of Mass motion */
@@ -1238,9 +1248,20 @@ void gmx::LegacySimulator::do_md()
                actually move to the new state before outputting
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
-
-            lamnew = ExpandedEnsembleDynamics(
-                    fplog, ir, enerd, state, &MassQ, state->fep_state, state->dfhist, step, state->v.rvec_array(), mdatoms);
+            // TODO: Avoid changing inputrec (#3854)
+            // Simulated tempering updates the reference temperature.
+            // Expanded ensemble without simulated tempering does not change the inputrec.
+            auto* nonConstInputrec = const_cast<t_inputrec*>(inputrec);
+            lamnew                 = ExpandedEnsembleDynamics(fplog,
+                                              nonConstInputrec,
+                                              enerd,
+                                              state,
+                                              &MassQ,
+                                              state->fep_state,
+                                              state->dfhist,
+                                              step,
+                                              state->v.rvec_array(),
+                                              mdatoms);
             /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
             if (MASTER(cr))
             {

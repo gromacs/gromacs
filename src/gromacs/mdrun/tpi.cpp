@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -434,8 +434,12 @@ void LegacySimulator::do_tpi()
      * inserted atoms located in the center of the sphere, so we need
      * a buffer of size of the sphere and molecule radius.
      */
-    inputrec->rlist = maxCutoff + 2 * inputrec->rtpi + 2 * molRadius;
-    fr->rlist       = inputrec->rlist;
+    {
+        // TODO: Avoid changing inputrec (#3854)
+        auto* nonConstInputrec  = const_cast<t_inputrec*>(inputrec);
+        nonConstInputrec->rlist = maxCutoff + 2 * inputrec->rtpi + 2 * molRadius;
+    }
+    fr->rlist = inputrec->rlist;
     fr->nbv->changePairlistRadii(inputrec->rlist, inputrec->rlist);
 
     ngid   = groups->groups[SimulationAtomGroupType::EnergyOutput].size();
