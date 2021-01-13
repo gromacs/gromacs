@@ -56,6 +56,24 @@ based upon xssp, and make it available under a new gmx tool name.
 Functionality deprecated in |Gromacs| 2021
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+``mdrun -deffnm`` to be removed
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This functionality is convenient when running very simple simulations,
+because it permits grouping of a set of files that then differ only
+their suffix. However, it does not work in the wider case of an
+``mdrun`` module (or modules) writing multiple ``.xvg`` output
+files. The resulting filenames collide. That, and its interaction with
+checkpointing and appending, have led to quite a few bug reports.
+
+Because users can use a folder to group files (a standard mechanism
+that they understand from experience outside of |Gromacs|), we can
+build and test better software for them if we remove the erstwhile
+convenience of ``mdrun -deffnm``. Please update your workflows
+accordingly.
+
+:issue:`3818`
+
 OpenCL to be removed as a GPU framework
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 :issue:`3818` Work is underway for ports to AMD and Intel GPUs, and it
