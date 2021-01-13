@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -31,7 +31,7 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
-#
+
 # \author Victor Holanda <victor.holanda@cscs.ch>
 # \author Joe Jordan <ejjordan@kth.se>
 # \author Prashanth Kanduri <kanduri@cscs.ch>
@@ -46,10 +46,10 @@ gmx_add_gtest_executable(
     ${exename}
     CPP_SOURCE_FILES
     # files with code for tests
-        samples.cpp
+        argon-sample.cpp
     )
 #The following line is a not so nice hack to prevent compiler warnings that are not relevant for the sample scripts
-set_source_files_properties(samples.cpp PROPERTIES COMPILE_FLAGS "-Wno-header-hygiene")
+set_source_files_properties(argon-sample.cpp PROPERTIES COMPILE_FLAGS "-Wno-header-hygiene")
 target_link_libraries(nblib-samples-test PRIVATE nblib)
 gmx_register_gtest_test(${testname} ${exename})
 add_dependencies(check-nblib ${exename})

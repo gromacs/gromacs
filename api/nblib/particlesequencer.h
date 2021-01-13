@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,92 +32,47 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \inpublicapi \file
  * \brief
- * This implements basic nblib utility tests
+ * Implements ParticleSequencer class
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
+#ifndef NBLIB_PARTICLESEQUENCER_H
+#define NBLIB_PARTICLESEQUENCER_H
+
+#include <tuple>
+#include <unordered_map>
 #include <vector>
 
-#include "nblib/tests/testhelpers.h"
-#include "nblib/util/user.h"
-
-#include "testutils/testasserts.h"
-
+#include "nblib/molecules.h"
 
 namespace nblib
 {
-namespace test
+
+//! Helper class for Topology to keep track of particle IDs
+class ParticleSequencer
 {
-namespace
-{
+    //! Alias for storing by (molecule name, molecule nr, residue name, particle name)
+    using DataType = std::unordered_map<
+            std::string,
+            std::unordered_map<int, std::unordered_map<std::string, std::unordered_map<std::string, int>>>>;
 
-TEST(NBlibTest, isRealValued)
-{
-    std::vector<Vec3> vec;
-    vec.emplace_back(1., 1., 1.);
-    vec.emplace_back(2., 2., 2.);
+public:
+    //! Build sequence from a list of molecules
+    void build(const std::vector<std::tuple<Molecule, int>>& moleculesList);
 
-    bool ret = isRealValued(vec);
-    EXPECT_EQ(ret, true);
-}
+    //! Access ID by (molecule name, molecule nr, residue name, particle name)
+    int operator()(const MoleculeName&, int, const ResidueName&, const ParticleName&) const;
 
-TEST(NBlibTest, checkNumericValuesHasNan)
-{
-    std::vector<Vec3> vec;
-    vec.emplace_back(1., 1., 1.);
-    vec.emplace_back(2., 2., 2.);
+private:
+    DataType data_;
+};
 
-    vec.emplace_back(NAN, NAN, NAN);
-
-    bool ret = isRealValued(vec);
-    EXPECT_EQ(ret, false);
-}
-
-TEST(NBlibTest, checkNumericValuesHasInf)
-{
-    std::vector<Vec3> vec;
-    vec.emplace_back(1., 1., 1.);
-    vec.emplace_back(2., 2., 2.);
-
-    vec.emplace_back(INFINITY, INFINITY, INFINITY);
-
-    bool ret = isRealValued(vec);
-    EXPECT_EQ(ret, false);
-}
-
-
-TEST(NBlibTest, GeneratedVelocitiesAreCorrect)
-{
-    constexpr size_t  N = 10;
-    std::vector<real> masses(N, 1.0);
-    std::vector<Vec3> velocities;
-    velocities = generateVelocity(300.0, 1, masses);
-
-    Vector3DTest velocitiesTest;
-    velocitiesTest.testVectors(velocities, "generated-velocities");
-}
-TEST(NBlibTest, generateVelocitySize)
-{
-    constexpr int     N = 10;
-    std::vector<real> masses(N, 1.0);
-    auto              out = generateVelocity(300.0, 1, masses);
-    EXPECT_EQ(out.size(), N);
-}
-
-TEST(NBlibTest, generateVelocityCheckNumbers)
-{
-    constexpr int     N = 10;
-    std::vector<real> masses(N, 1.0);
-    auto              out = generateVelocity(300.0, 1, masses);
-    bool              ret = isRealValued(out);
-    EXPECT_EQ(ret, true);
-}
-
-} // namespace
-} // namespace test
 } // namespace nblib
+
+#endif // NBLIB_PARTICLESEQUENCER_H

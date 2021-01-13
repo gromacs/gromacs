@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,98 +48,11 @@
 
 #include <numeric>
 
-#include "nblib/util/internal.h"
 #include "bondtypes.h"
 #include "definitions.h"
 
 namespace nblib
 {
-
-namespace detail
-{
-
-template<class InteractionType, class = void>
-struct CoordinateIndex_
-{
-};
-
-template<class InteractionType>
-struct CoordinateIndex_<InteractionType, std::enable_if_t<Contains<InteractionType, SupportedTwoCenterTypes>{}>>
-{
-    typedef std::array<int, 2> type;
-};
-
-template<class InteractionType>
-struct CoordinateIndex_<InteractionType, std::enable_if_t<Contains<InteractionType, SupportedThreeCenterTypes>{}>>
-{
-    typedef std::array<int, 3> type;
-};
-
-template<class InteractionType>
-struct CoordinateIndex_<InteractionType, std::enable_if_t<Contains<InteractionType, SupportedFourCenterTypes>{}>>
-{
-    typedef std::array<int, 4> type;
-};
-
-template<class InteractionType>
-struct CoordinateIndex_<InteractionType, std::enable_if_t<Contains<InteractionType, SupportedFiveCenterTypes>{}>>
-{
-    typedef std::array<int, 5> type;
-};
-
-} // namespace detail
-
-/*! \brief traits class to determine the coordinate index type for InteractionType
- *  \internal
- *
- * \tparam InteractionCategory
- */
-template<class InteractionType>
-using CoordinateIndex = typename detail::CoordinateIndex_<InteractionType>::type;
-
-
-namespace detail
-{
-
-template<class InteractionType, class = void>
-struct InteractionIndex_
-{
-};
-
-template<class InteractionType>
-struct InteractionIndex_<InteractionType, std::enable_if_t<Contains<InteractionType, SupportedTwoCenterTypes>{}>>
-{
-    typedef TwoCenterInteractionIndex type;
-};
-
-template<class InteractionType>
-struct InteractionIndex_<InteractionType, std::enable_if_t<Contains<InteractionType, SupportedThreeCenterTypes>{}>>
-{
-    typedef ThreeCenterInteractionIndex type;
-};
-
-template<class InteractionType>
-struct InteractionIndex_<InteractionType, std::enable_if_t<Contains<InteractionType, SupportedFourCenterTypes>{}>>
-{
-    typedef FourCenterInteractionIndex type;
-};
-
-template<class InteractionType>
-struct InteractionIndex_<InteractionType, std::enable_if_t<Contains<InteractionType, SupportedFiveCenterTypes>{}>>
-{
-    typedef FiveCenterInteractionIndex type;
-};
-
-} // namespace detail
-
-/*! \brief traits class to determine the InteractionIndex type for InteractionType
- *  \internal
- *
- * \tparam InteractionType
- */
-template<class InteractionType>
-using InteractionIndex = typename detail::InteractionIndex_<InteractionType>::type;
-
 
 template<class I, class = void>
 struct HasTwoCenterAggregate : std::false_type

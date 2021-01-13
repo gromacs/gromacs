@@ -51,7 +51,9 @@
 
 #include "nblib/pbc.hpp"
 #include "definitions.h"
-#include "nblib/util/internal.h"
+#include "nblib/util/util.hpp"
+
+#define NBLIB_ALWAYS_INLINE __attribute((always_inline))
 
 namespace nblib
 {
@@ -190,5 +192,7 @@ std::vector<ListedInteractionData> splitListedWork(const ListedInteractionData& 
 }
 
 } // namespace nblib
+
+#undef NBLIB_ALWAYS_INLINE
 
 #endif // NBLIB_LISTEDFORCSES_HELPERS_HPP

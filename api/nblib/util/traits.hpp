@@ -34,7 +34,7 @@
  */
 /*! \inpublicapi \file
  * \brief
- * Implements nblib utilities
+ * Implements general purpose STL-like type traits
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -43,8 +43,8 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
-#ifndef NBLIB_UTIL_INTERNAL_H
-#define NBLIB_UTIL_INTERNAL_H
+#ifndef NBLIB_UTIL_TRAITS_HPP
+#define NBLIB_UTIL_TRAITS_HPP
 
 #include <cassert>
 
@@ -58,17 +58,105 @@
 namespace nblib
 {
 
+//! \brief Base template for a holder of entries of different data types
+template<class... Ts>
+struct TypeList
+{
+};
+
 namespace detail
 {
-//! Format strings for use in error messages
-std::string next_token(std::string& s, const std::string& delimiter);
+//! \brief unimplemented base template
+template<template<class...> class P, class L>
+struct [[maybe_unused]] Map_;
+
+/*! \brief Implementation of Map_
+ *
+ * This is a specialization of the Map_ base template
+ * for the case that the L template parameter itself has template parameters
+ * in this case, the template parameters of L are caught in Ts...
+ *
+ */
+template<template<class...> class P, template<class...> class L, class... Ts>
+struct Map_<P, L<Ts...>>
+{
+    // resulting type is a TypeList of the P-template instantiated
+    // with all template parameters of L
+    typedef TypeList<P<Ts>...> type;
+};
+
+//! \brief unimplemented base template
+template<template<class...> class P, class L>
+struct [[maybe_unused]] Reduce_;
+
+//! \brief Implementation of Reduce_
+template<template<class...> class P, template<class...> class L, class... Ts>
+struct Reduce_<P, L<Ts...>>
+{
+    typedef P<Ts...> type;
+};
+
+//! \brief unimplemented base template
+template<class L1, class L2>
+struct [[maybe_unused]] FuseTwo_;
+
+//! \brief implementation of FuseTwo_
+template<template<class...> class L1, template<class...> class L2, class... Ts1, class... Ts2>
+struct FuseTwo_<L1<Ts1...>, L2<Ts2...>>
+{
+    typedef TypeList<Ts1..., Ts2...> type;
+};
+
+//! \brief unimplemented base template
+template<class... Ls>
+struct [[maybe_unused]] Fuse_;
+
+//! \brief recursion endpoint
+template<class L>
+struct Fuse_<L>
+{
+    typedef L type;
+};
+
+//! \brief recurse until only one type is left
+template<class L1, class L2, class... Ls>
+struct Fuse_<L1, L2, Ls...>
+{
+    typedef typename Fuse_<typename FuseTwo_<L1, L2>::type, Ls...>::type type;
+};
+
+
+//! \brief keep adding the template parameter pack to the type list
+template<class L, int N, class... Ts>
+struct RepeatHelper_
+{
+    typedef typename RepeatHelper_<typename FuseTwo_<L, TypeList<Ts...>>::type, N - 1, Ts...>::type type;
+};
+
+//! \brief stop recurision
+template<class L, class... Ts>
+struct RepeatHelper_<L, 1, Ts...>
+{
+    typedef L type;
+};
+
+//! \brief base case
+template<class L, int N, class = void>
+struct Repeat_
+{
+};
+
+//! \brief capture original template parameter pack, protect against N < 1
+template<template<class...> class L, int N, class... Ts>
+struct Repeat_<L<Ts...>, N, std::enable_if_t<N >= 1>>
+{
+    typedef typename RepeatHelper_<L<Ts...>, N, Ts...>::type type;
+};
+
 
 // Like std::void_t but for values
 template<auto...>
 using void_value_t = void;
-
-template<class... Tuples>
-using tuple_cat_t = decltype(std::tuple_cat(Tuples{}...));
 
 template<class T, class = void>
 struct HasValueMember : std::false_type
@@ -102,8 +190,8 @@ using AccessTypeMemberIfPresent_t = typename AccessTypeMemberIfPresent<T>::type;
  */
 template<int N, typename T, typename Tuple>
 struct MatchTypeOrTypeMember :
-    std::disjunction<std::is_same<T, std::tuple_element_t<N, Tuple>>,
-                     std::is_same<T, AccessTypeMemberIfPresent_t<std::tuple_element_t<N, Tuple>>>>
+        std::disjunction<std::is_same<T, std::tuple_element_t<N, Tuple>>,
+                std::is_same<T, AccessTypeMemberIfPresent_t<std::tuple_element_t<N, Tuple>>>>
 {
 };
 
@@ -116,12 +204,47 @@ struct MatchField_ : std::integral_constant<size_t, MatchField_<N + 1, T, Tuple,
 //! \brief recursion stop when Comparison<N, T, Tuple>::value is true
 template<int N, class T, class Tuple, template<int, class, class> class Comparison>
 struct MatchField_<N, T, Tuple, Comparison, std::enable_if_t<Comparison<N, T, Tuple>{}>> :
-    std::integral_constant<size_t, N>
+        std::integral_constant<size_t, N>
 {
 };
 
 } // namespace detail
 
+/*! \brief Create a TypeList of P instantiated with each template parameter of L
+ *
+ * returns TypeList<P<Ts>...>, with Ts... = template parameters of L
+ * does not compile if L has no template parameters
+ */
+template<template<class...> class P, class L>
+using Map = typename detail::Map_<P, L>::type;
+
+/*! \brief Base template for expressing a datatype P templated with all the entries in type list L
+ *
+ * The result is P instantiated with all the template parameters of L
+ */
+template<template<class...> class P, class L>
+using Reduce = typename detail::Reduce_<P, L>::type;
+
+//! \brief Concatenates template parameters of two variadic templates into a TypeList
+template<class... Ls>
+using FuseTwo = typename detail::FuseTwo_<Ls...>::type;
+
+/*! \brief This traits concatenates an arbitrary number of variadic templates into a single TypeList
+ *
+ * For clarity reasons, the fuse operation to fuse two lists into one has been decoupled
+ * into a separate trait from the handling of the recursion over the variadic arguments.
+ */
+template<class... Ls>
+using Fuse = typename detail::Fuse_<Ls...>::type;
+
+/*! \brief Repeat the template parameters of L N times
+ *
+ * L must have template parameters
+ * N must be bigger than 0
+ * Repeated types are put in a TypeList
+ */
+template<class L, int N>
+using Repeat = typename detail::Repeat_<L, N>::type;
 
 /*! \brief Meta function to return the first index in Tuple whose type matches T
  *
@@ -167,51 +290,20 @@ struct Contains
 {
 };
 
-//! this formatting must be a bug in clang-format... should be:
-// struct Contains<T, TL<Ts...>> : std::bool_constant<FindIndex<T, TL<Ts...>>{} < sizeof...(Ts)>
+/*! \brief implementation of the Contains trait to look for T in TL
+ *
+ * @tparam T   type to look for in TL
+ * @tparam TL  a variadic type, such as std::tuple or TypeList
+ * @tparam Ts  the template parameters of TL
+ *
+ * Note that this clang-format enforced formatting is unfortunate, it should be:
+ * struct Contains<T, TL<Ts...>> : std::bool_constant<FindIndex<T, TL<Ts...>>{} < sizeof...(Ts)>
+ */
 template<class T, template<class...> class TL, class... Ts>
         struct Contains<T, TL<Ts...>> : std::bool_constant < FindIndex<T, TL<Ts...>>{}<sizeof...(Ts)>
 {
 };
 
-
-//! Utility to call function with each element in tuple_
-template<class F, class... Ts>
-void for_each_tuple(F&& func, std::tuple<Ts...>& tuple_)
-{
-    std::apply(
-            [f = func](auto&... args) {
-                [[maybe_unused]] auto list = std::initializer_list<int>{ (f(args), 0)... };
-            },
-            tuple_);
-}
-
-//! Utility to call function with each element in tuple_ with const guarantee
-template<class F, class... Ts>
-void for_each_tuple(F&& func, const std::tuple<Ts...>& tuple_)
-{
-    std::apply(
-            [f = func](auto&... args) {
-                [[maybe_unused]] auto list = std::initializer_list<int>{ (f(args), 0)... };
-            },
-            tuple_);
-}
-
-//! Format strings for use in error messages
-template<class... Args>
-std::string formatString(std::string fmt, Args... args)
-{
-    std::ostringstream os;
-    std::string        delimiter = "{}";
-
-    std::initializer_list<int> unused{ 0, (os << detail::next_token(fmt, delimiter) << args, 0)... };
-    static_cast<void>(unused); // unused is not actually used
-
-    os << detail::next_token(fmt, delimiter);
-
-    return os.str();
-}
-
 } // namespace nblib
 
-#endif // NBLIB_UTIL_INTERNAL_H
+#endif // NBLIB_UTIL_TRAITS_HPP

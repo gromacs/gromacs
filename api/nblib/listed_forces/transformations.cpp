@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,16 +46,19 @@
  */
 #include "nblib/listed_forces/transformations.h"
 
-#include "nblib/util/internal.h"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {
 
 void sortInteractions(ListedInteractionData& interactions)
 {
-    auto sortKeyObj = [](const auto& lhs, const auto& rhs) { return interactionSortKey(lhs, rhs); };
-    auto sortOneElement = [comparison = sortKeyObj](auto& interactionElement) {
-        std::sort(begin(interactionElement.indices), end(interactionElement.indices), comparison);
+    auto sortOneElement = [](auto& interactionElement) {
+        using InteractionContainerType = std::decay_t<decltype(interactionElement)>;
+        using InteractionType          = typename InteractionContainerType::type;
+
+        std::sort(begin(interactionElement.indices), end(interactionElement.indices),
+                  interactionSortKey<InteractionType>);
     };
 
     for_each_tuple(sortOneElement, interactions);

@@ -41,13 +41,13 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include <gtest/gtest.h>
+#include <vector>
 
-#include "nblib/gmxsetup.h"
-#include "nblib/kerneloptions.h"
-#include "nblib/simulationstate.h"
-#include "nblib/tests/testsystems.h"
-#include "gromacs/utility/arrayref.h"
+#include "nblib/tests/testhelpers.h"
+#include "nblib/util/setup.h"
+
+#include "testutils/testasserts.h"
+
 
 namespace nblib
 {
@@ -55,28 +55,69 @@ namespace test
 {
 namespace
 {
-TEST(NBlibTest, GmxForceCalculatorCanCompute)
+
+TEST(NBlibTest, isRealValued)
 {
-    ArgonSimulationStateBuilder argonSystemBuilder;
-    SimulationState             simState = argonSystemBuilder.setupSimulationState();
-    NBKernelOptions             options  = NBKernelOptions();
-    options.nbnxmSimd                    = SimdKernels::SimdNo;
-    std::unique_ptr<GmxForceCalculator> gmxForceCalculator =
-            nblib::GmxSetupDirector::setupGmxForceCalculator(simState, options);
-    EXPECT_NO_THROW(gmxForceCalculator->compute(simState.coordinates(), simState.forces()));
+    std::vector<Vec3> vec;
+    vec.emplace_back(1., 1., 1.);
+    vec.emplace_back(2., 2., 2.);
+
+    bool ret = isRealValued(vec);
+    EXPECT_EQ(ret, true);
 }
 
-TEST(NBlibTest, CanSetupStepWorkload)
+TEST(NBlibTest, checkNumericValuesHasNan)
 {
-    NBKernelOptions options;
-    EXPECT_NO_THROW(NbvSetupUtil{}.setupStepWorkload(options));
+    std::vector<Vec3> vec;
+    vec.emplace_back(1., 1., 1.);
+    vec.emplace_back(2., 2., 2.);
+
+    vec.emplace_back(NAN, NAN, NAN);
+
+    bool ret = isRealValued(vec);
+    EXPECT_EQ(ret, false);
 }
 
-TEST(NBlibTest, GmxForceCalculatorCanSetupInteractionConst)
+TEST(NBlibTest, checkNumericValuesHasInf)
 {
-    NBKernelOptions options;
-    EXPECT_NO_THROW(NbvSetupUtil{}.setupInteractionConst(options));
+    std::vector<Vec3> vec;
+    vec.emplace_back(1., 1., 1.);
+    vec.emplace_back(2., 2., 2.);
+
+    vec.emplace_back(INFINITY, INFINITY, INFINITY);
+
+    bool ret = isRealValued(vec);
+    EXPECT_EQ(ret, false);
 }
+
+
+TEST(NBlibTest, GeneratedVelocitiesAreCorrect)
+{
+    constexpr size_t  N = 10;
+    std::vector<real> masses(N, 1.0);
+    std::vector<Vec3> velocities;
+    velocities = generateVelocity(300.0, 1, masses);
+
+    Vector3DTest velocitiesTest;
+    velocitiesTest.testVectors(velocities, "generated-velocities");
+}
+TEST(NBlibTest, generateVelocitySize)
+{
+    constexpr int     N = 10;
+    std::vector<real> masses(N, 1.0);
+    auto              out = generateVelocity(300.0, 1, masses);
+    EXPECT_EQ(out.size(), N);
+}
+
+TEST(NBlibTest, generateVelocityCheckNumbers)
+{
+    constexpr int     N = 10;
+    std::vector<real> masses(N, 1.0);
+    auto              out = generateVelocity(300.0, 1, masses);
+    bool              ret = isRealValued(out);
+    EXPECT_EQ(ret, true);
+}
+
 } // namespace
 } // namespace test
 } // namespace nblib

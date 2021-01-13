@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "nblib/tests/testhelpers.h"
 #include "nblib/tests/testsystems.h"
 #include "nblib/topology.h"
+#include "nblib/util/setup.h"
 
 namespace nblib
 {
@@ -80,12 +81,7 @@ TEST(NBlibTest, SpcMethanolForcesAreCorrect)
     gmx::ArrayRef<Vec3> forces(simState.forces());
     ASSERT_NO_THROW(forceCalculator.compute(simState.coordinates(), forces));
 
-    /* Use higher-than-usual tolerance for forces. Some of the particles in the test systems are
-     * very close to each other, and, for example, the distance between the first two particles
-     * is approx. 0.13 and already has relative uncertainty around 1e-6. */
-    gmx::test::FloatingPointTolerance forceTolerance(1.0e-5, 1.0e-9, 1e-4, 1.0e-9, 1000, 1000, true);
-
-    Vector3DTest forcesOutputTest(forceTolerance);
+    Vector3DTest forcesOutputTest;
     forcesOutputTest.testVectors(forces, "SPC-methanol forces");
 }
 

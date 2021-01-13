@@ -34,49 +34,69 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic nblib utility tests
+ * Implements ParticleSequencer class
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#include <gtest/gtest.h>
 
-#include "nblib/gmxsetup.h"
-#include "nblib/kerneloptions.h"
-#include "nblib/simulationstate.h"
-#include "nblib/tests/testsystems.h"
-#include "gromacs/utility/arrayref.h"
+#include <algorithm>
+
+#include "nblib/exception.h"
+#include "nblib/particlesequencer.h"
 
 namespace nblib
 {
-namespace test
+
+int ParticleSequencer::operator()(const MoleculeName& moleculeName,
+                                  int                 moleculeNr,
+                                  const ResidueName&  residueName,
+                                  const ParticleName& particleName) const
 {
-namespace
-{
-TEST(NBlibTest, GmxForceCalculatorCanCompute)
-{
-    ArgonSimulationStateBuilder argonSystemBuilder;
-    SimulationState             simState = argonSystemBuilder.setupSimulationState();
-    NBKernelOptions             options  = NBKernelOptions();
-    options.nbnxmSimd                    = SimdKernels::SimdNo;
-    std::unique_ptr<GmxForceCalculator> gmxForceCalculator =
-            nblib::GmxSetupDirector::setupGmxForceCalculator(simState, options);
-    EXPECT_NO_THROW(gmxForceCalculator->compute(simState.coordinates(), simState.forces()));
+    try
+    {
+        return data_.at(moleculeName).at(moleculeNr).at(residueName).at(particleName);
+    }
+    catch (const std::out_of_range& outOfRange)
+    {
+        // TODO: use string format function once we have it
+        if (moleculeName.value() == residueName.value())
+        {
+            printf("No particle %s in residue %s in molecule %s found\n", particleName.value().c_str(),
+                   residueName.value().c_str(), moleculeName.value().c_str());
+        }
+        else
+        {
+            printf("No particle %s in molecule %s found\n", particleName.value().c_str(),
+                   moleculeName.value().c_str());
+        }
+
+        throw InputException(outOfRange.what());
+    }
 }
 
-TEST(NBlibTest, CanSetupStepWorkload)
+void ParticleSequencer::build(const std::vector<std::tuple<Molecule, int>>& moleculesList)
 {
-    NBKernelOptions options;
-    EXPECT_NO_THROW(NbvSetupUtil{}.setupStepWorkload(options));
+    int currentID = 0;
+    for (const auto& molNumberTuple : moleculesList)
+    {
+        const Molecule& molecule = std::get<0>(molNumberTuple);
+        const size_t    numMols  = std::get<1>(molNumberTuple);
+
+        auto& moleculeMap = data_[molecule.name()];
+
+        for (size_t i = 0; i < numMols; ++i)
+        {
+            auto& moleculeNrMap = moleculeMap[i];
+            for (int j = 0; j < molecule.numParticlesInMolecule(); ++j)
+            {
+                moleculeNrMap[molecule.residueName(j)][molecule.particleName(j)] = currentID++;
+            }
+        }
+    }
 }
 
-TEST(NBlibTest, GmxForceCalculatorCanSetupInteractionConst)
-{
-    NBKernelOptions options;
-    EXPECT_NO_THROW(NbvSetupUtil{}.setupInteractionConst(options));
-}
-} // namespace
-} // namespace test
 } // namespace nblib

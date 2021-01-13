@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,7 +105,7 @@ public:
     void setParticlesOnGrid(const std::vector<Vec3>& coordinates, const Box& box);
 
     //! Constructs pair lists
-    void constructPairList(const gmx::ListOfLists<int>& exclusions);
+    void constructPairList(ExclusionLists<int> exclusionLists);
 
     //! Sets up t_forcerec object on the GmxForceCalculator
     void setupForceRec(const matrix& box);
