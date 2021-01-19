@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -578,7 +578,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                 inputrec->nstxout_compressed, trajectoryElement->tngBoxOut(),
                 trajectoryElement->tngLambdaOut(), trajectoryElement->tngBoxOutCompressed(),
                 trajectoryElement->tngLambdaOutCompressed(), inputrec->nstenergy));
-        addSignaller(loggingSignallerBuilder_.build(inputrec->nstlog, inputrec->init_step, inputrec->init_t));
+        addSignaller(loggingSignallerBuilder_.build(inputrec->nstlog, inputrec->init_step,
+                                                    legacySimulatorData_->startingBehavior));
         addSignaller(lastStepSignallerBuilder_.build(inputrec->nsteps, inputrec->init_step,
                                                      algorithm.stopHandler_.get()));
         addSignaller(neighborSearchSignallerBuilder_.build(inputrec->nstlist, inputrec->init_step,
