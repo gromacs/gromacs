@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,6 +107,7 @@ std::string formatCentered(int width, const char* text)
 
 void printCopyright(gmx::TextWriter* writer)
 {
+    // Contributors sorted alphabetically by last name
     static const char* const Contributors[]  = { "Andrey Alekseenko",
                                                 "Emile Apol",
                                                 "Rossen Apostolov",
@@ -119,6 +120,7 @@ void printCopyright(gmx::TextWriter* writer)
                                                 "Aldert van Buuren",
                                                 "Rudi van Drunen",
                                                 "Anton Feenstra",
+                                                "Gilles Gouaillardet",
                                                 "Alan Gray",
                                                 "Gerrit Groenhof",
                                                 "Anca Hamuraru",
