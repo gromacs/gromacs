@@ -284,7 +284,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #if GMX_DOUBLE
     writer->writeLine("Precision:          double");
 #else
-    writer->writeLine("Precision:          single");
+    writer->writeLine("Precision:          mixed");
 #endif
     writer->writeLine(formatString("Memory model:       %u bit", static_cast<unsigned>(8 * sizeof(void*))));
 
