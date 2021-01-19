@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,16 +42,17 @@
 # GEN_VERSION_INFO_INTERNAL has to be set ON.
 #
 # The following variables have to be previously defined:
-# PROJECT_VERSION         - hard-coded version string (generated info is appended)
-# PROJECT_SOURCE_DIR      - top level source directory
-# DIRECTORIES_TO_CHECKSUM - List of directories to hash
-# VERSION_CMAKEIN         - path to an input template file
-# VERSION_OUT             - path to the output file
+# PROJECT_VERSION               - hard-coded version string (generated info is appended)
+# PROJECT_SOURCE_DIR            - top level source directory
+# SOURCE_IS_SOURCE_DISTRIBUTION - Whether we are building from source or tarball
+# DIRECTORIES_TO_CHECKSUM       - List of directories to hash
+# VERSION_CMAKEIN               - path to an input template file
+# VERSION_OUT                   - path to the output file
 #
 # The following a possible additional definitions
-# PYTHON_EXECUTABLE       - Needed to run checking stage of current tree
-# VERSION_STRING_OF_FORK  - Possibly defined custom version string to override
-#                          process of checking source file hashes.
+# PYTHON_EXECUTABLE             - Needed to run checking stage of current tree
+# VERSION_STRING_OF_FORK        - Possibly defined custom version string to override
+#                                 process of checking source file hashes.
 # Output:
 # VERSION_OUT is configured from the input VERSION_CMAKEIN
 # using the variables listed below.
@@ -80,6 +81,9 @@ if ("${VERSION_CMAKEIN}" STREQUAL "")
 endif()
 if ("${VERSION_OUT}" STREQUAL "")
     message(FATAL_ERROR "Missing input parameter VERSION_OUT!")
+endif()
+if ("${SOURCE_IS_SOURCE_DISTRIBUTION}" STREQUAL "")
+    message(FATAL_ERROR "SOURCE_IS_SOURCE_DISTRIBUTION undefined!")
 endif()
 
 # Prepare version string to populate
