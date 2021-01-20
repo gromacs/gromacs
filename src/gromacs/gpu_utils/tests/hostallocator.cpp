@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithoutPinningWork)
     {
         setActiveDevice(testDevice->deviceInfo());
         typename TestFixture::VectorType input;
-        fillInput(&input, 1);
+        resizeAndFillInput(&input, 3, 1);
         typename TestFixture::VectorType output;
         output.resizeWithPadding(input.size());
 
@@ -216,7 +216,7 @@ TYPED_TEST(HostAllocatorTestCopyable, FillInputAlsoWorksAfterCallingReserve)
 {
     typename TestFixture::VectorType input;
     input.reserveWithPadding(3);
-    fillInput(&input, 1);
+    resizeAndFillInput(&input, 3, 1);
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, CreateVector)
@@ -303,7 +303,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithCuda)
         setActiveDevice(testDevice->deviceInfo());
         typename TestFixture::VectorType input;
         changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
-        fillInput(&input, 1);
+        resizeAndFillInput(&input, 3, 1);
         typename TestFixture::VectorType output;
         changePinningPolicy(&output, PinningPolicy::PinnedIfSupported);
         output.resizeWithPadding(input.size());
@@ -329,7 +329,7 @@ TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWorkWithCuda)
         changePinningPolicy(&input, PinningPolicy::PinnedIfSupported);
         EXPECT_TRUE(input.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
         EXPECT_TRUE(input.empty());
-        fillInput(&input, 1);
+        resizeAndFillInput(&input, 3, 1);
         // realloc and copy).
         auto oldInputData = input.data();
         changePinningPolicy(&input, PinningPolicy::CannotBePinned);

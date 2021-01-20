@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,40 +53,34 @@ namespace test
 
 //! Initialization overload for non-BasicVector
 template<typename T>
-void fillInputContents(ArrayRef<T> inputRef, int scaleFactor)
+void fillInputContents(ArrayRef<T> inputRef, int scaleFactorForElements)
 {
-    inputRef[0] = 1;
-    inputRef[1] = 2;
-    inputRef[2] = 3;
-    for (auto& element : inputRef)
+    for (size_t i = 0; i < inputRef.size(); i++)
     {
-        element *= scaleFactor;
+        inputRef[i] = T((i + 1) * scaleFactorForElements);
     }
 }
 
 //! Initialization overload for BasicVector
 template<typename T>
-void fillInputContents(ArrayRef<BasicVector<T>> inputRef, int scaleFactor)
+void fillInputContents(ArrayRef<BasicVector<T>> inputRef, int scaleFactorForElements)
 {
-    inputRef[0] = { 1, 2, 3 };
-    inputRef[1] = { 4, 5, 6 };
-    inputRef[2] = { 7, 8, 9 };
-    for (auto& element : inputRef)
+    for (size_t i = 0; i < inputRef.size(); i++)
     {
-        element *= scaleFactor;
+        for (size_t j = 0; j < DIM; j++)
+        {
+            inputRef[i][j] = T((DIM * i + j + 1) * scaleFactorForElements);
+        }
     }
 }
 
 //! Dispatcher function for filling.
 template<typename PaddedVectorOfT>
-void fillInput(PaddedVectorOfT* input, int scaleFactor)
+void resizeAndFillInput(PaddedVectorOfT* input, int newSize, int scaleFactorForElements)
 {
-    // Use a size for the vector in tests that is prime enough to
-    // expose problems where they exist.
-    int sizeOfVector = 3;
-    input->resizeWithPadding(sizeOfVector);
-    fillInputContents(makeArrayRef(*input), scaleFactor);
-    EXPECT_LE(sizeOfVector, input->paddedSize());
+    input->resizeWithPadding(newSize);
+    fillInputContents(makeArrayRef(*input), scaleFactorForElements);
+    EXPECT_LE(newSize, input->paddedSize());
 }
 
 //! Comparison overload for non-BasicVector
