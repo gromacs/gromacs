@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,8 +151,13 @@ enum tpxv
 static const int tpx_version = tpxv_Count - 1;
 
 
-/* This number should only be increased when you edit the TOPOLOGY section
- * or the HEADER of the tpx format.
+/*! \brief
+ * Enum keeping track of incompatible changes for older TPR versions.
+ *
+ * The enum should be updated with a new field when editing the TOPOLOGY
+ * or HEADER of the tpx format. In particular, updating ftupd or
+ * changing the fields of TprHeaderVersion often trigger such needs.
+ *
  * This way we can maintain forward compatibility too for all analysis tools
  * and/or external programs that only need to know the atom/residue names,
  * charges, and bond connectivity.
@@ -163,10 +168,17 @@ static const int tpx_version = tpxv_Count - 1;
  *
  * In particular, it must be increased when adding new elements to
  * ftupd, so that old code can read new .tpr files.
- *
- * Updated for added field that contains the number of bytes of the tpr body, excluding the header.
  */
-static const int tpx_generation = 27;
+enum class TpxGeneration : int
+{
+    Initial = 26, //! First version is 26
+    AddSizeField, //! TPR header modified for writing as a block.
+    AddVSite1,    //! ftupd changed to include VSite1 type.
+    Count         //! Number of entries.
+};
+
+//! Value of Current TPR generation.
+static const int tpx_generation = static_cast<int>(TpxGeneration::Count) - 1;
 
 /* This number should be the most recent backwards incompatible version
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -194,6 +206,9 @@ typedef struct
  * obsolete t_interaction_function types. Any data read from such
  * fields is discarded. Their names have _NOLONGERUSED appended to
  * them to make things clear.
+ *
+ * When adding to or making breaking changes to reading this struct,
+ * update TpxGeneration.
  */
 static const t_ftupd ftupd[] = {
     { 70, F_RESTRBONDS },
