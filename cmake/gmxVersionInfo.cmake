@@ -435,7 +435,7 @@ set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
 # not been tampered with.
 # Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
 # mean that the target is run in all builds
-if (PYTHONINTERP_FOUND)
+if (Python3_Interpreter_FOUND)
     # We need the full path to the directories after passing it through
     set(FULL_PATH_DIRECTORIES "")
     foreach(DIR ${SET_OF_DIRECTORIES_TO_CHECKSUM})
@@ -452,7 +452,7 @@ if (PYTHONINTERP_FOUND)
 else()
     add_custom_target(reference_checksum
         COMMAND ${CMAKE_COMMAND} -E echo
-        "Can not checksum files without python being available"
+        "Can not checksum files without python3 being available"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMENT "Generating reference checksum of source files")
 endif()
