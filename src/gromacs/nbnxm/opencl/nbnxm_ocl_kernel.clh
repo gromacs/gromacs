@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -126,11 +126,11 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #else
                 const __global int* restrict atom_types, /* IN  */
 #endif
-                const __global float* restrict shift_vec,             /* IN stores float3 values */
-                __constant const float* gmx_unused nbfp_climg2d,      /* IN  */
-                __constant const float* gmx_unused nbfp_comb_climg2d, /* IN  */
-                __constant const float* gmx_unused coulomb_tab_climg2d, /* IN  */
-                const __global nbnxn_sci_t* pl_sci,                     /* IN  */
+                const __global float* restrict shift_vec,       /* IN stores float3 values */
+                __constant const float* gmx_unused nbfp,        /* IN  */
+                __constant const float* gmx_unused nbfp_comb,   /* IN  */
+                __constant const float* gmx_unused coulomb_tab, /* IN  */
+                const __global nbnxn_sci_t* pl_sci,             /* IN  */
 #ifndef PRUNE_NBL
                 const
 #endif
@@ -286,8 +286,8 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
             E_el += qi * qi;
 #        endif
 #        if defined LJ_EWALD
-            E_lj += nbfp_climg2d[atom_types[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * CL_SIZE + tidxi]
-                                 * (ntypes + 1) * 2];
+            E_lj += nbfp[atom_types[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * CL_SIZE + tidxi]
+                         * (ntypes + 1) * 2];
 #        endif /* LJ_EWALD */
         }
 
@@ -411,8 +411,8 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif                          /* IATYPE_SHMEM */
                                 /* LJ 6*C6 and 12*C12 */
 #ifndef LJ_COMB
-                                const float c6  = nbfp_climg2d[2 * (ntypes * typei + typej)];
-                                const float c12 = nbfp_climg2d[2 * (ntypes * typei + typej) + 1];
+                                const float c6  = nbfp[2 * (ntypes * typei + typej)];
+                                const float c12 = nbfp[2 * (ntypes * typei + typej) + 1];
 #else /* LJ_COMB */
 #    ifdef LJ_COMB_GEOM
                                 const float c6     = ljcp_i.x * ljcp_j.x;
@@ -474,7 +474,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #ifdef LJ_EWALD
 #    ifdef LJ_EWALD_COMB_GEOM
 #        ifdef CALC_ENERGIES
-                                calculate_lj_ewald_comb_geom_F_E(nbfp_comb_climg2d,
+                                calculate_lj_ewald_comb_geom_F_E(nbfp_comb,
                                                                  nbparam,
                                                                  typei,
                                                                  typej,
@@ -487,10 +487,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                                                  &E_lj_p);
 #        else
                                 calculate_lj_ewald_comb_geom_F(
-                                        nbfp_comb_climg2d, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, &F_invr);
+                                        nbfp_comb, typei, typej, r2, inv_r2, lje_coeff2, lje_coeff6_6, &F_invr);
 #        endif /* CALC_ENERGIES */
 #    elif defined LJ_EWALD_COMB_LB
-                                calculate_lj_ewald_comb_LB_F_E(nbfp_comb_climg2d,
+                                calculate_lj_ewald_comb_LB_F_E(nbfp_comb,
                                                                nbparam,
                                                                typei,
                                                                typej,
@@ -555,7 +555,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 F_invr += qi * qj_f
                                           * (int_bit * inv_r2
                                              - interpolate_coulomb_force_r(
-                                                       coulomb_tab_climg2d, r2 * inv_r, coulomb_tab_scale))
+                                                       coulomb_tab, r2 * inv_r, coulomb_tab_scale))
                                           * inv_r;
 #endif /* EL_EWALD_ANA/TAB */
 
