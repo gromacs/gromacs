@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -505,6 +506,23 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
             if (nrank_new == 5)
             {
                 nrank_new = 4;
+            }
+        }
+
+        if (ngpu > 0 && (nrank_new % ngpu) != 0)
+        {
+            /* If we use GPUs, the number of ranks must be divisible by the number of GPUs,
+             * unless the GPUs are very different (and if they are, user should manually
+             * select the parallelization scheme).
+             * Rounding down the number of ranks, or setting it to ngpu, whichever is smaller.
+             * */
+            if (nrank_new > ngpu)
+            {
+                nrank_new = (nrank_new / ngpu) * ngpu;
+            }
+            else
+            {
+                nrank_new = ngpu;
             }
         }
 
