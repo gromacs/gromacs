@@ -69,14 +69,14 @@ static const unsigned int c_fullWarpMask = 0xffffffff;
  *
  *  Only texture objects supported.
  *  Disable texture support missing in clang (all versions up to <=5.0-dev as of writing).
- *  Disable texture support on CC 7.0 for performance reasons (Issue #3845).
+ *  Disable texture support on CC 7.0 and 8.0 for performance reasons (Issue #3845).
  *
  *  This option will not influence functionality. All features using textures ought
  *  to have fallback for texture-less reads (direct/LDG loads), all new code needs
  *  to provide fallback code.
  */
 #if defined(GMX_DISABLE_CUDA_TEXTURES) || (defined(__clang__) && defined(__CUDA__)) \
-        || (GMX_PTX_ARCH == 700)
+        || (GMX_PTX_ARCH == 700) || (GMX_PTX_ARCH == 800)
 #    define DISABLE_CUDA_TEXTURES 1
 #else
 #    define DISABLE_CUDA_TEXTURES 0
