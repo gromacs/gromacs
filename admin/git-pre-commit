@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2019,2020,2021, by the GROMACS development team.
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,12 +34,12 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 # This script is intended as a pre-commit hook that optionally runs all
-# changes through some formatting check.  Currently, it runs uncrustify and
+# changes through some formatting check.  Currently, it runs clang-format and
 # checks copyright headers.
 #
 # It needs to be copied as .git/hooks/pre-commit and configured with
-#   git config hooks.uncrustifypath /path/to/uncrustify
-#   git config hooks.uncrustifymode check
+#   git config hooks.clangformatpath /path/to/clang-format-7
+#   git config hooks.clangformatmode check
 #   git config hooks.copyrightmode update
 #
 # To disable the hook temporarily for a commit, set NO_FORMAT_CHECK environment
@@ -109,7 +109,8 @@ then
     clangformat_path=`git config hooks.clangformatpath`
     if [ -z "$clangformat_path" ]
     then
-        echo "Please set the path to clang-format using 'git config hooks.clangformatpath'."
+        echo "Please set the path to clang-format using 'git config hooks.clangformatpath /path/to/clang-format'."
+        echo "See https://manual.gromacs.org/current/dev-manual/code-formatting.html#gmx-clang-format"
         exit 1
     fi
     export CLANG_FORMAT="$clangformat_path"
