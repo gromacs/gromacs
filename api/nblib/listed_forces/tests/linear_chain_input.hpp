@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,9 +63,9 @@ public:
         std::vector<HarmonicBondType> bonds{ bond1, bond2 };
         pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-        DefaultAngle              angle(Degrees(179.9), 397.5);
-        std::vector<DefaultAngle> angles{ angle };
-        pickType<DefaultAngle>(interactions).parameters = angles;
+        HarmonicAngleType              angle(Degrees(179.9), 397.5);
+        std::vector<HarmonicAngleType> angles{ angle };
+        pickType<HarmonicAngleType>(interactions).parameters = angles;
 
         std::vector<InteractionIndex<HarmonicBondType>> bondIndices;
         for (int i = 0; i < nParticles - 1; ++i)
@@ -75,12 +75,12 @@ public:
         }
         pickType<HarmonicBondType>(interactions).indices = bondIndices;
 
-        std::vector<InteractionIndex<DefaultAngle>> angleIndices;
+        std::vector<InteractionIndex<HarmonicAngleType>> angleIndices;
         for (int i = 0; i < nParticles - 2; ++i)
         {
-            angleIndices.push_back(InteractionIndex<DefaultAngle>{ i, i + 1, i + 2, 0 });
+            angleIndices.push_back(InteractionIndex<HarmonicAngleType>{ i, i + 1, i + 2, 0 });
         }
-        pickType<DefaultAngle>(interactions).indices = angleIndices;
+        pickType<HarmonicAngleType>(interactions).indices = angleIndices;
 
         // initialize coordinates
         x.resize(nParticles);

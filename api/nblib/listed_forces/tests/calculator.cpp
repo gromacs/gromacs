@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,15 +102,15 @@ protected:
         // one bond between atoms 0-1 with bond1 parameters and another between atoms 1-2 with bond2 parameters
         std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 1, 0 }, { 1, 2, 1 } };
 
-        DefaultAngle                                angle(Degrees(108.53), 397.5);
-        std::vector<DefaultAngle>                   angles{ angle };
-        std::vector<InteractionIndex<DefaultAngle>> angleIndices{ { 0, 1, 2, 0 } };
+        HarmonicAngleType                                angle(Degrees(108.53), 397.5);
+        std::vector<HarmonicAngleType>                   angles{ angle };
+        std::vector<InteractionIndex<HarmonicAngleType>> angleIndices{ { 0, 1, 2, 0 } };
 
         pickType<HarmonicBondType>(interactions).indices    = bondIndices;
         pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-        pickType<DefaultAngle>(interactions).indices    = angleIndices;
-        pickType<DefaultAngle>(interactions).parameters = angles;
+        pickType<HarmonicAngleType>(interactions).indices    = angleIndices;
+        pickType<HarmonicAngleType>(interactions).parameters = angles;
 
         // initial position for the methanol atoms from the spc-water example
         x = std::vector<gmx::RVec>{ { 1.97, 1.46, 1.209 }, { 1.978, 1.415, 1.082 }, { 1.905, 1.46, 1.03 } };
@@ -176,8 +176,8 @@ TEST_F(ListedExampleData, DISABLED_ComputeHarmonicBondForces)
 
 TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
 {
-    auto indices = pickType<DefaultAngle>(interactions).indices;
-    auto angles  = pickType<DefaultAngle>(interactions).parameters;
+    auto indices = pickType<HarmonicAngleType>(interactions).indices;
+    auto angles  = pickType<HarmonicAngleType>(interactions).parameters;
     real energy  = computeForces(indices, angles, x, &forces, *pbc);
 
     EXPECT_FLOAT_DOUBLE_EQ_TOL(energy, refAngleEnergyFloat, refAngleEnergyDouble,

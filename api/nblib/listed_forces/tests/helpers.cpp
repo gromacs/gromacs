@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,8 +62,8 @@ TEST(NBlibTest, CanSplitListedWork)
 {
     ListedInteractionData interactions;
 
-    DefaultAngle     angle(Degrees(1), 1);
-    HarmonicBondType bond(1, 1);
+    HarmonicAngleType angle(Degrees(1), 1);
+    HarmonicBondType  bond(1, 1);
 
     int largestIndex = 20;
     int nSplits      = 3; // split ranges: [0,5], [6,11], [12, 19]
@@ -71,30 +71,30 @@ TEST(NBlibTest, CanSplitListedWork)
     std::vector<InteractionIndex<HarmonicBondType>> bondIndices{
         { 0, 1, 0 }, { 0, 6, 0 }, { 11, 12, 0 }, { 18, 19, 0 }
     };
-    std::vector<InteractionIndex<DefaultAngle>> angleIndices{
+    std::vector<InteractionIndex<HarmonicAngleType>> angleIndices{
         { 0, 1, 2, 0 }, { 0, 6, 7, 0 }, { 11, 12, 13, 0 }, { 17, 19, 18, 0 }
     };
 
-    pickType<HarmonicBondType>(interactions).indices = bondIndices;
-    pickType<DefaultAngle>(interactions).indices     = angleIndices;
+    pickType<HarmonicBondType>(interactions).indices  = bondIndices;
+    pickType<HarmonicAngleType>(interactions).indices = angleIndices;
 
     std::vector<ListedInteractionData> splitInteractions =
             splitListedWork(interactions, largestIndex, nSplits);
 
     std::vector<InteractionIndex<HarmonicBondType>> refBondIndices0{ { 0, 1, 0 }, { 0, 6, 0 } };
-    std::vector<InteractionIndex<DefaultAngle>> refAngleIndices0{ { 0, 1, 2, 0 }, { 0, 6, 7, 0 } };
-    std::vector<InteractionIndex<HarmonicBondType>> refBondIndices1{ { 11, 12, 0 } };
-    std::vector<InteractionIndex<DefaultAngle>>     refAngleIndices1{ { 11, 12, 13, 0 } };
-    std::vector<InteractionIndex<HarmonicBondType>> refBondIndices2{ { 18, 19, 0 } };
-    std::vector<InteractionIndex<DefaultAngle>>     refAngleIndices2{ { 17, 19, 18, 0 } };
+    std::vector<InteractionIndex<HarmonicAngleType>> refAngleIndices0{ { 0, 1, 2, 0 }, { 0, 6, 7, 0 } };
+    std::vector<InteractionIndex<HarmonicBondType>>  refBondIndices1{ { 11, 12, 0 } };
+    std::vector<InteractionIndex<HarmonicAngleType>> refAngleIndices1{ { 11, 12, 13, 0 } };
+    std::vector<InteractionIndex<HarmonicBondType>>  refBondIndices2{ { 18, 19, 0 } };
+    std::vector<InteractionIndex<HarmonicAngleType>> refAngleIndices2{ { 17, 19, 18, 0 } };
 
     EXPECT_EQ(refBondIndices0, pickType<HarmonicBondType>(splitInteractions[0]).indices);
     EXPECT_EQ(refBondIndices1, pickType<HarmonicBondType>(splitInteractions[1]).indices);
     EXPECT_EQ(refBondIndices2, pickType<HarmonicBondType>(splitInteractions[2]).indices);
 
-    EXPECT_EQ(refAngleIndices0, pickType<DefaultAngle>(splitInteractions[0]).indices);
-    EXPECT_EQ(refAngleIndices1, pickType<DefaultAngle>(splitInteractions[1]).indices);
-    EXPECT_EQ(refAngleIndices2, pickType<DefaultAngle>(splitInteractions[2]).indices);
+    EXPECT_EQ(refAngleIndices0, pickType<HarmonicAngleType>(splitInteractions[0]).indices);
+    EXPECT_EQ(refAngleIndices1, pickType<HarmonicAngleType>(splitInteractions[1]).indices);
+    EXPECT_EQ(refAngleIndices2, pickType<HarmonicAngleType>(splitInteractions[2]).indices);
 }
 
 

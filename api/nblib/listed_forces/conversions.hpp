@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,7 +91,7 @@ struct ListedIndex<G96BondType> : std::integral_constant<int, F_G96BONDS>
 };
 
 template<>
-struct ListedIndex<DefaultAngle> : std::integral_constant<int, F_ANGLES>
+struct ListedIndex<HarmonicAngleType> : std::integral_constant<int, F_ANGLES>
 {
 };
 
@@ -137,7 +137,7 @@ void transferParameters(const ListedTypeData<HarmonicBondType>& interactions, gm
 }
 
 template<>
-void transferParameters(const ListedTypeData<DefaultAngle>& interactions, gmx_ffparams_t& gmx_params)
+void transferParameters(const ListedTypeData<HarmonicAngleType>& interactions, gmx_ffparams_t& gmx_params)
 {
     for (const auto& angle : interactions.parameters)
     {

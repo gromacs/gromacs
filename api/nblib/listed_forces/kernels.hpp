@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -396,7 +396,7 @@ inline auto bondKernel(T dr, const HalfAttractiveQuarticBondType& bond)
 //! Three-center interaction type dispatch
 
 template <class T>
-inline auto threeCenterKernel(T dr, const DefaultAngle& angle)
+inline auto threeCenterKernel(T dr, const HarmonicAngleType& angle)
 {
     return harmonicScalarForce(angle.forceConstant(), angle.equilDistance(), dr);
 }

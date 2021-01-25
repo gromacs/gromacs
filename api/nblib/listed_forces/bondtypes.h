@@ -224,18 +224,18 @@ inline bool operator==(const MorseBondType& a, const MorseBondType& b)
  *
  * Note: the angle is always stored as radians internally
  */
-struct DefaultAngle : public TwoParameterInteraction<struct DefaultAngleParameter>
+struct HarmonicAngleType : public TwoParameterInteraction<struct HarmonicAngleTypeParameter>
 {
-    DefaultAngle() = default;
+    HarmonicAngleType() = default;
     //! \brief construct from angle given in radians
-    DefaultAngle(Radians angle, ForceConstant f) :
-        TwoParameterInteraction<struct DefaultAngleParameter>{ f, angle }
+    HarmonicAngleType(Radians angle, ForceConstant f) :
+        TwoParameterInteraction<struct HarmonicAngleTypeParameter>{ f, angle }
     {
     }
 
     //! \brief construct from angle given in degrees
-    DefaultAngle(Degrees angle, ForceConstant f) :
-        TwoParameterInteraction<struct DefaultAngleParameter>{ f, angle * DEG2RAD }
+    HarmonicAngleType(Degrees angle, ForceConstant f) :
+        TwoParameterInteraction<struct HarmonicAngleTypeParameter>{ f, angle * DEG2RAD }
     {
     }
 };

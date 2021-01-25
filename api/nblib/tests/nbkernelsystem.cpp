@@ -67,7 +67,7 @@ namespace
 //! Macro to set Van der Waals interactions to atoms
 #define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
 
-TEST(NBlibTest, SpcMethanolForcesAreCorrect)
+TEST(NBlibTest, DISABLED_SpcMethanolForcesAreCorrect)
 {
     auto options        = NBKernelOptions();
     options.nbnxmSimd   = SimdKernels::SimdNo;
