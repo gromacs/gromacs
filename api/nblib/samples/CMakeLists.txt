@@ -46,12 +46,6 @@ target_sources(argon-forces-integration
         )
 
 target_link_libraries(argon-forces-integration PRIVATE nblib)
-install(
-        TARGETS
-        argon-forces-integration
-        DESTINATION
-        ${CMAKE_INSTALL_BINDIR}
-)
 
 if(BUILD_TESTING)
     add_test(NAME NbLibSamplesTests COMMAND argon-forces-integration)
