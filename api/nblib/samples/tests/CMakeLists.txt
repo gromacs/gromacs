@@ -48,8 +48,14 @@ gmx_add_gtest_executable(
     # files with code for tests
         argon-sample.cpp
     )
-#The following line is a not so nice hack to prevent compiler warnings that are not relevant for the sample scripts
-set_source_files_properties(argon-sample.cpp PROPERTIES COMPILE_FLAGS "-Wno-header-hygiene")
-target_link_libraries(nblib-samples-test PRIVATE nblib)
-gmx_register_gtest_test(${testname} ${exename})
-add_dependencies(check-nblib ${exename})
+#The following compiler option prevents compiler warnings that are not relevant for the sample scripts
+set(sampleCompileFlag "-Wno-header-hygiene")
+check_cxx_compiler_flag(${sampleCompileFlag} CanCompileSamples)
+if(CanCompileSamples)
+    set_source_files_properties(argon-sample.cpp PROPERTIES COMPILE_FLAGS ${sampleCompileFlag})
+    target_link_libraries(nblib-samples-test PRIVATE nblib)
+    gmx_register_gtest_test(${testname} ${exename})
+    add_dependencies(check-nblib ${exename})
+else()
+    message(WARNING "Failed to test compile with flag ${sampleCompileFlag}, so samples cannot be compiled.")
+endif()
