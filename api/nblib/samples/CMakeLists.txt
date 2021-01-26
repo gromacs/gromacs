@@ -38,17 +38,29 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
-set(exename "argon-forces-integration")
-add_executable(${exename} "")
+set(argon "argon-forces-integration")
+add_executable(${argon} "")
 
-target_sources(${exename}
+target_sources(${argon}
         PRIVATE
         argon-forces-integration.cpp
         )
 
-target_link_libraries(${exename} PRIVATE nblib)
+target_link_libraries(${argon} PRIVATE nblib)
+
+set(methane "methane-water-integration")
+add_executable(${methane} "")
+
+target_sources(${methane}
+        PRIVATE
+        methane-water-integration.cpp
+        )
+
+target_link_libraries(${methane} PRIVATE nblib)
 
 if(BUILD_TESTING)
-    add_test(NAME NbLibSamplesTests COMMAND ${exename})
-    add_dependencies(check-nblib ${exename})
+    add_test(NAME NbLibSamplesTestArgon COMMAND ${argon})
+    add_test(NAME NbLibSamplesTestMethaneWater COMMAND ${methane})
+    add_dependencies(check-nblib ${argon})
+    add_dependencies(check-nblib ${methane})
 endif()
