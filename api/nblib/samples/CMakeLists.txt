@@ -38,15 +38,17 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
-add_executable(argon-forces-integration "")
+set(exename "argon-forces-integration")
+add_executable(${exename} "")
 
-target_sources(argon-forces-integration
+target_sources(${exename}
         PRIVATE
         argon-forces-integration.cpp
         )
 
-target_link_libraries(argon-forces-integration PRIVATE nblib)
+target_link_libraries(${exename} PRIVATE nblib)
 
 if(BUILD_TESTING)
-    add_test(NAME NbLibSamplesTests COMMAND argon-forces-integration)
+    add_test(NAME NbLibSamplesTests COMMAND ${exename})
+    add_dependencies(check-nblib ${exename})
 endif()
