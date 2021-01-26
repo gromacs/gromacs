@@ -63,6 +63,15 @@ given in the reference manual.
 
 :issue:`3751`
 
+Fixed default for tick-mark spacing in gmx xpm2ps
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This was inadvertently changed many years ago, leading to the intended
+default of automatic tick-mark spacing being replaced with an
+unsuitable fixed value.
+
+:issue:`3881`
+
 Fixed LJ Ewald exclusions when used with cut-off electrostatics
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
