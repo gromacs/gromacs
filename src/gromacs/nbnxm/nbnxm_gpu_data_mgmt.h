@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,8 @@ void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
                                     const DeviceContext&         deviceContext);
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused& ic);
+int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t gmx_unused& ic,
+                                     const DeviceInformation&              deviceInfo);
 
 /*! \brief Copies all parameters related to the cut-off from ic to nbp
  */

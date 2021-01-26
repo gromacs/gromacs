@@ -46,3 +46,10 @@ Allow offloading GPU update and constraints without direct GPU communication
 Allow domain-decomposition and separate PME rank parallel runs to offload update and
 constraints to a GPU with CUDA without requiring the (experimental) direct GPU
 communication features to be also enabled.
+
+Tune CUDA short-range nonbonded kernel parameters on NVIDIA Volta and Ampere A100
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Recent compilers allowed re-tuning the nonbonded kernel defaults on NVIDIA Volta and
+Ampere A100GPUs which improves performance of the Ewald kernels, especially those that
+also compute energies.
