@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017, The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,11 +101,10 @@
 
 struct gmx_inputrec_strings
 {
-    char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN], acc[STRLEN], accgrps[STRLEN], freeze[STRLEN],
-            frdim[STRLEN], energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN],
-            x_compressed_groups[STRLEN], couple_moltype[STRLEN], orirefitgrp[STRLEN],
-            egptable[STRLEN], egpexcl[STRLEN], wall_atomtype[STRLEN], wall_density[STRLEN],
-            deform[STRLEN], QMMM[STRLEN], imd_grp[STRLEN];
+    char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN], freeze[STRLEN], frdim[STRLEN],
+            energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN],
+            couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
+            wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN], imd_grp[STRLEN];
     char                     fep_lambda[efptNR][STRLEN];
     char                     lambda_weights[STRLEN];
     std::vector<std::string> pullGroupNames;
@@ -1729,33 +1728,6 @@ static void convertReals(warninp_t wi, gmx::ArrayRef<const std::string> inputs, 
     }
 }
 
-static void convertRvecs(warninp_t wi, gmx::ArrayRef<const std::string> inputs, const char* name, rvec* outputs)
-{
-    int i = 0, d = 0;
-    for (const auto& input : inputs)
-    {
-        try
-        {
-            outputs[i][d] = gmx::fromString<real>(input);
-        }
-        catch (gmx::GromacsException&)
-        {
-            auto message = gmx::formatString(
-                    "Invalid value for mdp option %s. %s should only consist of real numbers "
-                    "separated by spaces.",
-                    name,
-                    name);
-            warning_error(wi, message);
-        }
-        ++d;
-        if (d == DIM)
-        {
-            d = 0;
-            ++i;
-        }
-    }
-}
-
 static void do_wall_params(t_inputrec* ir, char* wall_atomtype, char* wall_density, t_gromppopts* opts, warninp_t wi)
 {
     opts->wall_atomtype[0] = nullptr;
@@ -2316,8 +2288,6 @@ void get_ir(const char*     mdparin,
 
     /* Non-equilibrium MD stuff */
     printStringNewline(&inp, "Non-equilibrium MD stuff");
-    setStringEntry(&inp, "acc-grps", inputrecStrings->accgrps, nullptr);
-    setStringEntry(&inp, "accelerate", inputrecStrings->acc, nullptr);
     setStringEntry(&inp, "freezegrps", inputrecStrings->freeze, nullptr);
     setStringEntry(&inp, "freezedim", inputrecStrings->frdim, nullptr);
     ir->cos_accel = get_ereal(&inp, "cos-acceleration", 0, wi);
@@ -3840,31 +3810,6 @@ void do_index(const char*                   mdparin,
             *defaultIndexGroups, gmx::arrayRefFromArray(gnames, defaultIndexGroups->nr));
     notifier.preProcessingNotifications_.notify(defaultIndexGroupsAndNames);
 
-    auto accelerations          = gmx::splitString(inputrecStrings->acc);
-    auto accelerationGroupNames = gmx::splitString(inputrecStrings->accgrps);
-    if (accelerationGroupNames.size() * DIM != accelerations.size())
-    {
-        gmx_fatal(FARGS,
-                  "Invalid Acceleration input: %zu groups and %zu acc. values",
-                  accelerationGroupNames.size(),
-                  accelerations.size());
-    }
-    do_numbering(natoms,
-                 groups,
-                 accelerationGroupNames,
-                 defaultIndexGroups,
-                 gnames,
-                 SimulationAtomGroupType::Acceleration,
-                 restnm,
-                 egrptpALL_GENREST,
-                 bVerbose,
-                 wi);
-    nr = groups->groups[SimulationAtomGroupType::Acceleration].size();
-    snew(ir->opts.acc, nr);
-    ir->opts.ngacc = nr;
-
-    convertRvecs(wi, accelerations, "anneal-time", ir->opts.acc);
-
     auto freezeDims       = gmx::splitString(inputrecStrings->frdim);
     auto freezeGroupNames = gmx::splitString(inputrecStrings->freeze);
     if (freezeDims.size() != DIM * freezeGroupNames.size())
@@ -4320,9 +4265,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
 
     char                      err_buf[STRLEN];
     int                       i, m, c, nmol;
-    bool                      bCharge, bAcc;
-    real *                    mgrp, mt;
-    rvec                      acc;
+    bool                      bCharge;
     gmx_mtop_atomloop_block_t aloopb;
     ivec                      AbsRef;
     char                      warn_buf[STRLEN];
@@ -4520,60 +4463,6 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
                       "Generalized reaction-field electrostatics is no longer supported. "
                       "You can use normal reaction-field instead and compute the reaction-field "
                       "constant by hand.");
-    }
-
-    bAcc = FALSE;
-    for (int i = 0; (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration])); i++)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            if (fabs(ir->opts.acc[i][m]) > 1e-6)
-            {
-                bAcc = TRUE;
-            }
-        }
-    }
-    if (bAcc)
-    {
-        clear_rvec(acc);
-        snew(mgrp, sys->groups.groups[SimulationAtomGroupType::Acceleration].size());
-        for (const AtomProxy atomP : AtomRange(*sys))
-        {
-            const t_atom& local = atomP.atom();
-            int           i     = atomP.globalAtomNumber();
-            mgrp[getGroupType(sys->groups, SimulationAtomGroupType::Acceleration, i)] += local.m;
-        }
-        mt = 0.0;
-        for (i = 0; (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration])); i++)
-        {
-            for (m = 0; (m < DIM); m++)
-            {
-                acc[m] += ir->opts.acc[i][m] * mgrp[i];
-            }
-            mt += mgrp[i];
-        }
-        for (m = 0; (m < DIM); m++)
-        {
-            if (fabs(acc[m]) > 1e-6)
-            {
-                const char* dim[DIM] = { "X", "Y", "Z" };
-                fprintf(stderr,
-                        "Net Acceleration in %s direction, will %s be corrected\n",
-                        dim[m],
-                        ir->nstcomm != 0 ? "" : "not");
-                if (ir->nstcomm != 0 && m < ndof_com(ir))
-                {
-                    acc[m] /= mt;
-                    for (i = 0;
-                         (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration]));
-                         i++)
-                    {
-                        ir->opts.acc[i][m] -= acc[m];
-                    }
-                }
-            }
-        }
-        sfree(mgrp);
     }
 
     if (ir->efep != efepNO && ir->fepvals->sc_alpha != 0

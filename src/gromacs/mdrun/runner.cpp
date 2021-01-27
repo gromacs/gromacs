@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -904,6 +904,11 @@ int Mdrunner::mdrunner()
     }
     GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
     partialDeserializedTpr.reset(nullptr);
+
+    GMX_RELEASE_ASSERT(
+            !inputrec->useConstantAcceleration,
+            "Linear acceleration has been removed in GROMACS 2022, and was broken for many years "
+            "before that. Use GROMACS 4.5 or earlier if you need this feature.");
 
     // Now the number of ranks is known to all ranks, and each knows
     // the inputrec read by the master rank. The ranks can now all run
@@ -1843,7 +1848,7 @@ int Mdrunner::mdrunner()
 
         /* Kinetic energy data */
         gmx_ekindata_t ekind;
-        init_ekindata(fplog, &mtop, &(inputrec->opts), &ekind, inputrec->cos_accel);
+        init_ekindata(fplog, &(inputrec->opts), &ekind, inputrec->cos_accel);
 
         /* Set up interactive MD (IMD) */
         auto imdSession = makeImdSession(inputrec.get(),

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,20 +66,6 @@ struct t_grp_tcstat
     double vscale_nhc = 0;
 };
 
-struct t_grp_acc
-{
-    //! Number of atoms in this group
-    int nat = 0;
-    //! Mean velocities of home particles
-    rvec u = { 0 };
-    //! Previous mean velocities of home particles
-    rvec uold = { 0 };
-    //! Mass for topology A
-    double mA = 0;
-    //! Mass for topology B
-    double mB = 0;
-};
-
 struct t_cos_acc
 {
     //! The acceleration for the cosine profile
@@ -92,8 +78,6 @@ struct t_cos_acc
 
 struct gmx_ekindata_t
 {
-    //! Whether non-equilibrium MD is active (ie. constant or cosine acceleration)
-    gmx_bool bNEMD;
     //! The number of T-coupling groups
     int ngtc = 0;
     //! For size of ekin_work
@@ -106,10 +90,6 @@ struct gmx_ekindata_t
     tensor** ekin_work = nullptr;
     //! Work location for dekindl per thread
     real** dekindl_work = nullptr;
-    //! The number of acceleration groups
-    int ngacc = 0;
-    //! Acceleration data
-    std::vector<t_grp_acc> grpstat;
     //! overall kinetic energy
     tensor ekin = { { 0 } };
     //! overall 1/2 step kinetic energy

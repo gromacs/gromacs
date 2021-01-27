@@ -88,18 +88,14 @@ static void calc_ke_part_normal(gmx::ArrayRef<const gmx::RVec> v,
                                 gmx_bool                       bEkinAveVel)
 {
     int                         g;
-    gmx::ArrayRef<t_grp_tcstat> tcstat  = ekind->tcstat;
-    gmx::ArrayRef<t_grp_acc>    grpstat = ekind->grpstat;
+    gmx::ArrayRef<t_grp_tcstat> tcstat = ekind->tcstat;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
        an option, but not supported now.
        bEkinAveVel: If TRUE, we sum into ekin, if FALSE, into ekinh.
      */
 
-    /* group velocities are calculated in update_ekindata and
-     * accumulated in acumulate_groups.
-     * Now the partial global and groups ekin.
-     */
+    // Now accumulate the partial global and groups ekin.
     for (g = 0; (g < opts->ngtc); g++)
     {
         copy_mat(tcstat[g].ekinh, tcstat[g].ekinh_old);
@@ -123,8 +119,7 @@ static void calc_ke_part_normal(gmx::ArrayRef<const gmx::RVec> v,
         // or memory allocation. It should not be able to throw, so for now
         // we do not need a try/catch wrapper.
         int     start_t, end_t, n;
-        int     ga, gt;
-        rvec    v_corrt;
+        int     gt;
         real    hm;
         int     d, m;
         matrix* ekin_sum;
@@ -142,14 +137,9 @@ static void calc_ke_part_normal(gmx::ArrayRef<const gmx::RVec> v,
         }
         *dekindl_sum = 0.0;
 
-        ga = 0;
         gt = 0;
         for (n = start_t; n < end_t; n++)
         {
-            if (md->cACC)
-            {
-                ga = md->cACC[n];
-            }
             if (md->cTC)
             {
                 gt = md->cTC[n];
@@ -158,19 +148,15 @@ static void calc_ke_part_normal(gmx::ArrayRef<const gmx::RVec> v,
 
             for (d = 0; (d < DIM); d++)
             {
-                v_corrt[d] = v[n][d] - grpstat[ga].u[d];
-            }
-            for (d = 0; (d < DIM); d++)
-            {
                 for (m = 0; (m < DIM); m++)
                 {
-                    /* if we're computing a full step velocity, v_corrt[d] has v(t).  Otherwise, v(t+dt/2) */
-                    ekin_sum[gt][m][d] += hm * v_corrt[m] * v_corrt[d];
+                    /* if we're computing a full step velocity, v[d] has v(t).  Otherwise, v(t+dt/2) */
+                    ekin_sum[gt][m][d] += hm * v[n][m] * v[n][d];
                 }
             }
             if (md->nMassPerturbed && md->bPerturbed[n])
             {
-                *dekindl_sum += 0.5 * (md->massB[n] - md->massA[n]) * iprod(v_corrt, v_corrt);
+                *dekindl_sum += 0.5 * (md->massB[n] - md->massA[n]) * iprod(v[n], v[n]);
             }
         }
     }
@@ -346,14 +332,6 @@ void compute_globals(gmx_global_stat*               gstat,
 
     if (bTemp)
     {
-        /* Non-equilibrium MD: this is parallellized, but only does communication
-         * when there really is NEMD.
-         */
-
-        if (PAR(cr) && (ekind->bNEMD))
-        {
-            accumulate_u(cr, &(ir->opts), ekind);
-        }
         if (!bReadEkin)
         {
             calc_ke_part(x, v, box, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel);

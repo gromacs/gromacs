@@ -3,7 +3,7 @@
 <ReferenceData>
   <File Name="EnergyFile">
     <Sequence Name="EnergyTerms">
-      <Int Name="Length">51</Int>
+      <Int Name="Length">45</Int>
       <EnergyTerm>
         <String Name="Name">LJ-14</String>
         <String Name="Units">kJ/mol</String>
@@ -184,30 +184,6 @@
         <String Name="Name">LJ-14:Lipid-Lipid</String>
         <String Name="Units">kJ/mol</String>
       </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">Ux-Protein</String>
-        <String Name="Units">nm/ps</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">Uy-Protein</String>
-        <String Name="Units">nm/ps</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">Uz-Protein</String>
-        <String Name="Units">nm/ps</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">Ux-Lipid</String>
-        <String Name="Units">nm/ps</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">Uy-Lipid</String>
-        <String Name="Units">nm/ps</String>
-      </EnergyTerm>
-      <EnergyTerm>
-        <String Name="Name">Uz-Lipid</String>
-        <String Name="Units">nm/ps</String>
-      </EnergyTerm>
     </Sequence>
     <Sequence Name="Frames">
       <Int Name="Length">1</Int>
@@ -217,7 +193,7 @@
         <String Name="Step">0</String>
         <String Name="NumSteps">0</String>
         <Sequence Name="EnergyTerms">
-          <Int Name="Length">51</Int>
+          <Int Name="Length">45</Int>
           <EnergyTerm>
             <String Name="Name">LJ-14</String>
             <Real Name="Value">11.499999999999995</Real>
@@ -398,35 +374,11 @@
             <String Name="Name">LJ-14:Lipid-Lipid</String>
             <Real Name="Value">17.5</Real>
           </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">Ux-Protein</String>
-            <Real Name="Value">18.20000000000001</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">Uy-Protein</String>
-            <Real Name="Value">18.300000000000011</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">Uz-Protein</String>
-            <Real Name="Value">18.400000000000013</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">Ux-Lipid</String>
-            <Real Name="Value">18.500000000000014</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">Uy-Lipid</String>
-            <Real Name="Value">18.600000000000016</Real>
-          </EnergyTerm>
-          <EnergyTerm>
-            <String Name="Name">Uz-Lipid</String>
-            <Real Name="Value">18.700000000000017</Real>
-          </EnergyTerm>
         </Sequence>
       </Frame>
     </Sequence>
   </File>
-  <Int Name="Number of Energy Terms">51</Int>
+  <Int Name="Number of Energy Terms">45</Int>
   <String Name="log">Current ref_t for group Water:     25.7
 Current ref_t for group Lipid:     25.8
 
@@ -469,10 +421,6 @@ Protein-Protein    1.31000e+01    1.32000e+01    1.34000e+01    1.35000e+01
     Water-Water    1.51000e+01    1.52000e+01    1.54000e+01    1.55000e+01
     Water-Lipid    1.56000e+01    1.57000e+01    1.59000e+01    1.60000e+01
     Lipid-Lipid    1.71000e+01    1.72000e+01    1.74000e+01    1.75000e+01
-
-          Group             Ux             Uy             Uz
-        Protein    1.82000e+01    1.83000e+01    1.84000e+01
-          Lipid    1.85000e+01    1.86000e+01    1.87000e+01
 
 </String>
 </ReferenceData>

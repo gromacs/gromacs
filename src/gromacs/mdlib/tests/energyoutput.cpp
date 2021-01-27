@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -320,10 +320,6 @@ public:
         mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling][1] = 1;
         mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling][2] = 2;
 
-        mtop_.groups.groups[SimulationAtomGroupType::Acceleration].resize(2);
-        mtop_.groups.groups[SimulationAtomGroupType::Acceleration][0] = 0;
-        mtop_.groups.groups[SimulationAtomGroupType::Acceleration][1] = 2;
-
         // Nose-Hoover chains
         inputrec_.bPrintNHChains     = true;
         inputrec_.opts.nhchainlength = 2;
@@ -344,7 +340,6 @@ public:
 
         // Kinetic energy and related data
         ekindata_.tcstat.resize(mtop_.groups.groups[SimulationAtomGroupType::TemperatureCoupling].size());
-        ekindata_.grpstat.resize(mtop_.groups.groups[SimulationAtomGroupType::Acceleration].size());
 
         // This is needed so that the ebin space will be allocated
         inputrec_.cos_accel = 1.0;
@@ -435,12 +430,9 @@ public:
             tcstat.T      = (*testValue += 0.1);
             tcstat.lambda = (*testValue += 0.1);
         }
-        for (auto& grpstat : ekindata_.grpstat)
-        {
-            grpstat.u[XX] = (*testValue += 0.1);
-            grpstat.u[YY] = (*testValue += 0.1);
-            grpstat.u[ZZ] = (*testValue += 0.1);
-        }
+        // Removing constant acceleration removed a total increment of 0.6
+        // To avoid unnecessary changes in reference data, we keep the increment
+        (*testValue += 0.6);
 
         // This conditional is to check whether the ebin was allocated.
         // Otherwise it will print cosacc data into the first bin.

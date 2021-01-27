@@ -2039,55 +2039,20 @@ void vrescale_tcoupl(const t_inputrec* ir, int64_t step, gmx_ekindata_t* ekind, 
 
 void rescale_velocities(const gmx_ekindata_t* ekind, const t_mdatoms* mdatoms, int start, int end, rvec v[])
 {
-    unsigned short *cACC, *cTC;
-    int             ga, gt, n, d;
-    real            lg;
-    rvec            vrel;
-
-    cTC = mdatoms->cTC;
-
+    const unsigned short*             cTC    = mdatoms->cTC;
     gmx::ArrayRef<const t_grp_tcstat> tcstat = ekind->tcstat;
 
-    if (ekind->bNEMD)
+    for (int n = start; n < end; n++)
     {
-        gmx::ArrayRef<const t_grp_acc> gstat = ekind->grpstat;
-        cACC                                 = mdatoms->cACC;
-
-        ga = 0;
-        gt = 0;
-        for (n = start; n < end; n++)
+        int gt = 0;
+        if (cTC)
         {
-            if (cACC)
-            {
-                ga = cACC[n];
-            }
-            if (cTC)
-            {
-                gt = cTC[n];
-            }
-            /* Only scale the velocity component relative to the COM velocity */
-            rvec_sub(v[n], gstat[ga].u, vrel);
-            lg = tcstat[gt].lambda;
-            for (d = 0; d < DIM; d++)
-            {
-                v[n][d] = gstat[ga].u[d] + lg * vrel[d];
-            }
+            gt = cTC[n];
         }
-    }
-    else
-    {
-        gt = 0;
-        for (n = start; n < end; n++)
+        const real lg = tcstat[gt].lambda;
+        for (int d = 0; d < DIM; d++)
         {
-            if (cTC)
-            {
-                gt = cTC[n];
-            }
-            lg = tcstat[gt].lambda;
-            for (d = 0; d < DIM; d++)
-            {
-                v[n][d] *= lg;
-            }
+            v[n][d] *= lg;
         }
     }
 }

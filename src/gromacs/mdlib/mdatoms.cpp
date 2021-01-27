@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,6 @@ MDAtoms::~MDAtoms()
     sfree(mdatoms_->ptype);
     sfree(mdatoms_->cTC);
     sfree(mdatoms_->cENER);
-    sfree(mdatoms_->cACC);
     sfree(mdatoms_->cFREEZE);
     sfree(mdatoms_->cVCM);
     sfree(mdatoms_->cORF);
@@ -289,10 +288,6 @@ void atoms2md(const gmx_mtop_t*  mtop,
             /* We always copy cTC with domain decomposition */
         }
         srenew(md->cENER, md->nalloc);
-        if (opts->ngacc > 1)
-        {
-            srenew(md->cACC, md->nalloc);
-        }
         if (opts->nFreeze
             && (opts->ngfrz > 1 || opts->nFreeze[0][XX] || opts->nFreeze[0][YY] || opts->nFreeze[0][ZZ]))
         {
@@ -480,10 +475,6 @@ void atoms2md(const gmx_mtop_t*  mtop,
                 md->cTC[i] = groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag];
             }
             md->cENER[i] = getGroupType(groups, SimulationAtomGroupType::EnergyOutput, ag);
-            if (md->cACC)
-            {
-                md->cACC[i] = groups.groupNumbers[SimulationAtomGroupType::Acceleration][ag];
-            }
             if (md->cVCM)
             {
                 md->cVCM[i] = groups.groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval][ag];

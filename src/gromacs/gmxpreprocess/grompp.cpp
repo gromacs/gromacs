@@ -1743,9 +1743,7 @@ int gmx_grompp(int argc, char* argv[])
         "Then a coordinate file is read and velocities can be generated",
         "from a Maxwellian distribution if requested.",
         "[THISMODULE] also reads parameters for [gmx-mdrun] ",
-        "(eg. number of MD steps, time step, cut-off), and others such as",
-        "NEMD parameters, which are corrected so that the net acceleration",
-        "is zero.",
+        "(eg. number of MD steps, time step, cut-off).",
         "Eventually a binary file is produced that can serve as the sole input",
         "file for the MD program.[PAR]",
 

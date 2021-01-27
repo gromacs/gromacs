@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -167,7 +167,6 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     state_.box[ZZ][YY] = 0.0;
     state_.box[ZZ][ZZ] = 10.0;
 
-    kineticEnergyData_.bNEMD            = false;
     kineticEnergyData_.cosacc.cos_accel = 0.0;
 
     kineticEnergyData_.nthreads = 1;

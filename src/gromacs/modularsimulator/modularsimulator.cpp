@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -253,9 +253,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                              "Pulling is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
-            && conditionalAssert(inputrec->opts.ngacc == 1 && inputrec->opts.acc[0][XX] == 0.0
-                                         && inputrec->opts.acc[0][YY] == 0.0
-                                         && inputrec->opts.acc[0][ZZ] == 0.0 && inputrec->cos_accel == 0.0,
+            && conditionalAssert(inputrec->cos_accel == 0.0,
                                  "Acceleration is not supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible

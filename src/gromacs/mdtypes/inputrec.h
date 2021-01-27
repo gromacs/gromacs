@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,8 +71,6 @@ struct t_grpopts
     int ngtc;
     //! Number of of Nose-Hoover chains per group
     int nhchainlength;
-    //! Number of Accelerate groups
-    int ngacc;
     //! Number of Freeze groups
     int ngfrz;
     //! Number of Energy groups
@@ -91,8 +89,6 @@ struct t_grpopts
     real** anneal_temp;
     //! Tau coupling time
     real* tau_t;
-    //! Acceleration per group
-    rvec* acc;
     //! Whether the group will be frozen in each direction
     ivec* nFreeze;
     //! Exclusions/tables of energy group pairs
@@ -564,6 +560,8 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool bAdress;
     //! Whether twin-range scheme is active - always false if a valid .tpr was read
     gmx_bool useTwinRange;
+    //! Whether we have constant acceleration - removed in GROMACS 2022
+    bool useConstantAcceleration;
 
     //! KVT object that contains input parameters converted to the new style.
     gmx::KeyValueTreeObject* params;

@@ -405,11 +405,6 @@ private:
     //! Index for scalling factor of MTTK
     int itcb_ = 0;
 
-    //! Number of acceleration groups
-    int nU_ = 0;
-    //! Index for group velocities
-    int iu_ = 0;
-
     //! Array to accumulate values during update
     real* tmp_r_ = nullptr;
     //! Array to accumulate values during update

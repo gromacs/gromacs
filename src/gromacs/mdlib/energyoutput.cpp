@@ -518,29 +518,6 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     }
     sfree(grpnms);
 
-    nU_ = groups->groups[SimulationAtomGroupType::Acceleration].size();
-    snew(tmp_v_, nU_);
-    if (nU_ > 1)
-    {
-        snew(grpnms, 3 * nU_);
-        for (i = 0; (i < nU_); i++)
-        {
-            ni = groups->groups[SimulationAtomGroupType::Acceleration][i];
-            sprintf(buf, "Ux-%s", *(groups->groupNames[ni]));
-            grpnms[3 * i + XX] = gmx_strdup(buf);
-            sprintf(buf, "Uy-%s", *(groups->groupNames[ni]));
-            grpnms[3 * i + YY] = gmx_strdup(buf);
-            sprintf(buf, "Uz-%s", *(groups->groupNames[ni]));
-            grpnms[3 * i + ZZ] = gmx_strdup(buf);
-        }
-        iu_ = get_ebin_space(ebin_, 3 * nU_, grpnms, unit_vel);
-        for (i = 0; i < 3 * nU_; i++)
-        {
-            sfree(grpnms[i]);
-        }
-        sfree(grpnms);
-    }
-
     /* Note that fp_ene should be valid on the master rank and null otherwise */
     if (fp_ene != nullptr && startingBehavior != StartingBehavior::RestartWithAppending)
     {
@@ -1055,15 +1032,6 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         }
     }
 
-    if (ekind && nU_ > 1)
-    {
-        for (int i = 0; (i < nU_); i++)
-        {
-            copy_rvec(ekind->grpstat[i].u, tmp_v_[i]);
-        }
-        add_ebin(ebin_, iu_, 3 * nU_, tmp_v_[0], bSum);
-    }
-
     ebin_increase_count(1, ebin_, bSum);
 
     // BAR + thermodynamic integration values
@@ -1432,17 +1400,6 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
         if (nTC_ > 1)
         {
             pr_ebin(log, ebin_, itemp_, nTC_, 4, eprAVER, true);
-            fprintf(log, "\n");
-        }
-        if (nU_ > 1)
-        {
-            fprintf(log, "%15s   %12s   %12s   %12s\n", "Group", "Ux", "Uy", "Uz");
-            for (int i = 0; (i < nU_); i++)
-            {
-                int ni = groups->groups[SimulationAtomGroupType::Acceleration][i];
-                fprintf(log, "%15s", *groups->groupNames[ni]);
-                pr_ebin(log, ebin_, iu_ + 3 * i, 3, 3, eprAVER, false);
-            }
             fprintf(log, "\n");
         }
     }

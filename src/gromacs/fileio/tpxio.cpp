@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,7 +134,8 @@ enum tpxv
     tpxv_StoreNonBondedInteractionExclusionGroup, /**< Store the non bonded interaction exclusion group in the topology */
     tpxv_VSite1,                                  /**< Added 1 type virtual site */
     tpxv_MTS,                                     /**< Added multiple time stepping */
-    tpxv_Count                                    /**< the total number of tpxv versions */
+    tpxv_RemovedConstantAcceleration, /**< Removed support for constant acceleration NEMD. */
+    tpxv_Count                        /**< the total number of tpxv versions */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -1548,7 +1549,11 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     {
         ir->opts.nhchainlength = 1;
     }
-    serializer->doInt(&ir->opts.ngacc);
+    int removedOptsNgacc = 0;
+    if (serializer->reading() && file_version < tpxv_RemovedConstantAcceleration)
+    {
+        serializer->doInt(&removedOptsNgacc);
+    }
     serializer->doInt(&ir->opts.ngfrz);
     serializer->doInt(&ir->opts.ngener);
 
@@ -1562,7 +1567,6 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         snew(ir->opts.anneal_temp, ir->opts.ngtc);
         snew(ir->opts.tau_t, ir->opts.ngtc);
         snew(ir->opts.nFreeze, ir->opts.ngfrz);
-        snew(ir->opts.acc, ir->opts.ngacc);
         snew(ir->opts.egp_flags, ir->opts.ngener * ir->opts.ngener);
     }
     if (ir->opts.ngtc > 0)
@@ -1575,9 +1579,18 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     {
         serializer->doIvecArray(ir->opts.nFreeze, ir->opts.ngfrz);
     }
-    if (ir->opts.ngacc > 0)
+    if (serializer->reading() && file_version < tpxv_RemovedConstantAcceleration && removedOptsNgacc > 0)
     {
-        serializer->doRvecArray(ir->opts.acc, ir->opts.ngacc);
+        std::vector<gmx::RVec> dummy;
+        dummy.resize(removedOptsNgacc);
+        serializer->doRvecArray(reinterpret_cast<rvec*>(dummy.data()), removedOptsNgacc);
+        ir->useConstantAcceleration = std::any_of(dummy.begin(), dummy.end(), [](const gmx::RVec& vec) {
+            return vec[XX] != 0.0 || vec[YY] != 0.0 || vec[ZZ] != 0.0;
+        });
+    }
+    else
+    {
+        ir->useConstantAcceleration = false;
     }
     serializer->doIntArray(ir->opts.egp_flags, ir->opts.ngener * ir->opts.ngener);
 
@@ -2593,6 +2606,11 @@ static void do_mtop(gmx::ISerializer* serializer, gmx_mtop_t* mtop, int file_ver
     }
 
     do_groups(serializer, &mtop->groups, &(mtop->symtab));
+    if (file_version < tpxv_RemovedConstantAcceleration)
+    {
+        mtop->groups.groups[SimulationAtomGroupType::AccelerationUnused].clear();
+        mtop->groups.groupNumbers[SimulationAtomGroupType::AccelerationUnused].clear();
+    }
 
     mtop->haveMoleculeIndices = true;
 
