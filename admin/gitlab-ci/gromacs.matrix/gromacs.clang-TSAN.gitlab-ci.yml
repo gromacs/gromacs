@@ -1,0 +1,62 @@
+# Test goal: Clang ThreadSanitizer
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: Clang
+#   Build type: TSAN
+#   GPU: None
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Compiler: Clang 8
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2
+
+gromacs:clang-TSAN:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    COMPILER_MAJOR_VERSION: 8
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=TSAN"
+
+gromacs:clang-TSAN:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+  needs:
+    - job: gromacs:clang-TSAN:configure
+
+gromacs:clang-TSAN:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+  needs:
+    - job: gromacs:clang-TSAN:build
+
+gromacs:clang-TSAN:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-TSAN:build
+    - job: regressiontests:prepare
+

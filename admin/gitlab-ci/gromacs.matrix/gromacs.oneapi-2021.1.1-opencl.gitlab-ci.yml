@@ -1,0 +1,62 @@
+# Test goal: Newest ICPX build with OpenCL
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: ICPX newest supported
+#   FFT: MKL
+#   GPU: OpenCL
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Build type: Debug
+#   Compiler: ICPX 2021.1
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   Parallelism nt/ntomp: 4/2
+
+gromacs:oneapi-2021.1.1-opencl:configure:
+  extends:
+   - .gromacs:base:configure
+   - .use-oneapi:base
+   - .use-opencl
+   - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    COMPILER_MAJOR_VERSION: 2021
+
+gromacs:oneapi-2021.1.1-opencl:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-ccache
+    - .use-oneapi:base
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+  needs:
+    - job: gromacs:oneapi-2021.1.1-opencl:configure
+
+gromacs:oneapi-2021.1.1-opencl:test:
+  extends:
+    - .gromacs:base:test
+    - .use-oneapi:base
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+  needs:
+    - job: gromacs:oneapi-2021.1.1-opencl:build
+
+gromacs:oneapi-2021.1.1-opencl:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-oneapi:base
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+  needs:
+    - job: gromacs:oneapi-2021.1.1-opencl:build
+    - job: regressiontests:prepare
+

@@ -25,6 +25,19 @@ H atoms in particular.
 
 :issue:`3469`
 
+pdb2gmx handles ASPH and GLUH inputs better
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The default is to treat all such residues as the unprotonated form,
+and not to try to infer the protonation from the residue name in the
+input. Protonated forms are only available via the interactive
+selection options. Now pdb2gmx reports when it is converting such
+input residues automatically. It also ensures that the output
+configuration and topology are naming such residues correctly in both
+the default and interactive-selection cases.
+
+:issue:`2480`
+
 Correct excluded perturbed interactions beyond the non-bonded cut-off distance
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -49,6 +62,15 @@ dimensions. The, now simplified, formula for the initial histogram size is
 given in the reference manual.
 
 :issue:`3751`
+
+Fixed default for tick-mark spacing in gmx xpm2ps
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This was inadvertently changed many years ago, leading to the intended
+default of automatic tick-mark spacing being replaced with an
+unsuitable fixed value.
+
+:issue:`3881`
 
 Fixed LJ Ewald exclusions when used with cut-off electrostatics
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""

@@ -51,6 +51,7 @@ include:
   # To do: Consider expanding matrix here to improve transparency and reduce file sizes.
   # E.g. '/admin/gitlab-ci/matrix/clang-8.gitlab-ci.yml
   - local: '/admin/gitlab-ci/gromacs.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix.gitlab-ci.yml'
   # Repository cleanliness. Source tidiness, linting, and policy compliance.
   - local: '/admin/gitlab-ci/lint.gitlab-ci.yml'
   # Web page and manual.

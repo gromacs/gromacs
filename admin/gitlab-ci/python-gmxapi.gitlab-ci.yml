@@ -131,3 +131,11 @@ gmxapi-0.2:gcc-10:gmx2021:py-3.8.2:
   variables:
     VENVPATH: "/root/venv/py3.8"
     PY_VER: "3.8.2"
+
+gmxapi-0.2:gcc-10:gmx2021:py-3.9.1:
+  extends:
+    - .gmxapi-0.2:gcc-10:gmx2021
+    - .rules:merge-requests:release-2021
+  variables:
+    VENVPATH: "/root/venv/py3.9"
+    PY_VER: "3.9.1"

@@ -203,7 +203,7 @@ set(GMX_VERSION_PATCH 0)
 # candidates, where it signifies the most recent such release from
 # this branch; it will be empty before the first such release, as well
 # as after the final release is out.
-set(GMX_VERSION_SUFFIX "-rc2")
+set(GMX_VERSION_SUFFIX "")
 
 # Conventionally with libtool, any ABI change must change the major
 # version number, the minor version number should change if it's just
@@ -262,7 +262,7 @@ set(REGRESSIONTEST_BRANCH "release-2021")
 # build the regressiontests tarball with all the right naming. The
 # naming affects the md5sum that has to go here, and if it isn't right
 # release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "486fa43c7b91e6cd9830d8830ecf2974" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "c9b6b2f0754b113efc44c738897a26f7" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
@@ -285,8 +285,8 @@ if (GMX_VERSION_STRING_OF_FORK)
     set(GMX_MANUAL_DOI_INTERNAL "")
     set(GMX_SOURCE_DOI_INTERNAL "")
 else()
-    set(GMX_MANUAL_DOI_INTERNAL "") # Set correct doi string here
-    set(GMX_SOURCE_DOI_INTERNAL "") # Set correct doi string here
+    set(GMX_MANUAL_DOI_INTERNAL "10.5281/zenodo.4457591") # Set correct doi string here
+    set(GMX_SOURCE_DOI_INTERNAL "10.5281/zenodo.4457626") # Set correct doi string here
 endif()
 set(GMX_MANUAL_DOI ${GMX_MANUAL_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
 set(GMX_SOURCE_DOI ${GMX_SOURCE_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
@@ -411,6 +411,7 @@ else()
             -D VERSION_CMAKEIN=${VERSION_INFO_CMAKEIN_FILE_PARTIAL}
             -D VERSION_OUT=${VERSION_INFO_CMAKE_FILE}
             -D VERSION_STRING_OF_FORK=${GMX_VERSION_STRING_OF_FORK}
+            -D SOURCE_IS_SOURCE_DISTRIBUTION=${SOURCE_IS_SOURCE_DISTRIBUTION}
             -P ${CMAKE_CURRENT_LIST_DIR}/gmxGenerateVersionInfoWithoutGit.cmake
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMENT "Generating release version information")
@@ -434,7 +435,7 @@ set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
 # not been tampered with.
 # Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
 # mean that the target is run in all builds
-if (PYTHONINTERP_FOUND)
+if (Python3_Interpreter_FOUND)
     # We need the full path to the directories after passing it through
     set(FULL_PATH_DIRECTORIES "")
     foreach(DIR ${SET_OF_DIRECTORIES_TO_CHECKSUM})
@@ -451,7 +452,7 @@ if (PYTHONINTERP_FOUND)
 else()
     add_custom_target(reference_checksum
         COMMAND ${CMAKE_COMMAND} -E echo
-        "Can not checksum files without python being available"
+        "Can not checksum files without python3 being available"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         COMMENT "Generating reference checksum of source files")
 endif()

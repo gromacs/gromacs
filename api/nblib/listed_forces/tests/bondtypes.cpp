@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +42,7 @@
  * \author Sebastian Keller <keller@cscs.ch>
  */
 #include "nblib/listed_forces/bondtypes.h"
-#include "nblib/util/internal.h"
+#include "nblib/util/util.hpp"
 
 #include "testutils/testasserts.h"
 
@@ -53,9 +53,8 @@ namespace test_detail
 {
 
 template<class B>
-void testTwoParameterBondEquality(const B& deduceType)
+void testTwoParameterBondEquality([[maybe_unused]] const B& deduceType)
 {
-    ignore_unused(deduceType);
     B a(1, 2);
     B b(1, 2);
     EXPECT_TRUE(a == b);
@@ -65,9 +64,8 @@ void testTwoParameterBondEquality(const B& deduceType)
 }
 
 template<class B>
-void testThreeParameterBondEquality(const B& deduceType)
+void testThreeParameterBondEquality([[maybe_unused]] const B& deduceType)
 {
-    ignore_unused(deduceType);
     B a(1, 2, 3);
     B b(1, 2, 3);
     EXPECT_TRUE(a == b);
@@ -77,9 +75,8 @@ void testThreeParameterBondEquality(const B& deduceType)
 }
 
 template<class B>
-void testTwoParameterBondLessThan(const B& deduceType)
+void testTwoParameterBondLessThan([[maybe_unused]] const B& deduceType)
 {
-    ignore_unused(deduceType);
     B a(1, 2);
     B b(1, 3);
     EXPECT_TRUE(a < b);
@@ -96,9 +93,8 @@ void testTwoParameterBondLessThan(const B& deduceType)
 }
 
 template<class B>
-void testThreeParameterBondLessThan(const B& deduceType)
+void testThreeParameterBondLessThan([[maybe_unused]] const B& deduceType)
 {
-    ignore_unused(deduceType);
     B a(1, 2, 1);
     B b(1, 3, 1);
     EXPECT_TRUE(a < b);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include "nblib/forcecalculator.h"
 #include "nblib/gmxcalculator.h"
 #include "nblib/gmxsetup.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace nblib
 {
@@ -52,7 +53,11 @@ ForceCalculator::~ForceCalculator() = default;
 
 ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOptions& options)
 {
-    gmxForceCalculator_ = nblib::GmxSetupDirector::setupGmxForceCalculator(system, options);
+    if (options.useGpu)
+    {
+        throw InputException("GPUs are not supported for force calculations yet.");
+    }
+    gmxForceCalculator_ = GmxSetupDirector::setupGmxForceCalculator(system, options);
 }
 
 void ForceCalculator::compute(gmx::ArrayRef<const Vec3> coordinates, gmx::ArrayRef<Vec3> forces)

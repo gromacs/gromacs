@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,13 +112,17 @@ inline std::array<int, 5> nblibOrdering(const std::array<int, 5>& t)
 } // namespace detail
 
 //! \brief sort key function object to sort 2-center interactions
-inline bool interactionSortKey(const TwoCenterInteractionIndex& lhs, const TwoCenterInteractionIndex& rhs)
+template<class Interaction>
+std::enable_if_t<Contains<Interaction, SupportedTwoCenterTypes>{}, bool>
+interactionSortKey(const InteractionIndex<Interaction>& lhs, const InteractionIndex<Interaction>& rhs)
 {
     return lhs < rhs;
 }
 
 //! \brief sort key function object to sort 3-center interactions
-inline bool interactionSortKey(const ThreeCenterInteractionIndex& lhs, const ThreeCenterInteractionIndex& rhs)
+template<class Interaction>
+std::enable_if_t<Contains<Interaction, SupportedThreeCenterTypes>{}, bool>
+interactionSortKey(const InteractionIndex<Interaction>& lhs, const InteractionIndex<Interaction>& rhs)
 {
     // position [1] is the center atom of the angle and is the only sort key
     // to allow use of std::equal_range to obtain a range of all angles with a given central atom
@@ -126,7 +130,9 @@ inline bool interactionSortKey(const ThreeCenterInteractionIndex& lhs, const Thr
 }
 
 //! \brief sort key function object to sort 4-center interactions
-inline bool interactionSortKey(const FourCenterInteractionIndex& lhs, const FourCenterInteractionIndex& rhs)
+template<class Interaction>
+std::enable_if_t<Contains<Interaction, SupportedFourCenterTypes>{}, bool>
+interactionSortKey(const InteractionIndex<Interaction>& lhs, const InteractionIndex<Interaction>& rhs)
 {
     // we only take the first center-axis-particle into account
     // this allows use of std::equal_range to find all four-center interactions with a given j-index
@@ -136,7 +142,10 @@ inline bool interactionSortKey(const FourCenterInteractionIndex& lhs, const Four
 }
 
 //! \brief sort key function object to sort 5-center interactions
-inline bool interactionSortKey(const FiveCenterInteractionIndex& lhs, const FiveCenterInteractionIndex& rhs)
+//! \brief sort key function object to sort 4-center interactions
+template<class Interaction>
+std::enable_if_t<Contains<Interaction, SupportedFiveCenterTypes>{}, bool>
+interactionSortKey(const InteractionIndex<Interaction>& lhs, const InteractionIndex<Interaction>& rhs)
 {
     return lhs < rhs;
 }

@@ -1,0 +1,75 @@
+# Test goal: Newest ICPX build with OpenCL, release build
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: ICPX newest supported
+#   Build type: RelWithAssert
+#   FFT: MKL
+#   GPU: OpenCL
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Compiler: ICPX 2021.1
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+#   Parallelism nt/ntomp: 2/1 (regression tests)
+
+gromacs:oneapi-2021.1.1-opencl:release:configure:
+  extends:
+   - .gromacs:base:release:configure
+   - .use-oneapi:base
+   - .use-opencl
+   - .rules:nightly-only-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    COMPILER_MAJOR_VERSION: 2021
+    RELEASE_BUILD_DIR: release-builds-oneapi
+
+gromacs:oneapi-2021.1.1-opencl:release:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-oneapi:base
+    - .use-opencl
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    BUILD_DIR: release-builds-oneapi
+    COMPILER_MAJOR_VERSION: 2021
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  needs:
+    - job: gromacs:oneapi-2021.1.1-opencl:release:configure
+
+gromacs:oneapi-2021.1.1-opencl:release:test:
+  extends:
+    - .gromacs:base:test
+    - .use-oneapi:base
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    BUILD_DIR: release-builds-oneapi
+  needs:
+    - job: gromacs:oneapi-2021.1.1-opencl:release:configure
+    - job: gromacs:oneapi-2021.1.1-opencl:release:build
+
+gromacs:oneapi-2021.1.1-opencl:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-oneapi:base
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-oneapi-2021.1.1
+  variables:
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
+    BUILD_DIR: release-builds-oneapi
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  needs:
+    - job: gromacs:oneapi-2021.1.1-opencl:release:build
+    - job: regressiontests:package

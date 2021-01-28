@@ -111,7 +111,9 @@ uint64_t makeRandomSeed()
     }
     else
     {
-        int64_t microsecondsSinceEpoch = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        int64_t microsecondsSinceEpoch = std::chrono::duration_cast<std::chrono::microseconds>(
+                                                 std::chrono::system_clock::now().time_since_epoch())
+                                                 .count();
         std::mt19937_64 prng(microsecondsSinceEpoch);
         return makeRandomSeedInternal(prng);
     }

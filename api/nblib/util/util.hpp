@@ -43,50 +43,19 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
-#ifndef NBLIB_UTIL_USER_H
-#define NBLIB_UTIL_USER_H
+#ifndef NBLIB_UTIL_UTIL_HPP
+#define NBLIB_UTIL_UTIL_HPP
 
-#include <functional>
-#include <iostream>
+#include <cassert>
+
 #include <sstream>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <vector>
 
-#include "nblib/basicdefinitions.h"
-#include "nblib/ppmap.h"
-#include "nblib/vector.h"
-
-namespace gmx
-{
-template<typename T>
-class ArrayRef;
-} // namespace gmx
-
 namespace nblib
 {
-
-//! Generate velocities from a Maxwell Boltzmann distribution, masses should be the
-//! same as the ones specified for the Topology object
-std::vector<Vec3> generateVelocity(real Temperature, unsigned int seed, std::vector<real> const& masses);
-
-//! Check within the container of gmx::RVecs for a NaN or inf
-bool isRealValued(gmx::ArrayRef<const Vec3> values);
-
-//! Zero a cartesian buffer
-void zeroCartesianArray(gmx::ArrayRef<Vec3> cartesianArray);
-
-//! Used to ignore unused arguments of a lambda functions
-inline void ignore_unused() {}
-
-//! Variadic argument version of the ignore_unused function
-template<class T, class... Ts>
-inline void ignore_unused(T& x, Ts&... xs)
-{
-    static_cast<void>(x);
-    ignore_unused(xs...);
-}
 
 /*! \brief A template to create structs as a type-safe alternative to using declarations
  *
@@ -135,8 +104,12 @@ private:
     T value_;
 };
 
-//! Equality comparison. For the case where a comparison between StrongTypes with matching T, but differing Phantom
-//! parameters is desired, the underlying value attribute should be compared instead
+/*! \brief StrongType equality comparison
+ *
+ * Requires that both T and Phantom template parameters match.
+ * For the case where a comparison between StrongTypes with matching T, but differing Phantom
+ * parameters is desired, the underlying value attribute should be compared instead
+ */
 template<class T, class Phantom>
 [[maybe_unused]] inline bool operator==(const StrongType<T, Phantom>& lhs, const StrongType<T, Phantom>& rhs)
 {
@@ -157,53 +130,56 @@ inline bool operator>(const StrongType<T, Phantom>& lhs, const StrongType<T, Pha
     return lhs.value() > rhs.value();
 }
 
-
-//! Base template for a holder of entries of different data types
-template<class... Ts>
-struct TypeList
+//! \brief Utility to call function with each element in tuple_
+template<class F, class... Ts>
+void for_each_tuple(F&& func, std::tuple<Ts...>& tuple_)
 {
-};
+    std::apply(
+            [f = func](auto&... args) {
+                [[maybe_unused]] auto list = std::initializer_list<int>{ (f(args), 0)... };
+            },
+            tuple_);
+}
 
-//! Base template for mapping between a datatype P templated separately with instances of type list L
-template<template<class...> class P, class L>
-struct Map_
+//! \brief Utility to call function with each element in tuple_ with const guarantee
+template<class F, class... Ts>
+void for_each_tuple(F&& func, const std::tuple<Ts...>& tuple_)
 {
-};
+    std::apply(
+            [f = func](auto&... args) {
+                [[maybe_unused]] auto list = std::initializer_list<int>{ (f(args), 0)... };
+            },
+            tuple_);
+}
 
-//! this is a specialization of the Map_ base template
-//! for the case that the L template parameter itself has template parameters
-//! in this case, the template parameters of L are caught in Ts...
-template<template<class...> class P, template<class...> class L, class... Ts>
-struct Map_<P, L<Ts...>>
+//! \brief Format strings for use in error messages
+template<class... Args>
+std::string formatString(std::string fmt, Args... args)
 {
-    //! resulting type is a TypeList of the P-template instantiated
-    //! with all template parameters of L
-    typedef TypeList<P<Ts>...> type;
-};
+    std::ostringstream os;
+    std::string        delimiter = "{}";
 
-//! Maps a datatype P to create instances where each is templated with entries of type list L
-template<template<class...> class P, class L>
-using Map = typename Map_<P, L>::type;
+    auto next_token = [](std::string& s, const std::string& delimiter_)
+    {
+        std::string token = s.substr(0, s.find(delimiter_));
 
-//! Base template for expressing a datatype P templated with all the entries in type list L
-template<template<class...> class P, class L>
-struct Reduce_
-{
-};
+        std::size_t next = s.find(delimiter_);
+        if (next == std::string::npos)
+            s.clear();
+        else
+            s.erase(0, next + delimiter_.length());
 
-//! Specialization of the Reduce_ base template
-template<template<class...> class P, template<class...> class L, class... Ts>
-struct Reduce_<P, L<Ts...>>
-{
-    //! resulting type is P instantiated
-    //! with all template parameters of L
-    typedef P<Ts...> type;
-};
+        return token;
+    };
 
-//! Expresses a data type P instantiated with all the entries in list L as template arguments
-template<template<class...> class P, class L>
-using Reduce = typename Reduce_<P, L>::type;
+    [[maybe_unused]]
+    std::initializer_list<int> unused{ 0, (os << next_token(fmt, delimiter) << args, 0)... };
+
+    os << next_token(fmt, delimiter);
+
+    return os.str();
+}
 
 } // namespace nblib
 
-#endif // NBLIB_UTIL_USER_H
+#endif // NBLIB_UTIL_UTIL_HPP

@@ -54,9 +54,13 @@
 
 #include "nblib/listed_forces/traits.h"
 #include "nblib/listed_forces/kernels.hpp"
+#include "nblib/util/util.hpp"
 #include "nblib/pbc.hpp"
+#include "nblib/vector.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/arrayref.h"
+
+#define NBLIB_ALWAYS_INLINE __attribute((always_inline))
 
 namespace nblib
 {
@@ -83,16 +87,21 @@ auto computeTwoCenter(const TwoCenterType& parameters, const BasicVector& dx, Ba
 
 /*! \brief calculate two-center interactions
  *
- * \tparam BondType
- * \param index
- * \param bondInstances
- * \param x
- * \param forces
- * \return
+ * \tparam Force buffer type
+ * \tparam TwoCenterType The bond type to compute; used for type deduction
+ * \tparam Cartesian vector type
+ * \tparam PBC type
+ * \param[in] index The atom and parameter indices used for computing the interaction
+ * \param[in] bondInstances The full type-specific interaction list
+ * \param[in] x The coordinates
+ * \param[in/out] forces The forces
+ * \param[in] pbc Object used for computing distances accounting for PBC's
+ * \return Computed kernel energies
  */
-template <class Buffer, class TwoCenterType, class BasicVector, class Pbc>
+template <class Buffer, class TwoCenterType, class BasicVector, class Pbc,
+          std::enable_if_t<Contains<TwoCenterType, SupportedTwoCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
-auto dispatchInteraction(const TwoCenterInteractionIndex& index,
+auto dispatchInteraction(const InteractionIndex<TwoCenterType>& index,
                          const std::vector<TwoCenterType>& bondInstances,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
@@ -155,12 +164,12 @@ auto computeThreeCenter(const ThreeCenterType& parameters, const BasicVector& ri
                         BasicVector* fi, BasicVector* fj, BasicVector* fk)
 {
     using ValueType = BasicVectorValueType_t<BasicVector>;
-    //! calculate 3-center common quantities: angle between x1-x2 and x2-x3
-    //! Todo: after sufficient evaluation, switch over to atan2 based algorithm
+    // calculate 3-center common quantities: angle between x1-x2 and x2-x3
+    // Todo: after sufficient evaluation, switch over to atan2 based algorithm
     ValueType costh = cos_angle(rij, rkj); /* 25             */
     ValueType theta = std::acos(costh);    /* 10             */
 
-    //! call type-specific angle kernel, e.g. harmonic, linear, quartic,  etc.
+    // call type-specific angle kernel, e.g. harmonic, linear, quartic,  etc.
     auto [force, energy] = threeCenterKernel(theta, parameters);
 
     spreadThreeCenterForces(costh, force, rij, rkj, fi, fj, fk);
@@ -168,18 +177,23 @@ auto computeThreeCenter(const ThreeCenterType& parameters, const BasicVector& ri
     return energy;
 }
 
-/*! \brief calculate three-center interactions
+/*! \brief Calculate three-center interactions
  *
- * \tparam BondType
- * \param index
- * \param bondInstances
- * \param x
- * \param forces
- * \return
+ * \tparam Force buffer type
+ * \tparam Three centre interaction parameters
+ * \tparam Cartesian vector type
+ * \tparam PBC type
+ * \param[in] index
+ * \param[in] Bond parameters
+ * \param[in] x coordinate array
+ * \param[in/out] Force buffer
+ * \param[in] PBC
+ * \return Computed kernel energies
  */
-template <class Buffer, class ThreeCenterType, class BasicVector, class Pbc>
+template <class Buffer, class ThreeCenterType, class BasicVector, class Pbc,
+          std::enable_if_t<Contains<ThreeCenterType, SupportedThreeCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
-auto dispatchInteraction(const ThreeCenterInteractionIndex& index,
+auto dispatchInteraction(const InteractionIndex<ThreeCenterType>& index,
                          const std::vector<ThreeCenterType>& parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
@@ -246,22 +260,26 @@ addThreeCenterAggregate([[maybe_unused]] const FourCenterType& parameters,
                         [[maybe_unused]] BasicVector* fk,
                         [[maybe_unused]] BasicVector* fl)
 {
-return 0.0;
+    return 0.0;
 };
 
-/*! \brief calculate four-center interactions
+/*! \brief Calculate four-center interactions
  *
+ * \tparam Force buffer type
  * \tparam FourCenterType The bond type to compute; used for type deduction
+ * \tparam Cartesian vector type
+ * \tparam PBC type
  * \param[in] index The atom and parameter indices used for computing the interaction
  * \param[in] parameters The full type-specific interaction list
  * \param[in] x The coordinates
  * \param[in/out] forces The forces
  * \param[in] pbc Object used for computing distances accounting for PBC's
- * \return
+ * \return Computed kernel energies
  */
-template <class Buffer, class FourCenterType, class BasicVector, class Pbc>
+template <class Buffer, class FourCenterType, class BasicVector, class Pbc,
+          std::enable_if_t<Contains<FourCenterType, SupportedFourCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
-auto dispatchInteraction(const FourCenterInteractionIndex& index,
+auto dispatchInteraction(const InteractionIndex<FourCenterType>& index,
                          const std::vector<FourCenterType>& parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
@@ -306,18 +324,23 @@ auto dispatchInteraction(const FourCenterInteractionIndex& index,
     return energy;
 }
 
-/*! \brief calculate five-center interactions
+/*! \brief Calculate five-center interactions
  *
- * \tparam BondType
- * \param index
- * \param bondInstances
- * \param x
- * \param forces
- * \return
+ * \tparam Force buffer type
+ * \tparam FiveCenterType The bond type to compute; used for type deduction
+ * \tparam Cartesian vector type
+ * \tparam PBC type
+ * \param[in] index The atom and parameter indices used for computing the interaction
+ * \param[in] parameters The full type-specific interaction list
+ * \param[in] x The coordinates
+ * \param[in/out] forces The forces
+ * \param[in] pbc Object used for computing distances accounting for PBC's
+ * \return Computed kernel energies
  */
-template <class Buffer, class FiveCenterType, class BasicVector, class Pbc>
+template <class Buffer, class FiveCenterType, class BasicVector, class Pbc,
+          std::enable_if_t<Contains<FiveCenterType, SupportedFiveCenterTypes>{}>* = nullptr>
 inline NBLIB_ALWAYS_INLINE
-auto dispatchInteraction(const FiveCenterInteractionIndex& index,
+auto dispatchInteraction(const InteractionIndex<FiveCenterType>& index,
                          const std::vector<FiveCenterType>& parameters,
                          gmx::ArrayRef<const BasicVector> x,
                          Buffer* forces,
@@ -345,7 +368,12 @@ auto dispatchInteraction(const FiveCenterInteractionIndex& index,
 
     const FiveCenterType& fiveCenterTypeParams = parameters[std::get<5>(index)];
 
-    ignore_unused(x, forces, fiveCenterTypeParams);
+    // this dispatch function is not in use yet, because CMap is not yet implemented
+    // we don't want to add [[maybe_unused]] in the signature
+    // and we also don't want compiler warnings, so we cast to void
+    (void)fiveCenterTypeParams;
+    (void)forces;
+
     return energy;
 }
 
@@ -353,13 +381,12 @@ auto dispatchInteraction(const FiveCenterInteractionIndex& index,
 /*! \brief implement a loop over bonds for a given BondType and Kernel
  *  corresponds to e.g. the "bonds" function at Gromacs:bonded.cpp@450
  *
- * \tparam BondType
- * \tparam Kernel unused for now
- * \param indices interaction atom pair indices + bond parameter index
- * \param bondInstances bond parameters
- * \param x coordinate input
- * \param kernel unused for now
- * \return
+ * \param[in] indices interaction atom pair indices + bond parameter index
+ * \param[in] interactionParameters bond/interaction parameters
+ * \param[in] x coordinate input
+ * \param[in/out] forces The forces
+ * \param[in] pbc Object used for computing distances accounting for PBC's
+ * \return Computed kernel energies
  */
 template <class Index, class InteractionType, class Buffer, class Pbc>
 auto computeForces(const std::vector<Index>& indices,
@@ -380,9 +407,11 @@ auto computeForces(const std::vector<Index>& indices,
 
 /*! \brief implement a loop over bond types and accumulate their force contributions
  *
- * \param interactions interaction pairs and bond parameters
- * \param x coordinate input
- * \param forces output force buffer
+ * \param[in] interactions interaction pairs and bond parameters
+ * \param[in] x coordinate input
+ * \param[in/out] forces output force buffer
+ * \param[in] pbc Object used for computing distances accounting for PBC's
+ * \return Computed kernel energies
  */
 template<class Buffer, class Pbc>
 auto reduceListedForces(const ListedInteractionData& interactions,
@@ -413,5 +442,7 @@ auto reduceListedForces(const ListedInteractionData& interactions,
 }
 
 } // namespace nblib
+
+#undef NBLIB_ALWAYS_INLINE
 
 #endif // NBLIB_LISTEDFORCES_DATAFLOW_HPP

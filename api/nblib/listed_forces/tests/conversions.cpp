@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,16 +65,16 @@ ListedInteractionData someBondsAndAngles()
     std::vector<HarmonicBondType> bonds{ bond1, bond2 };
     pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-    DefaultAngle              angle1(Degrees(100), 100);
-    DefaultAngle              angle2(Degrees(101), 200);
-    std::vector<DefaultAngle> angles{ angle1, angle2 };
-    pickType<DefaultAngle>(interactions).parameters = angles;
+    HarmonicAngleType              angle1(Degrees(100), 100);
+    HarmonicAngleType              angle2(Degrees(101), 200);
+    std::vector<HarmonicAngleType> angles{ angle1, angle2 };
+    pickType<HarmonicAngleType>(interactions).parameters = angles;
 
     std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 1, 0 }, { 1, 2, 0 }, { 2, 3, 1 } };
     pickType<HarmonicBondType>(interactions).indices = std::move(bondIndices);
 
-    std::vector<InteractionIndex<DefaultAngle>> angleIndices{ { 0, 1, 2, 0 }, { 1, 2, 3, 1 } };
-    pickType<DefaultAngle>(interactions).indices = std::move(angleIndices);
+    std::vector<InteractionIndex<HarmonicAngleType>> angleIndices{ { 0, 1, 2, 0 }, { 1, 2, 3, 1 } };
+    pickType<HarmonicAngleType>(interactions).indices = std::move(angleIndices);
 
     return interactions;
 }
@@ -89,7 +89,7 @@ TEST(ListedShims, ParameterConversion)
     EXPECT_EQ(gmx_params->iparams[0].harmonic.rA,
               pickType<HarmonicBondType>(interactions).parameters[0].equilDistance());
     EXPECT_REAL_EQ_TOL(gmx_params->iparams[2].harmonic.rA,
-                       pickType<DefaultAngle>(interactions).parameters[0].equilDistance() / DEG2RAD,
+                       pickType<HarmonicAngleType>(interactions).parameters[0].equilDistance() / DEG2RAD,
                        gmx::test::defaultRealTolerance());
 
     EXPECT_EQ(idef->il[F_BONDS].iatoms.size(), 9);

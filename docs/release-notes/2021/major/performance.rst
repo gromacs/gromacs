@@ -7,6 +7,13 @@ Performance improvements
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without the
    a space between the colon and number!
 
+Added support for multiple time-stepping
+""""""""""""""""""""""""""""""""""""""""
+
+A two-level multiple time-stepping scheme has been implemented.
+Any combination of five different force groups can be selected
+to evaluate less frequently, thereby improving performance.
+
 Extend supported use-cases for GPU version of update and constraints
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -39,3 +46,10 @@ Allow offloading GPU update and constraints without direct GPU communication
 Allow domain-decomposition and separate PME rank parallel runs to offload update and
 constraints to a GPU with CUDA without requiring the (experimental) direct GPU
 communication features to be also enabled.
+
+Tune CUDA short-range nonbonded kernel parameters on NVIDIA Volta and Ampere A100
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Recent compilers allowed re-tuning the nonbonded kernel defaults on NVIDIA Volta and
+Ampere A100GPUs which improves performance of the Ewald kernels, especially those that
+also compute energies.

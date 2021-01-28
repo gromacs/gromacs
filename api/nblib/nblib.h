@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,14 +52,13 @@
 #include "nblib/interactions.h"
 #include "nblib/kerneloptions.h"
 #include "nblib/listed_forces/bondtypes.h"
-#include "nblib/listed_forces/calculator.h"
 #include "nblib/listed_forces/definitions.h"
+#include "nblib/listed_forces/calculator.h"
 #include "nblib/molecules.h"
+#include "nblib/particlesequencer.h"
 #include "nblib/particletype.h"
-#include "nblib/ppmap.h"
 #include "nblib/simulationstate.h"
 #include "nblib/topology.h"
-#include "nblib/topologyhelpers.h"
-#include "nblib/util/user.h"
+#include "nblib/util/setup.h"
 
 #endif // NBLIB_HEADERS_H

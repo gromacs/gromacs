@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,29 +41,13 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  * \author Artem Zhmurov <zhmurov@gmail.com>
- *
- * A note on the preprocessor (PP) usage in this file:
- *
- * The PP macros defined here are used exclusively to generate
- * template instantiations declarations of the form "extern template function(X)"
- * in header files and "template function(X)" in .cpp files.
- * These declarations do not affect the program logic in any way and neither are they
- * required to read and understand the behavior of the code as they do not
- * result in any executable instructions.
- * In fact, it would even be technically possible to omit these PP generated
- * declarations in the header files and replace them with an unused static function
- * in the .cpp file that calls the template function in question
- * (e.g. Molecule::addInteraction) once with each type from the variadic template
- * TypeLists declared in this file. This would be enough to create the required instantiations.
- * It would, however, create more work for the compiler which then has to instantiate the
- * templates in the header in each translation unit where the header is included.
- * Doing this results in a compiler warning.
- *
  */
 #ifndef NBLIB_LISTEDFORCES_DEFINITIONS_H
 #define NBLIB_LISTEDFORCES_DEFINITIONS_H
 
-#include "nblib/util/user.h"
+#include <variant>
+
+#include "nblib/util/traits.hpp"
 #include "bondtypes.h"
 
 namespace nblib
@@ -71,7 +55,7 @@ namespace nblib
 
 //***********************************************************************************
 
-/*! \brief These macros define what interaction types are supported in
+/*! \brief These type lists define what interaction types are supported in
  *  -Molecule
  *  -Topology
  *  -ListedForceCalculator
@@ -81,101 +65,87 @@ namespace nblib
  *  a kernel in kernels.hpp
  */
 
-#define SUPPORTED_TWO_CENTER_TYPES \
-    HarmonicBondType, G96BondType, CubicBondType, FENEBondType, HalfAttractiveQuarticBondType
-
-#define SUPPORTED_THREE_CENTER_TYPES DefaultAngle
-
-#define SUPPORTED_FOUR_CENTER_TYPES ProperDihedral, ImproperDihedral, RyckaertBellemanDihedral
-
-#define SUPPORTED_FIVE_CENTER_TYPES Default5Center
+using SupportedTwoCenterTypes =
+        TypeList<HarmonicBondType, G96BondType, CubicBondType, FENEBondType, HalfAttractiveQuarticBondType>;
+using SupportedThreeCenterTypes = TypeList<HarmonicAngleType>;
+using SupportedFourCenterTypes = TypeList<ProperDihedral, ImproperDihedral, RyckaertBellemanDihedral>;
+using SupportedFiveCenterTypes = TypeList<Default5Center>;
 
 //***********************************************************************************
 
-#define SUPPORTED_LISTED_TYPES                                                             \
-    SUPPORTED_TWO_CENTER_TYPES, SUPPORTED_THREE_CENTER_TYPES, SUPPORTED_FOUR_CENTER_TYPES, \
-            SUPPORTED_FIVE_CENTER_TYPES
+using SupportedListedTypes =
+        Fuse<SupportedTwoCenterTypes, SupportedThreeCenterTypes, SupportedFourCenterTypes, SupportedFiveCenterTypes>;
 
-#define NBLIB_ALWAYS_INLINE __attribute((always_inline))
-
-//! \brief encodes the number of integers needed to represent 2-center interactions (bonds, pairs)
-using TwoCenterInteractionIndex = std::array<int, 3>;
-//! \brief encodes the number of integers needed to represent 3-center interactions (angles)
-using ThreeCenterInteractionIndex = std::array<int, 4>;
-//! \brief encodes the number of integers needed to represent 4-center interactions (dihedrals)
-using FourCenterInteractionIndex = std::array<int, 5>;
-//! \brief encodes the number of integers needed to represent 5-center interactions (CMAP)
-using FiveCenterInteractionIndex = std::array<int, 6>;
-
-//! \brief data type for pairwise interactions, e.g. bonds
-template<class TwoCenterType>
-struct TwoCenterData
+//! \brief meta function to map from an Interaction type to the number of interaction centers
+template<class Interaction, class = void>
+struct NCenter
 {
-    using type = TwoCenterType;
+};
 
-    // tuple format: <particleID i, particleID j, TwoCenterInstanceIndex>
-    std::vector<TwoCenterInteractionIndex> indices;
+//! \brief meta function return value for two-center interactions
+template<class Interaction>
+struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, SupportedTwoCenterTypes>{}>> :
+    std::integral_constant<std::size_t, 2>
+{
+};
+
+//! \brief meta function return value for three-center interactions
+template<class Interaction>
+struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, SupportedThreeCenterTypes>{}>> :
+    std::integral_constant<std::size_t, 3>
+{
+};
+
+//! \brief meta function return value for four-center interactions
+template<class Interaction>
+struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, SupportedFourCenterTypes>{}>> :
+    std::integral_constant<std::size_t, 4>
+{
+};
+
+//! \brief meta function return value for five-center interactions
+template<class Interaction>
+struct NCenter<Interaction, std::enable_if_t<Contains<Interaction, SupportedFiveCenterTypes>{}>> :
+    std::integral_constant<std::size_t, 5>
+{
+};
+
+template<size_t N>
+using IndexArray = std::array<int, N>;
+
+/*! \brief encodes the number of integers needed to represent N-center interactions
+ *
+ *  number of indices to store is the the number of interaction center
+ *  plus 1 index for the interaction parameter lookup
+ */
+template<class Interaction>
+using InteractionIndex = IndexArray<NCenter<Interaction>{} + 1>;
+
+// same as InteractionIndex, but just the coordinate indices
+template<class Interaction>
+using CoordinateIndex = IndexArray<NCenter<Interaction>{}>;
+
+//! \brief container data type for listed interactions
+template<class InteractionType>
+struct ListedTypeData
+{
+    using type = InteractionType;
+
+    // tuple format: <particleID i, particleID j, ..., InteractionInstanceIndex>
+    std::vector<InteractionIndex<InteractionType>> indices;
     // vector of unique TwoCenterType instances
-    std::vector<TwoCenterType> parameters;
+    std::vector<InteractionType> parameters;
 };
 
-//! \brief data type for three-center interactions, e.g. angles
-template<class ThreeCenterType>
-struct ThreeCenterData
-{
-    using type = ThreeCenterType;
-
-    // tuple format: <particleID i, particleID j, particleID k, ThreeCenterInstanceIndex>
-    std::vector<ThreeCenterInteractionIndex> indices;
-    // vector of unique ThreeCenterType instances
-    std::vector<ThreeCenterType> parameters;
-};
-
-//! \brief data type for four-center interactions, e.g. dihedrals
-template<class FourCenterType>
-struct FourCenterData
-{
-    using type = FourCenterType;
-
-    // tuple format: <particleID i, particleID j, particleID k, particleID l, FourCenterInstanceIndex>
-    std::vector<FourCenterInteractionIndex> indices;
-    // vector of unique FiveCenterType instances
-    std::vector<FourCenterType> parameters;
-};
-
-//! \brief data type for five-center interactions, e.g. CMAP
-template<class FiveCenterType>
-struct FiveCenterData
-{
-    using type = FiveCenterType;
-
-    // tuple format: <particleID i, particleID j, particleID k, particleID l, particleID m, FiveCenterInstanceIndex>
-    std::vector<FiveCenterInteractionIndex> indices;
-    // vector of unique FiveCenterType instances
-    std::vector<FiveCenterType> parameters;
-};
-
-
-using SupportedTwoCenterTypes = TypeList<SUPPORTED_TWO_CENTER_TYPES>;
-// std::tuple<TwoCenterData<TwoCenterType1>, ...>
-using TwoCenterInteractionData = Reduce<std::tuple, Map<TwoCenterData, SupportedTwoCenterTypes>>;
-
-using SupportedThreeCenterTypes = TypeList<SUPPORTED_THREE_CENTER_TYPES>;
-// std::tuple<AngleData<ThreeCenterType1>, ...>
-using ThreeCenterInteractionData = Reduce<std::tuple, Map<ThreeCenterData, SupportedThreeCenterTypes>>;
-
-using SupportedFourCenterTypes = TypeList<SUPPORTED_FOUR_CENTER_TYPES>;
-// std::tuple<FourCenterData<FourCenterType1>, ...>
-using FourCenterInteractionData = Reduce<std::tuple, Map<FourCenterData, SupportedFourCenterTypes>>;
-
-using SupportedFiveCenterTypes = TypeList<SUPPORTED_FIVE_CENTER_TYPES>;
-// std::tuple<FiveCenterData<FiveCenterType1>, ...>
-using FiveCenterInteractionData = Reduce<std::tuple, Map<FiveCenterData, SupportedFiveCenterTypes>>;
+using TwoCenterInteraction   = Reduce<std::variant, SupportedTwoCenterTypes>;
+using ThreeCenterInteraction = Reduce<std::variant, SupportedThreeCenterTypes>;
+using FourCenterInteraction  = Reduce<std::variant, SupportedFourCenterTypes>;
+using FiveCenterInteraction  = Reduce<std::variant, SupportedFiveCenterTypes>;
 
 //! This is the complete type that holds all listed interaction data
-using ListedInteractionData = decltype(std::tuple_cat(TwoCenterInteractionData{},
-                                                      ThreeCenterInteractionData{},
-                                                      FourCenterInteractionData{},
-                                                      FiveCenterInteractionData{}));
+// result: std::tuple<ListedTypeData<SupportedListedType1>, ...>
+using ListedInteractionData = Reduce<std::tuple, Map<ListedTypeData, SupportedListedTypes>>;
+
 } // namespace nblib
+
 #endif // NBLIB_LISTEDFORCES_DEFINITIONS_H

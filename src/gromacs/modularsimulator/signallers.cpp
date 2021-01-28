@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/stophandler.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 
 #include "modularsimulatorinterfaces.h"
 
@@ -122,11 +123,11 @@ std::optional<SignallerCallback> LastStepSignaller::registerNSCallback()
 LoggingSignaller::LoggingSignaller(std::vector<SignallerCallback> callbacks,
                                    Step                           nstlog,
                                    Step                           initStep,
-                                   Time                           initTime) :
+                                   StartingBehavior               startingBehavior) :
     callbacks_(std::move(callbacks)),
     nstlog_(nstlog),
     initStep_(initStep),
-    initTime_(initTime),
+    startingBehavior_(startingBehavior),
     lastStep_(-1),
     lastStepRegistrationDone_(false)
 {
@@ -134,7 +135,8 @@ LoggingSignaller::LoggingSignaller(std::vector<SignallerCallback> callbacks,
 
 void LoggingSignaller::signal(Step step, Time time)
 {
-    if (do_per_step(step, nstlog_) || step == lastStep_)
+    if (do_per_step(step, nstlog_) || step == lastStep_
+        || (step == initStep_ && startingBehavior_ == StartingBehavior::NewSimulation))
     {
         runAllCallbacks(callbacks_, step, time);
     }

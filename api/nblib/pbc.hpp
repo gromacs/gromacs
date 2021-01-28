@@ -50,8 +50,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 
-struct PbcAiuc;
-
 namespace nblib
 {
 

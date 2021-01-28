@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -162,7 +162,7 @@ MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_(MoleculeName("MeO
     HarmonicBondType ometBond(1.1, 1.2);
     methanol_.addInteraction(ParticleName("O2"), ParticleName("Me1"), ometBond);
 
-    DefaultAngle ochAngle(Degrees(108.52), 397.5);
+    HarmonicAngleType ochAngle(Degrees(108.52), 397.5);
     methanol_.addInteraction(ParticleName("O2"), ParticleName("Me1"), ParticleName("H3"), ochAngle);
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #define GMX_MATH_PADDEDVECTOR_H
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 #include "gromacs/math/arrayrefwithpadding.h"
@@ -254,31 +255,42 @@ public:
     }
     //! Copy constructor
     PaddedVector(PaddedVector const& o) : storage_(o.storage_), unpaddedEnd_(begin() + o.size()) {}
-    //! Move constructor
+    /*! \brief Move constructor
+     *
+     * Leaves \c o in a valid state (ie the destructor can be
+     * called). */
     PaddedVector(PaddedVector&& o) noexcept :
-        storage_(std::move(o.storage_)),
-        unpaddedEnd_(std::move(o.unpaddedEnd_))
+        storage_(std::exchange(o.storage_, {})),
+        unpaddedEnd_(o.unpaddedEnd_)
     {
-        unpaddedEnd_ = begin();
     }
-    //! Move constructor using \c alloc for the new vector.
+    /*! \brief Move constructor using \c alloc for the new vector.
+     *
+     * Note that \c alloc is another instance of the same allocator
+     * type as used for \c PaddedVector. This makes sense e.g. for
+     * stateful allocators such as HostAllocator used in
+     * PaddedHostVector.
+     *
+     * Leaves \c o in a valid state (ie. the destructor can be
+     * called). */
     PaddedVector(PaddedVector&& o, const Allocator& alloc) noexcept :
-        storage_(std::move(alloc)),
+        storage_(alloc),
         unpaddedEnd_(begin())
     {
-        auto unpaddedSize = o.size();
         if (alloc == o.storage_.get_allocator())
         {
-            storage_ = std::move(o.storage_);
+            std::swap(storage_, o.storage_);
+            unpaddedEnd_ = o.unpaddedEnd_;
         }
         else
         {
             // If the allocator compares differently, we must
             // reallocate and copy.
+            auto unpaddedSize = o.size();
             resizeWithPadding(unpaddedSize);
             std::copy(o.begin(), o.end(), storage_.begin());
+            unpaddedEnd_ = begin() + unpaddedSize;
         }
-        unpaddedEnd_ = begin() + unpaddedSize;
     }
     //! Construct from an initializer list
     PaddedVector(std::initializer_list<value_type> const& il) :

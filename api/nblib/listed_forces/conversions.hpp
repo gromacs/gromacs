@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,9 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic nblib utility tests
+ * This implements conversion utilities between the internal
+ * representations of the listed forces parameters for NBLIB
+ * and that of the GROMACS backend
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -44,6 +46,8 @@
 
 #ifndef NBLIB_LISTEDFORCES_CONVERSION_HPP
 #define NBLIB_LISTEDFORCES_CONVERSION_HPP
+
+#include <memory>
 
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
@@ -87,7 +91,7 @@ struct ListedIndex<G96BondType> : std::integral_constant<int, F_G96BONDS>
 };
 
 template<>
-struct ListedIndex<DefaultAngle> : std::integral_constant<int, F_ANGLES>
+struct ListedIndex<HarmonicAngleType> : std::integral_constant<int, F_ANGLES>
 {
 };
 
@@ -121,7 +125,7 @@ void transferParameters([[maybe_unused]] const InteractionData& interactionData,
 }
 
 template<>
-void transferParameters(const TwoCenterData<HarmonicBondType>& interactions, gmx_ffparams_t& gmx_params)
+void transferParameters(const ListedTypeData<HarmonicBondType>& interactions, gmx_ffparams_t& gmx_params)
 {
     for (const auto& hbond : interactions.parameters)
     {
@@ -133,7 +137,7 @@ void transferParameters(const TwoCenterData<HarmonicBondType>& interactions, gmx
 }
 
 template<>
-void transferParameters(const ThreeCenterData<DefaultAngle>& interactions, gmx_ffparams_t& gmx_params)
+void transferParameters(const ListedTypeData<HarmonicAngleType>& interactions, gmx_ffparams_t& gmx_params)
 {
     for (const auto& angle : interactions.parameters)
     {
@@ -145,7 +149,7 @@ void transferParameters(const ThreeCenterData<DefaultAngle>& interactions, gmx_f
 }
 
 template<>
-void transferParameters(const FourCenterData<ProperDihedral>& interactions, gmx_ffparams_t& gmx_params)
+void transferParameters(const ListedTypeData<ProperDihedral>& interactions, gmx_ffparams_t& gmx_params)
 {
     for (const auto& dihedral : interactions.parameters)
     {
@@ -158,7 +162,8 @@ void transferParameters(const FourCenterData<ProperDihedral>& interactions, gmx_
 }
 
 template<class TwoCenterType>
-void transferIndicesImpl(const TwoCenterData<TwoCenterType>& interactions, InteractionDefinitions& idef, int offset)
+std::enable_if_t<Contains<TwoCenterType, SupportedTwoCenterTypes>{}>
+transferIndicesImpl(const ListedTypeData<TwoCenterType>& interactions, InteractionDefinitions& idef, int offset)
 {
     for (const auto& index : interactions.indices)
     {
@@ -170,7 +175,8 @@ void transferIndicesImpl(const TwoCenterData<TwoCenterType>& interactions, Inter
 }
 
 template<class ThreeCenterType>
-void transferIndicesImpl(const ThreeCenterData<ThreeCenterType>& interactions, InteractionDefinitions& idef, int offset)
+std::enable_if_t<Contains<ThreeCenterType, SupportedThreeCenterTypes>{}>
+transferIndicesImpl(const ListedTypeData<ThreeCenterType>& interactions, InteractionDefinitions& idef, int offset)
 {
     for (const auto& index : interactions.indices)
     {
@@ -183,7 +189,8 @@ void transferIndicesImpl(const ThreeCenterData<ThreeCenterType>& interactions, I
 }
 
 template<class FourCenterType>
-void transferIndicesImpl(const FourCenterData<FourCenterType>& interactions, InteractionDefinitions& idef, int offset)
+std::enable_if_t<Contains<FourCenterType, SupportedFourCenterTypes>{}>
+transferIndicesImpl(const ListedTypeData<FourCenterType>& interactions, InteractionDefinitions& idef, int offset)
 {
     for (const auto& index : interactions.indices)
     {
@@ -197,7 +204,8 @@ void transferIndicesImpl(const FourCenterData<FourCenterType>& interactions, Int
 }
 
 template<class FiveCenterType>
-void transferIndicesImpl(const FiveCenterData<FiveCenterType>& interactions, InteractionDefinitions& idef, int offset)
+std::enable_if_t<Contains<FiveCenterType, SupportedFiveCenterTypes>{}>
+transferIndicesImpl(const ListedTypeData<FiveCenterType>& interactions, InteractionDefinitions& idef, int offset)
 {
     for (const auto& index : interactions.indices)
     {

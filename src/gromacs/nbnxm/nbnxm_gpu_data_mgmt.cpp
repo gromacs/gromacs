@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 
 #include "nbnxm_gpu_data_mgmt.h"
 
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/timing/gpu_timing.h"
@@ -101,7 +102,8 @@ void inline printEnvironmentVariableDeprecationMessage(bool               isEnvi
     }
 }
 
-enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
+enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
+                                               const DeviceInformation gmx_unused& deviceInfo)
 {
     bool bTwinCut = (ic.rcoulomb != ic.rvdw);
 
@@ -134,13 +136,19 @@ enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
                 "requested through environment variables.");
     }
 
-    /* By default, use analytical Ewald
-     * TODO: tabulated does not work in OpenCL, it needs fixing, see init_nbparam() in nbnxn_ocl_data_mgmt.cpp
-     *
+    /* By default, use analytical Ewald except with CUDA on NVIDIA CC 7.0 and 8.0.
      */
-    bool bUseAnalyticalEwald = true;
+    const bool c_useTabulatedEwaldDefault =
+#if GMX_GPU_CUDA
+            (deviceInfo.prop.major == 7 && deviceInfo.prop.minor == 0)
+            || (deviceInfo.prop.major == 8 && deviceInfo.prop.minor == 0);
+#else
+            false;
+#endif
+    bool bUseAnalyticalEwald = !c_useTabulatedEwaldDefault;
     if (forceAnalyticalEwald)
     {
+        bUseAnalyticalEwald = true;
         if (debug)
         {
             fprintf(debug, "Using analytical Ewald GPU kernels\n");
@@ -201,7 +209,7 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interacti
 
     set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
-    nbp->elecType = nbnxn_gpu_pick_ewald_kernel_type(*ic);
+    nbp->elecType = nbnxn_gpu_pick_ewald_kernel_type(*ic, nb->deviceContext_->deviceInfo());
 
     GMX_RELEASE_ASSERT(ic->coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
     init_ewald_coulomb_force_table(*ic->coulombEwaldTables, nbp, *nb->deviceContext_);
@@ -336,7 +344,8 @@ bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
             || (nb->nbparam->elecType == ElecType::EwaldAnaTwin));
 }
 
-enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t* ic)
+enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t* ic,
+                                                   const DeviceInformation gmx_unused& deviceInfo)
 {
     if (ic->eeltype == eelCUT)
     {
@@ -348,7 +357,7 @@ enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t* ic
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype == eelEWALD))
     {
-        return nbnxn_gpu_pick_ewald_kernel_type(*ic);
+        return nbnxn_gpu_pick_ewald_kernel_type(*ic, deviceInfo);
     }
     else
     {

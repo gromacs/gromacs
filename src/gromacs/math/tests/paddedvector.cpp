@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,26 +83,112 @@ using Implementations = ::testing::Types<std::allocator<int32_t>,
                                          AlignedAllocator<BasicVector<double>>>;
 TYPED_TEST_CASE(PaddedVectorTest, Implementations);
 
-TYPED_TEST(PaddedVectorTest, ConstructsResizesAndReserves)
+TYPED_TEST(PaddedVectorTest, DefaultConstructorWorks)
 {
     using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
 
     VectorType v;
-    fillInput(&v, 1);
+    EXPECT_EQ(v.size(), 0);
+    EXPECT_EQ(v.paddedSize(), 0);
+    EXPECT_TRUE(v.empty());
+    EXPECT_EQ(v.begin(), v.end());
+    EXPECT_EQ(v.cbegin(), v.cend());
+}
 
-    EXPECT_EQ(v.size(), v.size());
+TYPED_TEST(PaddedVectorTest, ResizeWorks)
+{
+    using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
+
+    VectorType v;
+
+    resizeAndFillInput(&v, 3, 1);
+    EXPECT_EQ(v.size(), 3);
+    EXPECT_GE(v.paddedSize(), 3);
     EXPECT_EQ(v.paddedSize(), v.arrayRefWithPadding().size());
     EXPECT_LE(v.size(), v.arrayRefWithPadding().size());
+}
+
+TYPED_TEST(PaddedVectorTest, ReserveWorks)
+{
+    using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
 
     VectorType vReserved;
     vReserved.reserveWithPadding(5);
-    fillInput(&vReserved, 1);
+    resizeAndFillInput(&vReserved, 3, 1);
 
-    EXPECT_EQ(vReserved.size(), vReserved.size());
     EXPECT_EQ(vReserved.paddedSize(), vReserved.arrayRefWithPadding().size());
     EXPECT_LE(vReserved.size(), vReserved.arrayRefWithPadding().size());
+}
 
-    EXPECT_LE(v.paddedSize(), vReserved.paddedSize());
+TYPED_TEST(PaddedVectorTest, ReserveWorksTheSameAsNoReserve)
+{
+    using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
+
+    VectorType v;
+    resizeAndFillInput(&v, 3, 1);
+
+    {
+        SCOPED_TRACE("Test when the reservation is larger than needed");
+        VectorType vReserved;
+        vReserved.reserveWithPadding(5);
+        resizeAndFillInput(&vReserved, 3, 1);
+
+        EXPECT_EQ(v.size(), vReserved.size());
+        EXPECT_LE(v.paddedSize(), vReserved.paddedSize());
+    }
+    {
+        SCOPED_TRACE("Test when the reservation is smaller than needed");
+        VectorType vReserved;
+        vReserved.reserveWithPadding(1);
+        resizeAndFillInput(&vReserved, 3, 1);
+
+        EXPECT_EQ(v.size(), vReserved.size());
+        EXPECT_GE(v.paddedSize(), vReserved.paddedSize());
+    }
+}
+
+TYPED_TEST(PaddedVectorTest, MoveConstructorWorks)
+{
+    using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
+
+    VectorType vOriginal;
+    resizeAndFillInput(&vOriginal, 3, 1);
+
+    VectorType v(std::move(vOriginal));
+    EXPECT_EQ(v.size(), 3);
+    EXPECT_GE(v.paddedSize(), 3);
+    EXPECT_EQ(v.paddedSize(), v.arrayRefWithPadding().size());
+    EXPECT_LE(v.size(), v.arrayRefWithPadding().size());
+}
+
+TYPED_TEST(PaddedVectorTest, MoveConstructorWithAllocatorWorks)
+{
+    using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
+
+    VectorType vOriginal;
+    resizeAndFillInput(&vOriginal, 3, 1);
+
+    TypeParam  allocatorToTest;
+    VectorType v(std::move(vOriginal), allocatorToTest);
+    EXPECT_EQ(v.size(), 3);
+    EXPECT_GE(v.paddedSize(), 3);
+    EXPECT_EQ(v.paddedSize(), v.arrayRefWithPadding().size());
+    EXPECT_LE(v.size(), v.arrayRefWithPadding().size());
+}
+
+TYPED_TEST(PaddedVectorTest, MoveAssignmentWorks)
+{
+    using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
+
+    VectorType vOriginal;
+    resizeAndFillInput(&vOriginal, 3, 1);
+
+    VectorType v;
+    v = std::move(vOriginal);
+    EXPECT_EQ(v.size(), 3);
+    EXPECT_GE(v.paddedSize(), 3);
+    EXPECT_EQ(v.paddedSize(), v.arrayRefWithPadding().size());
+    EXPECT_LE(v.size(), v.arrayRefWithPadding().size());
 }
 
 TYPED_TEST(PaddedVectorTest, ArrayRefConversionsAreIdentical)
@@ -110,7 +196,7 @@ TYPED_TEST(PaddedVectorTest, ArrayRefConversionsAreIdentical)
     using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
 
     VectorType v;
-    fillInput(&v, 1);
+    resizeAndFillInput(&v, 3, 1);
 
     SCOPED_TRACE("Comparing different paths to create identical unpadded views");
     compareViews(makeArrayRef(v), v.arrayRefWithPadding().unpaddedArrayRef());
@@ -127,8 +213,8 @@ TYPED_TEST(PaddedVectorTest, CanCopyAssign)
     using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
 
     VectorType v, w;
-    fillInput(&v, 1);
-    fillInput(&w, 2);
+    resizeAndFillInput(&v, 3, 1);
+    resizeAndFillInput(&w, 3, 2);
 
     w = v;
     compareViews(v.arrayRefWithPadding().unpaddedArrayRef(), w.arrayRefWithPadding().unpaddedArrayRef());
@@ -140,9 +226,9 @@ TYPED_TEST(PaddedVectorTest, CanMoveAssign)
     using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
 
     VectorType v, w, x;
-    fillInput(&v, 1);
-    fillInput(&w, 2);
-    fillInput(&x, 1);
+    resizeAndFillInput(&v, 3, 1);
+    resizeAndFillInput(&w, 3, 2);
+    resizeAndFillInput(&x, 3, 1);
 
     SCOPED_TRACE("Comparing padded views before move");
     compareViews(v.arrayRefWithPadding().unpaddedArrayRef(), x.arrayRefWithPadding().unpaddedArrayRef());
@@ -162,9 +248,9 @@ TYPED_TEST(PaddedVectorTest, CanSwap)
     using VectorType = PaddedVector<typename TypeParam::value_type, TypeParam>;
 
     VectorType v, w, x;
-    fillInput(&v, 1);
-    fillInput(&w, 2);
-    fillInput(&x, 1);
+    resizeAndFillInput(&v, 3, 1);
+    resizeAndFillInput(&w, 3, 2);
+    resizeAndFillInput(&x, 3, 1);
 
     std::swap(w, x);
     compareViews(v.arrayRefWithPadding().unpaddedArrayRef(), w.arrayRefWithPadding().unpaddedArrayRef());

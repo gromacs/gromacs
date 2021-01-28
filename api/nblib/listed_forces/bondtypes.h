@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,8 +55,7 @@
 #include <array>
 
 #include "nblib/particletype.h"
-#include "nblib/ppmap.h"
-#include "nblib/util/user.h"
+#include "nblib/util/util.hpp"
 
 namespace nblib
 {
@@ -221,22 +220,22 @@ inline bool operator==(const MorseBondType& a, const MorseBondType& b)
 }
 
 
-/*! \brief default angle type
+/*! \brief Harmonic angle type
  *
  * Note: the angle is always stored as radians internally
  */
-struct DefaultAngle : public TwoParameterInteraction<struct DefaultAngleParameter>
+struct HarmonicAngleType : public TwoParameterInteraction<struct HarmonicAngleTypeParameter>
 {
-    DefaultAngle() = default;
+    HarmonicAngleType() = default;
     //! \brief construct from angle given in radians
-    DefaultAngle(Radians angle, ForceConstant f) :
-        TwoParameterInteraction<struct DefaultAngleParameter>{ f, angle }
+    HarmonicAngleType(Radians angle, ForceConstant f) :
+        TwoParameterInteraction<struct HarmonicAngleTypeParameter>{ f, angle }
     {
     }
 
     //! \brief construct from angle given in degrees
-    DefaultAngle(Degrees angle, ForceConstant f) :
-        TwoParameterInteraction<struct DefaultAngleParameter>{ f, angle * DEG2RAD }
+    HarmonicAngleType(Degrees angle, ForceConstant f) :
+        TwoParameterInteraction<struct HarmonicAngleTypeParameter>{ f, angle * DEG2RAD }
     {
     }
 };

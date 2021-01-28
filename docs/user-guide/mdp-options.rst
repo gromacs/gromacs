@@ -252,18 +252,15 @@ Run control
 
 .. mdp:: mts-level2-forces
 
-   (longrange-nonbonded nonbonded pair dihedral)
-   A list of force groups that will be evaluated only every
+   (longrange-nonbonded)
+   A list of one or more force groups that will be evaluated only every
    :mdp:`mts-level2-factor` steps. Supported entries are:
    ``longrange-nonbonded``, ``nonbonded``, ``pair``, ``dihedral``, ``angle``,
    ``pull`` and ``awh``. With ``pair`` the listed pair forces (such as 1-4)
    are selected. With ``dihedral`` all dihedrals are selected, including cmap.
    All other forces, including all restraints, are evaluated and
    integrated every step. When PME or Ewald is used for electrostatics
-   and/or LJ interactions, ``longrange-nonbonded`` has to be entered here.
-   The default value should work well for most standard atomistic simulations
-   and in particular for replacing virtual site treatment for increasing
-   the time step.
+   and/or LJ interactions, ``longrange-nonbonded`` can not be omitted here.
 
 .. mdp:: mts-level2-factor
 
