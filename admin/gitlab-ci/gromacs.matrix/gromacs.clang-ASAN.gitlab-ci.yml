@@ -1,0 +1,69 @@
+# Test goal: Clang AddressSanitizer build
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: Clang
+#   Build type: ASAN
+#   GPU: no
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Compiler: Clang 8
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2
+
+gromacs:clang-ASAN:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    COMPILER_MAJOR_VERSION: 8
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
+
+gromacs:clang-ASAN:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .use-clang:base
+    - .use-ccache
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-ASAN:configure
+
+gromacs:clang-ASAN:test:
+  extends:
+    - .gromacs:base:test
+    - .use-clang:base
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CTEST_RUN_MODE: "ExperimentalMemCheck"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-ASAN:build
+
+gromacs:clang-ASAN:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .use-clang:base
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-ASAN:build
+    - job: regressiontests:prepare
+

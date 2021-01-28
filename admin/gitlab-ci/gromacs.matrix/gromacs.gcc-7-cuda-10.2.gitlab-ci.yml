@@ -1,0 +1,144 @@
+# Test goal: old versions of GCC with CUDA; GPU communications with tMPI
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: GCC oldest supported
+#   GPU: CUDA oldest supported
+#   HW: NVIDIA GPU, dual NVIDIA GPU
+#   MPI: thread_MPI
+#   Features: GPU direct communications + update (unit tests)
+#   Features: GPU direct communications + update (regression tests with dual GPU)
+#   Features: GPU update (regression tests with dual GPU)
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Build type: Debug
+#   Compiler: GCC 7
+#   GPU: CUDA 10.2
+#   SIMD: SSE 4.1
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+#   Parallelism nt/ntomp: 2/1 (regression tests)
+#   Parallelism nt/ntomp: 4/1 (regression tests with dual GPU)
+
+gromacs:gcc-7-cuda-10.2:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+    - .use-cuda
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+    COMPILER_MAJOR_VERSION: 7
+
+gromacs:gcc-7-cuda-10.2:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+  needs:
+    - job: gromacs:gcc-7-cuda-10.2:configure
+
+gromacs:gcc-7-cuda-10.2:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-7-cuda-10.2:build
+
+gromacs:gcc-7-cuda-10.2:test-gpucommupd:
+  extends:
+    - .gromacs:base:test
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    GMX_GPU_DD_COMMS: 1
+    GMX_GPU_PME_PP_COMMS: 1
+    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-7-cuda-10.2:build
+
+gromacs:gcc-7-cuda-10.2:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-7-cuda-10.2:build
+    - job: regressiontests:prepare
+
+gromacs:gcc-7-cuda-10.2:regressiontest-gpucommupd-tMPI:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    GMX_GPU_DD_COMMS: 1
+    GMX_GPU_PME_PP_COMMS: 1
+    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-7-cuda-10.2:build
+    - job: regressiontests:prepare
+  artifacts:
+    paths:
+      - regressiontests
+    when: always
+    expire_in: 1 week
+
+gromacs:gcc-7-cuda-10.2:regressiontest-upd-tMPI:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
+  variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-7-cuda-10.2:build
+    - job: regressiontests:prepare
+  artifacts:
+    paths:
+      - regressiontests
+    when: always
+    expire_in: 1 week

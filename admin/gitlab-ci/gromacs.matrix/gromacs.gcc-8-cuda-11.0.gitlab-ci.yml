@@ -1,0 +1,72 @@
+# Test goal: CUDA GPU communications with OpenMPI
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   GPU: CUDA newest supported
+#   HW: dual NVIDIA GPU
+#   MPI: OpenMPI
+#   Features: GPU direct communications + update (regression tests with dual GPU)
+#   Scope: configure, build, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Build type: RelWithDebInfo
+#   Compiler: GCC 8
+#   GPU: CUDA 11.0
+#   SIMD: SSE 4.1
+#   FFT: FFTW3
+#   Parallelism np/ntomp: 4/1 (regression tests with dual GPU)
+
+gromacs:gcc-8-cuda-11.0:configureMPI:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+    - .use-cuda
+    - .use-mpi
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+    COMPILER_MAJOR_VERSION: 8
+
+gromacs:gcc-8-cuda-11.0:buildMPI:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+  needs:
+    - job: gromacs:gcc-8-cuda-11.0:configureMPI
+
+gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
+  # Test parallelism np/ntomp: 4/1
+  # Test parallelism GPU: direct communications, update
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    REGRESSIONTEST_PARALLEL: "-np"
+    GMX_GPU_DD_COMMS: 1  
+    GMX_GPU_PME_PP_COMMS: 1
+    GMX_FORCE_UPDATE_DEFAULT_GPU: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-8-cuda-11.0:buildMPI
+    - job: regressiontests:prepare
+  artifacts:
+    paths:
+      - regressiontests
+    when: always
+    expire_in: 1 week
+

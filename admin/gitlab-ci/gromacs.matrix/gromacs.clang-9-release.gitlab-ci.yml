@@ -1,0 +1,80 @@
+# Test goal: Release build with Clang, MPI, and double-precision
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: Clang
+#   MPI: OpenMPI
+#   GPU: no
+#   Features: double precision FP
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Build type: RelWithAssert
+#   Compiler: Clang 9
+#   MPI: OpenMPI 3.1
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism np/ntomp: 4/2
+
+gromacs:clang-9:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-clang:base
+    - .use-mpi
+    - .rules:nightly-only-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    COMPILER_MAJOR_VERSION: 9
+    RELEASE_BUILD_DIR: release-builds-clang
+    CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+gromacs:clang-9:release:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    BUILD_DIR: release-builds-clang
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  needs:
+    - job: gromacs:clang-9:release:configure
+
+gromacs:clang-9:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    BUILD_DIR: release-builds-clang
+  needs:
+    - job: gromacs:clang-9:release:configure
+    - job: gromacs:clang-9:release:build
+
+gromacs:clang-9:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    BUILD_DIR: release-builds-clang
+    REGRESSIONTEST_DOUBLE: "-double"
+    REGRESSIONTEST_PARALLEL: "-np"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-9:release:build
+    - job: regressiontests:package
+

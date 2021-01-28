@@ -1,0 +1,69 @@
+# Test goal: GCC with newest CUDA; Mdrun-only build
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   GPU: CUDA newest supported
+#   HW: NVIDIA GPU
+#   Features: Mdrun-only build
+#   Scope: configure, build, unit tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Build type: RelWithAssert
+#   Compiler: GCC 8
+#   MPI: thread_MPI
+#   GPU: CUDA 11.0
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+
+gromacs:gcc-8-cuda-11.0:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-gcc:base
+    - .use-mpi
+    - .use-cuda
+    - .rules:nightly-only-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    COMPILER_MAJOR_VERSION: 8
+    RELEASE_BUILD_DIR: release-builds-gcc
+    CMAKE_EXTRA_OPTIONS: "-DGMX_BUILD_MDRUN_ONLY=ON"
+    CMAKE_BUILD_TYPE_OPTIONS : "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_REGRESSIONTEST_OPTIONS: ""
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+gromacs:gcc-8-cuda-11.0:release:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    BUILD_DIR: release-builds-gcc
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  needs:
+    - job: gromacs:gcc-8-cuda-11.0:release:configure
+
+gromacs:gcc-8-cuda-11.0:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  variables:
+    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    BUILD_DIR: release-builds-gcc
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-8-cuda-11.0:release:configure
+    - job: gromacs:gcc-8-cuda-11.0:release:build
+
