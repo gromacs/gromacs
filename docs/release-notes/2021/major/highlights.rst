@@ -1,7 +1,7 @@
 Highlights
 ^^^^^^^^^^
 
-|Gromacs| 2021 was released on INSERT DATE HERE. Patch releases may
+|Gromacs| 2021 was released on January 28th, 2021. Patch releases may
 have been made since then, please use the updated versions!  Here are
 some highlights of what you can expect, along with more detail in the
 links below!
