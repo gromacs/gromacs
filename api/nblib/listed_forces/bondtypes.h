@@ -220,7 +220,7 @@ inline bool operator==(const MorseBondType& a, const MorseBondType& b)
 }
 
 
-/*! \brief default angle type
+/*! \brief Harmonic angle type
  *
  * Note: the angle is always stored as radians internally
  */

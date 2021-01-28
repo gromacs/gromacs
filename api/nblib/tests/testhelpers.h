@@ -76,10 +76,22 @@ public:
         checker_.setDefaultTolerance(tolerance);
     }
 
-    //! Compare a given input vector of cartesians with the reference data
-    void testVectors(gmx::ArrayRef<Vec3> forces, const std::string& testString)
+    Vector3DTest(real relativeFloatingPointTolerance) : checker_(refData_.rootChecker())
     {
-        checker_.checkSequence(forces.begin(), forces.end(), testString.c_str());
+        gmx::test::FloatingPointTolerance tolerance(gmx::test::FloatingPointTolerance(
+                1e-8, 1.0e-12, relativeFloatingPointTolerance, 1.0e-12, 200, 100, true));
+        checker_.setDefaultTolerance(tolerance);
+    }
+
+    //! Compare a given input vector of cartesians with the reference data
+    void testVectors(gmx::ArrayRef<Vec3> forces, const std::string& testName)
+    {
+        checker_.checkSequence(forces.begin(), forces.end(), testName.c_str());
+    }
+
+    void testReal(real value, const std::string& testName)
+    {
+        checker_.checkReal(value, testName.c_str());
     }
 
 private:

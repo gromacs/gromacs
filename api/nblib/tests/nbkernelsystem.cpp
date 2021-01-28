@@ -67,7 +67,7 @@ namespace
 //! Macro to set Van der Waals interactions to atoms
 #define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
 
-TEST(NBlibTest, DISABLED_SpcMethanolForcesAreCorrect)
+TEST(NBlibTest, SpcMethanolForcesAreCorrect)
 {
     auto options        = NBKernelOptions();
     options.nbnxmSimd   = SimdKernels::SimdNo;
@@ -81,7 +81,7 @@ TEST(NBlibTest, DISABLED_SpcMethanolForcesAreCorrect)
     gmx::ArrayRef<Vec3> forces(simState.forces());
     ASSERT_NO_THROW(forceCalculator.compute(simState.coordinates(), forces));
 
-    Vector3DTest forcesOutputTest;
+    Vector3DTest forcesOutputTest(5e-5);
     forcesOutputTest.testVectors(forces, "SPC-methanol forces");
 }
 

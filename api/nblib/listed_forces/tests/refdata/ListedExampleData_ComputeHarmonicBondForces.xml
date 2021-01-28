@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Bond forces">
+    <Int Name="Length">3</Int>
+    <Vector>
+      <Real Name="X">-22.89764839974935</Real>
+      <Real Name="Y">128.79927224858977</Real>
+      <Real Name="Z">363.50016834602064</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-43.24622441913251</Real>
+      <Real Name="Y">-88.025652017772231</Real>
+      <Real Name="Z">-410.61635172385439</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">66.14387281888186</Real>
+      <Real Name="Y">-40.773620230817542</Real>
+      <Real Name="Z">47.116183377833721</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

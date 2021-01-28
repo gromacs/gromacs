@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Angle forces">
+    <Int Name="Length">3</Int>
+    <Vector>
+      <Real Name="X">54.726206806506241</Real>
+      <Real Name="Y">-40.167809526198106</Real>
+      <Real Name="Z">17.680008528590246</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-81.80978166674862</Real>
+      <Real Name="Y">86.196545126117257</Real>
+      <Real Name="Z">60.17372352514144</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">27.083574860242376</Real>
+      <Real Name="Y">-46.028735599919159</Real>
+      <Real Name="Z">-77.85373205373169</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>
