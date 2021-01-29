@@ -59,6 +59,7 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/baseversion.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fileredirector.h"
 #include "gromacs/utility/gmxassert.h"

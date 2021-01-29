@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,9 +52,11 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <type_traits>
 
 #include "gromacs/math/functions.h"
+
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"

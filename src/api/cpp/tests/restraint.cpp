@@ -45,7 +45,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/classhelpers.h"
 
 namespace gmxapi
 {

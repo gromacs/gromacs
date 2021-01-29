@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,10 +45,10 @@
 
 #include <cstddef>
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/iserializer.h"
 
 namespace gmx
@@ -96,7 +96,7 @@ public:
 private:
     class Impl;
 
-    PrivateImplPointer<Impl> impl_;
+    std::unique_ptr<Impl> impl_;
 };
 
 class InMemoryDeserializer : public ISerializer
@@ -130,7 +130,7 @@ public:
 private:
     class Impl;
 
-    PrivateImplPointer<Impl> impl_;
+    std::unique_ptr<Impl> impl_;
 };
 
 } // namespace gmx

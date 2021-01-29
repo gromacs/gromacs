@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,10 +42,11 @@
 #ifndef GMX_TRAJECTORYANALYSIS_TESTS_MODULETEST_H
 #define GMX_TRAJECTORYANALYSIS_TESTS_MODULETEST_H
 
+#include <memory>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/trajectoryanalysis/analysismodule.h"
-#include "gromacs/utility/classhelpers.h"
 
 #include "testutils/cmdlinetest.h"
 
@@ -180,7 +181,7 @@ protected:
 private:
     class Impl;
 
-    PrivateImplPointer<Impl> impl_;
+    std::unique_ptr<Impl> impl_;
 };
 
 /*! \internal \brief

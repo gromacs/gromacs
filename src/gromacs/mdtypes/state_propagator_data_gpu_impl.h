@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,8 @@
 
 #include "config.h"
 
+#include <memory>
+
 #include "gromacs/gpu_utils/devicebuffer.h"
 #if GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
@@ -55,9 +57,9 @@
 #elif GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/gpueventsynchronizer_sycl.h"
 #endif
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
-#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
 struct gmx_wallcycle;

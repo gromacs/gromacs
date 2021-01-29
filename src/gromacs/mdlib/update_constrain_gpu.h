@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,11 +44,12 @@
 #ifndef GMX_MDLIB_UPDATE_CONSTRAIN_GPU_H
 #define GMX_MDLIB_UPDATE_CONSTRAIN_GPU_H
 
+#include <memory>
+
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/classhelpers.h"
 
 class DeviceContext;
 class DeviceStream;
@@ -179,7 +180,7 @@ public:
 
 private:
     class Impl;
-    gmx::PrivateImplPointer<Impl> impl_;
+    std::unique_ptr<Impl> impl_;
 };
 
 } // namespace gmx

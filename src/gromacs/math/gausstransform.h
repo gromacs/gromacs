@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,13 +43,13 @@
 #ifndef GMX_MATH_GAUSSTRANSFORM_H
 #define GMX_MATH_GAUSSTRANSFORM_H
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdspan/mdspan.h"
-#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -121,7 +121,7 @@ public:
 
 private:
     class Impl;
-    PrivateImplPointer<Impl> impl_;
+    std::unique_ptr<Impl> impl_;
 };
 
 /*! \libinternal \brief Parameters for density spreading kernels.
@@ -204,7 +204,7 @@ public:
 
 private:
     class Impl;
-    PrivateImplPointer<Impl> impl_;
+    std::unique_ptr<Impl> impl_;
 };
 
 /*! \internal \brief A 3-orthotope over integer intervals.

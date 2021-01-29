@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,7 @@
 #ifndef GMX_ANALYSISDATA_DATASTORAGE_H
 #define GMX_ANALYSISDATA_DATASTORAGE_H
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/analysisdata/dataframe.h"
@@ -428,7 +429,7 @@ public:
 private:
     typedef internal::AnalysisDataStorageImpl Impl;
 
-    PrivateImplPointer<Impl> impl_;
+    std::unique_ptr<Impl> impl_;
 };
 
 } // namespace gmx
