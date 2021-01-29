@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #define GMX_EWALD_PME_H
 
 #include <string>
+#include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
@@ -83,6 +84,29 @@ class ForceWithVirial;
 class MDLogger;
 enum class PinningPolicy : int;
 class StepWorkload;
+
+/*! \libinternal \brief Class for managing usage of separate PME-only ranks
+ *
+ * Used for checking if some parts of the code could not use PME-only ranks
+ *
+ */
+class SeparatePmeRanksPermitted
+{
+public:
+    //! Disables PME ranks permitted flag with a reason
+    void disablePmeRanks(const std::string& reason);
+    //! Return status of PME ranks usage
+    bool permitSeparatePmeRanks() const;
+    //! Returns all reasons, for not using PME ranks
+    std::string reasonsWhyDisabled() const;
+
+private:
+    //! Flag that informs whether simualtion could use dedicated PME ranks
+    bool permitSeparatePmeRanks_ = true;
+    //! Storage for all reasons, why PME ranks could not be used
+    std::vector<std::string> reasons_;
+};
+
 } // namespace gmx
 
 enum
