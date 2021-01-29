@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -67,11 +67,11 @@ if (GMX_LIB_MPI)
     # Clarification should be possible with resolution of #3672.
     set(_gmx_mpi_type "library")
     # Ref https://cmake.org/cmake/help/v3.13/module/FindMPI.html#variables-for-using-mpi
-    find_package(MPI COMPONENTS C)
-    if (MPI_C_FOUND)
-        target_link_libraries(gmxapi PRIVATE MPI::MPI_C)
+    find_package(MPI COMPONENTS CXX)
+    if (MPI_CXX_FOUND)
+target_link_libraries(gmxapi PRIVATE MPI::MPI_CXX)
         # If clients also need to link this target, we need to provide help in gmxapi-config.cmake
-        set(_gmxapi_find_dependencies "find_dependency(MPI COMPONENTS C)")
+        set(_gmxapi_find_dependencies "find_dependency(MPI COMPONENTS CXX)")
     else()
         message(FATAL_ERROR "Building gmxapi for MPI-enabled GROMACS, but no MPI toolchain found.")
     endif ()

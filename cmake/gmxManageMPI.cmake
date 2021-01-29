@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -50,15 +50,15 @@ if(GMX_MPI)
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
   if(NOT MPI_FOUND)
       find_package(MPI)
-      if(MPI_C_FOUND)
-          set(MPI_COMPILE_FLAGS ${MPI_C_COMPILE_FLAGS})
+      if(MPI_CXX_FOUND)
+          set(MPI_COMPILE_FLAGS ${MPI_CXX_COMPILE_FLAGS})
           separate_arguments(MPI_COMPILE_FLAGS)
-          set(MPI_LINKER_FLAGS ${MPI_C_LINK_FLAGS})
-          separate_arguments(MPI_C_LINK_FLAGS)
-          include_directories(SYSTEM ${MPI_C_INCLUDE_PATH})
-          list(APPEND GMX_COMMON_LIBRARIES ${MPI_C_LIBRARIES})
+          set(MPI_LINKER_FLAGS ${MPI_CXX_LINK_FLAGS})
+          separate_arguments(MPI_CXX_LINK_FLAGS)
+          include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
+          list(APPEND GMX_COMMON_LIBRARIES ${MPI_CXX_LIBRARIES})
       endif()
-      set(MPI_FOUND ${MPI_C_FOUND})
+      set(MPI_FOUND ${MPI_CXX_FOUND})
   else()
       # The following defaults are based on FindMPI.cmake in cmake
       # 3.1.2. (That package does not actually do any detection of the
@@ -91,8 +91,8 @@ if(GMX_MPI)
     endif()
 
     # Find path of the mpi compilers
-    if (${MPI_C_FOUND})
-        get_filename_component(_mpi_c_compiler_path "${MPI_C_COMPILER}" PATH)
+    if (${MPI_CXX_FOUND})
+        get_filename_component(_mpi_c_compiler_path "${MPI_CXX_COMPILER}" PATH)
         get_filename_component(_mpiexec_path "${MPIEXEC}" PATH)
     else()
         get_filename_component(_cmake_c_compiler_path "${CMAKE_C_COMPILER}" PATH)
@@ -172,7 +172,7 @@ if(GMX_MPI)
       message(FATAL_ERROR
         "MPI support requested, but no MPI compiler found. Either set the "
         "C-compiler (CMAKE_C_COMPILER) to the MPI compiler (often called mpicc), "
-        "or set the variables reported missing for MPI_C above.")
+        "or set the variables reported missing for MPI_CXX above.")
   endif()
 
   set(GMX_LIB_MPI 1)
