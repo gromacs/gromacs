@@ -1580,6 +1580,7 @@ int Mdrunner::mdrunner()
     {
         mdModulesNotifier.notify(*cr);
         mdModulesNotifier.notify(&atomSets);
+        mdModulesNotifier.notify(mtop);
         mdModulesNotifier.notify(inputrec->pbcType);
         mdModulesNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
         /* Initiate forcerecord */

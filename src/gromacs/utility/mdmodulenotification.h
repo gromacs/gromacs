@@ -50,6 +50,7 @@
 #include "gromacs/utility/mdmodulenotification-impl.h"
 
 struct t_commrec;
+struct gmx_mtop_t;
 enum class PbcType : int;
 
 namespace gmx
@@ -198,6 +199,7 @@ struct MdModulesNotifier
      *                           wrote to .tpr files
      * LocalAtomSetManager* enables modules to add atom indices to local atom sets
      *                      to be managed
+     * const gmx_mtop_t& provides the topology of the system to the modules
      * MdModulesEnergyOutputToDensityFittingRequestChecker* enables modules to
      *                      report if they want to write their energy output
      *                      to the density fitting field in the energy files
@@ -213,6 +215,7 @@ struct MdModulesNotifier
      */
     registerMdModuleNotification<const KeyValueTreeObject&,
                                  LocalAtomSetManager*,
+                                 const gmx_mtop_t&,
                                  MdModulesEnergyOutputToDensityFittingRequestChecker*,
                                  SeparatePmeRanksPermitted*,
                                  const PbcType&,
