@@ -48,6 +48,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <mutex>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec_struct.h"
@@ -73,7 +74,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -1413,9 +1413,9 @@ static PullCoordVectorForces calculateVectorForces(const pull_coord_work_t& pcrd
  * We could use a different, local mutex for each pull object, but the overhead
  * is extremely small here and registration is only done during initialization.
  */
-static gmx::Mutex registrationMutex;
+static std::mutex registrationMutex;
 
-using Lock = gmx::lock_guard<gmx::Mutex>;
+using Lock = std::lock_guard<std::mutex>;
 
 void register_external_pull_potential(struct pull_t* pull, int coord_index, const char* provider)
 {

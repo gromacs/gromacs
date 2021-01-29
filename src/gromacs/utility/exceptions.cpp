@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,8 +51,6 @@
 #include <new>
 #include <stdexcept>
 #include <typeinfo>
-
-#include "thread_mpi/system_error.h"
 
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/fatalerror.h"
@@ -508,10 +506,6 @@ void printFatalErrorMessage(FILE* fp, const std::exception& ex)
     if (gmxEx != nullptr)
     {
         title = getErrorCodeString(gmxEx->errorCode());
-    }
-    else if (dynamic_cast<const tMPI::system_error*>(&ex) != nullptr)
-    {
-        title = "System error in thread synchronization";
     }
     else if (dynamic_cast<const std::bad_alloc*>(&ex) != nullptr)
     {

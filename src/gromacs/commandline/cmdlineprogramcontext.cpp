@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,13 +52,13 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <mutex>
 #include <string>
 #include <vector>
 
 #include "buildinfo.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -306,7 +306,7 @@ public:
     mutable std::string          fullBinaryPath_;
     mutable std::string          installationPrefix_;
     mutable bool                 bSourceLayout_;
-    mutable Mutex                binaryPathMutex_;
+    mutable std::mutex           binaryPathMutex_;
 };
 
 CommandLineProgramContext::Impl::Impl() : programName_("GROMACS"), bSourceLayout_(false) {}
@@ -388,14 +388,14 @@ const char* CommandLineProgramContext::commandLine() const
 
 const char* CommandLineProgramContext::fullBinaryPath() const
 {
-    lock_guard<Mutex> lock(impl_->binaryPathMutex_);
+    std::lock_guard<std::mutex> lock(impl_->binaryPathMutex_);
     impl_->findBinaryPath();
     return impl_->fullBinaryPath_.c_str();
 }
 
 InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
 {
-    lock_guard<Mutex> lock(impl_->binaryPathMutex_);
+    std::lock_guard<std::mutex> lock(impl_->binaryPathMutex_);
     if (impl_->installationPrefix_.empty())
     {
         impl_->findBinaryPath();

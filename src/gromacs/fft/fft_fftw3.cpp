@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,12 +41,13 @@
 #include <cerrno>
 #include <cstdlib>
 
+#include <mutex>
+
 #include <fftw3.h>
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/mutex.h"
 
 #if GMX_DOUBLE
 #    define FFTWPREFIX(name) fftw_##name
@@ -56,7 +57,7 @@
 
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */
-static gmx::Mutex big_fftw_mutex;
+static std::mutex big_fftw_mutex;
 #define FFTW_LOCK              \
     try                        \
     {                          \

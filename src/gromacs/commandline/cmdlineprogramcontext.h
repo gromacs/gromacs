@@ -187,7 +187,6 @@ public:
      * Returns the full path of the running binary.
      *
      * \throws std::bad_alloc if out of memory.
-     * \throws tMPI::system_error on thread synchronization errors.
      *
      * Returns argv[0] if there was an error in finding the absolute path.
      */
@@ -196,7 +195,6 @@ public:
      * Returns the installation prefix (for finding \Gromacs data files).
      *
      * \throws std::bad_alloc if out of memory.
-     * \throws tMPI::system_error on thread synchronization errors.
      *
      * Returns a hardcoded path set during configuration time if there is
      * an error in finding the library data files.

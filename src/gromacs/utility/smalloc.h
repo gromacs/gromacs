@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team.
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -357,7 +358,7 @@ constexpr float OVER_ALLOC_FAC = 1.19F;
  * This is mdrun-specific, so it might be better to put this and
  * over_alloc_dd() much higher up.
  */
-void set_over_alloc_dd(gmx_bool set);
+void set_over_alloc_dd(bool set);
 
 /*! \brief
  * Returns new allocation count for domain decomposition allocations.

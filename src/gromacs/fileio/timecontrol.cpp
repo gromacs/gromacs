@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 
 #include "timecontrol.h"
 
-#include "thread_mpi/threads.h"
+#include <mutex>
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -56,16 +56,15 @@ typedef struct
 
 static t_timecontrol timecontrol[TNR] = { { 0, FALSE }, { 0, FALSE }, { 0, FALSE } };
 
-static tMPI_Thread_mutex_t tc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+static std::mutex g_timeControlMutex;
 
 gmx_bool bTimeSet(int tcontrol)
 {
     gmx_bool ret;
 
-    tMPI_Thread_mutex_lock(&tc_mutex);
+    const std::lock_guard<std::mutex> lock(g_timeControlMutex);
     range_check(tcontrol, 0, TNR);
     ret = timecontrol[tcontrol].bSet;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
 
     return ret;
 }
@@ -74,18 +73,16 @@ real rTimeValue(int tcontrol)
 {
     real ret;
 
-    tMPI_Thread_mutex_lock(&tc_mutex);
+    const std::lock_guard<std::mutex> lock(g_timeControlMutex);
     range_check(tcontrol, 0, TNR);
     ret = timecontrol[tcontrol].t;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
     return ret;
 }
 
 void setTimeValue(int tcontrol, real value)
 {
-    tMPI_Thread_mutex_lock(&tc_mutex);
+    const std::lock_guard<std::mutex> lock(g_timeControlMutex);
     range_check(tcontrol, 0, TNR);
     timecontrol[tcontrol].t    = value;
     timecontrol[tcontrol].bSet = TRUE;
-    tMPI_Thread_mutex_unlock(&tc_mutex);
 }

@@ -59,6 +59,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <mutex>
 #include <vector>
 
 #include "gromacs/math/functions.h"
@@ -69,7 +70,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
-#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "position.h"
@@ -321,7 +321,7 @@ private:
     //! Data structure to hold the grid cell contents.
     CellList cells_;
 
-    Mutex          createPairSearchMutex_;
+    std::mutex     createPairSearchMutex_;
     PairSearchList pairSearchList_;
 
     friend class AnalysisNeighborhoodPairSearchImpl;
@@ -452,7 +452,7 @@ AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
 
 AnalysisNeighborhoodSearchImpl::PairSearchImplPointer AnalysisNeighborhoodSearchImpl::getPairSearch()
 {
-    lock_guard<Mutex> lock(createPairSearchMutex_);
+    std::lock_guard<std::mutex> lock(createPairSearchMutex_);
     // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
     // separate pool of unused search objects.
     PairSearchList::const_iterator i;
@@ -1255,7 +1255,7 @@ public:
 
     SearchImplPointer getSearch();
 
-    Mutex                   createSearchMutex_;
+    std::mutex              createSearchMutex_;
     SearchList              searchList_;
     real                    cutoff_;
     const ListOfLists<int>* excls_;
@@ -1265,7 +1265,7 @@ public:
 
 AnalysisNeighborhood::Impl::SearchImplPointer AnalysisNeighborhood::Impl::getSearch()
 {
-    lock_guard<Mutex> lock(createSearchMutex_);
+    std::lock_guard<std::mutex> lock(createSearchMutex_);
     // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
     // separate pool of unused search objects.
     SearchList::const_iterator i;

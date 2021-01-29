@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include <mutex>
 #include <vector>
 
 #if HAVE_IO_H
@@ -60,7 +61,6 @@
 #include "gromacs/fileio/md5.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "gmxfio_impl.h"
@@ -82,9 +82,9 @@ static t_fileio* open_files = nullptr;
    opening and closing of files, or during global operations like
    iterating along all open files. All these cases should be rare
    during the simulation. */
-static gmx::Mutex open_file_mutex;
+static std::mutex open_file_mutex;
 
-using Lock = gmx::lock_guard<gmx::Mutex>;
+using Lock = std::lock_guard<std::mutex>;
 
 /******************************************************************
  *

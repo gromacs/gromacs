@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,11 +86,13 @@ FILE* debug = 0;
 
 #if GMX_FFT_FFTW3
 
+#    include <mutex>
+
 #    include "gromacs/utility/exceptions.h"
-#    include "gromacs/utility/mutex.h"
+
 /* none of the fftw3 calls, except execute(), are thread-safe, so
    we need to serialize them with this mutex. */
-static gmx::Mutex big_fftw_mutex;
+static std::mutex big_fftw_mutex;
 #    define FFTW_LOCK              \
         try                        \
         {                          \

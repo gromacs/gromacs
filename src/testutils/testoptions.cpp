@@ -44,10 +44,10 @@
 #include "testutils/testoptions.h"
 
 #include <list>
+#include <mutex>
 
 #include <memory>
 #include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/mutex.h"
 
 namespace gmx
 {
@@ -75,7 +75,7 @@ public:
     //! Adds a provider into the registry.
     void add(const char* /*name*/, TestOptionsProvider* provider)
     {
-        lock_guard<Mutex> lock(listMutex_);
+        std::lock_guard<std::mutex> lock(listMutex_);
         providerList_.push_back(provider);
     }
 
@@ -87,7 +87,7 @@ private:
 
     typedef std::list<TestOptionsProvider*> ProviderList;
 
-    Mutex        listMutex_;
+    std::mutex   listMutex_;
     ProviderList providerList_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(TestOptionsRegistry);
@@ -97,7 +97,7 @@ void TestOptionsRegistry::initOptions(IOptionsContainer* options)
 {
     // TODO: Have some deterministic order for the options; now it depends on
     // the order in which the global initializers are run.
-    lock_guard<Mutex>            lock(listMutex_);
+    std::lock_guard<std::mutex>  lock(listMutex_);
     ProviderList::const_iterator i;
     for (i = providerList_.begin(); i != providerList_.end(); ++i)
     {

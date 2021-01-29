@@ -220,10 +220,6 @@ MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
         list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/winthreads.cpp)
     endif ()
 
-    if (TMPI_CXX_LIB)
-        list(APPEND ${SRC_VARIABLE} ${SRC_ROOT}/system_error.cpp)
-    endif ()
-
     if (TMPI_ENABLED)
         list(APPEND ${SRC_VARIABLE}
              ${SRC_ROOT}/alltoall.cpp      ${SRC_ROOT}/p2p_protocol.cpp

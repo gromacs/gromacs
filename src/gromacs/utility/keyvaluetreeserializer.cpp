@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -36,10 +36,11 @@
 
 #include "keyvaluetreeserializer.h"
 
+#include <mutex>
+
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/mutex.h"
 
 namespace gmx
 {
@@ -68,12 +69,12 @@ private:
         DeserializerFunction deserialize;
     };
 
-    static Mutex                                         s_initMutex;
+    static std::mutex                                    s_initMutex;
     static std::map<std::type_index, Serializer>         s_serializers;
     static std::map<unsigned char, DeserializerFunction> s_deserializers;
 };
 
-Mutex                                                          ValueSerializer::s_initMutex;
+std::mutex                                                     ValueSerializer::s_initMutex;
 std::map<std::type_index, ValueSerializer::Serializer>         ValueSerializer::s_serializers;
 std::map<unsigned char, ValueSerializer::DeserializerFunction> ValueSerializer::s_deserializers;
 
@@ -230,7 +231,7 @@ void serializeValueType(const KeyValueTreeValue& value, ISerializer* serializer)
 // static
 void ValueSerializer::initSerializers()
 {
-    lock_guard<Mutex> lock(s_initMutex);
+    std::lock_guard<std::mutex> lock(s_initMutex);
     if (!s_serializers.empty())
     {
         return;
