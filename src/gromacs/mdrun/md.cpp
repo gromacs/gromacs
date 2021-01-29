@@ -672,7 +672,7 @@ void gmx::LegacySimulator::do_md()
                         shake_vir,
                         total_vir,
                         pres,
-                        constr,
+                        gmx::ArrayRef<real>{},
                         &nullSignaller,
                         state->box,
                         &totalNumberOfBondedInteractions,
@@ -724,7 +724,7 @@ void gmx::LegacySimulator::do_md()
                         shake_vir,
                         total_vir,
                         pres,
-                        constr,
+                        gmx::ArrayRef<real>{},
                         &nullSignaller,
                         state->box,
                         nullptr,
@@ -1046,7 +1046,7 @@ void gmx::LegacySimulator::do_md()
                             nullptr,
                             nullptr,
                             nullptr,
-                            constr,
+                            gmx::ArrayRef<real>{},
                             &nullSignaller,
                             state->box,
                             &totalNumberOfBondedInteractions,
@@ -1597,34 +1597,36 @@ void gmx::LegacySimulator::do_md()
                 bool                doIntraSimSignal = true;
                 SimulationSignaller signaller(&signals, cr, ms, doInterSimSignal, doIntraSimSignal);
 
-                compute_globals(gstat,
-                                cr,
-                                ir,
-                                fr,
-                                ekind,
-                                makeConstArrayRef(state->x),
-                                makeConstArrayRef(state->v),
-                                state->box,
-                                mdatoms,
-                                nrnb,
-                                &vcm,
-                                wcycle,
-                                enerd,
-                                force_vir,
-                                shake_vir,
-                                total_vir,
-                                pres,
-                                constr,
-                                &signaller,
-                                lastbox,
-                                &totalNumberOfBondedInteractions,
-                                &bSumEkinhOld,
-                                (bGStat ? CGLO_GSTAT : 0) | (!EI_VV(ir->eI) && bCalcEner ? CGLO_ENERGY : 0)
-                                        | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
-                                        | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
-                                        | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) | CGLO_CONSTRAINT
-                                        | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
-                                                                                 : 0));
+                compute_globals(
+                        gstat,
+                        cr,
+                        ir,
+                        fr,
+                        ekind,
+                        makeConstArrayRef(state->x),
+                        makeConstArrayRef(state->v),
+                        state->box,
+                        mdatoms,
+                        nrnb,
+                        &vcm,
+                        wcycle,
+                        enerd,
+                        force_vir,
+                        shake_vir,
+                        total_vir,
+                        pres,
+                        (!EI_VV(ir->eI) && bCalcEner && constr != nullptr) ? constr->rmsdData()
+                                                                           : gmx::ArrayRef<real>{},
+                        &signaller,
+                        lastbox,
+                        &totalNumberOfBondedInteractions,
+                        &bSumEkinhOld,
+                        (bGStat ? CGLO_GSTAT : 0) | (!EI_VV(ir->eI) && bCalcEner ? CGLO_ENERGY : 0)
+                                | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
+                                | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
+                                | (!EI_VV(ir->eI) ? CGLO_PRESSURE : 0) | CGLO_CONSTRAINT
+                                | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
+                                                                         : 0));
                 checkNumberOfBondedInteractions(mdlog,
                                                 cr,
                                                 totalNumberOfBondedInteractions,

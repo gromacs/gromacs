@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/tgroup.h"
@@ -136,20 +135,20 @@ static int filter_enerdterm(const real* afrom, gmx_bool bToBuffer, real* ato, gm
     return to;
 }
 
-void global_stat(const gmx_global_stat*  gs,
-                 const t_commrec*        cr,
-                 gmx_enerdata_t*         enerd,
-                 tensor                  fvir,
-                 tensor                  svir,
-                 const t_inputrec*       inputrec,
-                 gmx_ekindata_t*         ekind,
-                 const gmx::Constraints* constr,
-                 t_vcm*                  vcm,
-                 int                     nsig,
-                 real*                   sig,
-                 int*                    totalNumberOfBondedInteractions,
-                 bool                    bSumEkinhOld,
-                 int                     flags)
+void global_stat(const gmx_global_stat* gs,
+                 const t_commrec*       cr,
+                 gmx_enerdata_t*        enerd,
+                 tensor                 fvir,
+                 tensor                 svir,
+                 const t_inputrec*      inputrec,
+                 gmx_ekindata_t*        ekind,
+                 gmx::ArrayRef<real>    constraintsRmsdData,
+                 t_vcm*                 vcm,
+                 int                    nsig,
+                 real*                  sig,
+                 int*                   totalNumberOfBondedInteractions,
+                 bool                   bSumEkinhOld,
+                 int                    flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
     t_bin* rb;
@@ -235,17 +234,12 @@ void global_stat(const gmx_global_stat*  gs,
         ifv = add_binr(rb, DIM * DIM, fvir[0]);
     }
 
-    gmx::ArrayRef<real> rmsdData;
     if (bEner)
     {
         ie = add_binr(rb, nener, copyenerd);
-        if (constr)
+        if (!constraintsRmsdData.empty())
         {
-            rmsdData = constr->rmsdData();
-            if (!rmsdData.empty())
-            {
-                irmsd = add_binr(rb, 2, rmsdData.data());
-            }
+            irmsd = add_binr(rb, 2, constraintsRmsdData.data());
         }
 
         for (j = 0; (j < egNR); j++)
@@ -340,9 +334,9 @@ void global_stat(const gmx_global_stat*  gs,
     if (bEner)
     {
         extract_binr(rb, ie, nener, copyenerd);
-        if (!rmsdData.empty())
+        if (!constraintsRmsdData.empty())
         {
-            extract_binr(rb, irmsd, rmsdData);
+            extract_binr(rb, irmsd, constraintsRmsdData);
         }
 
         for (j = 0; (j < egNR); j++)
