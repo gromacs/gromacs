@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Reduced forces">
+    <Int Name="Length">3</Int>
+    <Vector>
+      <Real Name="X">31.828558406756891</Real>
+      <Real Name="Y">88.63146272239166</Real>
+      <Real Name="Z">381.18017687461088</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-125.05600608588114</Real>
+      <Real Name="Y">-1.8291068916549733</Real>
+      <Real Name="Z">-350.44262819871295</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">93.227447679124239</Real>
+      <Real Name="Y">-86.802355830736701</Real>
+      <Real Name="Z">-30.737548675897969</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

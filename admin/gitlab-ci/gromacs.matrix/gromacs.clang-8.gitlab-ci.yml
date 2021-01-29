@@ -1,0 +1,54 @@
+# Test goal: Simple Clang build with no GPU
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   Compiler: Clang
+#   GPU: no
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Build type: Debug
+#   Compiler: Clang 8
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2
+
+gromacs:clang-8:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+
+gromacs:clang-8:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  needs:
+    - job: gromacs:clang-8:configure
+
+gromacs:clang-8:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  needs:
+    - job: gromacs:clang-8:build
+
+gromacs:clang-8:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.0
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-8:build
+    - job: regressiontests:prepare
+

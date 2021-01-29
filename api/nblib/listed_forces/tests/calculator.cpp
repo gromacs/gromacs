@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -104,45 +104,19 @@ protected:
         // one bond between atoms 0-1 with bond1 parameters and another between atoms 1-2 with bond2 parameters
         std::vector<InteractionIndex<HarmonicBondType>> bondIndices{ { 0, 1, 0 }, { 1, 2, 1 } };
 
-        DefaultAngle                                angle(Degrees(108.53), 397.5);
-        std::vector<DefaultAngle>                   angles{ angle };
-        std::vector<InteractionIndex<DefaultAngle>> angleIndices{ { 0, 1, 2, 0 } };
+        HarmonicAngleType                                angle(Degrees(108.53), 397.5);
+        std::vector<HarmonicAngleType>                   angles{ angle };
+        std::vector<InteractionIndex<HarmonicAngleType>> angleIndices{ { 0, 1, 2, 0 } };
 
         pickType<HarmonicBondType>(interactions).indices    = bondIndices;
         pickType<HarmonicBondType>(interactions).parameters = bonds;
 
-        pickType<DefaultAngle>(interactions).indices    = angleIndices;
-        pickType<DefaultAngle>(interactions).parameters = angles;
+        pickType<HarmonicAngleType>(interactions).indices    = angleIndices;
+        pickType<HarmonicAngleType>(interactions).parameters = angles;
 
         // initial position for the methanol atoms from the spc-water example
         x = std::vector<gmx::RVec>{ { 1.97, 1.46, 1.209 }, { 1.978, 1.415, 1.082 }, { 1.905, 1.46, 1.03 } };
         forces = std::vector<gmx::RVec>(3, gmx::RVec{ 0, 0, 0 });
-
-        refBondForcesFloat =
-                std::valarray<gmx::BasicVector<float>>{ { -22.8980637, 128.801575, 363.505951 },
-                                                        { -43.2698593, -88.0130997, -410.639252 },
-                                                        { 66.167923, -40.788475, 47.1333084 } };
-        refAngleForcesFloat =
-                std::valarray<gmx::BasicVector<float>>{ { 54.7276611, -40.1688995, 17.6805191 },
-                                                        { -81.8118973, 86.1988525, 60.1752243 },
-                                                        { 27.0842342, -46.0299492, -77.8557434 } };
-
-        refBondForcesDouble = std::valarray<gmx::BasicVector<double>>{
-            { -22.89764839974935, 128.79927224858977, 363.50016834602064 },
-            { -43.24622441913251, -88.025652017772231, -410.61635172385434 },
-            { 66.14387281888186, -40.773620230817542, 47.116183377833721 }
-        };
-        refAngleForcesDouble = std::valarray<gmx::BasicVector<double>>{
-            { 54.726206806506234, -40.167809526198099, 17.680008528590257 },
-            { -81.809781666748606, 86.196545126117257, 60.173723525141448 },
-            { 27.083574860242372, -46.028735599919159, -77.853732053731704 }
-        };
-
-        refBondEnergyFloat  = 0.2113433;
-        refAngleEnergyFloat = 0.112774156;
-
-        refBondEnergyDouble  = 0.2113273434867636;
-        refAngleEnergyDouble = 0.11276812148357591;
 
         box.reset(new Box(3, 3, 3));
         pbc.reset(new PbcHolder(*box));
@@ -155,54 +129,53 @@ protected:
 
     std::shared_ptr<Box>       box;
     std::shared_ptr<PbcHolder> pbc;
-
-    // reference values
-    std::valarray<gmx::BasicVector<float>>  refBondForcesFloat, refAngleForcesFloat;
-    std::valarray<gmx::BasicVector<double>> refBondForcesDouble, refAngleForcesDouble;
-
-    float  refBondEnergyFloat, refAngleEnergyFloat;
-    double refBondEnergyDouble, refAngleEnergyDouble;
 };
 
-TEST_F(ListedExampleData, DISABLED_ComputeHarmonicBondForces)
+TEST_F(ListedExampleData, ComputeHarmonicBondForces)
+{
+    auto indices = pickType<HarmonicBondType>(interactions).indices;
+    auto bonds   = pickType<HarmonicBondType>(interactions).parameters;
+    computeForces(indices, bonds, x, &forces, *pbc);
+
+    Vector3DTest vector3DTest(1e-3);
+    vector3DTest.testVectors(forces, "Bond forces");
+}
+
+TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
 {
     auto indices = pickType<HarmonicBondType>(interactions).indices;
     auto bonds   = pickType<HarmonicBondType>(interactions).parameters;
     real energy  = computeForces(indices, bonds, x, &forces, *pbc);
 
-    EXPECT_FLOAT_DOUBLE_EQ_TOL(energy,
-                               refBondEnergyFloat,
-                               refBondEnergyDouble,
-                               gmx::test::relativeToleranceAsFloatingPoint(refBondEnergyDouble, 1e-5));
-
-    compareVectors(forces, refBondForcesFloat, refBondForcesDouble);
+    Vector3DTest vector3DTest(1e-4);
+    vector3DTest.testReal(energy, "Bond energy");
 }
 
 TEST_F(ListedExampleData, ComputeHarmonicAngleForces)
 {
-    auto indices = pickType<DefaultAngle>(interactions).indices;
-    auto angles  = pickType<DefaultAngle>(interactions).parameters;
-    real energy  = computeForces(indices, angles, x, &forces, *pbc);
+    auto indices = pickType<HarmonicAngleType>(interactions).indices;
+    auto angles  = pickType<HarmonicAngleType>(interactions).parameters;
+    computeForces(indices, angles, x, &forces, *pbc);
 
-    EXPECT_FLOAT_DOUBLE_EQ_TOL(energy,
-                               refAngleEnergyFloat,
-                               refAngleEnergyDouble,
-                               gmx::test::relativeToleranceAsFloatingPoint(refAngleEnergyDouble, 1e-5));
-
-    compareVectors(forces, refAngleForcesFloat, refAngleForcesDouble);
+    Vector3DTest vector3DTest(1e-4);
+    vector3DTest.testVectors(forces, "Angle forces");
 }
 
-TEST_F(ListedExampleData, DISABLED_CanReduceForces)
+TEST_F(ListedExampleData, CanReduceForces)
+{
+    reduceListedForces(interactions, x, &forces, *pbc);
+
+    Vector3DTest vector3DTest(1e-2);
+    vector3DTest.testVectors(forces, "Reduced forces");
+}
+
+TEST_F(ListedExampleData, CanReduceEnergies)
 {
     auto energies    = reduceListedForces(interactions, x, &forces, *pbc);
     real totalEnergy = std::accumulate(begin(energies), end(energies), 0.0);
 
-    EXPECT_FLOAT_DOUBLE_EQ_TOL(totalEnergy,
-                               refBondEnergyFloat + refAngleEnergyFloat,
-                               refBondEnergyDouble + refAngleEnergyDouble,
-                               gmx::test::relativeToleranceAsFloatingPoint(refBondEnergyDouble, 1e-5));
-
-    compareVectors(forces, refBondForcesFloat + refAngleForcesFloat, refBondForcesDouble + refAngleForcesDouble);
+    Vector3DTest vector3DTest(1e-4);
+    vector3DTest.testReal(totalEnergy, "Reduced energy");
 }
 
 

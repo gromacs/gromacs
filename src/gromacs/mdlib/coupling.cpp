@@ -1732,7 +1732,7 @@ static real energyNoseHoover(const t_inputrec* ir, const t_state* state, const t
         const double* ivxi  = &state->nosehoover_vxi[i * nh];
         const double* iQinv = &(MassQ->Qinv[i * nh]);
 
-        int  nd   = static_cast<int>(ir->opts.nrdf[i]);
+        real nd   = ir->opts.nrdf[i];
         real reft = std::max<real>(ir->opts.ref_t[i], 0);
         real kT   = BOLTZ * reft;
 
@@ -1747,7 +1747,7 @@ static real energyNoseHoover(const t_inputrec* ir, const t_state* state, const t
                     {
                         energy += 0.5 * gmx::square(ivxi[j]) / iQinv[j];
                         /* contribution from the thermal variable of the NH chain */
-                        int ndj;
+                        real ndj = 0;
                         if (j == 0)
                         {
                             ndj = nd;

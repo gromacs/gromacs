@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,25 +32,52 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \inpublicapi \file
  * \brief
- * This tests that sample code can run
+ * Implements nblib utilities for system setup
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#include "gmxpre.h"
 
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
+#ifndef NBLIB_UTIL_SETUP_H
+#define NBLIB_UTIL_SETUP_H
 
-//! Google Test defines a main function so we rename the main function of the sample scripts
-#define main ArgonSampleMain
-#include "nblib/samples/argon-forces-integration.cpp"
-TEST(NBlibTest, ArgonSampleDoesNotThrow)
+#include <functional>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <vector>
+
+#include "nblib/basicdefinitions.h"
+#include "nblib/vector.h"
+
+namespace gmx
 {
-    EXPECT_NO_FATAL_FAILURE(main());
-}
-#undef main
+template<typename T>
+class ArrayRef;
+} // namespace gmx
+
+namespace nblib
+{
+
+/*! \brief Generate velocities from a Maxwell Boltzmann distribution
+ *
+ * masses should be the same as the ones specified for the Topology object
+ */
+std::vector<Vec3> generateVelocity(real Temperature, unsigned int seed, std::vector<real> const& masses);
+
+//! \brief Check within the container of gmx::RVecs for a NaN or inf
+bool isRealValued(gmx::ArrayRef<const Vec3> values);
+
+//! \brief Zero a cartesian buffer
+void zeroCartesianArray(gmx::ArrayRef<Vec3> cartesianArray);
+
+} // namespace nblib
+
+#endif // NBLIB_UTIL_SETUP_H

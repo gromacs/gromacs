@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,28 +114,6 @@ TEST(NBlibTest, CanConstructExclusionListFromNames)
     }
 }
 
-TEST(NBlibTest, CanConstructExclusionListFromIndices)
-{
-    WaterMoleculeBuilder waterMolecule;
-    Molecule             water = waterMolecule.waterMoleculeWithoutExclusions();
-
-    //! Add the exclusions
-    water.addExclusion(1, 0);
-    water.addExclusion(2, 0);
-    water.addExclusion(1, 2);
-
-    std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
-
-    std::vector<std::tuple<int, int>> reference{ { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 },
-                                                 { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 } };
-
-    ASSERT_EQ(exclusions.size(), 9);
-    for (std::size_t i = 0; i < exclusions.size(); ++i)
-    {
-        EXPECT_EQ(exclusions[i], reference[i]);
-    }
-}
-
 TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
 {
     WaterMoleculeBuilder waterMolecule;
@@ -144,7 +122,7 @@ TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
     //! Add the exclusions
     water.addExclusion(ParticleName("H1"), ParticleName("Oxygen"));
     water.addExclusion(ParticleName("H2"), ParticleName("Oxygen"));
-    water.addExclusion(1, 2);
+    water.addExclusion(ParticleName("H1"), ParticleName("H2"));
 
     std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
 
@@ -215,9 +193,9 @@ TEST(NBlibTest, CanAddInteractions)
     molecule.addParticle(ParticleName("H1"), H);
     molecule.addParticle(ParticleName("H2"), H);
 
-    HarmonicBondType hb(1, 2);
-    CubicBondType    cub(1, 2, 3);
-    DefaultAngle     ang(Degrees(1), 1);
+    HarmonicBondType  hb(1, 2);
+    CubicBondType     cub(1, 2, 3);
+    HarmonicAngleType ang(Degrees(1), 1);
 
     molecule.addInteraction(ParticleName("O"), ParticleName("H1"), hb);
     molecule.addInteraction(ParticleName("O"), ParticleName("H2"), hb);
@@ -231,7 +209,7 @@ TEST(NBlibTest, CanAddInteractions)
     //! cubic bonds
     EXPECT_EQ(pickType<CubicBondType>(interactionData).interactions_.size(), 1);
     //! angular interactions
-    EXPECT_EQ(pickType<DefaultAngle>(interactionData).interactions_.size(), 1);
+    EXPECT_EQ(pickType<HarmonicAngleType>(interactionData).interactions_.size(), 1);
 }
 
 } // namespace

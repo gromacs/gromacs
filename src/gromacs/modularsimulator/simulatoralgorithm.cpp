@@ -648,7 +648,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                                                        trajectoryElement->tngBoxOutCompressed(),
                                                        trajectoryElement->tngLambdaOutCompressed(),
                                                        inputrec->nstenergy));
-        addSignaller(loggingSignallerBuilder_.build(inputrec->nstlog, inputrec->init_step, inputrec->init_t));
+        addSignaller(loggingSignallerBuilder_.build(
+                inputrec->nstlog, inputrec->init_step, legacySimulatorData_->startingBehavior));
         addSignaller(lastStepSignallerBuilder_.build(
                 inputrec->nsteps, inputrec->init_step, algorithm.stopHandler_.get()));
         addSignaller(neighborSearchSignallerBuilder_.build(

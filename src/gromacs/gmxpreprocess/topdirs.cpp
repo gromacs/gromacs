@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,6 +66,7 @@ static gmx::EnumerationArray<Directive, const char*> directive_names = {
       /* All the directives above can not appear after moleculetype */
       "moleculetype",
       "atoms",
+      "virtual_sites1",
       "virtual_sites2",
       "virtual_sites3",
       "virtual_sites4",
@@ -173,6 +174,15 @@ int ifunc_index(Directive d, int type)
             else
             {
                 return F_BHAM;
+            }
+        case Directive::d_vsites1:
+            if (type == 1)
+            {
+                return F_VSITE1;
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Invalid vsites1 type %d", type);
             }
         case Directive::d_vsites2:
             switch (type)
@@ -308,6 +318,7 @@ void DS_Init(DirStack** DS)
         set_nec(&(necessary[Directive::d_cmaptypes]), Directive::d_atomtypes, Directive::d_none);
         set_nec(&(necessary[Directive::d_moleculetype]), Directive::d_atomtypes, Directive::d_none);
         set_nec(&(necessary[Directive::d_atoms]), Directive::d_moleculetype, Directive::d_none);
+        set_nec(&(necessary[Directive::d_vsites1]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_vsites2]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_vsites3]), Directive::d_atoms, Directive::d_none);
         set_nec(&(necessary[Directive::d_vsites4]), Directive::d_atoms, Directive::d_none);

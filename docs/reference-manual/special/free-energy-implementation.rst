@@ -47,11 +47,20 @@ where the pathway is controlled by a single :math:`\lambda` variable,
 can be preserved by using only ``fep-lambdas`` to define the
 pathway.
 
-For example, if you wanted to first to change the Coulombic terms, then
+
+.. _figlambdaval:
+
+.. figure:: plots/lambda-values.*
+   :width: 12.00000cm
+
+   Separate :math:`\lambda` values for Coulomb, van-der-Waals and restraint interactions.
+
+:numref:`Fig. %s <figlambdaval>` shows an example of different lambda arrays.
+There, first the Coulombic terms are reduced, then
 the van der Waals terms, changing bonded at the same time rate as the
 van der Waals, but changing the restraints throughout the first
-two-thirds of the simulation, then you could use this :math:`\lambda`
-vector:
+two-thirds of the simulation. The corresponding :math:`\lambda`
+vector is given here:
 
 ::
 

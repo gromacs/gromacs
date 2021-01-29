@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,18 +63,18 @@ void doDeviceTransfers(const DeviceInformation& deviceInfo, ArrayRef<const char>
         cl::sycl::property_list syclBufferProperties{ cl::sycl::property::buffer::context_bound(
                 syclQueue.get_context()) };
 
-        cl::sycl::buffer<char> syclBuffer(::sycl::range<1>(input.size()), syclBufferProperties);
+        cl::sycl::buffer<char> syclBuffer(cl::sycl::range<1>(input.size()), syclBufferProperties);
 
         syclQueue
                 .submit([&](cl::sycl::handler& cgh) {
-                    auto accessor = syclBuffer.get_access<cl::sycl::access_mode::discard_write>(cgh);
+                    auto accessor = syclBuffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
                     cgh.copy(input.data(), accessor);
                 })
                 .wait_and_throw();
 
         syclQueue
                 .submit([&](cl::sycl::handler& cgh) {
-                    auto accessor = syclBuffer.get_access<cl::sycl::access_mode::write>(cgh);
+                    auto accessor = syclBuffer.get_access<cl::sycl::access::mode::read>(cgh);
                     cgh.copy(accessor, output.data());
                 })
                 .wait_and_throw();

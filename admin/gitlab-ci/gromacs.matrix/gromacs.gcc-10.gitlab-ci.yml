@@ -1,0 +1,77 @@
+# Test goal: newest GCC with OpenCL
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu newest supported
+#   Compiler: GCC newest supported
+#   GPU: OpenCL
+#   FFT: CLFFT
+#   HW: AMD GPU
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 20.04
+#   Build type: Debug
+#   Compiler: GCC 10
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+#   Parallelism nt/ntomp: 2/1 (regression tests)
+
+gromacs:gcc-10:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+    - .use-opencl
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_EXTERNAL_CLFFT=ON"
+    COMPILER_MAJOR_VERSION: 10
+
+gromacs:gcc-10:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:merge-and-post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+  needs:
+    - job: gromacs:gcc-10:configure
+
+gromacs:gcc-10:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:merge-requests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-10:build
+
+gromacs:gcc-10:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:post-merge-acceptance
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  variables:
+    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    LD_LIBRARY_PATH: "/opt/rocm-3.5.0/opencl/lib"
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:gcc-10:build
+    - job: regressiontests:prepare
+

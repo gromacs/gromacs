@@ -3,7 +3,10 @@
 
 # Optionally, set `--build-arg DOCKER_CORES=N` for a Docker engine running with access to more than 1 CPU.
 #    REF=`git show -s --pretty=format:"%h"`
-#    docker build -t gmxapi/gromacs:${REF} --build-arg DOCKER_CORES=4 -f gromacs.dockerfile ../..
+#    docker build -t gmxapi/gromacs-${MPIFLAVOR}:${REF} \
+#               --build-arg DOCKER_CORES=4 \
+#               --build-arg MPIFLAVOR=${MPIFLAVOR} \
+#               -f gromacs.dockerfile ../..
 
 # This image serves as a base for integration with the gmxapi Python tools and sample code.
 
@@ -26,6 +29,7 @@ RUN cmake $SRC_DIR \
         -DGMXAPI=ON \
         -DGMX_THREAD_MPI=ON \
         -DGMX_BUILD_HELP=OFF \
+        -DGMX_USE_RDTSCP=OFF \
         -DGMX_REQUIRE_VALID_TOOLCHAIN=TRUE \
         -DCMAKE_BUILD_TYPE=$TYPE
 RUN make -j$DOCKER_CORES

@@ -508,7 +508,7 @@ if (GMX_HWLOC)
         message(FATAL_ERROR "HWLOC package support required, but not found.")
     endif()
 
-    if (HWLOC_VERSION VERSION_LESS "2")
+    if (HWLOC_FOUND AND HWLOC_VERSION VERSION_LESS "2")
         message(STATUS "Support for hwloc versions 1.x is deprecated")
     endif()
 

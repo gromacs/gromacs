@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@ namespace gmx
 {
 class StopHandler;
 class TrajectoryElement;
+enum class StartingBehavior;
 
 /*! \internal
  * \ingroup module_modularsimulator
@@ -228,12 +229,15 @@ public:
 private:
     /*! \brief Constructor
      *
-     * \param callbacks  A vector of pointers to callbacks
-     * \param nstlog     The logging frequency
-     * \param initStep   The first step of the simulation
-     * \param initTime   The start time of the simulation
+     * \param callbacks         A vector of pointers to callbacks
+     * \param nstlog            The logging frequency
+     * \param initStep          The first step of the simulation
+     * \param startingBehavior  Whether this is a new simulation or restarting from checkpoint
      */
-    LoggingSignaller(std::vector<SignallerCallback> callbacks, Step nstlog, Step initStep, Time initTime);
+    LoggingSignaller(std::vector<SignallerCallback> callbacks,
+                     Step                           nstlog,
+                     Step                           initStep,
+                     StartingBehavior               startingBehavior);
 
     //! Client callbacks
     std::vector<SignallerCallback> callbacks_;
@@ -242,8 +246,8 @@ private:
     const Step nstlog_;
     //! The initial step of the simulation
     const Step initStep_;
-    //! The initial time of the simulation
-    const Time initTime_;
+    //! How we are starting the simulation
+    const StartingBehavior startingBehavior_;
 
     //! ILastStepSignallerClient implementation
     std::optional<SignallerCallback> registerLastStepCallback() override;

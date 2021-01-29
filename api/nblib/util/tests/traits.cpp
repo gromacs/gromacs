@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * This implements basic nblib utility tests
+ * This implements test for nblib general purpose traits
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -43,13 +43,48 @@
  */
 
 #include "nblib/tests/testhelpers.h"
-#include "nblib/util/internal.h"
-#include "nblib/util/user.h"
+#include "nblib/util/traits.hpp"
 
 namespace nblib
 {
 
-TEST(NblibInternalUtils, FindIndexTuple1)
+TEST(NblibTraitsUtils, FuseTwo)
+{
+    using TL1 = TypeList<float, int>;
+    using TL2 = TypeList<double, unsigned>;
+
+    using TL_fused = FuseTwo<TL1, TL2>;
+    using TL_ref   = TypeList<float, int, double, unsigned>;
+
+    constexpr bool match = std::is_same_v<TL_fused, TL_ref>;
+    EXPECT_TRUE(match);
+}
+
+TEST(NblibTraitsUtils, Fuse)
+{
+    using TL1 = TypeList<float, int>;
+    using TL2 = TypeList<double, unsigned>;
+    using TL3 = TypeList<char, short>;
+
+    using TL_fused = Fuse<TL1, TL2, TL3>;
+    using TL_ref   = TypeList<float, int, double, unsigned, char, short>;
+
+    constexpr bool match = std::is_same_v<TL_fused, TL_ref>;
+    EXPECT_TRUE(match);
+}
+
+TEST(NblibTraitsUtils, Repeat)
+{
+    using TL1 = TypeList<float, int>;
+
+    using TL_repeated = Repeat<TL1, 3>;
+    using TL_ref      = TypeList<float, int, float, int, float, int>;
+
+    constexpr bool match = std::is_same_v<TL_repeated, TL_ref>;
+    EXPECT_TRUE(match);
+}
+
+TEST(NblibTraitsUtils, FindIndexTuple1)
 {
     using TupleType = std::tuple<float>;
 
@@ -61,7 +96,7 @@ TEST(NblibInternalUtils, FindIndexTuple1)
     EXPECT_EQ(1, outOfRange);
 }
 
-TEST(NblibInternalUtils, FindIndexTuple2)
+TEST(NblibTraitsUtils, FindIndexTuple2)
 {
     using TupleType = std::tuple<float, int>;
 
@@ -75,7 +110,7 @@ TEST(NblibInternalUtils, FindIndexTuple2)
     EXPECT_EQ(2, outOfRange);
 }
 
-TEST(NblibInternalUtils, FindIndexTypeList1)
+TEST(NblibTraitsUtils, FindIndexTypeList1)
 {
     using ListType = TypeList<float>;
 
@@ -87,7 +122,7 @@ TEST(NblibInternalUtils, FindIndexTypeList1)
     EXPECT_EQ(1, outOfRange);
 }
 
-TEST(NblibInternalUtils, FindIndexTypeList2)
+TEST(NblibTraitsUtils, FindIndexTypeList2)
 {
     using ListType = TypeList<float, int>;
 
@@ -102,7 +137,7 @@ TEST(NblibInternalUtils, FindIndexTypeList2)
 }
 
 
-TEST(NblibInternalUtils, Contains)
+TEST(NblibTraitsUtils, Contains)
 {
     using ListType = TypeList<float, int>;
 
@@ -115,7 +150,7 @@ TEST(NblibInternalUtils, Contains)
     EXPECT_FALSE(hasUint);
 }
 
-TEST(NblibInternalUtils, FindIndexTupleRepeated)
+TEST(NblibTraitsUtils, FindIndexTupleRepeated)
 {
     using TupleType = std::tuple<float, float, int>;
 
@@ -130,7 +165,7 @@ TEST(NblibInternalUtils, FindIndexTupleRepeated)
     EXPECT_EQ(3, outOfRange);
 }
 
-TEST(NblibInternalUtils, FindIndexTypeListRepeated)
+TEST(NblibTraitsUtils, FindIndexTypeListRepeated)
 {
     using TupleType = TypeList<float, float, int>;
 

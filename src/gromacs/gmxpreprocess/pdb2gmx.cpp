@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -413,43 +413,80 @@ void rename_pdbres(t_atoms* pdba, const char* oldnm, const char* newnm, bool bFu
     }
 }
 
-void rename_bb(t_atoms* pdba, const char* oldnm, const char* newnm, bool bFullCompare, t_symtab* symtab)
+/*! \brief Rename all residues named \c oldnm to \c newnm
+ *
+ * Search for residues for which the residue name from the input
+ * configuration file matches \c oldnm, and when found choose the rtp
+ * entry and name of \c newnm.
+ *
+ * \todo Refactor this function to accept a lambda that accepts i and
+ * numMatchesFound but always produces \c newnm. Then remove
+ * renameResiduesInteractively by calling this method with suitable
+ * lambdas that capture its parameter \c rr and ignores
+ * numMatchesFound. */
+void renameResidue(const gmx::MDLogger& logger,
+                   t_atoms*             pdba,
+                   const char*          oldnm,
+                   const char*          newnm,
+                   bool                 bFullCompare,
+                   t_symtab*            symtab)
 {
-    char* bbnm;
-    int   i;
-
-    for (i = 0; (i < pdba->nres); i++)
+    int numMatchesFound = 0;
+    for (int i = 0; (i < pdba->nres); i++)
     {
-        /* We have not set the rtp name yes, use the residue name */
-        bbnm = *pdba->resinfo[i].name;
-        if ((bFullCompare && (gmx::equalCaseInsensitive(bbnm, oldnm)))
-            || (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
+        /* We have not set the rtp name yet, use the residue name */
+        const char* residueNameInInputConfiguration = *pdba->resinfo[i].name;
+        if ((bFullCompare && (gmx::equalCaseInsensitive(residueNameInInputConfiguration, oldnm)))
+            || (!bFullCompare && strstr(residueNameInInputConfiguration, oldnm) != nullptr))
         {
-            /* Change the rtp builing block name */
-            pdba->resinfo[i].rtp = put_symtab(symtab, newnm);
+            /* Change the rtp building block name */
+            pdba->resinfo[i].rtp  = put_symtab(symtab, newnm);
+            pdba->resinfo[i].name = pdba->resinfo[i].rtp;
+            numMatchesFound++;
         }
+    }
+    if (numMatchesFound > 0)
+    {
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted(
+                        "Replaced %d residue%s named %s to the default %s. Use interactive "
+                        "selection of protonated residues if that is what you need.",
+                        numMatchesFound,
+                        numMatchesFound > 1 ? "s" : "",
+                        oldnm,
+                        newnm);
     }
 }
 
-void rename_bbint(t_atoms*                       pdba,
-                  const char*                    oldnm,
-                  const char*                    gettp(int, gmx::ArrayRef<const RtpRename>),
-                  bool                           bFullCompare,
-                  t_symtab*                      symtab,
-                  gmx::ArrayRef<const RtpRename> rr)
+/*! \brief Rename all residues named \c oldnm according to the user's
+ * interactive choice
+ *
+ * Search for residues for which the residue name from the input
+ * configuration file matches \c oldnm, and when found choose the rtp
+ * entry and name of the interactive choice from \c gettp.
+ *
+ * \todo Remove this function, per todo in \c renameResidue. */
+void renameResidueInteractively(t_atoms*    pdba,
+                                const char* oldnm,
+                                const char* gettp(int, gmx::ArrayRef<const RtpRename>),
+                                bool        bFullCompare,
+                                t_symtab*   symtab,
+                                gmx::ArrayRef<const RtpRename> rr)
 {
-    int         i;
-    const char* ptr;
-    char*       bbnm;
-
-    for (i = 0; i < pdba->nres; i++)
+    // Search for residues i for which the residue name from the input
+    // configuration file matches oldnm, so it can replaced by the rtp
+    // entry and name of newnm.
+    for (int i = 0; i < pdba->nres; i++)
     {
         /* We have not set the rtp name yet, use the residue name */
-        bbnm = *pdba->resinfo[i].name;
-        if ((bFullCompare && (strcmp(bbnm, oldnm) == 0)) || (!bFullCompare && strstr(bbnm, oldnm) != nullptr))
+        char* residueNameInInputConfiguration = *pdba->resinfo[i].name;
+        if ((bFullCompare && (strcmp(residueNameInInputConfiguration, oldnm) == 0))
+            || (!bFullCompare && strstr(residueNameInInputConfiguration, oldnm) != nullptr))
         {
-            ptr                  = gettp(i, rr);
-            pdba->resinfo[i].rtp = put_symtab(symtab, ptr);
+            const char* interactiveRtpChoice = gettp(i, rr);
+            pdba->resinfo[i].rtp             = put_symtab(symtab, interactiveRtpChoice);
+            pdba->resinfo[i].name            = pdba->resinfo[i].rtp;
         }
     }
 }
@@ -620,7 +657,8 @@ int read_pdball(const char*     inf,
     return natom;
 }
 
-void process_chain(t_atoms*                       pdba,
+void process_chain(const gmx::MDLogger&           logger,
+                   t_atoms*                       pdba,
                    gmx::ArrayRef<gmx::RVec>       x,
                    bool                           bTrpU,
                    bool                           bPheU,
@@ -639,43 +677,43 @@ void process_chain(t_atoms*                       pdba,
     /* Rename aromatics, lys, asp and histidine */
     if (bTyrU)
     {
-        rename_bb(pdba, "TYR", "TYRU", false, symtab);
+        renameResidue(logger, pdba, "TYR", "TYRU", false, symtab);
     }
     if (bTrpU)
     {
-        rename_bb(pdba, "TRP", "TRPU", false, symtab);
+        renameResidue(logger, pdba, "TRP", "TRPU", false, symtab);
     }
     if (bPheU)
     {
-        rename_bb(pdba, "PHE", "PHEU", false, symtab);
+        renameResidue(logger, pdba, "PHE", "PHEU", false, symtab);
     }
     if (bLysMan)
     {
-        rename_bbint(pdba, "LYS", get_lystp, false, symtab, rr);
+        renameResidueInteractively(pdba, "LYS", get_lystp, false, symtab, rr);
     }
     if (bArgMan)
     {
-        rename_bbint(pdba, "ARG", get_argtp, false, symtab, rr);
+        renameResidueInteractively(pdba, "ARG", get_argtp, false, symtab, rr);
     }
     if (bGlnMan)
     {
-        rename_bbint(pdba, "GLN", get_glntp, false, symtab, rr);
+        renameResidueInteractively(pdba, "GLN", get_glntp, false, symtab, rr);
     }
     if (bAspMan)
     {
-        rename_bbint(pdba, "ASP", get_asptp, false, symtab, rr);
+        renameResidueInteractively(pdba, "ASP", get_asptp, false, symtab, rr);
     }
     else
     {
-        rename_bb(pdba, "ASPH", "ASP", false, symtab);
+        renameResidue(logger, pdba, "ASPH", "ASP", false, symtab);
     }
     if (bGluMan)
     {
-        rename_bbint(pdba, "GLU", get_glutp, false, symtab, rr);
+        renameResidueInteractively(pdba, "GLU", get_glutp, false, symtab, rr);
     }
     else
     {
-        rename_bb(pdba, "GLUH", "GLU", false, symtab);
+        renameResidue(logger, pdba, "GLUH", "GLU", false, symtab);
     }
 
     if (!bHisMan)
@@ -684,7 +722,7 @@ void process_chain(t_atoms*                       pdba,
     }
     else
     {
-        rename_bbint(pdba, "HIS", get_histp, true, symtab, rr);
+        renameResidueInteractively(pdba, "HIS", get_histp, true, symtab, rr);
     }
 
     /* Initialize the rtp builing block names with the residue names
@@ -2298,7 +2336,8 @@ int pdb2gmx::run()
                             "Processing chain %d (%d atoms, %d residues)", chain + 1, natom, nres);
         }
 
-        process_chain(pdba,
+        process_chain(logger,
+                      pdba,
                       x,
                       bUnA_,
                       bUnA_,

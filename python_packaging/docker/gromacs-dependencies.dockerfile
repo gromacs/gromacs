@@ -5,20 +5,20 @@
 
 # This image serves as a base for integration with the gmxapi Python tools and sample code.
 
-FROM ubuntu:bionic
+FROM ubuntu:groovy as base
 
 # Basic packages
 RUN apt-get update && \
-    apt-get -yq --no-install-suggests --no-install-recommends install software-properties-common && \
+    apt-get -yq --no-install-suggests --no-install-recommends install software-properties-common build-essential && \
     apt-get -yq --no-install-suggests --no-install-recommends install \
         cmake \
         git \
         libblas-dev \
-        libcr-dev \
         libfftw3-dev \
         liblapack-dev \
         libxml2-dev \
         make \
+        vim \
         wget \
         zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*

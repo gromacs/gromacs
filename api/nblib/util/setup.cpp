@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,7 @@
  * \author Artem Zhmurov <zhmurov@gmail.com>
  */
 
-#include "nblib/util/internal.h"
-#include "nblib/util/user.h"
+#include "nblib/util/setup.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/arrayref.h"
@@ -52,24 +51,6 @@
 
 namespace nblib
 {
-
-namespace detail
-{
-
-std::string next_token(std::string& s, const std::string& delimiter)
-{
-    std::string token = s.substr(0, s.find(delimiter));
-
-    std::size_t next = s.find(delimiter);
-    if (next == std::string::npos)
-        s.clear();
-    else
-        s.erase(0, next + delimiter.length());
-
-    return token;
-}
-
-} // namespace detail
 
 //! Generates an array of particle velocities based on the Maxwell-Boltzmann distribution
 //! using temperature, masses and a random number generator

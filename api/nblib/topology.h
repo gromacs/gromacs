@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,16 +50,26 @@
 #include "nblib/interactions.h"
 #include "nblib/listed_forces/definitions.h"
 #include "nblib/molecules.h"
-#include "nblib/topologyhelpers.h"
-
-namespace gmx
-{
-template<typename>
-class ListOfLists;
-} // namespace gmx
+#include "nblib/particlesequencer.h"
 
 namespace nblib
 {
+
+/*! \brief A list of exclusion lists, optimized for performance
+ *
+ * This struct is to hold data that comes from, and will be copied into,
+ * gmx::ListOfLists. Since the ListElements and ListRanges are sufficient
+ * to create a gmx::ListOfLists, they are stored in the topoology instead
+ * of a gmx::ListOfLists to avoid dependencies.
+ */
+template<typename T>
+struct ExclusionLists
+{
+    //! Ranges of the concatenated lists
+    std::vector<int> ListRanges;
+    //! Elements of the concatenated lists
+    std::vector<T> ListElements;
+};
 
 /*! \inpublicapi
  * \ingroup nblib
@@ -86,8 +96,8 @@ public:
     //! Returns a vector of particles partial charges
     std::vector<real> getCharges() const;
 
-    //! Returns exclusions in proper, performant, GROMACS layout
-    gmx::ListOfLists<int> getGmxExclusions() const;
+    //! Returns exclusions in a format that can be used to create gmx::ListOfLists
+    ExclusionLists<int> exclusionLists() const;
 
     //! Returns the unique ID of a specific particle belonging to a molecule in the global space
     int sequenceID(MoleculeName moleculeName, int moleculeNr, ResidueName residueName, ParticleName particleName) const;
@@ -115,9 +125,9 @@ private:
     //! Storage for particles partial charges
     std::vector<real> charges_;
     //! Information about exclusions.
-    gmx::ListOfLists<int> exclusions_;
+    ExclusionLists<int> exclusionLists_;
     //! Associate molecule, residue and particle names with sequence numbers
-    detail::ParticleSequencer particleSequencer_;
+    ParticleSequencer particleSequencer_;
     //! Map that should hold all nonbonded interactions for all particle types
     NonBondedInteractionMap nonBondedInteractionMap_;
     //! data about bonds for all supported types
@@ -167,11 +177,11 @@ private:
     //! List of molecule types and number of molecules
     std::vector<std::tuple<Molecule, int>> molecules_;
 
-    //! Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
-    gmx::ListOfLists<int> createExclusionsListOfLists() const;
+    //! Builds an exclusions list aggregating exclusions from all molecules
+    ExclusionLists<int> createExclusionsLists() const;
 
     //! Gather interaction data from molecules
-    ListedInteractionData createInteractionData(const detail::ParticleSequencer&);
+    ListedInteractionData createInteractionData(const ParticleSequencer&);
 
     //! Helper function to extract quantities like mass, charge, etc from the system
     template<typename T, class Extractor>

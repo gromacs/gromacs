@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,6 @@
 #include "nblib/particletype.h"
 #include "nblib/simulationstate.h"
 #include "nblib/topology.h"
-#include "nblib/util/internal.h"
 
 #include "testutils/testasserts.h"
 
@@ -77,10 +76,8 @@ TEST(NBlibTest, IntegratorWorks)
     topologyBuilder.addParticleTypesInteractions(interactions);
     Topology topology = topologyBuilder.buildTopology();
 
-    // Some random starting conditions
-    std::vector<Vec3> x(numAtoms, { -9.0, 8.0, -7.0 });
-    std::vector<Vec3> v(numAtoms, { 0.6, -0.5, 0.4 });
-    // Constant force acting on the atom
+    std::vector<Vec3> x(numAtoms, { 0.0, 0.0, 0.0 });
+    std::vector<Vec3> v(numAtoms, { 0.0, 0.0, 0.0 });
     std::vector<Vec3> f(numAtoms, { 1.0, 2.0, 0.0 });
 
     Box box(100);
@@ -128,9 +125,11 @@ TEST(NBlibTest, IntegratorWorks)
                                    i,
                                    step);
             }
+            integrator.integrate(dt,
+                                 simulationState.coordinates(),
+                                 simulationState.velocities(),
+                                 simulationState.forces());
         }
-        integrator.integrate(
-                dt, simulationState.coordinates(), simulationState.velocities(), simulationState.forces());
     }
 }
 

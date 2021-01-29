@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -449,13 +449,25 @@ real max_pull_distance2(const pull_coord_work_t* pcrd, const t_pbc* pbc)
 
 /* This function returns the distance based on coordinates xg and xref.
  * Note that the pull coordinate struct pcrd is not modified.
+ *
+ * \param[in]  pull  The pull struct
+ * \param[in]  pcrd  The pull coordinate to compute a distance for
+ * \param[in]  pbc   The periodic boundary conditions
+ * \param[in]  xg    The coordinate of group 1
+ * \param[in]  xref  The coordinate of group 0
+ * \param[in]  groupIndex0  The index of group 0 in the pcrd->params.group
+ * \param[in]  groupIndex1  The index of group 1 in the pcrd->params.group
+ * \param[in]  max_dist2    The maximum distance squared
+ * \param[out] dr           The distance vector
  */
 static void low_get_pull_coord_dr(const struct pull_t*     pull,
                                   const pull_coord_work_t* pcrd,
                                   const t_pbc*             pbc,
-                                  dvec                     xg,
+                                  const dvec               xg,
                                   dvec                     xref,
-                                  double                   max_dist2,
+                                  const int                groupIndex0,
+                                  const int                groupIndex1,
+                                  const double             max_dist2,
                                   dvec                     dr)
 {
     const pull_group_work_t* pgrp0 = &pull->group[pcrd->params.group[0]];
@@ -506,8 +518,8 @@ static void low_get_pull_coord_dr(const struct pull_t*     pull,
         gmx_fatal(FARGS,
                   "Distance between pull groups %d and %d (%f nm) is larger than 0.49 times the "
                   "box size (%f).\n%s",
-                  pcrd->params.group[0],
-                  pcrd->params.group[1],
+                  pcrd->params.group[groupIndex0],
+                  pcrd->params.group[groupIndex1],
                   sqrt(dr2),
                   sqrt(0.98 * 0.98 * max_dist2),
                   pcrd->params.eGeom == epullgDIR
@@ -586,6 +598,8 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
                           pbc,
                           pgrp1->x,
                           pcrd->params.eGeom == epullgCYL ? pull->dyna[coord_ind].x : pgrp0->x,
+                          0,
+                          1,
                           md2,
                           spatialData.dr01);
 
@@ -595,7 +609,7 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
         pgrp2 = &pull->group[pcrd->params.group[2]];
         pgrp3 = &pull->group[pcrd->params.group[3]];
 
-        low_get_pull_coord_dr(pull, pcrd, pbc, pgrp3->x, pgrp2->x, md2, spatialData.dr23);
+        low_get_pull_coord_dr(pull, pcrd, pbc, pgrp3->x, pgrp2->x, 2, 3, md2, spatialData.dr23);
     }
     if (pcrd->params.ngroup >= 6)
     {
@@ -603,7 +617,7 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
         pgrp4 = &pull->group[pcrd->params.group[4]];
         pgrp5 = &pull->group[pcrd->params.group[5]];
 
-        low_get_pull_coord_dr(pull, pcrd, pbc, pgrp5->x, pgrp4->x, md2, spatialData.dr45);
+        low_get_pull_coord_dr(pull, pcrd, pbc, pgrp5->x, pgrp4->x, 4, 5, md2, spatialData.dr45);
     }
 }
 
@@ -905,7 +919,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
 
             /* Get the current difference vector */
             low_get_pull_coord_dr(
-                    pull, pcrd, pbc, rnew[pcrd->params.group[1]], rnew[pcrd->params.group[0]], -1, unc_ij);
+                    pull, pcrd, pbc, rnew[pcrd->params.group[1]], rnew[pcrd->params.group[0]], 0, 1, -1, unc_ij);
 
             if (debug)
             {
@@ -988,8 +1002,8 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
 
                 g0 = pcrd->params.group[0];
                 g1 = pcrd->params.group[1];
-                low_get_pull_coord_dr(pull, pcrd, pbc, rnew[g1], rnew[g0], -1, tmp);
-                low_get_pull_coord_dr(pull, pcrd, pbc, dr1, dr0, -1, tmp3);
+                low_get_pull_coord_dr(pull, pcrd, pbc, rnew[g1], rnew[g0], 0, 1, -1, tmp);
+                low_get_pull_coord_dr(pull, pcrd, pbc, dr1, dr0, 0, 1, -1, tmp3);
                 fprintf(debug,
                         "Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
                         rnew[g0][0],
@@ -1033,7 +1047,7 @@ do_constraint(struct pull_t* pull, t_pbc* pbc, rvec* x, rvec* v, gmx_bool bMaste
             }
 
             low_get_pull_coord_dr(
-                    pull, &coord, pbc, rnew[coord.params.group[1]], rnew[coord.params.group[0]], -1, unc_ij);
+                    pull, &coord, pbc, rnew[coord.params.group[1]], rnew[coord.params.group[0]], 0, 1, -1, unc_ij);
 
             switch (coord.params.eGeom)
             {

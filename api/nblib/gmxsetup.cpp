@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 #include "gromacs/nbnxm/pairsearch.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 #include "nblib/exception.h"
 #include "nblib/kerneloptions.h"
@@ -193,19 +194,19 @@ void NbvSetupUtil::setupNbnxmInstance(const size_t numParticleTypes, const NBKer
 
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
 
-    // Put everything together
-    auto nbv = std::make_unique<nonbonded_verlet_t>(
-            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullWallcycle);
-
     // Needs to be called with the number of unique ParticleTypes
     nbnxn_atomdata_init(gmx::MDLogger(),
-                        nbv->nbat.get(),
+                        atomData.get(),
                         kernelSetup.kernelType,
                         combinationRule,
                         numParticleTypes,
                         nonbondedParameters_,
                         1,
                         numThreads);
+
+    // Put everything together
+    auto nbv = std::make_unique<nonbonded_verlet_t>(
+            std::move(pairlistSets), std::move(pairSearch), std::move(atomData), kernelSetup, nullptr, nullWallcycle);
 
     gmxForceCalculator_->nbv_ = std::move(nbv);
 }
@@ -302,8 +303,10 @@ void NbvSetupUtil::setParticlesOnGrid(const std::vector<Vec3>& coordinates, cons
     gmxForceCalculator_->setParticlesOnGrid(particleInfoAllVdw_, coordinates, box);
 }
 
-void NbvSetupUtil::constructPairList(const gmx::ListOfLists<int>& exclusions)
+void NbvSetupUtil::constructPairList(ExclusionLists<int> exclusionLists)
 {
+    gmx::ListOfLists<int> exclusions(std::move(exclusionLists.ListRanges),
+                                     std::move(exclusionLists.ListElements));
     gmxForceCalculator_->nbv_->constructPairlist(
             gmx::InteractionLocality::Local, exclusions, 0, gmxForceCalculator_->nrnb_.get());
 }
@@ -322,7 +325,7 @@ std::unique_ptr<GmxForceCalculator> GmxSetupDirector::setupGmxForceCalculator(co
     nbvSetupUtil.setupStepWorkload(options);
     nbvSetupUtil.setupNbnxmInstance(system.topology().getParticleTypes().size(), options);
     nbvSetupUtil.setParticlesOnGrid(system.coordinates(), system.box());
-    nbvSetupUtil.constructPairList(system.topology().getGmxExclusions());
+    nbvSetupUtil.constructPairList(system.topology().exclusionLists());
     nbvSetupUtil.setAtomProperties(system.topology().getParticleTypeIdOfAllParticles(),
                                    system.topology().getCharges());
     nbvSetupUtil.setupForceRec(system.box().legacyMatrix());

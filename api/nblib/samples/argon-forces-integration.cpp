@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,33 +44,11 @@
 
 #include <cstdio>
 
+#include "gromacs/utility/arrayref.h"
+
 // The entire nblib public API can be included with a single header or individual components
 // can be included via their respective headers.
 #include "nblib/nblib.h"
-
-// User defined coordinates.
-std::vector<nblib::Vec3> coordinates = {
-    { 0.794, 1.439, 0.610 }, { 1.397, 0.673, 1.916 }, { 0.659, 1.080, 0.573 },
-    { 1.105, 0.090, 3.431 }, { 1.741, 1.291, 3.432 }, { 1.936, 1.441, 5.873 },
-    { 0.960, 2.246, 1.659 }, { 0.382, 3.023, 2.793 }, { 0.053, 4.857, 4.242 },
-    { 2.655, 5.057, 2.211 }, { 4.114, 0.737, 0.614 }, { 5.977, 5.104, 5.217 },
-};
-
-// User defined velocities.
-std::vector<nblib::Vec3> velocities = {
-    { 0.0055, -0.1400, 0.2127 },   { 0.0930, -0.0160, -0.0086 }, { 0.1678, 0.2476, -0.0660 },
-    { 0.1591, -0.0934, -0.0835 },  { -0.0317, 0.0573, 0.1453 },  { 0.0597, 0.0013, -0.0462 },
-    { 0.0484, -0.0357, 0.0168 },   { 0.0530, 0.0295, -0.2694 },  { -0.0550, -0.0896, 0.0494 },
-    { -0.0799, -0.2534, -0.0079 }, { 0.0436, -0.1557, 0.1849 },  { -0.0214, 0.0446, 0.0758 },
-};
-
-// Force buffer initialization for each particle.
-std::vector<nblib::Vec3> forces = {
-    { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
-    { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
-    { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
-    { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
-};
 
 // Main function to write the MD program.
 int main(); // Keep the compiler happy
@@ -84,8 +62,8 @@ int main()
     // Add the argon particle to a molecule. The names are for bookkeeping and need not match.
     argonMolecule.addParticle(nblib::ParticleName("Argon"), argonAtom);
     // Define Lennard-Jones params for argon (parameters from gromos43A1).
-    const nblib::C6  ArC6{ 0.0062647225 };  // C6 parameter
-    const nblib::C12 ArC12{ 9.847044e-06 }; // C12 parameter
+    nblib::C6  ArC6{ 0.0062647225 };  // C6 parameter
+    nblib::C12 ArC12{ 9.847044e-06 }; // C12 parameter
     // Holder for non-bonded interactions.
     nblib::ParticleTypesInteractions interactions;
     // Add non-bonded interactions for argon.
@@ -93,7 +71,7 @@ int main()
     // The TopologyBuilder builds the Topology!
     nblib::TopologyBuilder topologyBuilder;
     // Number of Argon particles (molecules) in the system.
-    const int numParticles = 12;
+    int numParticles = 12;
     // Add the requested number of argon molecules to a topology.
     topologyBuilder.addMolecule(argonMolecule, numParticles);
     // Add the argon interactions to the topology.
@@ -102,6 +80,27 @@ int main()
     nblib::Topology topology = topologyBuilder.buildTopology();
     // The system needs a bounding box. Only cubic and rectangular boxes are supported.
     nblib::Box box(6.05449);
+    // User defined coordinates.
+    std::vector<nblib::Vec3> coordinates = {
+        { 0.794, 1.439, 0.610 }, { 1.397, 0.673, 1.916 }, { 0.659, 1.080, 0.573 },
+        { 1.105, 0.090, 3.431 }, { 1.741, 1.291, 3.432 }, { 1.936, 1.441, 5.873 },
+        { 0.960, 2.246, 1.659 }, { 0.382, 3.023, 2.793 }, { 0.053, 4.857, 4.242 },
+        { 2.655, 5.057, 2.211 }, { 4.114, 0.737, 0.614 }, { 5.977, 5.104, 5.217 },
+    };
+    // User defined velocities.
+    std::vector<nblib::Vec3> velocities = {
+        { 0.0055, -0.1400, 0.2127 },   { 0.0930, -0.0160, -0.0086 }, { 0.1678, 0.2476, -0.0660 },
+        { 0.1591, -0.0934, -0.0835 },  { -0.0317, 0.0573, 0.1453 },  { 0.0597, 0.0013, -0.0462 },
+        { 0.0484, -0.0357, 0.0168 },   { 0.0530, 0.0295, -0.2694 },  { -0.0550, -0.0896, 0.0494 },
+        { -0.0799, -0.2534, -0.0079 }, { 0.0436, -0.1557, 0.1849 },  { -0.0214, 0.0446, 0.0758 },
+    };
+    // Force buffer initialization for each particle.
+    std::vector<nblib::Vec3> forces = {
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+        { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 }, { 0.0000, 0.0000, 0.0000 },
+    };
     // A simulation state contains all the molecular information about the system.
     nblib::SimulationState simState(coordinates, velocities, forces, box, topology);
     // Kernel options are flags needed for force calculation.

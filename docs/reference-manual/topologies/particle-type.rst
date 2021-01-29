@@ -77,13 +77,29 @@ while it is still supported internally in the code, the old 4fd type
 should not be used in new input files. The different types are explained
 in sec. :ref:`virtualsites`.
 
-Parameters for type 2 should look like this:
+Parameters for type 1 should look like this:
+
+::
+
+    [ virtual_sites1 ]
+    ; Site  from        funct
+    5       1           1
+
+for type 2 like this:
 
 ::
 
     [ virtual_sites2 ]
     ; Site  from        funct  a
     5       1     2     1      0.7439756
+
+for type 2fd like this:
+
+::
+
+    [ virtual_sites2 ]
+    ; Site  from        funct  d
+    5       1     2     2      -0.105
 
 for type 3 like this:
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,7 +124,8 @@ static bool isDeviceFunctional(const cl::sycl::device& syclDevice, std::string* 
         cl::sycl::buffer<int, 1> buffer(numThreads);
         queue.submit([&](cl::sycl::handler& cgh) {
                  auto d_buffer = buffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
-                 cgh.parallel_for<class DummyKernel>(numThreads, [=](cl::sycl::id<1> threadId) {
+                 cl::sycl::range<1> range{ numThreads };
+                 cgh.parallel_for<class DummyKernel>(range, [=](cl::sycl::id<1> threadId) {
                      d_buffer[threadId] = threadId.get(0);
                  });
              })
@@ -202,7 +203,7 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfos[i]->syclDevice = syclDevice;
         deviceInfos[i]->status     = checkDevice(i, *deviceInfos[i]);
         deviceInfos[i]->deviceVendor =
-                getDeviceVendor(syclDevice.get_info<sycl::info::device::vendor>().c_str());
+                getDeviceVendor(syclDevice.get_info<cl::sycl::info::device::vendor>().c_str());
     }
     return deviceInfos;
 }

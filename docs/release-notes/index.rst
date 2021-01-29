@@ -25,6 +25,15 @@ can be found on the `issue tracker`_ at that issue number.
 
 .. todolist::
 
+Patch releases
+^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2021/2021.1
+
+
 Major release
 ^^^^^^^^^^^^^
 
@@ -74,6 +83,7 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2020/2020.6
    2020/2020.5
    2020/2020.4
    2020/2020.3

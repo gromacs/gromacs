@@ -1,0 +1,78 @@
+# Test goal: old Clang with old CUDA
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu oldest supported
+#   GPU: CUDA oldest supported
+#   HW: NVIDIA GPU
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 18.04
+#   Build type: RelWithAssert
+#   Compiler: Clang 8
+#   GPU: CUDA 10.1
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2 (unit tests)
+#   Parallelism nt/ntomp: 2/1 (regression tests)
+
+gromacs:clang-8-cuda-10.1:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-clang:base
+    - .use-cuda
+    - .rules:nightly-only-for-release
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.1
+  variables:
+    COMPILER_MAJOR_VERSION: 8
+    RELEASE_BUILD_DIR: release-builds-clang
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+
+gromacs:clang-8-cuda-10.1:release:build:
+  extends:
+    - .variables:default
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+    - .rules:nightly-only-for-release
+  stage: release-build
+  variables:
+    BUILD_DIR: release-builds-clang
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.1
+  needs:
+    - job: gromacs:clang-8-cuda-10.1:release:configure
+
+gromacs:clang-8-cuda-10.1:release:test:
+  extends:
+    - .gromacs:base:test
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.1
+  variables:
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    BUILD_DIR: release-builds-clang
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-8-cuda-10.1:release:configure
+    - job: gromacs:clang-8-cuda-10.1:release:build
+
+gromacs:clang-8-cuda-10.1:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:nightly-only-for-release
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-cuda-10.1
+  variables:
+    BUILD_DIR: release-builds-clang
+    KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+    KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+  tags:
+    - k8s-scilifelab
+  needs:
+    - job: gromacs:clang-8-cuda-10.1:release:build
+    - job: regressiontests:package
+

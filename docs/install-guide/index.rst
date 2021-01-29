@@ -69,7 +69,7 @@ using the following `CMake options`_ with the
 appropriate value instead of ``xxx`` :
 
 * ``-DCMAKE_C_COMPILER=xxx`` equal to the name of the C99 `Compiler`_ you wish to use (or the environment variable ``CC``)
-* ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++98 `compiler`_ you wish to use (or the environment variable ``CXX``)
+* ``-DCMAKE_CXX_COMPILER=xxx`` equal to the name of the C++17 `compiler`_ you wish to use (or the environment variable ``CXX``)
 * ``-DGMX_MPI=on`` to build using `MPI support`_
 * ``-DGMX_GPU=CUDA`` to build with NVIDIA CUDA support enabled.
 * ``-DGMX_GPU=OpenCL`` to build with OpenCL_ support enabled.
@@ -142,7 +142,7 @@ particular libstdc++ library, provide the path to g++ with
 ``-DGMX_GPLUSPLUS_PATH=/path/to/g++``.
 
 On Windows with the Intel compiler, the MSVC standard library is used,
-and at least MSVC 2017 15.7 is required. Load the enviroment variables with
+and at least MSVC 2017 15.7 is required. Load the environment variables with
 vcvarsall.bat.
 
 To build with clang and llvm's libcxx standard library, use

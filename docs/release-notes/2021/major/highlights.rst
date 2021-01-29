@@ -1,7 +1,7 @@
 Highlights
 ^^^^^^^^^^
 
-|Gromacs| 2021 was released on INSERT DATE HERE. Patch releases may
+|Gromacs| 2021 was released on January 28th, 2021. Patch releases may
 have been made since then, please use the updated versions!  Here are
 some highlights of what you can expect, along with more detail in the
 links below!
@@ -19,7 +19,7 @@ simulations and hardware. The new features are:
 * Support PME offloading to GPU for free energy simulations
 * Support for ARM SVE and Fujitsu A64FX (contribution by Research Organization for Information Science and Technology (RIST))
 * New nonbonded interaction API with NB-LIB (in collaboration with PRACE)
-
+* New |Gromacs| logo!
 
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,
