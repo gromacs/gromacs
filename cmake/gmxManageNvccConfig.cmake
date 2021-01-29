@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -101,11 +101,11 @@ if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
 else()
     # Set the CUDA GPU architectures to compile for:
     # - with CUDA >=9.0         CC 7.0 is supported and CC 2.0 is no longer supported
-    #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70 SASS, and compute_70 PTX
+    #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70 SASS, and compute_35, compute_70 PTX
     # - with CUDA >=10.0        CC 7.5 is supported
-    #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75 SASS, and compute_75 PTX
+    #     => compile sm_30, sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75 SASS, and compute_35, compute_75 PTX
     # - with CUDA >=11.0        CC 8.0 is supported
-    #     => compile sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75, sm_80 SASS, and compute_80 PTX
+    #     => compile sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75, sm_80 SASS, and compute_35, compute_80 PTX
 
     # First add flags that trigger SASS (binary) code generation for physical arch
     if(CUDA_VERSION VERSION_LESS "11.0")
@@ -118,22 +118,28 @@ else()
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=sm_60")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=sm_61")
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=sm_70")
+    if(NOT CUDA_VERSION VERSION_LESS "10.0")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_75,code=sm_75")
+    endif()
     if(NOT CUDA_VERSION VERSION_LESS "11.0")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_80,code=sm_80")
         # Requesting sm or compute 35, 37, or 50 triggers deprecation messages with
         # nvcc 11.0, which we need to suppress for use in CI
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-Wno-deprecated-gpu-targets")
     endif()
+    if(NOT CUDA_VERSION VERSION_LESS "11.1")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_86,code=sm_86")
+    endif()
 
-    # Next add flags that trigger PTX code generation for the newest supported virtual arch
-    # that's useful to JIT to future architectures
+    # Next add flags that trigger PTX code generation for the
+    # newest supported virtual arch that's useful to JIT to future architectures
+    # as well as an older one suitable for JIT-ing to any rare intermediate arch
+    # (like that of Jetson / Drive PX devices)
     list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_35,code=compute_35")
-    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_50,code=compute_50")
-    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_52,code=compute_52")
-    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_60,code=compute_60")
-    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_61,code=compute_61")
-    list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_70,code=compute_70")
-    if(NOT CUDA_VERSION VERSION_LESS "10.0")
-        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_75,code=compute_75")
+    if(CUDA_VERSION VERSION_LESS "11.0")
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_32,code=compute_32")
+    else()
+        list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_53,code=compute_53")
     endif()
     if(NOT CUDA_VERSION VERSION_LESS "11.0")
         list (APPEND GMX_CUDA_NVCC_GENCODE_FLAGS "-gencode;arch=compute_80,code=compute_80")
