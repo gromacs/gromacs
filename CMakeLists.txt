@@ -182,12 +182,6 @@ mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
 
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
-gmx_dependent_option(
-    GMX_MPI_IN_PLACE
-    "Enable MPI_IN_PLACE for MPIs that have it defined"
-    ON
-    GMX_MPI)
-mark_as_advanced(GMX_MPI_IN_PLACE)
 
 option(GMX_MIMIC "Enable MiMiC QM/MM interface (CPMD is required)" OFF)
 
@@ -558,7 +552,6 @@ tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include")
 if(GMX_THREAD_MPI)
     # enable MPI functions
     tmpi_enable()
-    set(MPI_IN_PLACE_EXISTS 1)
 endif()
 # If atomics are manually disabled a define is needed because atomics.h doesn't depend on config.h
 if (TMPI_ATOMICS_DISABLED)

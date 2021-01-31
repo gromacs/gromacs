@@ -50,6 +50,9 @@ if(GMX_MPI)
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
   if(NOT MPI_FOUND)
       find_package(MPI)
+      if (MPI_CXX_VERSION VERSION_LESS 2.0)
+          message(FATAL_ERROR "MPI version 2.0 or higher is required. Please update your MPI library.")
+      endif()
       if(MPI_CXX_FOUND)
           set(MPI_COMPILE_FLAGS ${MPI_CXX_COMPILE_FLAGS})
           separate_arguments(MPI_COMPILE_FLAGS)
@@ -85,11 +88,6 @@ if(GMX_MPI)
   endif()
 
   if(MPI_FOUND)
-    include(gmxTestMPI_IN_PLACE)
-    if (GMX_MPI_IN_PLACE)
-      gmx_test_mpi_in_place(MPI_IN_PLACE_EXISTS)
-    endif()
-
     # Find path of the mpi compilers
     if (${MPI_CXX_FOUND})
         get_filename_component(_mpi_c_compiler_path "${MPI_CXX_COMPILER}" PATH)

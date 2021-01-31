@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,21 +113,6 @@ struct gmx_multisim_t
     MPI_Comm mastersComm_ = MPI_COMM_NULL;
     //! The MPI communicator between ranks of this simulation.
     MPI_Comm simulationComm_ = MPI_COMM_NULL;
-    /*! \brief Communication buffers needed if MPI_IN_PLACE isn't supported
-     *
-     * Other types could be added as needed.
-     *
-     * These vectors are unused when MPI_IN_PLACE is available
-     * and could be removed with preprocessing (or perhaps
-     * templating) or simply requiring MPI 2.0 (the standard
-     * introduced in 1997). However, the additional cache pressure
-     * introduced by the extra size of this type is not of great
-     * concern, since we have at most one per MPI rank.
-     * See issue #3591. */
-    //! \{
-    std::vector<int>     intBuffer_;
-    std::vector<int64_t> int64Buffer_;
-    //! \}
 };
 
 //! Calculate the sum over the simulations of an array of ints

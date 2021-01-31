@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -169,46 +169,14 @@ gmx_multisim_t::~gmx_multisim_t()
 #if GMX_MPI
 static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 {
-#    if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
-#    else
-    /* this function is only used in code that is not performance critical,
-       (during setup, when comm_rec is not the appropriate communication
-       structure), so this isn't as bad as it looks. */
-    double* buf;
-    int     i;
-
-    snew(buf, nr);
-    MPI_Allreduce(r, buf, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
-    for (i = 0; i < nr; i++)
-    {
-        r[i] = buf[i];
-    }
-    sfree(buf);
-#    endif
 }
 #endif
 
 #if GMX_MPI
 static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 {
-#    if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
-#    else
-    /* this function is only used in code that is not performance critical,
-       (during setup, when comm_rec is not the appropriate communication
-       structure), so this isn't as bad as it looks. */
-    float* buf;
-    int    i;
-
-    snew(buf, nr);
-    MPI_Allreduce(r, buf, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
-    for (i = 0; i < nr; i++)
-    {
-        r[i] = buf[i];
-    }
-    sfree(buf);
-#    endif
 }
 #endif
 
@@ -235,14 +203,7 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumi_sim");
 #else
-#    if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mastersComm_);
-#    else
-    /* this is thread-unsafe, but it will do for now: */
-    ms->intBuffer.resize(nr);
-    MPI_Allreduce(r, ms->intBuffer.data(), ms->intBuffer.size(), MPI_INT, MPI_SUM, ms->mastersComm_);
-    std::copy(std::begin(ms->intBuffer), std::end(ms->intBuffer), r);
-#    endif
 #endif
 }
 
@@ -251,14 +212,7 @@ void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim
 #if !GMX_MPI
     GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumli_sim");
 #else
-#    if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, ms->mastersComm_);
-#    else
-    /* this is thread-unsafe, but it will do for now: */
-    ms->int64Buffer.resize(nr);
-    MPI_Allreduce(r, ms->int64Buffer.data(), ms->int64Buffer.size(), MPI_INT64_T, MPI_SUM, ms->mastersComm_);
-    std::copy(std::begin(ms->int64Buffer), std::end(ms->int64Buffer), r);
-#    endif
 #endif
 }
 

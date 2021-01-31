@@ -215,28 +215,15 @@ workstation using its built-in thread-MPI. No user action is required
 in order to enable this.
 
 If you wish to run in parallel on multiple machines across a network,
-you will need to have
-
-* an MPI library installed that supports the MPI 1.3
-  standard, and
-* wrapper compilers that will compile code using that library.
+you will need to have an MPI library installed that supports the MPI
+2.0 standard. That's true for any MPI library version released since
+about 2009, but the |Gromacs| team recommends the latest version (for
+best performance) of either your vendor's library, OpenMPI_ or MPICH_.
 
 To compile with MPI set your compiler to the normal (non-MPI) compiler
 and add ``-DGMX_MPI=on`` to the cmake options. It is possible to set
 the compiler to the MPI compiler wrapper but it is neither necessary
 nor recommended.
-
-The |Gromacs| team recommends OpenMPI_ version
-1.6 (or higher), MPICH_ version 1.4.1 (or
-higher), or your hardware vendor's MPI installation. The most recent
-version of either of these is likely to be the best. More specialized
-networks might depend on accelerations only available in the vendor's
-library. LAM-MPI_ might work, but since it has
-been deprecated for years, it is not supported.
-
-For example, depending on your actual MPI library, use ``cmake
--DMPI_CXX_COMPILER=mpic++ -DGMX_MPI=on``.
-
 
 CMake
 ^^^^^

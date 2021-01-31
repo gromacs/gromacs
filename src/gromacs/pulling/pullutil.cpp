@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,19 +107,7 @@ static void pullAllReduce(const t_commrec* cr, pull_comm_t* comm, int n, T* data
         {
             /* Separate branch because gmx_sum uses cr->mpi_comm_mygroup */
 #if GMX_MPI
-#    if MPI_IN_PLACE_EXISTS
             MPI_Allreduce(MPI_IN_PLACE, data, n, mpiDatatype(data), MPI_SUM, comm->mpi_comm_com);
-#    else
-            std::vector<T> buf(n);
-
-            MPI_Allreduce(data, buf.data(), n, mpiDatatype(data), MPI_SUM, comm->mpi_comm_com);
-
-            /* Copy the result from the buffer to the input/output data */
-            for (int i = 0; i < n; i++)
-            {
-                data[i] = buf[i];
-            }
-#    endif
 #else
             gmx_incons("comm->bParticipateAll=FALSE without GMX_MPI");
 #endif
