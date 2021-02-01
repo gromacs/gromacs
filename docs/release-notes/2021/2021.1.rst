@@ -22,6 +22,14 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed compilation on Cygwin
+"""""""""""""""""""""""""""
+
+A |Gromacs| header file was not including the necessary standard
+header.
+
+:issue:`3890`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
