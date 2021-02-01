@@ -23,3 +23,11 @@ in GROMACS 2021. Removing it will simplify maintenance, testing,
 documentation, installation, and teaching new users.
 
 :issue:`3808`
+
+Removed support for x86 MIC platform
+""""""""""""""""""""""""""""""""""""
+
+This platform is nearly dead and is no longer supported. The KNL
+platform is unaffected by this change.
+
+:issue:`3891`

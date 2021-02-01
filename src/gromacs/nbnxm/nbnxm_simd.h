@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@
 /*! \brief The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
  * Currently the 2xNN SIMD kernels only make sense with:
  *  8-way SIMD: 4x4 setup, works with AVX-256 in single precision
- * 16-way SIMD: 4x8 setup, works with Intel MIC in single precision
+ * 16-way SIMD: 4x8 setup, not currently in use, but worked with Intel MIC
  */
 #    if GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8
 #        define GMX_NBNXN_SIMD_4XN

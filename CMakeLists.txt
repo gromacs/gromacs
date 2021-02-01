@@ -204,13 +204,9 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "AUTO"
-    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL MIC ARM_NEON ARM_NEON_ASIMD ARM_SVE IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
+    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL ARM_NEON ARM_NEON_ASIMD ARM_SVE IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
-if(GMX_TARGET_MIC)
-    set(GMX_FFT_LIBRARY_DEFAULT "mkl")
-else()
-    set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
-endif()
+set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
 
 gmx_option_multichoice(
     GMX_FFT_LIBRARY

@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -176,11 +176,6 @@ elseif(GMX_SIMD_ACTIVE MATCHES "AVX2_")
     else()
         set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions using CXX flags: ${SIMD_AVX2_CXX_FLAGS}")
     endif()
-
-elseif(GMX_SIMD_ACTIVE STREQUAL "MIC")
-    # No flags needed. Not testing.
-    set(GMX_SIMD_X86_MIC 1)
-    set(SIMD_STATUS_MESSAGE "Enabling MIC (Xeon Phi) SIMD instructions without special flags. This SIMD support is deprecated.")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512")
 

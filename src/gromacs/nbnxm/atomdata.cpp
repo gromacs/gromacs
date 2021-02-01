@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -687,12 +687,6 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
     {
         nbat->bUseTreeReduce = (strtol(ptr, nullptr, 10) != 0);
     }
-#if defined __MIC__
-    else if (nth > 8) /*on the CPU we currently don't benefit even at 32*/
-    {
-        nbat->bUseTreeReduce = 1;
-    }
-#endif
     else
     {
         nbat->bUseTreeReduce = false;

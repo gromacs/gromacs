@@ -52,7 +52,7 @@ and for this reason they are part of the SIMD implementation.
 Finally, for some architectures with large or very large SIMD width (e.g. AVX
 with 8 elements in single precision, or AVX-512 with 16), the nonbonded
 kernels can become inefficient. Since all such architectures presently known
-(AVX, AVX2, MIC, AVX512) also provide extensive support for accessing
+(AVX, AVX2, AVX512) also provide extensive support for accessing
 parts of the register, we optionally define a handful of routines to
 perform load, store, and reduce operations based on half-SIMD-width data,
 which can improve performance. It is only useful for wide implementations,

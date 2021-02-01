@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -82,7 +82,6 @@ const std::string& simdString(SimdType s)
         { SimdType::X86_Avx2_128, "AVX2_128" },
         { SimdType::X86_Avx512, "AVX_512" },
         { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
-        { SimdType::X86_Mic, "X86_MIC" },
         { SimdType::Arm_Neon, "ARM_NEON" },
         { SimdType::Arm_NeonAsimd, "ARM_NEON_ASIMD" },
         { SimdType::Arm_Sve, "ARM_SVE" },
@@ -204,8 +203,6 @@ SimdType simdCompiled()
     return SimdType::X86_Avx512Knl;
 #elif GMX_SIMD_X86_AVX_512
     return SimdType::X86_Avx512;
-#elif GMX_SIMD_X86_MIC
-    return SimdType::X86_Mic;
 #elif GMX_SIMD_X86_AVX2_256
     return SimdType::X86_Avx2;
 #elif GMX_SIMD_X86_AVX2_128
