@@ -243,7 +243,6 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
 
-    # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
     gmx_option_multichoice(
         GMX_SIMD_ARM_SVE_LENGTH
 	"SVE vector length in bits"
@@ -321,13 +320,6 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_IBM_VSX_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VSX SIMD instructions using CXX flags: ${SIMD_IBM_VSX_CXX_FLAGS}")
-
-elseif(GMX_SIMD_ACTIVE STREQUAL "SPARC64_HPC_ACE")
-
-    # Note that GMX_RELAXED_DOUBLE_PRECISION is enabled by default in the top-level CMakeLists.txt
-
-    set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling Sparc64 HPC-ACE SIMD instructions without special flags. This SIMD support is deprecated.")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
 

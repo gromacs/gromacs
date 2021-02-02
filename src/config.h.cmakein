@@ -118,9 +118,6 @@
 /* IBM VSX was selected as SIMD instructions (Power 7 and later) */
 #cmakedefine01 GMX_SIMD_IBM_VSX
 
-/* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
-#cmakedefine01 GMX_SIMD_SPARC64_HPC_ACE
-
 /* Reference SIMD implementation for testing */
 #cmakedefine01 GMX_SIMD_REFERENCE
 
@@ -141,9 +138,6 @@
 
 /* Whether NBNXM and other SIMD kernels should be compiled */
 #cmakedefine01 GMX_USE_SIMD_KERNELS
-
-/* Whether a double-precision configuration may target accuracy equivalent to single precision */
-#cmakedefine01 GMX_RELAXED_DOUBLE_PRECISION
 
 /* Integer byte order is big endian. */
 #cmakedefine01 GMX_INTEGER_BIG_ENDIAN

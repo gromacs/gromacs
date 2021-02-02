@@ -555,12 +555,11 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
    Additionally, with GPU accelerated runs ``AVX2_256`` can also be
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors
-10. ``Sparc64_HPC_ACE`` Fujitsu machines like the K computer have this.
-11. ``IBM_VMX`` Power6 and similar Altivec processors have this.
-12. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
-13. ``ARM_NEON`` 32-bit ARMv7 with NEON support.
-14. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
-15. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
+10. ``IBM_VMX`` Power6 and similar Altivec processors have this.
+11. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
+12. ``ARM_NEON`` 32-bit ARMv7 with NEON support.
+13. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
+14. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
     ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.
@@ -1184,32 +1183,6 @@ version 1.11.8 of hwloc is recommended.
 Oracle Developer Studio is not a currently supported compiler (and
 does not currently compile |Gromacs| correctly, perhaps because the
 thread-MPI atomics are incorrectly implemented in |Gromacs|).
-
-Fujitsu PRIMEHPC
-^^^^^^^^^^^^^^^^
-
-This is the architecture of the K computer, which uses Fujitsu
-Sparc64VIIIfx chips. On this platform, |Gromacs| has
-accelerated group kernels using the HPC-ACE instructions, no
-accelerated Verlet kernels, and a custom build toolchain. Since this
-particular chip only does double precision SIMD, the default setup
-is to build |Gromacs| in double. Since most users only need single, we have added
-an option GMX_RELAXED_DOUBLE_PRECISION to accept single precision square root
-accuracy in the group kernels; unless you know that you really need 15 digits
-of accuracy in each individual force, we strongly recommend you use this. Note
-that all summation and other operations are still done in double.
-
-The recommended configuration is to use
-
-::
-
-    cmake .. -DCMAKE_TOOLCHAIN_FILE=Toolchain-Fujitsu-Sparc64-mpi.cmake \
-             -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
-             -DCMAKE_INSTALL_PREFIX=/where/gromacs/should/be/installed \
-             -DGMX_MPI=ON \
-             -DGMX_RELAXED_DOUBLE_PRECISION=ON
-    make
-    make install
 
 Intel Xeon Phi
 ^^^^^^^^^^^^^^

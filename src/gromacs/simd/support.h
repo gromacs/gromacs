@@ -72,8 +72,7 @@ enum class SimdType
     Arm_NeonAsimd, //!< 64-bit ARM AArch64 Advanced SIMD
     Arm_Sve,       //!< ARM Scalable Vector Extensions
     Ibm_Vmx,       //!< IBM VMX SIMD (Altivec on Power6 and later)
-    Ibm_Vsx,       //!< IBM VSX SIMD (Power7 and later)
-    Fujitsu_HpcAce //!< Fujitsu K-computer
+    Ibm_Vsx        //!< IBM VSX SIMD (Power7 and later)
 };
 
 /*! \libinternal \brief Return a string with the name of a SIMD type

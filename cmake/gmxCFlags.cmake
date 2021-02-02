@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
 # Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -482,19 +482,6 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3;/wd161;/wd177;/wd411;/wd593;/wd981;/wd1418;/wd14
             # does not align the stack properly. Embarrassing, Apple...
             GMX_TEST_CXXFLAG(CXXFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CXXFLAGS)
         endif()
-    endif()
-
-    # Fujitsu compilers on PrimeHPC/Sparc64
-    if(${CMAKE_C_COMPILER_ID} MATCHES Fujitsu OR
-       (${CMAKE_C_COMPILER_ID} MATCHES unknown AND ${CMAKE_C_COMPILER} MATCHES ^fcc))
-        GMX_TEST_CFLAG(CFLAG_GNUCOMPAT "-Xg;-w" GMXC_CFLAGS)
-        GMX_TEST_CFLAG(CFLAG_OPT "-Kfast,reduction,swp,simd=2,uxsimd,fsimple;-x100" GMXC_CFLAGS)
-    endif()
-
-    if(${CMAKE_CXX_COMPILER_ID} MATCHES Fujitsu OR
-       (${CMAKE_CXX_COMPILER_ID} MATCHES unknown AND ${CMAKE_CXX_COMPILER} MATCHES ^FCC))
-        GMX_TEST_CXXFLAG(CXXFLAG_GNUCOMPAT "-Xg;-w" GMXC_CXXFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAG_OPT "-Kfast,reduction,swp,simd=2,uxsimd,fsimple;-x100" GMXC_CXXFLAGS)
     endif()
 
 endmacro()

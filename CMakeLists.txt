@@ -174,11 +174,7 @@ include(gmxOptionUtilities)
 
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-# Fujitsu only has SIMD in double precision, so this will be faster
-gmx_set_boolean(GMX_DOUBLE_DEFAULT GMX_TARGET_FUJITSU_SPARC64)
-option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
-option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
-mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
+option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
 
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
@@ -204,7 +200,7 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "AUTO"
-    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL ARM_NEON ARM_NEON_ASIMD ARM_SVE IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
+    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL ARM_NEON ARM_NEON_ASIMD ARM_SVE IBM_VMX IBM_VSX Reference)
 
 set(GMX_FFT_LIBRARY_DEFAULT "fftw3")
 
@@ -310,9 +306,6 @@ gmx_test_compiler_problems()
 # want such variables to always have a definition, because #if is more
 # robust than #ifdef. So, we put this value on the compiler command
 # line in all cases.
-#
-# GMX_RELAXED_DOUBLE_PRECISION does not need to be handled here,
-# because no installed header needs it
 if(GMX_DOUBLE)
     set(GMX_DOUBLE_VALUE 1)
 else()
@@ -388,17 +381,6 @@ include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
 gmx_set_boolean(GMX_USE_NICE "HAVE_UNISTD_H AND HAVE_NICE")
-
-# Management of GROMACS options for specific toolchains should go
-# here. Because the initial settings for some of the main options have
-# already happened, but things like library detection and MPI compiler
-# feature detection have not, the docstrings for any over-rides of
-# GROMACS defaults or user settings will make sense. Also, any
-# toolchain-related reasons for choosing whether to detect various
-# things can be sorted out now, before the detection takes place.
-if(GMX_TARGET_FUJITSU_SPARC64)
-    include(gmxManageFujitsuSparc64)
-endif()
 
 ########################################################################
 #Process MPI settings

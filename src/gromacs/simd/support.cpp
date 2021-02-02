@@ -70,25 +70,23 @@ namespace gmx
 
 const std::string& simdString(SimdType s)
 {
-    static const std::map<SimdType, std::string> name = {
-        { SimdType::None, "None" },
-        { SimdType::Reference, "Reference" },
-        { SimdType::Generic, "Generic" },
-        { SimdType::X86_Sse2, "SSE2" },
-        { SimdType::X86_Sse4_1, "SSE4.1" },
-        { SimdType::X86_Avx128Fma, "AVX_128_FMA" },
-        { SimdType::X86_Avx, "AVX_256" },
-        { SimdType::X86_Avx2, "AVX2_256" },
-        { SimdType::X86_Avx2_128, "AVX2_128" },
-        { SimdType::X86_Avx512, "AVX_512" },
-        { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
-        { SimdType::Arm_Neon, "ARM_NEON" },
-        { SimdType::Arm_NeonAsimd, "ARM_NEON_ASIMD" },
-        { SimdType::Arm_Sve, "ARM_SVE" },
-        { SimdType::Ibm_Vmx, "IBM_VMX" },
-        { SimdType::Ibm_Vsx, "IBM_VSX" },
-        { SimdType::Fujitsu_HpcAce, "Fujitsu HPC-ACE" }
-    };
+    static const std::map<SimdType, std::string> name = { { SimdType::None, "None" },
+                                                          { SimdType::Reference, "Reference" },
+                                                          { SimdType::Generic, "Generic" },
+                                                          { SimdType::X86_Sse2, "SSE2" },
+                                                          { SimdType::X86_Sse4_1, "SSE4.1" },
+                                                          { SimdType::X86_Avx128Fma, "AVX_128_FMA" },
+                                                          { SimdType::X86_Avx, "AVX_256" },
+                                                          { SimdType::X86_Avx2, "AVX2_256" },
+                                                          { SimdType::X86_Avx2_128, "AVX2_128" },
+                                                          { SimdType::X86_Avx512, "AVX_512" },
+                                                          { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
+                                                          { SimdType::Arm_Neon, "ARM_NEON" },
+                                                          { SimdType::Arm_NeonAsimd,
+                                                            "ARM_NEON_ASIMD" },
+                                                          { SimdType::Arm_Sve, "ARM_SVE" },
+                                                          { SimdType::Ibm_Vmx, "IBM_VMX" },
+                                                          { SimdType::Ibm_Vsx, "IBM_VSX" } };
 
     return name.at(s);
 }
@@ -188,7 +186,7 @@ SimdType simdSuggested(const CpuInfo& c)
             case CpuInfo::Vendor::Fujitsu:
                 if (c.feature(CpuInfo::Feature::Fujitsu_HpcAce))
                 {
-                    suggested = SimdType::Fujitsu_HpcAce;
+                    suggested = SimdType::None;
                 }
                 break;
             default: break;
@@ -225,8 +223,6 @@ SimdType simdCompiled()
     return SimdType::Ibm_Vmx;
 #elif GMX_SIMD_IBM_VSX
     return SimdType::Ibm_Vsx;
-#elif GMX_SIMD_SPARC64_HPC_ACE
-    return SimdType::Fujitsu_HpcAce;
 #elif GMX_SIMD_REFERENCE
     return SimdType::Reference;
 #else

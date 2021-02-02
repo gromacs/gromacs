@@ -45,11 +45,4 @@ function(gmx_detect_target_architecture)
         try_compile(GMX_TARGET_X86 ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestX86.cpp")
     endif()
-    if (NOT DEFINED GMX_TARGET_FUJITSU_SPARC64)
-        try_compile(GMX_TARGET_FUJITSU_SPARC64 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestFujitsuSparc64.cpp")
-    endif()
-    if (GMX_TARGET_FUJITSU_SPARC64)
-        message(STATUS "The Fujitsu Sparc64 target is deprecated")
-    endif()
 endfunction()
