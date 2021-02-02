@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1082,7 +1082,7 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
     fprintf(fplog, "\n");
     fprintf(stderr, "\n");
 
-    if (lossFraction >= DD_PERF_LOSS_WARN)
+    if ((lossFraction >= DD_PERF_LOSS_WARN) && (dd->comm->dlbState != DlbState::offTemporarilyLocked))
     {
         std::string message = gmx::formatString(
                 "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
@@ -1090,9 +1090,16 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
                 lossFraction * 100);
 
         bool hadSuggestion = false;
-        if (!isDlbOn(comm))
+        if (dd->comm->dlbState == DlbState::offUser)
         {
-            message += "      You might want to use dynamic load balancing (option -dlb.)\n";
+            message += "      You might want to allow dynamic load balancing (option -dlb auto.)\n";
+            hadSuggestion = true;
+        }
+        else if (dd->comm->dlbState == DlbState::offCanTurnOn)
+        {
+            message +=
+                    "      Dynamic load balancing was automatically disabled, but it might be "
+                    "beneficial to manually tuning it on (option -dlb on.)\n";
             hadSuggestion = true;
         }
         else if (dlbWasLimited)
@@ -1107,7 +1114,6 @@ static void print_dd_load_av(FILE* fplog, gmx_domdec_t* dd)
                 "      e.g. by using fewer domains along the box dimension in which there is\n"
                 "      considerable inhomogeneity in the simulated system.",
                 hadSuggestion ? "also " : "");
-
 
         fprintf(fplog, "%s\n", message.c_str());
         fprintf(stderr, "%s\n", message.c_str());
