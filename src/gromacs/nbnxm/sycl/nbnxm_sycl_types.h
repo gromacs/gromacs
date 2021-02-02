@@ -58,16 +58,17 @@
 /*! \internal
  * \brief Staging area for temporary data downloaded from the GPU.
  *
- * Since SYCL buffers already have host-side storage, we put pointers to them here.
+ * Since SYCL buffers already have host-side storage, this is a bit redundant.
+ * But it allows prefetching of the data from GPU, and brings GPU backends closer together.
  */
-struct nb_staging_sycl_t
+struct nb_staging_t
 {
     //! LJ energy
-    DeviceBuffer<float>* e_lj;
+    float* e_lj = nullptr;
     //! electrostatic energy
-    DeviceBuffer<float>* e_el = nullptr;
-    //! float3 buffer with shift forces
-    DeviceBuffer<float3>* fshift;
+    float* e_el = nullptr;
+    //! shift forces
+    float3* fshift = nullptr;
 };
 
 /** \internal
@@ -76,15 +77,15 @@ struct nb_staging_sycl_t
 struct sycl_atomdata_t
 {
     //! number of atoms
-    int numAtoms;
+    int natoms;
     //! number of local atoms
-    int numAtomsLocal;
+    int natoms_local; //
     //! allocation size for the atom data (xq, f)
     int numAlloc;
 
-    //! atom coordinates + charges, size \ref numAtoms
+    //! atom coordinates + charges, size \ref natoms
     DeviceBuffer<float4> xq;
-    //! force output array, size \ref numAtoms
+    //! force output array, size \ref natoms
     DeviceBuffer<float3> f;
 
     //! LJ energy output, size 1
@@ -97,9 +98,9 @@ struct sycl_atomdata_t
 
     //! number of atom types
     int numTypes;
-    //! atom type indices, size \ref numAtoms
+    //! atom type indices, size \ref natoms
     DeviceBuffer<int> atomTypes;
-    //! sqrt(c6),sqrt(c12) size \ref numAtoms
+    //! sqrt(c6),sqrt(c12) size \ref natoms
     DeviceBuffer<float2> ljComb;
 
     //! shifts
@@ -122,6 +123,8 @@ struct NbnxmGpu
     const DeviceContext* deviceContext_;
     /*! \brief true if doing both local/non-local NB work on GPU */
     bool bUseTwoStreams = false;
+    /*! \brief true indicates that the nonlocal_done event was enqueued */
+    bool bNonLocalStreamActive = false;
     /*! \brief atom data */
     sycl_atomdata_t* atdat = nullptr;
     /*! \brief f buf ops cell index mapping */
@@ -130,7 +133,7 @@ struct NbnxmGpu
     /*! \brief pair-list data structures (local and non-local) */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, Nbnxm::gpu_plist*> plist = { { nullptr } };
     /*! \brief staging area where fshift/energies get downloaded. Will be removed in SYCL. */
-    nb_staging_sycl_t nbst;
+    nb_staging_t nbst;
     /*! \brief local and non-local GPU streams */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, const DeviceStream*> deviceStreams;
 

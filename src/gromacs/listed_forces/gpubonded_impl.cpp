@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -123,6 +123,10 @@ bool buildSupportsGpuBondeds(std::string* error)
     if (GMX_GPU_OPENCL)
     {
         errorReasons.emplace_back("not supported with OpenCL build of GROMACS");
+    }
+    if (GMX_GPU_SYCL)
+    {
+        errorReasons.emplace_back("not supported with SYCL build of GROMACS");
     }
     else if (!GMX_GPU)
     {
