@@ -31,3 +31,15 @@ This platform is nearly dead and is no longer supported. The KNL
 platform is unaffected by this change.
 
 :issue:`3891`
+
+Removed deprecated environment variables
+""""""""""""""""""""""""""""""""""""""""
+
+The following environment variables were removed after being deprecated
+in favor of better-named alternatives:
+
+* ``GMX_CUDA_NB_ANA_EWALD`` and ``GMX_OCL_NB_ANA_EWALD`` (use ``GMX_GPU_NB_ANA_EWALD``)
+* ``GMX_CUDA_NB_TAB_EWALD`` and ``GMX_OCL_NB_TAB_EWALD`` (use ``GMX_GPU_NB_TAB_EWALD``)
+* ``GMX_CUDA_NB_EWALD_TWINCUT`` and ``GMX_OCL_NB_EWALD_TWINCUT`` (use ``GMX_GPU_NB_EWALD_TWINCUT``)
+
+:issue:`3803`

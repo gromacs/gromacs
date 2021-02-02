@@ -84,20 +84,6 @@ void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
             &nbp->coulomb_tab, &nbp->coulomb_tab_texobj, tables.tableF.data(), tables.tableF.size(), deviceContext);
 }
 
-void inline printEnvironmentVariableDeprecationMessage(bool               isEnvironmentVariableSet,
-                                                       const std::string& environmentVariableSuffix)
-{
-    if (isEnvironmentVariableSet)
-    {
-        fprintf(stderr,
-                "Environment variables GMX_CUDA_%s and GMX_OCL_%s are deprecated and will be\n"
-                "removed in release 2022, please use GMX_GPU_%s instead.",
-                environmentVariableSuffix.c_str(),
-                environmentVariableSuffix.c_str(),
-                environmentVariableSuffix.c_str());
-    }
-}
-
 enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
                                                const DeviceInformation gmx_unused& deviceInfo)
 {
@@ -105,25 +91,9 @@ enum ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
 
     /* Benchmarking/development environment variables to force the use of
        analytical or tabulated Ewald kernel. */
-
-    // Remove these when old environment variables are deprecated
-    const bool forceAnalyticalEwaldLegacy = (getenv("GMX_CUDA_NB_ANA_EWALD") != nullptr)
-                                            || (getenv("GMX_OCL_NB_ANA_EWALD") != nullptr);
-    const bool forceTabulatedEwaldLegacy = (getenv("GMX_CUDA_NB_TAB_EWALD") != nullptr)
-                                           || (getenv("GMX_OCL_NB_TAB_EWALD") != nullptr);
-    const bool forceTwinCutoffEwaldLegacy = (getenv("GMX_CUDA_NB_EWALD_TWINCUT") != nullptr)
-                                            || (getenv("GMX_OCL_NB_EWALD_TWINCUT") != nullptr);
-
-    printEnvironmentVariableDeprecationMessage(forceAnalyticalEwaldLegacy, "NB_ANA_EWALD");
-    printEnvironmentVariableDeprecationMessage(forceTabulatedEwaldLegacy, "NB_TAB_EWALD");
-    printEnvironmentVariableDeprecationMessage(forceTwinCutoffEwaldLegacy, "NB_EWALD_TWINCUT");
-
-    const bool forceAnalyticalEwald =
-            (getenv("GMX_GPU_NB_ANA_EWALD") != nullptr) || forceAnalyticalEwaldLegacy;
-    const bool forceTabulatedEwald =
-            (getenv("GMX_GPU_NB_TAB_EWALD") != nullptr) || forceTabulatedEwaldLegacy;
-    const bool forceTwinCutoffEwald =
-            (getenv("GMX_GPU_NB_EWALD_TWINCUT") != nullptr) || forceTwinCutoffEwaldLegacy;
+    const bool forceAnalyticalEwald = (getenv("GMX_GPU_NB_ANA_EWALD") != nullptr);
+    const bool forceTabulatedEwald  = (getenv("GMX_GPU_NB_TAB_EWALD") != nullptr);
+    const bool forceTwinCutoffEwald = (getenv("GMX_GPU_NB_EWALD_TWINCUT") != nullptr);
 
     if (forceAnalyticalEwald && forceTabulatedEwald)
     {
