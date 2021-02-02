@@ -68,7 +68,6 @@ enum class SimdType
     X86_Avx2_128,  //!< 128-bit AVX2, better than 256-bit for AMD Ryzen
     X86_Avx512,    //!< AVX_512
     X86_Avx512Knl, //!< AVX_512_KNL
-    Arm_Neon,      //!< 32-bit ARM NEON
     Arm_NeonAsimd, //!< 64-bit ARM AArch64 Advanced SIMD
     Arm_Sve,       //!< ARM Scalable Vector Extensions
     Ibm_Vmx,       //!< IBM VMX SIMD (Altivec on Power6 and later)

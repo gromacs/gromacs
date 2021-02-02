@@ -555,9 +555,8 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
 9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors
 10. ``IBM_VMX`` Power6 and similar Altivec processors have this.
 11. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
-12. ``ARM_NEON`` 32-bit ARMv7 with NEON support.
-13. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
-14. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
+12. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later.
+13. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
     ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.

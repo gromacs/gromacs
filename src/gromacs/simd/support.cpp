@@ -81,7 +81,6 @@ const std::string& simdString(SimdType s)
                                                           { SimdType::X86_Avx2_128, "AVX2_128" },
                                                           { SimdType::X86_Avx512, "AVX_512" },
                                                           { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
-                                                          { SimdType::Arm_Neon, "ARM_NEON" },
                                                           { SimdType::Arm_NeonAsimd,
                                                             "ARM_NEON_ASIMD" },
                                                           { SimdType::Arm_Sve, "ARM_SVE" },
@@ -170,7 +169,7 @@ SimdType simdSuggested(const CpuInfo& c)
                 }
                 else if (c.feature(CpuInfo::Feature::Arm_Neon))
                 {
-                    suggested = SimdType::Arm_Neon;
+                    suggested = SimdType::None;
                 }
                 break;
             case CpuInfo::Vendor::Ibm:
@@ -213,8 +212,6 @@ SimdType simdCompiled()
     return SimdType::X86_Sse4_1;
 #elif GMX_SIMD_X86_SSE2
     return SimdType::X86_Sse2;
-#elif GMX_SIMD_ARM_NEON
-    return SimdType::Arm_Neon;
 #elif GMX_SIMD_ARM_NEON_ASIMD
     return SimdType::Arm_NeonAsimd;
 #elif GMX_SIMD_ARM_SVE

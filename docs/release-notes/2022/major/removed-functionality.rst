@@ -32,6 +32,13 @@ platform is unaffected by this change.
 
 :issue:`3891`
 
+Removed support for ARMv7 platform
+""""""""""""""""""""""""""""""""""
+
+This platform was nearly unused in HPC.
+
+:issue:`3891`
+
 Removed deprecated environment variables
 """"""""""""""""""""""""""""""""""""""""
 

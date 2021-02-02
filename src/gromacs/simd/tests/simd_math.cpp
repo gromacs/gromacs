@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -750,7 +750,7 @@ TEST_F(SimdMathTest, exp)
     const real lowestReal = -std::numeric_limits<real>::max();
     // In theory the smallest value should be (min_exponent-1)*log(2), but rounding after the multiplication will cause this
     // value to be a single ulp too low. This might cause failed tests on CPUs that use different DTZ modes for SIMD vs.
-    // non-SIMD arithmetics (ARM v7), so multiply by (1.0-eps) to increase it by a single ulp.
+    // non-SIMD arithmetics (e.g. ARM v7), so multiply by (1.0-eps) to increase it by a single ulp.
     const real lowestRealThatProducesNormal = (std::numeric_limits<real>::min_exponent - 1)
                                               * std::log(2.0)
                                               * (1 - std::numeric_limits<real>::epsilon());
@@ -1234,7 +1234,7 @@ TEST_F(SimdMathTest, expSingleAccuracy)
     const real lowestReal = -std::numeric_limits<real>::max();
     // In theory the smallest value should be (min_exponent-1)*log(2), but rounding after the multiplication will cause this
     // value to be a single ulp too low. This might cause failed tests on CPUs that use different DTZ modes for SIMD vs.
-    // non-SIMD arithmetics (ARM v7), so multiply by (1.0-eps) to increase it by a single ulp.
+    // non-SIMD arithmetics (e.g. ARM v7), so multiply by (1.0-eps) to increase it by a single ulp.
     const real lowestRealThatProducesNormal = (std::numeric_limits<real>::min_exponent - 1)
                                               * std::log(2.0)
                                               * (1.0 - std::numeric_limits<real>::epsilon());

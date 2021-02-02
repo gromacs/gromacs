@@ -207,25 +207,6 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512_KNL")
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512-KNL SIMD instructions using CXX flags: ${SIMD_AVX_512_KNL_CXX_FLAGS}")
 
-elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON")
-
-    if (GMX_DOUBLE)
-        message(FATAL_ERROR "ARM_NEON SIMD support is not available for a double precision build because the architecture lacks double-precision support")
-    endif()
-
-    gmx_find_simd_arm_neon_flags(SIMD_ARM_NEON_C_SUPPORTED SIMD_ARM_NEON_CXX_SUPPORTED
-                                 SIMD_ARM_NEON_C_FLAGS SIMD_ARM_NEON_CXX_FLAGS)
-
-    if(NOT SIMD_ARM_NEON_C_SUPPORTED OR NOT SIMD_ARM_NEON_CXX_SUPPORTED)
-        gmx_give_fatal_error_when_simd_support_not_found("ARM NEON" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
-    endif()
-
-    # If multiple flags are neeed, make them into a list
-    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_ARM_NEON_C_FLAGS})
-    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_ARM_NEON_CXX_FLAGS})
-    set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 32-bit ARM NEON SIMD instructions using CXX flags: ${SIMD_ARM_NEON_CXX_FLAGS}. This SIMD support is deprecated.")
-
 elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
 
     gmx_find_simd_arm_neon_asimd_flags(SIMD_ARM_NEON_ASIMD_C_SUPPORTED SIMD_ARM_NEON_ASIMD_CXX_SUPPORTED

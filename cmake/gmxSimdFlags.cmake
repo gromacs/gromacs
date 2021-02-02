@@ -286,26 +286,6 @@ function(gmx_find_simd_avx_512_knl_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS
 endfunction()
 
 
-# Arm Neon (32-bit ARM)
-function(gmx_find_simd_arm_neon_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
-
-    gmx_find_flags(SIMD_ARM_NEON_C_FLAGS_RESULT SIMD_ARM_NEON_CXX_FLAGS_RESULT
-        "#include<arm_neon.h>
-         int main(){float32x4_t x=vdupq_n_f32(0.5);x=vmlaq_f32(x,x,x);return vgetq_lane_f32(x,0)>0;}"
-        TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_ARM_NEON_C_FLAGS SIMD_ARM_NEON_CXX_FLAGS
-        "-mfpu=neon-vfpv4" "-mfpu=neon" "")
-
-    if(${SIMD_ARM_NEON_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_ARM_NEON_C_FLAGS}" CACHE INTERNAL "C flags required for Arm Neon instructions")
-    endif()
-    if(${SIMD_ARM_NEON_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_ARM_NEON_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for Arm Neon instructions")
-    endif()
-    set(${C_FLAGS_RESULT} ${SIMD_ARM_NEON_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_ARM_NEON_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm Neon C++ flags" FORCE)
-endfunction()
-
 # Arm Neon Asimd (64-bit ARM)
 function(gmx_find_simd_arm_neon_asimd_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
 
