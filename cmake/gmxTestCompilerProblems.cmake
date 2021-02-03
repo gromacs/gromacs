@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -62,16 +62,16 @@ macro(gmx_test_compiler_problems)
         if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.6) # For feature complete C++14 only 3.4 is needed.
             set(cxx_required_version "Clang 3.6")        # But prior version have bugs (e.g. debug symbol support)
         endif()
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17)
-            set(cxx_required_version "Intel Compiler 2017")
-        endif()
     else()
         message(WARNING "You are using an unsupported compiler. Please make sure it fully supports C++14.")
     endif()
     if (cxx_required_version)
         message(FATAL_ERROR "${cxx_required_version} or later required. "
                             "Earlier versions don't have full C++14 support.")
+    endif()
+
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+        message(WARNING "The Intel classic compiler is no longer supported. It may pass the tests, but is not tested by the GROMACS developers. Use the clang-based compiler from oneAPI, or gcc")
     endif()
 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
@@ -90,7 +90,7 @@ TestStruct::TestStruct() : b(0) {}
         endif()
     endif()
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
-        message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC, ICC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
+        message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
     endif()
 
 endmacro(gmx_test_compiler_problems)

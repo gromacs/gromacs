@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,19 +61,8 @@ TEST(NotNullConstruction, Works)
     // shared_ptr<int> is nullptr assignable
     not_null<std::shared_ptr<int>> sharedPointer(std::make_shared<int>(10));
 
-#ifndef NDEBUG
-/* The workaround here is needed because the intel implementation
- * will not trigger the assert when using the pointer without
- * a valid object. This was needed due to an internal error
- * being triggered instead with the compiler under this condition.
- *
- * Death tests can also not be used safely in a parallel environment.
- */
-#    if !defined(__INTEL_COMPILER) || !(__INTEL_COMPILER == 1800 && __INTEL_COMPILER_UPDATE == 0)
     int* nullPointer = nullptr;
     GMX_EXPECT_DEATH_IF_SUPPORTED(not_null<int*> invalidNullPointer(nullPointer), "");
-#    endif
-#endif
 
     int  value        = 20;
     int* validPointer = &value;

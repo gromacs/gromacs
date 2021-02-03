@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -584,8 +584,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle_t wc)
     if (wc == nullptr)
     {
         /* Default construction of std::array of non-class T can leave
-           the values indeterminate, just like a C array, and icc
-           warns about it. */
+           the values indeterminate, just like a C array */
         cycles_sum.fill(0);
         return cycles_sum;
     }

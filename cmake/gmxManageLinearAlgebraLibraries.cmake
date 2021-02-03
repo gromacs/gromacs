@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2016,2020, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2016,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -153,7 +153,7 @@ endmacro()
 # these. If the libraries are not in a standard location, the user can
 # indicate a search path with CMAKE_PREFIX_PATH.
 #
-# However, if we are using icc+mkl (so a build command that includes
+# However, if we are using icpx+mkl (so a build command that includes
 # -mkl), then it is probably painful to try to link some other BLAS or
 # LAPACK. In that case, we use the BLAS & LAPACK provided by MKL. In
 # principle, we could offer a more configurable behaviour if/when

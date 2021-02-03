@@ -571,10 +571,6 @@ static yyconst flex_int16_t yy_chk[151] =
 // manually.
 #define YY_BREAK
 
-#ifdef __INTEL_COMPILER
-// Ignore unused variables in generated code.
-#pragma warning(disable:593)
-#endif
 #define YY_NO_UNISTD_H 1
 
 

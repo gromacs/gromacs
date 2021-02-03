@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -278,7 +278,7 @@ static void pmeGetGridAndSizesInternal(const gmx_pme_t* /*unused*/,
                                        IVec& /*unused*/)       //NOLINT(google-runtime-references)
 {
     GMX_THROW(InternalError("Deleted function call"));
-    // explicitly deleting general template does not compile in clang/icc, see https://llvm.org/bugs/show_bug.cgi?id=17537
+    // explicitly deleting general template does not compile in clang, see https://llvm.org/bugs/show_bug.cgi?id=17537
 }
 
 //! Getting the PME real grid memory buffer and its sizes

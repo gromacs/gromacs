@@ -1362,7 +1362,7 @@ of 2. So it can be useful go through the checklist.
 * Don't use double precision unless you're absolute sure you need it.
 * Compile the FFTW library (yourself) with the correct flags on x86 (in most
   cases, the correct flags are automatically configured).
-* On x86, use gcc or icc as the compiler (not pgi or the Cray compiler).
+* On x86, use gcc as the compiler (not icc, pgi or the Cray compiler).
 * On POWER, use gcc instead of IBM's xlc.
 * Use a new compiler version, especially for gcc (e.g. from version 5 to 6
   the performance of the compiled code improved a lot).

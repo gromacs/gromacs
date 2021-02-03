@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -783,8 +783,6 @@ std::vector<PaddedVector<RVec>> c_coordinatesForTestsZeroAngle = {
 //! PBC values for testing
 std::vector<PbcType> c_pbcForTests = { PbcType::No, PbcType::XY, PbcType::Xyz };
 
-// Those tests give errors with the Intel compiler (as of October 2019) and nothing else, so we disable them only there.
-#if !defined(__INTEL_COMPILER) || (__INTEL_COMPILER >= 2021)
 INSTANTIATE_TEST_CASE_P(Bond,
                         ListedForcesTest,
                         ::testing::Combine(::testing::ValuesIn(c_InputBonds),
@@ -826,7 +824,6 @@ INSTANTIATE_TEST_CASE_P(AngleZero,
                         ::testing::Combine(::testing::ValuesIn(c_InputAnglesZeroAngle),
                                            ::testing::ValuesIn(c_coordinatesForTestsZeroAngle),
                                            ::testing::ValuesIn(c_pbcForTests)));
-#endif
 
 } // namespace
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,16 +58,8 @@ namespace compat
 
 //! Contract-assurance macros that work like a simple version of the GSL ones
 //! \{
-#if !defined(__INTEL_COMPILER) || !(__INTEL_COMPILER == 1800 && __INTEL_COMPILER_UPDATE == 0)
-#    define Expects(cond) GMX_ASSERT((cond), "Precondition violation")
-#    define Ensures(cond) GMX_ASSERT((cond), "Postcondition violation")
-#else
-// icc 18.0.0 in a RelWithAssert build has an ICE, even if we directly
-// embed the contents of GMX_ASSERT, so it seems the lambda in
-// GMX_ASSERT is too complex for it in this use case.
-#    define Expects(cond)
-#    define Ensures(cond)
-#endif
+#define Expects(cond) GMX_ASSERT((cond), "Precondition violation")
+#define Ensures(cond) GMX_ASSERT((cond), "Postcondition violation")
 //! \}
 
 /*! \libinternal

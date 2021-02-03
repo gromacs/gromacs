@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016, The GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -256,7 +256,6 @@ gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans
             gmx::UniformIntDistribution<int> tdist(0, isize - 1);
             tid = gmx_omp_get_thread_num();
             /* now starting parallel threads */
-            INTEL_DIAGNOSTIC_IGNORE(593)
 #    pragma omp for
             for (int64_t mc = 0; mc < mc_max; mc++)
             {
@@ -273,7 +272,6 @@ gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
             }
         }
-        INTEL_DIAGNOSTIC_RESET
         /* collecting data from threads */
         for (i = 0; i < pr->grn; i++)
         {

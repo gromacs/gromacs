@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -128,10 +128,6 @@ if(NEED_TO_FIND_GPLUSPLUS)
             message(FATAL_ERROR "${GMX_GPLUSPLUS_PATH}/include/c++ doesn't exist even though it should. "
                 "Please report to developers.")
         endif()
-    else() #Intel
-        if (${GMX_GPLUSPLUS_VERSION} VERSION_GREATER_EQUAL 7 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19)
-            message(FATAL_ERROR "ICC versions below 19 don't support GCC versions above 6.")
-        endif ()
     endif()
 
     # Set up to use the libstdc++ from that g++. Note that we checked
@@ -139,8 +135,6 @@ if(NEED_TO_FIND_GPLUSPLUS)
     # we will not override any user settings here.
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --gcc-toolchain=${GMX_GPLUSPLUS_PATH}")
-    else() #Intel
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gcc-name=${GMX_GPLUSPLUS_PATH}")
     endif()
 endif()
 

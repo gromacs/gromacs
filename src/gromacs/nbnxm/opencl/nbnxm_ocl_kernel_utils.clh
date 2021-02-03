@@ -116,7 +116,7 @@
 
 
 #    ifdef __GNUC__
-/* GCC, clang, and some ICC pretending to be GCC */
+/* GCC, clang */
 #        define gmx_unused __attribute__((unused))
 #    else
 #        define gmx_unused

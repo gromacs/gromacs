@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -466,9 +466,6 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
         mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100 * GMX_REAL_EPS);
     }
 
-#    if defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 2021) // Bug in (at least) 19u1 and 18u5 (03424712)
-#        pragma novector
-#    endif
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
     {
         // Subtract values from _reference_ memory (we will then test with mem0_, and compare)
@@ -942,9 +939,6 @@ TEST_F(SimdFloatingpointUtilTest, loadUNDuplicate4)
     real       data[GMX_SIMD_REAL_WIDTH / 4];
     std::iota(data, data + GMX_SIMD_REAL_WIDTH / 4, 1);
 
-#        if defined __ICC && __ICC == 1800 || defined __ICL && __ICL == 1800
-#            pragma novector /* Work-around for incorrect vectorization for AVX_512(_KNL) */
-#        endif
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)
     {
         val0_[i * 4] = val0_[i * 4 + 1] = val0_[i * 4 + 2] = val0_[i * 4 + 3] = data[i];

@@ -113,13 +113,16 @@ compiler. Since we require full C++17 support the minimum supported
 compiler versions are
 
 * GNU (gcc/libstdc++) 7
-* Intel (icc) 19.1
 * LLVM (clang/libc++) 5
 * Microsoft (MSVC) 2017 15.7
 
 Other compilers may work (Cray, Pathscale, older clang) but do
 not offer competitive performance. We recommend against PGI because
 the performance with C++ is very bad.
+
+The Intel classic compiler (icc/icpc) is no longer supported in
+|Gromacs|. Use Intel's newer clang-based compiler from oneAPI, or
+gcc.
 
 The xlc compiler is not supported and version 16.1 does not compile on
 POWER architectures for |Gromacs|\ -\ |version|. We recommend to use
@@ -135,23 +138,18 @@ libraries and require no further configuration. If your vendor's
 compiler also manages the standard library library via compiler flags,
 these will be honored. For configuration of other compilers, read on.
 
-On Linux, both the Intel and clang compiler use the libstdc++ which
+On Linux, the clang compilers use the libstdc++ which
 comes with gcc as the default C++ library. For |Gromacs|, we require
 the compiler to support libstc++ version 7.1 or higher. To select a
 particular libstdc++ library, provide the path to g++ with
 ``-DGMX_GPLUSPLUS_PATH=/path/to/g++``.
 
-On Windows with the Intel compiler, the MSVC standard library is used,
-and at least MSVC 2017 15.7 is required. Load the environment variables with
-vcvarsall.bat.
-
 To build with clang and llvm's libcxx standard library, use
 ``-DCMAKE_CXX_FLAGS=-stdlib=libc++``.
 
-If you are running on Mac OS X, the best option is the Intel
-compiler. Both clang and gcc will work, but they produce lower
-performance and each have some shortcomings. clang 3.8 now offers
-support for OpenMP, and so may provide decent performance.
+If you are running on Mac OS X, the best option is gcc. The Apple
+clang compiler provided by MacPorts will work, but does not support
+OpenMP, so will probably not provide best performance.
 
 For all non-x86 platforms, your best option is typically to use gcc or
 the vendor's default or recommended compiler, and check for
@@ -1188,18 +1186,6 @@ Intel Xeon Phi
 ^^^^^^^^^^^^^^
 
 Xeon Phi processors, hosted or self-hosted, are supported.
-Only symmetric (aka native) mode is supported on Knights Corner. The
-performance depends among other factors on the system size, and for
-now the performance might not be faster than CPUs. When building for it,
-the recommended configuration is
-
-::
-
-    cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/XeonPhi
-    make
-    make install
-
-
 The Knights Landing-based Xeon Phi processors behave like standard x86 nodes,
 but support a special SIMD instruction set. When cross-compiling for such nodes,
 use the ``AVX_512_KNL`` SIMD flavor.
@@ -1227,7 +1213,7 @@ is currently tested with a range of configuration options on x86 with
 gcc versions 7 and 8,
 clang versions 8 and 9,
 and
-a beta version of oneAPI containing Intel's compiler.
+a version of oneAPI containing Intel's clang-based compiler.
 For this testing, we use Ubuntu 18.04 or 20.04 operating system.
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can have a look at the

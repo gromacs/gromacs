@@ -50,10 +50,9 @@ if (GMXAPI)
 endif()
 
 # Activate targets NBLIB
-if(GMX_NATIVE_WINDOWS OR NOT BUILD_SHARED_LIBS OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+if(GMX_NATIVE_WINDOWS OR NOT BUILD_SHARED_LIBS)
     # NBLIB has not been tested in Microsoft environments.
     # NBLIB requires position-independent code
-    # NBLIB causes an ICE in icc 19.1.2.20200623
     set(_NBLIB_DEFAULT OFF)
 else()
     set(_NBLIB_DEFAULT ON)

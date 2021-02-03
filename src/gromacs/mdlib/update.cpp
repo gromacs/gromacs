@@ -557,9 +557,6 @@ static void updateMDLeapfrogGeneral(int                   start,
 
         rvec vRel;
         real cosineZ, vCosine;
-#ifdef __INTEL_COMPILER
-#    pragma warning(disable : 280)
-#endif
         switch (accelerationType)
         {
             case AccelerationType::none: copy_rvec(v[n], vRel); break;

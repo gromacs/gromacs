@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -207,9 +207,6 @@ def get_opencl_packages(args) -> typing.Iterable[str]:
 
 def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
     # Compiler
-    if args.icc is not None:
-        raise RuntimeError('Intel compiler toolchain recipe not implemented yet')
-
     if args.llvm is not None:
         # Build our own version instead to get TSAN + OMP
         if args.tsan is not None:
@@ -226,8 +223,8 @@ def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
             compiler = compiler_build_stage.runtime(_from='oneapi')
             # Prepare the toolchain (needed only for builds done within the Dockerfile, e.g.
             # OpenMPI builds, which don't currently work for other reasons)
-            oneapi_toolchain = hpccm.toolchain(CC='/opt/intel/oneapi/compiler/latest/linux/bin/intel64/icc',
-                                               CXX='/opt/intel/oneapi/compiler/latest/linux/bin/intel64/icpc')
+            oneapi_toolchain = hpccm.toolchain(CC='/opt/intel/oneapi/compiler/latest/linux/bin/intel64/icx',
+                                               CXX='/opt/intel/oneapi/compiler/latest/linux/bin/intel64/icpx')
             setattr(compiler, 'toolchain', oneapi_toolchain)
 
         else:
@@ -330,9 +327,6 @@ def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[st
     This stage is isolated so that its installed components are minimized in the
     final image (chiefly /opt/intel) and its environment setup script can be
     sourced. This also helps with rebuild time and final image size.
-
-    Note that the ICC compiler inside oneAPI on linux also needs
-    gcc to build other components and provide libstdc++.
     """
     if not isinstance(output_stages, collections.abc.MutableMapping):
         raise RuntimeError('Need output_stages container.')
@@ -347,7 +341,7 @@ def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[st
         apt_keys=['https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB'],
         apt_repositories=['deb https://apt.repos.intel.com/oneapi all main'],
         # Add minimal packages (not the whole HPC toolkit!)
-        ospackages=['intel-oneapi-dpcpp-cpp-{}'.format(version),
+        ospackages=['intel-oneapi-dpcpp-{}'.format(version),
             'intel-oneapi-openmp-{}'.format(version),
             'intel-oneapi-mkl-{}'.format(version),
             'intel-oneapi-mkl-devel-{}'.format(version)]

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,8 +85,7 @@ inline void current_function_helper()
 
 #    define GMX_CURRENT_FUNCTION __FUNCSIG__
 
-#elif (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 600)) \
-        || (defined(__IBMCPP__) && (__IBMCPP__ >= 500))
+#elif (defined(__IBMCPP__) && (__IBMCPP__ >= 500))
 
 #    define GMX_CURRENT_FUNCTION __FUNCTION__
 

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -219,27 +219,12 @@ endfunction()
 # AVX2
 function(gmx_find_simd_avx2_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
     find_x86_toolchain_flags(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
-    # For our "AVX2_256" support we would ideally want to enable the instructions
-    # we want to use, '-mavx2 -mfma'. icc (v16-18) does not allow doing that and
-    # instead, it requires the '-march=core-avx2' flag to be used. Annoyingly, it does
-    # however accept the former flags but it is not silent about it issuing warnings
-    # that can't be disabled.
-    # At the same time Intel's -march=core-avx2 flag is not rejected by gcc/clang either
-    # (though they're at least silent). However, -march=core-avx2 is an undocumented
-    # flag with unclear behavior in gcc/clang (and might enable some arch-specific optimizations).
-    # For this reason, and because we can't distinguish compilers just based on checking flag
-    # compatibility, we need to treat the Intel and gcc/clang separately.
-    if (CMAKE_C_COMPILER_ID MATCHES "Intel")
-        set(TOOLCHAIN_FLAG_FOR_AVX2 "-march=core-avx2")
-    else()
-        set(TOOLCHAIN_FLAG_FOR_AVX2 "-mavx2 -mfma")
-    endif()
     gmx_find_flags(SIMD_AVX2_C_FLAGS_RESULT SIMD_AVX2_CXX_FLAGS_RESULT
         "#include<immintrin.h>
 int main(){__m256i x=_mm256_set1_epi32(5);x=_mm256_add_epi32(x,x);return _mm256_movemask_epi8(x);}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
         SIMD_AVX2_C_FLAGS SIMD_AVX2_CXX_FLAGS
-        "${TOOLCHAIN_FLAG_FOR_AVX2}" "-mavx2" "/arch:AVX2" "-hgnu") 
+        "-mavx2 -mfma" "-mavx2" "/arch:AVX2" "-hgnu")
 
     if(${SIMD_AVX2_C_FLAGS_RESULT})
         set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX2_C_FLAGS}" CACHE INTERNAL "C flags required for AVX2 instructions")
@@ -266,7 +251,7 @@ function(gmx_find_simd_avx_512_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
           return idata[0]*(int)(_mm512_cmp_ps_mask(x,y,_CMP_LT_OS));}"
         TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
         SIMD_AVX_512_C_FLAGS SIMD_AVX_512_CXX_FLAGS
-        "-xCORE-AVX512 -qopt-zmm-usage=high" "-xCORE-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX512" "-hgnu") #ICC should use ZMM if code anyhow uses ZMM
+        "-xCORE-AVX512 -qopt-zmm-usage=high" "-xCORE-AVX512" "-mavx512f -mfma" "-mavx512f" "/arch:AVX512" "-hgnu")
 
     if(${SIMD_AVX_512_C_FLAGS_RESULT})
         set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_512_C_FLAGS}" CACHE INTERNAL "C flags required for AVX-512 instructions")

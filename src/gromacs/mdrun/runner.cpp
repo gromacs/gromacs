@@ -1482,9 +1482,8 @@ int Mdrunner::mdrunner()
 // Release mode and not for compilers with known buggy FP
 // exception support (clang with any optimization) or suspected
 // buggy FP exception support (gcc 7.* with optimization).
-#if !defined NDEBUG                                                                         \
-        && !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
-             && defined __OPTIMIZE__)
+#if !defined NDEBUG \
+        && !((defined __clang__ || (defined(__GNUC__) && __GNUC__ == 7)) && defined __OPTIMIZE__)
     const bool bEnableFPE = true;
 #else
     const bool bEnableFPE = false;

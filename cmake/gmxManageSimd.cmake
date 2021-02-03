@@ -390,8 +390,8 @@ endif()
 
 # By default, 32-bit windows cannot pass SIMD (SSE/AVX) arguments in registers,
 # and even on 64-bit (all platforms) it is only used for a handful of arguments.
-# The __vectorcall (MSVC, from MSVC2013) or __regcall (ICC) calling conventions
-# enable this, which is critical to enable 32-bit SIMD and improves performance
+# The __vectorcall (MSVC, from MSVC2013) calling convention
+# enables this, which is critical to enable 32-bit SIMD and improves performance
 # for 64-bit SIMD.
 # Check if the compiler supports one of these, and in that case set gmx_simdcall
 # to that string. If we do not have any such calling convention modifier, set it

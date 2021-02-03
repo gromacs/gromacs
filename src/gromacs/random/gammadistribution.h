@@ -93,7 +93,7 @@ namespace gmx
 /*! \brief Gamma distribution
  *
  *  The C++ standard library does provide a gamma distribution, but when
- *  using libstdc++-4.4.7 with at least gcc-4.6 or icc-14.0 the headers
+ *  using libstdc++-4.4.7 with at least gcc-4.6 the headers
  *  produce errors. Even for newer compilers, libstdc++ and libc++ appear to
  *  use different algorithms to generate it, which means their values differ
  *  in contrast to the uniform and normal distributions where they are

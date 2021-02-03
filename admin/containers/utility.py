@@ -96,9 +96,6 @@ compiler_group.add_argument('--gcc', type=int, nargs='?', const=7, default=7,
 compiler_group.add_argument('--llvm', type=str, nargs='?', const='7', default=None,
                             help='Select LLVM compiler tool chain. '
                                  'Some checking is implemented to avoid incompatible combinations')
-compiler_group.add_argument('--icc', type=int, nargs='?', const=19, default=None,
-                            help='Select Intel compiler tool chain. '
-                                 'Some checking is implemented to avoid incompatible combinations')
 # TODO currently the installation merely gets the latest beta version of oneAPI,
 # not a specific version. GROMACS probably doesn't need to address that until
 # oneAPI makes an official release. Also, the resulting container is a mix
@@ -155,7 +152,7 @@ def image_name(configuration: argparse.Namespace) -> str:
         if version is not None:
             elements.append(distro + '-' + version)
             break
-    for compiler in ('icc', 'llvm', 'gcc'):
+    for compiler in ('llvm', 'gcc'):
         version = getattr(configuration, compiler, None)
         if version is not None:
             elements.append(compiler + '-' + str(version).split('.')[0])

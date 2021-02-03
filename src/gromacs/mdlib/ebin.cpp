@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -134,11 +134,6 @@ int get_ebin_space(t_ebin* eb, int nener, const char* const enm[], const char* u
     return index;
 }
 
-// ICC 19 -O3 -msse2 generates wrong code. Lower optimization levels
-// and other SIMD levels seem fine, however.
-#if defined __ICC
-#    pragma intel optimization_level 2
-#endif
 void add_ebin(t_ebin* eb, int entryIndex, int nener, const real ener[], gmx_bool bSum)
 {
     int       i, m;

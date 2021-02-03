@@ -2,7 +2,7 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
-# Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,7 @@ set(PKG_FFT_LIBS "")
 # all their stuff. It's not easy if you only want some of their
 # stuff...
 set(MKL_MANUALLY FALSE)
-if (GMX_FFT_LIBRARY STREQUAL "MKL" AND
-    NOT ((CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER "11")
-         OR GMX_ICC_NEXTGEN))
+if (GMX_FFT_LIBRARY STREQUAL "MKL" AND NOT GMX_ICC_NEXTGEN)
     # The user will have to provide the set of magic libraries in
     # MKL_LIBRARIES (see below), which we cache (non-advanced), so that they
     # don't have to keep specifying it, and can easily see that
@@ -128,7 +126,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-    # Intel 11 and up makes life somewhat easy if you just want to use
+    # Intel compilers make life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their
     # stuff...
     if (NOT MKL_MANUALLY)
