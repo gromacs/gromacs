@@ -26,7 +26,8 @@ Fixed compilation on Cygwin
 """""""""""""""""""""""""""
 
 A |Gromacs| header file was not including the necessary standard
-header.
+header. A problem with the ``M_PI`` math constant defined only by
+POSIX and not by C++ was also worked around.
 
 :issue:`3890`
 
