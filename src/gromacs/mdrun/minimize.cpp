@@ -1993,7 +1993,7 @@ void LegacySimulator::do_lbfgs()
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, LBFGS);
 
-    do_log = do_ene = do_x = do_f = TRUE;
+    do_log = do_ene = do_f = TRUE;
 
     /* Max number of steps */
     number_steps = inputrec->nsteps;

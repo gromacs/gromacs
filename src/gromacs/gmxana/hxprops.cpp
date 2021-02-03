@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -329,30 +329,30 @@ t_bb* mkbbind(const char* fn,
 #define NBB asize(bb_nm)
     t_bb* bb;
     char* grpname;
-    int   ai, i, i0, i1, j, k, rnr, gnx, r0, r1;
+    int   gnx, r0, r1;
 
     fprintf(stderr, "Please select a group containing the entire backbone\n");
     rd_index(fn, 1, &gnx, index, &grpname);
     *nall = gnx;
     fprintf(stderr, "Checking group %s\n", grpname);
     r0 = r1 = atom[(*index)[0]].resind;
-    for (i = 1; (i < gnx); i++)
+    for (int i = 1; (i < gnx); i++)
     {
         r0 = std::min(r0, atom[(*index)[i]].resind);
         r1 = std::max(r1, atom[(*index)[i]].resind);
     }
-    rnr = r1 - r0 + 1;
+    int rnr = r1 - r0 + 1;
     fprintf(stderr, "There are %d residues\n", rnr);
     snew(bb, rnr);
-    for (i = 0; (i < rnr); i++)
+    for (int i = 0; (i < rnr); i++)
     {
         bb[i].N = bb[i].H = bb[i].CA = bb[i].C = bb[i].O = -1;
         bb[i].resno                                      = res0 + i;
     }
 
-    for (i = j = 0; (i < gnx); i++)
+    for (int i = 0; (i < gnx); i++)
     {
-        ai = (*index)[i];
+        int ai = (*index)[i];
         // Create an index into the residue index for the topology.
         int resindex = atom[ai].resind;
         // Create an index into the residues present in the selected
@@ -367,7 +367,8 @@ t_bb* mkbbind(const char* fn,
                 bb[bbindex].H = ai;
             }
         }
-        for (k = 0; (k < NBB); k++)
+        int k = 0;
+        for (; (k < NBB); k++)
         {
             if (std::strcmp(bb_nm[k], *(atomname[ai])) == 0)
             {
@@ -389,7 +390,8 @@ t_bb* mkbbind(const char* fn,
         }
     }
 
-    for (i0 = 0; (i0 < rnr); i0++)
+    int i0 = 0;
+    for (; (i0 < rnr); i0++)
     {
         if ((bb[i0].N != -1) && (bb[i0].H != -1) && (bb[i0].CA != -1) && (bb[i0].C != -1)
             && (bb[i0].O != -1))
@@ -397,7 +399,8 @@ t_bb* mkbbind(const char* fn,
             break;
         }
     }
-    for (i1 = rnr - 1; (i1 >= 0); i1--)
+    int i1 = rnr - 1;
+    for (; (i1 >= 0); i1--)
     {
         if ((bb[i1].N != -1) && (bb[i1].H != -1) && (bb[i1].CA != -1) && (bb[i1].C != -1)
             && (bb[i1].O != -1))
@@ -414,7 +417,7 @@ t_bb* mkbbind(const char* fn,
         i1--;
     }
 
-    for (i = i0; (i < i1); i++)
+    for (int i = i0; (i < i1); i++)
     {
         bb[i].Cprev = bb[i - 1].C;
         bb[i].Nnext = bb[i + 1].N;
@@ -425,13 +428,13 @@ t_bb* mkbbind(const char* fn,
     {
         gmx_fatal(FARGS, "Zero complete backbone residues were found, cannot proceed");
     }
-    for (i = 0; (i < rnr); i++, i0++)
+    for (int i = 0; (i < rnr); i++, i0++)
     {
         bb[i] = bb[i0];
     }
 
     /* Set the labels */
-    for (i = 0; (i < rnr); i++)
+    for (int i = 0; (i < rnr); i++)
     {
         int resindex = atom[bb[i].CA].resind;
         sprintf(bb[i].label, "%s%d", *(resinfo[resindex].name), resinfo[resindex].nr);
