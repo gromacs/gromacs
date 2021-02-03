@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,20 +70,6 @@
 #ifndef _GNU_SOURCE
 #    define _GNU_SOURCE 1
 #endif
-
-/* Some C++(?) compilers require these to be defined to get the integer limits
- * and format specifier macros from stdint.h and inttypes.h, respectively.
- * The macros are in C99 and C++11, but not in C++98...
- * As with _GNU_SOURCE, these need to be defined before these headers get first
- * included.  Unlike _GNU_SOURCE, these headers are included indirectly in most
- * header and source files (even though the macros are not used that often), so
- * there is no easy alternative to defining them here, either.
- * If someone happens to use such a compiler to compile against the installed
- * Gromacs headers, they need for now take care to define the macros themselves
- * (as there is no way Gromacs can do that consistently).
- */
-#define __STDC_LIMIT_MACROS
-#define __STDC_FORMAT_MACROS
 
 #if GMX_FAHCORE
 #    define FULLINDIRECT 1
