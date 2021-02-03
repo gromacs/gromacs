@@ -222,16 +222,18 @@ void init_plist(gpu_plist* pl)
     pl->excl  = nullptr;
 
     /* size -1 indicates that the respective array hasn't been initialized yet */
-    pl->na_c          = -1;
-    pl->nsci          = -1;
-    pl->sci_nalloc    = -1;
-    pl->ncj4          = -1;
-    pl->cj4_nalloc    = -1;
-    pl->nimask        = -1;
-    pl->imask_nalloc  = -1;
-    pl->nexcl         = -1;
-    pl->excl_nalloc   = -1;
-    pl->haveFreshList = false;
+    pl->na_c                   = -1;
+    pl->nsci                   = -1;
+    pl->sci_nalloc             = -1;
+    pl->ncj4                   = -1;
+    pl->cj4_nalloc             = -1;
+    pl->nimask                 = -1;
+    pl->imask_nalloc           = -1;
+    pl->nexcl                  = -1;
+    pl->excl_nalloc            = -1;
+    pl->haveFreshList          = false;
+    pl->rollingPruningNumParts = 0;
+    pl->rollingPruningPart     = 0;
 }
 
 void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
