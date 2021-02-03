@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ using test::CommandLine;
 
 //! Test parameter struct.
 using CommandLineOptionParams =
-        std::tuple<std::string, std::string, std::string, std::string, std::string, std::string, int>;
+        std::tuple<std::string, std::string, std::string, std::string, std::string, std::string, int, bool>;
 
 /*! \brief Strings containing regular expressions for lines to skip
  * when matching.
@@ -94,6 +94,8 @@ public:
     Pdb2gmxTest()
     {
         int outputFileType = std::get<6>(GetParam());
+        // If the file type of the output configuration is one
+        // commonly used (ie. pdb, gro), then check its content.
         if (outputFileType == efPDB)
         {
             // If we're writing PDB output, we are interested in
@@ -103,9 +105,9 @@ public:
             ExactTextMatch settings;
             setOutputFile("-o", outputfile.c_str(), TextFileMatch(settings));
         }
-        else
+        else if (outputFileType == efGRO)
         {
-            setOutputFile("-o", "conf.gro", ConfMatch());
+            setOutputFile("-o", "conf.gro", ConfMatch().matchFullConfiguration(std::get<7>(GetParam())));
         }
         setOutputFile("-p", "topol.top", TextFileMatch(c_textMatcher));
     }
@@ -151,7 +153,8 @@ INSTANTIATE_TEST_CASE_P(ForOplsaa,
                                                              "fragment2.pdb",
                                                              "fragment3.pdb",
                                                              "fragment4.pdb"),
-                                           ::testing::Values(efGRO)));
+                                           ::testing::Values(efGRO),
+                                           ::testing::Values(false)));
 #endif
 
 #if GROMOS
@@ -166,7 +169,8 @@ INSTANTIATE_TEST_CASE_P(ForGromos43a1,
                                                              "fragment2.pdb",
                                                              "fragment3.pdb",
                                                              "fragment4.pdb"),
-                                           ::testing::Values(efGRO)));
+                                           ::testing::Values(efGRO),
+                                           ::testing::Values(false)));
 
 INSTANTIATE_TEST_CASE_P(ForGromos53a6,
                         Pdb2gmxTest,
@@ -179,7 +183,8 @@ INSTANTIATE_TEST_CASE_P(ForGromos53a6,
                                                              "fragment2.pdb",
                                                              "fragment3.pdb",
                                                              "fragment4.pdb"),
-                                           ::testing::Values(efGRO)));
+                                           ::testing::Values(efGRO),
+                                           ::testing::Values(false)));
 #endif
 
 #if AMBER
@@ -194,7 +199,18 @@ INSTANTIATE_TEST_CASE_P(ForAmber99sb_ildn,
                                                              "fragment2.pdb",
                                                              "fragment3.pdb",
                                                              "fragment4.pdb"),
-                                           ::testing::Values(efGRO)));
+                                           ::testing::Values(efGRO),
+                                           ::testing::Values(false)));
+INSTANTIATE_TEST_CASE_P(ForAmber99sb_ildnWithTip4p,
+                        Pdb2gmxTest,
+                        ::testing::Combine(::testing::Values("amber99sb-ildn"),
+                                           ::testing::Values("tip4p"),
+                                           ::testing::Values("none"),
+                                           ::testing::Values("id_or_ter"),
+                                           ::testing::Values("no"),
+                                           ::testing::Values("tip4p.pdb"),
+                                           ::testing::Values(efGRO),
+                                           ::testing::Values(true)));
 #endif
 
 #if CHARMM
@@ -209,7 +225,8 @@ INSTANTIATE_TEST_CASE_P(ForCharmm27,
                                                              "fragment2.pdb",
                                                              "fragment3.pdb",
                                                              "fragment4.pdb"),
-                                           ::testing::Values(efGRO)));
+                                           ::testing::Values(efGRO),
+                                           ::testing::Values(false)));
 
 
 INSTANTIATE_TEST_CASE_P(ChainSep,
@@ -220,7 +237,8 @@ INSTANTIATE_TEST_CASE_P(ChainSep,
                                            ::testing::Values("id", "ter", "id_or_ter", "id_and_ter"),
                                            ::testing::Values("all", "no"),
                                            ::testing::Values("chainTer.pdb"),
-                                           ::testing::Values(efGRO)));
+                                           ::testing::Values(efGRO),
+                                           ::testing::Values(false)));
 
 INSTANTIATE_TEST_CASE_P(ChainChanges,
                         Pdb2gmxTest,
@@ -230,7 +248,8 @@ INSTANTIATE_TEST_CASE_P(ChainChanges,
                                            ::testing::Values("id", "ter", "id_or_ter", "id_and_ter"),
                                            ::testing::Values("no"),
                                            ::testing::Values("two-fragments.pdb"),
-                                           ::testing::Values(efPDB)));
+                                           ::testing::Values(efPDB),
+                                           ::testing::Values(false)));
 
 INSTANTIATE_TEST_CASE_P(ForCharmm27CyclicSystem,
                         Pdb2gmxTest,
@@ -241,7 +260,8 @@ INSTANTIATE_TEST_CASE_P(ForCharmm27CyclicSystem,
                                            ::testing::Values("no", "all"),
                                            ::testing::Values("cyclic-rna.pdb",
                                                              "cyclic-protein-small.pdb"),
-                                           ::testing::Values(efGRO)));
+                                           ::testing::Values(efGRO),
+                                           ::testing::Values(false)));
 #endif
 
 } // namespace

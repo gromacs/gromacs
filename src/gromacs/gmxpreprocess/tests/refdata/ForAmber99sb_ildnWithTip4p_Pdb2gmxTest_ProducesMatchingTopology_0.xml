@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <GroFile Name="Header">
+        <String Name="Title">TIP4p ice to test that MW is handled correctly</String>
+        <Int Name="Number of atoms">8</Int>
+      </GroFile>
+      <String Name="Configuration"><![CDATA[
+    1HO4     OW    1  -2.474  -5.526  -0.497
+    1HO4    HW1    2  -2.393  -5.526  -0.439
+    1HO4    HW2    3  -2.556  -5.526  -0.439
+    1HO4     MW    4  -2.484  -5.527  -0.485
+    2HO4     OW    5  -2.496  -5.242  -0.878
+    2HO4    HW1    6  -2.415  -5.242  -0.820
+    2HO4    HW2    7  -2.496  -5.160  -0.936
+    2HO4     MW    8  -2.482  -5.239  -0.874
+   0.16330   0.36715   0.49637
+]]></String>
+    </File>
+    <File Name="-p">
+      <String Name="Contents"><![CDATA[
+;
+;
+;	This is a standalone topology file
+;
+;	Created by:
+;	
+;	Command line:
+;	Force field was read from the standard GROMACS share directory.
+;
+
+; Include forcefield parameters
+#include "amber99sb-ildn.ff/forcefield.itp"
+
+; Include water topology
+#include "amber99sb-ildn.ff/tip4p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "amber99sb-ildn.ff/ions.itp"
+
+[ system ]
+; Name
+TIP4p ice to test that MW is handled correctly
+
+[ molecules ]
+; Compound        #mols
+SOL                 2
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

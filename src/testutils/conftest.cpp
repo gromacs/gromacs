@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textstream.h"
 
 #include "testutils/refdata.h"
@@ -79,11 +80,11 @@ private:
 
 } // namespace
 
-void checkConfFile(TextInputStream* input, TestReferenceChecker* checker, const ConfMatchSettings& /*unused*/)
+void checkConfFile(TextInputStream* input, TestReferenceChecker* checker, const ConfMatchSettings& settings)
 {
 
     TestReferenceChecker groChecker(checker->checkCompound("GroFile", "Header"));
-    // Just check the first two lines of the output file
+    // Check the first two lines of the output file
     std::string line;
     EXPECT_TRUE(input->readLine(&line));
     line = stripSuffixIfPresent(line, "\n");
@@ -91,6 +92,12 @@ void checkConfFile(TextInputStream* input, TestReferenceChecker* checker, const 
     EXPECT_TRUE(input->readLine(&line));
     line = stripSuffixIfPresent(line, "\n");
     groChecker.checkInteger(std::atoi(line.c_str()), "Number of atoms");
+    // Check the full configuration only if required
+    if (settings.matchFullConfiguration)
+    {
+        TextReader reader(input);
+        checker->checkTextBlock(reader.readAll(), "Configuration");
+    }
 }
 
 TextBlockMatcherPointer ConfMatch::createMatcher() const
