@@ -80,6 +80,21 @@ static int pdbasearch_atom(const char*              name,
     return search_atom(name, i, pdba, searchtype, bAllowMissing, cyclicBondsIndex);
 }
 
+/*! \brief Return the index of the first atom whose residue index
+ * matches and which has a patch with the given name.
+ *
+ * \param[out] ii      Index of the first atom in the residue that matches,
+ *                       -1 if no match occurs.
+ * \param[out] jj      Index of the patch that matches,
+ *                       unchanged if no match occurs.
+ * \param[in]  name    Name of the desired patch to match
+ * \param[in]  patches The patch database to search
+ * \param[in]  resind  The residue index to match
+ * \param[in]  pdba    The atoms to work with
+ *
+ * \todo The short-circuit logic will be simpler if this returned a
+ * std::pair<int, int> as soon as the first double match is found.
+ */
 static void hacksearch_atom(int*                                            ii,
                             int*                                            jj,
                             const char*                                     name,
@@ -105,6 +120,10 @@ static void hacksearch_atom(int*                                            ii,
             {
                 *ii = i;
                 *jj = j;
+                if (*ii >= 0)
+                {
+                    break;
+                }
             }
             j++;
         }
