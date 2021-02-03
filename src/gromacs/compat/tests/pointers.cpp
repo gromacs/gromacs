@@ -61,8 +61,10 @@ TEST(NotNullConstruction, Works)
     // shared_ptr<int> is nullptr assignable
     not_null<std::shared_ptr<int>> sharedPointer(std::make_shared<int>(10));
 
+#ifndef NDEBUG
     int* nullPointer = nullptr;
     GMX_EXPECT_DEATH_IF_SUPPORTED(not_null<int*> invalidNullPointer(nullPointer), "");
+#endif
 
     int  value        = 20;
     int* validPointer = &value;
