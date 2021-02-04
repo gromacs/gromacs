@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019,2020,2021, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,48 +33,27 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Function definitions for non-GPU builds
+ * \brief
+ * Declares nbnxn sycl helper functions
  *
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_nbnxm
  */
-#include "gmxpre.h"
+#ifndef GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_PRUNEONLY_H
+#define GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_PRUNEONLY_H
 
-#include "gpu_utils.h"
+#include "gromacs/mdtypes/locality.h"
 
-#include "config.h"
+#include "nbnxm_sycl_types.h"
 
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/stringutil.h"
-
-#ifdef _MSC_VER
-#    pragma warning(disable : 6237)
-#endif
-
-/*! \brief Help build a descriptive message in \c error if there are
- * \c errorReasons why nonbondeds on a GPU are not supported.
- *
- * \returns Whether the lack of errorReasons indicate there is support. */
-static bool addMessageIfNotSupported(gmx::ArrayRef<const std::string> errorReasons, std::string* error)
+namespace Nbnxm
 {
-    bool isSupported = errorReasons.empty();
-    if (!isSupported && error)
-    {
-        *error = "Nonbonded interactions cannot run on GPUs: ";
-        *error += joinStrings(errorReasons, "; ") + ".";
-    }
-    return isSupported;
-}
 
-bool buildSupportsNonbondedOnGpu(std::string* error)
-{
-    std::vector<std::string> errorReasons;
-    if (GMX_DOUBLE)
-    {
-        errorReasons.emplace_back("double precision");
-    }
-    if (!GMX_GPU)
-    {
-        errorReasons.emplace_back("non-GPU build of GROMACS");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
-}
+void launchNbnxmKernelPruneOnly(NbnxmGpu*                 nb,
+                                const InteractionLocality iloc,
+                                const int                 numParts,
+                                const int                 part,
+                                const int                 numSciInPart);
+
+} // namespace Nbnxm
+
+#endif // GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_PRUNEONLY_H

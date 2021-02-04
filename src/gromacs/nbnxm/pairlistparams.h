@@ -62,6 +62,8 @@ static constexpr int c_nbnxnCpuIClusterSize = 4;
 //! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at compile time for OpenCL
 #if GMX_GPU_OPENCL
 static constexpr int c_nbnxnGpuClusterSize = GMX_OPENCL_NB_CLUSTER_SIZE;
+#elif GMX_GPU_SYCL //  SYCL-TODO: determine best value
+static constexpr int c_nbnxnGpuClusterSize = 4;
 #else
 static constexpr int c_nbnxnGpuClusterSize = 8;
 #endif

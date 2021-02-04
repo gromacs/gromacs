@@ -216,6 +216,8 @@ function (gmx_register_gtest_test NAME EXENAME)
             # configurations.
             if (GMX_GPU_OPENCL)
                 set(_timeout 240)
+            elseif (GMX_GPU_SYCL)
+                set(_timeout 480)
             elseif (${CMAKE_BUILD_TYPE} STREQUAL TSAN)
                 set(_timeout 300)
             else()
