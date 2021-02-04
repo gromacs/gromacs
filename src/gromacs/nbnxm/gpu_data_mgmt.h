@@ -135,7 +135,8 @@ enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t gmx
 
 /** Return the enum value of VdW kernel type for given \p ic and \p combRule. */
 GPU_FUNC_QUALIFIER
-enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t gmx_unused* ic, int gmx_unused combRule)
+enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t gmx_unused* ic,
+                                       LJCombinationRule gmx_unused ljCombinationRule)
         GPU_FUNC_TERM_WITH_RETURN(VdwType::Count);
 
 /** Returns an opaque pointer to the GPU command stream

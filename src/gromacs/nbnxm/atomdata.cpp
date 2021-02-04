@@ -72,7 +72,14 @@
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 
-const char* const c_ljcrNames[ljcrNR + 1] = { "none", "geometric", "Lorentz-Berthelot", nullptr };
+
+const char* enumValueToString(LJCombinationRule enumValue)
+{
+    static constexpr gmx::EnumerationArray<LJCombinationRule, const char*> s_ljCombinationRuleNames = {
+        "Geometric", "Lorentz-Berthelot", "None"
+    };
+    return s_ljCombinationRuleNames[enumValue];
+}
 
 void nbnxn_atomdata_t::resizeCoordinateBuffer(int numAtoms)
 {
@@ -292,11 +299,9 @@ static void set_lj_parameter_data(nbnxn_atomdata_t::Params* params, gmx_bool bSI
      * not per pair of atom types.
      */
     params->nbfp_comb.resize(nt * 2);
-    switch (params->comb_rule)
+    switch (params->ljCombinationRule)
     {
-        case ljcrGEOM:
-            params->comb_rule = ljcrGEOM;
-
+        case LJCombinationRule::Geometric:
             for (int i = 0; i < nt; i++)
             {
                 /* Store the sqrt of the diagonal from the nbfp matrix */
@@ -304,7 +309,7 @@ static void set_lj_parameter_data(nbnxn_atomdata_t::Params* params, gmx_bool bSI
                 params->nbfp_comb[i * 2 + 1] = std::sqrt(params->nbfp[(i * nt + i) * 2 + 1]);
             }
             break;
-        case ljcrLB:
+        case LJCombinationRule::LorentzBerthelot:
             for (int i = 0; i < nt; i++)
             {
                 /* Get 6*C6 and 12*C12 from the diagonal of the nbfp matrix */
@@ -325,7 +330,7 @@ static void set_lj_parameter_data(nbnxn_atomdata_t::Params* params, gmx_bool bSI
                 }
             }
             break;
-        case ljcrNONE:
+        case LJCombinationRule::None:
             /* We always store the full matrix (see code above) */
             break;
         default: gmx_incons("Unknown combination rule");
@@ -563,37 +568,41 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
              */
             if (bCombGeom)
             {
-                params->comb_rule = ljcrGEOM;
+                params->ljCombinationRule = LJCombinationRule::Geometric;
             }
             else if (bCombLB)
             {
-                params->comb_rule = ljcrLB;
+                params->ljCombinationRule = LJCombinationRule::LorentzBerthelot;
             }
             else
             {
-                params->comb_rule = ljcrNONE;
+                params->ljCombinationRule = LJCombinationRule::None;
 
                 params->nbfp_comb.clear();
             }
 
             {
                 std::string mesg;
-                if (params->comb_rule == ljcrNONE)
+                if (params->ljCombinationRule == LJCombinationRule::None)
                 {
                     mesg = "Using full Lennard-Jones parameter combination matrix";
                 }
                 else
                 {
                     mesg = gmx::formatString("Using %s Lennard-Jones combination rule",
-                                             enum_name(params->comb_rule, ljcrNR, c_ljcrNames));
+                                             enumValueToString(params->ljCombinationRule));
                 }
                 GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
             }
             break;
-        case enbnxninitcombruleGEOM: params->comb_rule = ljcrGEOM; break;
-        case enbnxninitcombruleLB: params->comb_rule = ljcrLB; break;
+        case enbnxninitcombruleGEOM:
+            params->ljCombinationRule = LJCombinationRule::Geometric;
+            break;
+        case enbnxninitcombruleLB:
+            params->ljCombinationRule = LJCombinationRule::LorentzBerthelot;
+            break;
         case enbnxninitcombruleNONE:
-            params->comb_rule = ljcrNONE;
+            params->ljCombinationRule = LJCombinationRule::None;
 
             params->nbfp_comb.clear();
             break;
@@ -748,7 +757,7 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
 {
     params->lj_comb.resize(gridSet.numGridAtomsTotal() * 2);
 
-    if (params->comb_rule != ljcrNONE)
+    if (params->ljCombinationRule != LJCombinationRule::None)
     {
         for (const Nbnxm::Grid& grid : gridSet.grids())
         {

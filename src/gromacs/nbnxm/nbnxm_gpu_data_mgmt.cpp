@@ -357,7 +357,7 @@ enum ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t* ic
 }
 
 
-enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, int combRule)
+enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, LJCombinationRule ljCombinationRule)
 {
     if (ic->vdwtype == evdwCUT)
     {
@@ -365,17 +365,16 @@ enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, int combRu
         {
             case eintmodNONE:
             case eintmodPOTSHIFT:
-                switch (combRule)
+                switch (ljCombinationRule)
                 {
-                    case ljcrNONE: return VdwType::Cut;
-                    case ljcrGEOM: return VdwType::CutCombGeom;
-                    case ljcrLB: return VdwType::CutCombLB;
+                    case LJCombinationRule::None: return VdwType::Cut;
+                    case LJCombinationRule::Geometric: return VdwType::CutCombGeom;
+                    case LJCombinationRule::LorentzBerthelot: return VdwType::CutCombLB;
                     default:
                         GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
-                                "The requested LJ combination rule %s (%d) is not implemented in "
+                                "The requested LJ combination rule %s is not implemented in "
                                 "the GPU accelerated kernels!",
-                                enum_name(combRule, ljcrNR, c_ljcrNames),
-                                combRule)));
+                                enumValueToString(ljCombinationRule))));
                 }
             case eintmodFORCESWITCH: return VdwType::FSwitch;
             case eintmodPOTSWITCH: return VdwType::PSwitch;
@@ -389,14 +388,14 @@ enum VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t* ic, int combRu
     }
     else if (ic->vdwtype == evdwPME)
     {
-        if (ic->ljpme_comb_rule == ljcrGEOM)
+        if (ic->ljpme_comb_rule == eljpmeGEOM)
         {
-            assert(combRule == ljcrGEOM);
+            assert(ljCombinationRule == LJCombinationRule::Geometric);
             return VdwType::EwaldGeom;
         }
         else
         {
-            assert(combRule == ljcrLB);
+            assert(ljCombinationRule == LJCombinationRule::LorentzBerthelot);
             return VdwType::EwaldLB;
         }
     }

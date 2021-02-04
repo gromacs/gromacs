@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -155,17 +155,21 @@ struct nbnxn_atomdata_output_t
 #define NBNXN_BUFFERFLAG_MAX_THREADS (BITMASK_SIZE)
 
 
-/*! \brief LJ combination rules: geometric, Lorentz-Berthelot, none */
-enum
+//! LJ combination rules
+enum class LJCombinationRule : int
 {
-    ljcrGEOM,
-    ljcrLB,
-    ljcrNONE,
-    ljcrNR
+    //! Geometric
+    Geometric,
+    //! Lorentz-Berthelot
+    LorentzBerthelot,
+    //! No rule
+    None,
+    //! Size of the enum
+    Count
 };
 
 //! String corresponding to LJ combination rule
-extern const char* const c_ljcrNames[ljcrNR + 1];
+const char* enumValueToString(LJCombinationRule enumValue);
 
 /*! \internal
  * \brief Struct that stores atom related data for the nbnxn module
@@ -190,7 +194,7 @@ struct nbnxn_atomdata_t
         //! Lennard-Jone 6*C6 and 12*C12 parameters, size numTypes*2*2
         gmx::HostVector<real> nbfp;
         //! Combination rule, see enum defined above
-        int comb_rule;
+        LJCombinationRule ljCombinationRule;
         //! LJ parameters per atom type, size numTypes*2
         gmx::HostVector<real> nbfp_comb;
         //! As nbfp, but with a stride for the present SIMD architecture

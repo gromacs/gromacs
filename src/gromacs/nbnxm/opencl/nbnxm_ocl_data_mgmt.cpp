@@ -135,18 +135,20 @@ static void init_nbparam(NBParamGpu*                     nbp,
 {
     set_cutoff_parameters(nbp, ic, listParams);
 
-    nbp->vdwType  = nbnxmGpuPickVdwKernelType(ic, nbatParams.comb_rule);
+    nbp->vdwType  = nbnxmGpuPickVdwKernelType(ic, nbatParams.ljCombinationRule);
     nbp->elecType = nbnxmGpuPickElectrostaticsKernelType(ic, deviceContext.deviceInfo());
 
     if (ic->vdwtype == evdwPME)
     {
-        if (ic->ljpme_comb_rule == ljcrGEOM)
+        if (ic->ljpme_comb_rule == eljpmeGEOM)
         {
-            GMX_ASSERT(nbatParams.comb_rule == ljcrGEOM, "Combination rule mismatch!");
+            GMX_ASSERT(nbatParams.ljCombinationRule == LJCombinationRule::Geometric,
+                       "Combination rule mismatch!");
         }
         else
         {
-            GMX_ASSERT(nbatParams.comb_rule == ljcrLB, "Combination rule mismatch!");
+            GMX_ASSERT(nbatParams.ljCombinationRule == LJCombinationRule::LorentzBerthelot,
+                       "Combination rule mismatch!");
         }
     }
     /* generate table for PME */

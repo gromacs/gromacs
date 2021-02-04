@@ -137,7 +137,7 @@ static void init_nbparam(NBParamGpu*                     nbp,
      * combination is rarely used. LJ force-switch with LB rule is more common,
      * but gives only 1% speed-up.
      */
-    nbp->vdwType  = nbnxmGpuPickVdwKernelType(ic, nbatParams.comb_rule);
+    nbp->vdwType  = nbnxmGpuPickVdwKernelType(ic, nbatParams.ljCombinationRule);
     nbp->elecType = nbnxmGpuPickElectrostaticsKernelType(ic, deviceContext.deviceInfo());
 
     /* generate table for PME */
