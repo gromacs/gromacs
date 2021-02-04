@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -569,13 +569,16 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         f_global = of->f_global;
         if (mdof_flags & MDOF_F)
         {
-            dd_collect_vec(
-                    cr->dd,
-                    state_local->ddp_count,
-                    state_local->ddp_count_cg_gl,
-                    state_local->cg_gl,
-                    f_local,
-                    gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(of->f_global), f_local.size()));
+            auto globalFRef =
+                    MASTER(cr) ? gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(of->f_global),
+                                                        f_local.size())
+                               : gmx::ArrayRef<gmx::RVec>();
+            dd_collect_vec(cr->dd,
+                           state_local->ddp_count,
+                           state_local->ddp_count_cg_gl,
+                           state_local->cg_gl,
+                           f_local,
+                           globalFRef);
         }
     }
     else
