@@ -33,4 +33,4 @@ POSIX and not by C++ was also worked around.
 
 Miscellaneous
 ^^^^^^^^^^^^^
-
+* Updated |Gromacs| logos
