@@ -237,10 +237,10 @@ typedef struct
 } nbnxn_excl_t;
 
 /*! i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster bits set */
-__constant unsigned supercl_interaction_mask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
+__constant const unsigned supercl_interaction_mask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
 
 /*! Minimum single precision threshold for r^2 to avoid r^-12 overflow. */
-__constant float c_nbnxnMinDistanceSquared = NBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT;
+__constant const float c_nbnxnMinDistanceSquared = NBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT;
 
 gmx_opencl_inline void preloadCj4Generic(__local int*        sm_cjPreload,
                                          const __global int* gm_cj,
