@@ -53,6 +53,8 @@
 #include <cmath>
 #include <cstdio>
 
+#include <numeric>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/options.h"
@@ -126,21 +128,6 @@ static int largest_divisor(int n)
     return div.back();
 }
 
-/*! \brief Compute largest common divisor of \p n1 and \b n2 */
-static int lcd(int n1, int n2)
-{
-    int d = 1;
-    for (int i = 2; (i <= n1 && i <= n2); i++)
-    {
-        if (n1 % i == 0 && n2 % i == 0)
-        {
-            d = i;
-        }
-    }
-
-    return d;
-}
-
 /*! \brief Returns TRUE when there are enough PME ranks for the ratio */
 static gmx_bool fits_pme_ratio(int nrank_tot, int nrank_pme, float ratio)
 {
@@ -172,7 +159,7 @@ static gmx_bool fits_pp_pme_perf(int ntot, int npme, float ratio)
      * The factor of 2 allows for a maximum ratio of 2^2=4
      * between nx_pme and ny_pme.
      */
-    if (lcd(ntot - npme, npme) * 2 < npme_root2)
+    if (std::gcd(ntot - npme, npme) * 2 < npme_root2)
     {
         return FALSE;
     }
@@ -489,9 +476,9 @@ static float comm_cost_est(real               limit,
         /* Determine the largest volume for PME x/f redistribution */
         if (nc[i] % npme[i] != 0)
         {
-            float comm_vol_xf = (nc[i] > npme[i])
-                                        ? (npme[i] == 2 ? 1.0 / 3.0 : 0.5)
-                                        : (1.0 - lcd(nc[i], npme[i]) / static_cast<double>(npme[i]));
+            float comm_vol_xf =
+                    (nc[i] > npme[i]) ? (npme[i] == 2 ? 1.0 / 3.0 : 0.5)
+                                      : (1.0 - std::gcd(nc[i], npme[i]) / static_cast<double>(npme[i]));
             comm_pme += 3 * natoms * comm_vol_xf;
         }
 

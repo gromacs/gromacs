@@ -46,6 +46,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <numeric>
 #include <string>
 
 #include "gromacs/applied_forces/awh/read_params.h"
@@ -205,22 +206,6 @@ static void check_nst(const char* desc_nst, int nst, const char* desc_p, int* p,
         sprintf(buf, "%s should be a multiple of %s, changing %s to %d\n", desc_p, desc_nst, desc_p, *p);
         warning(wi, buf);
     }
-}
-
-static int lcd(int n1, int n2)
-{
-    int d, i;
-
-    d = 1;
-    for (i = 2; (i <= n1 && i <= n2); i++)
-    {
-        if (n1 % i == 0 && n2 % i == 0)
-        {
-            d = i;
-        }
-    }
-
-    return d;
 }
 
 //! Convert legacy mdp entries to modern ones.
@@ -523,7 +508,7 @@ void check_ir(const char*                   mdparin,
                  */
                 if (ir->nstlist > 0)
                 {
-                    ir->nstcalcenergy = lcd(ir->nstenergy, ir->nstlist);
+                    ir->nstcalcenergy = std::gcd(ir->nstenergy, ir->nstlist);
                 }
                 else
                 {
