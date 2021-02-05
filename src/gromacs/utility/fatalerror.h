@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,9 +62,9 @@
    }
    \endcode
  */
-extern FILE* debug;
+extern FILE* debug; //NOLINT(cppcoreguidelines-avoid-non-const-global-variables,-warnings-as-errors)
 /** Whether extra debugging is enabled. */
-extern gmx_bool gmx_debug_at;
+extern gmx_bool gmx_debug_at; //NOLINT(cppcoreguidelines-avoid-non-const-global-variables,-warnings-as-errors)
 
 /*! \brief
  * Initializes debugging variables.
@@ -181,7 +181,7 @@ enum ExitType
 #define FARGS 0, __FILE__, __LINE__
 
 /** Implementation for gmx_error(). */
-[[noreturn]] void _gmx_error(const char* key, const std::string& msg, const char* file, int line);
+[[noreturn]] void gmx_error_function(const char* key, const std::string& msg, const char* file, int line);
 /*! \brief
  * Alternative fatal error routine with canned messages.
  *
@@ -189,7 +189,7 @@ enum ExitType
  * based on a string key, and printf-style formatting is not supported.
  * Should not typically be called directly, but through gmx_call() etc.
  */
-#define gmx_error(key, msg) _gmx_error(key, msg, __FILE__, __LINE__)
+#define gmx_error(key, msg) gmx_error_function(key, msg, __FILE__, __LINE__)
 
 /*! \name Fatal error routines for certain types of errors
  *
@@ -212,7 +212,7 @@ enum ExitType
  *
  * \p warn_str can be NULL.
  */
-void _range_check(int n, int n_min, int n_max, const char* warn_str, const char* var, const char* file, int line);
+void range_check_function(int n, int n_min, int n_max, const char* warn_str, const char* var, const char* file, int line);
 
 /*! \brief
  * Checks that a variable is within a range.
@@ -221,14 +221,15 @@ void _range_check(int n, int n_min, int n_max, const char* warn_str, const char*
  * \p n_min is inclusive, but \p n_max is not.
  */
 #define range_check_mesg(n, n_min, n_max, str) \
-    _range_check(n, n_min, n_max, str, #n, __FILE__, __LINE__)
+    range_check_function(n, n_min, n_max, str, #n, __FILE__, __LINE__)
 
 /*! \brief
  * Checks that a variable is within a range.
  *
  * This works as range_check_mesg(), but with a default error message.
  */
-#define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL, #n, __FILE__, __LINE__)
+#define range_check(n, n_min, n_max) \
+    range_check_function(n, n_min, n_max, NULL, #n, __FILE__, __LINE__)
 
 /*! \brief
  * Prints a warning message to stderr.

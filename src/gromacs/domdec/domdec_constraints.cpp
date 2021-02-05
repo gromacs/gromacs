@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2006,2007,2008,2009,2010 by the GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -210,15 +210,7 @@ static void walk_out(int                       con,
             {
                 /* Walk further */
                 const int* iap = constr_iatomptr(ia1, ia2, coni);
-                int        b;
-                if (a == iap[1])
-                {
-                    b = iap[2];
-                }
-                else
-                {
-                    b = iap[1];
-                }
+                const int  b   = (a == iap[1]) ? iap[2] : iap[1];
                 if (!ga2la.findHome(offset + b))
                 {
                     walk_out(coni, con_offset, b, offset, nrec - 1, ia1, ia2, at2con, ga2la, FALSE, dc, dcc, il_local, ireq);
@@ -246,8 +238,8 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
     {
         if (GET_CGINFO_SETTLE(cginfo[a]))
         {
-            int a_gl = dd->globalAtomIndices[a];
-            int a_mol;
+            int a_gl  = dd->globalAtomIndices[a];
+            int a_mol = 0;
             mtopGetMolblockIndex(mtop, a_gl, &mb, nullptr, &a_mol);
 
             const gmx_molblock_t* molb   = &mtop->molblock[mb];
@@ -326,8 +318,8 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
     {
         if (GET_CGINFO_CONSTR(cginfo[a]))
         {
-            int a_gl = dd->globalAtomIndices[a];
-            int molnr, a_mol;
+            int a_gl  = dd->globalAtomIndices[a];
+            int molnr = 0, a_mol = 0;
             mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
 
             const gmx_molblock_t& molb = mtop->molblock[mb];
@@ -347,8 +339,8 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
             const auto& at2con = at2con_mt[molb.type];
             for (const int con : at2con[a_mol])
             {
-                const int* iap = constr_iatomptr(ia1, ia2, con);
-                int        b_mol;
+                const int* iap   = constr_iatomptr(ia1, ia2, con);
+                int        b_mol = 0;
                 if (a_mol == iap[1])
                 {
                     b_mol = iap[2];
@@ -411,11 +403,6 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
                               int                            nrec,
                               gmx::ArrayRef<InteractionList> il_local)
 {
-    gmx_domdec_constraints_t* dc;
-    InteractionList *         ilc_local, *ils_local;
-    gmx::HashedMap<int>*      ga2la_specat;
-    int                       at_end, i, j;
-
     // This code should not be called unless this condition is true,
     // because that's the only time init_domdec_constraints is
     // called...
@@ -431,10 +418,10 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
     // true. dd->constraint_comm is unilaterally dereferenced before
     // the call to atoms_to_settles.
 
-    dc = dd->constraints;
+    gmx_domdec_constraints_t* dc = dd->constraints;
 
-    ilc_local = &il_local[F_CONSTR];
-    ils_local = &il_local[F_SETTLE];
+    InteractionList* ilc_local = &il_local[F_CONSTR];
+    InteractionList* ils_local = &il_local[F_SETTLE];
 
     dc->ncon = 0;
     gmx::ArrayRef<const ListOfLists<int>> at2con_mt;
@@ -465,12 +452,10 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
     }
     else
     {
-        int t0_set;
-
         /* Do the constraints, if present, on the first thread.
          * Do the settles on all other threads.
          */
-        t0_set = ((!at2con_mt.empty() && dc->nthread > 1) ? 1 : 0);
+        const int t0_set = ((!at2con_mt.empty() && dc->nthread > 1) ? 1 : 0);
 
 #pragma omp parallel for num_threads(dc->nthread) schedule(static)
         for (int thread = 0; thread < dc->nthread; thread++)
@@ -484,23 +469,13 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
 
                 if (thread >= t0_set)
                 {
-                    int              cg0, cg1;
-                    InteractionList* ilst;
-
                     /* Distribute the settle check+assignments over
                      * dc->nthread or dc->nthread-1 threads.
                      */
-                    cg0 = (dd->ncg_home * (thread - t0_set)) / (dc->nthread - t0_set);
-                    cg1 = (dd->ncg_home * (thread - t0_set + 1)) / (dc->nthread - t0_set);
+                    int cg0 = (dd->ncg_home * (thread - t0_set)) / (dc->nthread - t0_set);
+                    int cg1 = (dd->ncg_home * (thread - t0_set + 1)) / (dc->nthread - t0_set);
 
-                    if (thread == t0_set)
-                    {
-                        ilst = ils_local;
-                    }
-                    else
-                    {
-                        ilst = &dc->ils[thread];
-                    }
+                    InteractionList* ilst = (thread == t0_set) ? ils_local : &dc->ils[thread];
                     ilst->clear();
 
                     std::vector<int>& ireqt = dc->requestedGlobalAtomIndices[thread];
@@ -533,10 +508,9 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
         }
     }
 
+    int at_end = 0;
     if (dd->constraint_comm)
     {
-        int nral1;
-
         at_end = setup_specat_communication(dd,
                                             ireq,
                                             dd->constraint_comm,
@@ -547,13 +521,13 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
                                             " or lincs-order");
 
         /* Fill in the missing indices */
-        ga2la_specat = dd->constraints->ga2la.get();
+        gmx::HashedMap<int>* ga2la_specat = dd->constraints->ga2la.get();
 
-        nral1 = 1 + NRAL(F_CONSTR);
-        for (i = 0; i < ilc_local->size(); i += nral1)
+        int nral1 = 1 + NRAL(F_CONSTR);
+        for (int i = 0; i < ilc_local->size(); i += nral1)
         {
             int* iap = ilc_local->iatoms.data() + i;
-            for (j = 1; j < nral1; j++)
+            for (int j = 1; j < nral1; j++)
             {
                 if (iap[j] < 0)
                 {
@@ -565,10 +539,10 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
         }
 
         nral1 = 1 + NRAL(F_SETTLE);
-        for (i = 0; i < ils_local->size(); i += nral1)
+        for (int i = 0; i < ils_local->size(); i += nral1)
         {
             int* iap = ils_local->iatoms.data() + i;
-            for (j = 1; j < nral1; j++)
+            for (int j = 1; j < nral1; j++)
             {
                 if (iap[j] < 0)
                 {
@@ -590,16 +564,13 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
 
 void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t* mtop)
 {
-    gmx_domdec_constraints_t* dc;
-    const gmx_molblock_t*     molb;
-
     if (debug)
     {
         fprintf(debug, "Begin init_domdec_constraints\n");
     }
 
-    dd->constraints = new gmx_domdec_constraints_t;
-    dc              = dd->constraints;
+    dd->constraints              = new gmx_domdec_constraints_t;
+    gmx_domdec_constraints_t* dc = dd->constraints;
 
     dc->molb_con_offset.resize(mtop->molblock.size());
     dc->molb_ncon_mol.resize(mtop->molblock.size());
@@ -607,9 +578,9 @@ void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t* mtop)
     int ncon = 0;
     for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
-        molb                    = &mtop->molblock[mb];
-        dc->molb_con_offset[mb] = ncon;
-        dc->molb_ncon_mol[mb]   = mtop->moltype[molb->type].ilist[F_CONSTR].size() / 3
+        const gmx_molblock_t* molb = &mtop->molblock[mb];
+        dc->molb_con_offset[mb]    = ncon;
+        dc->molb_ncon_mol[mb]      = mtop->moltype[molb->type].ilist[F_CONSTR].size() / 3
                                 + mtop->moltype[molb->type].ilist[F_CONSTRNC].size() / 3;
         ncon += molb->nmol * dc->molb_ncon_mol[mb];
     }

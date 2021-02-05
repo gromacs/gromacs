@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009,2010,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,6 +64,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "domdec_internal.h"
+#include "math.h"
 
 /*! \brief Calculates the average and standard deviation in 3D of atoms */
 static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec stddev, const MPI_Comm* mpiCommunicator)
@@ -124,16 +125,12 @@ static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec s
 /*! \brief Determines if dimensions require triclinic treatment and stores this info in ddbox */
 static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box)
 {
-    int   npbcdim, d, i, j;
-    rvec *v, *normal;
-    real  dep, inv_skew_fac2;
-
-    npbcdim = ddbox->npbcdim;
-    normal  = ddbox->normal;
-    for (d = 0; d < DIM; d++)
+    int   npbcdim = ddbox->npbcdim;
+    rvec* normal  = ddbox->normal;
+    for (int d = 0; d < DIM; d++)
     {
         ddbox->tric_dir[d] = 0;
-        for (j = d + 1; j < npbcdim; j++)
+        for (int j = d + 1; j < npbcdim; j++)
         {
             if (box[j][d] != 0)
             {
@@ -166,13 +163,13 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
          */
         if (ddbox->tric_dir[d])
         {
-            inv_skew_fac2 = 1;
-            v             = ddbox->v[d];
+            real  inv_skew_fac2 = 1;
+            rvec* v             = ddbox->v[d];
             if (d == XX || d == YY)
             {
                 /* Normalize such that the "diagonal" is 1 */
                 svmul(1 / box[d + 1][d + 1], box[d + 1], v[d + 1]);
-                for (i = 0; i < d; i++)
+                for (int i = 0; i < d; i++)
                 {
                     v[d + 1][i] = 0;
                 }
@@ -182,8 +179,8 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
                     /* Normalize such that the "diagonal" is 1 */
                     svmul(1 / box[d + 2][d + 2], box[d + 2], v[d + 2]);
                     /* Set v[d+2][d+1] to zero by shifting along v[d+1] */
-                    dep = v[d + 2][d + 1] / v[d + 1][d + 1];
-                    for (i = 0; i < DIM; i++)
+                    const real dep = v[d + 2][d + 1] / v[d + 1][d + 1];
+                    for (int i = 0; i < DIM; i++)
                     {
                         v[d + 2][i] -= dep * v[d + 1][i];
                     }
@@ -201,7 +198,7 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
                 if (debug)
                 {
                     fprintf(debug, "box[%d]  %.3f %.3f %.3f\n", d, box[d][XX], box[d][YY], box[d][ZZ]);
-                    for (i = d + 1; i < DIM; i++)
+                    for (int i = d + 1; i < DIM; i++)
                     {
                         fprintf(debug, "  v[%d]  %.3f %.3f %.3f\n", i, v[i][XX], v[i][YY], v[i][ZZ]);
                     }
@@ -209,7 +206,7 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
             }
             ddbox->skew_fac[d] = 1.0 / std::sqrt(inv_skew_fac2);
             /* Set the normal vector length to skew_fac */
-            dep = ddbox->skew_fac[d] / norm(normal[d]);
+            const real dep = ddbox->skew_fac[d] / norm(normal[d]);
             svmul(dep, normal[d], normal[d]);
 
             if (debug)
@@ -222,7 +219,7 @@ static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box
         {
             ddbox->skew_fac[d] = 1;
 
-            for (i = 0; i < DIM; i++)
+            for (int i = 0; i < DIM; i++)
             {
                 clear_rvec(ddbox->v[d][i]);
                 ddbox->v[d][i][i] = 1;
@@ -244,13 +241,11 @@ static void low_set_ddbox(int                            numPbcDimensions,
                           gmx_ddbox_t*                   ddbox)
 {
     rvec av, stddev;
-    real b0, b1;
-    int  d;
 
     ddbox->npbcdim     = numPbcDimensions;
     ddbox->nboundeddim = numBoundedDimensions;
 
-    for (d = 0; d < numBoundedDimensions; d++)
+    for (int d = 0; d < numBoundedDimensions; d++)
     {
         ddbox->box0[d]     = 0;
         ddbox->box_size[d] = box[d][d];
@@ -264,10 +259,10 @@ static void low_set_ddbox(int                            numPbcDimensions,
          * gives a uniform load for a rectangular block of cg's.
          * For a sphere it is not a bad approximation for 4x1x1 up to 4x2x2.
          */
-        for (d = ddbox->nboundeddim; d < DIM; d++)
+        for (int d = ddbox->nboundeddim; d < DIM; d++)
         {
-            b0 = av[d] - GRID_STDDEV_FAC * stddev[d];
-            b1 = av[d] + GRID_STDDEV_FAC * stddev[d];
+            const real b0 = av[d] - GRID_STDDEV_FAC * stddev[d];
+            const real b1 = av[d] + GRID_STDDEV_FAC * stddev[d];
             if (debug)
             {
                 fprintf(debug, "Setting global DD grid boundaries to %f - %f\n", b0, b1);

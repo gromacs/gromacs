@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ bool gmx_mpi_initialized()
 #if !GMX_MPI
     return false;
 #else
-    int n;
+    int n = 0;
     MPI_Initialized(&n);
 
     return n != 0;
@@ -73,7 +73,7 @@ int gmx_node_num()
         return 1;
     }
 #    endif
-    int i;
+    int i = 0;
     (void)MPI_Comm_size(MPI_COMM_WORLD, &i);
     return i;
 #endif
@@ -90,7 +90,7 @@ int gmx_node_rank()
         return 0;
     }
 #    endif
-    int i;
+    int i = 0;
     (void)MPI_Comm_rank(MPI_COMM_WORLD, &i);
     return i;
 #endif
@@ -98,7 +98,7 @@ int gmx_node_rank()
 
 static int mpi_hostname_hash()
 {
-    int hash_int;
+    int hash_int = 0;
 
 #if GMX_LIB_MPI
     int  resultlen;

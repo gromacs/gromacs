@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 
 #include "atomdistribution.h"
 #include "domdec_internal.h"
+#include "math.h"
 #include "utility.h"
 
 static void set_pme_maxshift(gmx_domdec_t*      dd,
@@ -63,15 +64,11 @@ static void set_pme_maxshift(gmx_domdec_t*      dd,
                              const gmx_ddbox_t* ddbox,
                              const real*        cellFrac)
 {
-    gmx_domdec_comm_t* comm;
-    int                nc, ns, s;
-    int *              xmin, *xmax;
-    real               range, pme_boundary;
-    int                sh;
+    int sh = 0;
 
-    comm = dd->comm;
-    nc   = dd->numCells[ddpme->dim];
-    ns   = ddpme->nslab;
+    gmx_domdec_comm_t* comm = dd->comm;
+    const int          nc   = dd->numCells[ddpme->dim];
+    const int          ns   = ddpme->nslab;
 
     if (!ddpme->dim_match)
     {
@@ -88,22 +85,22 @@ static void set_pme_maxshift(gmx_domdec_t*      dd,
         /* We need to check for all pme nodes which nodes they
          * could possibly need to communicate with.
          */
-        xmin = ddpme->pp_min;
-        xmax = ddpme->pp_max;
+        const int* xmin = ddpme->pp_min;
+        const int* xmax = ddpme->pp_max;
         /* Allow for atoms to be maximally 2/3 times the cut-off
          * out of their DD cell. This is a reasonable balance between
          * between performance and support for most charge-group/cut-off
          * combinations.
          */
-        range = 2.0 / 3.0 * comm->systemInfo.cutoff / ddbox->box_size[ddpme->dim];
+        real range = 2.0 / 3.0 * comm->systemInfo.cutoff / ddbox->box_size[ddpme->dim];
         /* Avoid extra communication when we are exactly at a boundary */
         range *= 0.999;
 
-        sh = 1;
-        for (s = 0; s < ns; s++)
+        int sh = 1;
+        for (int s = 0; s < ns; s++)
         {
             /* PME slab s spreads atoms between box frac. s/ns and (s+1)/ns */
-            pme_boundary = static_cast<real>(s) / ns;
+            real pme_boundary = static_cast<real>(s) / ns;
             while (sh + 1 < ns
                    && ((s - (sh + 1) >= 0 && cellFrac[xmax[s - (sh + 1)] + 1] + range > pme_boundary)
                        || (s - (sh + 1) < 0 && cellFrac[xmax[s - (sh + 1) + ns] + 1] - 1 + range > pme_boundary)))
@@ -130,11 +127,9 @@ static void set_pme_maxshift(gmx_domdec_t*      dd,
 
 static void check_box_size(const gmx_domdec_t* dd, const gmx_ddbox_t* ddbox)
 {
-    int d, dim;
-
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
-        dim = dd->dim[d];
+        const int dim = dd->dim[d];
         if (dim < ddbox->nboundeddim
             && ddbox->box_size[dim] * ddbox->skew_fac[dim]
                        < dd->numCells[dim] * dd->comm->cellsize_limit * DD_CELL_MARGIN)
@@ -154,15 +149,13 @@ static void check_box_size(const gmx_domdec_t* dd, const gmx_ddbox_t* ddbox)
 
 real grid_jump_limit(const gmx_domdec_comm_t* comm, real cutoff, int dim_ind)
 {
-    real grid_jump_limit;
-
     /* The distance between the boundaries of cells at distance
      * x+-1,y+-1 or y+-1,z+-1 is limited by the cut-off restrictions
      * and by the fact that cells should not be shifted by more than
      * half their size, such that cg's only shift by one cell
      * at redecomposition.
      */
-    grid_jump_limit = comm->cellsize_limit;
+    real grid_jump_limit = comm->cellsize_limit;
     if (!comm->bVacDLBNoLimit)
     {
         if (comm->bPMELoadBalDLBLimits)
@@ -182,9 +175,7 @@ real grid_jump_limit(const gmx_domdec_comm_t* comm, real cutoff, int dim_ind)
  */
 static real cellsize_min_dlb(gmx_domdec_comm_t* comm, int dim_ind, int dim)
 {
-    real cellsize_min;
-
-    cellsize_min = comm->cellsize_min[dim];
+    real cellsize_min = comm->cellsize_min[dim];
 
     if (!comm->bVacDLBNoLimit)
     {
@@ -345,17 +336,15 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
                                                   real               cellsize_limit_f,
                                                   int                range[])
 {
-    gmx_domdec_comm_t* comm;
-    real               halfway, cellsize_limit_f_i, region_size;
-    gmx_bool           bLastHi  = FALSE;
-    int                nrange[] = { range[0], range[1] };
+    gmx_bool bLastHi  = FALSE;
+    int      nrange[] = { range[0], range[1] };
 
-    region_size = rowMaster->cellFrac[range[1]] - rowMaster->cellFrac[range[0]];
+    const real region_size = rowMaster->cellFrac[range[1]] - rowMaster->cellFrac[range[0]];
 
     GMX_ASSERT(region_size >= (range[1] - range[0]) * cellsize_limit_f,
                "The region should fit all cells at minimum size");
 
-    comm = dd->comm;
+    gmx_domdec_comm_t* comm = dd->comm;
 
     const int ncd = dd->numCells[dim];
 
@@ -378,8 +367,8 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
     {
         rowMaster->isCellMin[i] = false;
     }
-    int nmin = 0;
-    int nmin_old;
+    int nmin     = 0;
+    int nmin_old = 0;
     do
     {
         nmin_old = nmin;
@@ -402,14 +391,8 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
             if (!rowMaster->isCellMin[i])
             {
                 cell_size[i] *= fac;
-                if (!dimHasPbc && (i == 0 || i == dd->numCells[dim] - 1))
-                {
-                    cellsize_limit_f_i = 0;
-                }
-                else
-                {
-                    cellsize_limit_f_i = cellsize_limit_f;
-                }
+                const real cellsize_limit_f_i =
+                        (!dimHasPbc && (i == 0 || i == dd->numCells[dim] - 1)) ? 0 : cellsize_limit_f;
                 if (cell_size[i] < cellsize_limit_f_i)
                 {
                     rowMaster->isCellMin[i] = true;
@@ -458,7 +441,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
          */
         for (int i = range[0] + 1; i < range[1]; i++)
         {
-            halfway = 0.5 * (rowMaster->oldCellFrac[i] + rowMaster->oldCellFrac[i - 1]);
+            real halfway = 0.5 * (rowMaster->oldCellFrac[i] + rowMaster->oldCellFrac[i - 1]);
             if (rowMaster->cellFrac[i] < halfway)
             {
                 rowMaster->cellFrac[i] = halfway;
@@ -609,16 +592,14 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t*      dd,
     {
         real load_aver  = comm->load[d].sum_m / ncd;
         real change_max = 0;
-        real load_i;
-        real change;
         for (int i = 0; i < ncd; i++)
         {
             /* Determine the relative imbalance of cell i */
-            load_i         = comm->load[d].load[i * comm->load[d].nload + 2];
-            real imbalance = (load_i - load_aver) / (load_aver > 0 ? load_aver : 1);
+            const real load_i    = comm->load[d].load[i * comm->load[d].nload + 2];
+            const real imbalance = (load_i - load_aver) / (load_aver > 0 ? load_aver : 1);
             /* Determine the change of the cell size using underrelaxation */
-            change     = -c_relax * imbalance;
-            change_max = std::max(change_max, std::max(change, -change));
+            const real change = -c_relax * imbalance;
+            change_max        = std::max(change_max, std::max(change, -change));
         }
         /* Limit the amount of scaling.
          * We need to use the same rescaling for all cells in one row,
@@ -632,10 +613,10 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t*      dd,
         for (int i = 0; i < ncd; i++)
         {
             /* Determine the relative imbalance of cell i */
-            load_i         = comm->load[d].load[i * comm->load[d].nload + 2];
-            real imbalance = (load_i - load_aver) / (load_aver > 0 ? load_aver : 1);
+            const real load_i    = comm->load[d].load[i * comm->load[d].nload + 2];
+            const real imbalance = (load_i - load_aver) / (load_aver > 0 ? load_aver : 1);
             /* Determine the change of the cell size using underrelaxation */
-            change       = -sc * imbalance;
+            const real change = -sc * imbalance;
             cell_size[i] = (rowMaster->cellFrac[i + 1] - rowMaster->cellFrac[i]) * (1 + change);
         }
     }
@@ -851,13 +832,11 @@ static void set_dd_cell_sizes_dlb_change(gmx_domdec_t*      dd,
 
 static void set_dd_cell_sizes_dlb_nochange(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox)
 {
-    int d;
-
     /* This function assumes the box is static and should therefore
      * not be called when the box has changed since the last
      * call to dd_partition_system.
      */
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
         relative_to_absolute_cell_bounds(dd, ddbox, d);
     }
@@ -872,10 +851,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t*      dd,
                                   int64_t            step,
                                   gmx_wallcycle_t    wcycle)
 {
-    gmx_domdec_comm_t* comm;
-    int                dim;
-
-    comm = dd->comm;
+    gmx_domdec_comm_t* comm = dd->comm;
 
     if (bDoDLB)
     {
@@ -889,7 +865,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t*      dd,
     }
 
     /* Set the dimensions for which no DD is used */
-    for (dim = 0; dim < DIM; dim++)
+    for (int dim = 0; dim < DIM; dim++)
     {
         if (dd->numCells[dim] == 1)
         {

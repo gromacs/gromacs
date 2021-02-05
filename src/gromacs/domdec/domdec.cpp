@@ -111,6 +111,7 @@
 #include "domdec_internal.h"
 #include "domdec_setup.h"
 #include "domdec_vsite.h"
+#include "math.h"
 #include "redistribute.h"
 #include "utility.h"
 
@@ -178,7 +179,7 @@ static int ddcoord2ddnodeid(gmx_domdec_t* dd, ivec c)
 
 int ddglatnr(const gmx_domdec_t* dd, int i)
 {
-    int atnr;
+    int atnr = 0;
 
     if (dd == nullptr)
     {
@@ -207,15 +208,13 @@ gmx::ArrayRef<const gmx::RangePartitioning> getUpdateGroupingPerMoleculetype(con
 
 void dd_store_state(gmx_domdec_t* dd, t_state* state)
 {
-    int i;
-
     if (state->ddp_count != dd->ddp_count)
     {
         gmx_incons("The MD state does not match the domain decomposition state");
     }
 
     state->cg_gl.resize(dd->ncg_home);
-    for (i = 0; i < dd->ncg_home; i++)
+    for (int i = 0; i < dd->ncg_home; i++)
     {
         state->cg_gl[i] = dd->globalAtomGroupIndices[i];
     }
@@ -262,25 +261,21 @@ void dd_move_x(gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVec> x, g
 {
     wallcycle_start(wcycle, ewcMOVEX);
 
-    int                    nzone, nat_tot;
-    gmx_domdec_comm_t*     comm;
-    gmx_domdec_comm_dim_t* cd;
-    rvec                   shift = { 0, 0, 0 };
-    gmx_bool               bPBC, bScrew;
+    rvec shift = { 0, 0, 0 };
 
-    comm = dd->comm;
+    gmx_domdec_comm_t* comm = dd->comm;
 
-    nzone   = 1;
-    nat_tot = comm->atomRanges.numHomeAtoms();
+    int nzone   = 1;
+    int nat_tot = comm->atomRanges.numHomeAtoms();
     for (int d = 0; d < dd->ndim; d++)
     {
-        bPBC   = (dd->ci[dd->dim[d]] == 0);
-        bScrew = (bPBC && dd->unitCellInfo.haveScrewPBC && dd->dim[d] == XX);
+        const bool bPBC   = (dd->ci[dd->dim[d]] == 0);
+        const bool bScrew = (bPBC && dd->unitCellInfo.haveScrewPBC && dd->dim[d] == XX);
         if (bPBC)
         {
             copy_rvec(box[dd->dim[d]], shift);
         }
-        cd = &comm->cd[d];
+        gmx_domdec_comm_dim_t* cd = &comm->cd[d];
         for (const gmx_domdec_ind_t& ind : cd->ind)
         {
             DDBufferAccess<gmx::RVec> sendBufferAccess(comm->rvecBuffer, ind.nsend[nzone + 1]);
@@ -479,17 +474,13 @@ static gmx::ArrayRef<real> realArrayRefFromRvecArrayRef(gmx::ArrayRef<gmx::RVec>
 
 void dd_atom_spread_real(gmx_domdec_t* dd, real v[])
 {
-    int                    nzone, nat_tot;
-    gmx_domdec_comm_t*     comm;
-    gmx_domdec_comm_dim_t* cd;
+    gmx_domdec_comm_t* comm = dd->comm;
 
-    comm = dd->comm;
-
-    nzone   = 1;
-    nat_tot = comm->atomRanges.numHomeAtoms();
+    int nzone   = 1;
+    int nat_tot = comm->atomRanges.numHomeAtoms();
     for (int d = 0; d < dd->ndim; d++)
     {
-        cd = &comm->cd[d];
+        gmx_domdec_comm_dim_t* cd = &comm->cd[d];
         for (const gmx_domdec_ind_t& ind : cd->ind)
         {
             /* Note: We provision for RVec instead of real, so a factor of 3
@@ -537,17 +528,13 @@ void dd_atom_spread_real(gmx_domdec_t* dd, real v[])
 
 void dd_atom_sum_real(gmx_domdec_t* dd, real v[])
 {
-    int                    nzone, nat_tot;
-    gmx_domdec_comm_t*     comm;
-    gmx_domdec_comm_dim_t* cd;
+    gmx_domdec_comm_t* comm = dd->comm;
 
-    comm = dd->comm;
-
-    nzone   = comm->zones.n / 2;
-    nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
+    int nzone   = comm->zones.n / 2;
+    int nat_tot = comm->atomRanges.end(DDAtomRanges::Type::Zones);
     for (int d = dd->ndim - 1; d >= 0; d--)
     {
-        cd = &comm->cd[d];
+        gmx_domdec_comm_dim_t* cd = &comm->cd[d];
         for (int p = cd->numPulses() - 1; p >= 0; p--)
         {
             const gmx_domdec_ind_t& ind = cd->ind[p];
@@ -630,9 +617,7 @@ real dd_cutoff_multibody(const gmx_domdec_t* dd)
 
 real dd_cutoff_twobody(const gmx_domdec_t* dd)
 {
-    real r_mb;
-
-    r_mb = dd_cutoff_multibody(dd);
+    const real r_mb = dd_cutoff_multibody(dd);
 
     return std::max(dd->comm->systemInfo.cutoff, r_mb);
 }
@@ -688,15 +673,13 @@ static std::vector<int> dd_interleaved_pme_ranks(const DDRankSetup& ddRankSetup)
 
 static int gmx_ddcoord2pmeindex(const t_commrec* cr, int x, int y, int z)
 {
-    gmx_domdec_t* dd;
-    ivec          coords;
-    int           slab;
+    ivec coords;
 
-    dd         = cr->dd;
-    coords[XX] = x;
-    coords[YY] = y;
-    coords[ZZ] = z;
-    slab       = ddindex2pmeindex(dd->comm->ddRankSetup, dd_index(dd->numCells, coords));
+    gmx_domdec_t* dd = cr->dd;
+    coords[XX]       = x;
+    coords[YY]       = y;
+    coords[ZZ]       = z;
+    const int slab   = ddindex2pmeindex(dd->comm->ddRankSetup, dd_index(dd->numCells, coords));
 
     return slab;
 }
@@ -849,7 +832,7 @@ std::vector<int> get_pme_ddranks(const t_commrec* cr, const int pmenodeid)
 
 static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int> pmeRanks, const t_commrec* cr)
 {
-    gmx_bool bReceive = TRUE;
+    bool bReceive = true;
 
     const DDRankSetup& ddRankSetup = dd->comm->ddRankSetup;
     if (ddRankSetup.usePmeOnlyRanks)
@@ -864,7 +847,7 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int
             coords[cartSetup.cartpmedim]++;
             if (coords[cartSetup.cartpmedim] < dd->numCells[cartSetup.cartpmedim])
             {
-                int rank;
+                int rank = 0;
                 MPI_Cart_rank(cr->mpi_comm_mysim, coords, &rank);
                 if (dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, rank) == pmenode)
                 {
@@ -895,14 +878,11 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int
 
 static void set_slb_pme_dim_f(gmx_domdec_t* dd, int dim, real** dim_f)
 {
-    gmx_domdec_comm_t* comm;
-    int                i;
-
-    comm = dd->comm;
+    gmx_domdec_comm_t* comm = dd->comm;
 
     snew(*dim_f, dd->numCells[dim] + 1);
     (*dim_f)[0] = 0;
-    for (i = 1; i < dd->numCells[dim]; i++)
+    for (int i = 1; i < dd->numCells[dim]; i++)
     {
         if (comm->slb_frac[dim])
         {
@@ -955,16 +935,8 @@ static void init_ddpme(gmx_domdec_t* dd, gmx_ddpme_t* ddpme, int dimind)
          */
         if (dimind == 0 || xyz[XX] == dd->ci[XX])
         {
-            const int pmeindex = ddindex2pmeindex(ddRankSetup, i);
-            int       slab;
-            if (dimind == 0)
-            {
-                slab = pmeindex / nso;
-            }
-            else
-            {
-                slab = pmeindex % ddpme->nslab;
-            }
+            const int pmeindex  = ddindex2pmeindex(ddRankSetup, i);
+            const int slab      = (dimind == 0) ? pmeindex / nso : pmeindex % ddpme->nslab;
             ddpme->pp_min[slab] = std::min(ddpme->pp_min[slab], xyz[dimind]);
             ddpme->pp_max[slab] = std::max(ddpme->pp_max[slab], xyz[dimind]);
         }
@@ -1038,17 +1010,16 @@ void dd_cycles_add(const gmx_domdec_t* dd, float cycles, int ddCycl)
 #if GMX_MPI
 static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
 {
-    MPI_Comm c_row;
-    int      dim, i, rank;
+    MPI_Comm c_row = nullptr;
     ivec     loc_c;
-    gmx_bool bPartOfGroup = FALSE;
+    bool     bPartOfGroup = false;
 
-    dim = dd->dim[dim_ind];
+    const int dim = dd->dim[dim_ind];
     copy_ivec(loc, loc_c);
-    for (i = 0; i < dd->numCells[dim]; i++)
+    for (int i = 0; i < dd->numCells[dim]; i++)
     {
-        loc_c[dim] = i;
-        rank       = dd_index(dd->numCells, loc_c);
+        loc_c[dim]     = i;
+        const int rank = dd_index(dd->numCells, loc_c);
         if (rank == dd->rank)
         {
             /* This process is part of the group */
@@ -1095,9 +1066,7 @@ static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
 void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
 {
 #if GMX_MPI
-    int           physicalnode_id_hash;
-    gmx_domdec_t* dd;
-    MPI_Comm      mpi_comm_pp_physicalnode;
+    MPI_Comm mpi_comm_pp_physicalnode = nullptr;
 
     if (!thisRankHasDuty(cr, DUTY_PP) || gpu_id < 0)
     {
@@ -1107,9 +1076,9 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
         return;
     }
 
-    physicalnode_id_hash = gmx_physicalnode_id_hash();
+    const int physicalnode_id_hash = gmx_physicalnode_id_hash();
 
-    dd = cr->dd;
+    gmx_domdec_t* dd = cr->dd;
 
     if (debug)
     {
@@ -1147,7 +1116,6 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
 static void make_load_communicators(gmx_domdec_t gmx_unused* dd)
 {
 #if GMX_MPI
-    int  dim0, dim1, i, j;
     ivec loc;
 
     if (debug)
@@ -1167,8 +1135,8 @@ static void make_load_communicators(gmx_domdec_t gmx_unused* dd)
     make_load_communicator(dd, 0, loc);
     if (dd->ndim > 1)
     {
-        dim0 = dd->dim[0];
-        for (i = 0; i < dd->numCells[dim0]; i++)
+        const int dim0 = dd->dim[0];
+        for (int i = 0; i < dd->numCells[dim0]; i++)
         {
             loc[dim0] = i;
             make_load_communicator(dd, 1, loc);
@@ -1176,12 +1144,12 @@ static void make_load_communicators(gmx_domdec_t gmx_unused* dd)
     }
     if (dd->ndim > 2)
     {
-        dim0 = dd->dim[0];
-        for (i = 0; i < dd->numCells[dim0]; i++)
+        const int dim0 = dd->dim[0];
+        for (int i = 0; i < dd->numCells[dim0]; i++)
         {
-            loc[dim0] = i;
-            dim1      = dd->dim[1];
-            for (j = 0; j < dd->numCells[dim1]; j++)
+            loc[dim0]      = i;
+            const int dim1 = dd->dim[1];
+            for (int j = 0; j < dd->numCells[dim1]; j++)
             {
                 loc[dim1] = j;
                 make_load_communicator(dd, 2, loc);
@@ -1199,14 +1167,12 @@ static void make_load_communicators(gmx_domdec_t gmx_unused* dd)
 /*! \brief Sets up the relation between neighboring domains and zones */
 static void setup_neighbor_relations(gmx_domdec_t* dd)
 {
-    int                 d, dim, m;
-    ivec                tmp, s;
-    gmx_domdec_zones_t* zones;
+    ivec tmp, s;
     GMX_ASSERT((dd->ndim >= 0) && (dd->ndim <= DIM), "Must have valid number of dimensions for DD");
 
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
-        dim = dd->dim[d];
+        const int dim = dd->dim[d];
         copy_ivec(dd->ci, tmp);
         tmp[dim]           = (tmp[dim] + 1) % dd->numCells[dim];
         dd->neighbor[d][0] = ddcoord2ddnodeid(dd, tmp);
@@ -1228,13 +1194,13 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
     int nizone = (1 << std::max(dd->ndim - 1, 0));
     assert(nizone >= 1 && nizone <= DD_MAXIZONE);
 
-    zones = &dd->comm->zones;
+    gmx_domdec_zones_t* zones = &dd->comm->zones;
 
     for (int i = 0; i < nzone; i++)
     {
-        m = 0;
+        int m = 0;
         clear_ivec(zones->shift[i]);
-        for (d = 0; d < dd->ndim; d++)
+        for (int d = 0; d < dd->ndim; d++)
         {
             zones->shift[i][dd->dim[d]] = dd_zo[i][m++];
         }
@@ -1243,7 +1209,7 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
     zones->n = nzone;
     for (int i = 0; i < nzone; i++)
     {
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
             s[d] = dd->ci[d] - zones->shift[i][d];
             if (s[d] < 0)
@@ -1269,7 +1235,7 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
          */
         iZone.jZoneRange = gmx::Range<int>(std::min(ddNonbondedZonePairRanges[iZoneIndex][1], nzone),
                                            std::min(ddNonbondedZonePairRanges[iZoneIndex][2], nzone));
-        for (dim = 0; dim < DIM; dim++)
+        for (int dim = 0; dim < DIM; dim++)
         {
             if (dd->numCells[dim] == 1)
             {
@@ -1334,7 +1300,7 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog,
         {
             periods[i] = TRUE;
         }
-        MPI_Comm comm_cart;
+        MPI_Comm comm_cart = nullptr;
         MPI_Cart_create(cr->mpi_comm_mygroup, DIM, dd->numCells, periods, static_cast<int>(reorder), &comm_cart);
         /* We overwrite the old communicator with the new cartesian one */
         cr->mpi_comm_mygroup = comm_cart;
@@ -1354,15 +1320,7 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog,
         /* Get the rank of the DD master,
          * above we made sure that the master node is a PP node.
          */
-        int rank;
-        if (MASTER(cr))
-        {
-            rank = dd->rank;
-        }
-        else
-        {
-            rank = 0;
-        }
+        int rank = MASTER(cr) ? dd->rank : 0;
         MPI_Allreduce(&rank, &dd->masterrank, 1, MPI_INT, MPI_SUM, dd->mpi_comm_all);
     }
     else if (cartSetup.bCartesianPP)
@@ -1521,7 +1479,7 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
     if (cartSetup.bCartesianPP_PME)
     {
 #if GMX_MPI
-        int  rank;
+        int  rank = 0;
         ivec periods;
 
         GMX_LOG(mdlog.info)
@@ -1535,7 +1493,7 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
         {
             periods[i] = TRUE;
         }
-        MPI_Comm comm_cart;
+        MPI_Comm comm_cart = nullptr;
         MPI_Cart_create(cr->mpi_comm_mysim, DIM, cartSetup.ntot, periods, static_cast<int>(reorder), &comm_cart);
         MPI_Comm_rank(comm_cart, &rank);
         if (MASTER(cr) && rank != 0)
@@ -1714,19 +1672,16 @@ static void setupGroupCommunication(const gmx::MDLogger&     mdlog,
 
 static real* get_slb_frac(const gmx::MDLogger& mdlog, const char* dir, int nc, const char* size_string)
 {
-    real * slb_frac, tot;
-    int    i, n;
-    double dbl;
-
-    slb_frac = nullptr;
+    real* slb_frac = nullptr;
     if (nc > 1 && size_string != nullptr)
     {
         GMX_LOG(mdlog.info).appendTextFormatted("Using static load balancing for the %s direction", dir);
         snew(slb_frac, nc);
-        tot = 0;
-        for (i = 0; i < nc; i++)
+        real tot = 0;
+        for (int i = 0; i < nc; i++)
         {
-            dbl = 0;
+            double dbl = 0;
+            int    n   = 0;
             sscanf(size_string, "%20lf%n", &dbl, &n);
             if (dbl == 0)
             {
@@ -1741,7 +1696,7 @@ static real* get_slb_frac(const gmx::MDLogger& mdlog, const char* dir, int nc, c
         }
         /* Normalize */
         std::string relativeCellSizes = "Relative cell sizes:";
-        for (i = 0; i < nc; i++)
+        for (int i = 0; i < nc; i++)
         {
             slb_frac[i] /= tot;
             relativeCellSizes += gmx::formatString(" %5.3f", slb_frac[i]);
@@ -1756,7 +1711,7 @@ static int multi_body_bondeds_count(const gmx_mtop_t* mtop)
 {
     int                  n     = 0;
     gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
-    int                  nmol;
+    int                  nmol  = 0;
     while (const InteractionLists* ilists = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
         for (auto& ilist : extractILists(*ilists, IF_BOND))
@@ -1773,11 +1728,8 @@ static int multi_body_bondeds_count(const gmx_mtop_t* mtop)
 
 static int dd_getenv(const gmx::MDLogger& mdlog, const char* env_var, int def)
 {
-    char* val;
-    int   nst;
-
-    nst = def;
-    val = getenv(env_var);
+    int   nst = def;
+    char* val = getenv(env_var);
     if (val)
     {
         if (sscanf(val, "%20d", &nst) <= 0)
@@ -1963,8 +1915,8 @@ static gmx_domdec_comm_t* init_dd_comm()
 /* Returns whether mtop contains constraints and/or vsites */
 static bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
 {
-    auto ilistLoop = gmx_mtop_ilistloop_init(mtop);
-    int  nmol;
+    auto* ilistLoop = gmx_mtop_ilistloop_init(mtop);
+    int   nmol      = 0;
     while (const InteractionLists* ilists = gmx_mtop_ilistloop_next(ilistLoop, &nmol))
     {
         if (!extractILists(*ilists, IF_CONSTRAINT | IF_VSITE).empty())
@@ -2184,7 +2136,8 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
         }
         else
         {
-            real r_2b, r_mb;
+            real r_2b = 0;
+            real r_mb = 0;
 
             if (ddRole == DDRole::Master)
             {
@@ -2277,14 +2230,13 @@ static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
 {
     if (options.numCells[XX] <= 0 && (ddGridSetup.numDomains[XX] == 0))
     {
-        char     buf[STRLEN];
-        gmx_bool bC = (systemInfo.haveSplitConstraints
-                       && systemInfo.constraintCommunicationRange > systemInfo.minCutoffForMultiBody);
-        sprintf(buf,
-                "Change the number of ranks or mdrun option %s%s%s",
-                !bC ? "-rdd" : "-rcon",
-                ddSettings.initialDlbState != DlbState::offUser ? " or -dds" : "",
-                bC ? " or your LINCS settings" : "");
+        const bool  bC = (systemInfo.haveSplitConstraints
+                         && systemInfo.constraintCommunicationRange > systemInfo.minCutoffForMultiBody);
+        std::string message =
+                gmx::formatString("Change the number of ranks or mdrun option %s%s%s",
+                                  !bC ? "-rdd" : "-rcon",
+                                  ddSettings.initialDlbState != DlbState::offUser ? " or -dds" : "",
+                                  bC ? " or your LINCS settings" : "");
 
         gmx_fatal_collective(FARGS,
                              communicator,
@@ -2295,7 +2247,7 @@ static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
                              "Look in the log file for details on the domain decomposition",
                              numNodes - ddGridSetup.numPmeOnlyRanks,
                              cellsizeLimit,
-                             buf);
+                             message.c_str());
     }
 
     const real acs = average_cellsize_min(ddbox, ddGridSetup.numDomains);
@@ -2552,11 +2504,9 @@ void dd_init_bondeds(FILE*                           fplog,
                      gmx_bool                        bBCheck,
                      gmx::ArrayRef<cginfo_mb_t>      cginfo_mb)
 {
-    gmx_domdec_comm_t* comm;
-
     dd_make_reverse_top(fplog, dd, &mtop, vsite, ir, bBCheck);
 
-    comm = dd->comm;
+    gmx_domdec_comm_t* comm = dd->comm;
 
     if (comm->systemInfo.filterBondedCommunication)
     {
@@ -2578,17 +2528,12 @@ static void writeSettings(gmx::TextWriter*   log,
                           real               dlb_scale,
                           const gmx_ddbox_t* ddbox)
 {
-    gmx_domdec_comm_t* comm;
-    int                d;
-    ivec               np;
-    real               limit, shrink;
-
-    comm = dd->comm;
+    gmx_domdec_comm_t* comm = dd->comm;
 
     if (bDynLoadBal)
     {
         log->writeString("The maximum number of communication pulses is:");
-        for (d = 0; d < dd->ndim; d++)
+        for (int d = 0; d < dd->ndim; d++)
         {
             log->writeStringFormatted(" %c %d", dim2char(dd->dim[d]), comm->cd[d].np_dlb);
         }
@@ -2597,19 +2542,15 @@ static void writeSettings(gmx::TextWriter*   log,
                                 comm->cellsize_limit);
         log->writeLineFormatted("The requested allowed shrink of DD cells (option -dds) is: %.2f", dlb_scale);
         log->writeString("The allowed shrink of domain decomposition cells is:");
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
             if (dd->numCells[d] > 1)
             {
-                if (d >= ddbox->npbcdim && dd->numCells[d] == 2)
-                {
-                    shrink = 0;
-                }
-                else
-                {
-                    shrink = comm->cellsize_min_dlb[d]
-                             / (ddbox->box_size[d] * ddbox->skew_fac[d] / dd->numCells[d]);
-                }
+                const real shrink =
+                        (d >= ddbox->npbcdim && dd->numCells[d] == 2)
+                                ? 0
+                                : comm->cellsize_min_dlb[d]
+                                          / (ddbox->box_size[d] * ddbox->skew_fac[d] / dd->numCells[d]);
                 log->writeStringFormatted(" %c %.2f", dim2char(d), shrink);
             }
         }
@@ -2617,15 +2558,16 @@ static void writeSettings(gmx::TextWriter*   log,
     }
     else
     {
+        ivec np;
         set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbPULSE_ONLY, np);
         log->writeString("The initial number of communication pulses is:");
-        for (d = 0; d < dd->ndim; d++)
+        for (int d = 0; d < dd->ndim; d++)
         {
             log->writeStringFormatted(" %c %d", dim2char(dd->dim[d]), np[dd->dim[d]]);
         }
         log->ensureLineBreak();
         log->writeString("The initial domain decomposition cell size is:");
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
             if (dd->numCells[d] > 1)
             {
@@ -2657,6 +2599,7 @@ static void writeSettings(gmx::TextWriter*   log,
         log->writeLineFormatted(
                 "%40s  %-7s %6.3f nm", "non-bonded interactions", "", comm->systemInfo.cutoff);
 
+        real limit = 0;
         if (bDynLoadBal)
         {
             limit = dd->comm->cellsize_limit;
@@ -2670,7 +2613,7 @@ static void writeSettings(gmx::TextWriter*   log,
                         "deformation)");
             }
             limit = dd->comm->cellsize_min[XX];
-            for (d = 1; d < DIM; d++)
+            for (int d = 1; d < DIM; d++)
             {
                 limit = std::min(limit, dd->comm->cellsize_min[d]);
             }
@@ -2731,13 +2674,11 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
                                 const t_inputrec*    ir,
                                 const gmx_ddbox_t*   ddbox)
 {
-    gmx_domdec_comm_t* comm;
-    int                d, dim, npulse, npulse_d_max, npulse_d;
-    gmx_bool           bNoCutOff;
+    int npulse = 0, npulse_d_max = 0, npulse_d = 0;
 
-    comm = dd->comm;
+    gmx_domdec_comm_t* comm = dd->comm;
 
-    bNoCutOff = (ir->rvdw == 0 || ir->rcoulomb == 0);
+    bool bNoCutOff = (ir->rvdw == 0 || ir->rcoulomb == 0);
 
     /* Determine the maximum number of comm. pulses in one dimension */
 
@@ -2769,9 +2710,9 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     {
         /* See if we can do with less pulses, based on dlb_scale */
         npulse_d_max = 0;
-        for (d = 0; d < dd->ndim; d++)
+        for (int d = 0; d < dd->ndim; d++)
         {
-            dim      = dd->dim[d];
+            int dim  = dd->dim[d];
             npulse_d = static_cast<int>(
                     1
                     + dd->numCells[dim] * comm->systemInfo.cutoff
@@ -2782,7 +2723,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     }
 
     /* This env var can override npulse */
-    d = dd_getenv(mdlog, "GMX_DD_NPULSE", 0);
+    int d = dd_getenv(mdlog, "GMX_DD_NPULSE", 0);
     if (d > 0)
     {
         npulse = d;
@@ -2790,7 +2731,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
 
     comm->maxpulse       = 1;
     comm->bVacDLBNoLimit = (ir->pbcType == PbcType::No);
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
         comm->cd[d].np_dlb = std::min(npulse, dd->numCells[dd->dim[d]] - 1);
         comm->maxpulse     = std::max(comm->maxpulse, comm->cd[d].np_dlb);
@@ -2807,7 +2748,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     }
     comm->cellsize_limit = std::max(comm->cellsize_limit, comm->cutoff_mbody);
     /* Set the minimum cell size for each DD dimension */
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
         if (comm->bVacDLBNoLimit || comm->cd[d].np_dlb * comm->cellsize_limit >= comm->systemInfo.cutoff)
         {
@@ -2886,16 +2827,10 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
 
     logSettings(mdlog, dd, mtop, ir, dlb_scale, ddbox);
 
-    real vol_frac;
-    if (ir->pbcType == PbcType::No)
-    {
-        vol_frac = 1 - 1 / static_cast<double>(dd->nnodes);
-    }
-    else
-    {
-        vol_frac = (1 + comm_box_frac(dd->numCells, comm->systemInfo.cutoff, *ddbox))
-                   / static_cast<double>(dd->nnodes);
-    }
+    const real vol_frac = (ir->pbcType == PbcType::No)
+                                  ? (1 - 1 / static_cast<double>(dd->nnodes))
+                                  : ((1 + comm_box_frac(dd->numCells, comm->systemInfo.cutoff, *ddbox))
+                                     / static_cast<double>(dd->nnodes));
     if (debug)
     {
         fprintf(debug, "Volume fraction for all DD zones: %f\n", vol_frac);
@@ -3153,9 +3088,7 @@ DomainDecompositionBuilder::~DomainDecompositionBuilder() = default;
 static gmx_bool test_dd_cutoff(const t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::RVec> x, real cutoffRequested)
 {
     gmx_ddbox_t ddbox;
-    int         d, dim, np;
-    real        inv_cell_size;
-    int         LocallyLimited;
+    int         LocallyLimited = 0;
 
     const auto* dd = cr->dd;
 
@@ -3163,17 +3096,17 @@ static gmx_bool test_dd_cutoff(const t_commrec* cr, const matrix box, gmx::Array
 
     LocallyLimited = 0;
 
-    for (d = 0; d < dd->ndim; d++)
+    for (int d = 0; d < dd->ndim; d++)
     {
-        dim = dd->dim[d];
+        const int dim = dd->dim[d];
 
-        inv_cell_size = DD_CELL_MARGIN * dd->numCells[dim] / ddbox.box_size[dim];
+        real inv_cell_size = DD_CELL_MARGIN * dd->numCells[dim] / ddbox.box_size[dim];
         if (dd->unitCellInfo.ddBoxIsDynamic)
         {
             inv_cell_size *= DD_PRES_SCALE_MARGIN;
         }
 
-        np = 1 + static_cast<int>(cutoffRequested * inv_cell_size * ddbox.skew_fac[dim]);
+        const int np = 1 + static_cast<int>(cutoffRequested * inv_cell_size * ddbox.skew_fac[dim]);
 
         if (!isDlbDisabled(dd->comm) && (dim < ddbox.npbcdim) && (dd->comm->cd[d].np_dlb > 0))
         {
@@ -3218,9 +3151,7 @@ static gmx_bool test_dd_cutoff(const t_commrec* cr, const matrix box, gmx::Array
 
 gmx_bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const gmx::RVec> x, real cutoffRequested)
 {
-    gmx_bool bCutoffAllowed;
-
-    bCutoffAllowed = test_dd_cutoff(cr, box, x, cutoffRequested);
+    bool bCutoffAllowed = test_dd_cutoff(cr, box, x, cutoffRequested);
 
     if (bCutoffAllowed)
     {

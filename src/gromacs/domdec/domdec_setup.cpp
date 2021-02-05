@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2008,2009,2010,2011,2012 by the GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,6 +72,7 @@
 
 #include "box.h"
 #include "domdec_internal.h"
+#include "math.h"
 #include "utility.h"
 
 // TODO remove this when moving domdec into gmx namespace
@@ -129,10 +130,8 @@ static int largest_divisor(int n)
 /*! \brief Compute largest common divisor of \p n1 and \b n2 */
 static int lcd(int n1, int n2)
 {
-    int d, i;
-
-    d = 1;
-    for (i = 2; (i <= n1 && i <= n2); i++)
+    int d = 1;
+    for (int i = 2; (i <= n1 && i <= n2); i++)
     {
         if (n1 % i == 0 && n2 % i == 0)
         {
@@ -190,10 +189,7 @@ static int guess_npme(const gmx::MDLogger& mdlog,
                       const matrix         box,
                       int                  nrank_tot)
 {
-    float ratio;
-    int   npme;
-
-    ratio = pme_load_estimate(mtop, ir, box);
+    float ratio = pme_load_estimate(mtop, ir, box);
 
     GMX_LOG(mdlog.info).appendTextFormatted("Guess for relative PME load: %.2f", ratio);
 
@@ -216,7 +212,7 @@ static int guess_npme(const gmx::MDLogger& mdlog,
      * We start with a minimum PME node fraction of 1/16
      * and avoid ratios which lead to large prime factors in nnodes-npme.
      */
-    npme = (nrank_tot + 15) / 16;
+    int npme = (nrank_tot + 15) / 16;
     while (npme <= nrank_tot / 3)
     {
         if (nrank_tot % npme == 0)
@@ -280,28 +276,26 @@ static int div_up(int n, int f)
 
 real comm_box_frac(const gmx::IVec& dd_nc, real cutoff, const gmx_ddbox_t& ddbox)
 {
-    int  i, j, k;
     rvec nw;
-    real comm_vol;
 
-    for (i = 0; i < DIM; i++)
+    for (int i = 0; i < DIM; i++)
     {
         real bt = ddbox.box_size[i] * ddbox.skew_fac[i];
         nw[i]   = dd_nc[i] * cutoff / bt;
     }
 
-    comm_vol = 0;
-    for (i = 0; i < DIM; i++)
+    real comm_vol = 0;
+    for (int i = 0; i < DIM; i++)
     {
         if (dd_nc[i] > 1)
         {
             comm_vol += nw[i];
-            for (j = i + 1; j < DIM; j++)
+            for (int j = i + 1; j < DIM; j++)
             {
                 if (dd_nc[j] > 1)
                 {
                     comm_vol += nw[i] * nw[j] * M_PI / 4;
-                    for (k = j + 1; k < DIM; k++)
+                    for (int k = j + 1; k < DIM; k++)
                     {
                         if (dd_nc[k] > 1)
                         {
@@ -333,9 +327,7 @@ static gmx_bool inhomogeneous_z(const t_inputrec& ir)
 static float comm_pme_cost_vol(int npme, int a, int b, int c)
 {
     /* We use a float here, since an integer might overflow */
-    float comm_vol;
-
-    comm_vol = npme - 1;
+    float comm_vol = npme - 1;
     comm_vol *= npme;
     comm_vol *= div_up(a, npme);
     comm_vol *= div_up(b, npme);
@@ -356,9 +348,7 @@ static float comm_cost_est(real               limit,
                            const gmx::IVec&   nc)
 {
     gmx::IVec npme = { 1, 1, 1 };
-    int       i, j, nk, overlap;
     rvec      bt;
-    float     comm_vol, comm_vol_xf, comm_pme, cost_pbcdx;
     /* This is the cost of a pbc_dx call relative to the cost
      * of communicating the coordinate and force of an atom.
      * This will be machine dependent.
@@ -366,7 +356,6 @@ static float comm_cost_est(real               limit,
      */
     float pbcdx_rect_fac = 0.1;
     float pbcdx_tric_fac = 0.2;
-    float temp;
 
     /* Check the DD algorithm restrictions */
     if ((ir.pbcType == PbcType::XY && ir.nwall < 2 && nc[ZZ] > 1)
@@ -383,9 +372,9 @@ static float comm_cost_est(real               limit,
     assert(ddbox.npbcdim <= DIM);
 
     /* Check if the triclinic requirements are met */
-    for (i = 0; i < DIM; i++)
+    for (int i = 0; i < DIM; i++)
     {
-        for (j = i + 1; j < ddbox.npbcdim; j++)
+        for (int j = i + 1; j < ddbox.npbcdim; j++)
         {
             if (box[j][i] != 0 || ir.deform[j][i] != 0 || (ir.epc != epcNO && ir.compress[j][i] != 0))
             {
@@ -397,7 +386,7 @@ static float comm_cost_est(real               limit,
         }
     }
 
-    for (i = 0; i < DIM; i++)
+    for (int i = 0; i < DIM; i++)
     {
         bt[i] = ddbox.box_size[i] * ddbox.skew_fac[i];
 
@@ -462,9 +451,9 @@ static float comm_cost_est(real               limit,
      * for the smallest index, so the decomposition does not
      * depend sensitively on the rounding of the box elements.
      */
-    for (i = 0; i < DIM; i++)
+    for (int i = 0; i < DIM; i++)
     {
-        for (j = i + 1; j < DIM; j++)
+        for (int j = i + 1; j < DIM; j++)
         {
             /* Check if the box size is nearly identical,
              * in that case we prefer nx > ny  and ny > nz.
@@ -493,31 +482,26 @@ static float comm_cost_est(real               limit,
      * and the "back"-communication cost is identical to the forward cost.
      */
 
-    comm_vol = comm_box_frac(nc, cutoff, ddbox);
+    float comm_vol = comm_box_frac(nc, cutoff, ddbox);
 
-    comm_pme = 0;
-    for (i = 0; i < 2; i++)
+    float comm_pme = 0;
+    for (int i = 0; i < 2; i++)
     {
         /* Determine the largest volume for PME x/f redistribution */
         if (nc[i] % npme[i] != 0)
         {
-            if (nc[i] > npme[i])
-            {
-                comm_vol_xf = (npme[i] == 2 ? 1.0 / 3.0 : 0.5);
-            }
-            else
-            {
-                comm_vol_xf = 1.0 - lcd(nc[i], npme[i]) / static_cast<double>(npme[i]);
-            }
+            float comm_vol_xf = (nc[i] > npme[i])
+                                        ? (npme[i] == 2 ? 1.0 / 3.0 : 0.5)
+                                        : (1.0 - lcd(nc[i], npme[i]) / static_cast<double>(npme[i]));
             comm_pme += 3 * natoms * comm_vol_xf;
         }
 
         /* Grid overlap communication */
         if (npme[i] > 1)
         {
-            nk      = (i == 0 ? ir.nkx : ir.nky);
-            overlap = (nk % npme[i] == 0 ? ir.pme_order - 1 : ir.pme_order);
-            temp    = npme[i];
+            const int nk      = (i == 0 ? ir.nkx : ir.nky);
+            const int overlap = (nk % npme[i] == 0 ? ir.pme_order - 1 : ir.pme_order);
+            float     temp    = npme[i];
             temp *= overlap;
             temp *= ir.nkx;
             temp *= ir.nky;
@@ -532,7 +516,7 @@ static float comm_cost_est(real               limit,
     comm_pme += comm_pme_cost_vol(npme[XX], ir.nkx, ir.nky, ir.nkz);
 
     /* Add cost of pbc_dx for bondeds */
-    cost_pbcdx = 0;
+    float cost_pbcdx = 0;
     if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir.pbcType != PbcType::XY))
     {
         if ((ddbox.tric_dir[XX] && nc[XX] == 1) || (ddbox.tric_dir[YY] && nc[YY] == 1))
@@ -579,14 +563,12 @@ static void assign_factors(const real         limit,
                            gmx::IVec*         irTryPtr,
                            gmx::IVec*         opt)
 {
-    int        x, y, i;
-    float      ce;
     gmx::IVec& ir_try = *irTryPtr;
 
     if (ndiv == 0)
     {
 
-        ce = comm_cost_est(limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme, ir_try);
+        const float ce = comm_cost_est(limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme, ir_try);
         if (ce >= 0
             && ((*opt)[XX] == 0
                 || ce < comm_cost_est(limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme, *opt)))
@@ -597,19 +579,19 @@ static void assign_factors(const real         limit,
         return;
     }
 
-    for (x = mdiv[0]; x >= 0; x--)
+    for (int x = mdiv[0]; x >= 0; x--)
     {
-        for (i = 0; i < x; i++)
+        for (int i = 0; i < x; i++)
         {
             ir_try[XX] *= div[0];
         }
-        for (y = mdiv[0] - x; y >= 0; y--)
+        for (int y = mdiv[0] - x; y >= 0; y--)
         {
-            for (i = 0; i < y; i++)
+            for (int i = 0; i < y; i++)
             {
                 ir_try[YY] *= div[0];
             }
-            for (i = 0; i < mdiv[0] - x - y; i++)
+            for (int i = 0; i < mdiv[0] - x - y; i++)
             {
                 ir_try[ZZ] *= div[0];
             }
@@ -618,16 +600,16 @@ static void assign_factors(const real         limit,
             assign_factors(
                     limit, cutoff, box, ddbox, natoms, ir, pbcdxr, npme, ndiv - 1, div + 1, mdiv + 1, irTryPtr, opt);
 
-            for (i = 0; i < mdiv[0] - x - y; i++)
+            for (int i = 0; i < mdiv[0] - x - y; i++)
             {
                 ir_try[ZZ] /= div[0];
             }
-            for (i = 0; i < y; i++)
+            for (int i = 0; i < y; i++)
             {
                 ir_try[YY] /= div[0];
             }
         }
-        for (i = 0; i < x; i++)
+        for (int i = 0; i < x; i++)
         {
             ir_try[XX] /= div[0];
         }
@@ -649,7 +631,7 @@ static gmx::IVec optimizeDDCells(const gmx::MDLogger& mdlog,
                                  const t_inputrec&    ir,
                                  const DDSystemInfo&  systemInfo)
 {
-    double pbcdxr;
+    double pbcdxr = 0;
 
     const int numPPRanks = numRanksRequested - numPmeOnlyRanks;
 
@@ -817,8 +799,8 @@ static int getNumPmeOnlyRanksToUse(const gmx::MDLogger& mdlog,
                                    const matrix         box,
                                    const int            numRanksRequested)
 {
-    int         numPmeOnlyRanks;
-    const char* extraMessage = "";
+    int         numPmeOnlyRanks = 0;
+    const char* extraMessage    = "";
 
     if (options.numCells[XX] > 0)
     {

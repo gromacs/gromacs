@@ -258,6 +258,7 @@
 #cmakedefine01 HAVE_FSEEKO
 
 /* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
+//NOLINTNEXTLINE(bugprone-reserved-identifier)
 #cmakedefine01 HAVE__FSEEKI64
 
 /* Have io.h (windows)*/
@@ -270,6 +271,7 @@
 #cmakedefine01 HAVE_MEMALIGN
 
 /* Define to 1 if you have the MSVC _aligned_malloc() function. */
+//NOLINTNEXTLINE(bugprone-reserved-identifier)
 #cmakedefine01 HAVE__ALIGNED_MALLOC
 
 /* Define to 1 if you have the clock_gettime() function. */
@@ -285,12 +287,14 @@
 #cmakedefine01 HAVE_FSYNC
 
 /* Define to 1 if you have the Windows _commit() function. */
+//NOLINTNEXTLINE(bugprone-reserved-identifier)
 #cmakedefine01 HAVE__COMMIT
 
 /* Define to 1 if you have the fileno() function. */
 #cmakedefine01 HAVE_FILENO
 
 /* Define to 1 if you have the _fileno() function. */
+//NOLINTNEXTLINE(bugprone-reserved-identifier)
 #cmakedefine01 HAVE__FILENO
 
 /* Define to 1 if you have the sigaction() function. */
@@ -355,6 +359,7 @@
  * malloc.h or xmmintrin.h, and 0 otherwise. Note that you need to
  * conditionally include the three headers too before using _mm_malloc().
  */
+//NOLINTNEXTLINE(bugprone-reserved-identifier)
 #cmakedefine01 HAVE__MM_MALLOC
 
 /* Define if SIGUSR1 is present */

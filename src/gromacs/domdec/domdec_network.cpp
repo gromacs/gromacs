@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2008-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,12 +157,11 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
                        int gmx_unused n_r_bw)
 {
 #if GMX_MPI
-    int         rank_fw, rank_bw, nreq;
     MPI_Request req[4];
     MPI_Status  stat[4];
 
-    rank_fw = dd->neighbor[ddimind][0];
-    rank_bw = dd->neighbor[ddimind][1];
+    int rank_fw = dd->neighbor[ddimind][0];
+    int rank_bw = dd->neighbor[ddimind][1];
 
     if (!dd->comm->ddSettings.useSendRecv2)
     {
@@ -174,7 +173,7 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
          * are slower.
          * SendRecv2 can be turned on with the env.var. GMX_DD_SENDRECV2
          */
-        nreq = 0;
+        int nreq = 0;
         if (n_r_fw)
         {
             MPI_Irecv(buf_r_fw[0], n_r_fw * sizeof(rvec), MPI_BYTE, rank_bw, 0, dd->mpi_comm_all, &req[nreq++]);
@@ -294,7 +293,7 @@ void dd_scatterv(const gmx_domdec_t gmx_unused* dd,
                  void*           rbuf)
 {
 #if GMX_MPI
-    int dum;
+    int dum = 0;
 
     if (dd->nnodes > 1)
     {
@@ -326,7 +325,7 @@ void dd_gatherv(const gmx_domdec_t gmx_unused* dd,
                 void gmx_unused* rbuf)
 {
 #if GMX_MPI
-    int dum;
+    int dum = 0;
 
     if (scount == 0)
     {

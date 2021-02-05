@@ -150,7 +150,7 @@ void gmx_set_max_backup_count(int count)
 
 static void push_ps(FILE* fp)
 {
-    t_pstack* ps;
+    t_pstack* ps = nullptr;
 
     Lock pstackLock(pstack_mutex);
 
@@ -183,7 +183,7 @@ static int pclose(FILE* /* fp */)
 
 int gmx_ffclose(FILE* fp)
 {
-    t_pstack *ps, *tmp;
+    t_pstack *ps = nullptr, *tmp = nullptr;
     int       ret = 0;
 
     Lock pstackLock(pstack_mutex);
@@ -303,7 +303,7 @@ int gmx_truncate(const std::string& filename, gmx_off_t length)
 
 static FILE* uncompress(const std::string& fn, const char* mode)
 {
-    FILE*       fp;
+    FILE*       fp  = nullptr;
     std::string buf = "uncompress -c < " + fn;
     fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
     if ((fp = popen(buf.c_str(), mode)) == nullptr)
@@ -317,7 +317,7 @@ static FILE* uncompress(const std::string& fn, const char* mode)
 
 static FILE* gunzip(const std::string& fn, const char* mode)
 {
-    FILE*       fp;
+    FILE*       fp  = nullptr;
     std::string buf = "gunzip -c < ";
     buf += fn;
     fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
@@ -332,7 +332,7 @@ static FILE* gunzip(const std::string& fn, const char* mode)
 
 gmx_bool gmx_fexist(const std::string& fname)
 {
-    FILE* test;
+    FILE* test = nullptr;
 
     if (fname.empty())
     {
@@ -410,9 +410,9 @@ void make_backup(const std::string& name)
 
 FILE* gmx_ffopen(const std::string& file, const char* mode)
 {
-    FILE*    ff = nullptr;
-    gmx_bool bRead;
-    int      bs;
+    FILE*    ff    = nullptr;
+    gmx_bool bRead = 0;
+    int      bs    = 0;
 
     if (file.empty())
     {
@@ -452,7 +452,7 @@ FILE* gmx_ffopen(const std::string& file, const char* mode)
             }
             else
             {
-                char* ptr;
+                char* ptr = nullptr;
                 snew(ptr, bs + 8);
                 if (setvbuf(ff, ptr, _IOFBF, bs) != 0)
                 {
@@ -532,7 +532,7 @@ FilePtr openLibraryFile(const char* filename, bool bAddCWD, bool bFatal)
  * \todo Use std::string and std::vector<char>. */
 static int makeTemporaryFilename(char* buf)
 {
-    int len;
+    int len = 0;
 
     if ((len = strlen(buf)) < 7)
     {
@@ -546,7 +546,7 @@ static int makeTemporaryFilename(char* buf)
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
-    int fd;
+    int fd = 0;
 #if GMX_NATIVE_WINDOWS
     _mktemp(buf);
     if (buf == NULL)
@@ -641,12 +641,12 @@ int gmx_file_copy(const char* oldname, const char* newname, gmx_bool copy_if_emp
 
     while (!feof(in.get()))
     {
-        size_t nread;
+        size_t nread = 0;
 
         nread = fread(buf.data(), sizeof(char), FILECOPY_BUFSIZE, in.get());
         if (nread > 0)
         {
-            size_t ret;
+            size_t ret = 0;
             if (!out)
             {
                 /* so this is where we open when copy_if_empty is false:
@@ -677,7 +677,7 @@ int gmx_fsync(FILE* fp)
     int rc = 0;
 
     {
-        int fn;
+        int fn = 0;
 
         /* get the file number */
 #if HAVE_FILENO

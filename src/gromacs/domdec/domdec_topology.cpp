@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2006 - 2014, The GROMACS development team.
- * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,6 +89,7 @@
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
 #include "dump.h"
+#include "math.h"
 
 using gmx::ArrayRef;
 using gmx::ListOfLists;
@@ -163,9 +164,7 @@ struct gmx_reverse_top_t
 /*! \brief Returns the number of atom entries for il in gmx_reverse_top_t */
 static int nral_rt(int ftype)
 {
-    int nral;
-
-    nral = NRAL(ftype);
+    int nral = NRAL(ftype);
     if (interaction_function[ftype].flags & IF_VSITE)
     {
         /* With vsites the reverse topology contains an extra entry
@@ -306,8 +305,8 @@ static std::string printMissingInteractionsMolblock(t_commrec*               cr,
                                 numMissingToPrint);
                     }
                     log.writeStringFormatted("%20s atoms", interaction_function[ftype].longname);
-                    int a;
-                    for (a = 0; a < nral; a++)
+                    int a = 0;
+                    for (; a < nral; a++)
                     {
                         log.writeStringFormatted("%5d", ril.il[j_mol + 2 + a] + 1);
                     }
@@ -317,7 +316,7 @@ static std::string printMissingInteractionsMolblock(t_commrec*               cr,
                         a++;
                     }
                     log.writeString(" global");
-                    for (a = 0; a < nral; a++)
+                    for (int a = 0; a < nral; a++)
                     {
                         log.writeStringFormatted("%6d",
                                                  atomRange.begin() + mol * numAtomsPerMolecule
@@ -370,23 +369,20 @@ void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
                                    gmx::ArrayRef<const gmx::RVec> x,
                                    const matrix                   box)
 {
-    int           ndiff_tot, cl[F_NRE], n, ndiff, rest_global, rest_local;
-    int           ftype, nral;
-    gmx_domdec_t* dd;
-
-    dd = cr->dd;
+    int           cl[F_NRE];
+    gmx_domdec_t* dd = cr->dd;
 
     GMX_LOG(mdlog.warning)
             .appendText(
                     "Not all bonded interactions have been properly assigned to the domain "
                     "decomposition cells");
 
-    ndiff_tot = local_count - dd->nbonded_global;
+    const int ndiff_tot = local_count - dd->nbonded_global;
 
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        nral      = NRAL(ftype);
-        cl[ftype] = top_local->idef.il[ftype].size() / (1 + nral);
+        const int nral = NRAL(ftype);
+        cl[ftype]      = top_local->idef.il[ftype].size() / (1 + nral);
     }
 
     gmx_sumi(F_NRE, cl, cr);
@@ -394,9 +390,9 @@ void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
     if (DDMASTER(dd))
     {
         GMX_LOG(mdlog.warning).appendText("A list of missing interactions:");
-        rest_global = dd->nbonded_global;
-        rest_local  = local_count;
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        int rest_global = dd->nbonded_global;
+        int rest_local  = local_count;
+        for (int ftype = 0; ftype < F_NRE; ftype++)
         {
             /* In the reverse and local top all constraints are merged
              * into F_CONSTR. So in the if statement we skip F_CONSTRNC
@@ -407,12 +403,12 @@ void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
                 || (dd->reverse_top->bConstr && ftype == F_CONSTR)
                 || (dd->reverse_top->bSettle && ftype == F_SETTLE))
             {
-                n = gmx_mtop_ftype_count(top_global, ftype);
+                int n = gmx_mtop_ftype_count(top_global, ftype);
                 if (ftype == F_CONSTR)
                 {
                     n += gmx_mtop_ftype_count(top_global, F_CONSTRNC);
                 }
-                ndiff = cl[ftype] - n;
+                int ndiff = cl[ftype] - n;
                 if (ndiff != 0)
                 {
                     GMX_LOG(mdlog.warning)
@@ -426,7 +422,7 @@ void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
             }
         }
 
-        ndiff = rest_local - rest_global;
+        int ndiff = rest_local - rest_global;
         if (ndiff != 0)
         {
             GMX_LOG(mdlog.warning).appendTextFormatted("%20s of %6d missing %6d", "exclusions", rest_global, -ndiff);
@@ -465,7 +461,7 @@ static void global_atomnr_to_moltype_ind(const gmx_reverse_top_t* rt, int i_gl, 
     const MolblockIndices* mbi   = rt->mbi.data();
     int                    start = 0;
     int                    end   = rt->mbi.size(); /* exclusive */
-    int                    mid;
+    int                    mid   = 0;
 
     /* binary search for molblock_ind */
     while (TRUE)
@@ -523,12 +519,9 @@ static int low_make_reverse_ilist(const InteractionLists&  il_mt,
                                   gmx_bool                 bLinkToAllAtoms,
                                   gmx_bool                 bAssign)
 {
-    int ftype, j, nlink, link;
-    int a;
-    int nint;
+    int nint = 0;
 
-    nint = 0;
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
             || (bConstr && (ftype == F_CONSTR || ftype == F_CONSTRNC)) || (bSettle && ftype == F_SETTLE))
@@ -538,34 +531,18 @@ static int low_make_reverse_ilist(const InteractionLists&  il_mt,
             const auto& il     = il_mt[ftype];
             for (int i = 0; i < il.size(); i += 1 + nral)
             {
-                const int* ia = il.iatoms.data() + i;
-                if (bLinkToAllAtoms)
+                const int* ia    = il.iatoms.data() + i;
+                const int  nlink = bLinkToAllAtoms ? bVSite ? 0 : nral : 1;
+                for (int link = 0; link < nlink; link++)
                 {
-                    if (bVSite)
-                    {
-                        /* We don't need the virtual sites for the cg-links */
-                        nlink = 0;
-                    }
-                    else
-                    {
-                        nlink = nral;
-                    }
-                }
-                else
-                {
-                    /* Couple to the first atom in the interaction */
-                    nlink = 1;
-                }
-                for (link = 0; link < nlink; link++)
-                {
-                    a = ia[1 + link];
+                    const int a = ia[1 + link];
                     if (bAssign)
                     {
                         GMX_ASSERT(!r_il.empty(), "with bAssign not allowed to be empty");
                         GMX_ASSERT(!r_index.empty(), "with bAssign not allowed to be empty");
                         r_il[r_index[a] + count[a]]     = (ftype == F_CONSTRNC ? F_CONSTR : ftype);
                         r_il[r_index[a] + count[a] + 1] = ia[0];
-                        for (j = 1; j < 1 + nral; j++)
+                        for (int j = 1; j < 1 + nral; j++)
                         {
                             /* Store the molecular atom number */
                             r_il[r_index[a] + count[a] + 1 + j] = ia[j];
@@ -580,7 +557,7 @@ static int low_make_reverse_ilist(const InteractionLists&  il_mt,
                              * vsites again.
                              */
                             r_il[r_index[a] + count[a] + 2 + nral] = 0;
-                            for (j = 2; j < 1 + nral; j++)
+                            for (int j = 2; j < 1 + nral; j++)
                             {
                                 if (atom[ia[j]].ptype == eptVSite)
                                 {
@@ -618,16 +595,14 @@ static int make_reverse_ilist(const InteractionLists& ilist,
                               gmx_bool                bLinkToAllAtoms,
                               reverse_ilist_t*        ril_mt)
 {
-    int nat_mt, *count, i, nint_mt;
-
     /* Count the interactions */
-    nat_mt = atoms->nr;
-    snew(count, nat_mt);
+    const int        nat_mt = atoms->nr;
+    std::vector<int> count(nat_mt);
     low_make_reverse_ilist(
-            ilist, atoms->atom, count, bConstr, bSettle, bBCheck, {}, {}, bLinkToAllAtoms, FALSE);
+            ilist, atoms->atom, count.data(), bConstr, bSettle, bBCheck, {}, {}, bLinkToAllAtoms, FALSE);
 
     ril_mt->index.push_back(0);
-    for (i = 0; i < nat_mt; i++)
+    for (int i = 0; i < nat_mt; i++)
     {
         ril_mt->index.push_back(ril_mt->index[i] + count[i]);
         count[i] = 0;
@@ -635,10 +610,8 @@ static int make_reverse_ilist(const InteractionLists& ilist,
     ril_mt->il.resize(ril_mt->index[nat_mt]);
 
     /* Store the interactions */
-    nint_mt = low_make_reverse_ilist(
-            ilist, atoms->atom, count, bConstr, bSettle, bBCheck, ril_mt->index, ril_mt->il, bLinkToAllAtoms, TRUE);
-
-    sfree(count);
+    int nint_mt = low_make_reverse_ilist(
+            ilist, atoms->atom, count.data(), bConstr, bSettle, bBCheck, ril_mt->index, ril_mt->il, bLinkToAllAtoms, TRUE);
 
     ril_mt->numAtomsInMolecule = atoms->nr;
 
@@ -939,9 +912,7 @@ static void add_vsite(const gmx_ga2la_t&       ga2la,
                       const t_iatom*           iatoms,
                       InteractionDefinitions*  idef)
 {
-    int     k;
     t_iatom tiatoms[1 + MAXATOMLIST];
-    int     j, ftype_r, nral_r;
 
     /* Add this interaction to the local topology */
     add_ifunc_for_vsites(tiatoms, ga2la, nral, bHomeA, a, a_gl, a_mol, iatoms, &idef->il[ftype]);
@@ -949,7 +920,7 @@ static void add_vsite(const gmx_ga2la_t&       ga2la,
     if (iatoms[1 + nral])
     {
         /* Check for recursion */
-        for (k = 2; k < 1 + nral; k++)
+        for (int k = 2; k < 1 + nral; k++)
         {
             if ((iatoms[1 + nral] & (2 << k)) && (tiatoms[k] < 0))
             {
@@ -964,11 +935,11 @@ static void add_vsite(const gmx_ga2la_t&       ga2la,
                 /* Find the vsite construction */
 
                 /* Check all interactions assigned to this atom */
-                j = index[iatoms[k]];
+                int j = index[iatoms[k]];
                 while (j < index[iatoms[k] + 1])
                 {
-                    ftype_r = rtil[j++];
-                    nral_r  = NRAL(ftype_r);
+                    int ftype_r = rtil[j++];
+                    int nral_r  = NRAL(ftype_r);
                     if (interaction_function[ftype_r].flags & IF_VSITE)
                     {
                         /* Add this vsite (recursion) */
@@ -1011,9 +982,7 @@ static real dd_dist2(t_pbc* pbc_null, const rvec* x, const int i, int j)
 /*! \brief Append t_idef structures 1 to nsrc in src to *dest */
 static void combine_idef(InteractionDefinitions* dest, gmx::ArrayRef<const thread_work_t> src)
 {
-    int ftype;
-
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         int n = 0;
         for (gmx::index s = 1; s < src.ssize(); s++)
@@ -1110,7 +1079,7 @@ static inline void check_assign_interactions_atom(int                       i,
         }
         else
         {
-            gmx_bool bUse;
+            bool bUse = false;
 
             /* Copy the type */
             tiatoms[0] = iatoms[0];
@@ -1121,7 +1090,7 @@ static inline void check_assign_interactions_atom(int                       i,
                 /* Assign single-body interactions to the home zone */
                 if (iz == 0)
                 {
-                    bUse       = TRUE;
+                    bUse       = true;
                     tiatoms[1] = i;
                     if (ftype == F_POSRES)
                     {
@@ -1131,10 +1100,10 @@ static inline void check_assign_interactions_atom(int                       i,
                     {
                         add_fbposres(mol, i_mol, numAtomsInMolecule, molb, tiatoms, ip_in, idef);
                     }
-                }
-                else
-                {
-                    bUse = FALSE;
+                    else
+                    {
+                        bUse = false;
+                    }
                 }
             }
             else if (nral == 2)
@@ -1142,17 +1111,11 @@ static inline void check_assign_interactions_atom(int                       i,
                 /* This is a two-body interaction, we can assign
                  * analogous to the non-bonded assignments.
                  */
-                int k_gl;
-
-                if (!bInterMolInteractions)
-                {
-                    /* Get the global index using the offset in the molecule */
-                    k_gl = i_gl + iatoms[2] - i_mol;
-                }
-                else
-                {
-                    k_gl = iatoms[2];
-                }
+                const int k_gl = (!bInterMolInteractions)
+                                         ?
+                                         /* Get the global index using the offset in the molecule */
+                                         (i_gl + iatoms[2] - i_mol)
+                                         : iatoms[2];
                 if (const auto* entry = dd->ga2la->find(k_gl))
                 {
                     int kz = entry->cell;
@@ -1173,7 +1136,7 @@ static inline void check_assign_interactions_atom(int                       i,
                         /* If necessary check the cgcm distance */
                         if (bRCheck2B && dd_dist2(pbc_null, cg_cm, tiatoms[1], tiatoms[2]) >= rc2)
                         {
-                            bUse = FALSE;
+                            bUse = false;
                         }
                     }
                 }
@@ -1191,23 +1154,16 @@ static inline void check_assign_interactions_atom(int                       i,
                  * with 2 DD cells an extra check may be necessary.
                  */
                 ivec k_zero, k_plus;
-                int  k;
-
-                bUse = TRUE;
+                bUse = true;
                 clear_ivec(k_zero);
                 clear_ivec(k_plus);
-                for (k = 1; k <= nral && bUse; k++)
+                for (int k = 1; k <= nral && bUse; k++)
                 {
-                    int k_gl;
-                    if (!bInterMolInteractions)
-                    {
-                        /* Get the global index using the offset in the molecule */
-                        k_gl = i_gl + iatoms[k] - i_mol;
-                    }
-                    else
-                    {
-                        k_gl = iatoms[k];
-                    }
+                    const int k_gl = (!bInterMolInteractions)
+                                             ?
+                                             /* Get the global index using the offset in the molecule */
+                                             (i_gl + iatoms[k] - i_mol)
+                                             : iatoms[k];
                     const auto* entry = dd->ga2la->find(k_gl);
                     if (entry == nullptr || entry->cell >= zones->n)
                     {
@@ -1219,10 +1175,8 @@ static inline void check_assign_interactions_atom(int                       i,
                     }
                     else
                     {
-                        int d;
-
                         tiatoms[k] = entry->la;
-                        for (d = 0; d < DIM; d++)
+                        for (int d = 0; d < DIM; d++)
                         {
                             if (zones->shift[entry->cell][d] == 0)
                             {
@@ -1238,9 +1192,7 @@ static inline void check_assign_interactions_atom(int                       i,
                 bUse = (bUse && (k_zero[XX] != 0) && (k_zero[YY] != 0) && (k_zero[ZZ] != 0));
                 if (bRCheckMB)
                 {
-                    int d;
-
-                    for (d = 0; (d < DIM && bUse); d++)
+                    for (int d = 0; (d < DIM && bUse); d++)
                     {
                         /* Check if the cg_cm distance falls within
                          * the cut-off to avoid possible multiple
@@ -1290,16 +1242,13 @@ static int make_bondeds_zone(gmx_domdec_t*                      dd,
                              int                                izone,
                              const gmx::Range<int>&             atomRange)
 {
-    int                mb, mt, mol, i_mol;
-    gmx_bool           bBCheck;
-    gmx_reverse_top_t* rt;
-    int                nbonded_local;
+    int mb = 0, mt = 0, mol = 0, i_mol = 0;
 
-    rt = dd->reverse_top;
+    gmx_reverse_top_t* rt = dd->reverse_top;
 
-    bBCheck = rt->bBCheck;
+    bool bBCheck = rt->bBCheck;
 
-    nbonded_local = 0;
+    int nbonded_local = 0;
 
     for (int i : atomRange)
     {
@@ -1396,10 +1345,10 @@ static void make_exclusions_zone(gmx_domdec_t*                     dd,
 
         if (GET_CGINFO_EXCL_INTER(cginfo[at]))
         {
-            int a_gl, mb, mt, mol, a_mol;
+            int mb = 0, mt = 0, mol = 0, a_mol = 0;
 
             /* Copy the exclusions from the global top */
-            a_gl = dd->globalAtomIndices[at];
+            int a_gl = dd->globalAtomIndices[at];
             global_atomnr_to_moltype_ind(dd->reverse_top, a_gl, &mb, &mt, &mol, &a_mol);
             const auto excls = moltype[mt].excls[a_mol];
             for (const int aj_mol : excls)
@@ -1459,11 +1408,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
                                     ListOfLists<int>*       lexcls,
                                     int*                    excl_count)
 {
-    int                nzone_bondeds;
-    int                cg0, cg1;
-    real               rc2;
-    int                nbonded_local;
-    gmx_reverse_top_t* rt;
+    int nzone_bondeds = 0;
 
     if (dd->reverse_top->bInterAtomicInteractions)
     {
@@ -1480,21 +1425,21 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
     /* We only use exclusions from i-zones to i- and j-zones */
     const int numIZonesForExclusions = (dd->haveExclusions ? zones->iZones.size() : 0);
 
-    rt = dd->reverse_top;
+    gmx_reverse_top_t* rt = dd->reverse_top;
 
-    rc2 = rc * rc;
+    real rc2 = rc * rc;
 
     /* Clear the counts */
     idef->clear();
-    nbonded_local = 0;
+    int nbonded_local = 0;
 
     lexcls->clear();
     *excl_count = 0;
 
     for (int izone = 0; izone < nzone_bondeds; izone++)
     {
-        cg0 = zones->cg_range[izone];
-        cg1 = zones->cg_range[izone + 1];
+        int cg0 = zones->cg_range[izone];
+        int cg1 = zones->cg_range[izone + 1];
 
         const int numThreads = rt->th_work.size();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
@@ -1502,11 +1447,10 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
         {
             try
             {
-                int                     cg0t, cg1t;
-                InteractionDefinitions* idef_t;
+                InteractionDefinitions* idef_t = nullptr;
 
-                cg0t = cg0 + ((cg1 - cg0) * thread) / numThreads;
-                cg1t = cg0 + ((cg1 - cg0) * (thread + 1)) / numThreads;
+                int cg0t = cg0 + ((cg1 - cg0) * thread) / numThreads;
+                int cg1t = cg0 + ((cg1 - cg0) * (thread + 1)) / numThreads;
 
                 if (thread == 0)
                 {
@@ -1534,7 +1478,7 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
 
                 if (izone < numIZonesForExclusions)
                 {
-                    ListOfLists<int>* excl_t;
+                    ListOfLists<int>* excl_t = nullptr;
                     if (thread == 0)
                     {
                         // Thread 0 stores exclusions directly in the final storage
@@ -1597,19 +1541,18 @@ void dd_make_local_top(gmx_domdec_t*       dd,
                        const gmx_mtop_t&   mtop,
                        gmx_localtop_t*     ltop)
 {
-    gmx_bool bRCheckMB, bRCheck2B;
-    real     rc = -1;
-    ivec     rcheck;
-    int      d, nexcl;
-    t_pbc    pbc, *pbc_null = nullptr;
+    real  rc = -1;
+    ivec  rcheck;
+    int   nexcl = 0;
+    t_pbc pbc, *pbc_null = nullptr;
 
     if (debug)
     {
         fprintf(debug, "Making local topology\n");
     }
 
-    bRCheckMB = FALSE;
-    bRCheck2B = FALSE;
+    bool bRCheckMB = false;
+    bool bRCheck2B = false;
 
     if (dd->reverse_top->bInterAtomicInteractions)
     {
@@ -1621,7 +1564,7 @@ void dd_make_local_top(gmx_domdec_t*       dd,
         }
 
         /* Should we check cg_cm distances when assigning bonded interactions? */
-        for (d = 0; d < DIM; d++)
+        for (int d = 0; d < DIM; d++)
         {
             rcheck[d] = FALSE;
             /* Only need to check for dimensions where the part of the box
@@ -1719,11 +1662,8 @@ void dd_init_local_state(gmx_domdec_t* dd, const t_state* state_global, t_state*
 /*! \brief Check if a link is stored in \p link between charge groups \p cg_gl and \p cg_gl_j and if not so, store a link */
 static void check_link(t_blocka* link, int cg_gl, int cg_gl_j)
 {
-    int      k;
-    gmx_bool bFound;
-
-    bFound = FALSE;
-    for (k = link->index[cg_gl]; k < link->index[cg_gl + 1]; k++)
+    bool bFound = false;
+    for (int k = link->index[cg_gl]; k < link->index[cg_gl + 1]; k++)
     {
         GMX_RELEASE_ASSERT(link->a, "Inconsistent NULL pointer while making charge-group links");
         if (link->a[k] == cg_gl_j)
@@ -1748,8 +1688,7 @@ static void check_link(t_blocka* link, int cg_gl, int cg_gl_j)
 
 t_blocka* makeBondedLinks(const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb)
 {
-    t_blocka*    link;
-    cginfo_mb_t* cgi_mb;
+    t_blocka* link = nullptr;
 
     /* For each atom make a list of other atoms in the system
      * that a linked to it via bonded interactions
@@ -1793,9 +1732,9 @@ t_blocka* makeBondedLinks(const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cgi
         reverse_ilist_t ril;
         make_reverse_ilist(molt.ilist, &molt.atoms, FALSE, FALSE, FALSE, TRUE, &ril);
 
-        cgi_mb = &cginfo_mb[mb];
+        cginfo_mb_t* cgi_mb = &cginfo_mb[mb];
 
-        int mol;
+        int mol = 0;
         for (mol = 0; mol < (mtop.bIntermolecularInteractions ? molb.nmol : 1); mol++)
         {
             for (int a = 0; a < molt.atoms.nr; a++)
@@ -2003,7 +1942,7 @@ static void bonded_distance_intermol(const InteractionLists& ilists_intermol,
                     for (int aj = ai + 1; aj < nral; aj++)
                     {
                         rvec dx;
-                        real rij2;
+                        real rij2 = NAN;
 
                         int atom_j = il.iatoms[i + 1 + aj];
 
@@ -2043,8 +1982,6 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
                                         ArrayRef<const RVec>  x,
                                         ArrayRef<RVec>        xs)
 {
-    int n, i;
-
     if (pbcType != PbcType::No)
     {
         mk_mshift(nullptr, graph, pbcType, box, as_rvec_array(x.data()));
@@ -2063,8 +2000,7 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
          * unchanged, just to be 100% sure that we do not affect
          * binary reproducibility of simulations.
          */
-        n = molt->atoms.nr;
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < molt->atoms.nr; i++)
         {
             copy_rvec(x[i], xs[i]);
         }
@@ -2085,16 +2021,14 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
                            real*                r_2b,
                            real*                r_mb)
 {
-    gmx_bool          bExclRequired;
-    int               at_offset;
     bonded_distance_t bd_2b = { 0, -1, -1, -1 };
     bonded_distance_t bd_mb = { 0, -1, -1, -1 };
 
-    bExclRequired = inputrecExclForces(ir);
+    bool bExclRequired = inputrecExclForces(ir);
 
-    *r_2b     = 0;
-    *r_mb     = 0;
-    at_offset = 0;
+    *r_2b         = 0;
+    *r_mb         = 0;
+    int at_offset = 0;
     for (const gmx_molblock_t& molb : mtop->molblock)
     {
         const gmx_moltype_t& molt = mtop->moltype[molb.type];

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,7 @@
 #include "atomdistribution.h"
 #include "cellsizes.h"
 #include "domdec_internal.h"
+#include "math.h"
 #include "utility.h"
 
 static void distributeVecSendrecv(gmx_domdec_t*                  dd,
@@ -444,13 +445,10 @@ static std::vector<std::vector<int>> getAtomGroupDistribution(const gmx::MDLogge
     {
         // Use double for the sums to avoid natoms^2 overflowing
         // (65537^2 > 2^32)
-        int    nat_sum, nat_min, nat_max;
-        double nat2_sum;
-
-        nat_sum  = 0;
-        nat2_sum = 0;
-        nat_min  = ma.domainGroups[0].numAtoms;
-        nat_max  = ma.domainGroups[0].numAtoms;
+        int    nat_sum  = 0;
+        double nat2_sum = 0;
+        int    nat_min  = ma.domainGroups[0].numAtoms;
+        int    nat_max  = ma.domainGroups[0].numAtoms;
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
             int numAtoms = ma.domainGroups[rank].numAtoms;
@@ -483,8 +481,8 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
                                  const gmx_ddbox_t*   ddbox,
                                  rvec                 pos[])
 {
-    AtomDistribution* ma = dd->ma.get();
-    int *             ibuf, buf2[2] = { 0, 0 };
+    AtomDistribution* ma   = dd->ma.get();
+    int *             ibuf = nullptr, buf2[2] = { 0, 0 };
     gmx_bool          bMaster = DDMASTER(dd);
 
     std::vector<std::vector<int>> groupIndices;
@@ -506,10 +504,6 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
             ma->intBuffer[rank * 2 + 1] = ma->domainGroups[rank].numAtoms;
         }
         ibuf = ma->intBuffer.data();
-    }
-    else
-    {
-        ibuf = nullptr;
     }
     dd_scatter(dd, 2 * sizeof(int), ibuf, buf2);
 
