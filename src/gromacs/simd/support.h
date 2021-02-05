@@ -70,7 +70,6 @@ enum class SimdType
     X86_Avx512Knl, //!< AVX_512_KNL
     Arm_NeonAsimd, //!< 64-bit ARM AArch64 Advanced SIMD
     Arm_Sve,       //!< ARM Scalable Vector Extensions
-    Ibm_Vmx,       //!< IBM VMX SIMD (Altivec on Power6 and later)
     Ibm_Vsx        //!< IBM VSX SIMD (Power7 and later)
 };
 

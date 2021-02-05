@@ -84,7 +84,6 @@ const std::string& simdString(SimdType s)
                                                           { SimdType::Arm_NeonAsimd,
                                                             "ARM_NEON_ASIMD" },
                                                           { SimdType::Arm_Sve, "ARM_SVE" },
-                                                          { SimdType::Ibm_Vmx, "IBM_VMX" },
                                                           { SimdType::Ibm_Vsx, "IBM_VSX" } };
 
     return name.at(s);
@@ -179,7 +178,7 @@ SimdType simdSuggested(const CpuInfo& c)
                 }
                 else if (c.feature(CpuInfo::Feature::Ibm_Vmx))
                 {
-                    suggested = SimdType::Ibm_Vmx;
+                    suggested = SimdType::None;
                 }
                 break;
             case CpuInfo::Vendor::Fujitsu:
@@ -216,8 +215,6 @@ SimdType simdCompiled()
     return SimdType::Arm_NeonAsimd;
 #elif GMX_SIMD_ARM_SVE
     return SimdType::Arm_Sve;
-#elif GMX_SIMD_IBM_VMX
-    return SimdType::Ibm_Vmx;
 #elif GMX_SIMD_IBM_VSX
     return SimdType::Ibm_Vsx;
 #elif GMX_SIMD_REFERENCE

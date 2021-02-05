@@ -328,26 +328,6 @@ function(gmx_find_simd_arm_sve_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
     set(${CXX_FLAGS_RESULT} ${SIMD_ARM_SVE_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for Arm SVE C++ flags" FORCE)
 endfunction()
 
-# IBM VMX (power6)
-function(gmx_find_simd_ibm_vmx_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
-
-    gmx_find_flags(SIMD_IBM_VMX_C_FLAGS_RESULT SIMD_IBM_VMX_CXX_FLAGS_RESULT
-        "#include<altivec.h>
-         int main(){vector float x,y=vec_ctf(vec_splat_s32(1),0);x=vec_madd(y,y,y);return vec_all_ge(y,x);}"
-        TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_IBM_VMX_C_FLAGS SIMD_IBM_VMX_CXX_FLAGS
-        "-maltivec -mabi=altivec" "-qarch=auto -qaltivec")
-
-    if(${SIMD_IBM_VMX_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_IBM_VMX_C_FLAGS}" CACHE INTERNAL "C flags required for IBM VMX instructions")
-    endif()
-    if(${SIMD_IBM_VMX_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_IBM_VMX_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for IBM VMX instructions")
-    endif()
-    set(${C_FLAGS_RESULT} ${SIMD_IBM_VMX_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VMX C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_IBM_VMX_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for IBM VMX C++ flags" FORCE)
-endfunction()
-
 # IBM VSX (power7 and later)
 function(gmx_find_simd_ibm_vsx_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
     find_power_vsx_toolchain_flags(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)

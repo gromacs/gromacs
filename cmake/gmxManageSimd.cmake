@@ -260,21 +260,6 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) SVE Advanced SIMD instructions using CXX flags: ${SIMD_ARM_SVE_CXX_FLAGS}")
 
-elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VMX")
-
-    gmx_find_simd_ibm_vmx_flags(SIMD_IBM_VMX_C_SUPPORTED SIMD_IBM_VMX_CXX_SUPPORTED
-                                SIMD_IBM_VMX_C_FLAGS SIMD_IBM_VMX_CXX_FLAGS)
-
-    if(NOT SIMD_IBM_VMX_C_SUPPORTED OR NOT SIMD_IBM_VMX_CXX_SUPPORTED)
-        gmx_give_fatal_error_when_simd_support_not_found("IBM VMX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
-    endif()
-
-    # If multiple flags are neeed, make them into a list
-    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_IBM_VMX_C_FLAGS})
-    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_IBM_VMX_CXX_FLAGS})
-    set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling IBM VMX SIMD instructions using CXX flags: ${SIMD_IBM_VMX_CXX_FLAGS}. This SIMD support is deprecated.")
-
 elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
 
     # IBM_VSX and gcc > 9 do not work together, so we need to prevent people from

@@ -24,18 +24,11 @@ documentation, installation, and teaching new users.
 
 :issue:`3808`
 
-Removed support for x86 MIC platform
-""""""""""""""""""""""""""""""""""""
+Removed support for x86 MIC, ARMv7, Sparc64 HPC-ACE, and IBM VMX SIMD
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-This platform is nearly dead and is no longer supported. The KNL
-platform is unaffected by this change.
-
-:issue:`3891`
-
-Removed support for ARMv7 platform
-""""""""""""""""""""""""""""""""""
-
-This platform was nearly unused in HPC.
+These platforms are dead in HPC and so are no longer supported. The
+KNL platform is unaffected by this change.
 
 :issue:`3891`
 
