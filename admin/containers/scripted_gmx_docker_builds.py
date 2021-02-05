@@ -337,10 +337,10 @@ def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[st
         apt_keys=['https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB'],
         apt_repositories=['deb https://apt.repos.intel.com/oneapi all main'],
         # Add minimal packages (not the whole HPC toolkit!)
-        ospackages=['intel-oneapi-dpcpp-{}'.format(version),
-            'intel-oneapi-openmp-{}'.format(version),
-            'intel-oneapi-mkl-{}'.format(version),
-            'intel-oneapi-mkl-devel-{}'.format(version)]
+        ospackages=[f'intel-oneapi-dpcpp-cpp-{version}',
+            f'intel-oneapi-openmp-{version}',
+            f'intel-oneapi-mkl-{version}',
+            f'intel-oneapi-mkl-devel-{version}']
     )
     # Ensure that all bash shells on the final container will have access to oneAPI
     oneapi_stage += hpccm.primitives.shell(
@@ -357,21 +357,15 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
 
     pyenv = '$HOME/.pyenv/bin/pyenv'
 
-    py_ver = '{}.{}'.format(major, minor)
-    venv_path = '$HOME/venv/py{}'.format(py_ver)
-    commands = ['$({pyenv} prefix `{pyenv} whence python{py_ver}`)/bin/python -m venv {path}'.format(
-        pyenv=pyenv,
-        py_ver=py_ver,
-        path=venv_path
-    )]
+    py_ver = f'{major}.{minor}'
+    venv_path = f'$HOME/venv/py{py_ver}'
+    commands = [f'$({pyenv} prefix `{pyenv} whence python{py_ver}`)/bin/python -m venv {venv_path}']
 
-    commands.append('{path}/bin/python -m pip install --upgrade pip setuptools'.format(
-        path=venv_path
-    ))
+    commands.append(f'{venv_path}/bin/python -m pip install --upgrade pip setuptools')
     # Install dependencies for building and testing gmxapi Python package.
     # WARNING: Please keep this list synchronized with python_packaging/requirements-test.txt
     # TODO: Get requirements.txt from an input argument.
-    commands.append("""{path}/bin/python -m pip install --upgrade \
+    commands.append(f"""{venv_path}/bin/python -m pip install --upgrade \
             'cmake>=3.13' \
             'flake8>=3.7.7' \
             'mpi4py>=3.0.3' \
@@ -380,12 +374,12 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
             'pip>=10.1' \
             'pytest>=3.9' \
             'setuptools>=42' \
-            'scikit-build>=0.10'""".format(path=venv_path))
+            'scikit-build>=0.10'""")
 
     # TODO: Remove 'importlib_resources' dependency when Python >=3.7 is required.
     if minor == 6:
-        commands.append("""{path}/bin/python -m pip install --upgrade \
-                'importlib_resources'""".format(path=venv_path))
+        commands.append(f"""{venv_path}/bin/python -m pip install --upgrade \
+                'importlib_resources'""")
 
     return commands
 
@@ -432,9 +426,7 @@ def add_python_stages(building_blocks: typing.Mapping[str, bb_base],
             """echo 'eval "$(pyenv init -)"' >> $HOME/.bashrc""",
             """echo 'eval "$(pyenv virtualenv-init -)"' >> $HOME/.bashrc"""])
         pyenv = '$HOME/.pyenv/bin/pyenv'
-        commands = ['PYTHON_CONFIGURE_OPTS="--enable-shared" {pyenv} install -s {version}'.format(
-            pyenv=pyenv,
-            version=str(version))]
+        commands = [f'PYTHON_CONFIGURE_OPTS="--enable-shared" {pyenv} install -s {version}']
         stage += hpccm.primitives.shell(commands=commands)
 
         commands = prepare_venv(version)
@@ -485,17 +477,14 @@ def add_documentation_dependencies(input_args,
                 '--static'])
     else:
         version = input_args.doxygen
-        archive_name = 'doxygen-{}.linux.bin.tar.gz'.format(version)
-        archive_url = 'https://sourceforge.net/projects/doxygen/files/rel-{}/{}'.format(
-            version,
-            archive_name
-        )
-        binary_path = 'doxygen-{}/bin/doxygen'.format(version)
+        archive_name = f'doxygen-{version}.linux.bin.tar.gz'
+        archive_url = f'https://sourceforge.net/projects/doxygen/files/rel-{version}/{archive_name}'
+        binary_path = f'doxygen-{version}/bin/doxygen'
         commands = [
             'mkdir doxygen && cd doxygen',
-            'wget {}'.format(archive_url),
-            'tar xf {} {}'.format(archive_name, binary_path),
-            'cp {} /usr/local/bin/'.format(binary_path),
+            f'wget {archive_url}',
+            f'tar xf {archive_name} {binary_path}',
+            f'cp {binary_path} /usr/local/bin/',
             'cd .. && rm -rf doxygen'
         ]
         output_stages['main'] += hpccm.primitives.shell(commands=commands)
@@ -533,7 +522,7 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     for i, cmake in enumerate(args.cmake):
         building_blocks['cmake' + str(i)] = hpccm.building_blocks.cmake(
             eula=True,
-            prefix='/usr/local/cmake-{}'.format(cmake),
+            prefix=f'/usr/local/cmake-{cmake}',
             version=cmake)
 
     # Install additional packages early in the build to optimize Docker build layer cache.
