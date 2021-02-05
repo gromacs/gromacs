@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -429,8 +429,8 @@ std::string Path::getWorkingDirectory()
 
 void Path::splitPathEnvironment(const std::string& pathEnv, std::vector<std::string>* result)
 {
-    size_t prevPos = 0;
-    size_t separator;
+    size_t prevPos   = 0;
+    size_t separator = 0;
     do
     {
         separator = pathEnv.find(cPathSeparator, prevPos);
@@ -462,7 +462,7 @@ std::string Path::resolveSymlinks(const std::string& path)
     std::string result(path);
 #if !GMX_NATIVE_WINDOWS
     char buf[GMX_PATH_MAX];
-    int  length;
+    int  length = 0;
     while ((length = readlink(result.c_str(), buf, sizeof(buf) - 1)) > 0)
     {
         buf[length] = '\0';

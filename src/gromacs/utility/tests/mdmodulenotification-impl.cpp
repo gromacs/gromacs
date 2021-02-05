@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ class EventACallee final
 public:
     void callback(EventA /*a*/) { notifiedEventA_ = true; }
 
-    bool notifiedEventA() { return notifiedEventA_; }
+    bool notifiedEventA() const { return notifiedEventA_; }
 
 private:
     bool notifiedEventA_ = false;
@@ -74,7 +74,7 @@ class EventBCallee final
 public:
     void callback(EventB* /* bPointer */) { notifiedEventB_ = true; }
 
-    bool notifiedEventB() { return notifiedEventB_; }
+    bool notifiedEventB() const { return notifiedEventB_; }
 
 private:
     bool notifiedEventB_ = false;
@@ -87,8 +87,8 @@ public:
 
     void callback(EventA /* a */) { notifiedEventA_ = true; }
 
-    bool notifiedEventB() { return notifiedEventB_; }
-    bool notifiedEventA() { return notifiedEventA_; }
+    bool notifiedEventB() const { return notifiedEventB_; }
+    bool notifiedEventA() const { return notifiedEventA_; }
 
 private:
     bool notifiedEventB_ = false;

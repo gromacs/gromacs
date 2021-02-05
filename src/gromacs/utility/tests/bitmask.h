@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@ class BITMASK_CLASSNAME(BITMASK_SIZE) : public ::testing::TestWithParam<int>
 
 BITMASK_TEST_P(SetAndClear) //NOLINT(misc-definitions-in-headers)
 {
-    gmx_bitmask_t m;
+    gmx_bitmask_t m; //NOLINT(cppcoreguidelines-init-variables)
     int           i = GetParam();
     bitmask_clear(&m);
     EXPECT_TRUE(bitmask_is_zero(m));
@@ -76,7 +76,7 @@ BITMASK_TEST_P(SetAndClear) //NOLINT(misc-definitions-in-headers)
 
 BITMASK_TEST_P(InitBit) //NOLINT(misc-definitions-in-headers)
 {
-    gmx_bitmask_t m1, m2;
+    gmx_bitmask_t m1, m2; //NOLINT(cppcoreguidelines-init-variables)
     int           i = GetParam();
     bitmask_init_bit(&m1, i);
     bitmask_clear(&m2);
@@ -87,7 +87,7 @@ BITMASK_TEST_P(InitBit) //NOLINT(misc-definitions-in-headers)
 
 BITMASK_TEST_P(InitLowBits) //NOLINT(misc-definitions-in-headers)
 {
-    gmx_bitmask_t m;
+    gmx_bitmask_t m; //NOLINT(cppcoreguidelines-init-variables)
     int           i = GetParam();
     bitmask_init_low_bits(&m, i);
     for (int j = 0; j < BITMASK_SIZE; j++)
@@ -98,7 +98,7 @@ BITMASK_TEST_P(InitLowBits) //NOLINT(misc-definitions-in-headers)
 
 BITMASK_TEST_P(Disjoint) //NOLINT(misc-definitions-in-headers)
 {
-    gmx_bitmask_t m1, m2;
+    gmx_bitmask_t m1, m2; //NOLINT(cppcoreguidelines-init-variables)
     int           i = GetParam();
     bitmask_init_bit(&m1, i);
     bitmask_init_bit(&m2, i);
@@ -109,7 +109,7 @@ BITMASK_TEST_P(Disjoint) //NOLINT(misc-definitions-in-headers)
 
 BITMASK_TEST_P(Union) //NOLINT(misc-definitions-in-headers)
 {
-    gmx_bitmask_t m1, m2;
+    gmx_bitmask_t m1, m2; //NOLINT(cppcoreguidelines-init-variables)
     int           i = GetParam();
     int           j = (i + BITMASK_SIZE / 2) % BITMASK_SIZE;
     bitmask_init_bit(&m1, i);
@@ -133,7 +133,7 @@ BITMASK_TEST_P(Union) //NOLINT(misc-definitions-in-headers)
 }
 BITMASK_TEST_P(ToHex) //NOLINT(misc-definitions-in-headers)
 {
-    gmx_bitmask_t m;
+    gmx_bitmask_t m; //NOLINT(cppcoreguidelines-init-variables)
     bitmask_clear(&m);
     bitmask_set_bit(&m, BITMASK_SIZE - 1);
     EXPECT_EQ(to_hex_string(m), "8" + std::string(BITMASK_SIZE / 4 - 1, '0'));

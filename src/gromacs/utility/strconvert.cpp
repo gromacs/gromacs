@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,9 +75,9 @@ bool boolFromString(const char* value)
 
 int intFromString(const char* str)
 {
-    errno = 0;
-    char*          endptr;
-    const long int value = std::strtol(str, &endptr, 10);
+    errno                 = 0;
+    char*          endptr = nullptr;
+    const long int value  = std::strtol(str, &endptr, 10);
     if (errno == ERANGE || value < std::numeric_limits<int>::min()
         || value > std::numeric_limits<int>::max())
     {
@@ -93,9 +93,9 @@ int intFromString(const char* str)
 
 int64_t int64FromString(const char* str)
 {
-    errno = 0;
-    char*         endptr;
-    const int64_t value = str_to_int64_t(str, &endptr);
+    errno                = 0;
+    char*         endptr = nullptr;
+    const int64_t value  = str_to_int64_t(str, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
@@ -110,9 +110,9 @@ int64_t int64FromString(const char* str)
 
 float floatFromString(const char* str)
 {
-    errno = 0;
-    char*        endptr;
-    const double value = std::strtod(str, &endptr);
+    errno               = 0;
+    char*        endptr = nullptr;
+    const double value  = std::strtod(str, &endptr);
     if (errno == ERANGE || value < -std::numeric_limits<float>::max()
         || value > std::numeric_limits<float>::max())
     {
@@ -128,9 +128,9 @@ float floatFromString(const char* str)
 
 double doubleFromString(const char* str)
 {
-    errno = 0;
-    char*        endptr;
-    const double value = std::strtod(str, &endptr);
+    errno               = 0;
+    char*        endptr = nullptr;
+    const double value  = std::strtod(str, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)

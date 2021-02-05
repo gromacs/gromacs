@@ -183,12 +183,11 @@ static int pclose(FILE* /* fp */)
 
 int gmx_ffclose(FILE* fp)
 {
-    t_pstack *ps = nullptr, *tmp = nullptr;
-    int       ret = 0;
+    int ret = 0;
 
     Lock pstackLock(pstack_mutex);
 
-    ps = pstack;
+    t_pstack* ps = pstack;
     if (ps == nullptr)
     {
         if (fp != nullptr)
@@ -217,8 +216,8 @@ int gmx_ffclose(FILE* fp)
             {
                 ret = pclose(ps->prev->fp);
             }
-            tmp      = ps->prev;
-            ps->prev = ps->prev->prev;
+            t_pstack* tmp = ps->prev;
+            ps->prev      = ps->prev->prev;
             sfree(tmp);
         }
         else
@@ -332,13 +331,11 @@ static FILE* gunzip(const std::string& fn, const char* mode)
 
 gmx_bool gmx_fexist(const std::string& fname)
 {
-    FILE* test = nullptr;
-
     if (fname.empty())
     {
         return FALSE;
     }
-    test = fopen(fname.c_str(), "r");
+    FILE* test = fopen(fname.c_str(), "r");
     if (test == nullptr)
     {
 /*Windows doesn't allow fopen of directory - so we need to check this seperately */
@@ -410,9 +407,7 @@ void make_backup(const std::string& name)
 
 FILE* gmx_ffopen(const std::string& file, const char* mode)
 {
-    FILE*    ff    = nullptr;
-    gmx_bool bRead = 0;
-    int      bs    = 0;
+    FILE* ff = nullptr;
 
     if (file.empty())
     {
@@ -424,7 +419,7 @@ FILE* gmx_ffopen(const std::string& file, const char* mode)
         make_backup(file);
     }
 
-    bRead = (mode[0] == 'r' && mode[1] != '+');
+    bool bRead = (mode[0] == 'r' && mode[1] != '+');
     if (!bRead || gmx_fexist(file))
     {
         if ((ff = fopen(file.c_str(), mode)) == nullptr)
@@ -438,14 +433,7 @@ FILE* gmx_ffopen(const std::string& file, const char* mode)
         if (bUnbuffered || ((bufsize = getenv("GMX_LOG_BUFFER")) != nullptr))
         {
             /* Check whether to use completely unbuffered */
-            if (bUnbuffered)
-            {
-                bs = 0;
-            }
-            else
-            {
-                bs = strtol(bufsize, nullptr, 10);
-            }
+            const int bs = bUnbuffered ? 0 : strtol(bufsize, nullptr, 10);
             if (bs <= 0)
             {
                 setbuf(ff, nullptr);
@@ -546,16 +534,15 @@ static int makeTemporaryFilename(char* buf)
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
-    int fd = 0;
 #if GMX_NATIVE_WINDOWS
     _mktemp(buf);
     if (buf == NULL)
     {
         gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, strerror(errno));
     }
-    fd = 0;
+    int fd = 0;
 #else
-    fd = mkstemp(buf);
+    int fd = mkstemp(buf);
 
     if (fd < 0)
     {
@@ -641,9 +628,7 @@ int gmx_file_copy(const char* oldname, const char* newname, gmx_bool copy_if_emp
 
     while (!feof(in.get()))
     {
-        size_t nread = 0;
-
-        nread = fread(buf.data(), sizeof(char), FILECOPY_BUFSIZE, in.get());
+        size_t nread = fread(buf.data(), sizeof(char), FILECOPY_BUFSIZE, in.get());
         if (nread > 0)
         {
             size_t ret = 0;
@@ -677,16 +662,14 @@ int gmx_fsync(FILE* fp)
     int rc = 0;
 
     {
-        int fn = 0;
-
         /* get the file number */
 #if HAVE_FILENO
-        fn = fileno(fp);
+        int fn = fileno(fp);
 #elif HAVE__FILENO
-        fn = _fileno(fp);
+        int fn = _fileno(fp);
 #else
         GMX_UNUSED_VALUE(fp);
-        fn = -1;
+        int fn = -1;
 #endif
 
         /* do the actual fsync */

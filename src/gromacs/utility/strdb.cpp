@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,8 +50,8 @@
 
 gmx_bool get_a_line(FILE* fp, char line[], int n)
 {
-    char* line0;
-    char* dum;
+    char* line0 = nullptr;
+    char* dum   = nullptr;
 
     snew(line0, n + 1);
 
@@ -113,10 +113,8 @@ gmx_bool get_header(char line[], char* header)
 
 int search_str(int nstr, char** str, char* key)
 {
-    int i;
-
     /* Linear search */
-    for (i = 0; (i < nstr); i++)
+    for (int i = 0; (i < nstr); i++)
     {
         if (gmx_strcasecmp(str[i], key) == 0)
         {
@@ -129,12 +127,11 @@ int search_str(int nstr, char** str, char* key)
 
 static int fget_lines(FILE* in, const char* db, char*** strings)
 {
-    char** ptr;
+    char** ptr = nullptr;
     char   buf[STRLEN];
-    int    i, nstr;
-    char*  pret;
+    int    nstr = 0;
 
-    pret = fgets(buf, STRLEN, in);
+    char* pret = fgets(buf, STRLEN, in);
     if (pret == nullptr || sscanf(buf, "%d", &nstr) != 1)
     {
         gmx_warning("File is empty");
@@ -143,7 +140,7 @@ static int fget_lines(FILE* in, const char* db, char*** strings)
         return 0;
     }
     snew(ptr, nstr);
-    for (i = 0; (i < nstr); i++)
+    for (int i = 0; (i < nstr); i++)
     {
         if (fgets2(buf, STRLEN, in) == nullptr)
         {

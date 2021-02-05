@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,11 +59,10 @@
 
 int continuing(char* s)
 {
-    int sl;
     assert(s);
 
     rtrim(s);
-    sl = strlen(s);
+    int sl = strlen(s);
     if ((sl > 0) && (s[sl - 1] == CONTINUE))
     {
         s[sl - 1] = 0;
@@ -78,7 +77,7 @@ int continuing(char* s)
 
 char* fgets2(char* line, int n, FILE* stream)
 {
-    char* c;
+    char* c = nullptr;
     if (fgets(line, n, stream) == nullptr)
     {
         return nullptr;
@@ -113,7 +112,7 @@ char* fgets2(char* line, int n, FILE* stream)
 
 void strip_comment(char* line)
 {
-    char* c;
+    char* c = nullptr;
 
     if (!line)
     {
@@ -129,9 +128,7 @@ void strip_comment(char* line)
 
 void upstring(char* str)
 {
-    int i;
-
-    for (i = 0; (i < static_cast<int>(strlen(str))); i++)
+    for (int i = 0; (i < static_cast<int>(strlen(str))); i++)
     {
         str[i] = toupper(str[i]);
     }
@@ -139,21 +136,20 @@ void upstring(char* str)
 
 void ltrim(char* str)
 {
-    int i, c;
-
     if (nullptr == str)
     {
         return;
     }
 
-    c = 0;
+    int c = 0;
     while (('\0' != str[c]) && isspace(str[c]))
     {
         c++;
     }
     if (c > 0)
     {
-        for (i = c; ('\0' != str[i]); i++)
+        int i = c;
+        for (; ('\0' != str[i]); i++)
         {
             str[i - c] = str[i];
         }
@@ -163,14 +159,12 @@ void ltrim(char* str)
 
 void rtrim(char* str)
 {
-    int nul;
-
     if (nullptr == str)
     {
         return;
     }
 
-    nul = strlen(str) - 1;
+    int nul = strlen(str) - 1;
     while ((nul > 0) && ((str[nul] == ' ') || (str[nul] == '\t')))
     {
         str[nul] = '\0';
@@ -186,7 +180,7 @@ void trim(char* str)
 
 int gmx_strcasecmp_min(const char* str1, const char* str2)
 {
-    char ch1, ch2;
+    char ch1 = 0, ch2 = 0;
 
     do
     {
@@ -209,11 +203,10 @@ int gmx_strcasecmp_min(const char* str1, const char* str2)
 
 int gmx_strncasecmp_min(const char* str1, const char* str2, int n)
 {
-    char  ch1, ch2;
-    char *stri1, *stri2;
+    char ch1 = 0, ch2 = 0;
 
-    stri1 = const_cast<char*>(str1);
-    stri2 = const_cast<char*>(str2);
+    const char* stri1 = str1;
+    const char* stri2 = str2;
     do
     {
         do
@@ -235,7 +228,7 @@ int gmx_strncasecmp_min(const char* str1, const char* str2, int n)
 
 int gmx_strcasecmp(const char* str1, const char* str2)
 {
-    char ch1, ch2;
+    char ch1 = 0, ch2 = 0;
 
     do
     {
@@ -251,7 +244,7 @@ int gmx_strcasecmp(const char* str1, const char* str2)
 
 int gmx_strncasecmp(const char* str1, const char* str2, int n)
 {
-    char ch1, ch2;
+    char ch1 = 0, ch2 = 0;
 
     if (n == 0)
     {
@@ -273,7 +266,7 @@ int gmx_strncasecmp(const char* str1, const char* str2, int n)
 
 char* gmx_strdup(const char* src)
 {
-    char* dest;
+    char* dest = nullptr;
 
     auto length = strlen(src) + 1;
     snew(dest, length);
@@ -284,10 +277,9 @@ char* gmx_strdup(const char* src)
 
 char* gmx_strndup(const char* src, int n)
 {
-    int   len;
-    char* dest;
+    char* dest = nullptr;
 
-    len = strlen(src);
+    int len = strlen(src);
     if (len > n)
     {
         len = n;
@@ -306,7 +298,7 @@ const unsigned int gmx_string_hash_init = 5381;
 
 unsigned int gmx_string_fullhash_func(const char* s, unsigned int hash_init)
 {
-    int c;
+    int c = 0;
 
     while ((c = (*s++)) != '\0')
     {
@@ -317,7 +309,7 @@ unsigned int gmx_string_fullhash_func(const char* s, unsigned int hash_init)
 
 unsigned int gmx_string_hash_func(const char* s, unsigned int hash_init)
 {
-    int c;
+    int c = 0;
 
     while ((c = toupper(*s++)) != '\0')
     {
@@ -366,9 +358,8 @@ int gmx_wcmatch(const char* pattern, const char* str)
                  * since we have processed them above. */
                 if (*pattern == *str)
                 {
-                    int rc;
                     /* Match the suffix, and return if a match or an error */
-                    rc = gmx_wcmatch(pattern, str);
+                    int rc = gmx_wcmatch(pattern, str);
                     if (rc != GMX_NO_WCMATCH)
                     {
                         return rc;
@@ -395,9 +386,7 @@ int gmx_wcmatch(const char* pattern, const char* str)
 
 char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFirst)
 {
-    char*    b2;
-    int      i, i0, i2, j, b2len, lspace = 0, l2space = 0;
-    gmx_bool bFirst, bFitsOnLine;
+    int i = 0;
 
     /* characters are copied from buf to b2 with possible spaces changed
      * into newlines and extra space added for indentation.
@@ -411,10 +400,11 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
      * the current line (where it also won't fit, but looks better)
      */
 
-    b2    = nullptr;
-    b2len = strlen(buf) + 1 + indent;
+    char* b2    = nullptr;
+    int   b2len = strlen(buf) + 1 + indent;
     snew(b2, b2len);
-    i0 = i2 = 0;
+    int i0 = 0;
+    int i2 = 0;
     if (bIndentFirst)
     {
         for (i2 = 0; (i2 < indent); i2++)
@@ -422,10 +412,11 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
             b2[i2] = ' ';
         }
     }
-    bFirst = TRUE;
+    bool bFirst = true;
     do
     {
-        l2space = -1;
+        int lspace  = 0;
+        int l2space = -1;
         /* find the last space before end of line */
         for (i = i0; ((i - i0 < line_width) || (l2space == -1)) && (buf[i]); i++)
         {
@@ -443,7 +434,7 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
                 b2len += indent;
                 srenew(b2, b2len);
                 /* add indentation after the newline */
-                for (j = 0; (j < indent); j++)
+                for (int j = 0; (j < indent); j++)
                 {
                     b2[i2++] = ' ';
                 }
@@ -458,7 +449,7 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
         if (buf[i])
         {
             /* check if one word does not fit on the line */
-            bFitsOnLine = (i - i0 <= line_width);
+            bool bFitsOnLine = (i - i0 <= line_width);
             /* reset line counters to just after the space */
             i0 = lspace + 1;
             i2 = l2space + 1;
@@ -477,7 +468,7 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
                     }
                     b2len += indent;
                     srenew(b2, b2len);
-                    for (j = 0; (j < indent); j++)
+                    for (int j = 0; (j < indent); j++)
                     {
                         b2[i2++] = ' ';
                     }

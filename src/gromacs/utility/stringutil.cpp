@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2011-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -200,11 +200,11 @@ std::vector<std::string> splitString(const std::string& str)
 std::vector<std::string> splitDelimitedString(const std::string& str, char delim)
 {
     std::vector<std::string> result;
-    size_t                   currPos = 0;
-    const size_t             len     = str.length();
+    const size_t             len = str.length();
     if (len > 0)
     {
-        size_t nextDelim;
+        size_t nextDelim = 0;
+        size_t currPos   = 0;
         do
         {
             nextDelim = str.find(delim, currPos);

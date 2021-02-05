@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,6 +56,8 @@ typedef struct
     int         volume, year;
     const char* pages;
 } t_citerec;
+
+static constexpr int sc_lineWidth = 79;
 
 void please_cite(FILE* fp, const char* key)
 {
@@ -558,24 +560,20 @@ void please_cite(FILE* fp, const char* key)
     };
 #define NSTR static_cast<int>(asize(citedb))
 
-    int   index;
-    char* author;
-    char* title;
-#define LINE_WIDTH 79
-
     if (fp == nullptr)
     {
         return;
     }
 
-    for (index = 0; index < NSTR && (strcmp(citedb[index].key, key) != 0); index++) {}
+    int index = 0;
+    for (; index < NSTR && (strcmp(citedb[index].key, key) != 0); index++) {}
 
     fprintf(fp, "\n++++ PLEASE READ AND CITE THE FOLLOWING REFERENCE ++++\n");
     if (index < NSTR)
     {
         /* Insert newlines */
-        author = wrap_lines(citedb[index].author, LINE_WIDTH, 0, FALSE);
-        title  = wrap_lines(citedb[index].title, LINE_WIDTH, 0, FALSE);
+        char* author = wrap_lines(citedb[index].author, sc_lineWidth, 0, FALSE);
+        char* title  = wrap_lines(citedb[index].title, sc_lineWidth, 0, FALSE);
         fprintf(fp,
                 "%s\n%s\n%s %d (%d) pp. %s\n",
                 author,
@@ -611,7 +609,7 @@ void writeSourceDoi(FILE* fp)
         return;
     }
     gmx::TextLineWrapper wrapper;
-    wrapper.settings().setLineLength(LINE_WIDTH);
+    wrapper.settings().setLineLength(sc_lineWidth);
     wrapper.settings().setFirstLineIndent(0);
     const std::string doiString = wrapper.wrapToString(gmxDOI());
 

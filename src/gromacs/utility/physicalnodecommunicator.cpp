@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,15 +69,15 @@ void MPI_Comm_free_wrapper(MPI_Comm* comm)
 PhysicalNodeCommunicator::PhysicalNodeCommunicator(MPI_Comm world, int physicalNodeId)
 {
 #if GMX_MPI
-    int isInitialized;
+    int isInitialized = 0;
     MPI_Initialized(&isInitialized);
     if (isInitialized)
     {
-        int sizeOfWorld;
+        int sizeOfWorld = 0;
         MPI_Comm_size(world, &sizeOfWorld);
         if (sizeOfWorld > 1)
         {
-            int rankWithinWorld;
+            int rankWithinWorld = 0;
             MPI_Comm_rank(world, &rankWithinWorld);
             MPI_Comm_split(world, physicalNodeId, rankWithinWorld, &comm_);
             auto ptr = MPI_Comm_ptr(&comm_);

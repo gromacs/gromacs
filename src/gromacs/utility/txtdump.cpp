@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,7 @@
 
 int pr_indent(FILE* fp, int n)
 {
-    int i;
-
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         fprintf(fp, " ");
     }
@@ -93,13 +91,11 @@ int pr_title_nxn(FILE* fp, int indent, const char* title, int n1, int n2)
 
 void pr_reals(FILE* fp, int indent, const char* title, const real* vec, int n)
 {
-    int i;
-
     if (available(fp, vec, indent, title))
     {
         pr_indent(fp, indent);
         fprintf(fp, "%s:\t", title);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             fprintf(fp, "  %10g", vec[i]);
         }
@@ -109,13 +105,11 @@ void pr_reals(FILE* fp, int indent, const char* title, const real* vec, int n)
 
 void pr_doubles(FILE* fp, int indent, const char* title, const double* vec, int n)
 {
-    int i;
-
     if (available(fp, vec, indent, title))
     {
         pr_indent(fp, indent);
         fprintf(fp, "%s:\t", title);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             fprintf(fp, "  %10g", vec[i]);
         }
@@ -125,28 +119,18 @@ void pr_doubles(FILE* fp, int indent, const char* title, const double* vec, int 
 
 void pr_reals_of_dim(FILE* fp, int indent, const char* title, const real* vec, int n, int dim)
 {
-    int         i, j;
     const char* fshort = "%12.5e";
     const char* flong  = "%15.8e";
-    const char* format;
-
-    if (getenv("GMX_PRINT_LONGFORMAT") != nullptr)
-    {
-        format = flong;
-    }
-    else
-    {
-        format = fshort;
-    }
+    const char* format = (getenv("GMX_PRINT_LONGFORMAT") != nullptr) ? flong : fshort;
 
     if (available(fp, vec, indent, title))
     {
         indent = pr_title_nxn(fp, indent, title, n, dim);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
             fprintf(fp, "%s[%5d]={", title, i);
-            for (j = 0; j < dim; j++)
+            for (int j = 0; j < dim; j++)
             {
                 if (j != 0)
                 {
@@ -193,12 +177,10 @@ void pr_str(FILE* fp, int indent, const char* title, const char* s)
 
 void pr_strings(FILE* fp, int indent, const char* title, char*** nm, int n, gmx_bool bShowNumbers)
 {
-    int i;
-
     if (available(fp, nm, indent, title))
     {
         indent = pr_title_n(fp, indent, title, n);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
             fprintf(fp, "%s[%d]={name=\"%s\"}\n", title, bShowNumbers ? i : -1, *(nm[i]));

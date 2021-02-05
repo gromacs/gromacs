@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -157,9 +157,8 @@ inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 
 inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
-    int  i;
     bool r = true;
-    for (i = 0; i < BITMASK_ALEN; i++)
+    for (int i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && ((a[i] & b[i]) == 0U);
     }
@@ -168,9 +167,8 @@ inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 
 inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 {
-    int  i;
     bool r = true;
-    for (i = 0; i < BITMASK_ALEN; i++)
+    for (int i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && (a[i] == b[i]);
     }
@@ -179,9 +177,8 @@ inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 
 inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
-    int  i;
     bool r = true;
-    for (i = 0; i < BITMASK_ALEN; i++)
+    for (int i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && (m[i] == 0U);
     }
@@ -190,8 +187,7 @@ inline static bool bitmask_is_zero(gmx_bitmask_t m)
 
 inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
 {
-    int i;
-    for (i = 0; i < BITMASK_ALEN; i++)
+    for (int i = 0; i < BITMASK_ALEN; i++)
     {
         (*a)[i] |= b[i];
     }

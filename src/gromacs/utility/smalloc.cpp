@@ -66,9 +66,8 @@ static std::mutex g_overAllocMutex;
 
 void* save_malloc(const char* name, const char* file, int line, size_t size)
 {
-    void* p;
+    void* p = nullptr;
 
-    p = nullptr;
     if (size == 0)
     {
         p = nullptr;
@@ -95,9 +94,8 @@ void* save_malloc(const char* name, const char* file, int line, size_t size)
 
 void* save_calloc(const char* name, const char* file, int line, size_t nelem, size_t elsize)
 {
-    void* p;
+    void* p = nullptr;
 
-    p = nullptr;
     if ((nelem == 0) || (elsize == 0))
     {
         p = nullptr;
@@ -154,10 +152,9 @@ void* save_calloc(const char* name, const char* file, int line, size_t nelem, si
 
 void* save_realloc(const char* name, const char* file, int line, void* ptr, size_t nelem, size_t elsize)
 {
-    void*  p;
+    void*  p    = nullptr;
     size_t size = nelem * elsize;
 
-    p = nullptr;
     if (size == 0)
     {
         save_free(name, file, line, ptr);
@@ -217,7 +214,7 @@ void save_free(const char gmx_unused* name, const char gmx_unused* file, int gmx
  * the necessary alignment. */
 void* save_malloc_aligned(const char* name, const char* file, int line, size_t nelem, size_t elsize, size_t alignment)
 {
-    void* p;
+    void* p = nullptr;
 
     if (alignment == 0)
     {

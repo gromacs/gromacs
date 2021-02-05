@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,7 +52,6 @@ namespace gmx
 
 void niceHeader(TextWriter* writer, const char* fn, char commentChar)
 {
-    int  uid;
     char userbuf[256];
     char hostbuf[256];
 
@@ -60,7 +59,7 @@ void niceHeader(TextWriter* writer, const char* fn, char commentChar)
     writer->writeLine(formatString("%c", commentChar));
     writer->writeLine(formatString("%c\tFile '%s' was generated", commentChar, fn ? fn : "unknown"));
 
-    uid = gmx_getuid();
+    int uid = gmx_getuid();
     gmx_getusername(userbuf, 256);
     gmx_gethostname(hostbuf, 256);
 
