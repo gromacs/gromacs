@@ -89,7 +89,6 @@
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
 #include "dump.h"
-#include "math.h"
 
 using gmx::ArrayRef;
 using gmx::ListOfLists;
@@ -1242,7 +1241,10 @@ static int make_bondeds_zone(gmx_domdec_t*                      dd,
                              int                                izone,
                              const gmx::Range<int>&             atomRange)
 {
-    int mb = 0, mt = 0, mol = 0, i_mol = 0;
+    int mb    = 0;
+    int mt    = 0;
+    int mol   = 0;
+    int i_mol = 0;
 
     gmx_reverse_top_t* rt = dd->reverse_top;
 
@@ -1345,7 +1347,10 @@ static void make_exclusions_zone(gmx_domdec_t*                     dd,
 
         if (GET_CGINFO_EXCL_INTER(cginfo[at]))
         {
-            int mb = 0, mt = 0, mol = 0, a_mol = 0;
+            int mb    = 0;
+            int mt    = 0;
+            int mol   = 0;
+            int a_mol = 0;
 
             /* Copy the exclusions from the global top */
             int a_gl = dd->globalAtomIndices[at];
@@ -1438,8 +1443,8 @@ static int make_local_bondeds_excls(gmx_domdec_t*           dd,
 
     for (int izone = 0; izone < nzone_bondeds; izone++)
     {
-        int cg0 = zones->cg_range[izone];
-        int cg1 = zones->cg_range[izone + 1];
+        const int cg0 = zones->cg_range[izone];
+        const int cg1 = zones->cg_range[izone + 1];
 
         const int numThreads = rt->th_work.size();
 #pragma omp parallel for num_threads(numThreads) schedule(static)
@@ -1942,13 +1947,12 @@ static void bonded_distance_intermol(const InteractionLists& ilists_intermol,
                     for (int aj = ai + 1; aj < nral; aj++)
                     {
                         rvec dx;
-                        real rij2 = NAN;
 
                         int atom_j = il.iatoms[i + 1 + aj];
 
                         pbc_dx(&pbc, x[atom_i], x[atom_j], dx);
 
-                        rij2 = norm2(dx);
+                        const real rij2 = norm2(dx);
 
                         update_max_bonded_distance(rij2, ftype, atom_i, atom_j, (nral == 2) ? bd_2b : bd_mb);
                     }

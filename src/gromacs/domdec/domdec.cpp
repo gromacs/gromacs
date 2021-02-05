@@ -111,7 +111,6 @@
 #include "domdec_internal.h"
 #include "domdec_setup.h"
 #include "domdec_vsite.h"
-#include "math.h"
 #include "redistribute.h"
 #include "utility.h"
 
@@ -936,7 +935,7 @@ static void init_ddpme(gmx_domdec_t* dd, gmx_ddpme_t* ddpme, int dimind)
         if (dimind == 0 || xyz[XX] == dd->ci[XX])
         {
             const int pmeindex  = ddindex2pmeindex(ddRankSetup, i);
-            const int slab      = (dimind == 0) ? pmeindex / nso : pmeindex % ddpme->nslab;
+            const int slab      = (dimind == 0) ? (pmeindex / nso) : (pmeindex % ddpme->nslab);
             ddpme->pp_min[slab] = std::min(ddpme->pp_min[slab], xyz[dimind]);
             ddpme->pp_max[slab] = std::max(ddpme->pp_max[slab], xyz[dimind]);
         }
@@ -2674,7 +2673,9 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
                                 const t_inputrec*    ir,
                                 const gmx_ddbox_t*   ddbox)
 {
-    int npulse = 0, npulse_d_max = 0, npulse_d = 0;
+    int npulse       = 0;
+    int npulse_d_max = 0;
+    int npulse_d     = 0;
 
     gmx_domdec_comm_t* comm = dd->comm;
 
@@ -2723,10 +2724,10 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     }
 
     /* This env var can override npulse */
-    int d = dd_getenv(mdlog, "GMX_DD_NPULSE", 0);
-    if (d > 0)
+    const int ddPulseEnv = dd_getenv(mdlog, "GMX_DD_NPULSE", 0);
+    if (ddPulseEnv > 0)
     {
-        npulse = d;
+        npulse = ddPulseEnv;
     }
 
     comm->maxpulse       = 1;

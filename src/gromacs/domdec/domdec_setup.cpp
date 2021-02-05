@@ -72,7 +72,6 @@
 
 #include "box.h"
 #include "domdec_internal.h"
-#include "math.h"
 #include "utility.h"
 
 // TODO remove this when moving domdec into gmx namespace

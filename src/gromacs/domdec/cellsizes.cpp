@@ -55,7 +55,6 @@
 
 #include "atomdistribution.h"
 #include "domdec_internal.h"
-#include "math.h"
 #include "utility.h"
 
 static void set_pme_maxshift(gmx_domdec_t*      dd,
@@ -96,7 +95,7 @@ static void set_pme_maxshift(gmx_domdec_t*      dd,
         /* Avoid extra communication when we are exactly at a boundary */
         range *= 0.999;
 
-        int sh = 1;
+        sh = 1;
         for (int s = 0; s < ns; s++)
         {
             /* PME slab s spreads atoms between box frac. s/ns and (s+1)/ns */

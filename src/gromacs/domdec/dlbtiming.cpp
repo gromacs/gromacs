@@ -44,7 +44,6 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "domdec_internal.h"
-#include "math.h"
 
 /*! \brief Struct for timing the region for dynamic load balancing */
 struct BalanceRegion

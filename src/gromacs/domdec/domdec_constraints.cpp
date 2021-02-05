@@ -319,7 +319,8 @@ static void atoms_to_constraints(gmx_domdec_t*                         dd,
         if (GET_CGINFO_CONSTR(cginfo[a]))
         {
             int a_gl  = dd->globalAtomIndices[a];
-            int molnr = 0, a_mol = 0;
+            int molnr = 0;
+            int a_mol = 0;
             mtopGetMolblockIndex(mtop, a_gl, &mb, &molnr, &a_mol);
 
             const gmx_molblock_t& molb = mtop->molblock[mb];
@@ -472,8 +473,8 @@ int dd_make_local_constraints(gmx_domdec_t*                  dd,
                     /* Distribute the settle check+assignments over
                      * dc->nthread or dc->nthread-1 threads.
                      */
-                    int cg0 = (dd->ncg_home * (thread - t0_set)) / (dc->nthread - t0_set);
-                    int cg1 = (dd->ncg_home * (thread - t0_set + 1)) / (dc->nthread - t0_set);
+                    const int cg0 = (dd->ncg_home * (thread - t0_set)) / (dc->nthread - t0_set);
+                    const int cg1 = (dd->ncg_home * (thread - t0_set + 1)) / (dc->nthread - t0_set);
 
                     InteractionList* ilst = (thread == t0_set) ? ils_local : &dc->ils[thread];
                     ilst->clear();

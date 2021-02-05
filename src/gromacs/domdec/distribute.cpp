@@ -60,7 +60,6 @@
 #include "atomdistribution.h"
 #include "cellsizes.h"
 #include "domdec_internal.h"
-#include "math.h"
 #include "utility.h"
 
 static void distributeVecSendrecv(gmx_domdec_t*                  dd,
@@ -504,6 +503,10 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
             ma->intBuffer[rank * 2 + 1] = ma->domainGroups[rank].numAtoms;
         }
         ibuf = ma->intBuffer.data();
+    }
+    else
+    {
+        ibuf = nullptr;
     }
     dd_scatter(dd, 2 * sizeof(int), ibuf, buf2);
 

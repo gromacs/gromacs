@@ -64,7 +64,6 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "domdec_internal.h"
-#include "math.h"
 
 /*! \brief Calculates the average and standard deviation in 3D of atoms */
 static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec stddev, const MPI_Comm* mpiCommunicator)
