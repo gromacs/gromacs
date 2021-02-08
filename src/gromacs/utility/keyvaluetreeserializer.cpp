@@ -41,7 +41,6 @@
 #include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
-#include "math.h"
 
 namespace gmx
 {
