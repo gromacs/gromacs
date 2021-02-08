@@ -659,6 +659,7 @@ static void computeSpecialForces(FILE*                          fplog,
                 gmx::arrayRefFromArray(mdatoms->chargeA, mdatoms->homenr),
                 gmx::arrayRefFromArray(mdatoms->massT, mdatoms->homenr),
                 t,
+                step,
                 box,
                 *cr);
         gmx::ForceProviderOutput forceProviderOutput(forceWithVirialMtsLevel0, enerd);

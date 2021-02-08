@@ -86,6 +86,7 @@ public:
      * \param[in]  chargeA  Atomic charges for atoms on the domain.
      * \param[in]  massT    Atomic masses for atoms on the domain.
      * \param[in]  time     The current time in the simulation.
+     * \param[in]  step     The current step in the simulation
      * \param[in]  box      The simulation box.
      * \param[in]  cr       Communication record structure.
      */
@@ -94,9 +95,10 @@ public:
                        ArrayRef<const real> chargeA,
                        ArrayRef<const real> massT,
                        double               time,
+                       int64_t              step,
                        const matrix         box,
                        const t_commrec&     cr) :
-        x_(x), homenr_(homenr), chargeA_(chargeA), massT_(massT), t_(time), cr_(cr)
+        x_(x), homenr_(homenr), chargeA_(chargeA), massT_(massT), t_(time), step_(step), cr_(cr)
     {
         copy_mat(box, box_);
     }
@@ -105,7 +107,8 @@ public:
     int                  homenr_;
     ArrayRef<const real> chargeA_;
     ArrayRef<const real> massT_;
-    double               t_; //!< The current time in the simulation
+    double               t_;    //!< The current time in the simulation
+    int64_t              step_; //!< The current step in the simulation
     matrix               box_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } }; //!< The simulation box
     const t_commrec&     cr_; //!< Communication record structure
 };

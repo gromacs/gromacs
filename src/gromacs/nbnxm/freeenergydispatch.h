@@ -78,26 +78,26 @@ public:
     void setupFepThreadedForceBuffer(int numAtomsForce, const PairlistSets& pairlistSets);
 
     //! Dispatches the non-bonded free-energy kernels, thread parallel and reduces the output
-    void dispatchFreeEnergyKernels(const PairlistSets&                       pairlistSets,
+    void dispatchFreeEnergyKernels(const PairlistSets&                              pairlistSets,
                                    const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
-                                   gmx::ForceWithShiftForces*                forceWithShiftForces,
-                                   bool                                      useSimd,
-                                   int                                       ntype,
-                                   real                                      rlist,
-                                   const interaction_const_t&                ic,
-                                   gmx::ArrayRef<const gmx::RVec>            shiftvec,
-                                   gmx::ArrayRef<const real>                 nbfp,
-                                   gmx::ArrayRef<const real>                 nbfp_grid,
-                                   gmx::ArrayRef<const real>                 chargeA,
-                                   gmx::ArrayRef<const real>                 chargeB,
-                                   gmx::ArrayRef<const int>                  typeA,
-                                   gmx::ArrayRef<const int>                  typeB,
-                                   t_lambda*                                 fepvals,
-                                   gmx::ArrayRef<const real>                 lambda,
-                                   gmx_enerdata_t*                           enerd,
-                                   const gmx::StepWorkload&                  stepWork,
-                                   t_nrnb*                                   nrnb,
-                                   gmx_wallcycle*                            wcycle);
+                                   gmx::ForceWithShiftForces*     forceWithShiftForces,
+                                   bool                           useSimd,
+                                   int                            ntype,
+                                   real                           rlist,
+                                   const interaction_const_t&     ic,
+                                   gmx::ArrayRef<const gmx::RVec> shiftvec,
+                                   gmx::ArrayRef<const real>      nbfp,
+                                   gmx::ArrayRef<const real>      nbfp_grid,
+                                   gmx::ArrayRef<const real>      chargeA,
+                                   gmx::ArrayRef<const real>      chargeB,
+                                   gmx::ArrayRef<const int>       typeA,
+                                   gmx::ArrayRef<const int>       typeB,
+                                   t_lambda*                      fepvals,
+                                   gmx::ArrayRef<const real>      lambda,
+                                   gmx_enerdata_t*                enerd,
+                                   const gmx::StepWorkload&       stepWork,
+                                   t_nrnb*                        nrnb,
+                                   gmx_wallcycle*                 wcycle);
 
 private:
     //! Temporary array for storing foreign lambda group pair energies
