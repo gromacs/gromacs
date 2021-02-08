@@ -20,7 +20,7 @@ gromacs:gcc-9:release:configure:
     - .use-gcc:base
     - .use-opencl
     - .rules:nightly-only-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     COMPILER_MAJOR_VERSION: 9
@@ -44,7 +44,7 @@ gromacs:gcc-9:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-9:release-2021
   needs:
     - job: gromacs:gcc-9:release:configure
 
@@ -53,7 +53,7 @@ gromacs:gcc-9:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc
@@ -71,7 +71,7 @@ gromacs:gcc-9:release:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     BUILD_DIR: release-builds-gcc

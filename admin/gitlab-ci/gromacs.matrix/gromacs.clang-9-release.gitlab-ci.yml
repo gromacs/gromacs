@@ -21,7 +21,7 @@ gromacs:clang-9:release:configure:
     - .use-clang:base
     - .use-mpi
     - .rules:nightly-only-for-release
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     COMPILER_MAJOR_VERSION: 9
@@ -44,7 +44,7 @@ gromacs:clang-9:release:build:
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   needs:
     - job: gromacs:clang-9:release:configure
 
@@ -53,7 +53,7 @@ gromacs:clang-9:release:test:
     - .gromacs:base:test
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang
@@ -66,7 +66,7 @@ gromacs:clang-9:release:regressiontest:
     - .gromacs:base:regressiontest
     - .rules:nightly-only-for-release
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     BUILD_DIR: release-builds-clang

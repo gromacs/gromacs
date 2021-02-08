@@ -17,7 +17,7 @@ gromacs:clang-static-analyzer:configure:
     - .gromacs:base:configure
     - .use-clang:base
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
@@ -31,7 +31,7 @@ gromacs:clang-static-analyzer:build:
     - .use-clang:base
     - .use-ccache
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   tags:

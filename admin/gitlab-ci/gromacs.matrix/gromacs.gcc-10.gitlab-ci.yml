@@ -21,7 +21,7 @@ gromacs:gcc-10:configure:
     - .use-gcc:base
     - .use-opencl
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -35,7 +35,7 @@ gromacs:gcc-10:build:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
   needs:
@@ -45,7 +45,7 @@ gromacs:gcc-10:test:
   extends:
     - .gromacs:base:test
     - .rules:merge-requests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"
@@ -60,7 +60,7 @@ gromacs:gcc-10:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.13.0/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "amd.com/gpu"

@@ -30,7 +30,7 @@ echo
 
 for arg_string in "${args[@]}"; do
   # shellcheck disable=SC2086
-  tag=$(python3 -m utility $arg_string)
+  tag=$(python3 -m utility $arg_string):release-2021
   tags[${#tags[@]}]=$tag
   # shellcheck disable=SC2086
   python3 $SCRIPT $arg_string | docker build -t $tag -

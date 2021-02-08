@@ -3,7 +3,7 @@
   extends:
     - .variables:default
     - .use-clang:base
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-10:release-2021
   stage: test
   variables:
     KUBERNETES_CPU_LIMIT: 2

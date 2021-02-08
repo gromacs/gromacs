@@ -22,7 +22,7 @@ gromacs:gcc-8-cuda-11.0:configureMPI:
     - .use-cuda
     - .use-mpi
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
@@ -35,7 +35,7 @@ gromacs:gcc-8-cuda-11.0:buildMPI:
     - .before_script:default
     - .use-ccache
     - .rules:merge-and-post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
   needs:
@@ -47,7 +47,7 @@ gromacs:gcc-8-cuda-11.0:regressiontest-gpucommupd-MPI:
   extends:
     - .gromacs:base:regressiontest
     - .rules:post-merge-acceptance
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-8-cuda-11.0:release-2021
   variables:
     CMAKE: /usr/local/cmake-3.15.7/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
