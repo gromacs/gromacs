@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,10 +116,9 @@ void SelectionTester::analyzeFrame(int /*frnr*/,
     for (size_t g = 0; g < selections_.size(); ++g)
     {
         const Selection& sel = selections_[g];
-        int              n;
 
         fprintf(stderr, "  Atoms (%d pcs):", sel.atomCount());
-        n = sel.atomCount();
+        int n = sel.atomCount();
         if (nmaxind_ >= 0 && n > nmaxind_)
         {
             n = nmaxind_;

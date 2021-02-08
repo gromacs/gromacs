@@ -729,7 +729,7 @@ void Angle::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryA
             // read), but unsurprisingly the static analyzer chokes a bit on that.
             clear_rvecs(4, x);
 
-            real angle;
+            real angle = 0;
             // checkSelections() ensures that this reflects all the involved
             // positions.
             const bool bPresent = iter1.currentValuesSelected() && iter2.currentValuesSelected();

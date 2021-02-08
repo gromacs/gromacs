@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -370,8 +370,8 @@ void Distance::finishAnalysis(int /*nframes*/)
 void Distance::writeOutput()
 {
     SelectionList::const_iterator sel;
-    int                           index;
-    for (sel = sel_.begin(), index = 0; sel != sel_.end(); ++sel, ++index)
+    int                           index = 0;
+    for (sel = sel_.begin(); sel != sel_.end(); ++sel, ++index)
     {
         printf("%s:\n", sel->name());
         printf("  Number of samples:  %d\n", summaryStatsModule_->sampleCount(index, 0));

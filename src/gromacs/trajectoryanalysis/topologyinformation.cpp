@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,7 +81,7 @@ void TopologyInformation::fillFromInputFile(const std::string& filename)
     // t_atoms that we'd keep, which we currently can't do.
     // TODO Once there are fewer callers of the file-reading
     // functionality, make them read directly into std::vector.
-    rvec *x, *v;
+    rvec *x = nullptr, *v = nullptr;
     readConfAndTopology(filename.c_str(), &bTop_, mtop_.get(), &pbcType_, &x, &v, boxtop_);
     xtop_.assign(x, x + mtop_->natoms);
     vtop_.assign(v, v + mtop_->natoms);

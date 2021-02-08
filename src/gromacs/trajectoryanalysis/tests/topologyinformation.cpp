@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +109,7 @@ void runCommonTests(const TopologyInformation& topInfo, const int numAtoms)
     EXPECT_TRUE(atoms2);
     // Must be different pointer to a deep copy.
     EXPECT_NE(atoms1.get(), atoms2.get());
-    auto atoms = topInfo.atoms();
+    const auto* atoms = topInfo.atoms();
     // Must be a pointer to a different instance.
     EXPECT_NE(atoms1.get(), atoms);
     EXPECT_NE(atoms2.get(), atoms);
