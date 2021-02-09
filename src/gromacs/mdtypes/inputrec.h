@@ -379,13 +379,13 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Continuation run: starting state is correct (ie. constrained)
     gmx_bool bContinuation;
     //! Temperature coupling
-    int etc;
+    TemperatureCoupling etc;
     //! Interval in steps for temperature coupling
     int nsttcouple;
     //! Whether to print nose-hoover chains
     gmx_bool bPrintNHChains;
     //! Pressure coupling
-    int epc;
+    PressureCoupling epc;
     //! Pressure coupling type
     int epct;
     //! Interval in steps for pressure coupling
@@ -572,11 +572,11 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 
 int ir_optimal_nstcalcenergy(const t_inputrec* ir);
 
-int tcouple_min_integration_steps(int etc);
+int tcouple_min_integration_steps(TemperatureCoupling etc);
 
 int ir_optimal_nsttcouple(const t_inputrec* ir);
 
-int pcouple_min_integration_steps(int epc);
+int pcouple_min_integration_steps(PressureCoupling epc);
 
 int ir_optimal_nstpcouple(const t_inputrec* ir);
 

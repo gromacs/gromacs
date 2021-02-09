@@ -452,7 +452,8 @@ int computeGlobalCommunicationPeriod(const t_inputrec* ir)
     int nstglobalcomm = 10;
     {
         // Set up the default behaviour
-        if (!(ir->nstcalcenergy > 0 || ir->nstlist > 0 || ir->etc != etcNO || ir->epc != epcNO))
+        if (!(ir->nstcalcenergy > 0 || ir->nstlist > 0 || ir->etc != TemperatureCoupling::No
+              || ir->epc != PressureCoupling::No))
         {
             /* The user didn't choose the period for anything
                important, so we just make sure we can send signals and
@@ -475,8 +476,8 @@ int computeGlobalCommunicationPeriod(const t_inputrec* ir)
              */
             nstglobalcomm = lcd4(ir->nstcalcenergy,
                                  ir->nstlist,
-                                 ir->etc != etcNO ? ir->nsttcouple : 0,
-                                 ir->epc != epcNO ? ir->nstpcouple : 0);
+                                 ir->etc != TemperatureCoupling::No ? ir->nsttcouple : 0,
+                                 ir->epc != PressureCoupling::No ? ir->nstpcouple : 0);
         }
     }
     return nstglobalcomm;
@@ -540,7 +541,7 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
         {
             state->flags |= (1 << estBOX_REL);
         }
-        if ((ir->epc == epcPARRINELLORAHMAN) || (ir->epc == epcMTTK))
+        if ((ir->epc == PressureCoupling::ParrinelloRahman) || (ir->epc == PressureCoupling::Mttk))
         {
             state->flags |= (1 << estBOXV);
             if (!useModularSimulator)
@@ -558,19 +559,19 @@ void set_state_entries(t_state* state, const t_inputrec* ir, bool useModularSimu
             state->flags |= (1 << estVETA);
             state->flags |= (1 << estVOL0);
         }
-        if (ir->epc == epcBERENDSEN || ir->epc == epcCRESCALE)
+        if (ir->epc == PressureCoupling::Berendsen || ir->epc == PressureCoupling::CRescale)
         {
             state->flags |= (1 << estBAROS_INT);
         }
     }
 
-    if (ir->etc == etcNOSEHOOVER)
+    if (ir->etc == TemperatureCoupling::NoseHoover)
     {
         state->flags |= (1 << estNH_XI);
         state->flags |= (1 << estNH_VXI);
     }
 
-    if (ir->etc == etcVRESCALE || ir->etc == etcBERENDSEN)
+    if (ir->etc == TemperatureCoupling::VRescale || ir->etc == TemperatureCoupling::Berendsen)
     {
         state->flags |= (1 << estTHERM_INT);
     }

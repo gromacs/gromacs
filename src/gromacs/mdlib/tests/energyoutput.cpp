@@ -98,9 +98,9 @@ void fcloseWrapper(FILE* fp)
 struct EnergyOutputTestParameters
 {
     //! Thermostat (enum)
-    int temperatureCouplingScheme;
+    TemperatureCoupling temperatureCouplingScheme;
     //! Barostat (enum)
-    int pressureCouplingScheme;
+    PressureCoupling pressureCouplingScheme;
     //! Integrator
     int integrator;
     //! Number of saved energy frames (to test averages output).
@@ -116,17 +116,19 @@ struct EnergyOutputTestParameters
  * Only several combinations of the parameters are used. Using all possible combinations will
  * require ~10 MB of test data and ~2 sec to run the tests.
  */
-const EnergyOutputTestParameters parametersSets[] = { { etcNO, epcNO, eiMD, 1, false, false },
-                                                      { etcNO, epcNO, eiMD, 1, true, false },
-                                                      { etcNO, epcNO, eiMD, 1, false, true },
-                                                      { etcNO, epcNO, eiMD, 0, false, false },
-                                                      { etcNO, epcNO, eiMD, 10, false, false },
-                                                      { etcVRESCALE, epcNO, eiMD, 1, false, false },
-                                                      { etcNOSEHOOVER, epcNO, eiMD, 1, false, false },
-                                                      { etcNO, epcPARRINELLORAHMAN, eiMD, 1, false, false },
-                                                      { etcNO, epcMTTK, eiMD, 1, false, false },
-                                                      { etcNO, epcNO, eiVV, 1, false, false },
-                                                      { etcNO, epcMTTK, eiVV, 1, false, false } };
+const EnergyOutputTestParameters parametersSets[] = {
+    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 1, true, false },
+    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 1, false, true },
+    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 0, false, false },
+    { TemperatureCoupling::No, PressureCoupling::No, eiMD, 10, false, false },
+    { TemperatureCoupling::VRescale, PressureCoupling::No, eiMD, 1, false, false },
+    { TemperatureCoupling::NoseHoover, PressureCoupling::No, eiMD, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::ParrinelloRahman, eiMD, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::Mttk, eiMD, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::No, eiVV, 1, false, false },
+    { TemperatureCoupling::No, PressureCoupling::Mttk, eiVV, 1, false, false }
+};
 
 /*! \brief Test fixture to test energy output.
  *

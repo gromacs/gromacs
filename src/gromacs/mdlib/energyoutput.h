@@ -308,7 +308,7 @@ private:
     bool bMTTK_ = false;
 
     //! Temperature control scheme
-    int etc_ = 0;
+    TemperatureCoupling etc_ = TemperatureCoupling::No;
 
     //! Which of the main energy terms should be printed
     bool bEner_[F_NRE] = { false };
@@ -361,7 +361,7 @@ private:
     int isurft_ = 0;
 
     //! Pressure control scheme
-    int epc_ = 0;
+    PressureCoupling epc_ = PressureCoupling::No;
     //! Index for velocity of the box borders
     int ipc_ = 0;
 

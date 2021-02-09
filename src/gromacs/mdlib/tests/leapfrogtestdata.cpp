@@ -123,7 +123,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
 
     if (numTCoupleGroups_ == 0)
     {
-        inputRecord_.etc = etcNO;
+        inputRecord_.etc = TemperatureCoupling::No;
         for (int i = 0; i < numAtoms_; i++)
         {
             mdAtoms_.cTC[i] = 0;
@@ -135,7 +135,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     }
     else
     {
-        inputRecord_.etc = etcYES;
+        inputRecord_.etc = TemperatureCoupling::Yes;
         for (int i = 0; i < numAtoms_; i++)
         {
             mdAtoms_.cTC[i] = i % numTCoupleGroups_;
@@ -186,7 +186,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
 
     if (doPressureCouple_)
     {
-        inputRecord_.epc        = epcPARRINELLORAHMAN;
+        inputRecord_.epc        = PressureCoupling::ParrinelloRahman;
         inputRecord_.nstpcouple = nstpcouple;
         dtPressureCouple_       = inputRecord_.nstpcouple * inputRecord_.delta_t;
 
@@ -204,7 +204,7 @@ LeapFrogTestData::LeapFrogTestData(int        numAtoms,
     }
     else
     {
-        inputRecord_.epc               = epcNO;
+        inputRecord_.epc               = PressureCoupling::No;
         velocityScalingMatrix_[XX][XX] = 1.0;
         velocityScalingMatrix_[XX][YY] = 0.0;
         velocityScalingMatrix_[XX][ZZ] = 0.0;

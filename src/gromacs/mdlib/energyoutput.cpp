@@ -261,12 +261,12 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         }
     }
 
-    epc_            = isRerun ? epcNO : ir->epc;
+    epc_            = isRerun ? PressureCoupling::No : ir->epc;
     bDiagPres_      = !TRICLINIC(ir->ref_p) && !isRerun;
     ref_p_          = (ir->ref_p[XX][XX] + ir->ref_p[YY][YY] + ir->ref_p[ZZ][ZZ]) / DIM;
     bTricl_         = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
     bDynBox_        = inputrecDynamicBox(ir);
-    etc_            = isRerun ? etcNO : ir->etc;
+    etc_            = isRerun ? TemperatureCoupling::No : ir->etc;
     bNHC_trotter_   = inputrecNvtTrotter(ir) && !isRerun;
     bPrintNHChains_ = ir->bPrintNHChains && !isRerun;
     bMTTK_          = (inputrecNptTrotter(ir) || inputrecNphTrotter(ir)) && !isRerun;
@@ -310,7 +310,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         ipres_  = get_ebin_space(ebin_, asize(pres_nm), pres_nm, unit_pres_bar);
         isurft_ = get_ebin_space(ebin_, asize(surft_nm), surft_nm, unit_surft_bar);
     }
-    if (epc_ == epcPARRINELLORAHMAN || epc_ == epcMTTK)
+    if (epc_ == PressureCoupling::ParrinelloRahman || epc_ == PressureCoupling::Mttk)
     {
         ipc_ = get_ebin_space(ebin_, bTricl_ ? boxvel_nm.size() : DIM, boxvel_nm.data(), unit_vel);
     }
@@ -408,7 +408,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     {
         nTCP_ = 0;
     }
-    if (etc_ == etcNOSEHOOVER)
+    if (etc_ == TemperatureCoupling::NoseHoover)
     {
         if (bNHC_trotter_)
         {
@@ -418,7 +418,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         {
             mde_n_ = 2 * nTC_;
         }
-        if (epc_ == epcMTTK)
+        if (epc_ == PressureCoupling::Mttk)
         {
             mdeb_n_ = 2 * nNHC_ * nTCP_;
         }
@@ -447,7 +447,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     }
 
     int allocated = 0;
-    if (etc_ == etcNOSEHOOVER)
+    if (etc_ == TemperatureCoupling::NoseHoover)
     {
         if (bPrintNHChains_)
         {
@@ -500,7 +500,8 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
             }
         }
     }
-    else if (etc_ == etcBERENDSEN || etc_ == etcYES || etc_ == etcVRESCALE)
+    else if (etc_ == TemperatureCoupling::Berendsen || etc_ == TemperatureCoupling::Yes
+             || etc_ == TemperatureCoupling::VRescale)
     {
         for (i = 0; (i < nTC_); i++)
         {
@@ -725,7 +726,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     }
 
     nsetsextend = nsets;
-    if ((ir->epc != epcNO) && (fep->n_lambda > 0) && (fep->init_lambda < 0))
+    if ((ir->epc != PressureCoupling::No) && (fep->n_lambda > 0) && (fep->init_lambda < 0))
     {
         nsetsextend += 1; /* for PV term, other terms possible if required for
                              the reduced potential (only needed with foreign
@@ -925,7 +926,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         tmp = (pres[ZZ][ZZ] - (pres[XX][XX] + pres[YY][YY]) * 0.5) * box[ZZ][ZZ];
         add_ebin(ebin_, isurft_, 1, &tmp, bSum);
     }
-    if (epc_ == epcPARRINELLORAHMAN || epc_ == epcMTTK)
+    if (epc_ == PressureCoupling::ParrinelloRahman || epc_ == PressureCoupling::Mttk)
     {
         tmp6[0] = ptCouplingArrays.boxv[XX][XX];
         tmp6[1] = ptCouplingArrays.boxv[YY][YY];
@@ -979,7 +980,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
         }
         add_ebin(ebin_, itemp_, nTC_, tmp_r_, bSum);
 
-        if (etc_ == etcNOSEHOOVER)
+        if (etc_ == TemperatureCoupling::NoseHoover)
         {
             /* whether to print Nose-Hoover chains: */
             if (bPrintNHChains_)
@@ -1022,7 +1023,8 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                 }
             }
         }
-        else if (etc_ == etcBERENDSEN || etc_ == etcYES || etc_ == etcVRESCALE)
+        else if (etc_ == TemperatureCoupling::Berendsen || etc_ == TemperatureCoupling::Yes
+                 || etc_ == TemperatureCoupling::VRescale)
         {
             for (int i = 0; (i < nTC_); i++)
             {
@@ -1094,8 +1096,8 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             {
                 fprintf(fp_dhdl_, " %#.8g", dE_[i]);
             }
-            if (bDynBox_ && bDiagPres_ && (epc_ != epcNO) && foreignTerms.numLambdas() > 0
-                && (fep->init_lambda < 0))
+            if (bDynBox_ && bDiagPres_ && (epc_ != PressureCoupling::No)
+                && foreignTerms.numLambdas() > 0 && (fep->init_lambda < 0))
             {
                 fprintf(fp_dhdl_, " %#.8g", pv); /* PV term only needed when
                                                          there are alternate state

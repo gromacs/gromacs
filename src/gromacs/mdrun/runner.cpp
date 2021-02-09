@@ -431,7 +431,8 @@ static void prepare_verlet_scheme(FILE*               fplog,
                            "With Verlet lists and no PME rcoulomb and rvdw should be identical");
     }
     /* For NVE simulations, we will retain the initial list buffer */
-    if (EI_DYNAMICS(ir->eI) && ir->verletbuf_tol > 0 && !(EI_MD(ir->eI) && ir->etc == etcNO))
+    if (EI_DYNAMICS(ir->eI) && ir->verletbuf_tol > 0
+        && !(EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No))
     {
         /* Update the Verlet buffer size for the current run setup */
 

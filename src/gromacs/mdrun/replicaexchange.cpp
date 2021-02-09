@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -253,9 +253,9 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     const int nst = replExParams.exchangeInterval;
     check_multi_int64(
             fplog, ms, (ir->init_step + nst - 1) / nst, "first exchange step: init_step/-replex", FALSE);
-    check_multi_int(fplog, ms, ir->etc, "the temperature coupling", FALSE);
+    check_multi_int(fplog, ms, static_cast<int>(ir->etc), "the temperature coupling", FALSE);
     check_multi_int(fplog, ms, ir->opts.ngtc, "the number of temperature coupling groups", FALSE);
-    check_multi_int(fplog, ms, ir->epc, "the pressure coupling", FALSE);
+    check_multi_int(fplog, ms, static_cast<int>(ir->epc), "the pressure coupling", FALSE);
     check_multi_int(fplog, ms, ir->efep, "free energy", FALSE);
     check_multi_int(fplog, ms, ir->fepvals->n_lambda, "number of lambda states", FALSE);
 
@@ -293,19 +293,19 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
     if (bTemp)
     {
         please_cite(fplog, "Sugita1999a");
-        if (ir->epc != epcNO)
+        if (ir->epc != PressureCoupling::No)
         {
             re->bNPT = TRUE;
             fprintf(fplog, "Repl  Using Constant Pressure REMD.\n");
             please_cite(fplog, "Okabe2001a");
         }
-        if (ir->etc == etcBERENDSEN)
+        if (ir->etc == TemperatureCoupling::Berendsen)
         {
             gmx_fatal(FARGS,
                       "REMD with the %s thermostat does not produce correct potential energy "
                       "distributions, consider using the %s thermostat instead",
-                      ETCOUPLTYPE(ir->etc),
-                      ETCOUPLTYPE(etcVRESCALE));
+                      enumValueToString(ir->etc),
+                      enumValueToString(TemperatureCoupling::VRescale));
         }
     }
     if (bLambda)

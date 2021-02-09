@@ -450,7 +450,7 @@ void check_ir(const char*                   mdparin,
     /* GENERAL INTEGRATOR STUFF */
     if (!EI_MD(ir->eI))
     {
-        if (ir->etc != etcNO)
+        if (ir->etc != TemperatureCoupling::No)
         {
             if (EI_RANDOM(ir->eI))
             {
@@ -458,7 +458,7 @@ void check_ir(const char*                   mdparin,
                         "Setting tcoupl from '%s' to 'no'. %s handles temperature coupling "
                         "implicitly. See the documentation for more information on which "
                         "parameters affect temperature for %s.",
-                        etcoupl_names[ir->etc],
+                        enumValueToString(ir->etc),
                         ei_names[ir->eI],
                         ei_names[ir->eI]);
             }
@@ -467,12 +467,12 @@ void check_ir(const char*                   mdparin,
                 sprintf(warn_buf,
                         "Setting tcoupl from '%s' to 'no'. Temperature coupling does not apply to "
                         "%s.",
-                        etcoupl_names[ir->etc],
+                        enumValueToString(ir->etc),
                         ei_names[ir->eI]);
             }
             warning_note(wi, warn_buf);
         }
-        ir->etc = etcNO;
+        ir->etc = TemperatureCoupling::No;
     }
     if (ir->eI == eiVVAK)
     {
@@ -486,15 +486,15 @@ void check_ir(const char*                   mdparin,
     }
     if (!EI_DYNAMICS(ir->eI))
     {
-        if (ir->epc != epcNO)
+        if (ir->epc != PressureCoupling::No)
         {
             sprintf(warn_buf,
                     "Setting pcoupl from '%s' to 'no'. Pressure coupling does not apply to %s.",
-                    epcoupl_names[ir->epc],
+                    enumValueToString(ir->epc),
                     ei_names[ir->eI]);
             warning_note(wi, warn_buf);
         }
-        ir->epc = epcNO;
+        ir->epc = PressureCoupling::No;
     }
     if (EI_DYNAMICS(ir->eI))
     {
@@ -539,7 +539,7 @@ void check_ir(const char*                   mdparin,
             ir->nstcalcenergy = min_nst;
         }
 
-        if (ir->epc != epcNO)
+        if (ir->epc != PressureCoupling::No)
         {
             if (ir->nstpcouple < 0)
             {
@@ -649,12 +649,12 @@ void check_ir(const char*                   mdparin,
 
         /* check compatability of the temperature coupling with simulated tempering */
 
-        if (ir->etc == etcNOSEHOOVER)
+        if (ir->etc == TemperatureCoupling::NoseHoover)
         {
             sprintf(warn_buf,
                     "Nose-Hoover based temperature control such as [%s] my not be "
                     "entirelyconsistent with simulated tempering",
-                    etcoupl_names[ir->etc]);
+                    enumValueToString(ir->etc));
             warning_note(wi, warn_buf);
         }
 
@@ -969,10 +969,10 @@ void check_ir(const char*                   mdparin,
     {
         if (ir->pbcType == PbcType::No)
         {
-            if (ir->epc != epcNO)
+            if (ir->epc != PressureCoupling::No)
             {
                 warning(wi, "Turning off pressure coupling for vacuum system");
-                ir->epc = epcNO;
+                ir->epc = PressureCoupling::No;
             }
         }
         else
@@ -980,7 +980,7 @@ void check_ir(const char*                   mdparin,
             sprintf(err_buf,
                     "Can not have pressure coupling with pbc=%s",
                     c_pbcTypeNames[ir->pbcType].c_str());
-            CHECK(ir->epc != epcNO);
+            CHECK(ir->epc != PressureCoupling::No);
         }
         sprintf(err_buf, "Can not have Ewald with pbc=%s", c_pbcTypeNames[ir->pbcType].c_str());
         CHECK(EEL_FULL(ir->coulombtype));
@@ -1069,15 +1069,15 @@ void check_ir(const char*                   mdparin,
     }
 
     /* TEMPERATURE COUPLING */
-    if (ir->etc == etcYES)
+    if (ir->etc == TemperatureCoupling::Yes)
     {
-        ir->etc = etcBERENDSEN;
+        ir->etc = TemperatureCoupling::Berendsen;
         warning_note(wi,
                      "Old option for temperature coupling given: "
                      "changing \"yes\" to \"Berendsen\"\n");
     }
 
-    if ((ir->etc == etcNOSEHOOVER) || (ir->epc == epcMTTK))
+    if ((ir->etc == TemperatureCoupling::NoseHoover) || (ir->epc == PressureCoupling::Mttk))
     {
         if (ir->opts.nhchainlength < 1)
         {
@@ -1089,7 +1089,7 @@ void check_ir(const char*                   mdparin,
             warning(wi, warn_buf);
         }
 
-        if (ir->etc == etcNOSEHOOVER && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1)
+        if (ir->etc == TemperatureCoupling::NoseHoover && !EI_VV(ir->eI) && ir->opts.nhchainlength > 1)
         {
             warning_note(
                     wi,
@@ -1115,17 +1115,17 @@ void check_ir(const char*                   mdparin,
     {
         sprintf(err_buf,
                 "%s temperature control not supported for integrator %s.",
-                etcoupl_names[ir->etc],
+                enumValueToString(ir->etc),
                 ei_names[ir->eI]);
         CHECK(!(EI_VV(ir->eI)));
 
-        if (ir->nstcomm > 0 && (ir->etc == etcANDERSEN))
+        if (ir->nstcomm > 0 && (ir->etc == TemperatureCoupling::Andersen))
         {
             sprintf(warn_buf,
                     "Center of mass removal not necessary for %s.  All velocities of coupled "
                     "groups are rerandomized periodically, so flying ice cube errors will not "
                     "occur.",
-                    etcoupl_names[ir->etc]);
+                    enumValueToString(ir->etc));
             warning_note(wi, warn_buf);
         }
 
@@ -1133,21 +1133,22 @@ void check_ir(const char*                   mdparin,
                 "nstcomm must be 1, not %d for %s, as velocities of atoms in coupled groups are "
                 "randomized every time step",
                 ir->nstcomm,
-                etcoupl_names[ir->etc]);
-        CHECK(ir->nstcomm > 1 && (ir->etc == etcANDERSEN));
+                enumValueToString(ir->etc));
+        CHECK(ir->nstcomm > 1 && (ir->etc == TemperatureCoupling::Andersen));
     }
 
-    if (ir->etc == etcBERENDSEN)
+    if (ir->etc == TemperatureCoupling::Berendsen)
     {
         sprintf(warn_buf,
                 "The %s thermostat does not generate the correct kinetic energy distribution. You "
                 "might want to consider using the %s thermostat.",
-                ETCOUPLTYPE(ir->etc),
-                ETCOUPLTYPE(etcVRESCALE));
+                enumValueToString(ir->etc),
+                enumValueToString(TemperatureCoupling::VRescale));
         warning_note(wi, warn_buf);
     }
 
-    if ((ir->etc == etcNOSEHOOVER || ETC_ANDERSEN(ir->etc)) && ir->epc == epcBERENDSEN)
+    if ((ir->etc == TemperatureCoupling::NoseHoover || ETC_ANDERSEN(ir->etc))
+        && ir->epc == PressureCoupling::Berendsen)
     {
         sprintf(warn_buf,
                 "Using Berendsen pressure coupling invalidates the "
@@ -1156,15 +1157,15 @@ void check_ir(const char*                   mdparin,
     }
 
     /* PRESSURE COUPLING */
-    if (ir->epc == epcISOTROPIC)
+    if (ir->epc == PressureCoupling::Isotropic)
     {
-        ir->epc = epcBERENDSEN;
+        ir->epc = PressureCoupling::Berendsen;
         warning_note(wi,
                      "Old option for pressure coupling given: "
                      "changing \"Isotropic\" to \"Berendsen\"\n");
     }
 
-    if (ir->epc != epcNO)
+    if (ir->epc != PressureCoupling::No)
     {
         dt_pcoupl = ir->nstpcouple * ir->delta_t;
 
@@ -1176,7 +1177,7 @@ void check_ir(const char*                   mdparin,
             sprintf(warn_buf,
                     "For proper integration of the %s barostat, tau-p (%g) should be at least %d "
                     "times larger than nstpcouple*dt (%g)",
-                    EPCOUPLTYPE(ir->epc),
+                    enumValueToString(ir->epc),
                     ir->tau_p,
                     pcouple_min_integration_steps(ir->epc),
                     dt_pcoupl);
@@ -1186,12 +1187,12 @@ void check_ir(const char*                   mdparin,
         sprintf(err_buf,
                 "compressibility must be > 0 when using pressure"
                 " coupling %s\n",
-                EPCOUPLTYPE(ir->epc));
+                enumValueToString(ir->epc));
         CHECK(ir->compress[XX][XX] < 0 || ir->compress[YY][YY] < 0 || ir->compress[ZZ][ZZ] < 0
               || (trace(ir->compress) == 0 && ir->compress[YY][XX] <= 0 && ir->compress[ZZ][XX] <= 0
                   && ir->compress[ZZ][YY] <= 0));
 
-        if (epcPARRINELLORAHMAN == ir->epc && opts->bGenVel)
+        if (PressureCoupling::ParrinelloRahman == ir->epc && opts->bGenVel)
         {
             sprintf(warn_buf,
                     "You are generating velocities so I am assuming you "
@@ -1201,14 +1202,14 @@ void check_ir(const char*                   mdparin,
                     "equilibrating first with Berendsen pressure coupling. If "
                     "you are not equilibrating the system, you can probably "
                     "ignore this warning.",
-                    epcoupl_names[ir->epc]);
+                    enumValueToString(ir->epc));
             warning(wi, warn_buf);
         }
     }
 
     if (!EI_VV(ir->eI))
     {
-        if (ir->epc == epcMTTK)
+        if (ir->epc == PressureCoupling::Mttk)
         {
             warning_error(wi, "MTTK pressure coupling requires a Velocity-verlet integrator");
         }
@@ -1805,6 +1806,53 @@ static void read_expandedparams(std::vector<t_inpfile>* inp, t_expanded* expand,
     expand->bWLoneovert   = (get_eeenum(inp, "wl-oneovert", yesno_names, wi) != 0);
 }
 
+template<typename EnumType>
+EnumType getEnum(std::vector<t_inpfile>* inp, const char* name, warninp_t wi)
+{
+    // If we there's no valid option, we'll use the first enum entry as default.
+    // Note, this assumes the enum is zero based, which is also assumed by
+    // EnumerationWrapper and EnumerationArray.
+    const auto  defaultEnumValue = EnumType::Default;
+    const auto& defaultName      = enumValueToString(defaultEnumValue);
+    // Get index of option in input
+    const auto ii = get_einp(inp, name);
+    if (ii == -1)
+    {
+        // If the option wasn't set, we use the first enum entry as default
+        inp->back().value_.assign(defaultName);
+        return defaultEnumValue;
+    }
+
+    // Check if option string can be mapped to a valid enum value
+    const auto* optionString = (*inp)[ii].value_.c_str();
+    for (auto enumValue : gmx::EnumerationWrapper<EnumType>{})
+    {
+        if (gmx_strcasecmp_min(enumValueToString(enumValue), optionString) == 0)
+        {
+            return enumValue;
+        }
+    }
+
+    // If we get here, the option set is invalid. Print error.
+    std::string errorMessage = gmx::formatString(
+            "Invalid enum '%s' for variable %s, using '%s'\n", optionString, name, defaultName);
+    errorMessage += gmx::formatString("Next time, use one of:");
+    for (auto enumValue : gmx::EnumerationWrapper<EnumType>{})
+    {
+        errorMessage += gmx::formatString(" '%s'", enumValueToString(enumValue));
+    }
+    if (wi != nullptr)
+    {
+        warning_error(wi, errorMessage);
+    }
+    else
+    {
+        fprintf(stderr, "%s\n", errorMessage.c_str());
+    }
+    (*inp)[ii].value_.assign(defaultName);
+    return defaultEnumValue;
+}
+
 /*! \brief Return whether an end state with the given coupling-lambda
  * value describes fully-interacting VDW.
  *
@@ -2075,7 +2123,7 @@ void get_ir(const char*     mdparin,
     /* Coupling stuff */
     printStringNewline(&inp, "OPTIONS FOR WEAK COUPLING ALGORITHMS");
     printStringNoNewline(&inp, "Temperature coupling");
-    ir->etc                = get_eeenum(&inp, "tcoupl", etcoupl_names, wi);
+    ir->etc                = getEnum<TemperatureCoupling>(&inp, "tcoupl", wi);
     ir->nsttcouple         = get_eint(&inp, "nsttcouple", -1, wi);
     ir->opts.nhchainlength = get_eint(&inp, "nh-chain-length", 10, wi);
     ir->bPrintNHChains = (get_eeenum(&inp, "print-nose-hoover-chain-variables", yesno_names, wi) != 0);
@@ -2085,7 +2133,7 @@ void get_ir(const char*     mdparin,
     setStringEntry(&inp, "tau-t", inputrecStrings->tau_t, nullptr);
     setStringEntry(&inp, "ref-t", inputrecStrings->ref_t, nullptr);
     printStringNoNewline(&inp, "pressure coupling");
-    ir->epc        = get_eeenum(&inp, "pcoupl", epcoupl_names, wi);
+    ir->epc        = getEnum<PressureCoupling>(&inp, "pcoupl", wi);
     ir->epct       = get_eeenum(&inp, "pcoupltype", epcoupltype_names, wi);
     ir->nstpcouple = get_eint(&inp, "nstpcouple", -1, wi);
     printStringNoNewline(&inp, "Time constant (ps), compressibility (1/bar) and reference P (bar)");
@@ -2450,7 +2498,7 @@ void get_ir(const char*     mdparin,
         {
             dumdub[m][i] = 0.0;
         }
-        if (ir->epc)
+        if (ir->epc != PressureCoupling::No)
         {
             switch (ir->epct)
             {
@@ -2667,7 +2715,7 @@ void get_ir(const char*     mdparin,
     ir->deform[YY][XX] = dumdub[0][3];
     ir->deform[ZZ][XX] = dumdub[0][4];
     ir->deform[ZZ][YY] = dumdub[0][5];
-    if (ir->epc != epcNO)
+    if (ir->epc != PressureCoupling::No)
     {
         for (i = 0; i < 3; i++)
         {
@@ -3498,7 +3546,7 @@ void do_index(const char*                   mdparin,
                 warning_error(wi, warn_buf);
             }
 
-            if (ir->etc != etcVRESCALE && ir->opts.tau_t[i] == 0)
+            if (ir->etc != TemperatureCoupling::VRescale && ir->opts.tau_t[i] == 0)
             {
                 warning_note(
                         wi,
@@ -3511,23 +3559,23 @@ void do_index(const char*                   mdparin,
                 tau_min = std::min(tau_min, ir->opts.tau_t[i]);
             }
         }
-        if (ir->etc != etcNO && ir->nsttcouple == -1)
+        if (ir->etc != TemperatureCoupling::No && ir->nsttcouple == -1)
         {
             ir->nsttcouple = ir_optimal_nsttcouple(ir);
         }
 
         if (EI_VV(ir->eI))
         {
-            if ((ir->etc == etcNOSEHOOVER) && (ir->epc == epcBERENDSEN))
+            if ((ir->etc == TemperatureCoupling::NoseHoover) && (ir->epc == PressureCoupling::Berendsen))
             {
                 gmx_fatal(FARGS,
                           "Cannot do Nose-Hoover temperature with Berendsen pressure control with "
                           "md-vv; use either vrescale temperature with berendsen pressure or "
                           "Nose-Hoover temperature with MTTK pressure");
             }
-            if (ir->epc == epcMTTK)
+            if (ir->epc == PressureCoupling::Mttk)
             {
-                if (ir->etc != etcNOSEHOOVER)
+                if (ir->etc != TemperatureCoupling::NoseHoover)
                 {
                     gmx_fatal(FARGS,
                               "Cannot do MTTK pressure coupling without Nose-Hoover temperature "
@@ -3572,7 +3620,7 @@ void do_index(const char*                   mdparin,
                 sprintf(warn_buf,
                         "For proper integration of the %s thermostat, tau-t (%g) should be at "
                         "least %d times larger than nsttcouple*dt (%g)",
-                        ETCOUPLTYPE(ir->etc),
+                        enumValueToString(ir->etc),
                         tau_min,
                         nstcmin,
                         ir->nsttcouple * ir->delta_t);
@@ -4282,7 +4330,8 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     }
 
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 && ir->nstlist > 1
-        && ((EI_MD(ir->eI) || EI_SD(ir->eI)) && (ir->etc == etcVRESCALE || ir->etc == etcBERENDSEN)))
+        && ((EI_MD(ir->eI) || EI_SD(ir->eI))
+            && (ir->etc == TemperatureCoupling::VRescale || ir->etc == TemperatureCoupling::Berendsen)))
     {
         /* Check if a too small Verlet buffer might potentially
          * cause more drift than the thermostat can couple off.
@@ -4347,7 +4396,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
             CHECK(ir->opts.tau_t[i] < 0);
         }
 
-        if (ir->etc == etcANDERSENMASSIVE && ir->comm_mode != ecmNO)
+        if (ir->etc == TemperatureCoupling::AndersenMassive && ir->comm_mode != ecmNO)
         {
             for (i = 0; i < ir->opts.ngtc; i++)
             {
@@ -4358,7 +4407,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
                         "randomized every time step. The input tau_t (%8.3f) leads to %d steps per "
                         "randomization",
                         i,
-                        etcoupl_names[ir->etc],
+                        enumValueToString(ir->etc),
                         ir->nstcomm,
                         ir->opts.tau_t[i],
                         nsteps);
@@ -4375,7 +4424,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
                 "rounding errors can lead to build up of kinetic energy of the center of mass");
     }
 
-    if (ir->epc == epcPARRINELLORAHMAN && ir->etc == etcNOSEHOOVER)
+    if (ir->epc == PressureCoupling::ParrinelloRahman && ir->etc == TemperatureCoupling::NoseHoover)
     {
         real tau_t_max = 0;
         for (int g = 0; g < ir->opts.ngtc; g++)
@@ -4387,8 +4436,8 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
             std::string message = gmx::formatString(
                     "With %s T-coupling and %s p-coupling, "
                     "%s (%g) should be at least twice as large as %s (%g) to avoid resonances",
-                    etcoupl_names[ir->etc],
-                    epcoupl_names[ir->epc],
+                    enumValueToString(ir->etc),
+                    enumValueToString(ir->epc),
                     "tau-p",
                     ir->tau_p,
                     "tau-t",
@@ -4398,7 +4447,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     }
 
     /* Check for pressure coupling with absolute position restraints */
-    if (ir->epc != epcNO && ir->refcoord_scaling == erscNO)
+    if (ir->epc != PressureCoupling::No && ir->refcoord_scaling == erscNO)
     {
         absolute_reference(ir, sys, TRUE, AbsRef);
         {
@@ -4501,7 +4550,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
         {
             for (m = 0; m <= i; m++)
             {
-                if ((ir->epc != epcNO && ir->compress[i][m] != 0) || ir->deform[i][m] != 0)
+                if ((ir->epc != PressureCoupling::No && ir->compress[i][m] != 0) || ir->deform[i][m] != 0)
                 {
                     for (c = 0; c < ir->pull->ncoord; c++)
                     {
@@ -4545,7 +4594,8 @@ void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool b
     if ((ir->eConstrAlg == econtLINCS) && bHasNormalConstraints)
     {
         /* If we have Lincs constraints: */
-        if (ir->eI == eiMD && ir->etc == etcNO && ir->eConstrAlg == econtLINCS && ir->nLincsIter == 1)
+        if (ir->eI == eiMD && ir->etc == TemperatureCoupling::No && ir->eConstrAlg == econtLINCS
+            && ir->nLincsIter == 1)
         {
             sprintf(warn_buf,
                     "For energy conservation with LINCS, lincs_iter should be 2 or larger.\n");
@@ -4559,13 +4609,13 @@ void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool b
                     ei_names[ir->eI]);
             warning_note(wi, warn_buf);
         }
-        if (ir->epc == epcMTTK)
+        if (ir->epc == PressureCoupling::Mttk)
         {
             warning_error(wi, "MTTK not compatible with lincs -- use shake instead.");
         }
     }
 
-    if (bHasAnyConstraints && ir->epc == epcMTTK)
+    if (bHasAnyConstraints && ir->epc == PressureCoupling::Mttk)
     {
         warning_error(wi, "Constraints are not implemented with MTTK pressure control.");
     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -283,7 +283,7 @@ VelocityScalingTemperatureCoupling::VelocityScalingTemperatureCoupling(
         const real*                       couplingTime,
         const real*                       numDegreesOfFreedom,
         EnergyData*                       energyData,
-        TemperatureCouplingType           couplingType) :
+        TemperatureCoupling               couplingType) :
     nstcouple_(nstcouple),
     offset_(offset),
     useFullStepKE_(useFullStepKE),
@@ -301,17 +301,17 @@ VelocityScalingTemperatureCoupling::VelocityScalingTemperatureCoupling(
         temperatureCouplingIntegralPreviousStep_ = temperatureCouplingIntegral_;
     }
     energyData->setVelocityScalingTemperatureCoupling(this);
-    if (couplingType == etcVRESCALE)
+    if (couplingType == TemperatureCoupling::VRescale)
     {
         temperatureCouplingImpl_ = std::make_unique<VRescaleTemperatureCoupling>(seed);
     }
-    else if (couplingType == etcBERENDSEN)
+    else if (couplingType == TemperatureCoupling::Berendsen)
     {
         temperatureCouplingImpl_ = std::make_unique<BerendsenTemperatureCoupling>();
     }
     else
     {
-        throw NotImplementedError("Temperature coupling " + std::string(ETCOUPLTYPE(couplingType))
+        throw NotImplementedError("Temperature coupling " + std::string(enumValueToString(couplingType))
                                   + " is not implemented for modular simulator.");
     }
 }

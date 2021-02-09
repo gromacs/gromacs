@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,15 +118,15 @@ void writeParameterInformation(TextWriter* writer, const t_inputrec& ir, bool wr
     }
     writer->writeLine(formatString(
             "A single cut-off of %g nm was used for Van der Waals interactions.", ir.rlist));
-    if (ir.etc != 0)
+    if (ir.etc != TemperatureCoupling::No)
     {
         writer->writeLine(formatString("Temperature coupling was done with the %s algorithm.",
-                                       etcoupl_names[ir.etc]));
+                                       enumValueToString(ir.etc)));
     }
-    if (ir.epc != 0)
+    if (ir.epc != PressureCoupling::No)
     {
         writer->writeLine(formatString("Pressure coupling was done with the %s algorithm.",
-                                       epcoupl_names[ir.epc]));
+                                       enumValueToString(ir.epc)));
     }
     writer->ensureEmptyLine();
 }

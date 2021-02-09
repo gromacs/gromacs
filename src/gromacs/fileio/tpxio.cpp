@@ -1306,7 +1306,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         serializer->doInt(&ir->ljpme_combination_rule);
     }
     serializer->doBool(&ir->bContinuation);
-    serializer->doInt(&ir->etc);
+    serializer->doEnumAsInt(&ir->etc);
     /* before version 18, ir->etc was a gmx_bool (ir->btc),
      * but the values 0 and 1 still mean no and
      * berendsen temperature coupling, respectively.
@@ -1323,7 +1323,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     {
         ir->nsttcouple = ir->nstcalcenergy;
     }
-    serializer->doInt(&ir->epc);
+    serializer->doEnumAsInt(&ir->epc);
     serializer->doInt(&ir->epct);
     if (file_version >= 71)
     {

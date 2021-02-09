@@ -191,7 +191,7 @@ void parrinellorahman_pcoupl(FILE*             fplog,
  * computes the current value of the scaling matrix. The template
  * parameter determines the pressure coupling algorithm.
  */
-template<int pressureCouplingType>
+template<PressureCoupling pressureCouplingType>
 void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
                                             int64_t           step,
                                             const t_inputrec* ir,
@@ -210,7 +210,7 @@ void pressureCouplingCalculateScalingMatrix(FILE*             fplog,
  * the scaling matrix mu. The template parameter determines the pressure
  * coupling algorithm.
  */
-template<int pressureCouplingType>
+template<PressureCoupling pressureCouplingType>
 void pressureCouplingScaleBoxAndCoordinates(const t_inputrec*    ir,
                                             const matrix         mu,
                                             matrix               box,

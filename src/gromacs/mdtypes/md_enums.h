@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,43 +85,50 @@ enum eChannel
 /*! \brief Temperature coupling type
  *
  * yes is an alias for berendsen
+ *
+ * Note: Keep `Count` as the second-to-last entry, and `Default` as the last entry -
+ *       this is needed to keep EnumerationWrapper, EnumerationArray and (de)serialization
+ *       working.
  */
-enum
+enum class TemperatureCoupling : int
 {
-    etcNO,
-    etcBERENDSEN,
-    etcNOSEHOOVER,
-    etcYES,
-    etcANDERSEN,
-    etcANDERSENMASSIVE,
-    etcVRESCALE,
-    etcNR
+    No,
+    Berendsen,
+    NoseHoover,
+    Yes,
+    Andersen,
+    AndersenMassive,
+    VRescale,
+    Count,
+    Default = No
 };
-//! Strings corresponding to temperatyre coupling types
-extern const char* etcoupl_names[etcNR + 1];
-//! Macro for selecting t coupling string
-#define ETCOUPLTYPE(e) enum_name(e, etcNR, etcoupl_names)
+//! Return names of temperature coupling schemes
+const char* enumValueToString(TemperatureCoupling enumValue);
 //! Return whether this is andersen coupling
-#define ETC_ANDERSEN(e) (((e) == etcANDERSENMASSIVE) || ((e) == etcANDERSEN))
+#define ETC_ANDERSEN(e) \
+    (((e) == TemperatureCoupling::AndersenMassive) || ((e) == TemperatureCoupling::Andersen))
 
 /*! \brief Pressure coupling types
  *
  * isotropic is an alias for berendsen
+ *
+ * Note: Keep `Count` as the second-to-last entry, and `Default` as the last entry -
+ *       this is needed to keep EnumerationWrapper, EnumerationArray and (de)serialization
+ *       working.
  */
-enum
+enum class PressureCoupling : int
 {
-    epcNO,
-    epcBERENDSEN,
-    epcPARRINELLORAHMAN,
-    epcISOTROPIC,
-    epcMTTK,
-    epcCRESCALE,
-    epcNR
+    No,
+    Berendsen,
+    ParrinelloRahman,
+    Isotropic,
+    Mttk,
+    CRescale,
+    Count,
+    Default = No
 };
-//! String corresponding to pressure coupling algorithm
-extern const char* epcoupl_names[epcNR + 1];
-//! Macro to return the correct pcoupling string
-#define EPCOUPLTYPE(e) enum_name(e, epcNR, epcoupl_names)
+//! Return names of pressure coupling schemes
+const char* enumValueToString(PressureCoupling enumValue);
 
 //! Flat-bottom posres geometries
 enum

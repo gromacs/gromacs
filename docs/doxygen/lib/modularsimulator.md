@@ -200,7 +200,7 @@ the simulator algorithm.
             builder->add<ForceElement>();
              // We have a full state here (positions(t), velocities(t-dt/2), forces(t)
             builder->add<StatePropagatorData::Element>();
-            if (legacySimulatorData_->inputrec->etc == etcVRESCALE)
+            if (legacySimulatorData_->inputrec->etc == TemperatureCoupling::VRescale)
             {
                 builder->add<VRescaleThermostat>(-1, VRescaleThermostatUseFullStepKE::No);
             }
@@ -214,7 +214,7 @@ the simulator algorithm.
             builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>();
             // We have the energies at time t here
             builder->add<EnergyData::Element>();
-            if (legacySimulatorData_->inputrec->epc == epcPARRINELLORAHMAN)
+            if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
             {
                 builder->add<ParrinelloRahmanBarostat>(-1);
             }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,6 +179,17 @@ public:
         }
     }
     ///@}
+
+    //! Serialize enum value with underlying type int
+    template<typename EnumType>
+    void doEnumAsInt(EnumType* enumValue)
+    {
+        static_assert(std::is_same<std::underlying_type_t<EnumType>, int>::value,
+                      "Only enums with underlying type int are supported.");
+        auto castedValue = static_cast<int>(*enumValue);
+        doInt(&castedValue);
+        *enumValue = static_cast<EnumType>(castedValue);
+    }
 };
 
 } // namespace gmx

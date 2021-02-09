@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2012,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -181,7 +181,7 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
         {
             nonsimd_step_frac = 0;
         }
-        if (ir.epc != epcNO && 1.0 / ir.nstpcouple > nonsimd_step_frac)
+        if (ir.epc != PressureCoupling::No && 1.0 / ir.nstpcouple > nonsimd_step_frac)
         {
             nonsimd_step_frac = 1.0 / ir.nstpcouple;
         }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2761,7 +2761,7 @@ void dd_partition_system(FILE*                     fplog,
     // TODO if the update code becomes accessible here, use
     // upd->deform for this logic.
     bBoxChanged = (bMasterState || inputrecDeform(ir));
-    if (ir->epc != epcNO)
+    if (ir->epc != PressureCoupling::No)
     {
         /* With nstpcouple > 1 pressure coupling happens.
          * one step after calculating the pressure.
@@ -2799,7 +2799,7 @@ void dd_partition_system(FILE*                     fplog,
          * Since it requires (possibly expensive) global communication,
          * we might want to do DLB less frequently.
          */
-        if (bBoxChanged || ir->epc != epcNO)
+        if (bBoxChanged || ir->epc != PressureCoupling::No)
         {
             bDoDLB = bBoxChanged;
         }

@@ -119,22 +119,22 @@ int ir_optimal_nstcalcenergy(const t_inputrec* ir)
     return nst;
 }
 
-int tcouple_min_integration_steps(int etc)
+int tcouple_min_integration_steps(TemperatureCoupling etc)
 {
     int n;
 
     switch (etc)
     {
-        case etcNO: n = 0; break;
-        case etcBERENDSEN:
-        case etcYES: n = nstmin_berendsen_tcouple; break;
-        case etcVRESCALE:
+        case TemperatureCoupling::No: n = 0; break;
+        case TemperatureCoupling::Berendsen:
+        case TemperatureCoupling::Yes: n = nstmin_berendsen_tcouple; break;
+        case TemperatureCoupling::VRescale:
             /* V-rescale supports instantaneous rescaling */
             n = 0;
             break;
-        case etcNOSEHOOVER: n = nstmin_harmonic; break;
-        case etcANDERSEN:
-        case etcANDERSENMASSIVE: n = 1; break;
+        case TemperatureCoupling::NoseHoover: n = nstmin_harmonic; break;
+        case TemperatureCoupling::Andersen:
+        case TemperatureCoupling::AndersenMassive: n = 1; break;
         default: gmx_incons("Unknown etc value");
     }
 
@@ -152,7 +152,7 @@ int ir_optimal_nsttcouple(const t_inputrec* ir)
     nwanted = c_defaultNstTCouple;
 
     tau_min = 1e20;
-    if (ir->etc != etcNO)
+    if (ir->etc != TemperatureCoupling::No)
     {
         for (g = 0; g < ir->opts.ngtc; g++)
         {
@@ -183,18 +183,18 @@ int ir_optimal_nsttcouple(const t_inputrec* ir)
     return n;
 }
 
-int pcouple_min_integration_steps(int epc)
+int pcouple_min_integration_steps(PressureCoupling epc)
 {
     int n;
 
     switch (epc)
     {
-        case epcNO: n = 0; break;
-        case epcBERENDSEN:
-        case epcCRESCALE:
-        case epcISOTROPIC: n = nstmin_berendsen_pcouple; break;
-        case epcPARRINELLORAHMAN:
-        case epcMTTK: n = nstmin_harmonic; break;
+        case PressureCoupling::No: n = 0; break;
+        case PressureCoupling::Berendsen:
+        case PressureCoupling::CRescale:
+        case PressureCoupling::Isotropic: n = nstmin_berendsen_pcouple; break;
+        case PressureCoupling::ParrinelloRahman:
+        case PressureCoupling::Mttk: n = nstmin_harmonic; break;
         default: gmx_incons("Unknown epc value");
     }
 
@@ -906,12 +906,12 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         PR("epsilon-surface", ir->epsilon_surface);
 
         /* Options for weak coupling algorithms */
-        PS("tcoupl", ETCOUPLTYPE(ir->etc));
+        PS("tcoupl", enumValueToString(ir->etc));
         PI("nsttcouple", ir->nsttcouple);
         PI("nh-chain-length", ir->opts.nhchainlength);
         PS("print-nose-hoover-chain-variables", EBOOL(ir->bPrintNHChains));
 
-        PS("pcoupl", EPCOUPLTYPE(ir->epc));
+        PS("pcoupl", enumValueToString(ir->epc));
         PS("pcoupltype", EPCOUPLTYPETYPE(ir->epct));
         PI("nstpcouple", ir->nstpcouple);
         PR("tau-p", ir->tau_p);
@@ -1382,13 +1382,13 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
             static_cast<int>(ir1->bContinuation),
             static_cast<int>(ir2->bContinuation));
     cmp_int(fp, "inputrec->bShakeSOR", -1, static_cast<int>(ir1->bShakeSOR), static_cast<int>(ir2->bShakeSOR));
-    cmp_int(fp, "inputrec->etc", -1, ir1->etc, ir2->etc);
+    cmpEnum(fp, "inputrec->etc", ir1->etc, ir2->etc);
     cmp_int(fp,
             "inputrec->bPrintNHChains",
             -1,
             static_cast<int>(ir1->bPrintNHChains),
             static_cast<int>(ir2->bPrintNHChains));
-    cmp_int(fp, "inputrec->epc", -1, ir1->epc, ir2->epc);
+    cmpEnum(fp, "inputrec->epc", ir1->epc, ir2->epc);
     cmp_int(fp, "inputrec->epct", -1, ir1->epct, ir2->epct);
     cmp_real(fp, "inputrec->tau_p", -1, ir1->tau_p, ir2->tau_p, ftol, abstol);
     cmp_rvec(fp, "inputrec->ref_p(x)", -1, ir1->ref_p[XX], ir2->ref_p[XX], ftol, abstol);
@@ -1516,12 +1516,12 @@ gmx_bool inputrecDeform(const t_inputrec* ir)
 
 gmx_bool inputrecDynamicBox(const t_inputrec* ir)
 {
-    return (ir->epc != epcNO || ir->eI == eiTPI || inputrecDeform(ir));
+    return (ir->epc != PressureCoupling::No || ir->eI == eiTPI || inputrecDeform(ir));
 }
 
 gmx_bool inputrecPreserveShape(const t_inputrec* ir)
 {
-    return (ir->epc != epcNO && ir->deform[XX][XX] == 0
+    return (ir->epc != PressureCoupling::No && ir->deform[XX][XX] == 0
             && (ir->epct == epctISOTROPIC || ir->epct == epctSEMIISOTROPIC));
 }
 
@@ -1538,17 +1538,20 @@ gmx_bool inputrecExclForces(const t_inputrec* ir)
 
 gmx_bool inputrecNptTrotter(const t_inputrec* ir)
 {
-    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER));
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc == PressureCoupling::Mttk)
+            && (ir->etc == TemperatureCoupling::NoseHoover));
 }
 
 gmx_bool inputrecNvtTrotter(const t_inputrec* ir)
 {
-    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER));
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc != PressureCoupling::Mttk)
+            && (ir->etc == TemperatureCoupling::NoseHoover));
 }
 
 gmx_bool inputrecNphTrotter(const t_inputrec* ir)
 {
-    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER));
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc == PressureCoupling::Mttk)
+            && (ir->etc != TemperatureCoupling::NoseHoover));
 }
 
 bool inputrecPbcXY2Walls(const t_inputrec* ir)
@@ -1563,7 +1566,7 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)
         // Energy minimization or stochastic integrator: no conservation
         return false;
     }
-    else if (ir->etc == etcNO && ir->epc == epcNO)
+    else if (ir->etc == TemperatureCoupling::No && ir->epc == PressureCoupling::No)
     {
         // The total energy is conserved, no additional conserved quanitity
         return false;
@@ -1572,7 +1575,7 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)
     {
         // Shear stress with Parrinello-Rahman is not supported (tedious)
         bool shearWithPR =
-                ((ir->epc == epcPARRINELLORAHMAN || ir->epc == epcMTTK)
+                ((ir->epc == PressureCoupling::ParrinelloRahman || ir->epc == PressureCoupling::Mttk)
                  && (ir->ref_p[YY][XX] != 0 || ir->ref_p[ZZ][XX] != 0 || ir->ref_p[ZZ][YY] != 0));
 
         return !ETC_ANDERSEN(ir->etc) && !shearWithPR;
@@ -1581,7 +1584,7 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)
 
 bool integratorHasReferenceTemperature(const t_inputrec* ir)
 {
-    return ((ir->etc != etcNO) || EI_SD(ir->eI) || (ir->eI == eiBD) || EI_TPI(ir->eI));
+    return ((ir->etc != TemperatureCoupling::No) || EI_SD(ir->eI) || (ir->eI == eiBD) || EI_TPI(ir->eI));
 }
 
 int inputrec2nboundeddim(const t_inputrec* ir)
@@ -1619,7 +1622,7 @@ real maxReferenceTemperature(const t_inputrec& ir)
         return 0;
     }
 
-    if (EI_MD(ir.eI) && ir.etc == etcNO)
+    if (EI_MD(ir.eI) && ir.etc == TemperatureCoupling::No)
     {
         return -1;
     }

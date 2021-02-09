@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -159,6 +159,22 @@ int get_eeenum(std::vector<t_inpfile>* inp, const std::string& name, const char*
 
 int get_eenum(std::vector<t_inpfile>* inp, const char* name, const char** defs);
 /* defs must be NULL terminated */
+
+//! Get index of option `name`. Exposed here so that `getEnum` can access it.
+int get_einp(std::vector<t_inpfile>* inp, const char* name);
+
+/*! \brief Read option from input and return corresponding enum value
+ *
+ * If the option is not set, return the first value of the enum as default.
+ *
+ * \tparam EnumType  The type of enum to be returned
+ * \param[in]  inp   The input file vector
+ * \param[in]  name  The name of the option to be read
+ * \param[out] wi    Handler for context-sensitive warnings.
+ * \return  Enum value corresponding to read input
+ */
+template<typename EnumType>
+EnumType getEnum(std::vector<t_inpfile>* inp, const char* name, warninp* wi);
 
 //! Replace for macro CCTYPE, prints comment string after newline
 void printStringNewline(std::vector<t_inpfile>* inp, const char* line);

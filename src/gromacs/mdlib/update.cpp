@@ -610,14 +610,14 @@ static void do_update_md(int         start,
                          const rvec* gmx_restrict x,
                          rvec* gmx_restrict xprime,
                          rvec* gmx_restrict v,
-                         const rvec* gmx_restrict f,
-                         const int                etc,
-                         const int                epc,
-                         const int                nsttcouple,
-                         const int                nstpcouple,
-                         const t_mdatoms*         md,
-                         const gmx_ekindata_t*    ekind,
-                         const matrix             box,
+                         const rvec* gmx_restrict  f,
+                         const TemperatureCoupling etc,
+                         const PressureCoupling    epc,
+                         const int                 nsttcouple,
+                         const int                 nstpcouple,
+                         const t_mdatoms*          md,
+                         const gmx_ekindata_t*     ekind,
+                         const matrix              box,
                          const double* gmx_restrict nh_vxi,
                          const matrix               M)
 {
@@ -625,10 +625,11 @@ static void do_update_md(int         start,
                "For SIMD optimization certain compilers need to have xprime != x");
 
     /* Note: Berendsen pressure scaling is handled after do_update_md() */
-    bool doTempCouple = (etc != etcNO && do_per_step(step + nsttcouple - 1, nsttcouple));
-    bool doNoseHoover = (etc == etcNOSEHOOVER && doTempCouple);
-    bool doParrinelloRahman =
-            (epc == epcPARRINELLORAHMAN && do_per_step(step + nstpcouple - 1, nstpcouple));
+    bool doTempCouple =
+            (etc != TemperatureCoupling::No && do_per_step(step + nsttcouple - 1, nsttcouple));
+    bool doNoseHoover       = (etc == TemperatureCoupling::NoseHoover && doTempCouple);
+    bool doParrinelloRahman = (epc == PressureCoupling::ParrinelloRahman
+                               && do_per_step(step + nstpcouple - 1, nstpcouple));
     bool doPROffDiagonal = (doParrinelloRahman && (M[YY][XX] != 0 || M[ZZ][XX] != 0 || M[ZZ][YY] != 0));
 
     real dtPressureCouple = (doParrinelloRahman ? nstpcouple * dt : 0);
@@ -1561,8 +1562,9 @@ void Update::Impl::update_coords(const t_inputrec&                              
                 case (eiVV):
                 case (eiVVAK):
                 {
-                    gmx_bool bExtended = (inputRecord.etc == etcNOSEHOOVER || inputRecord.epc == epcPARRINELLORAHMAN
-                                          || inputRecord.epc == epcMTTK);
+                    gmx_bool bExtended = (inputRecord.etc == TemperatureCoupling::NoseHoover
+                                          || inputRecord.epc == PressureCoupling::ParrinelloRahman
+                                          || inputRecord.epc == PressureCoupling::Mttk);
 
                     /* assuming barostat coupled to group 0 */
                     real alpha = 1.0 + DIM / static_cast<real>(inputRecord.opts.nrdf[0]);

@@ -111,8 +111,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         // The leap frog integration algorithm
         builder->add<ForceElement>();
         builder->add<StatePropagatorData::Element>();
-        if (legacySimulatorData_->inputrec->etc == etcVRESCALE
-            || legacySimulatorData_->inputrec->etc == etcBERENDSEN)
+        if (legacySimulatorData_->inputrec->etc == TemperatureCoupling::VRescale
+            || legacySimulatorData_->inputrec->etc == TemperatureCoupling::Berendsen)
         {
             builder->add<VelocityScalingTemperatureCoupling>(
                     -1, UseFullStepKE::No, ReportPreviousStepConservedEnergy::No);
@@ -126,7 +126,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         }
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>();
         builder->add<EnergyData::Element>();
-        if (legacySimulatorData_->inputrec->epc == epcPARRINELLORAHMAN)
+        if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
         {
             builder->add<ParrinelloRahmanBarostat>(-1);
         }
@@ -145,8 +145,8 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         }
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>();
         builder->add<StatePropagatorData::Element>();
-        if (legacySimulatorData_->inputrec->etc == etcVRESCALE
-            || legacySimulatorData_->inputrec->etc == etcBERENDSEN)
+        if (legacySimulatorData_->inputrec->etc == TemperatureCoupling::VRescale
+            || legacySimulatorData_->inputrec->etc == TemperatureCoupling::Berendsen)
         {
             builder->add<VelocityScalingTemperatureCoupling>(
                     0, UseFullStepKE::Yes, ReportPreviousStepConservedEnergy::Yes);
@@ -161,7 +161,7 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
         }
         builder->add<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerlet>>();
         builder->add<EnergyData::Element>();
-        if (legacySimulatorData_->inputrec->epc == epcPARRINELLORAHMAN)
+        if (legacySimulatorData_->inputrec->epc == PressureCoupling::ParrinelloRahman)
         {
             builder->add<ParrinelloRahmanBarostat>(-1);
         }
@@ -206,7 +206,7 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
 
     GMX_RELEASE_ASSERT(
             !(modularSimulatorExplicitlyTurnedOff && inputrec->eI == eiVV
-              && inputrec->epc == epcPARRINELLORAHMAN),
+              && inputrec->epc == PressureCoupling::ParrinelloRahman),
             "Cannot use a Parrinello-Rahman barostat with md-vv and "
             "GMX_DISABLE_MODULAR_SIMULATOR=ON, "
             "as the Parrinello-Rahman barostat is not implemented in the legacy simulator. Unset "
@@ -228,14 +228,16 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             isInputCompatible
             && conditionalAssert(!doRerun, "Rerun is not supported by the modular simulator.");
     isInputCompatible = isInputCompatible
-                        && conditionalAssert(inputrec->etc == etcNO || inputrec->etc == etcVRESCALE
-                                                     || inputrec->etc == etcBERENDSEN,
+                        && conditionalAssert(inputrec->etc == TemperatureCoupling::No
+                                                     || inputrec->etc == TemperatureCoupling::VRescale
+                                                     || inputrec->etc == TemperatureCoupling::Berendsen,
                                              "Only v-rescale and Berendsen thermostat are "
                                              "supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
             && conditionalAssert(
-                       inputrec->epc == epcNO || inputrec->epc == epcPARRINELLORAHMAN,
+                       inputrec->epc == PressureCoupling::No
+                               || inputrec->epc == PressureCoupling::ParrinelloRahman,
                        "Only Parrinello-Rahman barostat is supported by the modular simulator.");
     isInputCompatible =
             isInputCompatible
@@ -356,7 +358,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                         && conditionalAssert(!GMX_FAHCORE,
                                              "GMX_FAHCORE not supported by the modular simulator.");
     GMX_RELEASE_ASSERT(
-            isInputCompatible || !(inputrec->eI == eiVV && inputrec->epc == epcPARRINELLORAHMAN),
+            isInputCompatible
+                    || !(inputrec->eI == eiVV && inputrec->epc == PressureCoupling::ParrinelloRahman),
             "Requested Parrinello-Rahman barostat with md-vv, but other options are not compatible "
             "with the modular simulator. The Parrinello-Rahman barostat is not implemented for "
             "md-vv in the legacy simulator. Use a different pressure control algorithm.");

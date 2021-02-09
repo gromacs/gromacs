@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,7 +80,7 @@
 static bool supportsDynamicPairlistGenerationInterval(const t_inputrec& ir)
 {
     return ir.cutoff_scheme == ecutsVERLET && EI_DYNAMICS(ir.eI)
-           && !(EI_MD(ir.eI) && ir.etc == etcNO) && ir.verletbuf_tol > 0;
+           && !(EI_MD(ir.eI) && ir.etc == TemperatureCoupling::No) && ir.verletbuf_tol > 0;
 }
 
 /*! \brief Cost of non-bonded kernels
@@ -190,7 +190,7 @@ void increaseNstlist(FILE*               fp,
         }
     }
 
-    if (EI_MD(ir->eI) && ir->etc == etcNO)
+    if (EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No)
     {
         if (MASTER(cr))
         {

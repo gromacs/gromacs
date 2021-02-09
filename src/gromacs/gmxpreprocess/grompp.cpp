@@ -907,7 +907,7 @@ static void cont_status(const char*             slog,
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Using frame at t = %g ps", use_time);
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Starting time for run is %g ps", ir->init_t);
 
-    if ((ir->epc != epcNO || ir->etc == etcNOSEHOOVER) && ener)
+    if ((ir->epc != PressureCoupling::No || ir->etc == TemperatureCoupling::NoseHoover) && ener)
     {
         get_enx_state(ener, use_time, sys->groups, ir, state);
         preserve_box_shape(ir, state->box_rel, state->boxv);
@@ -2035,7 +2035,7 @@ int gmx_grompp(int argc, char* argv[])
         }
     }
 
-    if (EI_SD(ir->eI) && ir->etc != etcNO)
+    if (EI_SD(ir->eI) && ir->etc != TemperatureCoupling::No)
     {
         warning_note(wi, "Temperature coupling is ignored with SD integrators.");
     }
@@ -2047,14 +2047,14 @@ int gmx_grompp(int argc, char* argv[])
 
     if (nint_ftype(&sys, mi, F_POSRES) > 0 || nint_ftype(&sys, mi, F_FBPOSRES) > 0)
     {
-        if (ir->epc == epcPARRINELLORAHMAN || ir->epc == epcMTTK)
+        if (ir->epc == PressureCoupling::ParrinelloRahman || ir->epc == PressureCoupling::Mttk)
         {
             std::string warningMessage = gmx::formatString(
                     "You are combining position restraints with %s pressure coupling, which can "
                     "lead to instabilities. If you really want to combine position restraints with "
                     "pressure coupling, we suggest to use %s pressure coupling instead.",
-                    EPCOUPLTYPE(ir->epc),
-                    EPCOUPLTYPE(epcBERENDSEN));
+                    enumValueToString(ir->epc),
+                    enumValueToString(PressureCoupling::Berendsen));
             warning_note(wi, warningMessage);
         }
 
@@ -2200,7 +2200,7 @@ int gmx_grompp(int argc, char* argv[])
         {
             real buffer_temp;
 
-            if (EI_MD(ir->eI) && ir->etc == etcNO)
+            if (EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No)
             {
                 if (bGenVel)
                 {
@@ -2232,7 +2232,7 @@ int gmx_grompp(int argc, char* argv[])
                 buffer_temp = get_max_reference_temp(ir, wi);
             }
 
-            if (EI_MD(ir->eI) && ir->etc == etcNO && buffer_temp == 0)
+            if (EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No && buffer_temp == 0)
             {
                 /* NVE with initial T=0: we add a fixed ratio to rlist.
                  * Since we don't actually use verletbuf_tol, we set it to -1
@@ -2248,7 +2248,7 @@ int gmx_grompp(int argc, char* argv[])
                  * Note that we can't warn when nsteps=0, since we don't
                  * know how many steps the user intends to run.
                  */
-                if (EI_MD(ir->eI) && ir->etc == etcNO && ir->nstlist > 1 && ir->nsteps > 0)
+                if (EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No && ir->nstlist > 1 && ir->nsteps > 0)
                 {
                     const real driftTolerance = 0.01;
                     /* We use 2 DOF per atom = 2kT pot+kin energy,
@@ -2393,7 +2393,7 @@ int gmx_grompp(int argc, char* argv[])
     if (ir->bDoAwh)
     {
         tensor compressibility = { { 0 } };
-        if (ir->epc != epcNO)
+        if (ir->epc != PressureCoupling::No)
         {
             copy_mat(ir->compress, compressibility);
         }

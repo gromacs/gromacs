@@ -432,11 +432,11 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(ir->eI == eiMD,
                            "Only the md integrator is supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
-                ir->etc != etcNOSEHOOVER,
+                ir->etc != TemperatureCoupling::NoseHoover,
                 "Nose-Hoover temperature coupling is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(
-                ir->epc == epcNO || ir->epc == epcPARRINELLORAHMAN || ir->epc == epcBERENDSEN
-                        || ir->epc == epcCRESCALE,
+                ir->epc == PressureCoupling::No || ir->epc == PressureCoupling::ParrinelloRahman
+                        || ir->epc == PressureCoupling::Berendsen || ir->epc == PressureCoupling::CRescale,
                 "Only Parrinello-Rahman, Berendsen, and C-rescale pressure coupling are supported "
                 "with the GPU update.\n");
         GMX_RELEASE_ASSERT(!mdatoms->haveVsites,
@@ -1072,13 +1072,14 @@ void gmx::LegacySimulator::do_md()
         {
             bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
             bCalcVir      = bCalcEnerStep
-                       || (ir->epc != epcNO
+                       || (ir->epc != PressureCoupling::No
                            && (do_per_step(step, ir->nstpcouple) || do_per_step(step - 1, ir->nstpcouple)));
         }
         else
         {
             bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
-            bCalcVir = bCalcEnerStep || (ir->epc != epcNO && do_per_step(step, ir->nstpcouple));
+            bCalcVir      = bCalcEnerStep
+                       || (ir->epc != PressureCoupling::No && do_per_step(step, ir->nstpcouple));
         }
         bCalcEner = bCalcEnerStep;
 
@@ -1405,7 +1406,7 @@ void gmx::LegacySimulator::do_md()
 
         // Parrinello-Rahman requires the pressure to be availible before the update to compute
         // the velocity scaling matrix. Hence, it runs one step after the nstpcouple step.
-        const bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN
+        const bool doParrinelloRahman = (ir->epc == PressureCoupling::ParrinelloRahman
                                          && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
 
         if (EI_VV(ir->eI))
@@ -1481,7 +1482,8 @@ void gmx::LegacySimulator::do_md()
                 }
 
                 const bool doTemperatureScaling =
-                        (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
+                        (ir->etc != TemperatureCoupling::No
+                         && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
 
                 // This applies Leap-Frog, LINCS and SETTLE in succession
                 integrator->integrate(
@@ -1676,10 +1678,10 @@ void gmx::LegacySimulator::do_md()
         update_pcouple_after_coordinates(
                 fplog, step, ir, mdatoms, pres, force_vir, shake_vir, pressureCouplingMu, state, nrnb, upd.deform(), !useGpuForUpdate);
 
-        const bool doBerendsenPressureCoupling =
-                (inputrec->epc == epcBERENDSEN && do_per_step(step, inputrec->nstpcouple));
-        const bool doCRescalePressureCoupling =
-                (inputrec->epc == epcCRESCALE && do_per_step(step, inputrec->nstpcouple));
+        const bool doBerendsenPressureCoupling = (inputrec->epc == PressureCoupling::Berendsen
+                                                  && do_per_step(step, inputrec->nstpcouple));
+        const bool doCRescalePressureCoupling  = (inputrec->epc == PressureCoupling::CRescale
+                                                 && do_per_step(step, inputrec->nstpcouple));
         if (useGpuForUpdate
             && (doBerendsenPressureCoupling || doCRescalePressureCoupling || doParrinelloRahman))
         {

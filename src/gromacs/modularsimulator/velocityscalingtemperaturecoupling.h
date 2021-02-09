@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,9 +75,6 @@ enum class ReportPreviousStepConservedEnergy
     Count
 };
 
-//! Typedef to match current use of ints as types.
-using TemperatureCouplingType = int;
-
 /*! \internal
  * \ingroup module_modularsimulator
  * \brief Element implementing the a velocity-scaling thermostat
@@ -104,7 +101,7 @@ public:
                                        const real*                       couplingTime,
                                        const real*                       numDegreesOfFreedom,
                                        EnergyData*                       energyData,
-                                       TemperatureCouplingType           couplingType);
+                                       TemperatureCoupling               couplingType);
 
     /*! \brief Register run function for step / time
      *
