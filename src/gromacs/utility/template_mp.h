@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,7 @@ auto dispatchTemplatedFunction(Function&& f)
 
 /** \internal \brief Helper function to select appropriate template based on runtime values.
  *
- * Can only use enums for template parameters.
+ * Can use enums or booleans for template parameters.
  * These enums must have a member \c Count indicating the total number of valid values.
  *
  * Example usage:
@@ -73,15 +73,15 @@ auto dispatchTemplatedFunction(Function&& f)
         Count = 2
     };
 
-    template<Options p1, Options p2>
+    template<bool p0, Options p1, Options p2>
     bool foo(int i);
 
-    bool bar(Options p1, Options p2, int i) {
+    bool bar(bool p0, Options p1, Options p2, int i) {
         return dispatchTemplatedFunction(
-            [=](auto p1, auto p2) {
-                return foo<p1, p2>(i);
+            [=](auto p0, auto p1, auto p2) {
+                return foo<p0, p1, p2>(i);
             },
-            p1, p2);
+            p0, p1, p2);
     }
  * \endcode
  */
@@ -93,6 +93,18 @@ auto dispatchTemplatedFunction(Function&& f, Enum e, Enums... es)
                 return compat::mp_with_index<size_t(Enum::Count)>(size_t(e), [&](auto e_) {
                     return std::forward<Function>(f)(
                             std::integral_constant<Enum, static_cast<Enum>(size_t(e_))>(), es_...);
+                });
+            },
+            es...);
+}
+
+template<class Function, class... Enums>
+auto dispatchTemplatedFunction(Function&& f, bool e, Enums... es)
+{
+    return dispatchTemplatedFunction(
+            [&](auto... es_) {
+                return compat::mp_with_index<2>(size_t(e), [&](auto e_) {
+                    return std::forward<Function>(f)(std::bool_constant<static_cast<bool>(e_)>(), es_...);
                 });
             },
             es...);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,11 +57,44 @@ static int testEnumTwoIPlusJPlusK(int k)
     return 2 * int(i) + int(j) + k;
 }
 
-TEST(TemplateMPTest, DispatchTemplatedFunction)
+template<bool doDoubling, Options i, Options j>
+static int testBoolEnumTwoIPlusJPlusK(int k)
+{
+    return (doDoubling ? 2 : 1) * int(i) + int(j) + k;
+}
+
+template<bool doDoubling>
+static int testBoolDoubleOrNot(int k)
+{
+    return (doDoubling ? 2 : 1) * k;
+}
+
+
+TEST(TemplateMPTest, DispatchTemplatedFunctionEnum)
 {
     int five           = 5;
     int two1plus2plus5 = dispatchTemplatedFunction(
             [=](auto p1, auto p2) { return testEnumTwoIPlusJPlusK<p1, p2>(five); }, Options::Op1, Options::Op2);
+    EXPECT_EQ(two1plus2plus5, 9);
+}
+
+TEST(TemplateMPTest, DispatchTemplatedFunctionBool)
+{
+    int five = 5;
+    int double5 = dispatchTemplatedFunction([=](auto p1) { return testBoolDoubleOrNot<p1>(five); }, true);
+    EXPECT_EQ(double5, 10);
+    int just5 = dispatchTemplatedFunction([=](auto p1) { return testBoolDoubleOrNot<p1>(five); }, false);
+    EXPECT_EQ(just5, 5);
+}
+
+TEST(TemplateMPTest, DispatchTemplatedFunctionEnumBool)
+{
+    int five           = 5;
+    int two1plus2plus5 = dispatchTemplatedFunction(
+            [=](auto p1, auto p2, auto p3) { return testBoolEnumTwoIPlusJPlusK<p1, p2, p3>(five); },
+            true,
+            Options::Op1,
+            Options::Op2);
     EXPECT_EQ(two1plus2plus5, 9);
 }
 
