@@ -64,7 +64,6 @@ class MDLogger;
 struct NbnxmGpu;
 struct nbnxn_atomdata_t;
 struct nonbonded_verlet_t;
-struct tMPI_Atomic;
 
 class GpuEventSynchronizer;
 
@@ -297,10 +296,6 @@ public:
     gmx_bool bUseBufferFlags;
     //! Flags for buffer zeroing+reduc.
     std::vector<gmx_bitmask_t> buffer_flags;
-    //! Use tree for force reduction
-    gmx_bool bUseTreeReduce;
-    //! Synchronization step for tree reduce
-    tMPI_Atomic* syncStep;
     //! \}
 };
 

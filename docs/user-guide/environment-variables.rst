@@ -396,10 +396,6 @@ Performance and Run Control
         by mdrun. Values should be between the pruning frequency value
         (1 for CPU and 2 for GPU) and :mdp:`nstlist` ``- 1``.
 
-``GMX_USE_TREEREDUCE``
-        use tree reduction for nbnxn force reduction. Potentially faster for large number of
-        OpenMP threads (if memory locality is important).
-
 .. _opencl-management:
 
 OpenCL management

@@ -45,8 +45,6 @@
 
 #include <algorithm>
 
-#include "thread_mpi/atomic.h"
-
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
@@ -439,8 +437,7 @@ nbnxn_atomdata_t::nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy) :
     shift_vec({}, { pinningPolicy }),
     x_({}, { pinningPolicy }),
     simdMasks(),
-    bUseBufferFlags(FALSE),
-    bUseTreeReduce(FALSE)
+    bUseBufferFlags(FALSE)
 {
 }
 
@@ -688,24 +685,6 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
     }
 
     nbat->buffer_flags.clear();
-
-    const int nth = gmx_omp_nthreads_get(emntNonbonded);
-
-    const char* ptr = getenv("GMX_USE_TREEREDUCE");
-    if (ptr != nullptr)
-    {
-        nbat->bUseTreeReduce = (strtol(ptr, nullptr, 10) != 0);
-    }
-    else
-    {
-        nbat->bUseTreeReduce = false;
-    }
-    if (nbat->bUseTreeReduce)
-    {
-        GMX_LOG(mdlog.info).asParagraph().appendText("Using tree force reduction");
-
-        nbat->syncStep = new tMPI_Atomic[nth];
-    }
 }
 
 template<int packSize>
@@ -1261,150 +1240,7 @@ static inline unsigned char reverse_bits(unsigned char b)
     return (b * 0x0202020202ULL & 0x010884422010ULL) % 1023;
 }
 
-static void nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbnxn_atomdata_t* nbat, int nth)
-{
-    gmx::ArrayRef<const gmx_bitmask_t> flags = nbat->buffer_flags;
-
-    int next_pow2 = 1 << (gmx::log2I(nth - 1) + 1);
-
-    const int numOutputBuffers = nbat->out.size();
-    GMX_ASSERT(numOutputBuffers == nth,
-               "tree-reduce currently only works for numOutputBuffers==nth");
-
-    memset(nbat->syncStep, 0, sizeof(*(nbat->syncStep)) * nth);
-
-#pragma omp parallel num_threads(nth)
-    {
-        try
-        {
-            int b0, b1, b;
-            int i0, i1;
-            int group_size, th;
-
-            th = gmx_omp_get_thread_num();
-
-            for (group_size = 2; group_size < 2 * next_pow2; group_size *= 2)
-            {
-                int index[2], group_pos, partner_pos, wu;
-                int partner_th = th ^ (group_size / 2);
-
-                if (group_size > 2)
-                {
-#ifdef TMPI_ATOMICS
-                    /* wait on partner thread - replaces full barrier */
-                    int sync_th, sync_group_size;
-
-#    if defined(__clang__) && __clang_major__ >= 8
-                    // Suppress warnings that the use of memory_barrier may be excessive
-                    // Only exists beginning with clang-8
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Watomic-implicit-seq-cst"
-#    endif
-
-                    tMPI_Atomic_memory_barrier(); /* guarantee data is saved before marking work as done */
-                    tMPI_Atomic_set(&(nbat->syncStep[th]), group_size / 2); /* mark previous step as completed */
-
-                    /* find thread to sync with. Equal to partner_th unless nth is not a power of two. */
-                    for (sync_th = partner_th, sync_group_size = group_size;
-                         sync_th >= nth && sync_group_size > 2;
-                         sync_group_size /= 2)
-                    {
-                        sync_th &= ~(sync_group_size / 4);
-                    }
-                    if (sync_th < nth) /* otherwise nothing to sync index[1] will be >=nout */
-                    {
-                        /* wait on the thread which computed input data in previous step */
-                        while (tMPI_Atomic_get(static_cast<volatile tMPI_Atomic_t*>(&(nbat->syncStep[sync_th])))
-                               < group_size / 2)
-                        {
-                            gmx_pause();
-                        }
-                        /* guarantee that no later load happens before wait loop is finisehd */
-                        tMPI_Atomic_memory_barrier();
-                    }
-#    if defined(__clang__) && __clang_major__ >= 8
-#        pragma clang diagnostic pop
-#    endif
-#else /* TMPI_ATOMICS */
-#    pragma omp barrier
-#endif
-                }
-
-                /* Calculate buffers to sum (result goes into first buffer) */
-                group_pos = th % group_size;
-                index[0]  = th - group_pos;
-                index[1]  = index[0] + group_size / 2;
-
-                /* If no second buffer, nothing to do */
-                if (index[1] >= numOutputBuffers && group_size > 2)
-                {
-                    continue;
-                }
-
-#if NBNXN_BUFFERFLAG_MAX_THREADS > 256
-#    error reverse_bits assumes max 256 threads
-#endif
-                /* Position is permuted so that one of the 2 vectors being added was computed on the same thread in the previous step.
-                   This improves locality and enables to sync with just a single thread between steps (=the levels in the btree).
-                   The permutation which allows this corresponds to reversing the bits of the group position.
-                 */
-                group_pos = reverse_bits(group_pos) / (256 / group_size);
-
-                partner_pos = group_pos ^ 1;
-
-                /* loop over two work-units (own and partner) */
-                for (wu = 0; wu < 2; wu++)
-                {
-                    if (wu == 1)
-                    {
-                        if (partner_th < nth)
-                        {
-                            break; /* partner exists we don't have to do his work */
-                        }
-                        else
-                        {
-                            group_pos = partner_pos;
-                        }
-                    }
-
-                    /* Calculate the cell-block range for our thread */
-                    b0 = (flags.size() * group_pos) / group_size;
-                    b1 = (flags.size() * (group_pos + 1)) / group_size;
-
-                    for (b = b0; b < b1; b++)
-                    {
-                        i0 = b * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
-                        i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
-
-                        if (bitmask_is_set(flags[b], index[1]) || group_size > 2)
-                        {
-                            const real* fIndex1 = nbat->out[index[1]].f.data();
-#if GMX_SIMD
-                            nbnxn_atomdata_reduce_reals_simd
-#else
-                            nbnxn_atomdata_reduce_reals
-#endif
-                                    (nbat->out[index[0]].f.data(),
-                                     bitmask_is_set(flags[b], index[0]) || group_size > 2,
-                                     &fIndex1,
-                                     1,
-                                     i0,
-                                     i1);
-                        }
-                        else if (!bitmask_is_set(flags[b], index[0]))
-                        {
-                            nbnxn_atomdata_clear_reals(nbat->out[index[0]].f, i0, i1);
-                        }
-                    }
-                }
-            }
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    }
-}
-
-
-static void nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbnxn_atomdata_t* nbat, int nth)
+static void nbnxn_atomdata_add_nbat_f_to_f_reduce(nbnxn_atomdata_t* nbat, int nth)
 {
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
@@ -1479,14 +1315,7 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
         /* Reduce the force thread output buffers into buffer 0, before adding
          * them to the, differently ordered, "real" force buffer.
          */
-        if (nbat->bUseTreeReduce)
-        {
-            nbnxn_atomdata_add_nbat_f_to_f_treereduce(nbat, nth);
-        }
-        else
-        {
-            nbnxn_atomdata_add_nbat_f_to_f_stdreduce(nbat, nth);
-        }
+        nbnxn_atomdata_add_nbat_f_to_f_reduce(nbat, nth);
     }
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
