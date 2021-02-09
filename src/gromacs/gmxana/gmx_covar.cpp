@@ -76,7 +76,7 @@ namespace
  * \param[in] numAtoms to be accessed
  * \param[in] indexUsagePurpose to be more explicit in the error message
  *
- * \throws RangeError if any element in indices is larger than or equal numAtoms 
+ * \throws RangeError if any element in indices is larger than or equal numAtoms
  *
  */
 void throwErrorIfIndexOutOfBounds(ArrayRef<const int> indices, const int numAtoms, const std::string& indexUsagePurpose)
