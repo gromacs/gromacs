@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -90,17 +90,10 @@ gmx_find_flag_for_source(SYCL_CXX_FLAGS_RESULT
     "#include <CL/sycl.hpp>
      namespace sycl = cl::sycl;
      int main(){
-         constexpr int length = 1000;
          sycl::queue q(sycl::default_selector{});
-         // Check USM extension
-         sycl::usm_allocator<int, sycl::usm::alloc::shared> q_alloc{q};
-         std::vector<int, sycl::usm_allocator<int, sycl::usm::alloc::shared>> v(q_alloc);
-         v.reserve(length);
-         for(int i = 0; i < length ; i++) { v.push_back(i); }
-         q.parallel_for<class whatever>(sycl::range<1>{length}, [=, ptr = v.data()] (sycl::id<1> i){ ptr[i] *= 2; }).wait();
          return 0;
      }
-     " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-fsycl")
+     " "CXX" DISABLE_SYCL_CXX_FLAGS SYCL_CXX_FLAGS "-fsycl -fsycl-device-code-split=per_kernel")
 
 if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
     if(SYCL_CXX_FLAGS_RESULT)
