@@ -38,7 +38,6 @@
 
 #include "atomdata.h"
 
-#include <cassert>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -58,7 +57,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -125,15 +123,13 @@ nbnxn_atomdata_output_t::nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
 
 static void copy_int_to_nbat_int(const int* a, int na, int na_round, const int* in, int fill, int* innb)
 {
-    int i, j;
-
-    j = 0;
-    for (i = 0; i < na; i++)
+    int j = 0;
+    for (int i = 0; i < na; i++)
     {
         innb[j++] = in[a[i]];
     }
     /* Complete the partially filled last cell with fill */
-    for (; i < na_round; i++)
+    for (int i = na; i < na_round; i++)
     {
         innb[j++] = fill;
     }
@@ -153,107 +149,113 @@ void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, i
      */
     const real farAway = -1000000;
 
-    int i, j, c;
-
-    switch (nbatFormat)
+    if (nbatFormat == nbatXYZ)
     {
-        case nbatXYZ:
-            j = a0 * STRIDE_XYZ;
-            for (i = 0; i < na; i++)
+        int i = 0;
+        int j = a0 * STRIDE_XYZ;
+        for (; i < na; i++)
+        {
+            xnb[j++] = x[a[i]][XX];
+            xnb[j++] = x[a[i]][YY];
+            xnb[j++] = x[a[i]][ZZ];
+        }
+        /* Complete the partially filled last cell with farAway elements */
+        for (; i < na_round; i++)
+        {
+            xnb[j++] = farAway;
+            xnb[j++] = farAway;
+            xnb[j++] = farAway;
+        }
+    }
+    else if (nbatFormat == nbatXYZQ)
+    {
+        int i = 0;
+        int j = a0 * STRIDE_XYZQ;
+        for (; i < na; i++)
+        {
+            xnb[j++] = x[a[i]][XX];
+            xnb[j++] = x[a[i]][YY];
+            xnb[j++] = x[a[i]][ZZ];
+            j++;
+        }
+        /* Complete the partially filled last cell with zeros */
+        for (; i < na_round; i++)
+        {
+            xnb[j++] = farAway;
+            xnb[j++] = farAway;
+            xnb[j++] = farAway;
+            j++;
+        }
+    }
+    else if (nbatFormat == nbatX4)
+    {
+        int i = 0;
+        int j = atom_to_x_index<c_packX4>(a0);
+        int c = a0 & (c_packX4 - 1);
+        for (; i < na; i++)
+        {
+            xnb[j + XX * c_packX4] = x[a[i]][XX];
+            xnb[j + YY * c_packX4] = x[a[i]][YY];
+            xnb[j + ZZ * c_packX4] = x[a[i]][ZZ];
+            j++;
+            c++;
+            if (c == c_packX4)
             {
-                xnb[j++] = x[a[i]][XX];
-                xnb[j++] = x[a[i]][YY];
-                xnb[j++] = x[a[i]][ZZ];
+                j += (DIM - 1) * c_packX4;
+                c = 0;
             }
-            /* Complete the partially filled last cell with farAway elements */
-            for (; i < na_round; i++)
+        }
+        /* Complete the partially filled last cell with zeros */
+        for (; i < na_round; i++)
+        {
+            xnb[j + XX * c_packX4] = farAway;
+            xnb[j + YY * c_packX4] = farAway;
+            xnb[j + ZZ * c_packX4] = farAway;
+            j++;
+            c++;
+            if (c == c_packX4)
             {
-                xnb[j++] = farAway;
-                xnb[j++] = farAway;
-                xnb[j++] = farAway;
+                j += (DIM - 1) * c_packX4;
+                c = 0;
             }
-            break;
-        case nbatXYZQ:
-            j = a0 * STRIDE_XYZQ;
-            for (i = 0; i < na; i++)
+        }
+    }
+    else if (nbatFormat == nbatX8)
+    {
+        int i = 0;
+        int j = atom_to_x_index<c_packX8>(a0);
+        int c = a0 & (c_packX8 - 1);
+        for (; i < na; i++)
+        {
+            xnb[j + XX * c_packX8] = x[a[i]][XX];
+            xnb[j + YY * c_packX8] = x[a[i]][YY];
+            xnb[j + ZZ * c_packX8] = x[a[i]][ZZ];
+            j++;
+            c++;
+            if (c == c_packX8)
             {
-                xnb[j++] = x[a[i]][XX];
-                xnb[j++] = x[a[i]][YY];
-                xnb[j++] = x[a[i]][ZZ];
-                j++;
+                j += (DIM - 1) * c_packX8;
+                c = 0;
             }
-            /* Complete the partially filled last cell with zeros */
-            for (; i < na_round; i++)
+        }
+        /* Complete the partially filled last cell with zeros */
+        for (; i < na_round; i++)
+        {
+            xnb[j + XX * c_packX8] = farAway;
+            xnb[j + YY * c_packX8] = farAway;
+            xnb[j + ZZ * c_packX8] = farAway;
+            j++;
+            c++;
+            if (c == c_packX8)
             {
-                xnb[j++] = farAway;
-                xnb[j++] = farAway;
-                xnb[j++] = farAway;
-                j++;
+                j += (DIM - 1) * c_packX8;
+                c = 0;
             }
-            break;
-        case nbatX4:
-            j = atom_to_x_index<c_packX4>(a0);
-            c = a0 & (c_packX4 - 1);
-            for (i = 0; i < na; i++)
-            {
-                xnb[j + XX * c_packX4] = x[a[i]][XX];
-                xnb[j + YY * c_packX4] = x[a[i]][YY];
-                xnb[j + ZZ * c_packX4] = x[a[i]][ZZ];
-                j++;
-                c++;
-                if (c == c_packX4)
-                {
-                    j += (DIM - 1) * c_packX4;
-                    c = 0;
-                }
-            }
-            /* Complete the partially filled last cell with zeros */
-            for (; i < na_round; i++)
-            {
-                xnb[j + XX * c_packX4] = farAway;
-                xnb[j + YY * c_packX4] = farAway;
-                xnb[j + ZZ * c_packX4] = farAway;
-                j++;
-                c++;
-                if (c == c_packX4)
-                {
-                    j += (DIM - 1) * c_packX4;
-                    c = 0;
-                }
-            }
-            break;
-        case nbatX8:
-            j = atom_to_x_index<c_packX8>(a0);
-            c = a0 & (c_packX8 - 1);
-            for (i = 0; i < na; i++)
-            {
-                xnb[j + XX * c_packX8] = x[a[i]][XX];
-                xnb[j + YY * c_packX8] = x[a[i]][YY];
-                xnb[j + ZZ * c_packX8] = x[a[i]][ZZ];
-                j++;
-                c++;
-                if (c == c_packX8)
-                {
-                    j += (DIM - 1) * c_packX8;
-                    c = 0;
-                }
-            }
-            /* Complete the partially filled last cell with zeros */
-            for (; i < na_round; i++)
-            {
-                xnb[j + XX * c_packX8] = farAway;
-                xnb[j + YY * c_packX8] = farAway;
-                xnb[j + ZZ * c_packX8] = farAway;
-                j++;
-                c++;
-                if (c == c_packX8)
-                {
-                    j += (DIM - 1) * c_packX8;
-                    c = 0;
-                }
-            }
-            break;
-        default: gmx_incons("Unsupported nbnxn_atomdata_t format");
+        }
+    }
+    else
+    {
+        gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
 }
 
@@ -342,7 +344,7 @@ nbnxn_atomdata_t::SimdMasks::SimdMasks()
     /* Set the diagonal cluster pair exclusion mask setup data.
      * In the kernel we check 0 < j - i to generate the masks.
      * Here we store j - i for generating the mask for the first i,
-     * we substract 0.5 to avoid rounding issues.
+     * we subtract 0.5 to avoid rounding issues.
      * In the kernel we can subtract 1 to generate the subsequent mask.
      */
     const int simd_4xn_diag_size = std::max(c_nbnxnCpuIClusterSize, simd_width);
@@ -450,10 +452,6 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                                        ArrayRef<const real>      nbfp,
                                        int                       n_energygroups)
 {
-    real     c6, c12, tol;
-    char*    ptr;
-    gmx_bool simple, bCombGeom, bCombLB, bSIMD;
-
     if (debug)
     {
         fprintf(debug, "There are %d atom types in the system, adding one for nbnxn_atomdata_t\n", ntype);
@@ -465,25 +463,23 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
     /* A tolerance of 1e-5 seems reasonable for (possibly hand-typed)
      * force-field floating point parameters.
      */
-    tol = 1e-5;
-    ptr = getenv("GMX_LJCOMB_TOL");
-    if (ptr != nullptr)
+    real        tol               = 1e-5;
+    const char* tolOverrideString = getenv("GMX_LJCOMB_TOL");
+    if (tolOverrideString != nullptr)
     {
-        double dbl;
-
-        sscanf(ptr, "%lf", &dbl);
-        tol = dbl;
+        double tolOverride = std::strtod(tolOverrideString, nullptr);
+        tol                = tolOverride;
     }
-    bCombGeom = TRUE;
-    bCombLB   = TRUE;
+    bool bCombGeom = true;
+    bool bCombLB   = true;
 
     /* Temporarily fill params->nbfp_comb with sigma and epsilon
      * to check for the LB rule.
      */
     for (int i = 0; i < ntype; i++)
     {
-        c6  = nbfp[(i * ntype + i) * 2] / 6.0;
-        c12 = nbfp[(i * ntype + i) * 2 + 1] / 12.0;
+        const real c6  = nbfp[(i * ntype + i) * 2] / 6.0;
+        const real c12 = nbfp[(i * ntype + i) * 2 + 1] / 12.0;
         if (c6 > 0 && c12 > 0)
         {
             params->nbfp_comb[i * 2]     = gmx::sixthroot(c12 / c6);
@@ -497,7 +493,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
         else
         {
             /* Can not use LB rule with only dispersion or repulsion */
-            bCombLB = FALSE;
+            bCombLB = false;
         }
     }
 
@@ -510,8 +506,9 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                 /* fr->nbfp has been updated, so that array too now stores c6/c12 including
                  * the 6.0/12.0 prefactors to save 2 flops in the most common case (force-only).
                  */
-                c6                                               = nbfp[(i * ntype + j) * 2];
-                c12                                              = nbfp[(i * ntype + j) * 2 + 1];
+                real c6  = nbfp[(i * ntype + j) * 2];
+                real c12 = nbfp[(i * ntype + j) * 2 + 1];
+
                 params->nbfp[(i * params->numTypes + j) * 2]     = c6;
                 params->nbfp[(i * params->numTypes + j) * 2 + 1] = c12;
 
@@ -555,12 +552,12 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                 gmx::boolToString(bCombLB));
     }
 
-    simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
+    const bool simple = Nbnxm::kernelTypeUsesSimplePairlist(kernelType);
 
     switch (enbnxninitcombrule)
     {
         case enbnxninitcombruleDETECT:
-            /* We prefer the geometic combination rule,
+            /* We prefer the geometric combination rule,
              * as that gives a slightly faster kernel than the LB rule.
              */
             if (bCombGeom)
@@ -606,7 +603,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
         default: gmx_incons("Unknown enbnxninitcombrule");
     }
 
-    bSIMD = Nbnxm::kernelTypeIsSimd(kernelType);
+    const bool bSIMD = Nbnxm::kernelTypeIsSimd(kernelType);
 
     set_lj_parameter_data(params, bSIMD);
 
@@ -646,11 +643,9 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
 
     if (simple)
     {
-        int pack_x;
-
         if (bSIMD)
         {
-            pack_x = std::max(c_nbnxnCpuIClusterSize, Nbnxm::JClusterSizePerKernelType[kernelType]);
+            int pack_x = std::max(c_nbnxnCpuIClusterSize, Nbnxm::JClusterSizePerKernelType[kernelType]);
             switch (pack_x)
             {
                 case 4: nbat->XFormat = nbatX4; break;
@@ -794,14 +789,13 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t*     nbat,
             if (nbat->XFormat == nbatXYZQ)
             {
                 real* q = nbat->x().data() + atomOffset * STRIDE_XYZQ + ZZ + 1;
-                int   i;
-                for (i = 0; i < numAtoms; i++)
+                for (int i = 0; i < numAtoms; i++)
                 {
                     *q = charges[gridSet.atomIndices()[atomOffset + i]];
                     q += STRIDE_XYZQ;
                 }
                 /* Complete the partially filled last cell with zeros */
-                for (; i < paddedNumAtoms; i++)
+                for (int i = numAtoms; i < paddedNumAtoms; i++)
                 {
                     *q = 0;
                     q += STRIDE_XYZQ;
@@ -810,14 +804,13 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t*     nbat,
             else
             {
                 real* q = nbat->paramsDeprecated().q.data() + atomOffset;
-                int   i;
-                for (i = 0; i < numAtoms; i++)
+                for (int i = 0; i < numAtoms; i++)
                 {
                     *q = charges[gridSet.atomIndices()[atomOffset + i]];
                     q++;
                 }
                 /* Complete the partially filled last cell with zeros */
-                for (; i < paddedNumAtoms; i++)
+                for (int i = numAtoms; i < paddedNumAtoms; i++)
                 {
                     *q = 0;
                     q++;
@@ -836,33 +829,17 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t*     nbat,
 static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const Nbnxm::GridSet& gridSet)
 {
     nbnxn_atomdata_t::Params& params = nbat->paramsDeprecated();
-    real*                     q;
-    int                       stride_q;
 
-    if (nbat->XFormat == nbatXYZQ)
-    {
-        q        = nbat->x().data() + ZZ + 1;
-        stride_q = STRIDE_XYZQ;
-    }
-    else
-    {
-        q        = params.q.data();
-        stride_q = 1;
-    }
+    const bool formatIsXYZQ = (nbat->XFormat == nbatXYZQ);
+
+    real* q        = formatIsXYZQ ? (nbat->x().data() + ZZ + 1) : params.q.data();
+    int   stride_q = formatIsXYZQ ? STRIDE_XYZQ : 1;
 
     for (const Nbnxm::Grid& grid : gridSet.grids())
     {
-        int nsubc;
-        if (grid.geometry().isSimple)
-        {
-            nsubc = 1;
-        }
-        else
-        {
-            nsubc = c_gpuNumClusterPerCell;
-        }
+        const int nsubc = (grid.geometry().isSimple) ? 1 : c_gpuNumClusterPerCell;
 
-        int c_offset = grid.firstAtomInColumn(0);
+        const int c_offset = grid.firstAtomInColumn(0);
 
         /* Loop over all columns and copy and fill */
         for (int c = 0; c < grid.numCells() * nsubc; c++)
@@ -891,14 +868,11 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const Nbnxm::GridSet
 static void
 copy_egp_to_nbat_egps(const int* a, int na, int na_round, int na_c, int bit_shift, const int* in, int* innb)
 {
-    int i;
-    int comb;
-
-    int j = 0;
-    for (i = 0; i < na; i += na_c)
+    int i = 0, j = 0;
+    for (; i < na; i += na_c)
     {
         /* Store na_c energy group numbers into one int */
-        comb = 0;
+        int comb = 0;
         for (int sa = 0; sa < na_c; sa++)
         {
             int at = a[i + sa];
@@ -974,10 +948,8 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t*     nbat,
 /* Copies the shift vector array to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_shiftvec(gmx_bool bDynamicBox, rvec* shift_vec, nbnxn_atomdata_t* nbat)
 {
-    int i;
-
     nbat->bDynamicBox = bDynamicBox;
-    for (i = 0; i < SHIFTS; i++)
+    for (int i = 0; i < SHIFTS; i++)
     {
         copy_rvec(shift_vec[i], nbat->shift_vec[i]);
     }
@@ -1046,19 +1018,13 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet&   gridSet,
                     const int na  = grid.numAtomsInColumn(cxy);
                     const int ash = grid.firstAtomInColumn(cxy);
 
-                    int na_fill;
-                    if (g == 0 && fillLocal)
-                    {
-                        na_fill = grid.paddedNumAtomsInColumn(cxy);
-                    }
-                    else
-                    {
-                        /* We fill only the real particle locations.
-                         * We assume the filling entries at the end have been
-                         * properly set before during pair-list generation.
-                         */
-                        na_fill = na;
-                    }
+                    const bool mustFillPadding = (g == 0 && fillLocal);
+                    /* When false, we fill only the real particle locations.
+                     * We assume the filling entries at the end have been
+                     * properly set before during pair-list generation.
+                     */
+                    const int na_fill = mustFillPadding ? grid.paddedNumAtomsInColumn(cxy) : na;
+
                     copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash,
                                            na,
                                            na_fill,
@@ -1127,7 +1093,7 @@ gmx_unused static void nbnxn_atomdata_reduce_reals(real* gmx_restrict dest,
     }
     else
     {
-        /* The destination buffer is unitialized, set it first */
+        /* The destination buffer is uninitialized, set it first */
         for (int i = i0; i < i1; i++)
         {
             dest[i] = src[0][i];
@@ -1247,21 +1213,20 @@ static void nbnxn_atomdata_add_nbat_f_to_f_reduce(nbnxn_atomdata_t* nbat, int nt
     {
         try
         {
-            int         nfptr;
             const real* fptr[NBNXN_BUFFERFLAG_MAX_THREADS];
 
             gmx::ArrayRef<const gmx_bitmask_t> flags = nbat->buffer_flags;
 
             /* Calculate the cell-block range for our thread */
-            int b0 = (flags.size() * th) / nth;
-            int b1 = (flags.size() * (th + 1)) / nth;
+            const int b0 = (flags.size() * th) / nth;
+            const int b1 = (flags.size() * (th + 1)) / nth;
 
             for (int b = b0; b < b1; b++)
             {
-                int i0 = b * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
-                int i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
+                const int i0 = b * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
+                const int i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * nbat->fstride;
 
-                nfptr = 0;
+                int nfptr = 0;
                 for (gmx::index out = 1; out < gmx::ssize(nbat->out); out++)
                 {
                     if (bitmask_is_set(flags[b], out))
