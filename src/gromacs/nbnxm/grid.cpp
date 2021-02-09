@@ -1069,8 +1069,9 @@ void Grid::sortColumnsCpuGeometry(GridSetData*                   gridSetData,
         {
             const int cell = firstCell + cellZ;
 
-            const int atomOffsetCell = atomOffset + cellZ * numAtomsPerCell;
-            const int numAtomsCell = std::min(numAtomsPerCell, numAtoms - (atomOffsetCell - atomOffset));
+            const int atomOffsetCell       = atomOffset + cellZ * numAtomsPerCell;
+            const int numAtomsLeftInColumn = std::max(numAtoms - (atomOffsetCell - atomOffset), 0);
+            const int numAtomsCell         = std::min(numAtomsPerCell, numAtomsLeftInColumn);
 
             fillCell(gridSetData, nbat, atomOffsetCell, atomOffsetCell + numAtomsCell, atinfo, x, nullptr);
 
