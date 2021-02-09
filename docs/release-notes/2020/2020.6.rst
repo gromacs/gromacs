@@ -17,6 +17,13 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix range checking bug in ``gmx covar``
+"""""""""""""""""""""""""""""""""""""""
+
+A check was inverted causing range checking to be applied wrong.
+
+:issue:`3902`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
