@@ -524,7 +524,7 @@ DeviceBuffer<gmx::RVec> gpu_get_fshift(NbnxmGpu* nb)
 /* TODO  Remove explicit pinning from host arrays from here and manage in a more natural way*/
 void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv)
 {
-    const DeviceStream& deviceStream  = *gpu_nbv->deviceStreams[InteractionLocality::Local];
+    const DeviceStream& localStream   = *gpu_nbv->deviceStreams[InteractionLocality::Local];
     bool                bDoTime       = gpu_nbv->bDoTime;
     const int           maxNumColumns = gridSet.numColumnsMax();
 
@@ -561,20 +561,20 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(deviceStream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(localStream);
             }
 
             copyToDeviceBuffer(&gpu_nbv->atomIndices,
                                atomIndices,
                                0,
                                atomIndicesSize,
-                               deviceStream,
+                               localStream,
                                GpuApiCallBehavior::Async,
                                nullptr);
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(deviceStream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(localStream);
             }
         }
 
@@ -582,30 +582,30 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
         {
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(deviceStream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(localStream);
             }
 
             int* destPtr = &gpu_nbv->cxy_na[maxNumColumns * g];
             copyToDeviceBuffer(
-                    &destPtr, cxy_na, 0, numColumns, deviceStream, GpuApiCallBehavior::Async, nullptr);
+                    &destPtr, cxy_na, 0, numColumns, localStream, GpuApiCallBehavior::Async, nullptr);
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(deviceStream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(localStream);
             }
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(deviceStream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.openTimingRegion(localStream);
             }
 
             destPtr = &gpu_nbv->cxy_ind[maxNumColumns * g];
             copyToDeviceBuffer(
-                    &destPtr, cxy_ind, 0, numColumns, deviceStream, GpuApiCallBehavior::Async, nullptr);
+                    &destPtr, cxy_ind, 0, numColumns, localStream, GpuApiCallBehavior::Async, nullptr);
 
             if (bDoTime)
             {
-                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(deviceStream);
+                gpu_nbv->timers->xf[AtomLocality::Local].nb_h2d.closeTimingRegion(localStream);
             }
         }
     }

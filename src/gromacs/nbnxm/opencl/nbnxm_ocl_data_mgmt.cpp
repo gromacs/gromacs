@@ -398,8 +398,8 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 //! This function is documented in the header file
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 {
-    cl_atomdata_t*      adat         = nb->atdat;
-    const DeviceStream& deviceStream = *nb->deviceStreams[InteractionLocality::Local];
+    cl_atomdata_t*      adat        = nb->atdat;
+    const DeviceStream& localStream = *nb->deviceStreams[InteractionLocality::Local];
 
     /* only if we have a dynamic box */
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
@@ -410,7 +410,7 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
                            reinterpret_cast<const float*>(nbatom->shift_vec.data()),
                            0,
                            SHIFTS * DIM,
-                           deviceStream,
+                           localStream,
                            GpuApiCallBehavior::Async,
                            nullptr);
         adat->bShiftVecUploaded = CL_TRUE;
@@ -427,7 +427,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     cl_timers_t*         timers        = nb->timers;
     cl_atomdata_t*       d_atdat       = nb->atdat;
     const DeviceContext& deviceContext = *nb->deviceContext_;
-    const DeviceStream&  deviceStream  = *nb->deviceStreams[InteractionLocality::Local];
+    const DeviceStream&  localStream   = *nb->deviceStreams[InteractionLocality::Local];
 
     natoms    = nbat->numAtoms();
     realloced = false;
@@ -435,7 +435,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     if (bDoTime)
     {
         /* time async copy */
-        timers->atdat.openTimingRegion(deviceStream);
+        timers->atdat.openTimingRegion(localStream);
     }
 
     /* need to reallocate if we have to copy more atoms than the amount of space
@@ -488,7 +488,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
                            nbat->params().lj_comb.data(),
                            0,
                            2 * natoms,
-                           deviceStream,
+                           localStream,
                            GpuApiCallBehavior::Async,
                            bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
@@ -500,18 +500,18 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
                            nbat->params().type.data(),
                            0,
                            natoms,
-                           deviceStream,
+                           localStream,
                            GpuApiCallBehavior::Async,
                            bDoTime ? timers->atdat.fetchNextEvent() : nullptr);
     }
 
     if (bDoTime)
     {
-        timers->atdat.closeTimingRegion(deviceStream);
+        timers->atdat.closeTimingRegion(localStream);
     }
 
     /* kick off the tasks enqueued above to ensure concurrency with the search */
-    cl_error = clFlush(deviceStream.stream());
+    cl_error = clFlush(localStream.stream());
     GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                        ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 }
