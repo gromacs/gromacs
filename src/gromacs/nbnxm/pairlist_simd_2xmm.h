@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,10 +57,9 @@ static inline void icell_set_x_simd_2xnn(int  ci,
                                          const real*           x,
                                          NbnxnPairlistCpuWork* work)
 {
-    int   ia;
     real* x_ci_simd = work->iClusterData.xSimd.data();
 
-    ia = xIndexFromCi<NbnxnLayout::Simd2xNN>(ci);
+    const int ia = xIndexFromCi<NbnxnLayout::Simd2xNN>(ci);
 
     store(x_ci_simd + 0 * GMX_SIMD_REAL_WIDTH,
           loadU1DualHsimd(x + ia + 0 * c_xStride2xNN + 0) + SimdReal(shx));
@@ -78,7 +77,7 @@ static inline void icell_set_x_simd_2xnn(int  ci,
 
 /*! \brief SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.
  *
- * Checks bouding box distances and possibly atom pair distances.
+ * Checks bounding box distances and possibly atom pair distances.
  * This is an accelerated version of make_cluster_list_simple.
  *
  * \param[in]     jGrid               The j-grid
@@ -121,10 +120,6 @@ static inline void makeClusterListSimd2xnn(const Grid&       jGrid,
 
     SimdReal rc2_S;
 
-    gmx_bool InRange;
-    float    d2;
-    int      xind_f, xind_l;
-
     int jclusterFirst = cjFromCi<NbnxnLayout::Simd2xNN, 0>(firstCell);
     int jclusterLast  = cjFromCi<NbnxnLayout::Simd2xNN, 1>(lastCell);
     GMX_ASSERT(jclusterLast >= jclusterFirst,
@@ -133,10 +128,10 @@ static inline void makeClusterListSimd2xnn(const Grid&       jGrid,
 
     rc2_S = SimdReal(rlist2);
 
-    InRange = FALSE;
+    bool InRange = false;
     while (!InRange && jclusterFirst <= jclusterLast)
     {
-        d2 = clusterBoundingBoxDistance2(bb_ci[0], jGrid.jBoundingBoxes()[jclusterFirst]);
+        const float d2 = clusterBoundingBoxDistance2(bb_ci[0], jGrid.jBoundingBoxes()[jclusterFirst]);
         *numDistanceChecks += 2;
 
         /* Check if the distance is within the distance where
@@ -146,11 +141,11 @@ static inline void makeClusterListSimd2xnn(const Grid&       jGrid,
          */
         if (d2 < rbb2)
         {
-            InRange = TRUE;
+            InRange = true;
         }
         else if (d2 < rlist2)
         {
-            xind_f = xIndexFromCj<NbnxnLayout::Simd2xNN>(
+            const int xind_f = xIndexFromCj<NbnxnLayout::Simd2xNN>(
                     cjFromCi<NbnxnLayout::Simd2xNN, 0>(jGrid.cellOffset()) + jclusterFirst);
 
             jx_S = loadDuplicateHsimd(x_j + xind_f + 0 * c_xStride2xNN);
@@ -188,10 +183,10 @@ static inline void makeClusterListSimd2xnn(const Grid&       jGrid,
         return;
     }
 
-    InRange = FALSE;
+    InRange = false;
     while (!InRange && jclusterLast > jclusterFirst)
     {
-        d2 = clusterBoundingBoxDistance2(bb_ci[0], jGrid.jBoundingBoxes()[jclusterLast]);
+        const float d2 = clusterBoundingBoxDistance2(bb_ci[0], jGrid.jBoundingBoxes()[jclusterLast]);
         *numDistanceChecks += 2;
 
         /* Check if the distance is within the distance where
@@ -201,11 +196,11 @@ static inline void makeClusterListSimd2xnn(const Grid&       jGrid,
          */
         if (d2 < rbb2)
         {
-            InRange = TRUE;
+            InRange = true;
         }
         else if (d2 < rlist2)
         {
-            xind_l = xIndexFromCj<NbnxnLayout::Simd2xNN>(
+            const int xind_l = xIndexFromCj<NbnxnLayout::Simd2xNN>(
                     cjFromCi<NbnxnLayout::Simd2xNN, 0>(jGrid.cellOffset()) + jclusterLast);
 
             jx_S = loadDuplicateHsimd(x_j + xind_l + 0 * c_xStride2xNN);

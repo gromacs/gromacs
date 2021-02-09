@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -100,6 +100,41 @@ static real gridAtomDensity(int numAtoms, const rvec lowerCorner, const rvec upp
     return static_cast<real>(numAtoms) / (size[XX] * size[YY] * size[ZZ]);
 }
 
+// Get approximate dimensions of each cell. Returns the length along X and Y.
+static std::array<real, DIM - 1> getTargetCellLength(const Grid::Geometry& geometry, const real atomDensity)
+{
+    if (geometry.isSimple)
+    {
+        /* To minimize the zero interactions, we should make
+         * the largest of the i/j cell cubic.
+         */
+        int numAtomsInCell = std::max(geometry.numAtomsICluster, geometry.numAtomsJCluster);
+
+        /* Approximately cubic cells */
+        real tlen = std::cbrt(numAtomsInCell / atomDensity);
+        return { tlen, tlen };
+    }
+    else
+    {
+        /* Approximately cubic sub cells */
+        real tlen = std::cbrt(geometry.numAtomsICluster / atomDensity);
+        return { tlen * c_gpuNumClusterPerCellX, tlen * c_gpuNumClusterPerCellY };
+    }
+}
+
+static int getMaxNumCells(const Grid::Geometry& geometry, const int numAtoms, const int numColumns)
+{
+    if (geometry.numAtomsJCluster <= geometry.numAtomsICluster)
+    {
+        return numAtoms / geometry.numAtomsPerCell + numColumns;
+    }
+    else
+    {
+        return numAtoms / geometry.numAtomsPerCell
+               + numColumns * geometry.numAtomsJCluster / geometry.numAtomsICluster;
+    }
+}
+
 void Grid::setDimensions(const int          ddZone,
                          const int          numAtoms,
                          gmx::RVec          lowerCorner,
@@ -146,33 +181,14 @@ void Grid::setDimensions(const int          ddZone,
         GMX_ASSERT(atomDensity > 0, "With one or more atoms, the density should be positive");
 
         /* target cell length */
-        real tlen_x;
-        real tlen_y;
-        if (geometry_.isSimple)
-        {
-            /* To minimize the zero interactions, we should make
-             * the largest of the i/j cell cubic.
-             */
-            int numAtomsInCell = std::max(geometry_.numAtomsICluster, geometry_.numAtomsJCluster);
+        const std::array<real, DIM - 1> tlen = getTargetCellLength(geometry_, atomDensity);
 
-            /* Approximately cubic cells */
-            real tlen = std::cbrt(numAtomsInCell / atomDensity);
-            tlen_x    = tlen;
-            tlen_y    = tlen;
-        }
-        else
-        {
-            /* Approximately cubic sub cells */
-            real tlen = std::cbrt(geometry_.numAtomsICluster / atomDensity);
-            tlen_x    = tlen * c_gpuNumClusterPerCellX;
-            tlen_y    = tlen * c_gpuNumClusterPerCellY;
-        }
         /* We round ncx and ncy down, because we get less cell pairs
          * in the pairlist when the fixed cell dimensions (x,y) are
          * larger than the variable one (z) than the other way around.
          */
-        dimensions_.numCells[XX] = std::max(1, static_cast<int>(size[XX] / tlen_x));
-        dimensions_.numCells[YY] = std::max(1, static_cast<int>(size[YY] / tlen_y));
+        dimensions_.numCells[XX] = std::max(1, static_cast<int>(size[XX] / tlen[XX]));
+        dimensions_.numCells[YY] = std::max(1, static_cast<int>(size[YY] / tlen[YY]));
     }
     else
     {
@@ -205,16 +221,7 @@ void Grid::setDimensions(const int          ddZone,
     changePinningPolicy(&cxy_ind_, pinningPolicy);
 
     /* Worst case scenario of 1 atom in each last cell */
-    int maxNumCells;
-    if (geometry_.numAtomsJCluster <= geometry_.numAtomsICluster)
-    {
-        maxNumCells = numAtoms / geometry_.numAtomsPerCell + numColumns();
-    }
-    else
-    {
-        maxNumCells = numAtoms / geometry_.numAtomsPerCell
-                      + numColumns() * geometry_.numAtomsJCluster / geometry_.numAtomsICluster;
-    }
+    const int maxNumCells = getMaxNumCells(geometry_, numAtoms, numColumns());
 
     if (!geometry_.isSimple)
     {
@@ -351,7 +358,7 @@ static void sort_atoms(int      dim,
             zi = 0;
         }
 
-        /* In a non-local domain, particles communcated for bonded interactions
+        /* In a non-local domain, particles communicated for bonded interactions
          * can be far beyond the grid size, which is set by the non-bonded
          * cut-off distance. We sort such particles into the last cell.
          */
@@ -461,16 +468,13 @@ static float R2F_U(const float x)
 //! Computes the bounding box for na coordinates in order x,y,z, bb order xyz0
 static void calc_bounding_box(int na, int stride, const real* x, BoundingBox* bb)
 {
-    int  i;
-    real xl, xh, yl, yh, zl, zh;
-
-    i  = 0;
-    xl = x[i + XX];
-    xh = x[i + XX];
-    yl = x[i + YY];
-    yh = x[i + YY];
-    zl = x[i + ZZ];
-    zh = x[i + ZZ];
+    int  i  = 0;
+    real xl = x[i + XX];
+    real xh = x[i + XX];
+    real yl = x[i + YY];
+    real yh = x[i + YY];
+    real zl = x[i + ZZ];
+    real zh = x[i + ZZ];
     i += stride;
     for (int j = 1; j < na; j++)
     {
@@ -494,14 +498,12 @@ static void calc_bounding_box(int na, int stride, const real* x, BoundingBox* bb
 /*! \brief Computes the bounding box for na packed coordinates, bb order xyz0 */
 static void calc_bounding_box_x_x4(int na, const real* x, BoundingBox* bb)
 {
-    real xl, xh, yl, yh, zl, zh;
-
-    xl = x[XX * c_packX4];
-    xh = x[XX * c_packX4];
-    yl = x[YY * c_packX4];
-    yh = x[YY * c_packX4];
-    zl = x[ZZ * c_packX4];
-    zh = x[ZZ * c_packX4];
+    real xl = x[XX * c_packX4];
+    real xh = x[XX * c_packX4];
+    real yl = x[YY * c_packX4];
+    real yh = x[YY * c_packX4];
+    real zl = x[ZZ * c_packX4];
+    real zh = x[ZZ * c_packX4];
     for (int j = 1; j < na; j++)
     {
         xl = std::min(xl, x[j + XX * c_packX4]);
@@ -523,14 +525,12 @@ static void calc_bounding_box_x_x4(int na, const real* x, BoundingBox* bb)
 /*! \brief Computes the bounding box for na coordinates, bb order xyz0 */
 static void calc_bounding_box_x_x8(int na, const real* x, BoundingBox* bb)
 {
-    real xl, xh, yl, yh, zl, zh;
-
-    xl = x[XX * c_packX8];
-    xh = x[XX * c_packX8];
-    yl = x[YY * c_packX8];
-    yh = x[YY * c_packX8];
-    zl = x[ZZ * c_packX8];
-    zh = x[ZZ * c_packX8];
+    real xl = x[XX * c_packX8];
+    real xh = x[XX * c_packX8];
+    real yl = x[YY * c_packX8];
+    real yh = x[YY * c_packX8];
+    real zl = x[ZZ * c_packX8];
+    real zh = x[ZZ * c_packX8];
     for (int j = 1; j < na; j++)
     {
         xl = std::min(xl, x[j + XX * c_packX8]);
@@ -590,16 +590,13 @@ gmx_unused static void calc_bounding_box_x_x4_halves(int na, const real* x, Boun
 /*! \brief Computes the bounding box for na coordinates in order xyz, bb order xxxxyyyyzzzz */
 static void calc_bounding_box_xxxx(int na, int stride, const real* x, float* bb)
 {
-    int  i;
-    real xl, xh, yl, yh, zl, zh;
-
-    i  = 0;
-    xl = x[i + XX];
-    xh = x[i + XX];
-    yl = x[i + YY];
-    yh = x[i + YY];
-    zl = x[i + ZZ];
-    zh = x[i + ZZ];
+    int  i  = 0;
+    real xl = x[i + XX];
+    real xh = x[i + XX];
+    real yl = x[i + YY];
+    real yh = x[i + YY];
+    real zl = x[i + ZZ];
+    real zh = x[i + ZZ];
     i += stride;
     for (int j = 1; j < na; j++)
     {
@@ -681,8 +678,7 @@ static void combine_bounding_box_pairs(const Grid&                      grid,
         const int sc2 = grid.firstCellInColumn(i) >> 1;
         /* For odd numbers skip the last bb here */
         const int nc2 = (grid.numAtomsInColumn(i) + 3) >> (2 + 1);
-        int       c2;
-        for (c2 = sc2; c2 < sc2 + nc2; c2++)
+        for (int c2 = sc2; c2 < sc2 + nc2; c2++)
         {
 #if NBNXN_SEARCH_BB_SIMD4
             Simd4Float min_S, max_S;
@@ -699,6 +695,7 @@ static void combine_bounding_box_pairs(const Grid&                      grid,
         if (((grid.numAtomsInColumn(i) + 3) >> 2) & 1)
         {
             /* The bb count in this column is odd: duplicate the last bb */
+            int c2        = sc2 + nc2;
             bbj[c2].lower = bb[c2 * 2].lower;
             bbj[c2].upper = bb[c2 * 2].upper;
         }
@@ -741,11 +738,10 @@ static void print_bbsizes_simple(FILE* fp, const Grid& grid)
 /*! \brief Prints the average bb size, used for debug output */
 static void print_bbsizes_supersub(FILE* fp, const Grid& grid)
 {
-    int  ns;
     dvec ba;
 
     clear_dvec(ba);
-    ns = 0;
+    int ns = 0;
     for (int c = 0; c < grid.numCells(); c++)
     {
 #if NBNXN_BBXXXX
@@ -1107,8 +1103,8 @@ void Grid::sortColumnsGpuGeometry(GridSetData*                   gridSetData,
                                   const gmx::Range<int>          columnRange,
                                   gmx::ArrayRef<int>             sort_work)
 {
-    BoundingBox  bb_work_array[2];
-    BoundingBox* bb_work_aligned = reinterpret_cast<BoundingBox*>(
+    BoundingBox bb_work_array[2];
+    auto*       bb_work_aligned = reinterpret_cast<BoundingBox*>(
             (reinterpret_cast<std::size_t>(bb_work_array + 1)) & (~(static_cast<std::size_t>(15))));
 
     if (debug)
@@ -1304,7 +1300,7 @@ void Grid::calcColumnIndices(const Grid::Dimensions&        gridDims,
                               gridDims.lowerCorner[YY]);
                 }
 #endif
-                /* Take care of potential rouding issues */
+                /* Take care of potential rounding issues */
                 cx = std::min(cx, gridDims.numCells[XX] - 1);
                 cy = std::min(cy, gridDims.numCells[YY] - 1);
 
