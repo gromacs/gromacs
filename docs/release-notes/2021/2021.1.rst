@@ -19,6 +19,15 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix periodic boundary conditions in analysis framework tools
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+There was a bug in the trajectory analysis framework which caused
+molecules that were broken over PBC not to be made whole. This would
+usually lead to obviously incorrect outliers in analysis output.
+
+:issue:`3900`
+
 Fix range checking bug in gmx covar
 """""""""""""""""""""""""""""""""""
 

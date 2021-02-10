@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,7 +76,8 @@ static t_graph* gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, PbcType pbcType, int natom
     int            i;
     rmpbc_graph_t* gr;
 
-    if (pbcType == PbcType::No || nullptr == gpbc || nullptr == gpbc->idef || gpbc->idef->ntypes <= 0)
+    if (pbcType == PbcType::No || nullptr == gpbc
+        || (nullptr == gpbc->interactionDefinitions && (nullptr == gpbc->idef || gpbc->idef->ntypes <= 0)))
     {
         return nullptr;
     }
