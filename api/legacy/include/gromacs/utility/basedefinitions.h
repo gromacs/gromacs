@@ -145,6 +145,18 @@ index ssize(const T& t)
  */
 #define GMX_UNUSED_VALUE(value) (void)value
 
+#if defined(__GNUC__) && !defined(__clang__)
+#    define DO_PRAGMA(x) _Pragma(#    x)
+#    define GCC_DIAGNOSTIC_IGNORE(warning) \
+        _Pragma("GCC diagnostic push") DO_PRAGMA(GCC diagnostic ignored #warning)
+#    define GCC_DIAGNOSTIC_RESET _Pragma("GCC diagnostic pop")
+#else
+//! Ignore specified clang warning until GCC_DIAGNOSTIC_RESET
+#    define GCC_DIAGNOSTIC_IGNORE(warning)
+//! Reset all diagnostics to default
+#    define GCC_DIAGNOSTIC_RESET
+#endif
+
 #ifdef __clang__
 #    define DO_PRAGMA(x) _Pragma(#    x)
 #    define CLANG_DIAGNOSTIC_IGNORE(warning) \
