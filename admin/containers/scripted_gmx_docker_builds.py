@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -298,22 +298,18 @@ def add_tsan_compiler_build_stage(input_args, output_stages: typing.Mapping[str,
     # out that duplication...
     tsan_stage += hpccm.building_blocks.python(python3=True, python2=False, devel=False)
 
-    compiler_branch = 'release_' + str(input_args.llvm) + '0'
+    compiler_branch = 'release/' + str(input_args.llvm) + '.x'
     tsan_stage += hpccm.building_blocks.generic_cmake(
-        repository='https://git.llvm.org/git/llvm.git',
+        repository='https://github.com/llvm/llvm-project.git',
+        directory='/var/tmp/llvm-project/llvm/',
         prefix='/usr/local', recursive=True, branch=compiler_branch,
-        cmake_opts=['-D CMAKE_BUILD_TYPE=Release', '-D LLVM_ENABLE_PROJECTS="clang;openmp;clang-tools-extra"',
+        cmake_opts=['-D CMAKE_BUILD_TYPE=Release', '-D LLVM_ENABLE_PROJECTS="clang;openmp;clang-tools-extra;compiler-rt;lld"',
                     '-D LIBOMP_TSAN_SUPPORT=on'],
-        preconfigure=['export branch=' + compiler_branch,
-                      '(cd projects; git clone --depth=1 --branch $branch https://git.llvm.org/git/libcxx.git)',
-                      '(cd projects; git clone --depth=1 --branch $branch https://git.llvm.org/git/libcxxabi.git)',
-                      '(cd projects; git clone --depth=1 --branch $branch https://git.llvm.org/git/compiler-rt.git)',
-                      '(cd ..; git clone --depth=1 --branch $branch https://git.llvm.org/git/openmp.git)',
-                      '(cd ..; git clone --depth=1 --branch $branch https://git.llvm.org/git/clang.git)',
-                      '(cd ..; git clone --depth=1 --branch $branch https://git.llvm.org/git/clang-tools-extra.git)'],
         postinstall=['ln -s /usr/local/bin/clang++ /usr/local/bin/clang++-' + str(input_args.llvm),
                      'ln -s /usr/local/bin/clang-format /usr/local/bin/clang-format-' + str(input_args.llvm),
                      'ln -s /usr/local/bin/clang-tidy /usr/local/bin/clang-tidy-' + str(input_args.llvm),
+                     'ln -s /usr/local/share/clang/run-clang-tidy.py /usr/local/bin/run-clang-tidy-' + str(input_args.llvm) + '.py',
+                     'ln -s /usr/local/bin/run-clang-tidy-' + str(input_args.llvm) + '.py /usr/local/bin/run-clang-tidy-' + str(input_args.llvm),
                      'ln -s /usr/local/libexec/c++-analyzer /usr/local/bin/c++-analyzer-' + str(input_args.llvm)])
     output_stages['compiler_build'] = tsan_stage
 
