@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,14 +132,14 @@ gmx::ArrayRef<const int> nonbonded_verlet_t::getLocalAtomOrder() const
     return gmx::constArrayRefFromArray(pairSearch_->gridSet().atomIndices().data(), numIndices);
 }
 
-void nonbonded_verlet_t::setLocalAtomOrder()
+void nonbonded_verlet_t::setLocalAtomOrder() const
 {
     pairSearch_->setLocalAtomOrder();
 }
 
 void nonbonded_verlet_t::setAtomProperties(gmx::ArrayRef<const int>  atomTypes,
                                            gmx::ArrayRef<const real> atomCharges,
-                                           gmx::ArrayRef<const int>  atomInfo)
+                                           gmx::ArrayRef<const int>  atomInfo) const
 {
     nbnxn_atomdata_set(nbat.get(), pairSearch_->gridSet(), atomTypes, atomCharges, atomInfo);
 }
@@ -197,7 +197,7 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const gmx::AtomLocality  local
     wallcycle_stop(wcycle_, ewcNB_XF_BUF_OPS);
 }
 
-int nonbonded_verlet_t::getNumAtoms(const gmx::AtomLocality locality)
+int nonbonded_verlet_t::getNumAtoms(const gmx::AtomLocality locality) const
 {
     int numAtoms = 0;
     switch (locality)
@@ -215,7 +215,7 @@ int nonbonded_verlet_t::getNumAtoms(const gmx::AtomLocality locality)
     return numAtoms;
 }
 
-void* nonbonded_verlet_t::getGpuForces()
+void* nonbonded_verlet_t::getGpuForces() const
 {
     return Nbnxm::getGpuForces(gpu_nbv);
 }
@@ -230,13 +230,13 @@ real nonbonded_verlet_t::pairlistOuterRadius() const
     return pairlistSets_->params().rlistOuter;
 }
 
-void nonbonded_verlet_t::changePairlistRadii(real rlistOuter, real rlistInner)
+void nonbonded_verlet_t::changePairlistRadii(real rlistOuter, real rlistInner) const
 {
     pairlistSets_->changePairlistRadii(rlistOuter, rlistInner);
 }
 
 void nonbonded_verlet_t::setupGpuShortRangeWork(const gmx::GpuBonded*          gpuBonded,
-                                                const gmx::InteractionLocality iLocality)
+                                                const gmx::InteractionLocality iLocality) const
 {
     if (useGpu() && !emulateGpu())
     {
@@ -244,12 +244,12 @@ void nonbonded_verlet_t::setupGpuShortRangeWork(const gmx::GpuBonded*          g
     }
 }
 
-void nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu()
+void nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu() const
 {
     Nbnxm::nbnxn_gpu_init_x_to_nbat_x(pairSearch_->gridSet(), gpu_nbv);
 }
 
-void nonbonded_verlet_t::insertNonlocalGpuDependency(const gmx::InteractionLocality interactionLocality)
+void nonbonded_verlet_t::insertNonlocalGpuDependency(const gmx::InteractionLocality interactionLocality) const
 {
     Nbnxm::nbnxnInsertNonlocalGpuDependency(gpu_nbv, interactionLocality);
 }

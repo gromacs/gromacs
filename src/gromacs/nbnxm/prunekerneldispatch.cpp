@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020 by the GROMACS development team.
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,7 +92,8 @@ void PairlistSet::dispatchPruneKernel(const nbnxn_atomdata_t* nbat, const rvec* 
     }
 }
 
-void nonbonded_verlet_t::dispatchPruneKernelCpu(const gmx::InteractionLocality iLocality, const rvec* shift_vec)
+void nonbonded_verlet_t::dispatchPruneKernelCpu(const gmx::InteractionLocality iLocality,
+                                                const rvec*                    shift_vec) const
 {
     pairlistSets_->dispatchPruneKernel(iLocality, nbat.get(), shift_vec);
 }

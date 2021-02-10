@@ -205,16 +205,14 @@ void init_plist(gpu_plist* pl)
 
 void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
 {
-    int i, j;
-
     t->nb_h2d_t = 0.0;
     t->nb_d2h_t = 0.0;
     t->nb_c     = 0;
     t->pl_h2d_t = 0.0;
     t->pl_h2d_c = 0;
-    for (i = 0; i < 2; i++)
+    for (int i = 0; i < 2; i++)
     {
-        for (j = 0; j < 2; j++)
+        for (int j = 0; j < 2; j++)
         {
             t->ktime[i][j].t = 0.0;
             t->ktime[i][j].c = 0;

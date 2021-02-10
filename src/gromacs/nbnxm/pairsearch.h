@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
  *
  * The PairSearch class holds the domain setup, the search grids
  * and helper object for the pair search. It manages the search work.
- * The actual gridding and pairlist generation is performeed by the
+ * The actual gridding and pairlist generation is performed by the
  * GridSet/Grid and PairlistSet/Pairlist classes, respectively.
  *
  * \author Berk Hess <hess@kth.se>
@@ -151,7 +151,7 @@ struct PairsearchWork
 
     ~PairsearchWork();
 
-    //! Buffer to avoid cache polution
+    //! Buffer to avoid cache pollution
     gmx_cache_protect_t cp0;
 
     //! Temporary buffer for sorting atoms within a grid column

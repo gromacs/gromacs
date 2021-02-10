@@ -4340,7 +4340,7 @@ void PairlistSets::construct(const InteractionLocality iLocality,
 void nonbonded_verlet_t::constructPairlist(const InteractionLocality iLocality,
                                            const ListOfLists<int>&   exclusions,
                                            int64_t                   step,
-                                           t_nrnb*                   nrnb)
+                                           t_nrnb*                   nrnb) const
 {
     pairlistSets_->construct(iLocality, pairSearch_.get(), nbat.get(), exclusions, step, nrnb);
 

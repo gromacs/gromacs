@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,7 @@ template<int numComponentsPerElement>
 static void clearBufferFlagged(const nbnxn_atomdata_t& nbat, int outputIndex, gmx::ArrayRef<real> buffer)
 {
     gmx::ArrayRef<const gmx_bitmask_t> flags = nbat.buffer_flags;
-    gmx_bitmask_t                      our_flag;
+    gmx_bitmask_t                      our_flag; // NOLINT(cppcoreguidelines-init-variables)
     bitmask_init_bit(&our_flag, outputIndex);
 
     constexpr size_t numComponentsPerBlock = NBNXN_BUFFERFLAG_SIZE * numComponentsPerElement;
@@ -98,9 +98,7 @@ void clearForceBuffer(nbnxn_atomdata_t* nbat, int outputIndex)
 
 void clear_fshift(real* fshift)
 {
-    int i;
-
-    for (i = 0; i < SHIFTS * DIM; i++)
+    for (int i = 0; i < SHIFTS * DIM; i++)
     {
         fshift[i] = 0;
     }

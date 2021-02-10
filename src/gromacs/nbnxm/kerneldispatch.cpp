@@ -56,6 +56,7 @@
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
@@ -134,6 +135,90 @@ static void reduceGroupEnergySimdBuffers(int numGroups, int numGroups_2log, nbnx
     }
 }
 
+static int getCoulombKernelType(const Nbnxm::KernelSetup& kernelSetup, const interaction_const_t& ic)
+{
+
+    if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
+    {
+        return coulktRF;
+    }
+    else
+    {
+        if (kernelSetup.ewaldExclusionType == Nbnxm::EwaldExclusionType::Table)
+        {
+            if (ic.rcoulomb == ic.rvdw)
+            {
+                return coulktTAB;
+            }
+            else
+            {
+                return coulktTAB_TWIN;
+            }
+        }
+        else
+        {
+            if (ic.rcoulomb == ic.rvdw)
+            {
+                return coulktEWALD;
+            }
+            else
+            {
+                return coulktEWALD_TWIN;
+            }
+        }
+    }
+}
+
+static int getVdwKernelType(const Nbnxm::KernelSetup&       kernelSetup,
+                            const nbnxn_atomdata_t::Params& nbatParams,
+                            const interaction_const_t&      ic)
+{
+    if (ic.vdwtype == evdwCUT)
+    {
+        switch (ic.vdw_modifier)
+        {
+            case eintmodNONE:
+            case eintmodPOTSHIFT:
+                switch (nbatParams.ljCombinationRule)
+                {
+                    case LJCombinationRule::Geometric: return vdwktLJCUT_COMBGEOM;
+                    case LJCombinationRule::LorentzBerthelot: return vdwktLJCUT_COMBLB;
+                    case LJCombinationRule::None: return vdwktLJCUT_COMBNONE;
+                    default: gmx_incons("Unknown combination rule");
+                }
+            case eintmodFORCESWITCH: return vdwktLJFORCESWITCH;
+            case eintmodPOTSWITCH: return vdwktLJPOTSWITCH;
+            default:
+                std::string errorMsg =
+                        gmx::formatString("Unsupported VdW interaction modifier %s (%d)",
+                                          INTMODIFIER(ic.vdw_modifier),
+                                          ic.vdw_modifier);
+                gmx_incons(errorMsg);
+        }
+    }
+    else if (ic.vdwtype == evdwPME)
+    {
+        if (ic.ljpme_comb_rule == eljpmeGEOM)
+        {
+            return vdwktLJEWALDCOMBGEOM;
+        }
+        else
+        {
+            /* At setup we (should have) selected the C reference kernel */
+            GMX_RELEASE_ASSERT(kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC,
+                               "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB "
+                               "combination rules");
+            return vdwktLJEWALDCOMBLB;
+        }
+    }
+    else
+    {
+        std::string errorMsg = gmx::formatString(
+                "Unsupported VdW interaction type %s (%d)", EVDWTYPE(ic.vdwtype), ic.vdwtype);
+        gmx_incons(errorMsg);
+    }
+}
+
 /*! \brief Dispatches the non-bonded N versus M atom cluster CPU kernels.
  *
  * OpenMP parallelization is performed within this function.
@@ -163,78 +248,10 @@ static void nbnxn_kernel_cpu(const PairlistSet&         pairlistSet,
                              gmx_wallcycle*             wcycle)
 {
 
-    int coulkt;
-    if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
-    {
-        coulkt = coulktRF;
-    }
-    else
-    {
-        if (kernelSetup.ewaldExclusionType == Nbnxm::EwaldExclusionType::Table)
-        {
-            if (ic.rcoulomb == ic.rvdw)
-            {
-                coulkt = coulktTAB;
-            }
-            else
-            {
-                coulkt = coulktTAB_TWIN;
-            }
-        }
-        else
-        {
-            if (ic.rcoulomb == ic.rvdw)
-            {
-                coulkt = coulktEWALD;
-            }
-            else
-            {
-                coulkt = coulktEWALD_TWIN;
-            }
-        }
-    }
-
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
-    int vdwkt = 0;
-    if (ic.vdwtype == evdwCUT)
-    {
-        switch (ic.vdw_modifier)
-        {
-            case eintmodNONE:
-            case eintmodPOTSHIFT:
-                switch (nbatParams.ljCombinationRule)
-                {
-                    case LJCombinationRule::Geometric: vdwkt = vdwktLJCUT_COMBGEOM; break;
-                    case LJCombinationRule::LorentzBerthelot: vdwkt = vdwktLJCUT_COMBLB; break;
-                    case LJCombinationRule::None: vdwkt = vdwktLJCUT_COMBNONE; break;
-                    default: GMX_RELEASE_ASSERT(false, "Unknown combination rule");
-                }
-                break;
-            case eintmodFORCESWITCH: vdwkt = vdwktLJFORCESWITCH; break;
-            case eintmodPOTSWITCH: vdwkt = vdwktLJPOTSWITCH; break;
-            default: GMX_RELEASE_ASSERT(false, "Unsupported VdW interaction modifier");
-        }
-    }
-    else if (ic.vdwtype == evdwPME)
-    {
-        if (ic.ljpme_comb_rule == eljpmeGEOM)
-        {
-            vdwkt = vdwktLJEWALDCOMBGEOM;
-        }
-        else
-        {
-            vdwkt = vdwktLJEWALDCOMBLB;
-            /* At setup we (should have) selected the C reference kernel */
-            GMX_RELEASE_ASSERT(kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC,
-                               "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB "
-                               "combination rules");
-        }
-    }
-    else
-    {
-        GMX_RELEASE_ASSERT(false, "Unsupported VdW interaction type");
-    }
+    const int coulkt = getCoulombKernelType(kernelSetup, ic);
+    const int vdwkt  = getVdwKernelType(kernelSetup, nbatParams, ic);
 
     gmx::ArrayRef<const NbnxnPairlistCpu> pairlists = pairlistSet.cpuLists();
 
@@ -370,7 +387,7 @@ static void accountFlops(t_nrnb*                    nrnb,
 {
     const bool usingGpuKernels = nbv.useGpu();
 
-    int enr_nbnxn_kernel_ljc;
+    int enr_nbnxn_kernel_ljc = eNRNB;
     if (EEL_RF(ic.eeltype) || ic.eeltype == eelCUT)
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -212,25 +212,22 @@ static KernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused* ir,
 
 const char* lookup_kernel_name(const KernelType kernelType)
 {
-    const char* returnvalue = nullptr;
     switch (kernelType)
     {
-        case KernelType::NotSet: returnvalue = "not set"; break;
-        case KernelType::Cpu4x4_PlainC: returnvalue = "plain C"; break;
+        case KernelType::NotSet: return "not set";
+        case KernelType::Cpu4x4_PlainC: return "plain C";
         case KernelType::Cpu4xN_Simd_4xN:
         case KernelType::Cpu4xN_Simd_2xNN:
 #if GMX_SIMD
-            returnvalue = "SIMD";
+            return "SIMD";
 #else  // GMX_SIMD
-            returnvalue = "not available";
+            return "not available";
 #endif // GMX_SIMD
-            break;
-        case KernelType::Gpu8x8x8: returnvalue = "GPU"; break;
-        case KernelType::Cpu8x8x8_PlainC: returnvalue = "plain C"; break;
+        case KernelType::Gpu8x8x8: return "GPU";
+        case KernelType::Cpu8x8x8_PlainC: return "plain C";
 
         default: gmx_fatal(FARGS, "Illegal kernel type selected");
     }
-    return returnvalue;
 };
 
 /*! \brief Returns the most suitable kernel type and Ewald handling */
@@ -314,13 +311,11 @@ namespace Nbnxm
 /*! \brief Gets and returns the minimum i-list count for balacing based on the GPU used or env.var. when set */
 static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
 {
-    int minimumIlistCount;
-
     if (const char* env = getenv("GMX_NB_MIN_CI"))
     {
-        char* end;
+        char* end = nullptr;
 
-        minimumIlistCount = strtol(env, &end, 10);
+        int minimumIlistCount = strtol(env, &end, 10);
         if (!end || (*end != 0) || minimumIlistCount < 0)
         {
             gmx_fatal(
@@ -331,10 +326,11 @@ static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
         {
             fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n", minimumIlistCount);
         }
+        return minimumIlistCount;
     }
     else
     {
-        minimumIlistCount = gpu_min_ci_balanced(nbnxmGpu);
+        int minimumIlistCount = gpu_min_ci_balanced(nbnxmGpu);
         if (debug)
         {
             fprintf(debug,
@@ -342,9 +338,36 @@ static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
                     "multi-processors)\n",
                     minimumIlistCount);
         }
+        return minimumIlistCount;
     }
+}
 
-    return minimumIlistCount;
+static int getENbnxnInitCombRule(const t_forcerec* fr)
+{
+    if (fr->ic->vdwtype == evdwCUT
+        && (fr->ic->vdw_modifier == eintmodNONE || fr->ic->vdw_modifier == eintmodPOTSHIFT)
+        && getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
+    {
+        /* Plain LJ cut-off: we can optimize with combination rules */
+        return enbnxninitcombruleDETECT;
+    }
+    else if (fr->ic->vdwtype == evdwPME)
+    {
+        /* LJ-PME: we need to use a combination rule for the grid */
+        if (fr->ljpme_combination_rule == eljpmeGEOM)
+        {
+            return enbnxninitcombruleGEOM;
+        }
+        else
+        {
+            return enbnxninitcombruleLB;
+        }
+    }
+    else
+    {
+        /* We use a full combination matrix: no rule required */
+        return enbnxninitcombruleNONE;
+    }
 }
 
 std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
@@ -387,31 +410,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
 
     setupDynamicPairlistPruning(mdlog, ir, mtop, box, fr->ic, &pairlistParams);
 
-    int enbnxninitcombrule;
-    if (fr->ic->vdwtype == evdwCUT
-        && (fr->ic->vdw_modifier == eintmodNONE || fr->ic->vdw_modifier == eintmodPOTSHIFT)
-        && getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
-    {
-        /* Plain LJ cut-off: we can optimize with combination rules */
-        enbnxninitcombrule = enbnxninitcombruleDETECT;
-    }
-    else if (fr->ic->vdwtype == evdwPME)
-    {
-        /* LJ-PME: we need to use a combination rule for the grid */
-        if (fr->ljpme_combination_rule == eljpmeGEOM)
-        {
-            enbnxninitcombrule = enbnxninitcombruleGEOM;
-        }
-        else
-        {
-            enbnxninitcombrule = enbnxninitcombruleLB;
-        }
-    }
-    else
-    {
-        /* We use a full combination matrix: no rule required */
-        enbnxninitcombrule = enbnxninitcombruleNONE;
-    }
+    const int enbnxninitcombrule = getENbnxnInitCombRule(fr);
 
     auto pinPolicy = (useGpuForNonbonded ? gmx::PinningPolicy::PinnedIfSupported
                                          : gmx::PinningPolicy::CannotBePinned);

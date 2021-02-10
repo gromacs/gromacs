@@ -232,7 +232,7 @@ struct nbnxn_atomdata_t
 
     /*! \brief Constructor
      *
-     * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transfered to a GPU
+     * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transferred to a GPU
      */
     nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy);
 
