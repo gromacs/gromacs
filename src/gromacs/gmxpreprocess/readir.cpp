@@ -1477,6 +1477,12 @@ void check_ir(const char*                   mdparin,
     {
         gmx_fatal(FARGS, "AdResS simulations are no longer supported");
     }
+
+    // cosine acceleration is only supported in leap-frog
+    if (ir->cos_accel != 0.0 && ir->eI != eiMD)
+    {
+        warning_error(wi, "cos-acceleration is only supported by integrator = md");
+    }
 }
 
 /* interpret a number of doubles from a string and put them in an array,

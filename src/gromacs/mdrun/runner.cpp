@@ -1858,6 +1858,11 @@ int Mdrunner::mdrunner()
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
                              inputrec->fepvals->n_lambda);
 
+        // cos acceleration is only supported by md, but older tpr
+        // files might still combine it with other integrators
+        GMX_RELEASE_ASSERT(inputrec->cos_accel == 0.0 || inputrec->eI == eiMD,
+                           "cos_acceleration is only supported by integrator=md");
+
         /* Kinetic energy data */
         gmx_ekindata_t ekind;
         init_ekindata(fplog, &(inputrec->opts), &ekind, inputrec->cos_accel);
