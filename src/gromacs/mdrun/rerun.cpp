@@ -144,13 +144,11 @@ using gmx::VirtualSitesHandler;
  * \param[in,out] globalState     The global state container
  * \param[in]     constructVsites When true, vsite coordinates are constructed
  * \param[in]     vsite           Vsite setup, can be nullptr when \p constructVsites = false
- * \param[in]     timeStep        Time step, used for constructing vsites
  */
 static void prepareRerunState(const t_trxframe&          rerunFrame,
                               t_state*                   globalState,
                               bool                       constructVsites,
-                              const VirtualSitesHandler* vsite,
-                              double                     timeStep)
+                              const VirtualSitesHandler* vsite)
 {
     auto x      = makeArrayRef(globalState->x);
     auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerunFrame.x), globalState->natoms);
@@ -161,7 +159,7 @@ static void prepareRerunState(const t_trxframe&          rerunFrame,
     {
         GMX_ASSERT(vsite, "Need valid vsite for constructing vsites");
 
-        vsite->construct(globalState->x, timeStep, globalState->v, globalState->box);
+        vsite->construct(globalState->x, globalState->v, globalState->box, gmx::VSiteOperation::PositionsAndVelocities);
     }
 }
 
@@ -584,7 +582,7 @@ void gmx::LegacySimulator::do_rerun()
                           "decomposition, "
                           "use a single rank");
             }
-            prepareRerunState(rerun_fr, state_global, constructVsites, vsite, ir->delta_t);
+            prepareRerunState(rerun_fr, state_global, constructVsites, vsite);
         }
 
         isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);

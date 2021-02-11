@@ -195,11 +195,16 @@ The force is then redistributed using the same weights:
 The types of virtual sites supported in |Gromacs| are given in the list
 below. Constructing atoms in virtual sites can be virtual sites
 themselves, but only if they are higher in the list, i.e. virtual sites
-can be constructed from “particles” that are simpler virtual sites.
+can be constructed from “particles” that are simpler virtual sites. The
+virtual site velocities are reported, but not used in the integration
+of the virtual site positions.
 
--  On top of an atom. This allows giving an atom multiple atom types and
+On top of an atom
+~~~~~~~~~~~~~~~~~
+
+-  This allows giving an atom multiple atom types and
    with that also assigned multiple, different bonded interactions. This
-   can espically be of use in free-energy calculations.
+   can especially be of use in free-energy calculations.
 
 -  The coordinates of the virtual site equal that of the constructing atom:
 
@@ -211,8 +216,15 @@ can be constructed from “particles” that are simpler virtual sites.
    .. math:: \mathbf{F}_i ~=~ \mathbf{F}_{s}
              :label: eqnvsite1force
 
--  As a linear combination of two atoms
-   (:numref:`Fig. %s <fig-vsites>` 2):
+-  The velocity of the virtual site equals that of the constructing atom:
+
+   .. math:: \mathbf{v}_s ~=~ \mathbf{v}_i
+             :label: eqnvsite1vel
+
+As a linear combination of two atoms (:numref:`Fig. %s <fig-vsites>` 2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  The weights are calculated as
 
    .. math:: w_i = 1 - a ~,~~ w_j = a
              :label: eqnvsitelin2atom
@@ -220,8 +232,13 @@ can be constructed from “particles” that are simpler virtual sites.
 -  In this case the virtual site is on the line through atoms :math:`i`
    and :math:`j`.
 
--  On the line through two atoms, with a fixed distance
-   (:numref:`Fig. %s <fig-vsites>` 2fd):
+-  The velocity of the virtual site is a linear combination of the
+   velocities of the constructing atoms
+
+On the line through two atoms, with a fixed distance (:numref:`Fig. %s <fig-vsites>` 2fd)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  The position is calculated as:
 
    .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + a \frac{ \mathbf{r}_{ij} }
                                                   { | \mathbf{r}_{ij} | }
@@ -244,8 +261,18 @@ can be constructed from “particles” that are simpler virtual sites.
              \end{array}
              :label: eqnvsite2fdforce
 
--  As a linear combination of three atoms
-   (:numref:`Fig. %s <fig-vsites>` 3):
+-  The velocity is calculated as:
+
+   .. math:: \mathbf{v}_{s} = \mathbf{v}_{i} + \frac{a}{|\mathbf{r}_{ij}|}
+                                 \left(\mathbf{v}_{ij} - \mathbf{r}_{ij}
+                                    \frac{\mathbf{v}_{ij}\cdot\mathbf{r}_{ij}}
+                                         {|\mathbf{r}_{ij}|^2}\right)
+             :label: eqnvsite2fdatomvel
+
+As a linear combination of three atoms (:numref:`Fig. %s <fig-vsites>` 3)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  The weights are calculated as:
 
    .. math:: w_i = 1 - a - b ~,~~ w_j = a ~,~~ w_k = b
              :label: eqnvsitelin3atom
@@ -253,11 +280,14 @@ can be constructed from “particles” that are simpler virtual sites.
 -  In this case the virtual site is in the plane of the other three
    particles.
 
--  In the plane of three atoms, with a fixed distance
-   (:numref:`Fig. %s <fig-vsites>` 3fd):
+In the plane of three atoms, with a fixed distance (:numref:`Fig. %s <fig-vsites>` 3fd)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  (1 - a) \mathbf{r}_{ij} + a \mathbf{r}_{jk}  }
-                                                  { | (1 - a) \mathbf{r}_{ij} + a \mathbf{r}_{jk} | }
+-  The position is calculated as:
+
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{ \mathbf{r}_{ijk} } { | \mathbf{r}_{ijk} | }
+             ~\mbox{ where }~
+             \mathbf{r}_{ijk} ~=~ (1 - a) \mathbf{r}_{ij} + a \mathbf{r}_{jk}
              :label: eqnvsiteplane3atom
 
 -  In this case the virtual site is in the plane of the other three
@@ -278,8 +308,19 @@ can be constructed from “particles” that are simpler virtual sites.
              \end{array}
              :label: eqnvsiteplane3atomforce
 
--  In the plane of three atoms, with a fixed angle and
-   distance (:numref:`Fig. %s <fig-vsites>` 3fad):
+-  The velocity is calculated as:
+
+   .. math:: \mathbf{v}_{s} ~=~ \mathbf{v}_{i} +
+                                \frac{b}{|\mathbf{r}_{ijk}|}
+                                \left(\dot{\mathbf{r}}_{ijk} -
+                                \mathbf{r}_{ijk}\frac{\dot{\mathbf{r}}_{ijk}\cdot\mathbf{r}_{ijk}}
+                                                     {|\mathbf{r}_{ijk}|^2}\right)
+             :label: eqnvsiteplane3atomvel
+
+In the plane of three atoms, with a fixed angle and distance (:numref:`Fig. %s <fig-vsites>` 3fad)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  The position is calculated as:
 
    .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i +
              d \cos \theta \frac{\mathbf{r}_{ij}}{ | \mathbf{r}_{ij} | } +
@@ -334,8 +375,27 @@ can be constructed from “particles” that are simpler virtual sites.
              \end{array}
              :label: eqnvsite2fadFforce
 
--  As a non-linear combination of three atoms, out of
-   plane (:numref:`Fig. %s <fig-vsites>` 3out):
+-  The velocity is calculated as:
+
+   .. math:: \mathbf{v}_{s} &= \mathbf{v}_{i} + d\cos\theta\ \frac{\delta}{\delta t}\frac{\mathbf{r}_{ij}}{|\mathbf{r}_{ij}|} +
+                               d\sin\theta\ \frac{\delta}{\delta t}\frac{\mathbf{r}_{\perp}}{|\mathbf{r}_{\perp}|} \\
+             ~\mbox{where}~&\\
+             \frac{\delta}{\delta t}\frac{\mathbf{r}_{ij}}{|\mathbf{r}_{ij}|} &=
+                 \frac{1}{|\mathbf{r}_{ij}|}\left(\mathbf{v}_{ij} - \mathbf{r}_{ij}
+                 \frac{\mathbf{v}_{ij}\cdot\mathbf{r}_{ij}}{|\mathbf{r}_{ij}|^2}\right)\\
+             \frac{\delta}{\delta t}\frac{\mathbf{r}_{\perp}}{|\mathbf{r}_{\perp}|} &=
+                 \frac{1}{|\mathbf{r}_{\perp}|}
+                 \left(\dot{\mathbf{r}}_{\perp} - \mathbf{r}_{\perp}\frac{\dot{\mathbf{r}}_{\perp}\cdot\mathbf{r}_{\perp}}{|\mathbf{r}_{\perp}|^2}\right)\\
+             \dot{\mathbf{r}}_\perp &= \mathbf{v}_{jk} - \mathbf{r}_{ij}
+                 \frac{|\mathbf{r}_{ij}|^2(\mathbf{v}_{ij}\cdot\mathbf{r}_{jk} + \mathbf{r}_{ij}\cdot\mathbf{v}_{jk}) -
+                 (\mathbf{r}_{ij}\cdot\mathbf{r}_{jk})(2\mathbf{r}_{ij}\cdot\mathbf{v}_{ij})} {|\mathbf{r}_{ij}|^4} -
+                 \frac{\mathbf{r}_{ij}\cdot\mathbf{r}_{jk}}{|\mathbf{r}_{ij}|^2}\ \mathbf{v}_{ij}
+             :label: eqnvsite2fadvel
+
+As a non-linear combination of three atoms, out of plane (:numref:`Fig. %s <fig-vsites>` 3out)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  The position is calculated as:
 
    .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + a \mathbf{r}_{ij} + b \mathbf{r}_{ik} +
                               c (\mathbf{r}_{ij} \times \mathbf{r}_{ik})
@@ -360,8 +420,15 @@ can be constructed from “particles” that are simpler virtual sites.
              \end{array}
              :label: eqnvsitenonlin3atomforce
 
--  From four atoms, with a fixed distance, see
-   separate :numref:`Fig. %s <fig-vsite4fdn>`. This construction is a bit complex,
+-  The velocity is calculated as:
+
+   .. math:: \mathbf{v}_{s} ~=~ \mathbf{v}_{i} + \frac{c}{|\mathbf{r}_{m}|}\left(\dot{\mathbf{r}}_{m} -
+                 \mathbf{r}_{m} \frac{\dot{\mathbf{r}}_{m}\cdot\mathbf{r}_{m}}{|\mathbf{r}_{m}|^2}\right)
+             :label: eqnvsitenonlin3atomvel
+
+From four atoms, with a fixed distance, see separate :numref:`Fig. %s <fig-vsite4fdn>`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-  This construction is a bit complex,
    in particular since the previous type (4fd) could be unstable which
    forced us to introduce a more elaborate construction:
 
@@ -373,14 +440,22 @@ can be constructed from “particles” that are simpler virtual sites.
       The new 4fdn virtual site construction, which is stable even when
       all constructing atoms are in the same plane.
 
--
+-  The position is calculated as
+
       .. math::   \begin{aligned}
                   \mathbf{r}_{ja} &=& a\, \mathbf{r}_{ik} - \mathbf{r}_{ij} = a\, (\mathbf{x}_k - \mathbf{x}_i) - (\mathbf{x}_j - \mathbf{x}_i) \nonumber \\
                   \mathbf{r}_{jb} &=& b\, \mathbf{r}_{il} - \mathbf{r}_{ij} = b\, (\mathbf{x}_l - \mathbf{x}_i) - (\mathbf{x}_j - \mathbf{x}_i) \nonumber \\
                   \mathbf{r}_m &=& \mathbf{r}_{ja} \times \mathbf{r}_{jb} \nonumber \\
-                  \mathbf{x}_s &=& \mathbf{x}_i + c \frac{\mathbf{r}_m}{ | \mathbf{r}_m | }
+                  \mathbf{r}_s &=& \mathbf{r}_i + c \frac{\mathbf{r}_m}{ | \mathbf{r}_m | }
                   \end{aligned}
                   :label: eqnvsite
+
+-   The velocity is calculated as:
+
+   .. math:: \mathbf{v}_{s} = \mathbf{v}_{i} + \frac{c}{|\mathbf{r}_{m}|}\left(\dot{\mathbf{r}}_{m} - \mathbf{r}_{m} \frac{\dot{\mathbf{r}}_{m}\cdot\mathbf{r}_{m}}{|\mathbf{r}_{m}|^2}\right)\\
+             ~\mbox{where}~&\\
+             \dot{\mathbf{r}}_{m} &= \dot{\mathbf{r}}_{ja} \times \mathbf{r}_{jb} + \mathbf{r}_{ja} \times \dot{\mathbf{r}}_{jb}
+             :label: eqnvsitevel
 
 -  In this case the virtual site is at a distance of :math:`|c|` from
    :math:`i`, while :math:`a` and :math:`b` are parameters. **Note**
@@ -400,8 +475,10 @@ can be constructed from “particles” that are simpler virtual sites.
    value 1), but it should not be used for new simulations. All current
    |Gromacs| tools will automatically generate type 4fdn instead.
 
--  A linear combination of :math:`N` atoms with relative
-   weights :math:`a_i`. The weight for atom :math:`i` is:
+A linear combination of :math:`N` atoms with relative weights :math:`a_i`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  The weight for atom :math:`i` is:
 
    .. math:: w_i = a_i \left(\sum_{j=1}^N a_j \right)^{-1}
              :label: eqnvsiterelweight

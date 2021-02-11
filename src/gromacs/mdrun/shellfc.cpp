@@ -1186,7 +1186,7 @@ void relax_shell_flexcon(FILE*                         fplog,
     {
         if (vsite)
         {
-            vsite->construct(pos[Min], inputrec->delta_t, v, box);
+            vsite->construct(pos[Min], v, box, gmx::VSiteOperation::PositionsAndVelocities);
         }
 
         if (nflexcon)

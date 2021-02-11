@@ -911,7 +911,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
 
     if (vsite)
     {
-        vsite->construct(ems->s.x, 1, {}, ems->s.box);
+        vsite->construct(ems->s.x, {}, ems->s.box, gmx::VSiteOperation::Positions);
     }
 
     if (DOMAINDECOMP(cr) && bNS)
@@ -2022,7 +2022,7 @@ void LegacySimulator::do_lbfgs()
 
     if (vsite)
     {
-        vsite->construct(state_global->x, 1, {}, state_global->box);
+        vsite->construct(state_global->x, {}, state_global->box, VSiteOperation::Positions);
     }
 
     /* Call the force routine and some auxiliary (neighboursearching etc.) */

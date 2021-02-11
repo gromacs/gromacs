@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2006,2007,2008,2009,2010 by the GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -93,6 +93,14 @@ void dd_move_x_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x)
     }
 }
 
+void dd_move_x_and_v_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x, rvec* v)
+{
+    if (dd.vsite_comm)
+    {
+        dd_move_x_specat(&dd, dd.vsite_comm, box, x, v, FALSE);
+    }
+}
+
 void dd_clear_local_vsite_indices(gmx_domdec_t* dd)
 {
     if (dd->vsite_comm)
@@ -143,7 +151,7 @@ int dd_make_local_vsites(gmx_domdec_t* dd, int at_start, gmx::ArrayRef<Interacti
     }
 
     int at_end = setup_specat_communication(
-            dd, &ireq, dd->vsite_comm, ga2la_specat, at_start, 1, "vsite", "");
+            dd, &ireq, dd->vsite_comm, ga2la_specat, at_start, 2, "vsite", "");
 
     /* Fill in the missing indices */
     for (int ftype = 0; ftype < F_NRE; ftype++)

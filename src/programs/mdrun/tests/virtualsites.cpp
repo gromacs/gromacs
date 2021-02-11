@@ -134,8 +134,7 @@ public:
                 velocities.emplace_back(frame.v().at(vSite.atomIdx));
             }
             EXPECT_THAT(refPositions, Pointwise(RVecEq(tolerance), positions));
-            // To be re-enabled in !979 once the velocity-handling is fixed
-            // EXPECT_THAT(refVelocities, Pointwise(RVecEq(tolerance), velocities));
+            EXPECT_THAT(refVelocities, Pointwise(RVecEq(tolerance), velocities));
         }
     }
 

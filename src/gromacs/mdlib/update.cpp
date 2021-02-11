@@ -255,18 +255,6 @@ void Update::update_temperature_constants(const t_inputrec& inputRecord)
     return impl_->update_temperature_constants(inputRecord);
 }
 
-/*! \brief Sets the velocities of virtual sites to zero */
-static void clearVsiteVelocities(int start, int nrend, const unsigned short* particleType, rvec* gmx_restrict v)
-{
-    for (int a = start; a < nrend; a++)
-    {
-        if (particleType[a] == eptVSite)
-        {
-            clear_rvec(v[a]);
-        }
-    }
-}
-
 /*! \brief Sets whether we store the updated velocities */
 enum class StoreUpdatedVelocities
 {
@@ -663,19 +651,6 @@ static void do_update_md(int         start,
     }
     else
     {
-        /* Use a simple and thus more efficient integration loop. */
-        /* The simple loop does not check for particle type (so it can
-         * be vectorized), which means we need to clear the velocities
-         * of virtual sites in advance, when present. Note that vsite
-         * velocities are computed after update and constraints from
-         * their displacement.
-         */
-        if (md->haveVsites)
-        {
-            /* Note: The overhead of this loop is completely neligible */
-            clearVsiteVelocities(start, nrend, md->ptype, v);
-        }
-
         /* We determine if we have a single T-coupling lambda value for all
          * atoms. That allows for better SIMD acceleration in the template.
          * If we do not do temperature coupling (in the run or this step),
@@ -811,7 +786,7 @@ static void do_update_vv_vel(int                  start,
 
         for (d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            if ((ptype[n] != eptShell) && !nFreeze[gf][d])
             {
                 v[n][d] = mv1 * (mv1 * v[n][d] + 0.5 * (w_dt * mv2 * f[n][d]));
             }
@@ -862,7 +837,7 @@ static void do_update_vv_pos(int                  start,
 
         for (d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            if ((ptype[n] != eptShell) && !nFreeze[gf][d])
             {
                 xprime[n][d] = mr1 * (mr1 * x[n][d] + mr2 * dt * v[n][d]);
             }
@@ -1045,7 +1020,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&  sd,
 
         for (int d = 0; d < DIM; d++)
         {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[freezeGroup][d])
+            if ((ptype[n] != eptShell) && !nFreeze[freezeGroup][d])
             {
                 if (updateType == SDUpdate::ForcesOnly)
                 {
@@ -1185,7 +1160,7 @@ static void do_update_bd(int         start,
         }
         for (d = 0; (d < DIM); d++)
         {
-            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            if ((ptype[n] != eptShell) && !nFreeze[gf][d])
             {
                 if (friction_coefficient != 0)
                 {

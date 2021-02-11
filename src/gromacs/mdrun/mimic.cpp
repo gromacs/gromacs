@@ -472,7 +472,7 @@ void gmx::LegacySimulator::do_mimic()
             if (constructVsites)
             {
                 wallcycle_start(wcycle, ewcVSITECONSTR);
-                vsite->construct(state->x, ir->delta_t, state->v, state->box);
+                vsite->construct(state->x, state->v, state->box, VSiteOperation::PositionsAndVelocities);
                 wallcycle_stop(wcycle, ewcVSITECONSTR);
             }
         }

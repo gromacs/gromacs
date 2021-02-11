@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2005 - 2014, The GROMACS development team.
  * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -242,6 +242,8 @@ void dd_move_x_constraints(struct gmx_domdec_t*     dd,
 
 /*! \brief Communicates the coordinates involved in virtual sites */
 void dd_move_x_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x);
+/*! \brief Communicates the positions and velocities involved in virtual sites */
+void dd_move_x_and_v_vsites(const gmx_domdec_t& dd, const matrix box, rvec* x, rvec* v);
 
 /*! \brief Returns the local atom count array for all constraints
  *
