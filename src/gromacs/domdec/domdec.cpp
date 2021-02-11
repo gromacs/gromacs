@@ -1009,7 +1009,7 @@ void dd_cycles_add(const gmx_domdec_t* dd, float cycles, int ddCycl)
 #if GMX_MPI
 static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
 {
-    MPI_Comm c_row = nullptr;
+    MPI_Comm c_row = MPI_COMM_NULL;
     ivec     loc_c;
     bool     bPartOfGroup = false;
 
@@ -1065,7 +1065,7 @@ static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
 void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
 {
 #if GMX_MPI
-    MPI_Comm mpi_comm_pp_physicalnode = nullptr;
+    MPI_Comm mpi_comm_pp_physicalnode = MPI_COMM_NULL;
 
     if (!thisRankHasDuty(cr, DUTY_PP) || gpu_id < 0)
     {
@@ -1299,7 +1299,7 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog,
         {
             periods[i] = TRUE;
         }
-        MPI_Comm comm_cart = nullptr;
+        MPI_Comm comm_cart = MPI_COMM_NULL;
         MPI_Cart_create(cr->mpi_comm_mygroup, DIM, dd->numCells, periods, static_cast<int>(reorder), &comm_cart);
         /* We overwrite the old communicator with the new cartesian one */
         cr->mpi_comm_mygroup = comm_cart;
@@ -1492,7 +1492,7 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
         {
             periods[i] = TRUE;
         }
-        MPI_Comm comm_cart = nullptr;
+        MPI_Comm comm_cart = MPI_COMM_NULL;
         MPI_Cart_create(cr->mpi_comm_mysim, DIM, cartSetup.ntot, periods, static_cast<int>(reorder), &comm_cart);
         MPI_Comm_rank(comm_cart, &rank);
         if (MASTER(cr) && rank != 0)
