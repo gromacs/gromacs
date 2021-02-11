@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,6 +109,17 @@ public:
     {
         event_->wait_and_throw();
         event_.reset();
+    }
+    /*! \brief Checks the completion of the underlying event and resets the object if it was. */
+    inline bool isReady()
+    {
+        auto info         = event_->get_info<cl::sycl::info::event::command_execution_status>();
+        bool hasTriggered = (info == cl::sycl::info::event_command_status::complete);
+        if (hasTriggered)
+        {
+            event_.reset();
+        }
+        return hasTriggered;
     }
     /*! \brief Enqueues a wait for the recorded event in stream \p deviceStream.
      * As in the OpenCL implementation, the event is released.

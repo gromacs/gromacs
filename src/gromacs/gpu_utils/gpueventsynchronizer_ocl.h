@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,6 +107,23 @@ public:
         }
 
         releaseEvent();
+    }
+    /*! \brief Checks the completion of the underlying event and resets the object if it was. */
+    inline bool isReady()
+    {
+        cl_int result;
+        cl_int clError = clGetEventInfo(
+                event_, CL_EVENT_COMMAND_EXECUTION_STATUS, sizeof(cl_int), &result, nullptr);
+        if (CL_SUCCESS != clError)
+        {
+            GMX_THROW(gmx::InternalError("Failed to retrieve event info: " + ocl_get_error_string(clError)));
+        }
+        bool hasTriggered = (result == CL_COMPLETE);
+        if (hasTriggered)
+        {
+            releaseEvent();
+        }
+        return hasTriggered;
     }
     /*! \brief Enqueues a wait for the recorded event in stream \p stream
      *
