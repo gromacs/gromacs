@@ -98,16 +98,19 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
         | no interactions that generate exclusions, no constraints, use global atom numbers |
         +-----------------------------------------------------------------------------------+
 
-.. parsed-literal::
+-   ``# at`` is the required number of atom type indices for this directive
+   
+-   ``f. tp`` is the value used to select this function type
 
-    '\# at' is the required number of atom type indices for this directive
-    'f. tp' is the value used to select this function type
-    'F. E.' indicates which of the parameters can be interpolated in free energy calculations
-    |CRO| the combination rule determines the type of LJ parameters, see 
-    |STAR| for ``dihedraltypes`` one can specify 4 atoms or the inner (outer for improper) 2 atoms
-    |NREX| exclude neighbors :math:`n_{ex}` bonds away for non-bonded interactions
-    For free energy calculations, type, :math:`q` and :math:`m`  or no parameters should be added
-    for topology 'B' (:math:`\lambda = 1`) on the same line, after the normal parameters.
+-   ``F. E.`` indicates which of the parameters can be interpolated in free energy calculations
+
+-   |CRO| the combination rule determines the type of LJ parameters, see 
+
+-   |STAR| for ``dihedraltypes`` one can specify 4 atoms or the inner (outer for improper) 2 atoms
+
+-   |NREX| exclude neighbors :math:`n_{ex}` bonds away for non-bonded interactions
+
+-   For free energy calculations, type, :math:`q` and :math:`m`  or no parameters should be added for topology ``B`` (:math:`\lambda = 1`) on the same line, after the normal parameters.
 
 .. |BZERO| replace:: :math:`b_0`
 .. |KB| replace:: :math:`k_b`
@@ -149,8 +152,8 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. |A2| replace:: :math:`a_2`
 .. |A3| replace:: :math:`a_3`
 .. |A4| replace:: :math:`a_4`
-.. |DOH| replace:: :math:d_{\mbox{\sc oh}}`
-.. |DHH| replace:: :math:d_{\mbox{\sc hh}}`
+.. |DOH| replace:: :math:`d_{\mbox{\sc oh}}`
+.. |DHH| replace:: :math:`d_{\mbox{\sc hh}}`
 .. |AO| replace:: :math:`a`
 .. |BO| replace:: :math:`b`
 .. |CO| replace:: :math:`c`
@@ -404,7 +407,7 @@ Here is an example of a topology file, ``urea.top``:
     [ bonds ]
         1	2
         1	3	
-        1   6
+        1       6
         3	4
         3	5
         6	7
@@ -440,7 +443,7 @@ Here is an example of a topology file, ``urea.top``:
         1    4     3    5     1  180     0  10
 
     ; Include TIP3P water topology
-    #include "amber99/tip3p.itp"
+    #include "amber99.ff/tip3p.itp"
 
     [ system ]
     Urea in Water
