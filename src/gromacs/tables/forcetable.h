@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -133,7 +133,8 @@ double v_lj_ewald_lr(double beta, double r);
  *
  * \return Pointer to inner loop table structure
  */
-t_forcetable* make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, int flags);
+std::unique_ptr<t_forcetable>
+make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, int flags);
 
 /*! \brief Return a table for bonded interactions,
  *

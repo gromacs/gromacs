@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -172,6 +172,8 @@ typedef struct t_nblist
 struct t_forcetable
 {
     t_forcetable(enum gmx_table_interaction interaction, enum gmx_table_format format);
+
+    ~t_forcetable();
 
     enum gmx_table_interaction interaction; /* Types of interactions stored in this table */
     enum gmx_table_format      format;      /* Interpolation type and data format */

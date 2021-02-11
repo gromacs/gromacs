@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1259,15 +1259,16 @@ static void set_table_type(int tabsel[], const interaction_const_t* ic, gmx_bool
     }
 }
 
-t_forcetable* make_tables(FILE* out, const interaction_const_t* ic, const char* fn, real rtab, int flags)
+std::unique_ptr<t_forcetable>
+make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, int flags)
 {
     t_tabledata* td;
     gmx_bool     b14only, useUserTable;
     int          nx0, tabsel[etiNR];
     real         scalefactor;
 
-    t_forcetable* table = new t_forcetable(GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
-                                           GMX_TABLE_FORMAT_CUBICSPLINE_YFGH);
+    auto table = std::make_unique<t_forcetable>(GMX_TABLE_INTERACTION_ELEC_VDWREP_VDWDISP,
+                                                GMX_TABLE_FORMAT_CUBICSPLINE_YFGH);
 
     b14only = ((flags & GMX_MAKETABLES_14ONLY) != 0);
 
@@ -1301,7 +1302,7 @@ t_forcetable* make_tables(FILE* out, const interaction_const_t* ic, const char* 
     }
     if (useUserTable)
     {
-        read_tables(out, fn, etiNR, 0, td);
+        read_tables(fp, fn, etiNR, 0, td);
         if (rtab == 0 || (flags & GMX_MAKETABLES_14ONLY))
         {
             table->n = td[0].nx;
@@ -1354,9 +1355,9 @@ t_forcetable* make_tables(FILE* out, const interaction_const_t* ic, const char* 
             init_table(table->n, nx0, scale, &(td[k]), !useUserTable);
 
             fill_table(&(td[k]), tabsel[k], ic, b14only);
-            if (out)
+            if (fp)
             {
-                fprintf(out,
+                fprintf(fp,
                         "Generated table with %d data points for %s%s.\n"
                         "Tabscale = %g points/nm\n",
                         td[k].nx,
@@ -1434,7 +1435,7 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
     GMX_RELEASE_ASSERT(ic->vdwtype != evdwUSER || tabfn,
                        "With VdW user tables we need a table file name");
 
-    t_forcetable* fullTable = make_tables(fp, ic, tabfn, rtab, 0);
+    std::unique_ptr<t_forcetable> fullTable = make_tables(fp, ic, tabfn, rtab, 0);
     /* Copy the contents of the table to one that has just dispersion
      * and repulsion, to improve cache performance. We want the table
      * data to be aligned to 32-byte boundaries.
@@ -1458,7 +1459,6 @@ makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab
             dispersionCorrectionTable->data[8 * i + j] = fullTable->data[12 * i + 4 + j];
         }
     }
-    delete fullTable;
 
     return dispersionCorrectionTable;
 }
@@ -1474,3 +1474,5 @@ t_forcetable::t_forcetable(enum gmx_table_interaction interaction, enum gmx_tabl
     stride(0)
 {
 }
+
+t_forcetable::~t_forcetable() = default;

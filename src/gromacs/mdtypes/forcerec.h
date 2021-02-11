@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,7 +231,7 @@ struct t_forcerec
     gmx_bool bcoultab = FALSE;
     gmx_bool bvdwtab  = FALSE;
 
-    t_forcetable* pairsTable = nullptr; /* for 1-4 interactions, [pairs] and [pairs_nb] */
+    std::unique_ptr<t_forcetable> pairsTable; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
     int efep = 0;
@@ -249,8 +249,8 @@ struct t_forcerec
     std::unique_ptr<nonbonded_verlet_t> nbv;
 
     /* The wall tables (if used) */
-    int             nwall    = 0;
-    t_forcetable*** wall_tab = nullptr;
+    int                                                     nwall = 0;
+    std::vector<std::vector<std::unique_ptr<t_forcetable>>> wall_tab;
 
     /* The number of atoms participating in do_force_lowlevel */
     int natoms_force = 0;

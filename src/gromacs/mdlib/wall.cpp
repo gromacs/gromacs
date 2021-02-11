@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,10 +78,10 @@ void make_wall_tables(FILE*                   fplog,
         fprintf(fplog, "Reading user tables for %d energy groups with %d walls\n", negp_pp, ir->nwall);
     }
 
-    snew(fr->wall_tab, ir->nwall);
+    fr->wall_tab.resize(ir->nwall);
     for (int w = 0; w < ir->nwall; w++)
     {
-        snew(fr->wall_tab[w], negp_pp);
+        fr->wall_tab[w].resize(negp_pp);
         for (int egp = 0; egp < negp_pp; egp++)
         {
             /* If the energy group pair is excluded, we don't need a table */
