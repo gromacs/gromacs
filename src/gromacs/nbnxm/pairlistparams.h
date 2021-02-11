@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -105,6 +105,10 @@ static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListTyp
 //! Gives the j-cluster size for each pairlist type
 static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = {
     { 2, 4, 8, c_nbnxnGpuClusterSize }
+};
+//! True if given pairlist type is used on GPU, false if on CPU.
+static constexpr gmx::EnumerationArray<PairlistType, bool> sc_isGpuPairListType = {
+    { false, false, false, true }
 };
 
 /*! \internal
