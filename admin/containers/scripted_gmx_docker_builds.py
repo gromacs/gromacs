@@ -223,8 +223,8 @@ def get_compiler(args, compiler_build_stage: hpccm.Stage = None) -> bb_base:
             compiler = compiler_build_stage.runtime(_from='oneapi')
             # Prepare the toolchain (needed only for builds done within the Dockerfile, e.g.
             # OpenMPI builds, which don't currently work for other reasons)
-            oneapi_toolchain = hpccm.toolchain(CC='/opt/intel/oneapi/compiler/latest/linux/bin/intel64/icx',
-                                               CXX='/opt/intel/oneapi/compiler/latest/linux/bin/intel64/icpx')
+            oneapi_toolchain = hpccm.toolchain(CC=f'/opt/intel/oneapi/compiler/{args.oneapi}/linux/bin/intel64/icx',
+                                               CXX=f'/opt/intel/oneapi/compiler/{args.oneapi}/linux/bin/intel64/icpx')
             setattr(compiler, 'toolchain', oneapi_toolchain)
 
         else:
@@ -344,7 +344,9 @@ def add_oneapi_compiler_build_stage(input_args, output_stages: typing.Mapping[st
     )
     # Ensure that all bash shells on the final container will have access to oneAPI
     oneapi_stage += hpccm.primitives.shell(
-            commands=['echo "source /opt/intel/oneapi/setvars.sh" >> /etc/bash.bashrc']
+            commands=['echo "source /opt/intel/oneapi/setvars.sh" >> /etc/bash.bashrc',
+                      'unlink /opt/intel/oneapi/compiler/latest',
+                     f'ln -sf /opt/intel/oneapi/compiler/{version} /opt/intel/oneapi/compiler/latest']
             )
     setattr(oneapi_stage, 'runtime', oneapi_runtime)
 
@@ -368,13 +370,17 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
     commands.append(f"""{venv_path}/bin/python -m pip install --upgrade \
             'cmake>=3.13' \
             'flake8>=3.7.7' \
+            'gcovr>=4.2' \
             'mpi4py>=3.0.3' \
             'networkx>=2.0' \
             'numpy>=1' \
             'pip>=10.1' \
+            'Pygments>=2.2.0' \
             'pytest>=3.9' \
             'setuptools>=42' \
-            'scikit-build>=0.10'""")
+            'scikit-build>=0.10' \
+            'Sphinx>=1.6.3' \
+            'sphinxcontrib-plantuml>=0.14'""")
 
     # TODO: Remove 'importlib_resources' dependency when Python >=3.7 is required.
     if minor == 6:
@@ -459,7 +465,6 @@ def add_documentation_dependencies(input_args,
         return
     output_stages['main'] += hpccm.primitives.shell(
         commands=['sed -i \'/\"XPS\"/d;/\"PDF\"/d;/\"PS\"/d;/\"EPS\"/d;/disable ghostscript format types/d\' /etc/ImageMagick-6/policy.xml'])
-    output_stages['main'] += hpccm.building_blocks.pip(pip='pip3', packages=['sphinx==1.6.1', 'gcovr'])
     if input_args.doxygen == '1.8.5':
         doxygen_commit = 'ed4ed873ab0e7f15116e2052119a6729d4589f7a'
         output_stages['main'] += hpccm.building_blocks.generic_autotools(
@@ -554,9 +559,7 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
             stages['main'] += bb
 
     # We always add Python3 and Pip
-    stages['main'] += hpccm.building_blocks.python(python3=True, python2=False, devel=True)
-    stages['main'] += hpccm.building_blocks.pip(upgrade=True, pip='pip3',
-                                                packages=['pytest', 'networkx', 'numpy'])
+    stages['main'] += hpccm.building_blocks.python(python3=True, python2=False)
 
     # Add documentation requirements (doxygen and sphinx + misc).
     if args.doxygen is not None:

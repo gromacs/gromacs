@@ -59,7 +59,7 @@ GitLab CI job parameters, but note the following GROMACS-specific conventions.
         Avoid using *before-script* directly, and be cautious
         about nested *extends* overriding multiple *before_script* definitions.
 
-    cache
+    job cache
         There is no global default, but jobs that build software will likely
         set *cache*. To explicitly unset *cache* directives, specify a job
         parameter of ``cache: {}``.
