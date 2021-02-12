@@ -58,18 +58,12 @@
  */
 static inline int get_2log(int n)
 {
-    // TODO: Replace with gmx::Log2I?
-    int log2 = 0;
-    while ((1 << log2) < n)
-    {
-        log2++;
-    }
-    if ((1 << log2) != n)
+    if (!gmx::isPowerOfTwo(n))
     {
         gmx_fatal(FARGS, "nbnxn na_c (%d) is not a power of 2", n);
     }
 
-    return log2;
+    return gmx::log2I(n);
 }
 
 namespace Nbnxm

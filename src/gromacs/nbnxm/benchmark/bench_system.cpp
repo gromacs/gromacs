@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,7 @@ constexpr real c12Oxygen = 2.634129e-06;
 // A fatal error is generated when this is not the case.
 static void generateCoordinates(int multiplicationFactor, std::vector<gmx::RVec>* coordinates, matrix box)
 {
-    if (multiplicationFactor < 1 || (multiplicationFactor & (multiplicationFactor - 1)) != 0)
+    if (!gmx::isPowerOfTwo(multiplicationFactor))
     {
         gmx_fatal(FARGS, "The size factor has to be a power of 2");
     }

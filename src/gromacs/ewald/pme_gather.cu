@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020 by the GROMACS development team.
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -92,7 +93,7 @@ __device__ __forceinline__ void reduce_atom_forces(float3* __restrict__ sm_force
                                                    float&       fy,
                                                    float&       fz)
 {
-    if (!(order & (order - 1))) // Only for orders of power of 2
+    if (gmx::isPowerOfTwo(order)) // Only for orders of power of 2
     {
         const unsigned int activeMask = c_fullWarpMask;
 

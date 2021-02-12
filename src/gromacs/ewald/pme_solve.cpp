@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,8 +94,7 @@ constexpr int c_simdWidth = 4;
 template<unsigned int factor>
 static size_t roundUpToMultipleOfFactor(size_t number)
 {
-    static_assert(factor > 0 && (factor & (factor - 1)) == 0,
-                  "factor should be >0 and a power of 2");
+    static_assert(gmx::isPowerOfTwo(factor));
 
     /* We need to add a most factor-1 and because factor is a power of 2,
      * we get the result by masking out the bits corresponding to factor-1.

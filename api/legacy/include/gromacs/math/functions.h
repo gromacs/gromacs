@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019,2020 by the GROMACS development team.
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -470,6 +471,19 @@ static inline int64_t roundToInt64(float x)
 static inline int64_t roundToInt64(double x)
 {
     return static_cast<int>(rint(x));
+}
+
+//! \brief Check whether \p v is an integer power of 2.
+template<typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
+#if defined(__NVCC__) && !defined(__CUDACC_RELAXED_CONSTEXPR__)
+/* In CUDA 11, a constexpr function cannot be called from a function with incompatible execution
+ * space, unless --expt-relaxed-constexpr flag is set */
+__host__ __device__
+#endif
+        static inline constexpr bool
+        isPowerOfTwo(const T v)
+{
+    return (v > 0) && ((v & (v - 1)) == 0);
 }
 
 } // namespace gmx
