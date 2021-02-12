@@ -469,6 +469,12 @@ void gmx::LegacySimulator::do_mimic()
                           "decomposition, "
                           "use a single rank");
             }
+            if (constructVsites)
+            {
+                wallcycle_start(wcycle, ewcVSITECONSTR);
+                vsite->construct(state->x, ir->delta_t, state->v, state->box);
+                wallcycle_stop(wcycle, ewcVSITECONSTR);
+            }
         }
 
         if (DOMAINDECOMP(cr))
@@ -620,13 +626,6 @@ void gmx::LegacySimulator::do_mimic()
         }
 
         stopHandler->setSignal();
-
-        if (vsite != nullptr)
-        {
-            wallcycle_start(wcycle, ewcVSITECONSTR);
-            vsite->construct(state->x, ir->delta_t, state->v, state->box);
-            wallcycle_stop(wcycle, ewcVSITECONSTR);
-        }
 
         {
             const bool          doInterSimSignal = false;

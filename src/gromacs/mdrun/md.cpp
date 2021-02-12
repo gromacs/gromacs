@@ -581,11 +581,6 @@ void gmx::LegacySimulator::do_md()
                                state->box,
                                state->lambda[efptBONDED]);
         }
-        if (vsite)
-        {
-            /* Construct the virtual sites for the initial configuration */
-            vsite->construct(state->x, ir->delta_t, {}, state->box);
-        }
     }
 
     if (ir->efep != efepNO)
@@ -952,6 +947,14 @@ void gmx::LegacySimulator::do_md()
             // NOTE: If the coordinates are to be written into output file they are also copied separately before the output.
             stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
+
+        if (vsite != nullptr)
+        {
+            // Virtual sites need to be updated before domain decomposition and forces are calculated
+            wallcycle_start(wcycle, ewcVSITECONSTR);
+            vsite->construct(state->x, ir->delta_t, state->v, state->box);
+            wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
 
         if (bNS && !(bFirstStep && ir->bContinuation))
@@ -1562,13 +1565,6 @@ void gmx::LegacySimulator::do_md()
             }
 
             enerd->term[F_DVDL_CONSTR] += dvdl_constr;
-        }
-
-        if (vsite != nullptr)
-        {
-            wallcycle_start(wcycle, ewcVSITECONSTR);
-            vsite->construct(state->x, ir->delta_t, state->v, state->box);
-            wallcycle_stop(wcycle, ewcVSITECONSTR);
         }
 
         /* ############## IF NOT VV, Calculate globals HERE  ############ */

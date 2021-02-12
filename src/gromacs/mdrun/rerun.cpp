@@ -739,13 +739,6 @@ void gmx::LegacySimulator::do_rerun()
 
         stopHandler->setSignal();
 
-        if (vsite != nullptr)
-        {
-            wallcycle_start(wcycle, ewcVSITECONSTR);
-            vsite->construct(state->x, ir->delta_t, state->v, state->box);
-            wallcycle_stop(wcycle, ewcVSITECONSTR);
-        }
-
         {
             const bool          doInterSimSignal = false;
             const bool          doIntraSimSignal = true;
