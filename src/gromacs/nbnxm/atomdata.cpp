@@ -1200,12 +1200,6 @@ static void nbnxn_atomdata_add_nbat_f_to_f_part(const Nbnxm::GridSet&          g
     }
 }
 
-static inline unsigned char reverse_bits(unsigned char b)
-{
-    /* http://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64BitsDiv */
-    return (b * 0x0202020202ULL & 0x010884422010ULL) % 1023;
-}
-
 static void nbnxn_atomdata_add_nbat_f_to_f_reduce(nbnxn_atomdata_t* nbat, int nth)
 {
 #pragma omp parallel for num_threads(nth) schedule(static)
