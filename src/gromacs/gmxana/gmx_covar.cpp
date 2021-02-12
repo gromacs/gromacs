@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,27 +73,25 @@ namespace
 /*! \brief Throw an error if any element in index exceeds a given number.
  *
  * \param[in] indices to be acessed
- * \param[in] largestOkayIndex to be accessed
+ * \param[in] numAtoms to be accessed
  * \param[in] indexUsagePurpose to be more explicit in the error message
  *
- * \throws RangeError if largestOkayIndex is larger than any element in indices
+ * \throws RangeError if any element in indices is larger than or equal numAtoms
  *
  */
-void throwErrorIfIndexOutOfBounds(ArrayRef<const int> indices,
-                                  const int           largestOkayIndex,
-                                  const std::string&  indexUsagePurpose)
+void throwErrorIfIndexOutOfBounds(ArrayRef<const int> indices, const int numAtoms, const std::string& indexUsagePurpose)
 {
     // do nothing if index is empty
-    if (indices.ssize() == 0)
+    if (indices.empty())
     {
         return;
     }
     const int largestIndex = *std::max_element(indices.begin(), indices.end());
-    if (largestIndex < largestOkayIndex)
+    if (largestIndex >= numAtoms)
     {
-        GMX_THROW(RangeError("The provided structure file only contains "
-                             + std::to_string(largestOkayIndex) + " coordinates, but coordinate index "
-                             + std::to_string(largestIndex) + " was requested for " + indexUsagePurpose
+        GMX_THROW(RangeError("The provided structure file only contains " + std::to_string(numAtoms)
+                             + " coordinates, but coordinate index " + std::to_string(largestIndex + 1)
+                             + " was requested for " + indexUsagePurpose
                              + ". Make sure to update structure files "
                                "and index files if you store only a part of your system."));
     }

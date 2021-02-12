@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,6 +87,11 @@ constexpr const int N_IVEC  = (N_BOX_Z * N_BOX_Y * N_BOX_X);
 
 //! Needed for generating Bolzmann velocity distribution (kJ/(mol K))
 constexpr const real BOLTZ = (detail::RGAS / detail::KILO); /*  */
+
+#ifndef M_PI
+//! Required work-around for platforms that don't implement POSIX-style cmath header
+#    define M_PI 3.14159265358979323846
+#endif
 
 //! Charge multiplication factor for Coulomb interactions
 constexpr const real ONE_4PI_EPS0 = (1.0 / (4.0 * M_PI * detail::EPSILON0));

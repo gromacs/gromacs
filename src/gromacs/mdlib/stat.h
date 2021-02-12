@@ -39,6 +39,8 @@
 #ifndef GMX_MDLIB_STAT_H
 #define GMX_MDLIB_STAT_H
 
+#include <cstdint>
+
 #include "gromacs/math/vectypes.h"
 
 struct gmx_ekindata_t;

@@ -19,9 +19,34 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix periodic boundary conditions in analysis framework tools
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+There was a bug in the trajectory analysis framework which caused
+molecules that were broken over PBC not to be made whole. This would
+usually lead to obviously incorrect outliers in analysis output.
+
+:issue:`3900`
+
+Fix range checking bug in gmx covar
+"""""""""""""""""""""""""""""""""""
+
+A check was inverted causing range checking to be applied wrong.
+
+:issue:`3902`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed compilation on Cygwin
+"""""""""""""""""""""""""""
+
+A |Gromacs| header file was not including the necessary standard
+header. A problem with the ``M_PI`` math constant defined only by
+POSIX and not by C++ was also worked around.
+
+:issue:`3890`
+
 Miscellaneous
 ^^^^^^^^^^^^^
-
+* Updated |Gromacs| logos

@@ -64,17 +64,12 @@ set_target_properties(gmxapi PROPERTIES
 
 if (GMX_LIB_MPI)
     # GROMACS is built against an MPI library.
-    # Clarification should be possible with resolution of #3672.
     set(_gmx_mpi_type "library")
-    # Ref https://cmake.org/cmake/help/v3.13/module/FindMPI.html#variables-for-using-mpi
-    find_package(MPI COMPONENTS CXX)
-    if (MPI_CXX_FOUND)
-target_link_libraries(gmxapi PRIVATE MPI::MPI_CXX)
-        # If clients also need to link this target, we need to provide help in gmxapi-config.cmake
-        set(_gmxapi_find_dependencies "find_dependency(MPI COMPONENTS CXX)")
-    else()
-        message(FATAL_ERROR "Building gmxapi for MPI-enabled GROMACS, but no MPI toolchain found.")
-    endif ()
+    # TODO: Normative solution with #3672.
+    # Do not target_link_options(gmxapi PRIVATE ${MPI_LINKER_FLAGS})
+    # because the root CMakeLists.txt sets CMAKE_SHARED_LINKER_FLAGS.
+    target_compile_options(gmxapi PUBLIC ${MPI_COMPILE_FLAGS})
+    target_link_libraries(gmxapi PUBLIC ${MPI_CXX_LIBRARIES})
 elseif(GMX_THREAD_MPI)
     # GROMACS is built with its internal thread-MPI implementation.
     set(_gmx_mpi_type "tmpi")

@@ -1,0 +1,9 @@
+TITLE     TIP4p ice to test that MW is handled correctly
+ATOM      1  OW  SOL A   1     -24.744 -55.257  -4.969  1.00  1.00      A    O
+ATOM      2  HW1 SOL A   1     -25.692 -55.390  -4.996  1.00  0.00      A    H
+ATOM      3  HW2 SOL A   1     -24.532 -55.232  -4.035  1.00  0.00      A    H
+ATOM      4  MW  SOL A   1     -24.838 -55.271  -4.853  1.00  0.00      A    O
+ATOM      5  OW  SOL A   2     -24.964 -52.416  -8.778  1.00  1.00      A    O
+ATOM      6  HW1 SOL A   2     -24.502 -52.770  -8.018  1.00  0.00      A    H
+ATOM      7  HW2 SOL A   2     -24.314 -51.874  -9.224  1.00  0.00      A    H
+ATOM      8  MW  SOL A   2     -24.822 -52.393  -8.738  1.00  0.00      A    O
