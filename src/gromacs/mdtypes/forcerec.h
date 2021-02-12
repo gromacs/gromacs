@@ -271,7 +271,7 @@ struct t_forcerec
     int               ntype = 0; /* Number of atom types */
     gmx_bool          bBHAM = FALSE;
     std::vector<real> nbfp;
-    real*             ljpme_c6grid = nullptr; /* C6-values used on grid in LJPME */
+    std::vector<real> ljpme_c6grid; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
     int* egp_flags = nullptr;

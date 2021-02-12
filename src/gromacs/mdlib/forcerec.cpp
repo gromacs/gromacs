@@ -155,11 +155,10 @@ static std::vector<real> mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
     return nbfp;
 }
 
-static real* make_ljpme_c6grid(const gmx_ffparams_t* idef, t_forcerec* fr)
+static std::vector<real> make_ljpme_c6grid(const gmx_ffparams_t* idef, t_forcerec* fr)
 {
-    int   i, j, k, atnr;
-    real  c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
-    real* grid;
+    int  i, j, k, atnr;
+    real c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
 
     /* For LJ-PME simulations, we correct the energies with the reciprocal space
      * inside of the cut-off. To do this the non-bonded kernels needs to have
@@ -167,7 +166,7 @@ static real* make_ljpme_c6grid(const gmx_ffparams_t* idef, t_forcerec* fr)
      */
 
     atnr = idef->atnr;
-    snew(grid, 2 * atnr * atnr);
+    std::vector<real> grid(2 * atnr * atnr, 0.0);
     for (i = k = 0; (i < atnr); i++)
     {
         for (j = 0; (j < atnr); j++, k++)

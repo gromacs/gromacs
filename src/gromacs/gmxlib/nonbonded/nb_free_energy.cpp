@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/arrayref.h"
 
 
 //! Scalar (non-SIMD) data types.
@@ -233,15 +234,16 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     const int* shift  = nlist->shift;
     const int* gid    = nlist->gid;
 
-    const real* shiftvec      = fr->shift_vec[0];
-    const real* chargeA       = mdatoms->chargeA;
-    const real* chargeB       = mdatoms->chargeB;
-    real*       Vc            = kernel_data->energygrp_elec;
-    const int*  typeA         = mdatoms->typeA;
-    const int*  typeB         = mdatoms->typeB;
-    const int   ntype         = fr->ntype;
-    const real* nbfp          = fr->nbfp.data();
-    const real* nbfp_grid     = fr->ljpme_c6grid;
+    const real*               shiftvec  = fr->shift_vec[0];
+    const real*               chargeA   = mdatoms->chargeA;
+    const real*               chargeB   = mdatoms->chargeB;
+    real*                     Vc        = kernel_data->energygrp_elec;
+    const int*                typeA     = mdatoms->typeA;
+    const int*                typeB     = mdatoms->typeB;
+    const int                 ntype     = fr->ntype;
+    gmx::ArrayRef<const real> nbfp      = fr->nbfp;
+    gmx::ArrayRef<const real> nbfp_grid = fr->ljpme_c6grid;
+
     real*       Vv            = kernel_data->energygrp_vdw;
     const real  lambda_coul   = kernel_data->lambda[efptCOUL];
     const real  lambda_vdw    = kernel_data->lambda[efptVDW];
