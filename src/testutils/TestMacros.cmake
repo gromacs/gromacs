@@ -2,7 +2,8 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2011,2012,2013,2014,2015 by the GROMACS development team.
-# Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2016,2017,2018,2019,2020 by the GROMACS development team.
+# Copyright (c) 2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -144,10 +145,11 @@ function (gmx_add_gtest_executable EXENAME)
             endif()
         elseif (GMX_GPU_SYCL)
             target_sources(${EXENAME} PRIVATE ${ARG_SYCL_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES})
-            set_source_files_properties(${ARG_GPU_CPP_SOURCE_FILES} PROPERTIES COMPILE_FLAGS "${SYCL_CXX_FLAGS}")
-            set_source_files_properties(${ARG_SYCL_CPP_SOURCE_FILES} PROPERTIES COMPILE_FLAGS "${SYCL_CXX_FLAGS}")
             if(ARG_SYCL_CPP_SOURCE_FILES OR ARG_GPU_CPP_SOURCE_FILES)
-                target_link_libraries(${EXENAME} PRIVATE ${SYCL_CXX_FLAGS})
+                add_sycl_to_target(
+                    TARGET ${EXENAME}
+                    SOURCES ${ARG_SYCL_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES}
+                    )
             endif()
         else()
             target_sources(${EXENAME} PRIVATE ${ARG_NON_GPU_CPP_SOURCE_FILES} ${ARG_GPU_CPP_SOURCE_FILES})

@@ -52,7 +52,7 @@ if(CMAKE_CXX_COMPILER MATCHES "dpcpp")
     # 2. We get a ton of warnings for the device-specific pass when the compiler sees our SIMD code.
     #
     # To avoid this, we attempt to find a flag to disable SYCL for non-SYCL files. Unfortunately,
-    # when using gmx_find_flag_for_source() that includes calling check_cxx_compiler_flag(),  
+    # when using gmx_find_flag_for_source() that includes calling check_cxx_compiler_flag(),
     # this in turn exposes a bug in dpcpp, where an object file compiles with -fno-sycl leads to
     # a failed link stage (when the same flag is not used). Since none of this is critical, we handle
     # it by merely checking if it works to compile a source fils with this flag, and choking if SYCL
@@ -103,5 +103,18 @@ if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
 endif()
 
 if(NOT SYCL_CXX_FLAGS_RESULT)
-    message(ERROR "Cannot compile SYCL with Intel extensions. Try a different compiler or disable SYCL.")
+    message(FATAL_ERROR "Cannot compile with SYCL Intel compiler. Try a different compiler or disable SYCL.")
 endif()
+
+# Add function wrapper similar to the one used by ComputeCPP and hipSYCL
+function(add_sycl_to_target)
+    cmake_parse_arguments(
+        PARSE_ARGV 0 # No positional arguments
+        ARGS # Prefix for the resulting variables
+        "" # No options
+        "TARGET" # One-value keyword
+        "SOURCES" # Multi-value keyword
+    )
+    set_source_files_properties(${ARGS_SOURCES} PROPERTIES COMPILE_FLAGS "${SYCL_CXX_FLAGS}")
+    target_link_libraries(${ARGS_TARGET} PRIVATE ${SYCL_CXX_FLAGS})
+endfunction(add_sycl_to_target)
