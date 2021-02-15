@@ -116,13 +116,13 @@ void ForceHelperBuffers::resize(int numAtoms)
     }
 }
 
-static std::vector<real> mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
+std::vector<real> makeNonBondedParameterLists(const gmx_ffparams_t& forceFieldParams, bool useBuckinghamPotential)
 {
     std::vector<real> nbfp;
     int               atnr;
 
-    atnr = idef->atnr;
-    if (bBHAM)
+    atnr = forceFieldParams.atnr;
+    if (useBuckinghamPotential)
     {
         nbfp.resize(3 * atnr * atnr);
         int k = 0;
@@ -130,10 +130,10 @@ static std::vector<real> mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
         {
             for (int j = 0; (j < atnr); j++, k++)
             {
-                BHAMA(nbfp, atnr, i, j) = idef->iparams[k].bham.a;
-                BHAMB(nbfp, atnr, i, j) = idef->iparams[k].bham.b;
+                BHAMA(nbfp, atnr, i, j) = forceFieldParams.iparams[k].bham.a;
+                BHAMB(nbfp, atnr, i, j) = forceFieldParams.iparams[k].bham.b;
                 /* nbfp now includes the 6.0 derivative prefactor */
-                BHAMC(nbfp, atnr, i, j) = idef->iparams[k].bham.c * 6.0;
+                BHAMC(nbfp, atnr, i, j) = forceFieldParams.iparams[k].bham.c * 6.0;
             }
         }
     }
@@ -146,8 +146,8 @@ static std::vector<real> mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
             for (int j = 0; (j < atnr); j++, k++)
             {
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                C6(nbfp, atnr, i, j)  = idef->iparams[k].lj.c6 * 6.0;
-                C12(nbfp, atnr, i, j) = idef->iparams[k].lj.c12 * 12.0;
+                C6(nbfp, atnr, i, j)  = forceFieldParams.iparams[k].lj.c6 * 6.0;
+                C12(nbfp, atnr, i, j) = forceFieldParams.iparams[k].lj.c12 * 12.0;
             }
         }
     }
@@ -155,7 +155,8 @@ static std::vector<real> mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
     return nbfp;
 }
 
-static std::vector<real> make_ljpme_c6grid(const gmx_ffparams_t* idef, t_forcerec* fr)
+std::vector<real> makeLJPmeC6GridCorrectionParameters(const gmx_ffparams_t& forceFieldParams,
+                                                      const t_forcerec&     forceRec)
 {
     int  i, j, k, atnr;
     real c6, c6i, c6j, c12i, c12j, epsi, epsj, sigmai, sigmaj;
@@ -165,19 +166,19 @@ static std::vector<real> make_ljpme_c6grid(const gmx_ffparams_t* idef, t_forcere
      * access to the C6-values used on the reciprocal grid in pme.c
      */
 
-    atnr = idef->atnr;
+    atnr = forceFieldParams.atnr;
     std::vector<real> grid(2 * atnr * atnr, 0.0);
     for (i = k = 0; (i < atnr); i++)
     {
         for (j = 0; (j < atnr); j++, k++)
         {
-            c6i  = idef->iparams[i * (atnr + 1)].lj.c6;
-            c12i = idef->iparams[i * (atnr + 1)].lj.c12;
-            c6j  = idef->iparams[j * (atnr + 1)].lj.c6;
-            c12j = idef->iparams[j * (atnr + 1)].lj.c12;
+            c6i  = forceFieldParams.iparams[i * (atnr + 1)].lj.c6;
+            c12i = forceFieldParams.iparams[i * (atnr + 1)].lj.c12;
+            c6j  = forceFieldParams.iparams[j * (atnr + 1)].lj.c6;
+            c12j = forceFieldParams.iparams[j * (atnr + 1)].lj.c12;
             c6   = std::sqrt(c6i * c6j);
-            if (fr->ljpme_combination_rule == eljpmeLB && !gmx_numzero(c6) && !gmx_numzero(c12i)
-                && !gmx_numzero(c12j))
+            if (forceRec.ljpme_combination_rule == eljpmeLB && !gmx_numzero(c6)
+                && !gmx_numzero(c12i) && !gmx_numzero(c12j))
             {
                 sigmai = gmx::sixthroot(c12i / c6i);
                 sigmaj = gmx::sixthroot(c12j / c6j);
@@ -1195,10 +1196,10 @@ void init_forcerec(FILE*                            fp,
     if (fr->nbfp.empty())
     {
         fr->ntype = mtop->ffparams.atnr;
-        fr->nbfp  = mk_nbfp(&mtop->ffparams, fr->bBHAM);
+        fr->nbfp  = makeNonBondedParameterLists(mtop->ffparams, fr->bBHAM);
         if (EVDW_PME(ic->vdwtype))
         {
-            fr->ljpme_c6grid = make_ljpme_c6grid(&mtop->ffparams, fr);
+            fr->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(mtop->ffparams, *fr);
         }
     }
 

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,12 +51,29 @@ struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
+struct gmx_ffparams_t;
 
 namespace gmx
 {
 class MDLogger;
 class PhysicalNodeCommunicator;
 } // namespace gmx
+
+/*! \brief Create nonbonded parameter lists
+ *
+ * \param[in] forceFieldParams       The forcefield parameters
+ * \param[in] useBuckinghamPotential Use Buckingham potential
+ */
+std::vector<real> makeNonBondedParameterLists(const gmx_ffparams_t& forceFieldParams,
+                                              bool                  useBuckinghamPotential);
+
+/*! \brief Calculate c6 parameters for grid correction
+ *
+ * \param[in] forceFieldParams The forcefield parameters
+ * \param[in] forceRec         The forcerec
+ */
+std::vector<real> makeLJPmeC6GridCorrectionParameters(const gmx_ffparams_t& forceFieldParams,
+                                                      const t_forcerec&     forceRec);
 
 /*! \brief Print the contents of the forcerec to a file
  *
