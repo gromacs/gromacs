@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,18 +44,9 @@
 
 static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* cmap_grid, gmx_bool bShowNumbers)
 {
-    int  j, nelem;
-    real dx, idx;
+    const real dx = cmap_grid->grid_spacing != 0 ? 360.0 / cmap_grid->grid_spacing : 0;
 
-    if (cmap_grid->grid_spacing != 0)
-    {
-        dx = 360.0 / cmap_grid->grid_spacing;
-    }
-    else
-    {
-        dx = 0;
-    }
-    nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
+    const int nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
 
     if (available(fp, cmap_grid, indent, title))
     {
@@ -63,12 +54,12 @@ static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* c
 
         for (gmx::index i = 0; i < gmx::ssize(cmap_grid->cmapdata); i++)
         {
-            idx = -180.0;
+            real idx = -180.0;
             fprintf(fp, "%8s %8s %8s %8s\n", "V", "dVdx", "dVdy", "d2dV");
 
             fprintf(fp, "grid[%3zd]={\n", bShowNumbers ? i : -1);
 
-            for (j = 0; j < nelem; j++)
+            for (int j = 0; j < nelem; j++)
             {
                 if ((j % cmap_grid->grid_spacing) == 0)
                 {
@@ -88,14 +79,12 @@ static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* c
 
 void pr_ffparams(FILE* fp, int indent, const char* title, const gmx_ffparams_t* ffparams, gmx_bool bShowNumbers)
 {
-    int i;
-
     indent = pr_title(fp, indent, title);
     pr_indent(fp, indent);
     fprintf(fp, "atnr=%d\n", ffparams->atnr);
     pr_indent(fp, indent);
     fprintf(fp, "ntypes=%d\n", ffparams->numTypes());
-    for (i = 0; i < ffparams->numTypes(); i++)
+    for (int i = 0; i < ffparams->numTypes(); i++)
     {
         pr_indent(fp, indent + INDENT);
         fprintf(fp,

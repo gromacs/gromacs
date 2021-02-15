@@ -361,14 +361,12 @@ static void pr_moltype(FILE*                 fp,
                        gmx_bool              bShowNumbers,
                        gmx_bool              bShowParameters)
 {
-    int j;
-
     indent = pr_title_n(fp, indent, title, n);
     pr_indent(fp, indent);
     fprintf(fp, "name=\"%s\"\n", *(molt->name));
     pr_atoms(fp, indent, "atoms", &(molt->atoms), bShowNumbers);
     pr_listoflists(fp, indent, "excls", &molt->excls, bShowNumbers);
-    for (j = 0; (j < F_NRE); j++)
+    for (int j = 0; (j < F_NRE); j++)
     {
         pr_ilist(fp,
                  indent,
@@ -465,11 +463,8 @@ static void cmp_iparm(FILE*            fp,
                       real             relativeTolerance,
                       real             absoluteTolerance)
 {
-    int      i;
-    gmx_bool bDiff;
-
-    bDiff = FALSE;
-    for (i = 0; i < MAXFORCEPARAM && !bDiff; i++)
+    bool bDiff = false;
+    for (int i = 0; i < MAXFORCEPARAM && !bDiff; i++)
     {
         bDiff = !equal_real(ip1.generic.buf[i], ip2.generic.buf[i], relativeTolerance, absoluteTolerance);
     }
@@ -484,13 +479,10 @@ static void cmp_iparm(FILE*            fp,
 
 static void cmp_iparm_AB(FILE* fp, const char* s, t_functype ft, const t_iparams& ip1, real relativeTolerance, real absoluteTolerance)
 {
-    int      nrfpA, nrfpB, p0, i;
-    gmx_bool bDiff;
-
     /* Normally the first parameter is perturbable */
-    p0    = 0;
-    nrfpA = interaction_function[ft].nrfpA;
-    nrfpB = interaction_function[ft].nrfpB;
+    int p0    = 0;
+    int nrfpA = interaction_function[ft].nrfpA;
+    int nrfpB = interaction_function[ft].nrfpB;
     if (ft == F_PDIHS)
     {
         nrfpB = 2;
@@ -501,8 +493,8 @@ static void cmp_iparm_AB(FILE* fp, const char* s, t_functype ft, const t_iparams
         p0    = 1;
         nrfpB = 1;
     }
-    bDiff = FALSE;
-    for (i = 0; i < nrfpB && !bDiff; i++)
+    bool bDiff = false;
+    for (int i = 0; i < nrfpB && !bDiff; i++)
     {
         bDiff = !equal_real(
                 ip1.generic.buf[p0 + i], ip1.generic.buf[nrfpA + i], relativeTolerance, absoluteTolerance);
@@ -531,11 +523,9 @@ static void cmp_cmap(FILE* fp, const gmx_cmap_t* cmap1, const gmx_cmap_t* cmap2,
     {
         for (size_t g = 0; g < cmap1->cmapdata.size(); g++)
         {
-            int i;
-
             fprintf(fp, "comparing cmap %zu\n", g);
 
-            for (i = 0; i < 4 * cmap1->grid_spacing * cmap1->grid_spacing; i++)
+            for (int i = 0; i < 4 * cmap1->grid_spacing * cmap1->grid_spacing; i++)
             {
                 cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], relativeTolerance, absoluteTolerance);
             }

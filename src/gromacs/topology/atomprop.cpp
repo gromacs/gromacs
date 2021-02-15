@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -237,8 +237,8 @@ static void addProperty(AtomProperty*      ap,
                         real               propValue,
                         int                line)
 {
-    bool bExact;
-    int  j = findPropertyIndex(ap, restype, residueName, atomName, &bExact);
+    bool bExact = false;
+    int  j      = findPropertyIndex(ap, restype, residueName, atomName, &bExact);
 
     if (!bExact)
     {
@@ -296,7 +296,7 @@ static void readProperty(AtomProperty* ap, ResidueType* restype, double factor)
     while (get_a_line(fp.get(), line, STRLEN))
     {
         line_no++;
-        double pp;
+        double pp = 0.0;
         if (sscanf(line, "%31s %31s %20lf", resnm, atomnm, &pp) == 3)
         {
             pp *= factor;
@@ -391,9 +391,8 @@ bool AtomProperties::setAtomProperty(int                eprop,
                                      const std::string& atomName,
                                      real*              value)
 {
-    int         j;
     std::string tmpAtomName, tmpResidueName;
-    gmx_bool    bExact;
+    bool        bExact = false;
 
     if (setProperties(prop(eprop), restype(), eprop, impl_->bWarned))
     {
@@ -410,7 +409,8 @@ bool AtomProperties::setAtomProperty(int                eprop,
     {
         tmpAtomName = atomName;
     }
-    j = findPropertyIndex(&(impl_->prop[eprop]), &impl_->restype, residueName, tmpAtomName, &bExact);
+    const int j = findPropertyIndex(
+            &(impl_->prop[eprop]), &impl_->restype, residueName, tmpAtomName, &bExact);
 
     if (eprop == epropVDW && !impl_->bWarnVDW)
     {

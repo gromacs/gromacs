@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,14 +49,12 @@
 
 static gmx_bool ip_pert(int ftype, const t_iparams* ip)
 {
-    gmx_bool bPert;
-    int      i;
-
     if (NRFPB(ftype) == 0)
     {
         return FALSE;
     }
 
+    bool bPert = false;
     switch (ftype)
     {
         case F_BONDS:
@@ -88,7 +86,7 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
             break;
         case F_RBDIHS:
             bPert = FALSE;
-            for (i = 0; i < NR_RBDIHS; i++)
+            for (int i = 0; i < NR_RBDIHS; i++)
             {
                 if (ip->rbdihs.rbcA[i] != ip->rbdihs.rbcB[i])
                 {
@@ -102,7 +100,7 @@ static gmx_bool ip_pert(int ftype, const t_iparams* ip)
         case F_TABDIHS: bPert = (ip->tab.kA != ip->tab.kB); break;
         case F_POSRES:
             bPert = FALSE;
-            for (i = 0; i < DIM; i++)
+            for (int i = 0; i < DIM; i++)
             {
                 if (ip->posres.pos0A[i] != ip->posres.pos0B[i] || ip->posres.fcA[i] != ip->posres.fcB[i])
                 {
@@ -180,10 +178,6 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
 
 void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real* qB)
 {
-    int      ftype, nral, i, ic, ib, a;
-    t_iatom* iabuf;
-    int      iabuf_nalloc;
-
     if (qB == nullptr)
     {
         qB = qA;
@@ -191,19 +185,19 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real*
 
     bool havePerturbedInteractions = false;
 
-    iabuf_nalloc = 0;
-    iabuf        = nullptr;
+    int      iabuf_nalloc = 0;
+    t_iatom* iabuf        = nullptr;
 
-    for (ftype = 0; ftype < F_NRE; ftype++)
+    for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         if (interaction_function[ftype].flags & IF_BOND)
         {
             InteractionList* ilist  = &idef->il[ftype];
             int*             iatoms = ilist->iatoms.data();
-            nral                    = NRAL(ftype);
-            ic                      = 0;
-            ib                      = 0;
-            i                       = 0;
+            const int        nral   = NRAL(ftype);
+            int              ic     = 0;
+            int              ib     = 0;
+            int              i      = 0;
             while (i < ilist->size())
             {
                 /* Check if this interaction is perturbed */
@@ -215,7 +209,7 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real*
                         iabuf_nalloc = over_alloc_large(ib + 1 + nral);
                         srenew(iabuf, iabuf_nalloc);
                     }
-                    for (a = 0; a < 1 + nral; a++)
+                    for (int a = 0; a < 1 + nral; a++)
                     {
                         iabuf[ib++] = iatoms[i++];
                     }
@@ -225,7 +219,7 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real*
                 else
                 {
                     /* Copy in place */
-                    for (a = 0; a < 1 + nral; a++)
+                    for (int a = 0; a < 1 + nral; a++)
                     {
                         iatoms[ic++] = iatoms[i++];
                     }
@@ -235,7 +229,7 @@ void gmx_sort_ilist_fe(InteractionDefinitions* idef, const real* qA, const real*
             idef->numNonperturbedInteractions[ftype] = ic;
 
             /* Copy the buffer with perturbed interactions to the ilist */
-            for (a = 0; a < ib; a++)
+            for (int a = 0; a < ib; a++)
             {
                 iatoms[ic++] = iabuf[a];
             }

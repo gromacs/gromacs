@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,8 +101,6 @@ void done_atomtypes(t_atomtypes* atype)
 
 void add_t_atoms(t_atoms* atoms, int natom_extra, int nres_extra)
 {
-    int i;
-
     if (natom_extra > 0)
     {
         srenew(atoms->atomname, atoms->nr + natom_extra);
@@ -119,7 +117,7 @@ void add_t_atoms(t_atoms* atoms, int natom_extra, int nres_extra)
         {
             srenew(atoms->atomtypeB, atoms->nr + natom_extra);
         }
-        for (i = atoms->nr; (i < atoms->nr + natom_extra); i++)
+        for (int i = atoms->nr; (i < atoms->nr + natom_extra); i++)
         {
             atoms->atomname[i] = nullptr;
             memset(&atoms->atom[i], 0, sizeof(atoms->atom[i]));
@@ -141,7 +139,7 @@ void add_t_atoms(t_atoms* atoms, int natom_extra, int nres_extra)
     if (nres_extra > 0)
     {
         srenew(atoms->resinfo, atoms->nres + nres_extra);
-        for (i = atoms->nres; (i < atoms->nres + nres_extra); i++)
+        for (int i = atoms->nres; (i < atoms->nres + nres_extra); i++)
         {
             std::memset(&atoms->resinfo[i], 0, sizeof(atoms->resinfo[i]));
         }
@@ -187,8 +185,7 @@ void gmx_pdbinfo_init_default(t_pdbinfo* pdbinfo)
 
 t_atoms* copy_t_atoms(const t_atoms* src)
 {
-    t_atoms* dst;
-    int      i;
+    t_atoms* dst = nullptr;
 
     snew(dst, 1);
     init_t_atoms(dst, src->nr, (nullptr != src->pdbinfo));
@@ -205,7 +202,7 @@ t_atoms* copy_t_atoms(const t_atoms* src)
     {
         snew(dst->atomtypeB, src->nr);
     }
-    for (i = 0; (i < src->nr); i++)
+    for (int i = 0; (i < src->nr); i++)
     {
         dst->atom[i] = src->atom[i];
         if (nullptr != src->pdbinfo)
@@ -231,7 +228,7 @@ t_atoms* copy_t_atoms(const t_atoms* src)
     dst->havePdbInfo = src->havePdbInfo;
     dst->haveType    = src->haveType;
     dst->nres        = src->nres;
-    for (i = 0; (i < src->nres); i++)
+    for (int i = 0; (i < src->nres); i++)
     {
         dst->resinfo[i] = src->resinfo[i];
     }
@@ -247,25 +244,21 @@ void t_atoms_set_resinfo(t_atoms*      atoms,
                          int           chainnum,
                          char          chainid)
 {
-    t_resinfo* ri;
-
-    ri           = &atoms->resinfo[atoms->atom[atom_ind].resind];
-    ri->name     = put_symtab(symtab, resname);
-    ri->rtp      = nullptr;
-    ri->nr       = resnr;
-    ri->ic       = ic;
-    ri->chainnum = chainnum;
-    ri->chainid  = chainid;
+    t_resinfo* ri = &atoms->resinfo[atoms->atom[atom_ind].resind];
+    ri->name      = put_symtab(symtab, resname);
+    ri->rtp       = nullptr;
+    ri->nr        = resnr;
+    ri->ic        = ic;
+    ri->chainnum  = chainnum;
+    ri->chainid   = chainid;
 }
 
 static void pr_atom(FILE* fp, int indent, const char* title, const t_atom* atom, int n)
 {
-    int i;
-
     if (available(fp, atom, indent, title))
     {
         indent = pr_title_n(fp, indent, title, n);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
             fprintf(fp,
@@ -288,12 +281,10 @@ static void pr_atom(FILE* fp, int indent, const char* title, const t_atom* atom,
 
 static void pr_strings2(FILE* fp, int indent, const char* title, char*** nm, char*** nmB, int n, gmx_bool bShowNumbers)
 {
-    int i;
-
     if (available(fp, nm, indent, title))
     {
         indent = pr_title_n(fp, indent, title, n);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
             fprintf(fp, "%s[%d]={name=\"%s\",nameB=\"%s\"}\n", title, bShowNumbers ? i : -1, *(nm[i]), *(nmB[i]));
@@ -303,12 +294,10 @@ static void pr_strings2(FILE* fp, int indent, const char* title, char*** nm, cha
 
 static void pr_resinfo(FILE* fp, int indent, const char* title, const t_resinfo* resinfo, int n, gmx_bool bShowNumbers)
 {
-    int i;
-
     if (available(fp, resinfo, indent, title))
     {
         indent = pr_title_n(fp, indent, title, n);
-        for (i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
             fprintf(fp,
@@ -337,11 +326,10 @@ void pr_atoms(FILE* fp, int indent, const char* title, const t_atoms* atoms, gmx
 
 void pr_atomtypes(FILE* fp, int indent, const char* title, const t_atomtypes* atomtypes, gmx_bool bShowNumbers)
 {
-    int i;
     if (available(fp, atomtypes, indent, title))
     {
         indent = pr_title(fp, indent, title);
-        for (i = 0; i < atomtypes->nr; i++)
+        for (int i = 0; i < atomtypes->nr; i++)
         {
             pr_indent(fp, indent);
             fprintf(fp, "atomtype[%3d]={atomnumber=%4d}\n", bShowNumbers ? i : -1, atomtypes->atomnumber[i]);

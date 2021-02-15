@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2008,2009,2010, The GROMACS development team.
  * Copyright (c) 2012,2013,2014,2015,2016 The GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,15 +68,7 @@ void gmx_mtop_count_atomtypes(const gmx_mtop_t* mtop, int state, int typecount[]
         const t_atoms& atoms = mtop->moltype[molb.type].atoms;
         for (int i = 0; i < atoms.nr; ++i)
         {
-            int tpi;
-            if (state == 0)
-            {
-                tpi = atoms.atom[i].type;
-            }
-            else
-            {
-                tpi = atoms.atom[i].typeB;
-            }
+            const int tpi = (state == 0) ? atoms.atom[i].type : atoms.atom[i].typeB;
             typecount[tpi] += molb.nmol;
         }
     }
@@ -202,7 +194,7 @@ typedef struct gmx_mtop_atomloop_block
 
 gmx_mtop_atomloop_block_t gmx_mtop_atomloop_block_init(const gmx_mtop_t* mtop)
 {
-    struct gmx_mtop_atomloop_block* aloop;
+    struct gmx_mtop_atomloop_block* aloop = nullptr;
 
     snew(aloop, 1);
 
@@ -254,7 +246,7 @@ typedef struct gmx_mtop_ilistloop
 
 gmx_mtop_ilistloop_t gmx_mtop_ilistloop_init(const gmx_mtop_t* mtop)
 {
-    struct gmx_mtop_ilistloop* iloop;
+    struct gmx_mtop_ilistloop* iloop = nullptr;
 
     snew(iloop, 1);
 
@@ -308,12 +300,10 @@ typedef struct gmx_mtop_ilistloop_all
 
 int gmx_mtop_ftype_count(const gmx_mtop_t* mtop, int ftype)
 {
-    gmx_mtop_ilistloop_t iloop;
-    int                  n, nmol;
+    int nmol = 0;
+    int n    = 0;
 
-    n = 0;
-
-    iloop = gmx_mtop_ilistloop_init(mtop);
+    gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
     while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
         n += nmol * (*il)[ftype].size() / (1 + NRAL(ftype));
@@ -337,7 +327,7 @@ int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, const int unsigned if_fla
     int n = 0;
 
     gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
-    int                  nmol;
+    int                  nmol  = 0;
     while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
         for (int ftype = 0; ftype < F_NRE; ftype++)
@@ -381,7 +371,7 @@ std::array<int, eptNR> gmx_mtop_particletype_count(const gmx_mtop_t& mtop)
 
 static void atomcat(t_atoms* dest, const t_atoms* src, int copies, int maxres_renum, int* maxresnr)
 {
-    int i, j, l, size;
+    int i = 0, j = 0, l = 0, size = 0;
     int srcnr  = src->nr;
     int destnr = dest->nr;
 
@@ -513,19 +503,17 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop)
 
 static void ilistcat(int ftype, InteractionList* dest, const InteractionList& src, int copies, int dnum, int snum)
 {
-    int nral, c, i, a;
-
-    nral = NRAL(ftype);
+    const int nral = NRAL(ftype);
 
     size_t destIndex = dest->iatoms.size();
     dest->iatoms.resize(dest->iatoms.size() + copies * src.size());
 
-    for (c = 0; c < copies; c++)
+    for (int c = 0; c < copies; c++)
     {
-        for (i = 0; i < src.size();)
+        for (int i = 0; i < src.size();)
         {
             dest->iatoms[destIndex++] = src.iatoms[i++];
-            for (a = 0; a < nral; a++)
+            for (int a = 0; a < nral; a++)
             {
                 dest->iatoms[destIndex++] = dnum + src.iatoms[i++];
             }
@@ -536,19 +524,17 @@ static void ilistcat(int ftype, InteractionList* dest, const InteractionList& sr
 
 static void ilistcat(int ftype, t_ilist* dest, const InteractionList& src, int copies, int dnum, int snum)
 {
-    int nral, c, i, a;
-
-    nral = NRAL(ftype);
+    const int nral = NRAL(ftype);
 
     dest->nalloc = dest->nr + copies * src.size();
     srenew(dest->iatoms, dest->nalloc);
 
-    for (c = 0; c < copies; c++)
+    for (int c = 0; c < copies; c++)
     {
-        for (i = 0; i < src.size();)
+        for (int i = 0; i < src.size();)
         {
             dest->iatoms[dest->nr++] = src.iatoms[i++];
-            for (a = 0; a < nral; a++)
+            for (int a = 0; a < nral; a++)
             {
                 dest->iatoms[dest->nr++] = dnum + src.iatoms[i++];
             }
@@ -580,18 +566,15 @@ static void resizeIParams(t_iparams** iparams, const int newSize)
 template<typename IdefType>
 static void set_posres_params(IdefType* idef, const gmx_molblock_t* molb, int i0, int a_offset)
 {
-    int        i1, i, a_molb;
-    t_iparams* ip;
-
     auto* il = &idef->il[F_POSRES];
-    i1       = il->size() / 2;
+    int   i1 = il->size() / 2;
     resizeIParams(&idef->iparams_posres, i1);
-    for (i = i0; i < i1; i++)
+    for (int i = i0; i < i1; i++)
     {
-        ip = &idef->iparams_posres[i];
+        t_iparams* ip = &idef->iparams_posres[i];
         /* Copy the force constants */
-        *ip    = getIparams(*idef, il->iatoms[i * 2]);
-        a_molb = il->iatoms[i * 2 + 1] - a_offset;
+        *ip        = getIparams(*idef, il->iatoms[i * 2]);
+        int a_molb = il->iatoms[i * 2 + 1] - a_offset;
         if (molb->posres_xA.empty())
         {
             gmx_incons("Position restraint coordinates are missing");
@@ -619,18 +602,15 @@ static void set_posres_params(IdefType* idef, const gmx_molblock_t* molb, int i0
 template<typename IdefType>
 static void set_fbposres_params(IdefType* idef, const gmx_molblock_t* molb, int i0, int a_offset)
 {
-    int        i1, i, a_molb;
-    t_iparams* ip;
-
     auto* il = &idef->il[F_FBPOSRES];
-    i1       = il->size() / 2;
+    int   i1 = il->size() / 2;
     resizeIParams(&idef->iparams_fbposres, i1);
-    for (i = i0; i < i1; i++)
+    for (int i = i0; i < i1; i++)
     {
-        ip = &idef->iparams_fbposres[i];
+        t_iparams* ip = &idef->iparams_fbposres[i];
         /* Copy the force constants */
-        *ip    = getIparams(*idef, il->iatoms[i * 2]);
-        a_molb = il->iatoms[i * 2 + 1] - a_offset;
+        *ip        = getIparams(*idef, il->iatoms[i * 2]);
+        int a_molb = il->iatoms[i * 2 + 1] - a_offset;
         if (molb->posres_xA.empty())
         {
             gmx_incons("Position restraint coordinates are missing");

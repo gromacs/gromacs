@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,18 +45,17 @@
 
 int* make_invblock(const t_block* block, int nr)
 {
-    int  i, j;
-    int* invblock;
+    int* invblock = nullptr;
 
     snew(invblock, nr + 1);
     /* Mark unused numbers */
-    for (i = 0; i <= nr; i++)
+    for (int i = 0; i <= nr; i++)
     {
         invblock[i] = -1;
     }
-    for (i = 0; (i < block->nr); i++)
+    for (int i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i + 1]); j++)
+        for (int j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (invblock[j] == -1)
             {
@@ -78,18 +77,17 @@ int* make_invblock(const t_block* block, int nr)
 
 int* make_invblocka(const t_blocka* block, int nr)
 {
-    int  i, j;
-    int* invblock;
+    int* invblock = nullptr;
 
     snew(invblock, nr + 1);
     /* Mark unused numbers */
-    for (i = 0; i <= nr; i++)
+    for (int i = 0; i <= nr; i++)
     {
         invblock[i] = -1;
     }
-    for (i = 0; (i < block->nr); i++)
+    for (int i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i + 1]); j++)
+        for (int j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (invblock[block->a[j]] == -1)
             {

@@ -403,8 +403,6 @@ static void printIlist(FILE*             fp,
                        gmx_bool          bShowParameters,
                        const t_iparams*  iparams)
 {
-    int i, j, k, type, ftype;
-
     indent = pr_title(fp, indent, title);
     pr_indent(fp, indent);
     fprintf(fp, "nr: %d\n", ilist.size());
@@ -412,18 +410,19 @@ static void printIlist(FILE*             fp,
     {
         pr_indent(fp, indent);
         fprintf(fp, "iatoms:\n");
-        for (i = j = 0; i < ilist.size();)
+        int j = 0;
+        for (int i = 0; i < ilist.size();)
         {
             pr_indent(fp, indent + INDENT);
-            type  = ilist.iatoms[i];
-            ftype = functype[type];
+            const int type  = ilist.iatoms[i];
+            const int ftype = functype[type];
             if (bShowNumbers)
             {
                 fprintf(fp, "%d type=%d ", j, type);
             }
             j++;
             printf("(%s)", interaction_function[ftype].name);
-            for (k = 0; k < interaction_function[ftype].nratoms; k++)
+            for (int k = 0; k < interaction_function[ftype].nratoms; k++)
             {
                 fprintf(fp, " %3d", ilist.iatoms[i + 1 + k]);
             }
@@ -452,8 +451,6 @@ void pr_ilist(FILE*                  fp,
 
 void pr_idef(FILE* fp, int indent, const char* title, const t_idef* idef, gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
-    int i, j;
-
     if (available(fp, idef, indent, title))
     {
         indent = pr_title(fp, indent, title);
@@ -461,7 +458,7 @@ void pr_idef(FILE* fp, int indent, const char* title, const t_idef* idef, gmx_bo
         fprintf(fp, "atnr=%d\n", idef->atnr);
         pr_indent(fp, indent);
         fprintf(fp, "ntypes=%d\n", idef->ntypes);
-        for (i = 0; i < idef->ntypes; i++)
+        for (int i = 0; i < idef->ntypes; i++)
         {
             pr_indent(fp, indent + INDENT);
             fprintf(fp,
@@ -472,7 +469,7 @@ void pr_idef(FILE* fp, int indent, const char* title, const t_idef* idef, gmx_bo
         }
         pr_real(fp, indent, "fudgeQQ", idef->fudgeQQ);
 
-        for (j = 0; (j < F_NRE); j++)
+        for (int j = 0; (j < F_NRE); j++)
         {
             printIlist(fp,
                        indent,

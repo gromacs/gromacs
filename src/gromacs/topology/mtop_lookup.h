@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,7 +88,7 @@ static inline void mtopGetMolblockIndex(const gmx_mtop_t* mtop,
     int molBlock0 = -1;
     int molBlock1 = mtop->molblock.size();
 
-    int globalAtomStart;
+    int globalAtomStart = 0;
     while (TRUE)
     {
         globalAtomStart = mtop->moleculeBlockIndices[*moleculeBlock].globalAtomStart;
@@ -134,7 +134,7 @@ static inline void mtopGetMolblockIndex(const gmx_mtop_t* mtop,
  */
 static inline int mtopGetMoleculeIndex(const gmx_mtop_t* mtop, int globalAtomIndex, int* moleculeBlock)
 {
-    int localMoleculeIndex;
+    int localMoleculeIndex = 0;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock, &localMoleculeIndex, nullptr);
 
     return mtop->moleculeBlockIndices[*moleculeBlock].moleculeIndexStart + localMoleculeIndex;
@@ -154,7 +154,7 @@ static inline int mtopGetMoleculeIndex(const gmx_mtop_t* mtop, int globalAtomInd
  */
 static inline const t_atom& mtopGetAtomParameters(const gmx_mtop_t* mtop, int globalAtomIndex, int* moleculeBlock)
 {
-    int atomIndexInMolecule;
+    int atomIndexInMolecule = 0;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock, nullptr, &atomIndexInMolecule);
     const gmx_moltype_t& moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
     return moltype.atoms.atom[atomIndexInMolecule];
@@ -206,8 +206,8 @@ static inline void mtopGetAtomAndResidueName(const gmx_mtop_t* mtop,
                                              const char**      residueName,
                                              int*              globalResidueIndex)
 {
-    int moleculeIndex;
-    int atomIndexInMolecule;
+    int moleculeIndex       = 0;
+    int atomIndexInMolecule = 0;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock, &moleculeIndex, &atomIndexInMolecule);
 
     const gmx_molblock_t&       molb    = mtop->molblock[*moleculeBlock];
@@ -268,7 +268,7 @@ static inline void mtopGetAtomAndResidueName(const gmx_mtop_t& mtop,
  */
 static inline const t_resinfo& mtopGetResidueInfo(const gmx_mtop_t* mtop, int globalAtomIndex, int* moleculeBlock)
 {
-    int atomIndexInMolecule;
+    int atomIndexInMolecule = 0;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock, nullptr, &atomIndexInMolecule);
     const gmx_moltype_t& moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
     const int            resind  = moltype.atoms.atom[atomIndexInMolecule].resind;
@@ -289,7 +289,7 @@ static inline const t_resinfo& mtopGetResidueInfo(const gmx_mtop_t* mtop, int gl
  */
 static inline const t_pdbinfo& mtopGetAtomPdbInfo(const gmx_mtop_t* mtop, int globalAtomIndex, int* moleculeBlock)
 {
-    int atomIndexInMolecule;
+    int atomIndexInMolecule = 0;
     mtopGetMolblockIndex(mtop, globalAtomIndex, moleculeBlock, nullptr, &atomIndexInMolecule);
     const gmx_moltype_t& moltype = mtop->moltype[mtop->molblock[*moleculeBlock].type];
     GMX_ASSERT(moltype.atoms.havePdbInfo, "PDB information not present when requested");
