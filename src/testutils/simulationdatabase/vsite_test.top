@@ -1,0 +1,154 @@
+; Combination of a GROMOS54A7 hexadecane (from ATB) with some
+; added virtual sites for testing purposes. Not a physical system.
+
+[ defaults ]
+; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ
+  1		1		no		1.0	1.0
+[ atomtypes ]
+;name  at.num   mass      charge  ptype       c6           c12
+  CH2    6      0.000      0.000     A  0.0074684164  3.3965584e-05
+  CH3    6      0.000      0.000     A  0.0096138025  2.6646244e-05
+  DUM    0      0.000      0.000     A           0           0
+[ nonbond_params ]			
+;	i	j	func	c6	c12
+	CH3	CH2	1	8.473481E-03	3.008414E-05
+	DUM	CH2	1	0.000000E+00	0.000000E+00
+	DUM	CH3	1	0.000000E+00	0.000000E+00
+[ pairtypes ]			
+;	i	j	func	c6	c12
+	CH2	CH2	1	4.723813E-03	4.741926E-06
+	CH3	CH2	1	5.689469E-03	5.347702E-06
+	CH3	CH3	1	6.852528E-03	6.030865E-06
+       	DUM	CH2	1	0.000000E+00	0.000000E+00
+	DUM	CH3	1	0.000000E+00	0.000000E+00
+        DUM	DUM	1	0.000000E+00	0.000000E+00
+
+
+[ moleculetype ]
+; Name   nrexcl
+VSTEST     3
+
+[ atoms ]
+;  nr  type  resnr  resid  atom  cgnr  charge    mass
+    1   CH3    1   VSTEST    C1    1   -0.016  15.0350
+    2   CH2    1   VSTEST    C2    2    0.013  14.0270
+    3   CH2    1   VSTEST    C3    3    0.012  14.0270
+    4   CH2    1   VSTEST    C4    4   -0.010  14.0270
+    5   CH2    1   VSTEST    C5    5   -0.004  14.0270
+    6   CH2    1   VSTEST    C6    6    0.006  14.0270
+    7   CH2    1   VSTEST    C7    7    0.001  14.0270
+    8   CH2    1   VSTEST    C8    8   -0.002  14.0270
+    9   CH2    1   VSTEST    C9    9   -0.002  14.0270
+   10   CH2    1   VSTEST   C10   10    0.001  14.0270
+   11   CH2    1   VSTEST   C11   11    0.006  14.0270
+   12   CH2    1   VSTEST   C12   12   -0.004  14.0270
+   13   CH2    1   VSTEST   C13   13   -0.010  14.0270
+   14   CH2    1   VSTEST   C14   14    0.012  14.0270
+   15   CH2    1   VSTEST   C15   15    0.013  14.0270
+   16   CH3    1   VSTEST   C16   16   -0.016  15.0350
+   17   DUM    1   VSTEST   VS1   17    0.010   0.0
+   18   DUM    1   VSTEST   VS2   18   -0.010   0.0
+   19   DUM    1   VSTEST   VS3   19    0.010   0.0
+   20   DUM    1   VSTEST   VS4   20   -0.010   0.0
+   21   DUM    1   VSTEST   VS5   21    0.010   0.0
+   22   DUM    1   VSTEST   VS6   22   -0.010   0.0
+   23   DUM    1   VSTEST   VS7   23    0.010   0.0
+   24   DUM    1   VSTEST   VS8   24   -0.010   0.0
+; total charge of the molecule:   0.000
+[ bonds ]
+;  ai   aj  funct   c0         c1
+    1    2    2   0.1530   7.1500e+06
+    2    3    2   0.1530   7.1500e+06
+    3    4    2   0.1530   7.1500e+06
+    4    5    2   0.1530   7.1500e+06
+    5    6    2   0.1530   7.1500e+06
+    6    7    2   0.1530   7.1500e+06
+    7    8    2   0.1530   7.1500e+06
+    8    9    2   0.1530   7.1500e+06
+    9   10    2   0.1530   7.1500e+06
+   10   11    2   0.1530   7.1500e+06
+   11   12    2   0.1530   7.1500e+06
+   12   13    2   0.1530   7.1500e+06
+   13   14    2   0.1530   7.1500e+06
+   14   15    2   0.1530   7.1500e+06
+   15   16    2   0.1530   7.1500e+06
+[ pairs ]
+;  ai   aj  funct  ;  all 1-4 pairs but the ones excluded in GROMOS itp
+    1    4    1
+    2    5    1
+    3    6    1
+    4    7    1
+    5    8    1
+    6    9    1
+    7   10    1
+    8   11    1
+    9   12    1
+   10   13    1
+   11   14    1
+   12   15    1
+   13   16    1
+[ angles ]
+;  ai   aj   ak  funct   angle     fc
+    1    2    3    2    111.00   530.00
+    2    3    4    2    111.00   530.00
+    3    4    5    2    111.00   530.00
+    4    5    6    2    111.00   530.00
+    5    6    7    2    111.00   530.00
+    6    7    8    2    111.00   530.00
+    7    8    9    2    111.00   530.00
+    8    9   10    2    111.00   530.00
+    9   10   11    2    111.00   530.00
+   10   11   12    2    111.00   530.00
+   11   12   13    2    111.00   530.00
+   12   13   14    2    111.00   530.00
+   13   14   15    2    111.00   530.00
+   14   15   16    2    111.00   530.00
+[ dihedrals ]
+;  ai   aj   ak   al  funct    ph0      cp     mult
+    1    2    3    4    1      0.00     5.92    3
+    2    3    4    5    1      0.00     5.92    3
+    3    4    5    6    1      0.00     5.92    3
+    4    5    6    7    1      0.00     5.92    3
+    5    6    7    8    1      0.00     5.92    3
+    6    7    8    9    1      0.00     5.92    3
+    7    8    9   10    1      0.00     5.92    3
+    8    9   10   11    1      0.00     5.92    3
+    9   10   11   12    1      0.00     5.92    3
+   10   11   12   13    1      0.00     5.92    3
+   11   12   13   14    1      0.00     5.92    3
+   12   13   14   15    1      0.00     5.92    3
+   13   14   15   16    1      0.00     5.92    3
+[ exclusions ]
+;  ai   aj  funct  ;  GROMOS 1-4 exclusions
+[ virtual_sites1 ]
+; Site  from        funct
+  17    1           1
+[ virtual_sites2 ]
+; Site  from        funct  a
+  18    2     3     1      0.7439756
+[ virtual_sites2 ]
+; Site  from        funct  a
+  19    3     4     2      0.7439756
+[ virtual_sites3 ]
+; Site  from               funct   a          b
+  20    4     5     6      1       0.7439756  0.128012
+[ virtual_sites3 ]
+; Site  from               funct   a          d
+  21    6     7     8      2       0.5        -0.105
+[ virtual_sites3 ]
+; Site  from               funct   theta      d
+  22    8     9    10      3       120        0.5
+[ virtual_sites3 ]
+; Site  from               funct   a          b          c
+  23    10   11    12      4       -0.4       -0.4       6.9281
+[ virtual_sites4 ]
+; Site  from                      funct   a          b          c
+  24    12   13    14    15       2       1.0        0.9       0.105
+
+[ system ]
+; Name
+Virtual sites test system in vacuo
+
+[ molecules ]
+; Compound        #mols
+VSTEST 1

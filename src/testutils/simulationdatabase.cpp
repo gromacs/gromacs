@@ -174,7 +174,9 @@ const MdpFileValues mdpFileValueDatabase_g{
           { ";couple-lambda0", "none" },
           { ";couple-lambda1", "vdw-q" },
           { ";couple-intramol", "yes" } },
-        { 1, 2, 3, 4, 5, 6, 8, 9 } } }
+        { 1, 2, 3, 4, 5, 6, 8, 9 } } },
+    // Artificial test system including all virtual site types
+    { "vsite_test", { {}, { 1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
 };
 
 /*! \brief Prepare default .mdp values
