@@ -21,6 +21,7 @@ args[${#args[@]}]="--llvm 8 --cuda 11.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--llvm 9 --clfft --mpi openmpi --ubuntu 18.04"
 args[${#args[@]}]="--oneapi 2021.1.1"
 args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7"
+args[${#args[@]}]="--llvm 11 --cuda 11.2.1 --hipsycl 2bc21b677a --ubuntu 20.04"
 
 echo "Building the following images."
 for arg_string in "${args[@]}"; do

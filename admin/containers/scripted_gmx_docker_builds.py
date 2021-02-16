@@ -192,10 +192,15 @@ def base_image_tag(args) -> str:
 def get_llvm_packages(args) -> typing.Iterable[str]:
     # If we use the package version of LLVM, we need to install extra packages for it.
     if (args.llvm is not None) and (args.tsan is None):
-        return ['libomp-dev',
-                'libomp5',
-                'clang-format-' + str(args.llvm),
-                'clang-tidy-' + str(args.llvm)]
+        packages = [f'libomp-{args.llvm}-dev',
+                    f'libomp5-{args.llvm}',
+                    'clang-format-' + str(args.llvm),
+                    'clang-tidy-' + str(args.llvm)]
+        if args.hipsycl is not None:
+            packages += [f'llvm-{args.llvm}-dev',
+                         f'libclang-{args.llvm}-dev',
+                         f'lld-{args.llvm}']
+        return packages
     else:
         return []
 
@@ -276,6 +281,38 @@ def get_clfft(args):
     else:
         return None
 
+def get_hipsycl(args):
+    if args.hipsycl is None:
+        return None
+    if args.llvm is None:
+        raise RuntimeError('Can not build hipSYCL without llvm')
+
+    cmake_opts = [f'-DLLVM_DIR=/usr/lib/llvm-{args.llvm}/cmake',
+                  f'-DCLANG_EXECUTABLE_PATH=/usr/bin/clang++-{args.llvm}',
+                  '-DCMAKE_PREFIX_PATH=/opt/rocm/lib/cmake',
+                  '-DWITH_ROCM_BACKEND=ON']
+    if args.cuda is not None:
+        cmake_opts += [f'-DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda',
+                       '-DWITH_CUDA_BACKEND=ON']
+
+    postinstall = [
+            # https://github.com/illuhad/hipSYCL/issues/361#issuecomment-718943645
+            'for f in /opt/rocm/amdgcn/bitcode/*.bc; do ln -s "$f" "/opt/rocm/lib/$(basename $f .bc).amdgcn.bc"; done'
+            ]
+    if args.cuda is not None:
+        postinstall += [
+            # https://github.com/illuhad/hipSYCL/issues/410#issuecomment-743301929
+            f'sed s/_OPENMP/__OPENMP_NVPTX__/ -i /usr/lib/llvm-{args.llvm}/lib/clang/*/include/__clang_cuda_complex_builtins.h',
+            # Not needed unless we're building with CUDA 11.x, but no harm in doing always
+            f'ln -s /usr/local/cuda/compat/* /usr/local/cuda/lib64/'
+            ]
+
+    return hpccm.building_blocks.generic_cmake(
+        repository='https://github.com/illuhad/hipSYCL.git',
+        directory='/var/tmp/hipSYCL',
+        prefix='/usr/local', recursive=True, commit=args.hipsycl,
+        cmake_opts=['-DCMAKE_BUILD_TYPE=Release', *cmake_opts],
+        postinstall=postinstall)
 
 def add_tsan_compiler_build_stage(input_args, output_stages: typing.Mapping[str, hpccm.Stage]):
     """Isolate the expensive TSAN preparation stage.
@@ -536,6 +573,8 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
         os_packages += _docs_extra_packages
     if args.oneapi is not None:
         os_packages += ['lsb-release']
+    if args.hipsycl is not None:
+        os_packages += ['libboost-fiber-dev']
     building_blocks['extra_packages'] = hpccm.building_blocks.packages(
         ospackages=os_packages,
         apt_ppas=['ppa:intel-opencl/intel-opencl'],
@@ -543,7 +582,16 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
         apt_repositories=['deb [arch=amd64] http://repo.radeon.com/rocm/apt/debian/ xenial main']
     )
 
+    if args.cuda is not None and args.llvm is not None:
+        # Hack to tell clang what version of CUDA we're using
+        # based on https://github.com/llvm/llvm-project/blob/1fdec59bffc11ae37eb51a1b9869f0696bfd5312/clang/lib/Driver/ToolChains/Cuda.cpp#L43
+        building_blocks['cuda-clang-workaround'] = hpccm.primitives.shell(commands=[
+            f'echo "CUDA Version {args.cuda}" > /usr/local/cuda/version.txt'
+            ])
+
     building_blocks['clfft'] = get_clfft(args)
+
+    building_blocks['hipSYCL'] = get_hipsycl(args)
 
     # Add Python environments to MPI images, only, so we don't have to worry
     # about whether to install mpi4py.
