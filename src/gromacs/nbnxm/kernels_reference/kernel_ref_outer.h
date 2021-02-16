@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -110,138 +110,88 @@ void
     real* Vc   = out->Vc.data();
 #endif
 
-    const nbnxn_cj_t* l_cj;
-    real              rcut2;
-#ifdef VDW_CUTOFF_CHECK
-    real rvdw2;
-#endif
-    int      ntype2;
-    real     facel;
-    int      ci, ci_sh;
-    int      ish, ishf;
-    gmx_bool do_LJ, half_LJ, do_coul;
-    int      cjind0, cjind1, cjind;
-
     real xi[UNROLLI * XI_STRIDE];
     real fi[UNROLLI * FI_STRIDE];
     real qi[UNROLLI];
-
-#ifdef CALC_ENERGIES
-#    ifndef ENERGY_GROUPS
-
-    real Vvdw_ci, Vc_ci;
-#    else
-    int         egp_mask;
-    int         egp_sh_i[UNROLLI];
-#    endif
-#endif
-#ifdef LJ_POT_SWITCH
-    real swV3, swV4, swV5;
-    real swF2, swF3, swF4;
-#endif
-#ifdef LJ_EWALD
-    real lje_coeff2, lje_coeff6_6;
-#    ifdef CALC_ENERGIES
-    real lje_vc;
-#    endif
-#endif
-
-#ifdef CALC_COUL_RF
-    real k_rf2;
-#    ifdef CALC_ENERGIES
-    real k_rf, c_rf;
-#    endif
-#endif
-#ifdef CALC_COUL_TAB
-#    ifdef CALC_ENERGIES
-    real halfsp;
-#    endif
-#    if !GMX_DOUBLE
-    const real* tab_coul_FDV0;
-#    else
-    const real* tab_coul_F;
-    const real gmx_unused* tab_coul_V;
-#    endif
-#endif
 
 #ifdef COUNT_PAIRS
     int npair = 0;
 #endif
 
 #ifdef LJ_POT_SWITCH
-    swV3 = ic->vdw_switch.c3;
-    swV4 = ic->vdw_switch.c4;
-    swV5 = ic->vdw_switch.c5;
-    swF2 = 3 * ic->vdw_switch.c3;
-    swF3 = 4 * ic->vdw_switch.c4;
-    swF4 = 5 * ic->vdw_switch.c5;
+    const real swV3 = ic->vdw_switch.c3;
+    const real swV4 = ic->vdw_switch.c4;
+    const real swV5 = ic->vdw_switch.c5;
+    const real swF2 = 3 * ic->vdw_switch.c3;
+    const real swF3 = 4 * ic->vdw_switch.c4;
+    const real swF4 = 5 * ic->vdw_switch.c5;
 #endif
 
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
 #ifdef LJ_EWALD
-    lje_coeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
-    lje_coeff6_6 = lje_coeff2 * lje_coeff2 * lje_coeff2 / 6.0;
+    const real lje_coeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
+    const real lje_coeff6_6 = lje_coeff2 * lje_coeff2 * lje_coeff2 / 6.0;
 #    ifdef CALC_ENERGIES
-    lje_vc = ic->sh_lj_ewald;
+    const real lje_vc = ic->sh_lj_ewald;
 #    endif
 
     const real* ljc = nbatParams.nbfp_comb.data();
 #endif
 
 #ifdef CALC_COUL_RF
-    k_rf2 = 2 * ic->k_rf;
+    const real k_rf2 = 2 * ic->k_rf;
 #    ifdef CALC_ENERGIES
-    k_rf = ic->k_rf;
-    c_rf = ic->c_rf;
+    const real k_rf = ic->k_rf;
+    const real c_rf = ic->c_rf;
 #    endif
 #endif
 #ifdef CALC_COUL_TAB
     const real tab_coul_scale = ic->coulombEwaldTables->scale;
 #    ifdef CALC_ENERGIES
-    halfsp = 0.5 / tab_coul_scale;
+    const real halfsp = 0.5 / tab_coul_scale;
 #    endif
 
 #    if !GMX_DOUBLE
-    tab_coul_FDV0 = ic->coulombEwaldTables->tableFDV0.data();
+    const real* tab_coul_FDV0 = ic->coulombEwaldTables->tableFDV0.data();
 #    else
-    tab_coul_F = ic->coulombEwaldTables->tableF.data();
-    tab_coul_V = ic->coulombEwaldTables->tableV.data();
+    const real* tab_coul_F = ic->coulombEwaldTables->tableF.data();
+#        ifdef CALC_ENERGIES
+    const real* tab_coul_V = ic->coulombEwaldTables->tableV.data();
+#        endif
 #    endif
 #endif
 
 #ifdef ENERGY_GROUPS
-    egp_mask = (1 << nbatParams.neg_2log) - 1;
+    const int egp_mask = (1 << nbatParams.neg_2log) - 1;
 #endif
 
 
-    rcut2 = ic->rcoulomb * ic->rcoulomb;
+    const real rcut2 = ic->rcoulomb * ic->rcoulomb;
 #ifdef VDW_CUTOFF_CHECK
-    rvdw2 = ic->rvdw * ic->rvdw;
+    const real rvdw2 = ic->rvdw * ic->rvdw;
 #endif
 
-    ntype2               = nbatParams.numTypes * 2;
+    const int   ntype2   = nbatParams.numTypes * 2;
     const real* nbfp     = nbatParams.nbfp.data();
     const real* q        = nbatParams.q.data();
     const int*  type     = nbatParams.type.data();
-    facel                = ic->epsfac;
+    const real  facel    = ic->epsfac;
     const real* shiftvec = shift_vec[0];
     const real* x        = nbat->x().data();
 
-    l_cj = nbl->cj.data();
+    const nbnxn_cj_t* l_cj = nbl->cj.data();
 
     for (const nbnxn_ci_t& ciEntry : nbl->ci)
     {
-        int i, d;
-
-        ish = (ciEntry.shift & NBNXN_CI_SHIFT);
+        const int ish = (ciEntry.shift & NBNXN_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
-        ishf   = ish * DIM;
-        cjind0 = ciEntry.cj_ind_start;
-        cjind1 = ciEntry.cj_ind_end;
+        const int ishf   = ish * DIM;
+        const int cjind0 = ciEntry.cj_ind_start;
+        const int cjind1 = ciEntry.cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
-        ci    = ciEntry.ci;
-        ci_sh = (ish == CENTRAL ? ci : -1);
+        const int ci    = ciEntry.ci;
+        const int ci_sh = (ish == CENTRAL ? ci : -1);
 
         /* We have 5 LJ/C combinations, but use only three inner loops,
          * as the other combinations are unlikely and/or not much faster:
@@ -249,22 +199,23 @@ void
          * inner LJ + C      for full-LJ + C
          * inner LJ          for full-LJ + no-C / half-LJ + no-C
          */
-        do_LJ   = ((ciEntry.shift & NBNXN_CI_DO_LJ(0)) != 0);
-        do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
-        half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
+        const bool do_LJ   = ((ciEntry.shift & NBNXN_CI_DO_LJ(0)) != 0);
+        const bool do_coul = ((ciEntry.shift & NBNXN_CI_DO_COUL(0)) != 0);
+        const bool half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 #ifdef CALC_ENERGIES
 
 #    ifdef LJ_EWALD
-        gmx_bool do_self = TRUE;
+        const bool do_self = true;
 #    else
-        gmx_bool do_self = do_coul;
+        const bool do_self = do_coul;
 #    endif
 
 #    ifndef ENERGY_GROUPS
-        Vvdw_ci = 0;
-        Vc_ci   = 0;
+        real Vvdw_ci = 0;
+        real Vc_ci   = 0;
 #    else
-        for (i = 0; i < UNROLLI; i++)
+        int        egp_sh_i[UNROLLI];
+        for (int i = 0; i < UNROLLI; i++)
         {
             egp_sh_i[i] = ((nbatParams.energrp[ci] >> (i * nbatParams.neg_2log)) & egp_mask)
                           * nbatParams.nenergrp;
@@ -272,9 +223,9 @@ void
 #    endif
 #endif
 
-        for (i = 0; i < UNROLLI; i++)
+        for (int i = 0; i < UNROLLI; i++)
         {
-            for (d = 0; d < DIM; d++)
+            for (int d = 0; d < DIM; d++)
             {
                 xi[i * XI_STRIDE + d] = x[(ci * UNROLLI + i) * X_STRIDE + d] + shiftvec[ishf + d];
                 fi[i * FI_STRIDE + d] = 0;
@@ -286,29 +237,26 @@ void
 #ifdef CALC_ENERGIES
         if (do_self)
         {
-            real Vc_sub_self;
-
 #    ifdef CALC_COUL_RF
-            Vc_sub_self = 0.5 * c_rf;
+            const real Vc_sub_self = 0.5 * c_rf;
 #    endif
 #    ifdef CALC_COUL_TAB
 #        if GMX_DOUBLE
-            Vc_sub_self = 0.5 * tab_coul_V[0];
+            const real Vc_sub_self = 0.5 * tab_coul_V[0];
 #        else
-            Vc_sub_self = 0.5 * tab_coul_FDV0[2];
+            const real Vc_sub_self = 0.5 * tab_coul_FDV0[2];
 #        endif
 #    endif
 
             if (l_cj[ciEntry.cj_ind_start].cj == ci_sh)
             {
-                for (i = 0; i < UNROLLI; i++)
+                for (int i = 0; i < UNROLLI; i++)
                 {
-                    int egp_ind;
 #    ifdef ENERGY_GROUPS
-                    egp_ind = egp_sh_i[i]
-                              + ((nbatParams.energrp[ci] >> (i * nbatParams.neg_2log)) & egp_mask);
+                    const int egp_ind =
+                            egp_sh_i[i] + ((nbatParams.energrp[ci] >> (i * nbatParams.neg_2log)) & egp_mask);
 #    else
-                    egp_ind = 0;
+                    const int egp_ind = 0;
 #    endif
                     /* Coulomb self interaction */
                     Vc[egp_ind] -= qi[i] * q[ci * UNROLLI + i] * Vc_sub_self;
@@ -325,7 +273,7 @@ void
         }
 #endif /* CALC_ENERGIES */
 
-        cjind = cjind0;
+        int cjind = cjind0;
         while (cjind < cjind1 && nbl->cj[cjind].excl != 0xffff)
         {
 #define CHECK_EXCLS
@@ -374,9 +322,9 @@ void
         }
 
         /* Add accumulated i-forces to the force array */
-        for (i = 0; i < UNROLLI; i++)
+        for (int i = 0; i < UNROLLI; i++)
         {
-            for (d = 0; d < DIM; d++)
+            for (int d = 0; d < DIM; d++)
             {
                 f[(ci * UNROLLI + i) * F_STRIDE + d] += fi[i * FI_STRIDE + d];
             }
@@ -385,9 +333,9 @@ void
         if (fshift != nullptr)
         {
             /* Add i forces to shifted force list */
-            for (i = 0; i < UNROLLI; i++)
+            for (int i = 0; i < UNROLLI; i++)
             {
-                for (d = 0; d < DIM; d++)
+                for (int d = 0; d < DIM; d++)
                 {
                     fshift[ishf + d] += fi[i * FI_STRIDE + d];
                 }

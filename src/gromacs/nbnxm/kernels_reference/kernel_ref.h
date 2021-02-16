@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 The GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -107,7 +107,7 @@ nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref;
  * advantage in using combination rules, so we (re-)use the same kernel.
  */
 //! \{
-static p_nbk_func_noener nbnxn_kernel_noener_ref[coulktNR][vdwktNR_ref] = {
+static const p_nbk_func_noener nbnxn_kernel_noener_ref[coulktNR][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_F_ref,
       nbnxn_kernel_ElecRF_VdwLJ_F_ref,
       nbnxn_kernel_ElecRF_VdwLJ_F_ref,
@@ -145,7 +145,7 @@ static p_nbk_func_noener nbnxn_kernel_noener_ref[coulktNR][vdwktNR_ref] = {
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_F_ref }
 };
 
-static p_nbk_func_ener nbnxn_kernel_ener_ref[coulktNR][vdwktNR_ref] = {
+static const p_nbk_func_ener nbnxn_kernel_ener_ref[coulktNR][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VF_ref,
@@ -183,7 +183,7 @@ static p_nbk_func_ener nbnxn_kernel_ener_ref[coulktNR][vdwktNR_ref] = {
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VF_ref }
 };
 
-static p_nbk_func_ener nbnxn_kernel_energrp_ref[coulktNR][vdwktNR_ref] = {
+static const p_nbk_func_ener nbnxn_kernel_energrp_ref[coulktNR][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,
       nbnxn_kernel_ElecRF_VdwLJ_VgrpF_ref,

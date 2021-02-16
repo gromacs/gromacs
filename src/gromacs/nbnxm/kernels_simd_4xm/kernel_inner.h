@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,8 +57,6 @@
 #    endif
 
 {
-    int cj, ajx, ajy, ajz;
-    int gmx_unused aj;
 
 #    ifdef ENERGY_GROUPS
     /* Energy group indices for two atoms packed into one int */
@@ -217,11 +215,6 @@
     SimdReal c6s_j_S, c12s_j_S;
 #        endif
 
-#        if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
-    /* Index for loading LJ parameters, complicated when interleaving */
-    int aj2;
-#        endif
-
     /* Intermediate variables for LJ calculation */
 #        ifndef LJ_COMB_LB
     SimdReal rinvsix_S0;
@@ -249,24 +242,25 @@
 #    endif /* CALC_LJ */
 
     /* j-cluster index */
-    cj = l_cj[cjind].cj;
+    const int cj = l_cj[cjind].cj;
 
     /* Atom indices (of the first atom in the cluster) */
-    aj = cj * UNROLLJ;
+    const int   aj = cj * UNROLLJ;
 #    if defined CALC_LJ && (defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM)
+    /* Index for loading LJ parameters, complicated when interleaving */
 #        if UNROLLJ == STRIDE
-    aj2 = aj * 2;
+    const int aj2 = aj * 2;
 #        else
-    aj2 = (cj >> 1) * 2 * STRIDE + (cj & 1) * UNROLLJ;
+    const int aj2 = (cj >> 1) * 2 * STRIDE + (cj & 1) * UNROLLJ;
 #        endif
 #    endif
 #    if UNROLLJ == STRIDE
-    ajx = aj * DIM;
+    const int ajx = aj * DIM;
 #    else
-    ajx = (cj >> 1) * DIM * STRIDE + (cj & 1) * UNROLLJ;
+    const int ajx = (cj >> 1) * DIM * STRIDE + (cj & 1) * UNROLLJ;
 #    endif
-    ajy = ajx + STRIDE;
-    ajz = ajy + STRIDE;
+    const int ajy = ajx + STRIDE;
+    const int ajz = ajy + STRIDE;
 
 #    ifdef CHECK_EXCLS
     gmx_load_simd_4xn_interactions(static_cast<int>(l_cj[cjind].excl),
@@ -1104,18 +1098,15 @@
      * complicated when the i- and j-cluster size don't match.
      */
     {
-        int egps_j;
 #            if UNROLLJ == 2
-        egps_j    = nbatParams.energrp[cj >> 1];
-        egp_jj[0] = ((egps_j >> ((cj & 1) * egps_jshift)) & egps_jmask) * egps_jstride;
+        const int egps_j = nbatParams.energrp[cj >> 1];
+        egp_jj[0]        = ((egps_j >> ((cj & 1) * egps_jshift)) & egps_jmask) * egps_jstride;
 #            else
         /* We assume UNROLLI <= UNROLLJ */
-        int jdi;
-        for (jdi = 0; jdi < UNROLLJ / UNROLLI; jdi++)
+        for (int jdi = 0; jdi < UNROLLJ / UNROLLI; jdi++)
         {
-            int jj;
-            egps_j = nbatParams.energrp[cj * (UNROLLJ / UNROLLI) + jdi];
-            for (jj = 0; jj < (UNROLLI / 2); jj++)
+            const int egps_j = nbatParams.energrp[cj * (UNROLLJ / UNROLLI) + jdi];
+            for (int jj = 0; jj < (UNROLLI / 2); jj++)
             {
                 egp_jj[jdi * (UNROLLI / 2) + jj] =
                         ((egps_j >> (jj * egps_jshift)) & egps_jmask) * egps_jstride;

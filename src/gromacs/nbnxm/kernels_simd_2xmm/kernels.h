@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2019 by the GROMACS development team.
+ * Copyright (c) 2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -142,7 +143,7 @@ nbk_func_ener nbnxm_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VgrpF_2xmm;
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch/PME functions.
  */
-static p_nbk_func_noener nbnxm_kernel_noener_simd_2xmm[coulktNR][vdwktNR] = {
+static const p_nbk_func_noener nbnxm_kernel_noener_simd_2xmm[coulktNR][vdwktNR] = {
     {
             nbnxm_kernel_ElecRF_VdwLJCombGeom_F_2xmm,
             nbnxm_kernel_ElecRF_VdwLJCombLB_F_2xmm,
@@ -185,7 +186,7 @@ static p_nbk_func_noener nbnxm_kernel_noener_simd_2xmm[coulktNR][vdwktNR] = {
     },
 };
 
-static p_nbk_func_ener nbnxm_kernel_ener_simd_2xmm[coulktNR][vdwktNR] = {
+static const p_nbk_func_ener nbnxm_kernel_ener_simd_2xmm[coulktNR][vdwktNR] = {
     {
             nbnxm_kernel_ElecRF_VdwLJCombGeom_VF_2xmm,
             nbnxm_kernel_ElecRF_VdwLJCombLB_VF_2xmm,
@@ -228,7 +229,7 @@ static p_nbk_func_ener nbnxm_kernel_ener_simd_2xmm[coulktNR][vdwktNR] = {
     },
 };
 
-static p_nbk_func_ener nbnxm_kernel_energrp_simd_2xmm[coulktNR][vdwktNR] = {
+static const p_nbk_func_ener nbnxm_kernel_energrp_simd_2xmm[coulktNR][vdwktNR] = {
     {
             nbnxm_kernel_ElecRF_VdwLJCombGeom_VgrpF_2xmm,
             nbnxm_kernel_ElecRF_VdwLJCombLB_VgrpF_2xmm,

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,13 +76,12 @@ static_assert(UNROLLI == c_nbnxnCpuIClusterSize, "UNROLLI should match the i-clu
 static inline void add_ener_grp(gmx::SimdReal e_S, real* v, const int* offset_jj)
 {
     using namespace gmx;
-    int jj;
 
     /* We need to balance the number of store operations with
      * the rapidly increases number of combinations of energy groups.
      * We add to a temporary buffer for 1 i-group vs 2 j-groups.
      */
-    for (jj = 0; jj < (UNROLLJ / 2); jj++)
+    for (int jj = 0; jj < (UNROLLJ / 2); jj++)
     {
         SimdReal v_S;
 
