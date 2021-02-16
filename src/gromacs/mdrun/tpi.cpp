@@ -770,7 +770,7 @@ void LegacySimulator::do_tpi()
             do_force(fplog,
                      cr,
                      ms,
-                     inputrec,
+                     *inputrec,
                      nullptr,
                      nullptr,
                      imdSession,

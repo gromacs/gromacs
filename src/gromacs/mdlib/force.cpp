@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +99,7 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t* ewc_t)
 }
 
 void calculateLongRangeNonbondeds(t_forcerec*                   fr,
-                                  const t_inputrec*             ir,
+                                  const t_inputrec&             ir,
                                   const t_commrec*              cr,
                                   t_nrnb*                       nrnb,
                                   gmx_wallcycle_t               wcycle,
@@ -117,7 +117,7 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                                  && thisRankHasDuty(cr, DUTY_PME)
                                  && (pme_run_mode(fr->pmedata) == PmeRunMode::CPU);
 
-    const bool haveEwaldSurfaceTerm = haveEwaldSurfaceContribution(*ir);
+    const bool haveEwaldSurfaceTerm = haveEwaldSurfaceContribution(ir);
 
     /* Do long-range electrostatics and/or LJ-PME
      * and compute PME surface terms when necessary.
@@ -164,7 +164,7 @@ void calculateLongRangeNonbondeds(t_forcerec*                   fr,
                                            nthreads,
                                            t,
                                            *fr,
-                                           *ir,
+                                           ir,
                                            md->chargeA,
                                            md->chargeB,
                                            (md->nChargePerturbed != 0),

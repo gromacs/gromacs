@@ -1580,7 +1580,7 @@ int Mdrunner::mdrunner()
         init_forcerec(fplog,
                       mdlog,
                       fr,
-                      inputrec.get(),
+                      *inputrec,
                       &mtop,
                       cr,
                       box,

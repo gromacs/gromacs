@@ -121,7 +121,7 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real rlist
 void init_forcerec(FILE*                            fplog,
                    const gmx::MDLogger&             mdlog,
                    t_forcerec*                      fr,
-                   const t_inputrec*                ir,
+                   const t_inputrec&                ir,
                    const gmx_mtop_t*                mtop,
                    const t_commrec*                 cr,
                    matrix                           box,

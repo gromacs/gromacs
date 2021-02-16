@@ -161,7 +161,7 @@ void dd_make_local_ed_indices(gmx_domdec_t* dd, gmx_edsam* ed);
  * \param bNS               Are we in a neighbor searching step?
  */
 void do_flood(const t_commrec*  cr,
-              const t_inputrec* ir,
+              const t_inputrec& ir,
               const rvec        x[],
               rvec              force[],
               gmx_edsam*        ed,

@@ -92,7 +92,7 @@ class VirtualSitesHandler;
 void do_force(FILE*                               log,
               const t_commrec*                    cr,
               const gmx_multisim_t*               ms,
-              const t_inputrec*                   inputrec,
+              const t_inputrec&                   inputrec,
               gmx::Awh*                           awh,
               gmx_enfrot*                         enforcedRotation,
               gmx::ImdSession*                    imdSession,
@@ -134,7 +134,7 @@ void do_force(FILE*                               log,
  * on whether the PME-mesh contribution is computed on a separate PME rank or on a GPU.
  */
 void calculateLongRangeNonbondeds(t_forcerec*                    fr,
-                                  const t_inputrec*              ir,
+                                  const t_inputrec&              ir,
                                   const t_commrec*               cr,
                                   t_nrnb*                        nrnb,
                                   gmx_wallcycle*                 wcycle,

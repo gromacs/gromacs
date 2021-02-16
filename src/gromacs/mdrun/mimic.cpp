@@ -567,7 +567,7 @@ void gmx::LegacySimulator::do_mimic()
             do_force(fplog,
                      cr,
                      ms,
-                     ir,
+                     *ir,
                      awh,
                      enforcedRotation,
                      imdSession,

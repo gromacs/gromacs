@@ -183,7 +183,7 @@ static void calc_virial(int                              start,
 }
 
 static void pull_potential_wrapper(const t_commrec*               cr,
-                                   const t_inputrec*              ir,
+                                   const t_inputrec&              ir,
                                    const matrix                   box,
                                    gmx::ArrayRef<const gmx::RVec> x,
                                    gmx::ForceWithVirial*          force,
@@ -201,7 +201,7 @@ static void pull_potential_wrapper(const t_commrec*               cr,
      * which is why pull_potential is called close to other communication.
      */
     wallcycle_start(wcycle, ewcPULLPOT);
-    set_pbc(&pbc, ir->pbcType, box);
+    set_pbc(&pbc, ir.pbcType, box);
     dvdl = 0;
     enerd->term[F_COM_PULL] += pull_potential(
             pull_work, mdatoms->massT, &pbc, cr, t, lambda[efptRESTRAINT], as_rvec_array(x.data()), force, &dvdl);
@@ -608,7 +608,7 @@ static bool haveSpecialForces(const t_inputrec&          inputrec,
  */
 static void computeSpecialForces(FILE*                          fplog,
                                  const t_commrec*               cr,
-                                 const t_inputrec*              inputrec,
+                                 const t_inputrec&              inputrec,
                                  gmx::Awh*                      awh,
                                  gmx_enfrot*                    enforcedRotation,
                                  gmx::ImdSession*               imdSession,
@@ -640,9 +640,9 @@ static void computeSpecialForces(FILE*                          fplog,
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
 
-    if (inputrec->bPull && pull_have_potential(*pull_work))
+    if (inputrec.bPull && pull_have_potential(*pull_work))
     {
-        const int mtsLevel = forceGroupMtsLevel(inputrec->mtsLevels, gmx::MtsForceGroups::Pull);
+        const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
         if (mtsLevel == 0 || stepWork.computeSlowForces)
         {
             auto& forceWithVirial = (mtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
@@ -652,7 +652,7 @@ static void computeSpecialForces(FILE*                          fplog,
     }
     if (awh)
     {
-        const int mtsLevel = forceGroupMtsLevel(inputrec->mtsLevels, gmx::MtsForceGroups::Pull);
+        const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
         if (mtsLevel == 0 || stepWork.computeSlowForces)
         {
             const bool needForeignEnergyDifferences = awh->needForeignEnergyDifferences(step);
@@ -660,12 +660,12 @@ static void computeSpecialForces(FILE*                          fplog,
             if (needForeignEnergyDifferences)
             {
                 enerd->foreignLambdaTerms.finalizePotentialContributions(
-                        enerd->dvdl_lin, lambda, *inputrec->fepvals);
+                        enerd->dvdl_lin, lambda, *inputrec.fepvals);
                 std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(cr);
             }
 
             auto& forceWithVirial = (mtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
-            enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(inputrec->pbcType,
+            enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(inputrec.pbcType,
                                                                          mdatoms->massT,
                                                                          foreignLambdaDeltaH,
                                                                          foreignLambdaDhDl,
@@ -681,7 +681,7 @@ static void computeSpecialForces(FILE*                          fplog,
     rvec* f = as_rvec_array(forceWithVirialMtsLevel0->force_.data());
 
     /* Add the forces from enforced rotation potentials (if any) */
-    if (inputrec->bRot)
+    if (inputrec.bRot)
     {
         wallcycle_start(wcycle, ewcROTadd);
         enerd->term[F_COM_PULL] += add_rot_forces(enforcedRotation, f, cr, step, t);
@@ -699,7 +699,7 @@ static void computeSpecialForces(FILE*                          fplog,
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if any */
-    if (inputrec->bIMD && stepWork.computeForces)
+    if (inputrec.bIMD && stepWork.computeForces)
     {
         imdSession->applyForces(f);
     }
@@ -1157,7 +1157,7 @@ static void setupGpuForceReductions(gmx::MdrunScheduleWorkload* runScheduleWork,
 void do_force(FILE*                               fplog,
               const t_commrec*                    cr,
               const gmx_multisim_t*               ms,
-              const t_inputrec*                   inputrec,
+              const t_inputrec&                   inputrec,
               gmx::Awh*                           awh,
               gmx_enfrot*                         enforcedRotation,
               gmx::ImdSession*                    imdSession,
@@ -1196,7 +1196,7 @@ void do_force(FILE*                               fplog,
     const SimulationWorkload& simulationWork = runScheduleWork->simulationWork;
 
     runScheduleWork->stepWork = setupStepWorkload(
-            legacyFlags, inputrec->mtsLevels, step, simulationWork, thisRankHasDuty(cr, DUTY_PME));
+            legacyFlags, inputrec.mtsLevels, step, simulationWork, thisRankHasDuty(cr, DUTY_PME));
     const StepWorkload& stepWork = runScheduleWork->stepWork;
 
     const bool useGpuPmeOnThisRank =
@@ -1432,7 +1432,7 @@ void do_force(FILE*                               fplog,
         // Need to run after the GPU-offload bonded interaction lists
         // are set up to be able to determine whether there is bonded work.
         runScheduleWork->domainWork = setupDomainLifetimeWorkload(
-                *inputrec, *fr, pull_work, ed, *mdatoms, simulationWork, stepWork);
+                inputrec, *fr, pull_work, ed, *mdatoms, simulationWork, stepWork);
 
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
@@ -1454,7 +1454,7 @@ void do_force(FILE*                               fplog,
             setupGpuForceReductions(runScheduleWork, cr, fr);
         }
     }
-    else if (!EI_TPI(inputrec->eI) && stepWork.computeNonbondedForces)
+    else if (!EI_TPI(inputrec.eI) && stepWork.computeNonbondedForces)
     {
         if (stepWork.useGpuXBufferOps)
         {
@@ -1673,7 +1673,7 @@ void do_force(FILE*                               fplog,
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
     }
 
-    if (inputrec->bRot)
+    if (inputrec.bRot)
     {
         wallcycle_start(wcycle, ewcROT);
         do_rotation(cr, enforcedRotation, box, as_rvec_array(x.unpaddedArrayRef().data()), t, step, stepWork.doNeighborSearch);
@@ -1711,7 +1711,7 @@ void do_force(FILE*                               fplog,
 
     ForceOutputs* forceOutNonbonded = nonbondedAtMtsLevel1 ? forceOutMtsLevel1 : &forceOutMtsLevel0;
 
-    if (inputrec->bPull && pull_have_constraint(*pull_work))
+    if (inputrec.bPull && pull_have_constraint(*pull_work))
     {
         clear_pull_forces(pull_work);
     }
@@ -1741,7 +1741,7 @@ void do_force(FILE*                               fplog,
                                       as_rvec_array(x.unpaddedArrayRef().data()),
                                       &forceOutNonbonded->forceWithShiftForces(),
                                       *mdatoms,
-                                      inputrec->fepvals,
+                                      inputrec.fepvals,
                                       lambda,
                                       enerd,
                                       stepWork,
@@ -1754,7 +1754,7 @@ void do_force(FILE*                               fplog,
                                           as_rvec_array(x.unpaddedArrayRef().data()),
                                           &forceOutNonbonded->forceWithShiftForces(),
                                           *mdatoms,
-                                          inputrec->fepvals,
+                                          inputrec.fepvals,
                                           lambda,
                                           enerd,
                                           stepWork,
@@ -1802,10 +1802,10 @@ void do_force(FILE*                               fplog,
 
     // Compute wall interactions, when present.
     // Note: should be moved to special forces.
-    if (inputrec->nwall && stepWork.computeNonbondedForces)
+    if (inputrec.nwall && stepWork.computeNonbondedForces)
     {
         /* foreign lambda component for walls */
-        real dvdl_walls = do_walls(*inputrec,
+        real dvdl_walls = do_walls(inputrec,
                                    *fr,
                                    box,
                                    *mdatoms,
@@ -1845,7 +1845,7 @@ void do_force(FILE*                               fplog,
             ForceOutputs& forceOut     = (mtsIndex == 0 ? forceOutMtsLevel0 : *forceOutMtsLevel1);
             listedForces.calculate(wcycle,
                                    box,
-                                   inputrec->fepvals,
+                                   inputrec.fepvals,
                                    cr,
                                    ms,
                                    x,
@@ -2013,7 +2013,7 @@ void do_force(FILE*                               fplog,
         combineMtsForces(numAtoms,
                          force.unpaddedArrayRef(),
                          forceView->forceMtsCombined(),
-                         inputrec->mtsLevels[1].stepFactor);
+                         inputrec.mtsLevels[1].stepFactor);
     }
 
     if (havePPDomainDecomposition(cr))
@@ -2257,18 +2257,18 @@ void do_force(FILE*                               fplog,
             combineMtsForces(mdatoms->homenr,
                              force.unpaddedArrayRef(),
                              forceView->forceMtsCombined(),
-                             inputrec->mtsLevels[1].stepFactor);
+                             inputrec.mtsLevels[1].stepFactor);
         }
     }
 
     if (stepWork.computeEnergy)
     {
         /* Compute the final potential energy terms */
-        accumulatePotentialEnergies(enerd, lambda, inputrec->fepvals);
+        accumulatePotentialEnergies(enerd, lambda, inputrec.fepvals);
 
-        if (!EI_TPI(inputrec->eI))
+        if (!EI_TPI(inputrec.eI))
         {
-            checkPotentialEnergyValidity(step, *enerd, *inputrec);
+            checkPotentialEnergyValidity(step, *enerd, inputrec);
         }
     }
 

@@ -62,7 +62,7 @@
 #include "gromacs/utility/smalloc.h"
 
 void make_wall_tables(FILE*                   fplog,
-                      const t_inputrec*       ir,
+                      const t_inputrec&       ir,
                       const char*             tabfn,
                       const SimulationGroups* groups,
                       t_forcerec*             fr)
@@ -70,22 +70,22 @@ void make_wall_tables(FILE*                   fplog,
     int  negp_pp;
     char buf[STRLEN];
 
-    negp_pp                         = ir->opts.ngener - ir->nwall;
+    negp_pp                         = ir.opts.ngener - ir.nwall;
     gmx::ArrayRef<const int> nm_ind = groups->groups[SimulationAtomGroupType::EnergyOutput];
 
     if (fplog)
     {
-        fprintf(fplog, "Reading user tables for %d energy groups with %d walls\n", negp_pp, ir->nwall);
+        fprintf(fplog, "Reading user tables for %d energy groups with %d walls\n", negp_pp, ir.nwall);
     }
 
-    fr->wall_tab.resize(ir->nwall);
-    for (int w = 0; w < ir->nwall; w++)
+    fr->wall_tab.resize(ir.nwall);
+    for (int w = 0; w < ir.nwall; w++)
     {
         fr->wall_tab[w].resize(negp_pp);
         for (int egp = 0; egp < negp_pp; egp++)
         {
             /* If the energy group pair is excluded, we don't need a table */
-            if (!(fr->egp_flags[egp * ir->opts.ngener + negp_pp + w] & EGP_EXCL))
+            if (!(fr->egp_flags[egp * ir.opts.ngener + negp_pp + w] & EGP_EXCL))
             {
                 sprintf(buf, "%s", tabfn);
                 sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,

@@ -1028,7 +1028,7 @@ static void do_single_flood(FILE*            edo,
 
 /* Main flooding routine, called from do_force */
 extern void do_flood(const t_commrec*  cr,
-                     const t_inputrec* ir,
+                     const t_inputrec& ir,
                      const rvec        x[],
                      rvec              force[],
                      gmx_edsam*        ed,
@@ -1040,7 +1040,7 @@ extern void do_flood(const t_commrec*  cr,
      * it in the output file for ED constraints. */
     if (MASTER(cr) && do_per_step(step, ed->edpar.begin()->outfrq))
     {
-        fprintf(ed->edo, "\n%12f", ir->init_t + step * ir->delta_t);
+        fprintf(ed->edo, "\n%12f", ir.init_t + step * ir.delta_t);
     }
 
     if (ed->eEDtype != EssentialDynamicsType::Flooding)

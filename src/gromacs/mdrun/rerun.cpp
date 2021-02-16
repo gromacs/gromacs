@@ -679,7 +679,7 @@ void gmx::LegacySimulator::do_rerun()
             do_force(fplog,
                      cr,
                      ms,
-                     ir,
+                     *ir,
                      awh,
                      enforcedRotation,
                      imdSession,
