@@ -1581,7 +1581,7 @@ int Mdrunner::mdrunner()
                       mdlog,
                       fr,
                       *inputrec,
-                      &mtop,
+                      mtop,
                       cr,
                       box,
                       opt2fn("-table", filenames.size(), filenames.data()),
