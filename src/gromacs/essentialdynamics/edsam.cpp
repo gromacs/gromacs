@@ -1027,14 +1027,14 @@ static void do_single_flood(FILE*            edo,
 
 
 /* Main flooding routine, called from do_force */
-extern void do_flood(const t_commrec*  cr,
-                     const t_inputrec& ir,
-                     const rvec        x[],
-                     rvec              force[],
-                     gmx_edsam*        ed,
-                     const matrix      box,
-                     int64_t           step,
-                     gmx_bool          bNS)
+void do_flood(const t_commrec*  cr,
+              const t_inputrec& ir,
+              const rvec        x[],
+              rvec              force[],
+              gmx_edsam*        ed,
+              const matrix      box,
+              int64_t           step,
+              bool              bNS)
 {
     /* Write time to edo, when required. Output the time anyhow since we need
      * it in the output file for ED constraints. */
@@ -1317,7 +1317,7 @@ static void broadcast_ed_data(const t_commrec* cr, gmx_edsam* ed)
 
 
 /* init-routine called for every *.edi-cycle, initialises t_edpar structure */
-static void init_edi(const gmx_mtop_t* mtop, t_edpar* edi)
+static void init_edi(const gmx_mtop_t& mtop, t_edpar* edi)
 {
     int  i;
     real totalmass = 0.0;
@@ -1334,7 +1334,7 @@ static void init_edi(const gmx_mtop_t* mtop, t_edpar* edi)
     {
         if (edi->fitmas)
         {
-            edi->sref.m[i] = mtopGetAtomMass(mtop, edi->sref.anrs[i], &molb);
+            edi->sref.m[i] = mtopGetAtomMass(&mtop, edi->sref.anrs[i], &molb);
         }
         else
         {
@@ -1365,7 +1365,7 @@ static void init_edi(const gmx_mtop_t* mtop, t_edpar* edi)
     snew(edi->sav.m, edi->sav.nr);
     for (i = 0; i < edi->sav.nr; i++)
     {
-        edi->sav.m[i] = mtopGetAtomMass(mtop, edi->sav.anrs[i], &molb);
+        edi->sav.m[i] = mtopGetAtomMass(&mtop, edi->sav.anrs[i], &molb);
         if (edi->pcamas)
         {
             edi->sav.sqrtm[i] = sqrt(edi->sav.m[i]);
@@ -2781,8 +2781,8 @@ static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oen
 std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        mdlog,
                                                    const char*                 ediFileName,
                                                    const char*                 edoFileName,
-                                                   const gmx_mtop_t*           mtop,
-                                                   const t_inputrec*           ir,
+                                                   const gmx_mtop_t&           mtop,
+                                                   const t_inputrec&           ir,
                                                    const t_commrec*            cr,
                                                    gmx::Constraints*           constr,
                                                    const t_state*              globalState,
@@ -2817,7 +2817,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
                     "gmx grompp and the related .mdp options may change also.");
 
     /* Open input and output files, allocate space for ED data structure */
-    auto edHandle = ed_open(mtop->natoms, oh, ediFileName, edoFileName, startingBehavior, oenv, cr);
+    auto edHandle = ed_open(mtop.natoms, oh, ediFileName, edoFileName, startingBehavior, oenv, cr);
     auto ed       = edHandle->getLegacyED();
     GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
     constr->saveEdsamPointer(ed);
@@ -2837,7 +2837,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
         for (auto& edi : ed->edpar)
         {
             init_edi(mtop, &edi);
-            init_flood(&edi, ed, ir->delta_t);
+            init_flood(&edi, ed, ir.delta_t);
         }
     }
 
@@ -2850,9 +2850,9 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
         if (!EDstate->bFromCpt)
         {
             /* Remove PBC, make molecule(s) subject to ED whole. */
-            snew(x_pbc, mtop->natoms);
-            copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop->natoms);
-            do_pbc_first_mtop(nullptr, ir->pbcType, globalState->box, mtop, x_pbc);
+            snew(x_pbc, mtop.natoms);
+            copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop.natoms);
+            do_pbc_first_mtop(nullptr, ir.pbcType, globalState->box, &mtop, x_pbc);
         }
         /* Reset pointer to first ED data set which contains the actual ED data */
         auto edi = ed->edpar.begin();
