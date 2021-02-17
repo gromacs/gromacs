@@ -345,9 +345,6 @@ public:
     //! Init for GPU version of setup coordinates in Nbnxm
     void atomdata_init_copy_x_to_nbat_x_gpu() const;
 
-    //! Sync the nonlocal GPU stream with dependent tasks in the local queue.
-    void insertNonlocalGpuDependency(gmx::InteractionLocality interactionLocality) const;
-
     //! Returns a reference to the pairlist sets
     const PairlistSets& pairlistSets() const { return *pairlistSets_; }
 

@@ -489,24 +489,35 @@ static void fillin_ocl_structures(NBParamGpu* nbp, cl_nbparam_params_t* nbparams
     nbparams_params->vdw_switch        = nbp->vdw_switch;
 }
 
-/*! \brief Enqueues a wait for event completion.
- *
- * Then it releases the event and sets it to 0.
- * Don't use this function when more than one wait will be issued for the event.
- * Equivalent to Cuda Stream Sync. */
-static void sync_ocl_event(cl_command_queue stream, cl_event* ocl_event)
+void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
 {
-    cl_int gmx_unused cl_error;
+    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
 
-    /* Enqueue wait */
-    cl_error = clEnqueueBarrierWithWaitList(stream, 1, ocl_event, nullptr);
-    GMX_RELEASE_ASSERT(CL_SUCCESS == cl_error, ocl_get_error_string(cl_error).c_str());
+    /* When we get here all misc operations issued in the local stream as well as
+       the local xq H2D are done,
+       so we record that in the local stream and wait for it in the nonlocal one.
+       This wait needs to precede any PP tasks, bonded or nonbonded, that may
+       compute on interactions between local and nonlocal atoms.
+     */
+    if (nb->bUseTwoStreams)
+    {
+        if (interactionLocality == InteractionLocality::Local)
+        {
+            nb->misc_ops_and_local_H2D_done.markEvent(deviceStream);
 
-    /* Release event and reset it to 0. It is ok to release it as enqueuewaitforevents performs implicit retain for events. */
-    cl_error = clReleaseEvent(*ocl_event);
-    GMX_ASSERT(cl_error == CL_SUCCESS,
-               ("clReleaseEvent failed: " + ocl_get_error_string(cl_error)).c_str());
-    *ocl_event = nullptr;
+            /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
+             * in the local stream in order to be able to sync with the above event
+             * from the non-local stream.
+             */
+            cl_int gmx_used_in_debug cl_error = clFlush(deviceStream.stream());
+            GMX_ASSERT(cl_error == CL_SUCCESS,
+                       ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
+        }
+        else
+        {
+            nb->misc_ops_and_local_H2D_done.enqueueWaitEvent(deviceStream);
+        }
+    }
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
@@ -538,6 +549,11 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
         plist->haveFreshList = false;
+
+        // The event is marked for Local interactions unconditionally,
+        // so it has to be released here because of the early return
+        // for NonLocal interactions.
+        nb->misc_ops_and_local_H2D_done.reset();
 
         return;
     }
@@ -576,31 +592,13 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
         t->xf[atomLocality].nb_h2d.closeTimingRegion(deviceStream);
     }
 
-    /* When we get here all misc operations issues in the local stream as well as
+    /* When we get here all misc operations issued in the local stream as well as
        the local xq H2D are done,
-       so we record that in the local stream and wait for it in the nonlocal one. */
-    if (nb->bUseTwoStreams)
-    {
-        if (iloc == InteractionLocality::Local)
-        {
-            cl_int gmx_used_in_debug cl_error = clEnqueueMarkerWithWaitList(
-                    deviceStream.stream(), 0, nullptr, &(nb->misc_ops_and_local_H2D_done));
-            GMX_ASSERT(cl_error == CL_SUCCESS,
-                       ("clEnqueueMarkerWithWaitList failed: " + ocl_get_error_string(cl_error)).c_str());
-
-            /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
-             * in the local stream in order to be able to sync with the above event
-             * from the non-local stream.
-             */
-            cl_error = clFlush(deviceStream.stream());
-            GMX_ASSERT(cl_error == CL_SUCCESS,
-                       ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
-        }
-        else
-        {
-            sync_ocl_event(deviceStream.stream(), &(nb->misc_ops_and_local_H2D_done));
-        }
-    }
+       so we record that in the local stream and wait for it in the nonlocal one.
+       This wait needs to precede any PP tasks, bonded or nonbonded, that may
+       compute on interactions between local and nonlocal atoms.
+     */
+    nbnxnInsertNonlocalGpuDependency(nb, iloc);
 }
 
 
@@ -944,6 +942,10 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 
     /* determine interaction locality from atom locality */
     const InteractionLocality iloc = gpuAtomToInteractionLocality(aloc);
+    GMX_ASSERT(iloc == InteractionLocality::Local
+                       || (iloc == InteractionLocality::NonLocal && nb->bNonLocalStreamDoneMarked == false),
+               "Non-local stream is indicating that the copy back event is enqueued at the "
+               "beginning of the copy back function.");
 
     cl_atomdata_t*      adat         = nb->atdat;
     cl_timers_t*        t            = nb->timers;
@@ -955,13 +957,13 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     {
         /* TODO An alternative way to signal that non-local work is
            complete is to use a clEnqueueMarker+clEnqueueBarrier
-           pair. However, the use of bNonLocalStreamActive has the
+           pair. However, the use of bNonLocalStreamDoneMarked has the
            advantage of being local to the host, so probably minimizes
            overhead. Curiously, for NVIDIA OpenCL with an empty-domain
            test case, overall simulation performance was higher with
            the API calls, but this has not been tested on AMD OpenCL,
            so could be worth considering in future. */
-        nb->bNonLocalStreamActive = CL_FALSE;
+        nb->bNonLocalStreamDoneMarked = false;
         return;
     }
 
@@ -975,9 +977,10 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 
     /* With DD the local D2H transfer can only start after the non-local
        has been launched. */
-    if (iloc == InteractionLocality::Local && nb->bNonLocalStreamActive)
+    if (iloc == InteractionLocality::Local && nb->bNonLocalStreamDoneMarked)
     {
-        sync_ocl_event(deviceStream.stream(), &(nb->nonlocal_done));
+        nb->nonlocal_done.enqueueWaitEvent(deviceStream);
+        nb->bNonLocalStreamDoneMarked = false;
     }
 
     /* DtoH f */
@@ -1001,10 +1004,8 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
        data back first. */
     if (iloc == InteractionLocality::NonLocal)
     {
-        cl_error = clEnqueueMarkerWithWaitList(deviceStream.stream(), 0, nullptr, &(nb->nonlocal_done));
-        GMX_ASSERT(cl_error == CL_SUCCESS,
-                   ("clEnqueueMarkerWithWaitList failed: " + ocl_get_error_string(cl_error)).c_str());
-        nb->bNonLocalStreamActive = CL_TRUE;
+        nb->nonlocal_done.markEvent(deviceStream);
+        nb->bNonLocalStreamDoneMarked = true;
     }
 
     /* only transfer energies in the local stream */

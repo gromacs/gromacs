@@ -131,6 +131,8 @@ public:
         deviceStream.stream().submit_barrier(waitlist);
         event_.reset();
     }
+    //! Reset the event to unmarked state.
+    inline void reset() { event_.reset(); }
 
 private:
     std::optional<cl::sycl::event> event_ = std::nullopt;

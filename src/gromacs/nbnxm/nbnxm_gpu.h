@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -260,12 +260,18 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid gmx_unused& grid,
                            int gmx_unused numColumnsMax) CUDA_FUNC_TERM;
 
 /*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
+ *
+ *  As the point where the local stream tasks can be considered complete happens
+ *  at the same call point where the nonlocal stream should be synced with the
+ *  the local, this function records the event if called with the local stream as
+ *  argument and inserts in the GPU stream a wait on the event on the nonlocal.
+ *
  * \param[in] nb                   The nonbonded data GPU structure
  * \param[in] interactionLocality  Local or NonLocal sync point
  */
-CUDA_FUNC_QUALIFIER
-void nbnxnInsertNonlocalGpuDependency(const NbnxmGpu gmx_unused* nb,
-                                      gmx::InteractionLocality gmx_unused interactionLocality) CUDA_FUNC_TERM;
+GPU_FUNC_QUALIFIER
+void nbnxnInsertNonlocalGpuDependency(NbnxmGpu gmx_unused* nb,
+                                      gmx::InteractionLocality gmx_unused interactionLocality) GPU_FUNC_TERM;
 
 /*! \brief Set up internal flags that indicate what type of short-range work there is.
  *

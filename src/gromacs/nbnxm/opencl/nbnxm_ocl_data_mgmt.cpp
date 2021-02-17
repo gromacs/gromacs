@@ -633,18 +633,6 @@ void gpu_free(NbnxmGpu* nb)
     pfree(nb->nbst.fshift);
     nb->nbst.fshift = nullptr;
 
-    /* Free other events */
-    if (nb->nonlocal_done)
-    {
-        clReleaseEvent(nb->nonlocal_done);
-        nb->nonlocal_done = nullptr;
-    }
-    if (nb->misc_ops_and_local_H2D_done)
-    {
-        clReleaseEvent(nb->misc_ops_and_local_H2D_done);
-        nb->misc_ops_and_local_H2D_done = nullptr;
-    }
-
     freeGpuProgram(nb->dev_rundata->program);
     delete nb->dev_rundata;
 

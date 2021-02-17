@@ -106,7 +106,7 @@ public:
                                          + ocl_get_error_string(clError)));
         }
 
-        releaseEvent();
+        reset();
     }
     /*! \brief Checks the completion of the underlying event and resets the object if it was. */
     inline bool isReady()
@@ -121,7 +121,7 @@ public:
         bool hasTriggered = (result == CL_COMPLETE);
         if (hasTriggered)
         {
-            releaseEvent();
+            reset();
         }
         return hasTriggered;
     }
@@ -139,11 +139,11 @@ public:
                                          + ocl_get_error_string(clError)));
         }
 
-        releaseEvent();
+        reset();
     }
 
-private:
-    inline void releaseEvent()
+    //! Reset (release) the event to unmarked state.
+    inline void reset()
     {
         cl_int clError = clReleaseEvent(event_);
         if (CL_SUCCESS != clError)
@@ -154,6 +154,7 @@ private:
         event_ = nullptr;
     }
 
+private:
     cl_event event_;
 };
 

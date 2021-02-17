@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
@@ -142,8 +143,6 @@ struct cu_atomdata
  */
 typedef struct Nbnxm::gpu_timers_t cu_timers_t;
 
-class GpuEventSynchronizer;
-
 /*! \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
@@ -156,6 +155,9 @@ struct NbnxmGpu
     const DeviceContext* deviceContext_;
     /*! \brief true if doing both local/non-local NB work on GPU */
     bool bUseTwoStreams = false;
+    //! true indicates that the nonlocal_done event was marked
+    bool bNonLocalStreamDoneMarked = false;
+
     /*! \brief atom data */
     cu_atomdata_t* atdat = nullptr;
     /*! \brief array of atom indices */
@@ -185,18 +187,15 @@ struct NbnxmGpu
     /*! \brief local and non-local GPU streams */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, const DeviceStream*> deviceStreams;
 
-    /*! \brief Events used for synchronization */
-    /*! \{ */
     /*! \brief Event triggered when the non-local non-bonded
      * kernel is done (and the local transfer can proceed) */
-    cudaEvent_t nonlocal_done = nullptr;
+    GpuEventSynchronizer nonlocal_done;
     /*! \brief Event triggered when the tasks issued in the local
      * stream that need to precede the non-local force or buffer
      * operation calculations are done (e.g. f buffer 0-ing, local
      * x/q H2D, buffer op initialization in local stream that is
      * required also by nonlocal stream ) */
-    cudaEvent_t misc_ops_and_local_H2D_done = nullptr;
-    /*! \} */
+    GpuEventSynchronizer misc_ops_and_local_H2D_done;
 
     /*! \brief True if there is work for the current domain in the
      * respective locality.
@@ -207,10 +206,6 @@ struct NbnxmGpu
      * local/nonlocal, if there is bonded GPU work, both flags
      * will be true. */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork = { { false } };
-
-    /*! \brief Event triggered when non-local coordinate buffer
-     * has been copied from device to host. */
-    GpuEventSynchronizer* xNonLocalCopyD2HDone = nullptr;
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.

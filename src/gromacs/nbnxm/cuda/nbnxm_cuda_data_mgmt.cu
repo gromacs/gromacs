@@ -182,8 +182,6 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
                    const nbnxn_atomdata_t*         nbat,
                    bool                            bLocalAndNonlocal)
 {
-    cudaError_t stat;
-
     auto nb            = new NbnxmGpu();
     nb->deviceContext_ = &deviceStreamManager.context();
     snew(nb->atdat, 1);
@@ -226,14 +224,6 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
                 &deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedNonLocal);
         ;
     }
-
-    /* init events for sychronization (timing disabled for performance reasons!) */
-    stat = cudaEventCreateWithFlags(&nb->nonlocal_done, cudaEventDisableTiming);
-    CU_RET_ERR(stat, "cudaEventCreate on nonlocal_done failed");
-    stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
-    CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
-
-    nb->xNonLocalCopyD2HDone = new GpuEventSynchronizer();
 
     /* WARNING: CUDA timings are incorrect with multiple streams.
      *          This is the main reason why they are disabled by default.
@@ -409,7 +399,6 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
 void gpu_free(NbnxmGpu* nb)
 {
-    cudaError_t    stat;
     cu_atomdata_t* atdat;
     NBParamGpu*    nbparam;
 
@@ -426,11 +415,6 @@ void gpu_free(NbnxmGpu* nb)
     {
         destroyParamLookupTable(&nbparam->coulomb_tab, nbparam->coulomb_tab_texobj);
     }
-
-    stat = cudaEventDestroy(nb->nonlocal_done);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->nonlocal_done");
-    stat = cudaEventDestroy(nb->misc_ops_and_local_H2D_done);
-    CU_RET_ERR(stat, "cudaEventDestroy failed on timers->misc_ops_and_local_H2D_done");
 
     delete nb->timers;
 
@@ -610,14 +594,19 @@ void nbnxn_gpu_init_x_to_nbat_x(const Nbnxm::GridSet& gridSet, NbnxmGpu* gpu_nbv
         }
     }
 
-    // The above data is transferred on the local stream but is a
-    // dependency of the nonlocal stream (specifically the nonlocal X
-    // buf ops kernel).  We therefore set a dependency to ensure
-    // that the nonlocal stream waits on the local stream here.
-    // This call records an event in the local stream:
-    nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::Local);
-    // ...and this call instructs the nonlocal stream to wait on that event:
-    nbnxnInsertNonlocalGpuDependency(gpu_nbv, Nbnxm::InteractionLocality::NonLocal);
+    if (gpu_nbv->bUseTwoStreams)
+    {
+        // The above data is transferred on the local stream but is a
+        // dependency of the nonlocal stream (specifically the nonlocal X
+        // buf ops kernel).  We therefore set a dependency to ensure
+        // that the nonlocal stream waits on the local stream here.
+        // This call records an event in the local stream:
+        gpu_nbv->misc_ops_and_local_H2D_done.markEvent(
+                *gpu_nbv->deviceStreams[Nbnxm::InteractionLocality::Local]);
+        // ...and this call instructs the nonlocal stream to wait on that event:
+        gpu_nbv->misc_ops_and_local_H2D_done.enqueueWaitEvent(
+                *gpu_nbv->deviceStreams[Nbnxm::InteractionLocality::NonLocal]);
+    }
 
     return;
 }

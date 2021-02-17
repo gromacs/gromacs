@@ -114,6 +114,8 @@ public:
         GMX_ASSERT(stat == cudaSuccess,
                    ("cudaStreamWaitEvent failed. " + gmx::getDeviceErrorString(stat)).c_str());
     }
+    //! Reset the event (not needed in CUDA)
+    inline void reset() {}
 
 private:
     cudaEvent_t event_;

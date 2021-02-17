@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -424,14 +424,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
     return shmem;
 }
 
-/*! \brief Sync the nonlocal stream with dependent tasks in the local queue.
- *
- *  As the point where the local stream tasks can be considered complete happens
- *  at the same call point where the nonlocal stream should be synced with the
- *  the local, this function records the event if called with the local stream as
- *  argument and inserts in the GPU stream a wait on the event on the nonlocal.
- */
-void nbnxnInsertNonlocalGpuDependency(const NbnxmGpu* nb, const InteractionLocality interactionLocality)
+void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
 {
     const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
 
@@ -445,14 +438,11 @@ void nbnxnInsertNonlocalGpuDependency(const NbnxmGpu* nb, const InteractionLocal
     {
         if (interactionLocality == InteractionLocality::Local)
         {
-            cudaError_t stat = cudaEventRecord(nb->misc_ops_and_local_H2D_done, deviceStream.stream());
-            CU_RET_ERR(stat, "cudaEventRecord on misc_ops_and_local_H2D_done failed");
+            nb->misc_ops_and_local_H2D_done.markEvent(deviceStream);
         }
         else
         {
-            cudaError_t stat =
-                    cudaStreamWaitEvent(deviceStream.stream(), nb->misc_ops_and_local_H2D_done, 0);
-            CU_RET_ERR(stat, "cudaStreamWaitEvent on misc_ops_and_local_H2D_done failed");
+            nb->misc_ops_and_local_H2D_done.enqueueWaitEvent(deviceStream);
         }
     }
 }
@@ -461,9 +451,6 @@ void nbnxnInsertNonlocalGpuDependency(const NbnxmGpu* nb, const InteractionLocal
 void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
-
-    GMX_ASSERT(atomLocality == AtomLocality::Local || atomLocality == AtomLocality::NonLocal,
-               "Only local and non-local xq transfers are supported");
 
     const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
 
@@ -488,6 +475,11 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
         plist->haveFreshList = false;
+
+        // The event is marked for Local interactions unconditionally,
+        // so it has to be released here because of the early return
+        // for NonLocal interactions.
+        nb->misc_ops_and_local_H2D_done.reset();
 
         return;
     }
@@ -809,11 +801,14 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    cudaError_t stat;
-    int         adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
+    int adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
     /* determine interaction locality from atom locality */
     const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
+    GMX_ASSERT(iloc == InteractionLocality::Local
+                       || (iloc == InteractionLocality::NonLocal && nb->bNonLocalStreamDoneMarked == false),
+               "Non-local stream is indicating that the copy back event is enqueued at the "
+               "beginning of the copy back function.");
 
     /* extract the data */
     cu_atomdata_t*      adat         = nb->atdat;
@@ -824,6 +819,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     /* don't launch non-local copy-back if there was no non-local work to do */
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
+        nb->bNonLocalStreamDoneMarked = false;
         return;
     }
 
@@ -837,10 +833,10 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 
     /* With DD the local D2H transfer can only start after the non-local
        kernel has finished. */
-    if (iloc == InteractionLocality::Local && nb->bUseTwoStreams)
+    if (iloc == InteractionLocality::Local && nb->bNonLocalStreamDoneMarked)
     {
-        stat = cudaStreamWaitEvent(deviceStream.stream(), nb->nonlocal_done, 0);
-        CU_RET_ERR(stat, "cudaStreamWaitEvent on nonlocal_done failed");
+        nb->nonlocal_done.enqueueWaitEvent(deviceStream);
+        nb->bNonLocalStreamDoneMarked = false;
     }
 
     /* DtoH f
@@ -866,8 +862,8 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
        back first. */
     if (iloc == InteractionLocality::NonLocal)
     {
-        stat = cudaEventRecord(nb->nonlocal_done, deviceStream.stream());
-        CU_RET_ERR(stat, "cudaEventRecord on nonlocal_done failed");
+        nb->nonlocal_done.markEvent(deviceStream);
+        nb->bNonLocalStreamDoneMarked = true;
     }
 
     /* only transfer energies in the local stream */
@@ -985,7 +981,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         launchGpuKernel(kernelFn, config, deviceStream, nullptr, "XbufferOps", kernelArgs);
     }
 
-    // TODO: note that this is not necessary when there astreamre no local atoms, that is:
+    // TODO: note that this is not necessary when there are no local atoms, that is:
     // (numAtoms == 0 && interactionLoc == InteractionLocality::Local)
     // but for now we avoid that optimization
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
