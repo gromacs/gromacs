@@ -110,6 +110,7 @@ gmx_add_gtest_executable(${exename}
         orires.cpp
         swapcoords.cpp
         tabulated_bonded_interactions.cpp
+        freezegroups.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
     )

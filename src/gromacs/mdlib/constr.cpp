@@ -786,10 +786,19 @@ bool Constraints::Impl::apply(bool                      bLog,
     }
     wallcycle_stop(wcycle, ewcCONSTR);
 
-    if (!v.empty() && cFREEZE_)
+    const bool haveVelocities = (!v.empty() || econq == ConstraintVariable::Velocities);
+    if (haveVelocities && cFREEZE_)
     {
         /* Set the velocities of frozen dimensions to zero */
-        ArrayRef<RVec> vRef = v.unpaddedArrayRef();
+        ArrayRef<RVec> vRef;
+        if (econq == ConstraintVariable::Velocities)
+        {
+            vRef = xprime.unpaddedArrayRef();
+        }
+        else
+        {
+            vRef = v.unpaddedArrayRef();
+        }
 
         int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
 

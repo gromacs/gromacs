@@ -137,6 +137,8 @@ const MdpFileValues mdpFileValueDatabase_g{
           7,
           8,
           9 } } },
+    // Capped alanine peptide in vacuo (no virtual sites)
+    { "alanine_vacuo", { { { "constraints", "h-bonds" } }, { 1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
     // Zwitterionic glycine in vacuo
     { "glycine_vacuo", { { { "constraints", "h-bonds" } }, { 1, 2, 3, 4, 5, 6, 7, 8, 9 } } },
     // Zwitterionic glycine in vacuo, without constraints
