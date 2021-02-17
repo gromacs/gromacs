@@ -1358,27 +1358,17 @@ void do_force(FILE*                               fplog,
             fr->wholeMoleculeTransform->updateForAtomPbcJumps(x.unpaddedArrayRef(), box);
         }
 
-        // TODO
-        // - vzero is constant, do we need to pass it?
-        // - box_diag should be passed directly to nbnxn_put_on_grid
-        //
-        rvec vzero;
-        clear_rvec(vzero);
-
-        rvec box_diag;
-        box_diag[XX] = box[XX][XX];
-        box_diag[YY] = box[YY][YY];
-        box_diag[ZZ] = box[ZZ][ZZ];
-
         wallcycle_start(wcycle, ewcNS);
         if (!DOMAINDECOMP(cr))
         {
+            const rvec vzero       = { 0.0_real, 0.0_real, 0.0_real };
+            const rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_LOCAL);
             nbnxn_put_on_grid(nbv,
                               box,
                               0,
                               vzero,
-                              box_diag,
+                              boxDiagonal,
                               nullptr,
                               { 0, mdatoms->homenr },
                               -1,
