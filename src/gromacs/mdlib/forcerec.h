@@ -75,13 +75,6 @@ std::vector<real> makeNonBondedParameterLists(const gmx_ffparams_t& forceFieldPa
 std::vector<real> makeLJPmeC6GridCorrectionParameters(const gmx_ffparams_t& forceFieldParams,
                                                       const t_forcerec&     forceRec);
 
-/*! \brief Print the contents of the forcerec to a file
- *
- * \param[in] fplog The log file to print to
- * \param[in] fr    The forcerec structure
- */
-void pr_forcerec(FILE* fplog, t_forcerec* fr);
-
 /*! \brief Set the number of charge groups and atoms.
  *
  * The force calculation needs information on which atoms it
@@ -129,24 +122,5 @@ void init_forcerec(FILE*                            fplog,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
                    real                             print_force);
-
-/*! \brief Check whether molecules are ever distributed over PBC boundaries
- *
- * Note: This covers only the non-DD case. For DD runs, domdec.h offers an
- *       equivalent dd_bonded_molpbc(...) function.
- *
- * \param[in]  ir                 Inputrec structure
- * \param[in]  mtop               Molecular topology
- * \param[in]  mdlog              File for printing
- */
-bool areMoleculesDistributedOverPbc(const t_inputrec& ir, const gmx_mtop_t& mtop, const gmx::MDLogger& mdlog);
-
-/*! \brief Divide exclusions over threads
- *
- * Set the exclusion load for the local exclusions and possibly threads
- * \param[out] fr  The force record
- * \param[in]  top The topology
- */
-void forcerec_set_excl_load(t_forcerec* fr, const gmx_localtop_t* top);
 
 #endif
