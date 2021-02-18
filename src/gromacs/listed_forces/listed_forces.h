@@ -94,6 +94,8 @@ struct t_lambda;
 struct t_mdatoms;
 struct t_nrnb;
 class t_state;
+struct t_disresdata;
+struct t_oriresdata;
 
 namespace gmx
 {
@@ -117,6 +119,8 @@ using BondedFunction = real (*)(int              nbonds,
                                 real*            dvdlambda,
                                 const t_mdatoms* md,
                                 t_fcdata*        fcd,
+                                t_disresdata*    disresdata,
+                                t_oriresdata*    oriresdata,
                                 int*             ddgatindex);
 
 //! Getter for finding a callable CPU function to compute an \c ftype interaction.

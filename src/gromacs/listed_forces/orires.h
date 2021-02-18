@@ -56,6 +56,8 @@ struct t_inputrec;
 struct t_pbc;
 struct t_commrec;
 struct t_oriresdata;
+struct t_disresdata;
+struct t_fcdata;
 class t_state;
 
 namespace gmx
@@ -119,6 +121,8 @@ real orires(int              nfa,
             real*            dvdlambda,
             const t_mdatoms* md,
             t_fcdata*        fcd,
+            t_disresdata*    disresdata,
+            t_oriresdata*    oriresdata,
             int*             global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_orires_dev.

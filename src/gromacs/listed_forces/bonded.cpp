@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,6 +102,8 @@ using BondedFunction = real (*)(int              nbonds,
                                 real*            dvdlambda,
                                 const t_mdatoms* md,
                                 t_fcdata*        fcd,
+                                t_disresdata*    disresdata,
+                                t_oriresdata*    oriresdata,
                                 int*             ddgatindex);
 
 /*! \brief Mysterious CMAP coefficient matrix */
@@ -256,6 +258,8 @@ real morse_bonds(int             nbonds,
                  real*           dvdlambda,
                  const t_mdatoms gmx_unused* md,
                  t_fcdata gmx_unused* fcd,
+                 t_disresdata gmx_unused* disresdata,
+                 t_oriresdata gmx_unused* oriresdata,
                  int gmx_unused* global_atom_index)
 {
     const real one = 1.0;
@@ -324,6 +328,8 @@ real cubic_bonds(int             nbonds,
                  real gmx_unused* dvdlambda,
                  const t_mdatoms gmx_unused* md,
                  t_fcdata gmx_unused* fcd,
+                 t_disresdata gmx_unused* disresdata,
+                 t_oriresdata gmx_unused* oriresdata,
                  int gmx_unused* global_atom_index)
 {
     const real three = 3.0;
@@ -379,7 +385,9 @@ real FENE_bonds(int             nbonds,
                 real gmx_unused* dvdlambda,
                 const t_mdatoms gmx_unused* md,
                 t_fcdata gmx_unused* fcd,
-                int*                 global_atom_index)
+                t_disresdata gmx_unused* disresdata,
+                t_oriresdata gmx_unused* oriresdata,
+                int*                     global_atom_index)
 {
     const real half = 0.5;
     const real one  = 1.0;
@@ -468,6 +476,8 @@ bonds(int             nbonds,
       real*           dvdlambda,
       const t_mdatoms gmx_unused* md,
       t_fcdata gmx_unused* fcd,
+      t_disresdata gmx_unused* disresdata,
+      t_oriresdata gmx_unused* oriresdata,
       int gmx_unused* global_atom_index)
 {
     int  i, ki, ai, aj, type;
@@ -528,6 +538,8 @@ bonds(int             nbonds,
       real gmx_unused* dvdlambda,
       const t_mdatoms gmx_unused* md,
       t_fcdata gmx_unused* fcd,
+      t_disresdata gmx_unused* disresdata,
+      t_oriresdata gmx_unused* oriresdata,
       int gmx_unused* global_atom_index)
 {
     constexpr int                            nfa1 = 3;
@@ -618,6 +630,8 @@ real restraint_bonds(int             nbonds,
                      real*           dvdlambda,
                      const t_mdatoms gmx_unused* md,
                      t_fcdata gmx_unused* fcd,
+                     t_disresdata gmx_unused* disresdata,
+                     t_oriresdata gmx_unused* oriresdata,
                      int gmx_unused* global_atom_index)
 {
     int  i, ki, ai, aj, type;
@@ -706,6 +720,8 @@ real polarize(int              nbonds,
               real*            dvdlambda,
               const t_mdatoms* md,
               t_fcdata gmx_unused* fcd,
+              t_disresdata gmx_unused* disresdata,
+              t_oriresdata gmx_unused* oriresdata,
               int gmx_unused* global_atom_index)
 {
     int  i, ki, ai, aj, type;
@@ -751,6 +767,8 @@ real anharm_polarize(int              nbonds,
                      real*            dvdlambda,
                      const t_mdatoms* md,
                      t_fcdata gmx_unused* fcd,
+                     t_disresdata gmx_unused* disresdata,
+                     t_oriresdata gmx_unused* oriresdata,
                      int gmx_unused* global_atom_index)
 {
     int  i, ki, ai, aj, type;
@@ -805,6 +823,8 @@ real water_pol(int             nbonds,
                real gmx_unused* dvdlambda,
                const t_mdatoms gmx_unused* md,
                t_fcdata gmx_unused* fcd,
+               t_disresdata gmx_unused* disresdata,
+               t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index)
 {
     /* This routine implements anisotropic polarizibility for water, through
@@ -948,6 +968,8 @@ real thole_pol(int             nbonds,
                real gmx_unused* dvdlambda,
                const t_mdatoms* md,
                t_fcdata gmx_unused* fcd,
+               t_disresdata gmx_unused* disresdata,
+               t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index)
 {
     /* Interaction between two pairs of particles with opposite charge */
@@ -999,6 +1021,8 @@ angles(int             nbonds,
        real*           dvdlambda,
        const t_mdatoms gmx_unused* md,
        t_fcdata gmx_unused* fcd,
+       t_disresdata gmx_unused* disresdata,
+       t_oriresdata gmx_unused* oriresdata,
        int gmx_unused* global_atom_index)
 {
     int  i, ai, aj, ak, t1, t2, type;
@@ -1091,6 +1115,8 @@ angles(int             nbonds,
        real gmx_unused* dvdlambda,
        const t_mdatoms gmx_unused* md,
        t_fcdata gmx_unused* fcd,
+       t_disresdata gmx_unused* disresdata,
+       t_oriresdata gmx_unused* oriresdata,
        int gmx_unused* global_atom_index)
 {
     const int                                nfa1 = 4;
@@ -1249,6 +1275,8 @@ real linear_angles(int             nbonds,
                    real*           dvdlambda,
                    const t_mdatoms gmx_unused* md,
                    t_fcdata gmx_unused* fcd,
+                   t_disresdata gmx_unused* disresdata,
+                   t_oriresdata gmx_unused* oriresdata,
                    int gmx_unused* global_atom_index)
 {
     int  i, m, ai, aj, ak, t1, t2, type;
@@ -1319,6 +1347,8 @@ urey_bradley(int             nbonds,
              real*           dvdlambda,
              const t_mdatoms gmx_unused* md,
              t_fcdata gmx_unused* fcd,
+             t_disresdata gmx_unused* disresdata,
+             t_oriresdata gmx_unused* oriresdata,
              int gmx_unused* global_atom_index)
 {
     int  i, m, ai, aj, ak, t1, t2, type, ki;
@@ -1429,6 +1459,8 @@ urey_bradley(int             nbonds,
              real gmx_unused* dvdlambda,
              const t_mdatoms gmx_unused* md,
              t_fcdata gmx_unused* fcd,
+             t_disresdata gmx_unused* disresdata,
+             t_oriresdata gmx_unused* oriresdata,
              int gmx_unused* global_atom_index)
 {
     constexpr int                            nfa1 = 4;
@@ -1571,6 +1603,8 @@ real quartic_angles(int             nbonds,
                     real gmx_unused* dvdlambda,
                     const t_mdatoms gmx_unused* md,
                     t_fcdata gmx_unused* fcd,
+                    t_disresdata gmx_unused* disresdata,
+                    t_oriresdata gmx_unused* oriresdata,
                     int gmx_unused* global_atom_index)
 {
     int  i, j, ai, aj, ak, t1, t2, type;
@@ -1936,6 +1970,8 @@ pdihs(int             nbonds,
       real*           dvdlambda,
       const t_mdatoms gmx_unused* md,
       t_fcdata gmx_unused* fcd,
+      t_disresdata gmx_unused* disresdata,
+      t_oriresdata gmx_unused* oriresdata,
       int gmx_unused* global_atom_index)
 {
     int  t1, t2, t3;
@@ -1997,6 +2033,8 @@ pdihs(int             nbonds,
       real gmx_unused* dvdlambda,
       const t_mdatoms gmx_unused* md,
       t_fcdata gmx_unused* fcd,
+      t_disresdata gmx_unused* disresdata,
+      t_oriresdata gmx_unused* oriresdata,
       int gmx_unused* global_atom_index)
 {
     const int                                nfa1 = 5;
@@ -2111,6 +2149,8 @@ rbdihs(int             nbonds,
        real gmx_unused* dvdlambda,
        const t_mdatoms gmx_unused* md,
        t_fcdata gmx_unused* fcd,
+       t_disresdata gmx_unused* disresdata,
+       t_oriresdata gmx_unused* oriresdata,
        int gmx_unused* global_atom_index)
 {
     const int                                nfa1 = 5;
@@ -2237,6 +2277,8 @@ real idihs(int             nbonds,
            real*           dvdlambda,
            const t_mdatoms gmx_unused* md,
            t_fcdata gmx_unused* fcd,
+           t_disresdata gmx_unused* disresdata,
+           t_oriresdata gmx_unused* oriresdata,
            int gmx_unused* global_atom_index)
 {
     int  i, type, ai, aj, ak, al;
@@ -2403,6 +2445,8 @@ real angres(int             nbonds,
             real*           dvdlambda,
             const t_mdatoms gmx_unused* md,
             t_fcdata gmx_unused* fcd,
+            t_disresdata gmx_unused* disresdata,
+            t_oriresdata gmx_unused* oriresdata,
             int gmx_unused* global_atom_index)
 {
     return low_angres<flavor>(nbonds, forceatoms, forceparams, x, f, fshift, pbc, lambda, dvdlambda, FALSE);
@@ -2420,6 +2464,8 @@ real angresz(int             nbonds,
              real*           dvdlambda,
              const t_mdatoms gmx_unused* md,
              t_fcdata gmx_unused* fcd,
+             t_disresdata gmx_unused* disresdata,
+             t_oriresdata gmx_unused* oriresdata,
              int gmx_unused* global_atom_index)
 {
     return low_angres<flavor>(nbonds, forceatoms, forceparams, x, f, fshift, pbc, lambda, dvdlambda, TRUE);
@@ -2437,6 +2483,8 @@ real dihres(int             nbonds,
             real*           dvdlambda,
             const t_mdatoms gmx_unused* md,
             t_fcdata gmx_unused* fcd,
+            t_disresdata gmx_unused* disresdata,
+            t_oriresdata gmx_unused* oriresdata,
             int gmx_unused* global_atom_index)
 {
     real vtot = 0;
@@ -2530,6 +2578,8 @@ real unimplemented(int gmx_unused nbonds,
                    real gmx_unused* dvdlambda,
                    const t_mdatoms gmx_unused* md,
                    t_fcdata gmx_unused* fcd,
+                   t_disresdata gmx_unused* disresdata,
+                   t_oriresdata gmx_unused* oriresdata,
                    int gmx_unused* global_atom_index)
 {
     gmx_impl("*** you are using a not implemented function");
@@ -2547,6 +2597,8 @@ real restrangles(int             nbonds,
                  real gmx_unused* dvdlambda,
                  const t_mdatoms gmx_unused* md,
                  t_fcdata gmx_unused* fcd,
+                 t_disresdata gmx_unused* disresdata,
+                 t_oriresdata gmx_unused* oriresdata,
                  int gmx_unused* global_atom_index)
 {
     int    i, d, ai, aj, ak, type, m;
@@ -2649,6 +2701,8 @@ real restrdihs(int             nbonds,
                real gmx_unused* dvlambda,
                const t_mdatoms gmx_unused* md,
                t_fcdata gmx_unused* fcd,
+               t_disresdata gmx_unused* disresdata,
+               t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index)
 {
     int  i, d, type, ai, aj, ak, al;
@@ -2771,6 +2825,8 @@ real cbtdihs(int             nbonds,
              real gmx_unused* dvdlambda,
              const t_mdatoms gmx_unused* md,
              t_fcdata gmx_unused* fcd,
+             t_disresdata gmx_unused* disresdata,
+             t_oriresdata gmx_unused* oriresdata,
              int gmx_unused* global_atom_index)
 {
     int  type, ai, aj, ak, al, i, d;
@@ -2886,6 +2942,8 @@ rbdihs(int             nbonds,
        real*           dvdlambda,
        const t_mdatoms gmx_unused* md,
        t_fcdata gmx_unused* fcd,
+       t_disresdata gmx_unused* disresdata,
+       t_oriresdata gmx_unused* oriresdata,
        int gmx_unused* global_atom_index)
 {
     const real c0 = 0.0, c1 = 1.0, c2 = 2.0, c3 = 3.0, c4 = 4.0, c5 = 5.0;
@@ -3036,6 +3094,8 @@ real cmap_dihs(int                 nbonds,
                real gmx_unused* dvdlambda,
                const t_mdatoms gmx_unused* md,
                t_fcdata gmx_unused* fcd,
+               t_disresdata gmx_unused* disresdata,
+               t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index)
 {
     int i, n;
@@ -3440,6 +3500,8 @@ real g96bonds(int             nbonds,
               real*           dvdlambda,
               const t_mdatoms gmx_unused* md,
               t_fcdata gmx_unused* fcd,
+              t_disresdata gmx_unused* disresdata,
+              t_oriresdata gmx_unused* oriresdata,
               int gmx_unused* global_atom_index)
 {
     int  i, ki, ai, aj, type;
@@ -3497,6 +3559,8 @@ real g96angles(int             nbonds,
                real*           dvdlambda,
                const t_mdatoms gmx_unused* md,
                t_fcdata gmx_unused* fcd,
+               t_disresdata gmx_unused* disresdata,
+               t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index)
 {
     int  i, ai, aj, ak, type, m, t1, t2;
@@ -3564,6 +3628,8 @@ real cross_bond_bond(int             nbonds,
                      real gmx_unused* dvdlambda,
                      const t_mdatoms gmx_unused* md,
                      t_fcdata gmx_unused* fcd,
+                     t_disresdata gmx_unused* disresdata,
+                     t_oriresdata gmx_unused* oriresdata,
                      int gmx_unused* global_atom_index)
 {
     /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
@@ -3636,6 +3702,8 @@ real cross_bond_angle(int             nbonds,
                       real gmx_unused* dvdlambda,
                       const t_mdatoms gmx_unused* md,
                       t_fcdata gmx_unused* fcd,
+                      t_disresdata gmx_unused* disresdata,
+                      t_oriresdata gmx_unused* oriresdata,
                       int gmx_unused* global_atom_index)
 {
     /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
@@ -3772,6 +3840,8 @@ real tab_bonds(int             nbonds,
                real*           dvdlambda,
                const t_mdatoms gmx_unused* md,
                t_fcdata*                   fcd,
+               t_disresdata gmx_unused* disresdata,
+               t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index)
 {
     int  i, ki, ai, aj, type, table;
@@ -3827,6 +3897,8 @@ real tab_angles(int             nbonds,
                 real*           dvdlambda,
                 const t_mdatoms gmx_unused* md,
                 t_fcdata*                   fcd,
+                t_disresdata gmx_unused* disresdata,
+                t_oriresdata gmx_unused* oriresdata,
                 int gmx_unused* global_atom_index)
 {
     int  i, ai, aj, ak, t1, t2, type, table;
@@ -3907,6 +3979,8 @@ real tab_dihs(int             nbonds,
               real*           dvdlambda,
               const t_mdatoms gmx_unused* md,
               t_fcdata*                   fcd,
+              t_disresdata gmx_unused* disresdata,
+              t_oriresdata gmx_unused* oriresdata,
               int gmx_unused* global_atom_index)
 {
     int  i, type, ai, aj, ak, al, table;
@@ -4083,13 +4157,15 @@ real calculateSimpleBond(const int           ftype,
                          real*               dvdlambda,
                          const t_mdatoms*    md,
                          t_fcdata*           fcd,
+                         t_disresdata*       disresdata,
+                         t_oriresdata*       oriresdata,
                          int gmx_unused*          global_atom_index,
                          const BondedKernelFlavor bondedKernelFlavor)
 {
     const BondedInteractions& bonded = c_bondedInteractionFunctionsPerFlavor[bondedKernelFlavor][ftype];
 
     real v = bonded.function(
-            numForceatoms, forceatoms, forceparams, x, f, fshift, pbc, lambda, dvdlambda, md, fcd, global_atom_index);
+            numForceatoms, forceatoms, forceparams, x, f, fshift, pbc, lambda, dvdlambda, md, fcd, disresdata, oriresdata, global_atom_index);
 
     return v;
 }

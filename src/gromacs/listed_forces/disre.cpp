@@ -415,48 +415,48 @@ void calc_disres_R_6(const t_commrec*      cr,
     dd->sumviol = 0;
 }
 
-real ta_disres(int             nfa,
-               const t_iatom   forceatoms[],
-               const t_iparams ip[],
-               const rvec      x[],
-               rvec4           f[],
-               rvec            fshift[],
-               const t_pbc*    pbc,
+real ta_disres(int              nfa,
+               const t_iatom*   forceatoms,
+               const t_iparams* ip,
+               const rvec*      x,
+               rvec4*           f,
+               rvec*            fshift,
+               const t_pbc*     pbc,
                real gmx_unused lambda,
                real gmx_unused* dvdlambda,
                const t_mdatoms gmx_unused* md,
-               t_fcdata*                   fcd,
+               t_fcdata gmx_unused* fcd,
+               t_disresdata*        disresdata,
+               t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index)
 {
     const real seven_three = 7.0 / 3.0;
 
-    rvec          dx;
-    real          weight_rt_1;
-    real          smooth_fc, Rt, Rtav, rt2, *Rtl_6, *Rt_6, *Rtav_6;
-    real          k0, f_scal = 0, fmax_scal, fk_scal, fij;
-    real          tav_viol, instant_viol, mixed_viol, violtot, vtot;
-    real          tav_viol_Rtav7, instant_viol_Rtav7;
-    real          up1, up2, low;
-    gmx_bool      bConservative, bMixed, bViolation;
-    t_disresdata* dd;
-    int           dr_weighting;
-    gmx_bool      dr_bMixed;
+    rvec     dx;
+    real     weight_rt_1;
+    real     smooth_fc, Rt, Rtav, rt2, *Rtl_6, *Rt_6, *Rtav_6;
+    real     k0, f_scal = 0, fmax_scal, fk_scal, fij;
+    real     tav_viol, instant_viol, mixed_viol, violtot, vtot;
+    real     tav_viol_Rtav7, instant_viol_Rtav7;
+    real     up1, up2, low;
+    gmx_bool bConservative, bMixed, bViolation;
+    int      dr_weighting;
+    gmx_bool dr_bMixed;
 
-    dd           = fcd->disres;
-    dr_weighting = dd->dr_weighting;
-    dr_bMixed    = dd->dr_bMixed;
-    Rtl_6        = dd->Rtl_6;
-    Rt_6         = dd->Rt_6;
-    Rtav_6       = dd->Rtav_6;
+    dr_weighting = disresdata->dr_weighting;
+    dr_bMixed    = disresdata->dr_bMixed;
+    Rtl_6        = disresdata->Rtl_6;
+    Rt_6         = disresdata->Rt_6;
+    Rtav_6       = disresdata->Rtav_6;
 
     tav_viol = instant_viol = mixed_viol = tav_viol_Rtav7 = instant_viol_Rtav7 = 0;
 
-    smooth_fc = dd->dr_fc;
-    if (dd->dr_tau != 0)
+    smooth_fc = disresdata->dr_fc;
+    if (disresdata->dr_tau != 0)
     {
         /* scaling factor to smoothly turn on the restraint forces *
          * when using time averaging                               */
-        smooth_fc *= (1.0 - dd->exp_min_t_tau);
+        smooth_fc *= (1.0 - disresdata->exp_min_t_tau);
     }
 
     violtot = 0;
@@ -464,7 +464,7 @@ real ta_disres(int             nfa,
 
     /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
      * the total number of atoms pairs is nfa/3                          */
-    int faOffset = static_cast<int>(forceatoms - dd->forceatomsStart);
+    int faOffset = static_cast<int>(forceatoms - disresdata->forceatomsStart);
     for (int fa = 0; fa < nfa; fa += 3)
     {
         int type  = forceatoms[fa];
@@ -474,7 +474,7 @@ real ta_disres(int             nfa,
         low       = ip[type].disres.low;
         k0        = smooth_fc * ip[type].disres.kfac;
 
-        int res = type - dd->type_min;
+        int res = type - disresdata->type_min;
 
         /* save some flops when there is only one pair */
         if (ip[type].disres.type != 2)
@@ -605,12 +605,14 @@ real ta_disres(int             nfa,
             {
                 if (!dr_bMixed)
                 {
-                    weight_rt_1 *= std::pow(dd->rm3tav[pair], seven_three);
+                    weight_rt_1 *= std::pow(disresdata->rm3tav[pair], seven_three);
                 }
                 else
                 {
-                    weight_rt_1 *= tav_viol_Rtav7 * std::pow(dd->rm3tav[pair], seven_three)
-                                   + instant_viol_Rtav7 / (dd->rt[pair] * gmx::power6(dd->rt[pair]));
+                    weight_rt_1 *=
+                            tav_viol_Rtav7 * std::pow(disresdata->rm3tav[pair], seven_three)
+                            + instant_viol_Rtav7
+                                      / (disresdata->rt[pair] * gmx::power6(disresdata->rt[pair]));
                 }
             }
 
@@ -632,7 +634,7 @@ real ta_disres(int             nfa,
     }
 
 #pragma omp atomic
-    dd->sumviol += violtot;
+    disresdata->sumviol += violtot;
 
     /* Return energy */
     return vtot;

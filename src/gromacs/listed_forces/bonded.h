@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
  * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,8 @@ struct t_fcdata;
 struct t_mdatom;
 struct t_nrnb;
 struct t_pbc;
+struct t_disresdata;
+struct t_oriresdata;
 
 namespace gmx
 {
@@ -127,6 +129,8 @@ real cmap_dihs(int                 nbonds,
                real gmx_unused* dvdlambda,
                const t_mdatoms gmx_unused* md,
                t_fcdata gmx_unused* fcd,
+               t_disresdata gmx_unused* disresdata,
+               t_oriresdata gmx_unused* oriresdata,
                int gmx_unused* global_atom_index);
 
 /*! \brief For selecting which flavor of bonded kernel is used for simple bonded types */
@@ -180,6 +184,8 @@ real calculateSimpleBond(int                 ftype,
                          real*               dvdlambda,
                          const t_mdatoms*    md,
                          t_fcdata*           fcd,
+                         t_disresdata*       disresdata,
+                         t_oriresdata*       oriresdata,
                          int gmx_unused*    global_atom_index,
                          BondedKernelFlavor bondedKernelFlavor);
 

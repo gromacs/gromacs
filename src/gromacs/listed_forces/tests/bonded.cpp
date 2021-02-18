@@ -606,6 +606,8 @@ protected:
                                                 &output.dvdlambda,
                                                 &mdatoms,
                                                 /* struct t_fcdata * */ nullptr,
+                                                nullptr,
+                                                nullptr,
                                                 ddgatindex.data(),
                                                 flavor);
             // Internal consistency test of both test input
