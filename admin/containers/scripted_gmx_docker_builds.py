@@ -405,7 +405,7 @@ def prepare_venv(version: StrictVersion) -> typing.Sequence[str]:
     # WARNING: Please keep this list synchronized with python_packaging/requirements-test.txt
     # TODO: Get requirements.txt from an input argument.
     commands.append(f"""{venv_path}/bin/python -m pip install --upgrade \
-            'cmake>=3.13' \
+            'cmake>=3.16.3' \
             'flake8>=3.7.7' \
             'gcovr>=4.2' \
             'mpi4py>=3.0.3' \

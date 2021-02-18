@@ -3,6 +3,7 @@
 #   OS: Ubuntu oldest supported
 #   Compiler: Clang
 #   Build type: Debug
+#   CMake: oldest supported
 #   GPU: no
 #   SIMD: no
 #   Scope: configure, build, unit tests
@@ -22,7 +23,7 @@ simple-build:
   stage: pre-build
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.16.3/bin/cmake
     KUBERNETES_CPU_LIMIT: 8
     KUBERNETES_CPU_REQUEST: 4
     KUBERNETES_MEMORY_REQUEST: 8Gi

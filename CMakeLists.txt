@@ -34,7 +34,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.16.3)
 cmake_policy(SET CMP0074 NEW) # From CMake 3.12
 cmake_policy(SET CMP0068 NEW) # From CMake-3.9
 

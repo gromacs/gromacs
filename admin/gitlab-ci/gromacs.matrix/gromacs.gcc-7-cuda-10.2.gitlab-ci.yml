@@ -28,7 +28,7 @@ gromacs:gcc-7-cuda-10.2:configure:
     - .rules:merge-and-post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     COMPILER_MAJOR_VERSION: 7
 
@@ -41,7 +41,7 @@ gromacs:gcc-7-cuda-10.2:build:
     - .rules:merge-and-post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
     - job: gromacs:gcc-7-cuda-10.2:configure
 
@@ -51,7 +51,7 @@ gromacs:gcc-7-cuda-10.2:test:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
   tags:
@@ -65,7 +65,7 @@ gromacs:gcc-7-cuda-10.2:test-gpucommupd:
     - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     GMX_GPU_DD_COMMS: 1
@@ -82,7 +82,7 @@ gromacs:gcc-7-cuda-10.2:regressiontest:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -100,7 +100,7 @@ gromacs:gcc-7-cuda-10.2:regressiontest-gpucommupd-tMPI:
     - .rules:post-merge-acceptance
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-gcc-7-cuda-10.2
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
     KUBERNETES_EXTENDED_RESOURCE_LIMIT: 2
     REGRESSIONTEST_PME_RANK_NUMBER: 0

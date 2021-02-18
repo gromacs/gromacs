@@ -23,7 +23,7 @@ gromacs:clang-9-mpi:configure:
    - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     COMPILER_MAJOR_VERSION: 9
     CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
 
@@ -38,7 +38,7 @@ gromacs:clang-9-mpi:build:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   needs:
     - job: gromacs:clang-9-mpi:configure
 
@@ -48,7 +48,7 @@ gromacs:clang-9-mpi:test:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -60,7 +60,7 @@ gromacs:clang-9:regressiontest:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-9
   variables:
-    CMAKE: /usr/local/cmake-3.15.7/bin/cmake
+    CMAKE: /usr/local/cmake-3.17.2/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
   tags:

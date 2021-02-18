@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2020, by the GROMACS development team, led by
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,28 +42,17 @@ if(FIND_PACKAGE_MESSAGE_DETAILS_Python3)
     set(Python3_FIND_QUIETLY ON)
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
-if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.15)
-    if (NOT Python3_FIND_STRATEGY)
-        # If the user provides a hint for the Python installation with Python3_ROOT_DIR,
-        # prevent FindPython3 from overriding the choice with a newer Python version
-        # when CMP0094 is set to OLD.
-        set(Python3_FIND_STRATEGY LOCATION)
-    endif ()
-    if(NOT Python3_FIND_VIRTUALENV)
-        # We advocate using Python venvs to manage package availability, so by default
-        # we want to preferentially discover user-space software.
-        set(Python3_FIND_VIRTUALENV FIRST)
-    endif()
-else()
-    if(NOT Python3_FIND_REGISTRY)
-        # We advocate using Python venvs to manage package availability, so by default
-        # we want to preferentially discover user-space software.
-        set(Python3_FIND_REGISTRY LAST)
-    endif()
-    # Make package discovery consistent with Unix behavior and our documented
-    # suggestions for installing dependencies.
-    set(CMAKE_FIND_FRAMEWORK LAST)
+if (NOT Python3_FIND_STRATEGY)
+    # If the user provides a hint for the Python installation with Python3_ROOT_DIR,
+    # prevent FindPython3 from overriding the choice with a newer Python version
+    # when CMP0094 is set to OLD.
+    set(Python3_FIND_STRATEGY LOCATION)
 endif ()
+if(NOT Python3_FIND_VIRTUALENV)
+    # We advocate using Python venvs to manage package availability, so by default
+    # we want to preferentially discover user-space software.
+    set(Python3_FIND_VIRTUALENV FIRST)
+endif()
 if(GMX_PYTHON_PACKAGE)
     find_package(Python3 3.6 COMPONENTS Interpreter Development)
     if (NOT Python3_FOUND OR NOT Python3_Development_FOUND)

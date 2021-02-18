@@ -20,7 +20,7 @@ gromacs:clang-ASAN:configure:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     COMPILER_MAJOR_VERSION: 8
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
 
@@ -33,7 +33,7 @@ gromacs:clang-ASAN:build:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
     - k8s-scilifelab
   needs:
@@ -46,7 +46,7 @@ gromacs:clang-ASAN:test:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
   tags:
     - k8s-scilifelab
@@ -60,7 +60,7 @@ gromacs:clang-ASAN:regressiontest:
     - .rules:merge-requests
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-18.04-llvm-8-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.13.0/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   tags:
     - k8s-scilifelab
   needs:

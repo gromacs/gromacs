@@ -1,6 +1,6 @@
 # Python package requirements for complete build, installation, and testing of
 # gmxapi functionality.
-cmake>=3.13
+cmake>=3.16.3
 flake8>=3.7.7
 networkx>=2.0
 numpy>=1

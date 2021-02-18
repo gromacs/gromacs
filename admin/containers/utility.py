@@ -86,7 +86,7 @@ parsers for tools.
     Instead, inherit from it with the *parents* argument to :py:class:`argparse.ArgumentParser`
 """
 
-parser.add_argument('--cmake', nargs='*', type=str, default=['3.13.0', '3.15.7', '3.17.2'],
+parser.add_argument('--cmake', nargs='*', type=str, default=['3.16.3', '3.17.2', '3.18.4'], # new minimum required versions
                     help='Selection of CMake version to provide to base image')
 
 compiler_group = parser.add_mutually_exclusive_group()

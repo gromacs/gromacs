@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018, by the GROMACS development team, led by
+# Copyright (c) 2018,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -88,12 +88,7 @@ mark_as_advanced(clFFT_ROOT_DIR clFFT_LIBRARY clFFT_INCLUDE_DIR)
 # that was found was actually built in this project.
 if(clFFT_FOUND)
     add_library(clFFT INTERFACE IMPORTED)
-    # When we depend on cmake 3.11, this work-around (specific to
-    # imported targets) can be done more simply by using the normal
-    # target_include_directories() and target_link_libraries()
-    set_target_properties(clFFT PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${clFFT_INCLUDE_DIR}"
-        INTERFACE_LINK_LIBRARIES "${clFFT_LIBRARY};${CMAKE_DL_LIBS}"
-        )
+    target_link_libraries(clFFT INTERFACE "${clFFT_LIBRARY}" "${CMAKE_DL_LIBS}")
+    target_include_directories(clFFT SYSTEM BEFORE INTERFACE "${clFFT_INCLUDE_DIR}")
 endif()
 

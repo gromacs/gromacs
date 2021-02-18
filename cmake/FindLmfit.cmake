@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2016,2018, by the GROMACS development team, led by
+# Copyright (c) 2016,2018,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -97,10 +97,8 @@ mark_as_advanced(LMFIT_INCLUDE_DIR LMFIT_LIBRARY)
 # library built in the main project.
 if (LMFIT_FOUND)
     add_library(lmfit INTERFACE IMPORTED)
-    set_target_properties(lmfit PROPERTIES
-        INTERFACE_INCLUDE_DIRECTORIES "${LMFIT_INCLUDE_DIR}"
-        INTERFACE_LINK_LIBRARIES "${LMFIT_LIBRARY}"
-        )
+    target_link_libraries(lmfit INTERFACE "${LMFIT_LIBRARY}")
+    target_include_directories(lmfit SYSTEM BEFORE INTERFACE "${LMFIT_INCLUDE_DIR}")
 endif()
 
 cmake_pop_check_state()

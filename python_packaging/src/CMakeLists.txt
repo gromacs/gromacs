@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,7 +38,7 @@
 # configure and run CMake. CMake could be invoked directly by the user or a
 # parent package, but the Python distribution would not be packaged automatically.
 # Reference https://gitlab.com/gromacs/gromacs/-/issues/2896 for additional discussion.
-cmake_minimum_required(VERSION 3.13.0)
+cmake_minimum_required(VERSION 3.16.3)
 
 # This needs to be set before project() in order to pick up toolchain files
 #list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
