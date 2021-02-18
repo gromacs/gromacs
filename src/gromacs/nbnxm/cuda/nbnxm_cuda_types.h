@@ -59,19 +59,6 @@
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
-/*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
- *
- *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
- */
-#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
-#    define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
-#endif
-/*! \brief Default for the prune kernel's j4 processing concurrency.
- *
- *  Initialized using the #GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro which allows compile-time override.
- */
-const int c_cudaPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
-
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
 /*! \brief cluster size = number of atoms per cluster. */

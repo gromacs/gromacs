@@ -63,6 +63,16 @@
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
+/*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
+ *
+ *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override with the default value of 4.
+ */
+#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#    define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
+#endif
+//! Default for the prune kernel's j4 processing concurrency.
+static constexpr int c_pruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY;
+
 /** \internal
  * \brief Parameters required for the GPU nonbonded calculations.
  */

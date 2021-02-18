@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,19 +40,15 @@
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_nbnxm
  */
-#ifndef NBNXN_OPENCL_CONSTS_H
-#define NBNXN_OPENCL_CONSTS_H
+#ifndef NBNXN_OCL_CONSTS_H
+#define NBNXN_OCL_CONSTS_H
 
-/*! \internal \file
- * \brief Macros defining platform-dependent defaults for the prune kernel's j4 processing concurrency.
+/*! \brief Macro definining default for the prune kernel's j4 processing concurrency.
  *
- *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override.
- *
- * \ingroup module_nbnxm
+ *  The GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY macro allows compile-time override with the default value of 4.
  */
-/*! @{ */
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT 4
-// The following has to match getOclPruneKernelJ4Concurrency
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT
-/*! @} */
+#ifndef GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
+#    define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY 4
+#endif
+
 #endif
