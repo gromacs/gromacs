@@ -54,7 +54,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/cyclecounter.h"
