@@ -111,9 +111,9 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
      */
     if (!stepWork.useGpuFBufferOps)
     {
-        GMX_ASSERT(adat->f.elementSize() == sizeof(float3),
+        GMX_ASSERT(adat->f.elementSize() == sizeof(Float3),
                    "The size of the force buffer element should be equal to the size of float3.");
-        copyFromDeviceBuffer(reinterpret_cast<float3*>(nbatom->out[0].f.data()) + adatBegin,
+        copyFromDeviceBuffer(reinterpret_cast<Float3*>(nbatom->out[0].f.data()) + adatBegin,
                              &adat->f,
                              adatBegin,
                              adatLen,
@@ -197,10 +197,10 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     getGpuAtomRange(adat, atomLocality, &adatBegin, &adatLen);
 
     /* HtoD x, q */
-    GMX_ASSERT(adat->xq.elementSize() == sizeof(float4),
+    GMX_ASSERT(adat->xq.elementSize() == sizeof(Float4),
                "The size of the xyzq buffer element should be equal to the size of float4.");
     copyToDeviceBuffer(&adat->xq,
-                       reinterpret_cast<const float4*>(nbatom->x().data()) + adatBegin,
+                       reinterpret_cast<const Float4*>(nbatom->x().data()) + adatBegin,
                        adatBegin,
                        adatLen,
                        deviceStream,

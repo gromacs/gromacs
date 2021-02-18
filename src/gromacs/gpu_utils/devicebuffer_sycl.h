@@ -383,7 +383,7 @@ cl::sycl::event fillSyclBufferWithNull(cl::sycl::buffer<ValueType, 1>& buffer,
 
 //! \brief Helper function to clear device buffer of type float3.
 template<>
-inline cl::sycl::event fillSyclBufferWithNull(cl::sycl::buffer<float3, 1>& buffer,
+inline cl::sycl::event fillSyclBufferWithNull(cl::sycl::buffer<Float3, 1>& buffer,
                                               size_t                       startingOffset,
                                               size_t                       numValues,
                                               cl::sycl::queue              queue)

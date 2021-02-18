@@ -54,14 +54,13 @@ using DeviceTexture = void*;
 //! \brief Single GPU call timing event, not used with SYCL
 using CommandEvent = void*;
 
+// TODO: Issue #3312
 //! Convenience alias.
-using float4 = cl::sycl::float4;
-
+using Float4 = cl::sycl::float4;
 //! Convenience alias. Not using cl::sycl::float3 due to alignment issues.
-using float3 = gmx::RVec;
-
+using Float3 = gmx::RVec;
 //! Convenience alias for cl::sycl::float2
-using float2 = cl::sycl::float2;
+using Float2 = cl::sycl::float2;
 
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.

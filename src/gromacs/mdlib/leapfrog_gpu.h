@@ -53,6 +53,7 @@
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/devicebuffer_sycl.h"
 #    include "gromacs/gpu_utils/gputraits_sycl.h"
+using float3 = Float3;
 #endif
 
 #include <memory>

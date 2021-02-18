@@ -62,8 +62,8 @@ namespace Nbnxm
  */
 template<bool haveFreshList>
 auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
-                          DeviceAccessor<float4, mode::read>            a_xq,
-                          DeviceAccessor<float3, mode::read>            a_shiftVec,
+                          DeviceAccessor<Float4, mode::read>            a_xq,
+                          DeviceAccessor<Float3, mode::read>            a_shiftVec,
                           DeviceAccessor<nbnxn_cj4_t, mode::read_write> a_plistCJ4,
                           DeviceAccessor<nbnxn_sci_t, mode::read>       a_plistSci,
                           DeviceAccessor<unsigned int, haveFreshList ? mode::write : mode::read> a_plistIMask,
@@ -79,7 +79,7 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
     cgh.require(a_plistIMask);
 
     /* shmem buffer for i x+q pre-loading */
-    cl::sycl::accessor<float4, 2, mode::read_write, target::local> sm_xq(
+    cl::sycl::accessor<Float4, 2, mode::read_write, target::local> sm_xq(
             cl::sycl::range<2>(c_nbnxnGpuNumClusterPerSupercluster, c_clSize), cgh);
 
     constexpr int warpSize = c_clSize * c_clSize / 2;
@@ -125,9 +125,9 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
 
                 /* We don't need q, but using float4 in shmem avoids bank conflicts.
                    (but it also wastes L2 bandwidth). */
-                const float4 xq    = a_xq[ai];
-                const float3 shift = a_shiftVec[nbSci.shift];
-                const float4 xi(xq[0] + shift[0], xq[1] + shift[1], xq[2] + shift[2], xq[3]);
+                const Float4 xq    = a_xq[ai];
+                const Float3 shift = a_shiftVec[nbSci.shift];
+                const Float4 xi(xq[0] + shift[0], xq[1] + shift[1], xq[2] + shift[2], xq[3]);
                 sm_xq[tidxj + i][tidxi] = xi;
             }
         }
@@ -170,17 +170,17 @@ auto nbnxmKernelPruneOnly(cl::sycl::handler&                            cgh,
                         const int aj = cj * c_clSize + tidxj;
 
                         /* load j atom data */
-                        const float4 tmp = a_xq[aj];
-                        const float3 xj(tmp[0], tmp[1], tmp[2]);
+                        const Float4 tmp = a_xq[aj];
+                        const Float3 xj(tmp[0], tmp[1], tmp[2]);
 
                         for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                         {
                             if (imaskCheck & mask_ji)
                             {
                                 // load i-cluster coordinates from shmem
-                                const float4 xi = sm_xq[i][tidxi];
+                                const Float4 xi = sm_xq[i][tidxi];
                                 // distance between i and j atoms
-                                float3 rv(xi[0], xi[1], xi[2]);
+                                Float3 rv(xi[0], xi[1], xi[2]);
                                 rv -= xj;
                                 const float r2 = norm2(rv);
 

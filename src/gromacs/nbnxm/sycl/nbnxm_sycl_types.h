@@ -68,7 +68,7 @@ struct nb_staging_t
     //! electrostatic energy
     float* e_el = nullptr;
     //! shift forces
-    float3* fshift = nullptr;
+    Float3* fshift = nullptr;
 };
 
 /** \internal
@@ -84,9 +84,9 @@ struct sycl_atomdata_t
     int numAlloc;
 
     //! atom coordinates + charges, size \ref natoms
-    DeviceBuffer<float4> xq;
+    DeviceBuffer<Float4> xq;
     //! force output array, size \ref natoms
-    DeviceBuffer<float3> f;
+    DeviceBuffer<Float3> f;
 
     //! LJ energy output, size 1
     DeviceBuffer<float> eLJ;
@@ -94,17 +94,17 @@ struct sycl_atomdata_t
     DeviceBuffer<float> eElec;
 
     //! shift forces
-    DeviceBuffer<float3> fShift;
+    DeviceBuffer<Float3> fShift;
 
     //! number of atom types
     int numTypes;
     //! atom type indices, size \ref natoms
     DeviceBuffer<int> atomTypes;
     //! sqrt(c6),sqrt(c12) size \ref natoms
-    DeviceBuffer<float2> ljComb;
+    DeviceBuffer<Float2> ljComb;
 
     //! shifts
-    DeviceBuffer<float3> shiftVec;
+    DeviceBuffer<Float3> shiftVec;
     //! true if the shift vector has been uploaded
     bool shiftVecUploaded;
 };
