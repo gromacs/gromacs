@@ -151,8 +151,6 @@ struct NbnxmGpu
     //! true when we did rolling pruning (at the previous step)
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> didRollingPrune = { { false } };
 
-    /*! \brief Events used for synchronization. Would be deprecated in SYCL. */
-    /*! \{ */
     /*! \brief Event triggered when the non-local non-bonded
      * kernel is done (and the local transfer can proceed) */
     GpuEventSynchronizer nonlocal_done;
@@ -162,7 +160,6 @@ struct NbnxmGpu
      * x/q H2D, buffer op initialization in local stream that is
      * required also by nonlocal stream ) */
     GpuEventSynchronizer misc_ops_and_local_H2D_done;
-    /*! \} */
 
     /*! \brief True if there is work for the current domain in the
      * respective locality.
