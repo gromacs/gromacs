@@ -1,7 +1,6 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team.
  * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -33,49 +32,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \internal \file
- *  \brief Function definitions for non-GPU builds
+ * \brief Implements stubs of high-level PME GPU functions for SYCL.
  *
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Andrey Alekseenko <al42and@gmail.com>
+ *
+ * \ingroup module_ewald
  */
 #include "gmxpre.h"
 
-#include "gpu_utils.h"
+#include "gromacs/ewald/ewald_utils.h"
 
-#include "config.h"
+#include "pme_gpu_3dfft.h"
+#include "pme_gpu_internal.h"
+#include "pme_gpu_program_impl.h"
 
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/stringutil.h"
-
-#ifdef _MSC_VER
-#    pragma warning(disable : 6237)
-#endif
-
-/*! \brief Help build a descriptive message in \c error if there are
- * \c errorReasons why nonbondeds on a GPU are not supported.
- *
- * \returns Whether the lack of errorReasons indicate there is support. */
-static bool addMessageIfNotSupported(gmx::ArrayRef<const std::string> errorReasons, std::string* error)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceContext& deviceContext) :
+    deviceContext_(deviceContext),
+    warpSize_(0),
+    spreadWorkGroupSize(0),
+    gatherWorkGroupSize(0),
+    solveMaxWorkGroupSize(0)
 {
-    bool isSupported = errorReasons.empty();
-    if (!isSupported && error)
-    {
-        *error = "Nonbonded interactions cannot run on GPUs: ";
-        *error += joinStrings(errorReasons, "; ") + ".";
-    }
-    return isSupported;
+    // SYCL-TODO
 }
 
-bool buildSupportsNonbondedOnGpu(std::string* error)
+PmeGpuProgramImpl::~PmeGpuProgramImpl() = default;
+
+// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
+
+GpuParallel3dFft::GpuParallel3dFft(PmeGpu const* /*pmeGpu*/, int /*gridIndex*/)
 {
-    std::vector<std::string> errorReasons;
-    if (GMX_DOUBLE)
-    {
-        errorReasons.emplace_back("double precision");
-    }
-    if (!GMX_GPU)
-    {
-        errorReasons.emplace_back("non-GPU build of GROMACS");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
+    GMX_THROW(gmx::NotImplementedError("PME is not implemented in SYCL"));
 }
+
+GpuParallel3dFft::~GpuParallel3dFft() = default;
+
+void GpuParallel3dFft::perform3dFft(gmx_fft_direction /*dir*/, CommandEvent* /*timingEvent*/)
+{
+    GMX_THROW(gmx::NotImplementedError("Not implemented on SYCL yet"));
+}
+
+#pragma clang diagnostic pop

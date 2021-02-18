@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,10 @@
 
 #if GMX_GPU_OPENCL
 #    include "opencl/nbnxm_ocl_types.h"
+#endif
+
+#if GMX_GPU_SYCL
+#    include "sycl/nbnxm_sycl_types.h"
 #endif
 
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -246,8 +250,7 @@ static void countPruneKernelTime(GpuTimers*                 timers,
  * \param[out] e_el           Variable to accumulate electrostatic energy into
  * \param[out] fshift         Pointer to the array of shift forces to accumulate into
  */
-template<typename StagingData>
-static inline void gpu_reduce_staged_outputs(const StagingData&        nbst,
+static inline void gpu_reduce_staged_outputs(const nb_staging_t&       nbst,
                                              const InteractionLocality iLocality,
                                              const bool                reduceEnergies,
                                              const bool                reduceFshift,
@@ -435,9 +438,12 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
         }
     }
 
-    /* Always reset both pruning flags (doesn't hurt doing it even when timing is off). */
-    nb->timers->interaction[iLocality].didPrune =
-            nb->timers->interaction[iLocality].didRollingPrune = false;
+    /* Reset both pruning flags. */
+    if (nb->bDoTime)
+    {
+        nb->timers->interaction[iLocality].didPrune =
+                nb->timers->interaction[iLocality].didRollingPrune = false;
+    }
 
     /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
     nb->plist[iLocality]->haveFreshList = false;

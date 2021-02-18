@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,7 +78,7 @@ typedef int PmeGpuSpecific;
 struct PmeGpuCudaKernelParams;
 /*! \brief A typedef for including the GPU kernel arguments data by pointer */
 typedef PmeGpuCudaKernelParams PmeGpuKernelParams;
-#elif GMX_GPU_OPENCL
+#elif GMX_GPU_OPENCL || GMX_GPU_SYCL
 struct PmeGpuKernelParamsBase;
 /*! \brief A typedef for including the GPU kernel arguments data by pointer */
 typedef PmeGpuKernelParamsBase PmeGpuKernelParams;

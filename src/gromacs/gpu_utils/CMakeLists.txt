@@ -1,7 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team.
+# Copyright (c) 2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -62,12 +63,13 @@ elseif(GMX_GPU_CUDA)
         )
     _gmx_add_files_to_property(CUDA_SOURCES
         device_stream_manager.cpp
-	)
+        )
 elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         devicebuffer_sycl.cpp
         device_context_sycl.cpp
         device_stream_sycl.cpp
+        syclutils.cpp
         )
     _gmx_add_files_to_property(SYCL_SOURCES
         devicebuffer_sycl.cpp
@@ -75,6 +77,7 @@ elseif(GMX_GPU_SYCL)
         device_context_sycl.cpp
         device_stream_manager.cpp
         device_stream_sycl.cpp
+        syclutils.cpp
         )
 else()
     gmx_add_libgromacs_sources(

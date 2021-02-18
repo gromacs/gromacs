@@ -214,7 +214,7 @@ function (gmx_register_gtest_test NAME EXENAME)
             # Both OpenCL (from JIT) and ThreadSanitizer (from how it
             # checks) can take signficantly more time than other
             # configurations.
-            if (GMX_GPU_OPENCL)
+            if (GMX_GPU_OPENCL OR GMX_GPU_SYCL)
                 set(_timeout 240)
             elseif (${CMAKE_BUILD_TYPE} STREQUAL TSAN)
                 set(_timeout 300)

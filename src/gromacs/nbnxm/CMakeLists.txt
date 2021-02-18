@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -69,13 +69,19 @@ if(GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
     _gmx_add_files_to_property(CUDA_SOURCES
         nbnxm_gpu_data_mgmt.cpp
-	)
+        )
 endif()
 
 if(GMX_GPU_OPENCL)
     add_subdirectory(opencl)
     set(NBNXM_OPENCL_KERNELS ${NBNXM_OPENCL_KERNELS} PARENT_SCOPE)
     gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
+endif()
+
+if(GMX_GPU_SYCL)
+    add_subdirectory(sycl)
+    gmx_add_libgromacs_sources(nbnxm_gpu_data_mgmt.cpp)
+    _gmx_add_files_to_property(SYCL_SOURCES nbnxm_gpu_data_mgmt.cpp nbnxm.cpp)
 endif()
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${NBNXM_SOURCES} PARENT_SCOPE)

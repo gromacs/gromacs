@@ -1,7 +1,6 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team.
  * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -34,48 +33,46 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Function definitions for non-GPU builds
+ *  \brief Define utility routines for SYCL
  *
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
+ *  \author Andrey Alekseenko <al42and@gmail.com>
  */
 #include "gmxpre.h"
 
-#include "gpu_utils.h"
+#include "syclutils.h"
 
-#include "config.h"
+#include "gromacs/utility/smalloc.h"
 
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/stringutil.h"
-
-#ifdef _MSC_VER
-#    pragma warning(disable : 6237)
-#endif
-
-/*! \brief Help build a descriptive message in \c error if there are
- * \c errorReasons why nonbondeds on a GPU are not supported.
+/*! \brief Allocates \p nbytes of host memory. Use \c pfree to free memory allocated with this function.
  *
- * \returns Whether the lack of errorReasons indicate there is support. */
-static bool addMessageIfNotSupported(gmx::ArrayRef<const std::string> errorReasons, std::string* error)
+ *  \todo
+ *  This function was copied from OpenCL implementation, not tuned for SYCL at all.
+ *  Once SYCL2020 is out, might be worthwhile to look into USM and sycl::malloc_host / sycl::aligned_alloc_host.
+ *  Overall, it is better to directly use sycl::buffer instead of pinned arrays. But this function
+ *  is needed to compile some PME code with SYCL enabled, even if it is never used.
+ *
+ * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
+ * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
+ */
+void pmalloc(void** h_ptr, size_t nbytes)
 {
-    bool isSupported = errorReasons.empty();
-    if (!isSupported && error)
-    {
-        *error = "Nonbonded interactions cannot run on GPUs: ";
-        *error += joinStrings(errorReasons, "; ") + ".";
-    }
-    return isSupported;
+    /* Need a temporary type whose size is 1 byte, so that the
+     * implementation of snew_aligned can cope without issuing
+     * warnings. */
+    auto** temporary = reinterpret_cast<std::byte**>(h_ptr);
+
+    /* 16-byte alignment inherited from OpenCL and does not sound unreasonable */
+    snew_aligned(*temporary, nbytes, 16);
 }
 
-bool buildSupportsNonbondedOnGpu(std::string* error)
+/*! \brief Frees memory allocated with pmalloc.
+ *
+ * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
+ */
+void pfree(void* h_ptr)
 {
-    std::vector<std::string> errorReasons;
-    if (GMX_DOUBLE)
+    if (h_ptr)
     {
-        errorReasons.emplace_back("double precision");
+        sfree_aligned(h_ptr);
     }
-    if (!GMX_GPU)
-    {
-        errorReasons.emplace_back("non-GPU build of GROMACS");
-    }
-    return addMessageIfNotSupported(errorReasons, error);
 }

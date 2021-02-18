@@ -56,6 +56,10 @@
 #    include "opencl/nbnxm_ocl_types.h"
 #endif
 
+#if GMX_GPU_SYCL
+#    include "sycl/nbnxm_sycl_types.h"
+#endif
+
 #include "nbnxm_gpu_data_mgmt.h"
 
 #include "gromacs/hardware/device_information.h"
@@ -63,6 +67,7 @@
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "nbnxm_gpu.h"
 #include "pairlistsets.h"
