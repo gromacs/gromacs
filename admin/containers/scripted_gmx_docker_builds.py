@@ -585,8 +585,15 @@ def build_stages(args) -> typing.Iterable[hpccm.Stage]:
     if args.cuda is not None and args.llvm is not None:
         # Hack to tell clang what version of CUDA we're using
         # based on https://github.com/llvm/llvm-project/blob/1fdec59bffc11ae37eb51a1b9869f0696bfd5312/clang/lib/Driver/ToolChains/Cuda.cpp#L43
+        cuda_version_split = args.cuda.split('.')
+        # LLVM requires having the version in x.y.z format, while args.cuda be be either x.y or x.y.z
+        cuda_version_str = '{}.{}.{}'.format(
+            cuda_version_split[0],
+            cuda_version_split[1],
+            cuda_version_split[2] if len(cuda_version_split) > 2 else 0
+        )
         building_blocks['cuda-clang-workaround'] = hpccm.primitives.shell(commands=[
-            f'echo "CUDA Version {args.cuda}" > /usr/local/cuda/version.txt'
+            f'echo "CUDA Version {cuda_version_str}" > /usr/local/cuda/version.txt'
             ])
 
     building_blocks['clfft'] = get_clfft(args)
