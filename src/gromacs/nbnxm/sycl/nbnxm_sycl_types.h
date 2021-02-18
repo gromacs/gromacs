@@ -123,11 +123,10 @@ struct NbnxmGpu
     const DeviceContext* deviceContext_;
     /*! \brief true if doing both local/non-local NB work on GPU */
     bool bUseTwoStreams = false;
-    /*! \brief true indicates that the nonlocal_done event was enqueued */
-    bool bNonLocalStreamActive = false;
+    /*! \brief true indicates that the nonlocal_done event was marked */
+    bool bNonLocalStreamDoneMarked = false;
     /*! \brief atom data */
     sycl_atomdata_t* atdat = nullptr;
-    /*! \brief f buf ops cell index mapping */
 
     NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
@@ -178,10 +177,6 @@ struct NbnxmGpu
      * in StatePropagatorDataGpu.
      */
     GpuEventSynchronizer* localFReductionDone = nullptr;
-
-    /*! \brief Event triggered when non-local coordinate buffer
-     * has been copied from device to host. Would be deprecated in SYCL. */
-    GpuEventSynchronizer* xNonLocalCopyD2HDone = nullptr;
 };
 
 #endif /* NBNXM_SYCL_TYPES_H */

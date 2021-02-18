@@ -51,6 +51,24 @@
 namespace Nbnxm
 {
 
+
+void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* nb, const InteractionLocality interactionLocality)
+{
+    const DeviceStream& deviceStream = *nb->deviceStreams[interactionLocality];
+    if (nb->bUseTwoStreams)
+    {
+        if (interactionLocality == InteractionLocality::Local)
+        {
+            nb->misc_ops_and_local_H2D_done.markEvent(deviceStream);
+        }
+        else
+        {
+            nb->misc_ops_and_local_H2D_done.enqueueWaitEvent(deviceStream);
+        }
+    }
+}
+
+
 /*! \brief
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
@@ -62,14 +80,19 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    const InteractionLocality iloc         = gpuAtomToInteractionLocality(atomLocality);
-    const DeviceStream&       deviceStream = *nb->deviceStreams[iloc];
-    sycl_atomdata_t*          adat         = nb->atdat;
+    const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
+    GMX_ASSERT(iloc == InteractionLocality::Local
+                       || (iloc == InteractionLocality::NonLocal && nb->bNonLocalStreamDoneMarked == false),
+               "Non-local stream is indicating that the copy back event is enqueued at the "
+               "beginning of the copy back function.");
+
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+    sycl_atomdata_t*    adat         = nb->atdat;
 
     /* don't launch non-local copy-back if there was no non-local work to do */
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
-        nb->bNonLocalStreamActive = false;
+        nb->bNonLocalStreamDoneMarked = false;
         return;
     }
 
@@ -77,9 +100,10 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     getGpuAtomRange(adat, atomLocality, &adatBegin, &adatLen);
 
     // With DD the local D2H transfer can only start after the non-local kernel has finished.
-    if (iloc == InteractionLocality::Local && nb->bNonLocalStreamActive)
+    if (iloc == InteractionLocality::Local && nb->bNonLocalStreamDoneMarked)
     {
         nb->nonlocal_done.waitForEvent();
+        nb->bNonLocalStreamDoneMarked = false;
     }
 
     /* DtoH f
@@ -105,7 +129,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     if (iloc == InteractionLocality::NonLocal)
     {
         nb->nonlocal_done.markEvent(deviceStream);
-        nb->bNonLocalStreamActive = true;
+        nb->bNonLocalStreamDoneMarked = true;
     }
 
     /* only transfer energies in the local stream */
@@ -160,6 +184,12 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
         plist->haveFreshList = false;
+
+        // The event is marked for Local interactions unconditionally,
+        // so it has to be released here because of the early return
+        // for NonLocal interactions.
+        nb->misc_ops_and_local_H2D_done.reset();
+
         return;
     }
 
@@ -178,7 +208,13 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
                        nullptr);
 
     /* No need to enforce stream synchronization with events like we do in CUDA/OpenCL.
-     * Runtime should do the scheduling correctly based on data dependencies. */
+     * Runtime should do the scheduling correctly based on data dependencies.
+     * But for consistency's sake, we do it anyway. */
+    /* When we get here all misc operations issued in the local stream as well as
+     * the local xq H2D are done, so we record that in the local stream and wait for it in the
+     * nonlocal one. This wait needs to precede any PP tasks, bonded or nonbonded, that may
+     * compute on interactions between local and nonlocal atoms. */
+    nbnxnInsertNonlocalGpuDependency(nb, iloc);
 }
 
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)

@@ -182,8 +182,6 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& deviceStreamManager,
                 &deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedNonLocal);
     }
 
-    nb->xNonLocalCopyD2HDone = new GpuEventSynchronizer();
-
     nb->bDoTime = false;
 
     const nbnxn_atomdata_t::Params& nbatParams    = nbat->params();
