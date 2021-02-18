@@ -491,7 +491,7 @@ static void dd_set_cginfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1, t
 static void make_dd_indices(gmx_domdec_t* dd, const int atomStart)
 {
     const int                numZones               = dd->comm->zones.n;
-    const int*               zone2cg                = dd->comm->zones.cg_range;
+    const int*               zone2cg                = dd->comm->zones.cg_range.data();
     const int*               zone_ncg1              = dd->comm->zone_ncg1;
     gmx::ArrayRef<const int> globalAtomGroupIndices = dd->globalAtomGroupIndices;
 
@@ -1941,7 +1941,7 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
         v_1 = ddbox->v[dim1];
     }
 
-    zone_cg_range                        = zones->cg_range;
+    zone_cg_range                        = zones->cg_range.data();
     gmx::ArrayRef<cginfo_mb_t> cginfo_mb = fr->cginfo_mb;
 
     zone_cg_range[0]   = 0;

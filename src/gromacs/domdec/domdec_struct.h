@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,13 +116,13 @@ struct gmx_domdec_zones_t
     /* The number of zones including the home zone */
     int n = 0;
     /* The shift of the zones with respect to the home zone */
-    ivec shift[DD_MAXZONE] = {};
+    std::array<ivec, DD_MAXZONE> shift;
     /* The charge group boundaries for the zones */
-    int cg_range[DD_MAXZONE + 1] = {};
+    std::array<int, DD_MAXZONE + 1> cg_range;
     /* The pair interaction zone and atom ranges per each i-zone */
     std::vector<DDPairInteractionRanges> iZones;
     /* Boundaries of the zones */
-    gmx_domdec_zone_size_t size[DD_MAXZONE];
+    std::array<gmx_domdec_zone_size_t, DD_MAXZONE> size;
     /* The cg density of the home zone */
     real dens_zone0 = 0;
 };
