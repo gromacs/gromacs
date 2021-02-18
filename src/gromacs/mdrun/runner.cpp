@@ -744,14 +744,14 @@ static void finish_run(FILE*                     fplog,
 
 int Mdrunner::mdrunner()
 {
-    matrix                    box;
-    t_forcerec*               fr               = nullptr;
-    real                      ewaldcoeff_q     = 0;
-    real                      ewaldcoeff_lj    = 0;
-    int                       nChargePerturbed = -1, nTypePerturbed = 0;
-    gmx_wallcycle_t           wcycle;
-    gmx_walltime_accounting_t walltime_accounting = nullptr;
-    MembedHolder              membedHolder(filenames.size(), filenames.data());
+    matrix                      box;
+    std::unique_ptr<t_forcerec> fr;
+    real                        ewaldcoeff_q     = 0;
+    real                        ewaldcoeff_lj    = 0;
+    int                         nChargePerturbed = -1, nTypePerturbed = 0;
+    gmx_wallcycle_t             wcycle;
+    gmx_walltime_accounting_t   walltime_accounting = nullptr;
+    MembedHolder                membedHolder(filenames.size(), filenames.data());
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -1575,11 +1575,11 @@ int Mdrunner::mdrunner()
         mdModulesNotifier.notify(inputrec->pbcType);
         mdModulesNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
         /* Initiate forcerecord */
-        fr                 = new t_forcerec;
+        fr                 = std::make_unique<t_forcerec>();
         fr->forceProviders = mdModules_->initForceProviders();
         init_forcerec(fplog,
                       mdlog,
-                      fr,
+                      fr.get(),
                       *inputrec,
                       mtop,
                       cr,
@@ -1615,7 +1615,7 @@ int Mdrunner::mdrunner()
 
         fr->nbv = Nbnxm::init_nb_verlet(mdlog,
                                         inputrec.get(),
-                                        fr,
+                                        fr.get(),
                                         cr,
                                         *hwinfo_,
                                         runScheduleWork.simulationWork.useGpuNonbonded,
@@ -1939,7 +1939,7 @@ int Mdrunner::mdrunner()
                 constr.get(), enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr, vsite.get()));
         // TODO: Separate `fr` to a separate add, and make the `build` handle the coupling sensibly.
         simulatorBuilder.add(LegacyInput(
-                static_cast<int>(filenames.size()), filenames.data(), inputrec.get(), fr));
+                static_cast<int>(filenames.size()), filenames.data(), inputrec.get(), fr.get()));
         simulatorBuilder.add(ReplicaExchangeParameters(replExParams));
         simulatorBuilder.add(InteractiveMD(imdSession.get()));
         simulatorBuilder.add(SimulatorModules(mdModules_->outputProvider(), mdModules_->notifier()));
@@ -2016,9 +2016,7 @@ int Mdrunner::mdrunner()
     globalState.reset(nullptr);
     mdModules_.reset(nullptr); // destruct force providers here as they might also use the GPU
     gpuBonded.reset(nullptr);
-    /* Free pinned buffers in *fr */
-    delete fr;
-    fr = nullptr;
+    fr.reset(nullptr); // destruct forcerec before gpu
     // TODO convert to C++ so we can get rid of these frees
     sfree(disresdata);
     sfree(oriresdata);
