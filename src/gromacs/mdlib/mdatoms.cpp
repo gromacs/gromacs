@@ -437,7 +437,7 @@ void atoms2md(const gmx_mtop_t*  mtop,
             {
                 c6  = mtop->ffparams.iparams[atom.type * (mtop->ffparams.atnr + 1)].lj.c6;
                 c12 = mtop->ffparams.iparams[atom.type * (mtop->ffparams.atnr + 1)].lj.c12;
-                md->sqrt_c6A[i] = sqrt(c6);
+                md->sqrt_c6A[i] = std::sqrt(c6);
                 if (c6 == 0.0 || c12 == 0)
                 {
                     md->sigmaA[i] = 1.0;
@@ -457,7 +457,7 @@ void atoms2md(const gmx_mtop_t*  mtop,
                 {
                     c6  = mtop->ffparams.iparams[atom.typeB * (mtop->ffparams.atnr + 1)].lj.c6;
                     c12 = mtop->ffparams.iparams[atom.typeB * (mtop->ffparams.atnr + 1)].lj.c12;
-                    md->sqrt_c6B[i] = sqrt(c6);
+                    md->sqrt_c6B[i] = std::sqrt(c6);
                     if (c6 == 0.0 || c12 == 0)
                     {
                         md->sigmaB[i] = 1.0;
