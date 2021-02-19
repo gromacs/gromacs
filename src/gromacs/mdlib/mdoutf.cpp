@@ -435,11 +435,12 @@ static void write_checkpoint(const char*                     fn,
 #if !GMX_NO_RENAME
     if (!bNumberAndKeep && !ret)
     {
+        // Add a barrier before renaming to reduce chance to get out of sync (#2440)
+        // Note: Checkpoint might only exist on some ranks, so put barrier before if clause (#3919)
+        mpiBarrierBeforeRename(applyMpiBarrierBeforeRename, mpiBarrierCommunicator);
         if (gmx_fexist(fn))
         {
             /* Rename the previous checkpoint file */
-            mpiBarrierBeforeRename(applyMpiBarrierBeforeRename, mpiBarrierCommunicator);
-
             std::strcpy(buf, fn);
             buf[std::strlen(fn) - std::strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
             std::strcat(buf, "_prev");
