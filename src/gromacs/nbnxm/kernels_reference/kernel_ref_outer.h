@@ -140,10 +140,10 @@ void
 #endif
 
 #ifdef CALC_COUL_RF
-    const real k_rf2 = 2 * ic->k_rf;
+    const real k_rf2 = 2 * ic->reactionFieldCoefficient;
 #    ifdef CALC_ENERGIES
-    const real k_rf = ic->k_rf;
-    const real c_rf = ic->c_rf;
+    const real reactionFieldCoefficient = ic->reactionFieldCoefficient;
+    const real reactionFieldShift       = ic->reactionFieldShift;
 #    endif
 #endif
 #ifdef CALC_COUL_TAB
@@ -238,7 +238,7 @@ void
         if (do_self)
         {
 #    ifdef CALC_COUL_RF
-            const real Vc_sub_self = 0.5 * c_rf;
+            const real Vc_sub_self = 0.5 * reactionFieldShift;
 #    endif
 #    ifdef CALC_COUL_TAB
 #        if GMX_DOUBLE

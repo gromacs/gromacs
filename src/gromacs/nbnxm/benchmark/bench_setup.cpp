@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,10 +154,10 @@ static interaction_const_t setupInteractionConst(const KernelBenchOptions& optio
     ic.coulomb_modifier = eintmodPOTSHIFT;
     ic.rcoulomb         = options.pairlistCutoff;
 
-    // Reaction-field with epsilon_rf=inf
+    // Reaction-field with reactionFieldPermitivity=inf
     // TODO: Replace by calc_rffac() after refactoring that
-    ic.k_rf = 0.5 * std::pow(ic.rcoulomb, -3);
-    ic.c_rf = 1 / ic.rcoulomb + ic.k_rf * ic.rcoulomb * ic.rcoulomb;
+    ic.reactionFieldCoefficient = 0.5 * std::pow(ic.rcoulomb, -3);
+    ic.reactionFieldShift = 1 / ic.rcoulomb + ic.reactionFieldCoefficient * ic.rcoulomb * ic.rcoulomb;
 
     if (EEL_PME_EWALD(ic.eeltype))
     {

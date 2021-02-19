@@ -1042,8 +1042,8 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
                 break;
             case etabRF:
             case etabRF_ZERO:
-                Vtab = 1.0 / r + ic->k_rf * r2 - ic->c_rf;
-                Ftab = 1.0 / r2 - 2 * ic->k_rf * r;
+                Vtab = 1.0 / r + ic->reactionFieldCoefficient * r2 - ic->reactionFieldShift;
+                Ftab = 1.0 / r2 - 2 * ic->reactionFieldCoefficient * r;
                 if (tp == etabRF_ZERO && r >= rc)
                 {
                     Vtab = 0;

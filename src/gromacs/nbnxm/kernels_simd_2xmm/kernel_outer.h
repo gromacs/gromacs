@@ -197,10 +197,10 @@
 
 #ifdef CALC_COUL_RF
     /* Reaction-field constants */
-    mrc_3_S = SimdReal(-2 * ic->k_rf);
+    mrc_3_S = SimdReal(-2 * ic->reactionFieldCoefficient);
 #    ifdef CALC_ENERGIES
-    hrc_3_S  = SimdReal(ic->k_rf);
-    moh_rc_S = SimdReal(-ic->c_rf);
+    hrc_3_S  = SimdReal(ic->reactionFieldCoefficient);
+    moh_rc_S = SimdReal(-ic->reactionFieldShift);
 #    endif
 #endif
 
@@ -401,7 +401,7 @@
                 if (do_coul)
                 {
 #    ifdef CALC_COUL_RF
-                    const real Vc_sub_self = 0.5 * ic->c_rf;
+                    const real Vc_sub_self = 0.5 * ic->reactionFieldShift;
 #    endif
 #    ifdef CALC_COUL_TAB
 #        ifdef TAB_FDV0

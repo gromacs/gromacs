@@ -135,7 +135,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
             }
             if (!bEwald)
             {
-                vctot *= -facel * 0.5 * iconst->c_rf;
+                vctot *= -facel * 0.5 * iconst->reactionFieldShift;
             }
             else
             {
@@ -230,11 +230,11 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                                 if (!bEwald)
                                 {
                                     /* Reaction-field */
-                                    const real krsq = iconst->k_rf * rsq;
+                                    const real krsq = iconst->reactionFieldCoefficient * rsq;
                                     fscal           = qq * (int_bit * rinv - 2 * krsq) * rinvsq;
                                     if (stepWork.computeEnergy)
                                     {
-                                        vcoul = qq * (int_bit * rinv + krsq - iconst->c_rf);
+                                        vcoul = qq * (int_bit * rinv + krsq - iconst->reactionFieldShift);
                                     }
                                 }
                                 else

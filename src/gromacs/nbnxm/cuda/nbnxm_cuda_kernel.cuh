@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
- * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -204,7 +204,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
     float                beta        = nbparam.ewald_beta;
     float                ewald_shift = nbparam.sh_ewald;
 #        else
-    float c_rf = nbparam.c_rf;
+    float reactionFieldShift = nbparam.c_rf;
 #        endif /* EL_EWALD_ANY */
     float*               e_lj        = atdat.e_lj;
     float*               e_el        = atdat.e_el;
@@ -357,7 +357,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
         /* Correct for epsfac^2 due to adding qi^2 */
         E_el /= nbparam.epsfac * c_clSize * NTHREAD_Z;
 #                if defined EL_RF || defined EL_CUTOFF
-        E_el *= -0.5f * c_rf;
+        E_el *= -0.5f * reactionFieldShift;
 #                else
         E_el *= -beta * M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #                endif
@@ -590,10 +590,11 @@ __launch_bounds__(THREADS_PER_BLOCK)
 
 #    ifdef CALC_ENERGIES
 #        ifdef EL_CUTOFF
-                                E_el += qi * qj_f * (int_bit * inv_r - c_rf);
+                                E_el += qi * qj_f * (int_bit * inv_r - reactionFieldShift);
 #        endif
 #        ifdef EL_RF
-                                E_el += qi * qj_f * (int_bit * inv_r + 0.5f * two_k_rf * r2 - c_rf);
+                                E_el += qi * qj_f
+                                        * (int_bit * inv_r + 0.5f * two_k_rf * r2 - reactionFieldShift);
 #        endif
 #        ifdef EL_EWALD_ANY
                                 /* 1.0f - erff is faster than erfcf */

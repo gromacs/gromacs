@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,7 +135,7 @@ struct interaction_const_t
     struct shift_consts_t  dispersion_shift = { 0, 0, 0 };
     struct shift_consts_t  repulsion_shift  = { 0, 0, 0 };
     struct switch_consts_t vdw_switch       = { 0, 0, 0 };
-    gmx_bool               useBuckingham    = false;
+    bool                   useBuckingham    = false;
     real                   buckinghamBMax   = 0;
 
     /* type of electrostatics */
@@ -158,9 +158,12 @@ struct interaction_const_t
     real epsfac    = 1;
 
     /* Constants for reaction-field or plain cut-off */
-    real epsilon_rf = 1;
-    real k_rf       = 0;
-    real c_rf       = 0;
+    //! Dielectric constant for reaction field beyond the cutoff distance
+    real reactionFieldPermitivity = 1;
+    //! Coefficient for reaction field; scales relation between epsilon_r and reactionFieldPermitivity
+    real reactionFieldCoefficient = 0;
+    //! Constant shift to reaction field Coulomb interaction to make potential an integral of force
+    real reactionFieldShift = 0;
 
     // Coulomb Ewald correction table
     std::unique_ptr<EwaldCorrectionTables> coulombEwaldTables;

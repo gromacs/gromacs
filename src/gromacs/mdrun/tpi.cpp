@@ -144,13 +144,13 @@ static real reactionFieldExclusionCorrection(gmx::ArrayRef<const gmx::RVec> x,
     for (int i = beginAtom; i < mdatoms.homenr; i++)
     {
         const real qi = mdatoms.chargeA[i];
-        energy -= 0.5 * qi * qi * ic.c_rf;
+        energy -= 0.5 * qi * qi * ic.reactionFieldShift;
 
         for (int j = i + 1; j < mdatoms.homenr; j++)
         {
             const real qj  = mdatoms.chargeA[j];
             const real rsq = distance2(x[i], x[j]);
-            energy += qi * qj * (ic.k_rf * rsq - ic.c_rf);
+            energy += qi * qj * (ic.reactionFieldCoefficient * rsq - ic.reactionFieldShift);
         }
     }
 

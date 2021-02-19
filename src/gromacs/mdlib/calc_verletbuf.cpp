@@ -1004,7 +1004,7 @@ real calcVerletBufferSize(const gmx_mtop_t&         mtop,
             }
             else
             {
-                /* epsilon_rf = infinity */
+                /* reactionFieldPermitivity = infinity */
                 k_rf = 0.5 / gmx::power3(ir.rcoulomb);
             }
         }
