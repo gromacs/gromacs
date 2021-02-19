@@ -47,6 +47,15 @@ POSIX and not by C++ was also worked around.
 
 :issue:`3890`
 
+Improve grompp checks of AWH settings when sampling an FEP dimension
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Ensure that the AWH sampling interval is compatible with nstcalcenergy
+when sampling an FEP dimension using AWH. This avoids crashes in the
+first AWH sampling step (step > 0) if the settings were not correct.
+
+:issue:`3922`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 * Updated |Gromacs| logos
