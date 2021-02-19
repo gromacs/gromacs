@@ -156,13 +156,20 @@ bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
 /*! \brief Return whether update groups are used */
 bool ddUsesUpdateGroups(const gmx_domdec_t& dd);
 
+/*! \brief Options for checking bonded interactions */
+enum class DDBondedChecking
+{
+    All,             //!< Check all bonded interactions
+    ExcludeZeroLimit //!< Do not check bonded interactions that go to 0 for large distances
+};
+
 /*! \brief Initialize data structures for bonded interactions */
 void dd_init_bondeds(FILE*                           fplog,
                      gmx_domdec_t*                   dd,
                      const gmx_mtop_t&               mtop,
                      const gmx::VirtualSitesHandler* vsite,
                      const t_inputrec*               ir,
-                     gmx_bool                        bBCheck,
+                     DDBondedChecking                ddBondedChecking,
                      gmx::ArrayRef<cginfo_mb_t>      cginfo_mb);
 
 /*! \brief Returns whether molecules are always whole, i.e. not broken by PBC */
@@ -272,7 +279,7 @@ void dd_make_reverse_top(FILE*                           fplog,
                          const gmx_mtop_t*               mtop,
                          const gmx::VirtualSitesHandler* vsite,
                          const t_inputrec*               ir,
-                         gmx_bool                        bBCheck);
+                         DDBondedChecking                ddBondedChecking);
 
 /*! \brief Generate the local topology and virtual site data */
 void dd_make_local_top(struct gmx_domdec_t*       dd,
@@ -304,7 +311,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger&           mdlog,
                            const t_inputrec*              ir,
                            gmx::ArrayRef<const gmx::RVec> x,
                            const matrix                   box,
-                           gmx_bool                       bBCheck,
+                           DDBondedChecking               ddBondedChecking,
                            real*                          r_2b,
                            real*                          r_mb);
 

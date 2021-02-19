@@ -1893,7 +1893,8 @@ int Mdrunner::mdrunner()
                             mtop,
                             vsite.get(),
                             inputrec.get(),
-                            domdecOptions.checkBondedInteractions,
+                            domdecOptions.checkBondedInteractions ? DDBondedChecking::All
+                                                                  : DDBondedChecking::ExcludeZeroLimit,
                             fr->cginfo_mb);
         }
 
