@@ -195,21 +195,20 @@ struct t_forcetable
 
 struct gmx_ns_t
 {
-    gmx_bool       bCGlist;
-    int*           simple_aaj;
-    struct t_grid* grid;
-    t_excl*        bexcl;
-    gmx_bool*      bHaveVdW;
-    t_ns_buf**     ns_buf;
-    gmx_bool*      bExcludeAlleg;
-    int            nra_alloc;
-    int            cg_alloc;
-    int**          nl_sr;
-    int*           nsr;
-    int**          nl_lr_ljc;
-    int**          nl_lr_one;
-    int*           nlr_ljc;
-    int*           nlr_one;
+    gmx_bool   bCGlist;
+    int*       simple_aaj;
+    t_excl*    bexcl;
+    gmx_bool*  bHaveVdW;
+    t_ns_buf** ns_buf;
+    gmx_bool*  bExcludeAlleg;
+    int        nra_alloc;
+    int        cg_alloc;
+    int**      nl_sr;
+    int*       nsr;
+    int**      nl_lr_ljc;
+    int**      nl_lr_one;
+    int*       nlr_ljc;
+    int*       nlr_one;
     /* the nblists should probably go in here */
     gmx_bool nblist_initialized; /* has the nblist been initialized?  */
     int      dump_nl;            /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
