@@ -3031,8 +3031,8 @@ Electric fields
    with units (respectively) V nm\ :sup:`-1`, ps\ :sup:`-1`, ps, ps.
 
    In the special case that ``sigma = 0``, the exponential term is omitted
-   and only the cosine term is used. If also ``omega = 0`` a static
-   electric field is applied.
+   and only the cosine term is used. In this case, ``t0`` must be set to 0.
+   If also ``omega = 0`` a static electric field is applied.
 
    Read more at :ref:`electric fields` and in ref. \ :ref:`146 <refCaleman2008a>`.
 
