@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,17 +85,17 @@ void increaseNstlist(FILE*               fplog,
 /*! \brief Set up the dynamic pairlist pruning
  *
  * \param[in,out] mdlog            MD logger
- * \param[in]     ir               The input parameter record
+ * \param[in]     inputrec         The input parameter record
  * \param[in]     mtop             The global topology
  * \param[in]     box              The unit cell
- * \param[in]     ic               The nonbonded interactions constants
+ * \param[in]     interactionConst The nonbonded interactions constants
  * \param[in,out] listParams       The list setup parameters
  */
 void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
-                                 const t_inputrec*          ir,
-                                 const gmx_mtop_t*          mtop,
+                                 const t_inputrec&          inputrec,
+                                 const gmx_mtop_t&          mtop,
                                  matrix                     box,
-                                 const interaction_const_t* ic,
+                                 const interaction_const_t& interactionConst,
                                  PairlistParams*            listParams);
 
 #endif /* NBNXM_PAIRLIST_TUNING_H */

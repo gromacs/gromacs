@@ -439,13 +439,13 @@ namespace Nbnxm
 
 /*! \brief Creates an Nbnxm object */
 std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
-                                                   const t_inputrec*    ir,
-                                                   const t_forcerec*    fr,
-                                                   const t_commrec*     cr,
+                                                   const t_inputrec&    inputrec,
+                                                   const t_forcerec&    forcerec,
+                                                   const t_commrec*     commrec,
                                                    const gmx_hw_info_t& hardwareInfo,
                                                    bool                 useGpuForNonbonded,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
-                                                   const gmx_mtop_t*               mtop,
+                                                   const gmx_mtop_t&               mtop,
                                                    matrix                          box,
                                                    gmx_wallcycle*                  wcycle);
 

@@ -1614,13 +1614,13 @@ int Mdrunner::mdrunner()
         }
 
         fr->nbv = Nbnxm::init_nb_verlet(mdlog,
-                                        inputrec.get(),
-                                        fr.get(),
+                                        *inputrec,
+                                        *fr,
                                         cr,
                                         *hwinfo_,
                                         runScheduleWork.simulationWork.useGpuNonbonded,
                                         deviceStreamManager.get(),
-                                        &mtop,
+                                        mtop,
                                         box,
                                         wcycle);
         // TODO: Move the logic below to a GPU bonded builder
