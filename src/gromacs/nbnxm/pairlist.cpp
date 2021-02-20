@@ -217,29 +217,6 @@ static inline int xIndexFromCj(int cj)
 }
 #endif // defined(GMX_NBNXN_SIMD_4XN) || defined(GMX_NBNXN_SIMD_2XNN)
 
-
-void nbnxn_init_pairlist_fep(t_nblist* nl)
-{
-    nl->type      = GMX_NBLIST_INTERACTION_FREE_ENERGY;
-    nl->igeometry = GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE;
-    /* The interaction functions are set in the free energy kernel function */
-    nl->ivdw     = -1;
-    nl->ivdwmod  = -1;
-    nl->ielec    = -1;
-    nl->ielecmod = -1;
-
-    nl->maxnri   = 0;
-    nl->maxnrj   = 0;
-    nl->nri      = 0;
-    nl->nrj      = 0;
-    nl->iinr     = nullptr;
-    nl->gid      = nullptr;
-    nl->shift    = nullptr;
-    nl->jindex   = nullptr;
-    nl->jjnr     = nullptr;
-    nl->excl_fep = nullptr;
-}
-
 static constexpr int sizeNeededForBufferFlags(const int numAtoms)
 {
     return (numAtoms + NBNXN_BUFFERFLAG_SIZE - 1) / NBNXN_BUFFERFLAG_SIZE;
@@ -733,7 +710,6 @@ PairlistSet::PairlistSet(const InteractionLocality locality, const PairlistParam
                  * impacts performance.
                  */
                 fepLists_[i] = std::make_unique<t_nblist>();
-                nbnxn_init_pairlist_fep(fepLists_[i].get());
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -1462,20 +1438,10 @@ static inline void fep_list_new_nri_copy(t_nblist* nlist)
 /* Rellocate FEP list for size nl->maxnri, TODO: replace by C++ */
 static void reallocate_nblist(t_nblist* nl)
 {
-    if (gmx_debug_at)
-    {
-        fprintf(debug,
-                "reallocating neigborlist (ielec=%d, ivdw=%d, igeometry=%d, type=%d), maxnri=%d\n",
-                nl->ielec,
-                nl->ivdw,
-                nl->igeometry,
-                nl->type,
-                nl->maxnri);
-    }
-    srenew(nl->iinr, nl->maxnri);
-    srenew(nl->gid, nl->maxnri);
-    srenew(nl->shift, nl->maxnri);
-    srenew(nl->jindex, nl->maxnri + 1);
+    nl->iinr.resize(nl->maxnri);
+    nl->gid.resize(nl->maxnri);
+    nl->shift.resize(nl->maxnri);
+    nl->jindex.resize(nl->maxnri + 1);
 }
 
 /* For load balancing of the free-energy lists over threads, we set
@@ -1573,8 +1539,8 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
             if (nlist->nrj + (cj_ind_end - cj_ind_start) * nbl->na_cj > nlist->maxnrj)
             {
                 nlist->maxnrj = over_alloc_small(nlist->nrj + (cj_ind_end - cj_ind_start) * nbl->na_cj);
-                srenew(nlist->jjnr, nlist->maxnrj);
-                srenew(nlist->excl_fep, nlist->maxnrj);
+                nlist->jjnr.resize(nlist->maxnrj);
+                nlist->excl_fep.resize(nlist->maxnrj);
             }
 
             if (ngid > 1)
@@ -1775,8 +1741,8 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
                 if (nrjMax > nlist->maxnrj)
                 {
                     nlist->maxnrj = over_alloc_small(nrjMax);
-                    srenew(nlist->jjnr, nlist->maxnrj);
-                    srenew(nlist->excl_fep, nlist->maxnrj);
+                    nlist->jjnr.resize(nlist->maxnrj);
+                    nlist->excl_fep.resize(nlist->maxnrj);
                 }
 
                 for (int cj4_ind = cj4_ind_start; cj4_ind < cj4_ind_end; cj4_ind++)
@@ -2227,9 +2193,9 @@ static void clear_pairlist_fep(t_nblist* nl)
 {
     nl->nri = 0;
     nl->nrj = 0;
-    if (nl->jindex == nullptr)
+    if (nl->jindex.empty())
     {
-        snew(nl->jindex, 1);
+        nl->jindex.resize(1);
     }
     nl->jindex[0] = 0;
 }
@@ -2728,8 +2694,8 @@ static void balance_fep_lists(gmx::ArrayRef<std::unique_ptr<t_nblist>> fepLists,
             if (nri_tot > nbl->maxnri || nrj_tot > nbl->maxnrj)
             {
                 nbl->maxnrj = over_alloc_small(nrj_tot);
-                srenew(nbl->jjnr, nbl->maxnrj);
-                srenew(nbl->excl_fep, nbl->maxnrj);
+                nbl->jjnr.resize(nbl->maxnrj);
+                nbl->excl_fep.resize(nbl->maxnrj);
             }
 
             clear_pairlist_fep(nbl);

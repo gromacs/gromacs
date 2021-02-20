@@ -189,15 +189,6 @@ const char* eSwapTypes_names[eSwapTypesNR + 1] = { "no", "X", "Y", "Z", nullptr 
 
 const char* eSwapFixedGrp_names[eSwapFixedGrpNR + 1] = { "Split0", "Split1", "Solvent", nullptr };
 
-const char* gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR + 1] = {
-    "Particle-Particle", "Water3-Particle", "Water3-Water3", "Water4-Particle",
-    "Water4-Water4",     "CG-CG",           nullptr
-};
-
-const char* gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR + 1] = { "Standard",
-                                                                            "Free_Energy",
-                                                                            nullptr };
-
 const char* gmx_nbkernel_elec_names[GMX_NBKERNEL_ELEC_NR + 1] = {
     "None", "Coulomb", "Reaction-Field", "Cubic-Spline-Table", "Ewald", nullptr
 };

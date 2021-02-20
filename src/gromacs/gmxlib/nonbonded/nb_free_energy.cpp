@@ -227,12 +227,12 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     const interaction_const_t* ic = fr->ic;
 
     // Extract pair list data
-    const int  nri    = nlist->nri;
-    const int* iinr   = nlist->iinr;
-    const int* jindex = nlist->jindex;
-    const int* jjnr   = nlist->jjnr;
-    const int* shift  = nlist->shift;
-    const int* gid    = nlist->gid;
+    const int                nri    = nlist->nri;
+    gmx::ArrayRef<const int> iinr   = nlist->iinr;
+    gmx::ArrayRef<const int> jindex = nlist->jindex;
+    gmx::ArrayRef<const int> jjnr   = nlist->jjnr;
+    gmx::ArrayRef<const int> shift  = nlist->shift;
+    gmx::ArrayRef<const int> gid    = nlist->gid;
 
     const real*               shiftvec  = fr->shift_vec[0];
     const real*               chargeA   = mdatoms->chargeA;
@@ -420,7 +420,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
             const RealType rSq = dX * dX + dY * dY + dZ * dZ;
             RealType       fScalC[NSTATES], fScalV[NSTATES];
             /* Check if this pair on the exlusions list.*/
-            const bool bPairIncluded = nlist->excl_fep == nullptr || nlist->excl_fep[k];
+            const bool bPairIncluded = nlist->excl_fep.empty() || nlist->excl_fep[k];
 
             if (rSq >= rcutoff_max2 && bPairIncluded)
             {

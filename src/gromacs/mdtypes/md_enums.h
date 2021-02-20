@@ -779,24 +779,6 @@ enum
 //! String for swap group splitting
 extern const char* eSwapFixedGrp_names[eSwapFixedGrpNR + 1];
 
-/*! \brief Neighborlist geometry type.
- *
- * Kernels will compute interactions between two particles,
- * 3-center water, 4-center water or coarse-grained beads.
- */
-enum gmx_nblist_kernel_geometry
-{
-    GMX_NBLIST_GEOMETRY_PARTICLE_PARTICLE,
-    GMX_NBLIST_GEOMETRY_WATER3_PARTICLE,
-    GMX_NBLIST_GEOMETRY_WATER3_WATER3,
-    GMX_NBLIST_GEOMETRY_WATER4_PARTICLE,
-    GMX_NBLIST_GEOMETRY_WATER4_WATER4,
-    GMX_NBLIST_GEOMETRY_CG_CG,
-    GMX_NBLIST_GEOMETRY_NR
-};
-//! String corresponding to nblist geometry names
-extern const char* gmx_nblist_geometry_names[GMX_NBLIST_GEOMETRY_NR + 1];
-
 /*! \brief Types of electrostatics calculations
  *
  * Types of electrostatics calculations available inside nonbonded kernels.
@@ -832,15 +814,5 @@ enum gmx_nbkernel_vdw
 };
 //! String corresponding to VdW kernels
 extern const char* gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR + 1];
-
-//! \brief Types of interactions inside the neighborlist
-enum gmx_nblist_interaction_type
-{
-    GMX_NBLIST_INTERACTION_STANDARD,
-    GMX_NBLIST_INTERACTION_FREE_ENERGY,
-    GMX_NBLIST_INTERACTION_NR
-};
-//! String corresponding to interactions in neighborlist code
-extern const char* gmx_nblist_interaction_names[GMX_NBLIST_INTERACTION_NR + 1];
 
 #endif /* GMX_MDTYPES_MD_ENUMS_H */
