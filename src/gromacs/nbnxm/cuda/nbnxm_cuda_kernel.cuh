@@ -48,6 +48,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
+#include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
 /* Note that floating-point constants in CUDA code should be suffixed
@@ -178,8 +179,8 @@ __launch_bounds__(THREADS_PER_BLOCK)
     float2        ljcp_i, ljcp_j;
 #    endif
     const float4*        xq          = atdat.xq;
-    float3*              f           = atdat.f;
-    const float3*        shift_vec   = atdat.shift_vec;
+    float3*              f           = asFloat3(atdat.f);
+    const float3*        shift_vec   = asFloat3(atdat.shift_vec);
     float                rcoulomb_sq = nbparam.rcoulomb_sq;
 #    ifdef VDW_CUTOFF_CHECK
     float                rvdw_sq     = nbparam.rvdw_sq;
@@ -648,7 +649,8 @@ __launch_bounds__(THREADS_PER_BLOCK)
     /* add up local shift forces into global mem, tidxj indexes x,y,z */
     if (bCalcFshift && (tidxj & 3) < 3)
     {
-        atomicAdd(&(atdat.fshift[nb_sci.shift].x) + (tidxj & 3), fshift_buf);
+        float3* fshift = asFloat3(atdat.fshift);
+        atomicAdd(&(fshift[nb_sci.shift].x) + (tidxj & 3), fshift_buf);
     }
 
 #    ifdef CALC_ENERGIES

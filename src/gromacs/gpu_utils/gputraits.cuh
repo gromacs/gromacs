@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,12 +45,22 @@
  * \ingroup module_gpu_utils
  */
 #include <cuda_runtime.h>
+#include "gromacs/math/vectypes.h"
 
 //! Device texture for fast read-only data fetching
 using DeviceTexture = cudaTextureObject_t;
 
 //! \brief Single GPU call timing event - meaningless in CUDA
 using CommandEvent = void;
+
+//! Convenience alias for 2-wide float
+using Float2 = float2;
+
+//! Convenience alias for 3-wide float
+using Float3 = gmx::RVec;
+
+//! Convenience alias for 4-wide float.
+using Float4 = float4;
 
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.

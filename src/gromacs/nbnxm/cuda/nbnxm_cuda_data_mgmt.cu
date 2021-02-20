@@ -268,7 +268,7 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
         static_assert(sizeof(adat->shift_vec[0]) == sizeof(nbatom->shift_vec[0]),
                       "Sizes of host- and device-side shift vectors should be the same.");
         copyToDeviceBuffer(&adat->shift_vec,
-                           reinterpret_cast<const float3*>(nbatom->shift_vec.data()),
+                           reinterpret_cast<const Float3*>(nbatom->shift_vec.data()),
                            0,
                            SHIFTS,
                            localStream,
@@ -368,10 +368,10 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 
     if (useLjCombRule(nb->nbparam->vdwType))
     {
-        static_assert(sizeof(d_atdat->lj_comb[0]) == sizeof(float2),
+        static_assert(sizeof(d_atdat->lj_comb[0]) == sizeof(Float2),
                       "Size of the LJ parameters element should be equal to the size of float2.");
         copyToDeviceBuffer(&d_atdat->lj_comb,
-                           reinterpret_cast<const float2*>(nbat->params().lj_comb.data()),
+                           reinterpret_cast<const Float2*>(nbat->params().lj_comb.data()),
                            0,
                            natoms,
                            localStream,
