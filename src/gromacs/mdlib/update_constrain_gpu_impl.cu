@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -215,6 +215,7 @@ void UpdateConstrainGpu::Impl::scaleVelocities(const matrix scalingMatrix)
 
 UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
                                const gmx_mtop_t&     mtop,
+                               const int             numTempScaleValues,
                                const DeviceContext&  deviceContext,
                                const DeviceStream&   deviceStream,
                                GpuEventSynchronizer* xUpdatedOnDevice,
@@ -227,7 +228,7 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
     GMX_ASSERT(xUpdatedOnDevice != nullptr, "The event synchronizer can not be nullptr.");
 
 
-    integrator_ = std::make_unique<LeapFrogGpu>(deviceContext_, deviceStream_);
+    integrator_ = std::make_unique<LeapFrogGpu>(deviceContext_, deviceStream_, numTempScaleValues);
     lincsGpu_ = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, deviceContext_, deviceStream_);
     settleGpu_ = std::make_unique<SettleGpu>(mtop, deviceContext_, deviceStream_);
 
@@ -243,8 +244,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
                                    DeviceBuffer<RVec>            d_v,
                                    const DeviceBuffer<RVec>      d_f,
                                    const InteractionDefinitions& idef,
-                                   const t_mdatoms&              md,
-                                   const int                     numTempScaleValues)
+                                   const t_mdatoms&              md)
 {
     // TODO wallcycle
     wallcycle_start_nocount(wcycle_, ewcLAUNCH_GPU);
@@ -266,7 +266,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
             &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
 
     // Integrator should also update something, but it does not even have a method yet
-    integrator_->set(numAtoms_, md.invmass, numTempScaleValues, md.cTC);
+    integrator_->set(numAtoms_, md.invmass, md.cTC);
     lincsGpu_->set(idef, numAtoms_, md.invmass);
     settleGpu_->set(idef);
 
@@ -290,11 +290,12 @@ GpuEventSynchronizer* UpdateConstrainGpu::Impl::getCoordinatesReadySync()
 
 UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec&     ir,
                                        const gmx_mtop_t&     mtop,
+                                       const int             numTempScaleValues,
                                        const DeviceContext&  deviceContext,
                                        const DeviceStream&   deviceStream,
                                        GpuEventSynchronizer* xUpdatedOnDevice,
                                        gmx_wallcycle*        wcycle) :
-    impl_(new Impl(ir, mtop, deviceContext, deviceStream, xUpdatedOnDevice, wcycle))
+    impl_(new Impl(ir, mtop, numTempScaleValues, deviceContext, deviceStream, xUpdatedOnDevice, wcycle))
 {
 }
 
@@ -337,10 +338,9 @@ void UpdateConstrainGpu::set(DeviceBuffer<RVec>            d_x,
                              DeviceBuffer<RVec>            d_v,
                              const DeviceBuffer<RVec>      d_f,
                              const InteractionDefinitions& idef,
-                             const t_mdatoms&              md,
-                             const int                     numTempScaleValues)
+                             const t_mdatoms&              md)
 {
-    impl_->set(d_x, d_v, d_f, idef, md, numTempScaleValues);
+    impl_->set(d_x, d_v, d_f, idef, md);
 }
 
 void UpdateConstrainGpu::setPbc(const PbcType pbcType, const matrix box)

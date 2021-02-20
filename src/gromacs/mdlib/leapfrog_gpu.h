@@ -101,10 +101,11 @@ class LeapFrogGpu
 public:
     /*! \brief Constructor.
      *
-     * \param[in] deviceContext  Device context (dummy in CUDA).
-     * \param[in] deviceStream   Device stream to use.
+     * \param[in] deviceContext       Device context (dummy in CUDA).
+     * \param[in] deviceStream        Device stream to use.
+     * \param[in] numTempScaleValues  Number of temperature scale groups.
      */
-    LeapFrogGpu(const DeviceContext& deviceContext, const DeviceStream& deviceStream);
+    LeapFrogGpu(const DeviceContext& deviceContext, const DeviceStream& deviceStream, int numTempScaleValues);
     ~LeapFrogGpu();
 
     /*! \brief Integrate
@@ -140,15 +141,11 @@ public:
      * and temperature coupling groups. Copies inverse masses and temperature coupling groups
      * to the GPU.
      *
-     * \param[in] numAtoms            Number of atoms in the system.
-     * \param[in] inverseMasses       Inverse masses of atoms.
-     * \param[in] numTempScaleValues  Number of temperature scale groups.
-     * \param[in] tempScaleGroups     Maps the atom index to temperature scale value.
+     * \param[in] numAtoms        Number of atoms in the system.
+     * \param[in] inverseMasses   Inverse masses of atoms.
+     * \param[in] tempScaleGroups Maps the atom index to temperature scale value.
      */
-    void set(const int             numAtoms,
-             const real*           inverseMasses,
-             int                   numTempScaleValues,
-             const unsigned short* tempScaleGroups);
+    void set(const int numAtoms, const real* inverseMasses, const unsigned short* tempScaleGroups);
 
     /*! \brief Class with hardware-specific interfaces and implementations.*/
     class Impl;

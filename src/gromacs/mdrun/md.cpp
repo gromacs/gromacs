@@ -473,6 +473,7 @@ void gmx::LegacySimulator::do_md()
         integrator = std::make_unique<UpdateConstrainGpu>(
                 *ir,
                 *top_global,
+                ekind->ngtc,
                 fr->deviceStreamManager->context(),
                 fr->deviceStreamManager->stream(gmx::DeviceStreamType::UpdateAndConstraints),
                 stateGpu->xUpdatedOnDevice(),
@@ -1481,8 +1482,7 @@ void gmx::LegacySimulator::do_md()
                                     stateGpu->getVelocities(),
                                     stateGpu->getForces(),
                                     top.idef,
-                                    *mdatoms,
-                                    ekind->ngtc);
+                                    *mdatoms);
 
                     // Copy data to the GPU after buffers might have being reinitialized
                     stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);

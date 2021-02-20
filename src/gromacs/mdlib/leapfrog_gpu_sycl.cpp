@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2020, by the GROMACS development team, led by
+ * Copyright (c) 2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -273,11 +273,20 @@ void LeapFrogGpu::integrate(DeviceBuffer<float3>              d_x,
                          prVelocityScalingMatrixDiagonal_);
 }
 
-LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext, const DeviceStream& deviceStream) :
+LeapFrogGpu::LeapFrogGpu(const DeviceContext& deviceContext,
+                         const DeviceStream&  deviceStream,
+                         const int            numTempScaleValues) :
     deviceContext_(deviceContext),
     deviceStream_(deviceStream),
-    numAtoms_(0)
+    numAtoms_(0),
+    numTempScaleValues_(numTempScaleValues)
 {
+    // If the temperature coupling is enabled, we need to make space for scaling factors
+    if (numTempScaleValues_ > 0)
+    {
+        reallocateDeviceBuffer(
+                &d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_, deviceContext_);
+    }
 }
 
 LeapFrogGpu::~LeapFrogGpu()
@@ -285,13 +294,9 @@ LeapFrogGpu::~LeapFrogGpu()
     freeDeviceBuffer(&d_inverseMasses_);
 }
 
-void LeapFrogGpu::set(const int             numAtoms,
-                      const real*           inverseMasses,
-                      const int             numTempScaleValues,
-                      const unsigned short* tempScaleGroups)
+void LeapFrogGpu::set(const int numAtoms, const real* inverseMasses, const unsigned short* tempScaleGroups)
 {
-    numAtoms_           = numAtoms;
-    numTempScaleValues_ = numTempScaleValues;
+    numAtoms_ = numAtoms;
 
     reallocateDeviceBuffer(
             &d_inverseMasses_, numAtoms_, &numInverseMasses_, &numInverseMassesAlloc_, deviceContext_);
@@ -305,13 +310,6 @@ void LeapFrogGpu::set(const int             numAtoms,
                 &d_tempScaleGroups_, numAtoms_, &numTempScaleGroups_, &numTempScaleGroupsAlloc_, deviceContext_);
         copyToDeviceBuffer(
                 &d_tempScaleGroups_, tempScaleGroups, 0, numAtoms_, deviceStream_, GpuApiCallBehavior::Sync, nullptr);
-    }
-
-    // If the temperature coupling is enabled, we need to make space for scaling factors
-    if (numTempScaleValues_ > 0)
-    {
-        reallocateDeviceBuffer(
-                &d_lambdas_, numTempScaleValues_, &numLambdas_, &numLambdasAlloc_, deviceContext_);
     }
 }
 

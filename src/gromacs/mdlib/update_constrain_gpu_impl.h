@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,18 +71,20 @@ public:
      * any) consumers of the updated coordinates. The \p xUpdatedOnDevice also can not be a nullptr
      * because the markEvent(...) method is called unconditionally.
      *
-     * \param[in] ir                Input record data: LINCS takes number of iterations and order of
-     *                              projection from it.
-     * \param[in] mtop              Topology of the system: SETTLE gets the masses for O and H atoms
-     *                              and target O-H and H-H distances from this object.
-     * \param[in] deviceContext     GPU device context.
-     * \param[in] deviceStream      GPU stream to use.
-     * \param[in] xUpdatedOnDevice  The event synchronizer to use to mark that
-     *                              update is done on the GPU.
-     * \param[in] wcycle            The wallclock counter
+     * \param[in] ir                  Input record data: LINCS takes number of iterations and order of
+     *                                projection from it.
+     * \param[in] mtop                Topology of the system: SETTLE gets the masses for O and H atoms
+     *                                and target O-H and H-H distances from this object.
+     * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
+     * \param[in] deviceContext       GPU device context.
+     * \param[in] deviceStream        GPU stream to use.
+     * \param[in] xUpdatedOnDevice    The event synchronizer to use to mark that
+     *                                update is done on the GPU.
+     * \param[in] wcycle              The wallclock counter
      */
     Impl(const t_inputrec&     ir,
          const gmx_mtop_t&     mtop,
+         int                   numTempScaleValues,
          const DeviceContext&  deviceContext,
          const DeviceStream&   deviceStream,
          GpuEventSynchronizer* xUpdatedOnDevice,
@@ -147,14 +149,12 @@ public:
      * \param[in]      d_f            Device buffer with forces.
      * \param[in] idef                System topology
      * \param[in] md                  Atoms data.
-     * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
      */
     void set(DeviceBuffer<RVec>            d_x,
              DeviceBuffer<RVec>            d_v,
              const DeviceBuffer<RVec>      d_f,
              const InteractionDefinitions& idef,
-             const t_mdatoms&              md,
-             const int                     numTempScaleValues);
+             const t_mdatoms&              md);
 
     /*! \brief
      * Update PBC data.
