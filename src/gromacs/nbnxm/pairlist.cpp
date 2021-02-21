@@ -654,8 +654,7 @@ NbnxnPairlistGpu::NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy) :
 }
 
 // TODO: Move to pairlistset.cpp
-PairlistSet::PairlistSet(const InteractionLocality locality, const PairlistParams& pairlistParams) :
-    locality_(locality),
+PairlistSet::PairlistSet(const PairlistParams& pairlistParams) :
     params_(pairlistParams),
     combineLists_(sc_isGpuPairListType[pairlistParams.pairlistType]), // Currently GPU lists are always combined
     isCpuType_(!sc_isGpuPairListType[pairlistParams.pairlistType])
@@ -3868,7 +3867,8 @@ static Range<int> getJZoneRange(const gmx_domdec_zones_t* ddZones,
 //! Prepares CPU lists produced by the search for dynamic pruning
 static void prepareListsForDynamicPruning(gmx::ArrayRef<NbnxnPairlistCpu> lists);
 
-void PairlistSet::constructPairlists(const Nbnxm::GridSet&         gridSet,
+void PairlistSet::constructPairlists(gmx::InteractionLocality      locality,
+                                     const Nbnxm::GridSet&         gridSet,
                                      gmx::ArrayRef<PairsearchWork> searchWork,
                                      nbnxn_atomdata_t*             nbat,
                                      const ListOfLists<int>&       exclusions,
@@ -3887,7 +3887,7 @@ void PairlistSet::constructPairlists(const Nbnxm::GridSet&         gridSet,
 
     nbat->bUseBufferFlags = (nbat->out.size() > 1);
     /* We should re-init the flags before making the first list */
-    if (nbat->bUseBufferFlags && locality_ == InteractionLocality::Local)
+    if (nbat->bUseBufferFlags && locality == InteractionLocality::Local)
     {
         resizeAndZeroBufferFlags(&nbat->buffer_flags, nbat->numAtoms());
     }
@@ -3897,7 +3897,7 @@ void PairlistSet::constructPairlists(const Nbnxm::GridSet&         gridSet,
     if (!isCpuType_ && minimumIlistCountForGpuBalancing > 0)
     {
         get_nsubpair_target(
-                gridSet, locality_, rlist, minimumIlistCountForGpuBalancing, &nsubpair_target, &nsubpair_tot_est);
+                gridSet, locality, rlist, minimumIlistCountForGpuBalancing, &nsubpair_target, &nsubpair_tot_est);
     }
 
     /* Clear all pair-lists */
@@ -3919,16 +3919,16 @@ void PairlistSet::constructPairlists(const Nbnxm::GridSet&         gridSet,
     }
 
     const gmx_domdec_zones_t* ddZones = gridSet.domainSetup().zones;
-    GMX_ASSERT(locality_ == InteractionLocality::Local || ddZones != nullptr,
+    GMX_ASSERT(locality == InteractionLocality::Local || ddZones != nullptr,
                "Nonlocal interaction locality with null ddZones.");
 
-    const auto iZoneRange = getIZoneRange(gridSet.domainSetup(), locality_);
+    const auto iZoneRange = getIZoneRange(gridSet.domainSetup(), locality);
 
     for (const int iZone : iZoneRange)
     {
         const Grid& iGrid = gridSet.grids()[iZone];
 
-        const auto jZoneRange = getJZoneRange(ddZones, locality_, iZone);
+        const auto jZoneRange = getJZoneRange(ddZones, locality, iZone);
 
         for (int jZone : jZoneRange)
         {
@@ -3947,7 +3947,7 @@ void PairlistSet::constructPairlists(const Nbnxm::GridSet&         gridSet,
             /* With GPU: generate progressively smaller lists for
              * load balancing for local only or non-local with 2 zones.
              */
-            const bool progBal = (locality_ == InteractionLocality::Local || ddZones->n <= 2);
+            const bool progBal = (locality == InteractionLocality::Local || ddZones->n <= 2);
 
 #pragma omp parallel for num_threads(numLists) schedule(static)
             for (int th = 0; th < numLists; th++)
@@ -4180,7 +4180,8 @@ void PairlistSets::construct(const InteractionLocality iLocality,
             "exclusions should either be empty or the number of lists should match the number of "
             "local i-atoms");
 
-    pairlistSet(iLocality).constructPairlists(gridSet,
+    pairlistSet(iLocality).constructPairlists(iLocality,
+                                              gridSet,
                                               pairSearch->work(),
                                               nbat,
                                               exclusions,

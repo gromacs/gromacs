@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,12 +83,13 @@ class PairlistSet
 {
 public:
     //! Constructor: initializes the pairlist set as empty
-    PairlistSet(gmx::InteractionLocality locality, const PairlistParams& listParams);
+    PairlistSet(const PairlistParams& listParams);
 
     ~PairlistSet();
 
     //! Constructs the pairlists in the set using the coordinates in \p nbat
-    void constructPairlists(const Nbnxm::GridSet&         gridSet,
+    void constructPairlists(gmx::InteractionLocality      locality,
+                            const Nbnxm::GridSet&         gridSet,
                             gmx::ArrayRef<PairsearchWork> searchWork,
                             nbnxn_atomdata_t*             nbat,
                             const gmx::ListOfLists<int>&  exclusions,
@@ -98,9 +99,6 @@ public:
 
     //! Dispatch the kernel for dynamic pairlist pruning
     void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, const rvec* shift_vec);
-
-    //! Returns the locality
-    gmx::InteractionLocality locality() const { return locality_; }
 
     //! Returns the lists of CPU pairlists
     gmx::ArrayRef<const NbnxnPairlistCpu> cpuLists() const { return cpuLists_; }
@@ -122,8 +120,6 @@ public:
     gmx::ArrayRef<const std::unique_ptr<t_nblist>> fepLists() const { return fepLists_; }
 
 private:
-    //! The locality of the pairlist set
-    gmx::InteractionLocality locality_;
     //! List of pairlists in CPU layout
     std::vector<NbnxnPairlistCpu> cpuLists_;
     //! List of working list for rebalancing CPU lists
