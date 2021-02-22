@@ -96,8 +96,8 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         return;
     }
 
-    int adatBegin, adatLen;
-    getGpuAtomRange(adat, atomLocality, &adatBegin, &adatLen);
+    /* local/nonlocal offset and length used for xq and f */
+    auto atomsRange = getGpuAtomRange(adat, atomLocality);
 
     // With DD the local D2H transfer can only start after the non-local kernel has finished.
     if (iloc == InteractionLocality::Local && nb->bNonLocalStreamDoneMarked)
@@ -113,10 +113,10 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     {
         GMX_ASSERT(adat->f.elementSize() == sizeof(Float3),
                    "The size of the force buffer element should be equal to the size of float3.");
-        copyFromDeviceBuffer(reinterpret_cast<Float3*>(nbatom->out[0].f.data()) + adatBegin,
+        copyFromDeviceBuffer(reinterpret_cast<Float3*>(nbatom->out[0].f.data()) + atomsRange.begin(),
                              &adat->f,
-                             adatBegin,
-                             adatLen,
+                             atomsRange.begin(),
+                             atomsRange.size(),
                              deviceStream,
                              GpuApiCallBehavior::Async,
                              nullptr);
@@ -193,16 +193,16 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
         return;
     }
 
-    int adatBegin, adatLen;
-    getGpuAtomRange(adat, atomLocality, &adatBegin, &adatLen);
+    /* local/nonlocal offset and length used for xq and f */
+    auto atomsRange = getGpuAtomRange(adat, atomLocality);
 
     /* HtoD x, q */
     GMX_ASSERT(adat->xq.elementSize() == sizeof(Float4),
                "The size of the xyzq buffer element should be equal to the size of float4.");
     copyToDeviceBuffer(&adat->xq,
-                       reinterpret_cast<const Float4*>(nbatom->x().data()) + adatBegin,
-                       adatBegin,
-                       adatLen,
+                       reinterpret_cast<const Float4*>(nbatom->x().data()) + atomsRange.begin(),
+                       atomsRange.begin(),
+                       atomsRange.size(),
                        deviceStream,
                        GpuApiCallBehavior::Async,
                        nullptr);

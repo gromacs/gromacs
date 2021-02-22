@@ -68,6 +68,7 @@
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/range.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gpu_common_utils.h"
@@ -167,14 +168,9 @@ bool haveGpuShortRangeWork(const NbnxmGpu* nb, const gmx::AtomLocality aLocality
  *
  * \param[in] atomData Atom descriptor data structure
  * \param[in] atomLocality Atom locality specifier
- * \param[out] atomRangeBegin Starting index of the atom range in the atom data array.
- * \param[out] atomRangeLen Atom range length in the atom data array.
+ * \returns Range of indexes for selected locality.
  */
-template<typename AtomDataT>
-static inline void getGpuAtomRange(const AtomDataT*   atomData,
-                                   const AtomLocality atomLocality,
-                                   int*               atomRangeBegin,
-                                   int*               atomRangeLen)
+static inline gmx::Range<int> getGpuAtomRange(const NBAtomData* atomData, const AtomLocality atomLocality)
 {
     assert(atomData);
     validateGpuAtomLocality(atomLocality);
@@ -182,13 +178,11 @@ static inline void getGpuAtomRange(const AtomDataT*   atomData,
     /* calculate the atom data index range based on locality */
     if (atomLocality == AtomLocality::Local)
     {
-        *atomRangeBegin = 0;
-        *atomRangeLen   = atomData->numAtomsLocal;
+        return gmx::Range<int>(0, atomData->numAtomsLocal);
     }
     else
     {
-        *atomRangeBegin = atomData->numAtomsLocal;
-        *atomRangeLen   = atomData->numAtoms - atomData->numAtomsLocal;
+        return gmx::Range<int>(atomData->numAtomsLocal, atomData->numAtoms);
     }
 }
 

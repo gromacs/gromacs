@@ -454,7 +454,6 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
 
     const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
 
-    int adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
     NBAtomData*         adat         = nb->atdat;
     gpu_plist*          plist        = nb->plist[iloc];
@@ -484,17 +483,8 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
         return;
     }
 
-    /* calculate the atom data index range based on locality */
-    if (atomLocality == AtomLocality::Local)
-    {
-        adat_begin = 0;
-        adat_len   = adat->numAtomsLocal;
-    }
-    else
-    {
-        adat_begin = adat->numAtomsLocal;
-        adat_len   = adat->numAtoms - adat->numAtomsLocal;
-    }
+    /* local/nonlocal offset and length used for xq and f */
+    auto atomsRange = getGpuAtomRange(adat, atomLocality);
 
     /* beginning of timed HtoD section */
     if (bDoTime)
@@ -506,9 +496,9 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     static_assert(sizeof(adat->xq[0]) == sizeof(Float4),
                   "The size of the xyzq buffer element should be equal to the size of float4.");
     copyToDeviceBuffer(&adat->xq,
-                       reinterpret_cast<const Float4*>(nbatom->x().data()) + adat_begin,
-                       adat_begin,
-                       adat_len,
+                       reinterpret_cast<const Float4*>(nbatom->x().data()) + atomsRange.begin(),
+                       atomsRange.begin(),
+                       atomsRange.size(),
                        deviceStream,
                        GpuApiCallBehavior::Async,
                        nullptr);
@@ -801,8 +791,6 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
-    int adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
-
     /* determine interaction locality from atom locality */
     const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
     GMX_ASSERT(iloc == InteractionLocality::Local
@@ -823,7 +811,8 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         return;
     }
 
-    getGpuAtomRange(adat, atomLocality, &adat_begin, &adat_len);
+    /* local/nonlocal offset and length used for xq and f */
+    auto atomsRange = getGpuAtomRange(adat, atomLocality);
 
     /* beginning of timed D2H section */
     if (bDoTime)
@@ -847,10 +836,10 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         static_assert(
                 sizeof(adat->f[0]) == sizeof(Float3),
                 "The size of the force buffer element should be equal to the size of float3.");
-        copyFromDeviceBuffer(reinterpret_cast<Float3*>(nbatom->out[0].f.data()) + adat_begin,
+        copyFromDeviceBuffer(reinterpret_cast<Float3*>(nbatom->out[0].f.data()) + atomsRange.begin(),
                              &adat->f,
-                             adat_begin,
-                             adat_len,
+                             atomsRange.begin(),
+                             atomsRange.size(),
                              deviceStream,
                              GpuApiCallBehavior::Async,
                              nullptr);
