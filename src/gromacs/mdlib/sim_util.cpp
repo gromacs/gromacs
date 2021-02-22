@@ -1200,7 +1200,7 @@ void do_force(FILE*                               fplog,
                "forces for");
 
     nonbonded_verlet_t*  nbv = fr->nbv.get();
-    interaction_const_t* ic  = fr->ic;
+    interaction_const_t* ic  = fr->ic.get();
 
     gmx::StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 

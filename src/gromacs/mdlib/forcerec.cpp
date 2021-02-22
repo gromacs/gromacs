@@ -829,50 +829,52 @@ static void potential_switch_constants(real rsw, real rc, switch_consts_t* sc)
  * short-range interactions. Many of these are constant for the whole
  * simulation; some are constant only after PME tuning completes.
  */
-static void init_interaction_const(FILE*                 fp,
-                                   interaction_const_t** interaction_const,
-                                   const t_inputrec&     ir,
-                                   const gmx_mtop_t&     mtop,
-                                   bool                  systemHasNetCharge)
+static interaction_const_t init_interaction_const(FILE*             fp,
+                                                  const t_inputrec& ir,
+                                                  const gmx_mtop_t& mtop,
+                                                  bool              systemHasNetCharge)
 {
-    interaction_const_t* ic = new interaction_const_t;
+    interaction_const_t interactionConst;
 
-    ic->coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
-    ic->vdwEwaldTables     = std::make_unique<EwaldCorrectionTables>();
+    interactionConst.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
+    interactionConst.vdwEwaldTables     = std::make_unique<EwaldCorrectionTables>();
 
     /* Lennard-Jones */
-    ic->vdwtype         = ir.vdwtype;
-    ic->vdw_modifier    = ir.vdw_modifier;
-    ic->reppow          = mtop.ffparams.reppow;
-    ic->rvdw            = cutoff_inf(ir.rvdw);
-    ic->rvdw_switch     = ir.rvdw_switch;
-    ic->ljpme_comb_rule = ir.ljpme_combination_rule;
-    ic->useBuckingham   = (mtop.ffparams.functype[0] == F_BHAM);
-    if (ic->useBuckingham)
+    interactionConst.vdwtype         = ir.vdwtype;
+    interactionConst.vdw_modifier    = ir.vdw_modifier;
+    interactionConst.reppow          = mtop.ffparams.reppow;
+    interactionConst.rvdw            = cutoff_inf(ir.rvdw);
+    interactionConst.rvdw_switch     = ir.rvdw_switch;
+    interactionConst.ljpme_comb_rule = ir.ljpme_combination_rule;
+    interactionConst.useBuckingham   = (mtop.ffparams.functype[0] == F_BHAM);
+    if (interactionConst.useBuckingham)
     {
-        ic->buckinghamBMax = calcBuckinghamBMax(fp, mtop);
+        interactionConst.buckinghamBMax = calcBuckinghamBMax(fp, mtop);
     }
 
-    initVdwEwaldParameters(fp, ir, ic);
+    initVdwEwaldParameters(fp, ir, &interactionConst);
 
-    clear_force_switch_constants(&ic->dispersion_shift);
-    clear_force_switch_constants(&ic->repulsion_shift);
+    clear_force_switch_constants(&interactionConst.dispersion_shift);
+    clear_force_switch_constants(&interactionConst.repulsion_shift);
 
-    switch (ic->vdw_modifier)
+    switch (interactionConst.vdw_modifier)
     {
         case InteractionModifiers::PotShift:
             /* Only shift the potential, don't touch the force */
-            ic->dispersion_shift.cpot = -1.0 / gmx::power6(ic->rvdw);
-            ic->repulsion_shift.cpot  = -1.0 / gmx::power12(ic->rvdw);
+            interactionConst.dispersion_shift.cpot = -1.0 / gmx::power6(interactionConst.rvdw);
+            interactionConst.repulsion_shift.cpot  = -1.0 / gmx::power12(interactionConst.rvdw);
             break;
         case InteractionModifiers::ForceSwitch:
             /* Switch the force, switch and shift the potential */
-            force_switch_constants(6.0, ic->rvdw_switch, ic->rvdw, &ic->dispersion_shift);
-            force_switch_constants(12.0, ic->rvdw_switch, ic->rvdw, &ic->repulsion_shift);
+            force_switch_constants(
+                    6.0, interactionConst.rvdw_switch, interactionConst.rvdw, &interactionConst.dispersion_shift);
+            force_switch_constants(
+                    12.0, interactionConst.rvdw_switch, interactionConst.rvdw, &interactionConst.repulsion_shift);
             break;
         case InteractionModifiers::PotSwitch:
             /* Switch the potential and force */
-            potential_switch_constants(ic->rvdw_switch, ic->rvdw, &ic->vdw_switch);
+            potential_switch_constants(
+                    interactionConst.rvdw_switch, interactionConst.rvdw, &interactionConst.vdw_switch);
             break;
         case InteractionModifiers::None:
         case InteractionModifiers::ExactCutoff:
@@ -882,72 +884,74 @@ static void init_interaction_const(FILE*                 fp,
     }
 
     /* Electrostatics */
-    ic->eeltype          = ir.coulombtype;
-    ic->coulomb_modifier = ir.coulomb_modifier;
-    ic->rcoulomb         = cutoff_inf(ir.rcoulomb);
-    ic->rcoulomb_switch  = ir.rcoulomb_switch;
-    ic->epsilon_r        = ir.epsilon_r;
+    interactionConst.eeltype          = ir.coulombtype;
+    interactionConst.coulomb_modifier = ir.coulomb_modifier;
+    interactionConst.rcoulomb         = cutoff_inf(ir.rcoulomb);
+    interactionConst.rcoulomb_switch  = ir.rcoulomb_switch;
+    interactionConst.epsilon_r        = ir.epsilon_r;
 
     /* Set the Coulomb energy conversion factor */
-    if (ic->epsilon_r != 0)
+    if (interactionConst.epsilon_r != 0)
     {
-        ic->epsfac = ONE_4PI_EPS0 / ic->epsilon_r;
+        interactionConst.epsfac = ONE_4PI_EPS0 / interactionConst.epsilon_r;
     }
     else
     {
         /* eps = 0 is infinite dieletric: no Coulomb interactions */
-        ic->epsfac = 0;
+        interactionConst.epsfac = 0;
     }
 
     /* Reaction-field */
-    if (EEL_RF(ic->eeltype))
+    if (EEL_RF(interactionConst.eeltype))
     {
-        GMX_RELEASE_ASSERT(ic->eeltype != CoulombInteractionType::GRFNotused,
+        GMX_RELEASE_ASSERT(interactionConst.eeltype != CoulombInteractionType::GRFNotused,
                            "GRF is no longer supported");
-        ic->reactionFieldPermitivity = ir.epsilon_rf;
-
+        interactionConst.reactionFieldPermitivity = ir.epsilon_rf;
         calc_rffac(fp,
-                   ic->epsilon_r,
-                   ic->reactionFieldPermitivity,
-                   ic->rcoulomb,
-                   &ic->reactionFieldCoefficient,
-                   &ic->reactionFieldShift);
+                   interactionConst.epsilon_r,
+                   interactionConst.reactionFieldPermitivity,
+                   interactionConst.rcoulomb,
+                   &interactionConst.reactionFieldCoefficient,
+                   &interactionConst.reactionFieldShift);
     }
     else
     {
         /* For plain cut-off we might use the reaction-field kernels */
-        ic->reactionFieldPermitivity = ic->epsilon_r;
-        ic->reactionFieldCoefficient = 0;
+        interactionConst.reactionFieldPermitivity = interactionConst.epsilon_r;
+        interactionConst.reactionFieldCoefficient = 0;
         if (ir.coulomb_modifier == InteractionModifiers::PotShift)
         {
-            ic->reactionFieldShift = 1 / ic->rcoulomb;
+            interactionConst.reactionFieldShift = 1 / interactionConst.rcoulomb;
         }
         else
         {
-            ic->reactionFieldShift = 0;
+            interactionConst.reactionFieldShift = 0;
         }
     }
 
-    initCoulombEwaldParameters(fp, ir, systemHasNetCharge, ic);
+    initCoulombEwaldParameters(fp, ir, systemHasNetCharge, &interactionConst);
 
     if (fp != nullptr)
     {
         real dispersion_shift;
 
-        dispersion_shift = ic->dispersion_shift.cpot;
-        if (EVDW_PME(ic->vdwtype))
+        dispersion_shift = interactionConst.dispersion_shift.cpot;
+        if (EVDW_PME(interactionConst.vdwtype))
         {
-            dispersion_shift -= ic->sh_lj_ewald;
+            dispersion_shift -= interactionConst.sh_lj_ewald;
         }
-        fprintf(fp, "Potential shift: LJ r^-12: %.3e r^-6: %.3e", ic->repulsion_shift.cpot, dispersion_shift);
+        fprintf(fp,
+                "Potential shift: LJ r^-12: %.3e r^-6: %.3e",
+                interactionConst.repulsion_shift.cpot,
+                dispersion_shift);
 
-        if (ic->eeltype == CoulombInteractionType::Cut)
+        if (interactionConst.eeltype == CoulombInteractionType::Cut)
         {
-            fprintf(fp, ", Coulomb %.e", -ic->reactionFieldShift);
+            fprintf(fp, ", Coulomb %.e", -interactionConst.reactionFieldShift);
         }
-        else if (EEL_PME(ic->eeltype))
+        else if (EEL_PME(interactionConst.eeltype))
         {
-            fprintf(fp, ", Ewald %.3e", -ic->sh_ewald);
+            fprintf(fp, ", Ewald %.3e", -interactionConst.sh_ewald);
         }
         fprintf(fp, "\n");
     }
@@ -955,10 +959,11 @@ static void init_interaction_const(FILE*                 fp,
     if (ir.efep != FreeEnergyPerturbationType::No)
     {
         GMX_RELEASE_ASSERT(ir.fepvals, "ir.fepvals should be set wth free-energy");
-        ic->softCoreParameters = std::make_unique<interaction_const_t::SoftCoreParameters>(*ir.fepvals);
+        interactionConst.softCoreParameters =
+                std::make_unique<interaction_const_t::SoftCoreParameters>(*ir.fepvals);
     }
 
-    *interaction_const = ic;
+    return interactionConst;
 }
 
 void init_forcerec(FILE*                            fp,
@@ -1093,11 +1098,11 @@ void init_forcerec(FILE*                            fp,
     /* This now calculates sum for q and c6*/
     bool systemHasNetCharge = set_chargesum(fp, fr, mtop);
 
-    /* fr->ic is used both by verlet and group kernels (to some extent) now */
-    init_interaction_const(fp, &fr->ic, ir, mtop, systemHasNetCharge);
-    init_interaction_const_tables(fp, fr->ic, fr->rlist, ir.tabext);
+    /* Make data structure used by kernels */
+    fr->ic = std::make_unique<interaction_const_t>(init_interaction_const(fp, ir, mtop, systemHasNetCharge));
+    init_interaction_const_tables(fp, fr->ic.get(), fr->rlist, ir.tabext);
 
-    const interaction_const_t* ic = fr->ic;
+    const interaction_const_t* ic = fr->ic.get();
 
     /* TODO: Replace this Ewald table or move it into interaction_const_t */
     if (ir.coulombtype == CoulombInteractionType::Ewald)

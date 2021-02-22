@@ -60,7 +60,7 @@ class DispersionCorrection;
 class ListedForces;
 struct t_fcdata;
 struct t_forcetable;
-struct t_QMMMrec;
+struct interaction_const_t;
 
 namespace gmx
 {
@@ -183,7 +183,7 @@ struct t_forcerec
     t_forcerec();
     ~t_forcerec();
 
-    struct interaction_const_t* ic = nullptr;
+    std::unique_ptr<interaction_const_t> ic;
 
     /* PBC stuff */
     PbcType pbcType = PbcType::Xyz;

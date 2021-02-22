@@ -224,7 +224,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     constexpr real six        = 6.0;
 
     /* Extract pointer to non-bonded interaction constants */
-    const interaction_const_t* ic = fr->ic;
+    const interaction_const_t* ic = fr->ic.get();
 
     // Extract pair list data
     const int                nri    = nlist->nri;

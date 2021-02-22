@@ -448,7 +448,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                 (deviceStreamManager != nullptr),
                 "Device stream manager should be initialized in order to use GPU for non-bonded.");
         gpu_nbv = gpu_init(
-                *deviceStreamManager, forcerec.ic, pairlistParams, nbat.get(), haveMultipleDomains);
+                *deviceStreamManager, forcerec.ic.get(), pairlistParams, nbat.get(), haveMultipleDomains);
 
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }

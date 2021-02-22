@@ -1067,7 +1067,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
                          box,
                          x,
                          pme_lb->cycles_c - cycles_prev,
-                         fr->ic,
+                         fr->ic.get(),
                          fr->nbv.get(),
                          &fr->pmedata,
                          step);

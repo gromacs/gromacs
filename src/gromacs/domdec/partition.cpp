@@ -3283,7 +3283,7 @@ void dd_partition_system(FILE*                     fplog,
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
         gmx_pme_send_parameters(cr,
-                                fr->ic,
+                                fr->ic.get(),
                                 mdatoms->nChargePerturbed != 0,
                                 mdatoms->nTypePerturbed != 0,
                                 mdatoms->chargeA,
