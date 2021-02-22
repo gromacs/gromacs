@@ -2893,6 +2893,8 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
 
 gmx_domdec_t::gmx_domdec_t(const t_inputrec& ir) : unitCellInfo(ir) {}
 
+gmx_domdec_t::~gmx_domdec_t() = default;
+
 namespace gmx
 {
 

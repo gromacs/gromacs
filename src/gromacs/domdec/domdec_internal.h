@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020,2021, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -796,6 +796,15 @@ static constexpr double DD_CELL_MARGIN2 = 1.00005;
 
 /*! \brief With pressure scaling, keep cell sizes 2% above the limit to allow for some scaling */
 static constexpr double DD_PRES_SCALE_MARGIN = 1.02;
+
+struct gmx_reverse_top_t
+{
+    gmx_reverse_top_t(const gmx_mtop_t& mtop, bool useFreeEnergy, const ReverseTopOptions& reverseTopOptions);
+    ~gmx_reverse_top_t();
+
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
 
 /*! \endcond */
 

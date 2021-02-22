@@ -70,6 +70,7 @@ struct gmx_domdec_specat_comm_t;
 class gmx_ga2la_t;
 struct gmx_pme_comm_n_box_t;
 struct t_inputrec;
+struct gmx_reverse_top_t;
 struct gmx_mtop_t;
 struct ReverseTopOptions;
 
@@ -159,19 +160,11 @@ struct UnitCellInfo
     bool haveScrewPBC;
 };
 
-struct gmx_reverse_top_t
-{
-    gmx_reverse_top_t(const gmx_mtop_t& mtop, bool useFreeEnergy, const ReverseTopOptions& reverseTopOptions);
-    ~gmx_reverse_top_t();
-
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
-};
-
 struct gmx_domdec_t
 { //NOLINT(clang-analyzer-optin.performance.Padding)
     //! Constructor, only partial for now
     gmx_domdec_t(const t_inputrec& ir);
+    ~gmx_domdec_t();
 
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all

@@ -149,7 +149,7 @@ struct ReverseTopOptions
     const bool includeSettles;
 };
 
-/*! \brief Struct for the reverse topology: links bonded interactions to atomsx */
+/*! \brief Struct for the reverse topology: links bonded interactions to atoms */
 struct gmx_reverse_top_t::Impl
 {
     //! Constructs a reverse topology from \p mtop
